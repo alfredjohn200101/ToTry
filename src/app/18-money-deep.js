@@ -478,7 +478,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
       '<input type="'+(f.type==='date'?'date':'text')+'"'+inMode+' id="fm-'+f.id+'"'+val+' placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" style="'+pad+'"></div>';
   }).join('');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
     (subtitle?'<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+subtitle+'</div>':'<div style="margin-bottom:8px"></div>')+
     fieldHtml+
     '<div id="fm-error" role="alert" aria-live="assertive" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+

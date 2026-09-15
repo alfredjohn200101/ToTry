@@ -98,7 +98,7 @@ function _fuelElicit(){
     '<input type="text" id="fuel-diet-free" placeholder="Allergies, foods you hate, anything else..." value="'+String(p.restrictions||'').replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px"><div><div style="font-size:13px;color:var(--tx);font-weight:500">Include supplements?</div><div style="font-size:11px;color:var(--tx3);line-height:1.4">Only real, evidence-backed, food-first. Optional.</div></div><button type="button" id="fuel-supp-toggle" data-on="'+(suppOn?'1':'0')+'" class="fuel-chip'+(suppOn?' on':'')+'" onclick="_fuelToggleSupp(this)" style="'+chipStyle+(suppOn?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+(suppOn?'Yes':'No')+'</button></div>'+
     '<button class="btn primary" onclick="_fuelElicitSave()">Next: pick my shop →</button>'+
-    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Maybe later</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -194,7 +194,7 @@ function _fuelShopPicker(){
     '<div id="fuel-shops-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn subtle" style="width:auto;padding:0 16px" onclick="_fuelAddShop()">Add</button></div>'+
     '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
-    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Later</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -301,7 +301,7 @@ function _fuelRenderPlan(plan){
   const _gentle = (typeof nutGentle==='function' && nutGentle());   // numbers off means numbers off
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:500;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:11px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
@@ -850,7 +850,7 @@ function openEventLogger(){
   for(let h=5; h<=23; h++){ for(let mn=0; mn<60; mn+=15){ const v=String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0'); const ampm=h<12?'am':'pm'; const h12=h%12===0?12:h%12; timeOpts+='<option value="'+v+'">'+h12+':'+String(mn).padStart(2,'0')+' '+ampm+'</option>'; } }
   const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:4px">Add to your week</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:4px">Add to your week.</div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:18px">Pick the day(s), set a time, done.</div>'+
     '<div class="lbl">What is it?</div>'+
     '<input type="text" id="ev-title" placeholder="e.g. Work shift, Lecture, Gym, Mass" style="margin-bottom:14px">'+

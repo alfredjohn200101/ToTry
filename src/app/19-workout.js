@@ -639,7 +639,7 @@ function renderMobilityPanel(){
   const prof = getMobilityProfile();
   let profHtml;
   if(!prof){
-    profHtml = '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
+    profHtml = '<div class="card"><div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
       '<button class="btn primary" onclick="openMobilityAssessment()">Take the mobility check</button></div>';
   } else {
     const items = MOBILITY_JOINTS.filter(j => prof[j.id]).map(j => {
@@ -649,11 +649,11 @@ function renderMobilityPanel(){
         '<span style="display:flex;gap:3px">' + [1,2,3,4,5].map(n=>'<span style="width:7px;height:7px;border-radius:50%;background:'+(n<=v?col:'var(--bg3)')+'"></span>').join('') + '</span></div>';
     }).join('');
     const when = prof._ts ? new Date(prof._ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
-    profHtml = '<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:10px;color:var(--tx3)">checked ' + when + '</span></div>'+
+    profHtml = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:10px;color:var(--tx3)">checked ' + when + '</span></div>'+
       items + '<button class="btn" onclick="openMobilityAssessment()" style="margin-top:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12px">Re-check mobility</button></div>';
   }
   box.innerHTML = profHtml +
-    '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
+    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("flame")+' Warm up for today</div>'+
       '<div id="mob-warmup-out"></div>'+
     '</div>'+

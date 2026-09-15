@@ -230,7 +230,7 @@ function renderMoneyGate(){
 
   if(empty){
     readCard.innerHTML = '';
-    gate.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+    gate.innerHTML = '<div class="card">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
@@ -255,7 +255,7 @@ function renderMoneyGate(){
   const _spanLbl = 'over ' + Math.max(1, Math.round(r.spanDays || 0)) + ' days';
   const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
   const _negNow = _thin ? (_net < 0) : neg;
-  readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+  readCard.innerHTML = '<div class="card">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
       '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
       '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+

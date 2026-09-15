@@ -740,7 +740,7 @@ function openToolkit(){
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">The tools I use with you.</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Two minutes each. Learn one somewhere calm and it works far better at 11pm, because you\u2019ll recognise it. Nothing to finish here \u2014 no streak, no score. Pick one up and put me down.</div>'+
-    (myLine?'<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
+    (myLine?'<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
     _TOOLKIT.map(function(l){
       const hi=(l.id===sug);
       return '<button class="btn stack" onclick="openLesson(\''+l.id+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:'+(hi?'rgba(200,169,110,0.10)':'var(--bg3)')+';border:1px solid '+(hi?'var(--go-bd)':'var(--bd)')+';display:block;width:100%">'+
@@ -1477,7 +1477,7 @@ function openBreathMenu(){
   const _pf = _breathProof();
   const proofLine = (_pf && _pf.n>0) ? '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:14px;font-style:italic">Breathing brought the wave down '+_pf.n+' of your last '+_pf.m+' times.</div>' : '';
   let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Take a breath.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+((mw>0||proofLine)?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine+proofLine;
   ids.forEach(id=>{ const p=_protoFor(id); html+=
     '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
@@ -1833,7 +1833,7 @@ function _planCardHTML(i){
     let inner='';
     if(why) inner+='<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic;margin-bottom:'+(move?'8px':'0')+'">“'+String(why).replace(/</g,'&lt;')+'”</div>';
     if(move) inner+='<div style="font-size:11px;color:var(--tx3);line-height:1.5"><span style="color:var(--go)">Your move:</span> '+String(move).replace(/</g,'&lt;')+'</div>';
-    return '<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px;text-align:left">'+
+    return '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Your plan — in your words</div>'+inner+'</div>';
   }catch(_){ return ''; }
 }
@@ -1962,7 +1962,7 @@ function openNaturalHighs(){
   const _intro=_phase?'Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.':'A real hit of clean dopamine beats the fake one every time — no crash, and it makes the pull quieter. Pick one and go.';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Chase a real high.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">'+_intro+'</div>'+_phaseLine;
   HIGHS.forEach(h=>{ html+=
     '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
@@ -2019,7 +2019,7 @@ function openProgressCheckin(){
     '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
     '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
-    '<button class="btn quiet" onclick="closeModal(this)">Maybe later</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   const areasWrap=m.querySelector('.pc-areas');

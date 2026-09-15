@@ -298,7 +298,7 @@ function renderLifeWoven(){
     ['flame','Spirit',spiritTxt,"go('soul')"],
     ['wallet','Money',moneyTxt,"go('money')"]
   ];
-  box.innerHTML='<div class="card" style="padding:4px 2px;margin-bottom:14px">'+
+  box.innerHTML='<div class="card" style="padding:4px 2px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
     rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
       '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+

@@ -81,7 +81,7 @@ function _breathProof(){
 function _hardHourBreath(viceName){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Get ahead of it</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Get ahead of it.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:18px">'+(viceName?('This is usually when '+String(viceName).replace(/</g,'&lt;')+' pulls. '):'')+'Nothing has to be happening yet — that’s the point. One slow minute now makes the next hour easier.</div>'+
     '<button class="btn primary" onclick="closeModal(this);openBreath(\'settle\',{reason:\'hard hour\'})" style="margin-bottom:8px">Breathe through it — 1 min</button>'+
     '<button class="btn subtle" onclick="closeModal(this);_feelThePull()" style="margin-bottom:8px">Talk it through instead</button>'+
@@ -308,7 +308,7 @@ function openMorningLight(){
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">A few minutes of real daylight in your eyes — no sunglasses, and a window does not count for much. Even grey and overcast is many times brighter than any room you own.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.65;margin-bottom:18px">It sets tonight’s sleep far more than anything you do at bedtime. Do it while the kettle boils.</div>'+
     '<button class="btn primary" onclick="_morningLightGo()" style="padding:14px">I’m going out</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Later</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });

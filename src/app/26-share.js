@@ -661,7 +661,7 @@ async function submitFeedback(){
       '<h3 style="margin-bottom:6px">Send via email instead?</h3>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Couldn\'t reach the server right now, but your feedback is saved. Tap below to send it by email so it reaches me directly.</p>' +
       '<a href="' + mailto + '" class="btn primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px" onclick="closeModal(this)">Open email</a>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Later</button>' +
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Not now</button>' +
     '</div>';
     document.body.appendChild(m);
   }

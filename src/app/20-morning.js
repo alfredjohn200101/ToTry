@@ -320,7 +320,7 @@ function renderReadinessCard(){
   const _sourceLine = _selfReported ? 'From your check-ins' : 'Tap to add how you slept';
   card.style.display = 'block';
   card.innerHTML = '<div class="lbl">Readiness</div>'+
-    '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="explainReadiness()">'+
+    '<div class="card" style="cursor:pointer" onclick="explainReadiness()">'+
       '<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="position:relative;width:52px;height:52px;flex-shrink:0">'+
           '<svg viewBox="0 0 36 36" style="width:52px;height:52px;transform:rotate(-90deg)"><circle cx="18" cy="18" r="16" fill="none" stroke="var(--bg3)" stroke-width="3"/><circle cx="18" cy="18" r="16" fill="none" stroke="'+col+'" stroke-width="3" stroke-dasharray="'+(r.score*1.005)+' 100" stroke-linecap="round"/></svg>'+
@@ -351,7 +351,7 @@ function renderWeeklyReflectionCard(){
   if(!show){ card.style.display='none'; return; }
   card.style.display='block';
   card.innerHTML = '<div class="lbl">Your week</div>'+
-    '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
+    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Take a moment to see your week honestly \u2014 body, discipline, and spirit, woven together.</div>'+
       '<button class="btn primary" id="weekly-reflection-btn" onclick="generateWeeklyReflection()" style="font-size:13px">Reflect on my week</button>'+
       '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:13px;margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go)">'+svgIcon("film",14)+' Make this week\u2019s content</button>'+

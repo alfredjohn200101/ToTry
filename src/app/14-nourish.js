@@ -1852,7 +1852,7 @@ async function estimateMealMacros(description){
       const isVague = meal.vague === true || itemsAllEstimated;
       if(isVague){
         const vagueNote=document.createElement('div');
-        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5';
+        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5';
         vagueNote.innerHTML='<span style="color:var(--go)">'+svgIcon("sparkle",14)+'</span> This was a little vague, so these are estimates. For a more accurate entry, add amounts \u2014 e.g. <span style="color:var(--tx)">\u201c200g chicken, 1 cup rice\u201d</span> \u2014 and search again. Or log the estimate as-is.';
         res.appendChild(vagueNote);
         const refineBtn=document.createElement('button');
@@ -3578,7 +3578,7 @@ function renderFoodGroups(){
   if(_seen > 0 && unknown / _seen > 0.33)
     nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
-  box.innerHTML = '<div class="card" style="margin-bottom:12px"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
+  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
     order.map(g => '<span style="font-family:DM Mono,monospace;font-size:10px;padding:4px 9px;border-radius:20px;background:var(--bg3);border:1px solid var(--bd);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
     '</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';

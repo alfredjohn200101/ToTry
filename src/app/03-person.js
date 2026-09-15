@@ -1954,7 +1954,7 @@ function showCrisisResponse(containerId, type){
   const resHtml = resources.map(r =>
     '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">' + r.region + '</div>' +
-      '<div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
+      '<div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
       '<div style="font-size:13px;color:var(--tx2);font-family:DM Mono,monospace">' + _crisisContact(r.contact) + '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
     '</div>'
@@ -3902,7 +3902,7 @@ function _renderDailyPassage(el,t){
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
@@ -4372,7 +4372,7 @@ function renderPlans(){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
     const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
-    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer;margin-bottom:10px">'+
+    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
@@ -4402,15 +4402,15 @@ function renderPlanDay(id,i){
     '<button class="btn subtle" onclick="renderPlans()" style="width:auto;padding:7px 11px">\u2039 Plans</button>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
-    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px;margin-bottom:12px">'+
+    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px">'+
       '<div id="plan-day-text" style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
       '<div id="plan-day-ref" style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
       // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
       // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
       // that puts both on the morning verse works here unchanged.
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
-    '<div class="card" style="margin-bottom:12px"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
-    '<div class="card" style="margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
+    '<div class="card"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
+    '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
       '<button class="btn subtle" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
     '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
@@ -4448,7 +4448,7 @@ function _planClose(id,i,finished){
     h+='<div style="font-size:26px;margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
       '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
-      '<div class="card" style="text-align:left;margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
+      '<div class="card" style="text-align:left"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
   } else {
     h+='<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
@@ -4554,7 +4554,7 @@ function renderThread(){
   let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
   html+='<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
   order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
-    html+='<div class="card" style="margin-bottom:10px;'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
+    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';

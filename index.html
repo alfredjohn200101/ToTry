@@ -221,7 +221,7 @@ button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],but
 .tab.active{display:block}
 .lbl{font-family:'DM Mono',monospace;font-size:var(--t-micro);letter-spacing:0.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;margin-top:4px;display:block}
 .card + .lbl, .card+.lbl{margin-top:18px}
-.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.2),0 1px 1px rgba(0,0,0,0.12)}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:var(--s3);box-shadow:0 1px 2px rgba(0,0,0,0.2),0 1px 1px rgba(0,0,0,0.12)}
 .card-hd{font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:6px}
 .mg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
 .mg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -296,7 +296,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 /* The ring owns the fold. Its own arithmetic sits under it, quiet, in one line. */
 /* One line and a link, not an essay and a billboard. */
 .setup-strip{display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:12px;
-  background:rgba(200,169,110,.09);border:1px solid var(--go-bd);border-radius:var(--rm)}
+  background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm)}
 .setup-strip-t{flex:1;min-width:0;font-size:var(--t-cap);color:var(--tx2);line-height:1.4}
 .setup-strip-go{flex:0 0 auto;background:transparent;border:0;color:var(--go);font-size:var(--t-cap);
   font-weight:600;cursor:pointer;font-family:inherit;padding:5px 2px;white-space:nowrap;
@@ -571,7 +571,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .feel-sub{font-size:var(--t-base);color:var(--tx2);text-align:center;margin-top:8px;margin-bottom:22px;line-height:1.5}  /* same reason as .feel-greeting above: this sheet is themed, so its ink must be too */
 .feel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .feel-chip{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:16px;border-radius:var(--r);border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);cursor:pointer;transition:transform .15s var(--spring),background .2s;text-align:left}
-.feel-chip:active{transform:scale(0.96);background:rgba(200,169,110,0.12)}
+.feel-chip:active{transform:scale(0.96);background:var(--go-bg)}
 .feel-chip-emoji{font-size:22px}
 .feel-chip-label{font-size:var(--t-md);color:var(--tx);font-weight:500}
 .feel-chip-sub{font-size:var(--t-cap);color:var(--tx3);line-height:1.3}
@@ -2147,7 +2147,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- The core reason -->
-  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+  <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:8px">The reason I started</div>
     <div id="why-display" style="font-family:'Cormorant Garamond',serif;font-size:var(--t-lg);color:var(--tx);font-style:italic;line-height:1.55;white-space:pre-wrap;margin-bottom:10px"></div>
     <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:var(--t-lg);line-height:1.6;display:none"></textarea>
@@ -2156,12 +2156,12 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- What matters — the values card sort (ACT/MI). A mirror the counsel argues from, never a score. -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">What actually matters to me</div>
     <div id="values-body"></div>
   </div>
   <!-- Identity + season (moved from Settings — they define the journey, like the why) -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">Who I’m becoming</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Complete the sentence. The app holds you to this.</p>
     <div style="font-family:'DM Mono',monospace;font-size:var(--t-mini);color:var(--go);margin-bottom:6px">I am becoming a person who...</div>
@@ -2169,14 +2169,14 @@ input:focus,textarea:focus,select:focus{
     <button class="btn primary" onclick="saveIdentity()" style="font-size:var(--t-base)">Save identity</button>
   </div>
 
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">The season I’m in</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
     <div id="settings-seasons"></div>
   </div>
 
   <!-- Affirmations -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">Affirmations</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Short affirmations in the present tense. Read them when you need to remember.</p>
     <div class="row" style="margin-bottom:8px">
@@ -2187,7 +2187,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- Promises (moved from Reflect) -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">Promises I’m keeping</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
     <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin-bottom:8px">
@@ -2206,7 +2206,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- People who matter (moved from Settings — they're part of your why) -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">The people I’m doing this for</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
     <div id="relationships-list" style="margin-bottom:10px"></div>
@@ -2401,7 +2401,7 @@ input:focus,textarea:focus,select:focus{
     <span>Today&#8217;s habits</span>
     <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:17px 12px;margin:-17px -12px -17px -12px;margin-right:0;padding-right:0;font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
   </div>
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div id="home-habit-list"></div>
   </div>
 
@@ -2418,7 +2418,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Calendar quick-entry — today's schedule at a glance, links to the smart calendar -->
   <div id="home-calendar-card" onclick="go('calendar')" style="display:none;cursor:pointer">
     <div class="lbl">Today’s schedule</div>
-    <div class="card" style="margin-bottom:12px">
+    <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div id="home-calendar-summary" style="font-size:var(--t-base);color:var(--tx2);line-height:1.5;flex:1"></div>
         <span style="color:var(--go);font-size:var(--t-hd);flex-shrink:0">›</span>
@@ -2429,7 +2429,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Quick vice wins — one tap from home, no navigating to Fight -->
   <div id="home-quickwin-wrap" style="display:none">
     <div class="lbl">Feeling something right now?</div>
-    <div class="card" style="margin-bottom:12px">
+    <div class="card">
       <button onclick="openFeelingNow()" style="width:100%;padding:16px;border-radius:var(--rm);background:linear-gradient(135deg,rgba(200,169,110,0.14),rgba(140,107,182,0.10));border:1px solid var(--go-bd);color:var(--tx);text-align:left;cursor:pointer">
         <div style="font-size:var(--t-md);font-weight:600;margin-bottom:3px">I’m feeling it right now</div>
         <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.45;font-weight:400">An urge, a craving, a heaviness — whatever it is. Tap and I’ll help you get through it, before you act on it.</div>
@@ -2452,7 +2452,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Today's training mission — only when there's a real plan, populated by renderHome() -->
   <div id="home-today-mission-wrap" style="display:none">
     <div class="lbl">Today’s mission</div>
-    <div class="card" style="margin-bottom:12px">
+    <div class="card">
       <div class="card-hd" id="today-focus">Loading...</div>
       <div id="today-detail" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-top:5px"></div>
     </div>
@@ -2486,7 +2486,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there’s no wrong way.</p>
   <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
-  <div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
+  <div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
     <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.9),rgba(200,169,110,0.22));flex-shrink:0"></div>
     <div style="flex:1">
       <div style="font-size:var(--t-md);color:var(--tx)">Begin with a breath</div>
@@ -2497,7 +2497,7 @@ input:focus,textarea:focus,select:focus{
   <!-- TIER 1.1b — the morning light anchor. The cheapest circadian lever there is: daylight in the eyes
        early shifts the whole clock, and it costs nothing and needs no device. Sits in the morning ritual
        because that is the surface a person already opens; it is not a notification and does not nag. -->
-  <div class="card" id="morning-light-card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openMorningLight()">
+  <div class="card" id="morning-light-card" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openMorningLight()">
     <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,214,140,0.95),rgba(255,180,90,0.20));flex-shrink:0"></div>
     <div style="flex:1">
       <div style="font-size:var(--t-md);color:var(--tx)">Get light in your eyes</div>
@@ -2506,7 +2506,7 @@ input:focus,textarea:focus,select:focus{
     <div style="color:var(--tx3);font-size:var(--t-hd)">&rsaquo;</div>
   </div>
   <!-- Adaptive yesterday-response card (shown when there's something to say) -->
-  <div class="card" id="morning-adaptive-card" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+  <div class="card" id="morning-adaptive-card" style="display:none;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div style="font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:5px" id="morning-adaptive-tag">From yesterday</div>
     <div style="font-family:Cormorant Garamond,serif;font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px" id="morning-adaptive-headline"></div>
     <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6" id="morning-adaptive-body"></div>
@@ -2523,7 +2523,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <!-- Sleep check (one tap) — feeds readiness, the coach, and the urge companion. Works for
        EVERYONE without a wearable; if a wearable is connected later it can prefill this. -->
-  <div class="card" id="morning-sleep-card" style="margin-bottom:12px;padding:12px 14px">
+  <div class="card" id="morning-sleep-card" style="padding:12px 14px">
     <div style="font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">How did you sleep?</div>
     <div style="display:flex;gap:6px" id="morning-sleep-opts">
       <button class="sleep-opt" data-v="3" onclick="logMorningSleep(3)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😴 Rough</button>
@@ -2543,12 +2543,12 @@ input:focus,textarea:focus,select:focus{
        readiness) and the morning never fused them — it only COLLECTED (sleep, gratitude, intention).
        This is the one thing that gives back and changes the day. It stays SILENT rather than invent
        a pattern it can't actually see. -->
-  <div class="card" id="morning-day-ahead" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.07),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+  <div class="card" id="morning-day-ahead" style="display:none;background:linear-gradient(135deg,rgba(200,169,110,0.07),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div style="font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Your day, before it starts pulling</div>
     <div id="morning-day-ahead-text" style="font-size:var(--t-base);color:var(--tx2);line-height:1.65"></div>
   </div>
   <!-- Active vice fight (secondary, smaller) -->
-  <div class="card" id="morning-vice-card" style="margin-bottom:12px;background:var(--bg3);border-color:var(--bd);padding:10px 12px">
+  <div class="card" id="morning-vice-card" style="background:var(--bg3);border-color:var(--bd);padding:10px 12px">
       <div id="morning-pledge-body"></div>
       <div style="display:none" id="morning-focus-vice"></div>
   </div>
@@ -2898,7 +2898,7 @@ input:focus,textarea:focus,select:focus{
   <!-- His foods, not a stock list. renderQuickFoods() counts what he has actually logged. -->
   <div id="nut-quick-foods" style="display:flex;column-gap:5px;row-gap:23px;margin-bottom:10px;flex-wrap:wrap"></div>
   <!-- Today's diary: what you've logged, right under the log box -->
-  <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:var(--t-base);color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
+  <div class="card"><div id="nut-log-list"><p style="font-size:var(--t-base);color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
 
   <!-- The CALCULATOR stays down here: it is 170px of settings and no reason to make a person scroll
        past it before they can type what they just ate. The one-line NUDGE is not the calculator, and
@@ -2993,7 +2993,7 @@ input:focus,textarea:focus,select:focus{
     <div id="micro-panel" style="display:none;margin-top:12px"></div>
 
   <!-- ══ SECTION 3 · THIS WEEK — how to actually HIT your target: real meals + a priced shopping list ══ -->
-  <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
+  <div class="card" id="fuel-plan-card" style="background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
     <div style="display:flex;align-items:flex-start;gap:11px">
       <div style="font-size:22px;line-height:1.1"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2c-1.7 1-3 3-3 6v4h3"/><path d="M18 2v20"/></svg></div>
       <div style="flex:1">
@@ -3012,7 +3012,7 @@ input:focus,textarea:focus,select:focus{
   <div id="nourishment-score" style="margin-top:14px"></div>
 
   <!-- Net calories card (consumed − burned from training) -->
-  <div class="card" id="nut-net-card" style="margin-bottom:12px;background:var(--bg3)">
+  <div class="card" id="nut-net-card" style="background:var(--bg3)">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-family:DM Mono,monospace;font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Net today</div>
@@ -3032,7 +3032,7 @@ input:focus,textarea:focus,select:focus{
   <!-- (Fuel plan moved up to Section 3 · This week, right after Today) -->
 
   <!-- Migration card: make it effortless for MyFitnessPal/Cronometer/etc users to bring history in -->
-  <div id="nut-migrate-card" class="card" style="margin-bottom:12px;display:none;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
+  <div id="nut-migrate-card" class="card" style="display:none;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
       <div class="eyebrow" style="color:var(--go);margin-bottom:0">Already use MyFitnessPal or another tracker?</div>
       <!-- 9.3×16 measured — the smallest control in the app. Padding cancelled by an equal negative
@@ -3060,14 +3060,14 @@ input:focus,textarea:focus,select:focus{
   <div class="lbl" id="nut-reports-lbl" style="display:none">Trends &amp; reports</div>
 
   <!-- Adaptive TDEE (MacroFactor-style): your real maintenance from data, not a formula -->
-  <div class="card" id="adaptive-tdee-card" style="margin-bottom:12px;display:none"></div>
+  <div class="card" id="adaptive-tdee-card" style="display:none"></div>
 
   <!-- Weekly nutrition digest (MFP/MacroFactor weekly report) -->
   <div id="nut-macro-glance" style="margin-bottom:12px;padding:11px 13px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);display:none"></div>
-  <div class="card" id="nut-weekly-digest" style="margin-bottom:12px;display:none"></div>
+  <div class="card" id="nut-weekly-digest" style="display:none"></div>
 
   <!-- Calorie trend — last 14 days vs goal (MFP-style) -->
-  <div class="card" id="nut-trend-card" style="margin-bottom:12px;display:none">
+  <div class="card" id="nut-trend-card" style="display:none">
     <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> Last 14 days</div>
     <div id="nut-trend-chart"></div>
   </div>
@@ -3084,7 +3084,7 @@ input:focus,textarea:focus,select:focus{
   </button>
   <div id="nut-secondary" style="display:none">
   <!-- ── WATER + FASTING (secondary trackers) ── -->
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 2.7 6.7 8a7.5 7.5 0 1 0 10.6 0z"/></svg> Water</div>
       <div id="water-count" style="font-family:DM Mono,monospace;font-size:var(--t-base);color:var(--bl)">0 / 2.5 L</div>
@@ -3099,7 +3099,7 @@ input:focus,textarea:focus,select:focus{
   
   <!-- SEASONAL FASTING COMPANION — frames the timer below when a season is live -->
   <div id="fast-season" style="margin-bottom:12px"></div>
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-hd" style="margin-bottom:0">⏱ Fasting</div>
       <select id="fasting-protocol" onchange="saveFastingProtocol(this.value)" style="width:auto;padding:6px 10px;font-size:var(--t-lg)">
@@ -3175,7 +3175,7 @@ input:focus,textarea:focus,select:focus{
       Pick an exercise below to start a strength session — or use the buttons above.
     </div>
 
-    <div class="card" id="pt-today-split-card" style="margin-bottom:12px">
+    <div class="card" id="pt-today-split-card">
       <div class="card-hd" id="pt-today-split-name">Loading your split...</div>
       <div id="pt-today-split-detail" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-top:4px"></div>
     </div>
@@ -3187,7 +3187,7 @@ input:focus,textarea:focus,select:focus{
         <span><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Weekly split &amp; routines</span>
       </summary>
       <div style="padding-top:12px">
-        <div class="card" style="margin-bottom:14px">
+        <div class="card">
           <div class="card-hd" style="margin-bottom:10px">Your weekly split</div>
           <div id="pt-split-overview"></div>
         </div>
@@ -3290,7 +3290,7 @@ input:focus,textarea:focus,select:focus{
     <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:12px">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</p>
     
     <!-- Saved routines -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:10px">Saved routines</div>
       <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Build a session in the Log tab, save it here, then assign it to a day.</p>
       <div id="pt-routines-list"></div>
@@ -3315,7 +3315,7 @@ input:focus,textarea:focus,select:focus{
     </div>
     
     <!-- AI recommendation -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Need a recommendation?</div>
       <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Not sure what split to do? Answer a few questions and the AI will recommend one.</p>
       <button class="btn" onclick="showRoutineRecommender()">Get a split recommendation</button>
@@ -3348,7 +3348,7 @@ input:focus,textarea:focus,select:focus{
     <div id="pt-plateau-card" style="display:none;margin-bottom:14px"></div>
     
     <!-- Muscle group volume + frequency -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg> Weekly muscle volume</div>
       <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Last 7 days. Spot which muscles you’re hitting hard and which you’re skipping.</p>
       <div id="pt-muscle-card"></div>
@@ -3357,7 +3357,7 @@ input:focus,textarea:focus,select:focus{
     </div>
     
     <!-- Per-exercise progress over time (Hevy-style strength curve) -->
-    <div class="card" style="margin-bottom:12px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> Strength over time</div>
       <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Pick a lift to see your estimated 1RM climb. This is the proof you’re getting stronger.</p>
       <select id="pt-exercise-select" onchange="renderExerciseProgressChart(this.value)" style="margin-bottom:12px">
@@ -3514,7 +3514,7 @@ input:focus,textarea:focus,select:focus{
     <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:14px">Write down what you’re praying for. Mark answered prayers as they come — it builds your faith to look back.</p>
 
     <!-- Unified prayer composer (WS-H): one box, choose to write your own or have the AI help. -->
-    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
+    <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
       <div class="card-hd" style="margin-bottom:8px">Pray</div>
       <div style="display:flex;gap:6px;margin-bottom:10px;background:var(--bg3);border-radius:var(--rm);padding:3px">
         <button id="prayer-mode-write" class="btn" onclick="setPrayerMode('write')" style="flex:1;padding:8px;font-size:var(--t-sm);background:var(--bg);border:1px solid var(--bd);color:var(--tx)">Write my own</button>
@@ -3534,7 +3534,7 @@ input:focus,textarea:focus,select:focus{
     </div>
 
     <!-- Saints' prayers library (WS-H) -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Prayers of the saints</div>
       <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Pray with the words of the saints. Tap one to read it — and save it to recite again.</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
@@ -3571,7 +3571,7 @@ input:focus,textarea:focus,select:focus{
     <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:16px">The sacraments are grace you can return to. Keeping track isn’t about scorekeeping — it’s about staying close, and noticing when it’s been a while.</p>
 
     <!-- Confession / Reconciliation -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div style="flex:1">
           <div class="eyebrow" style="color:var(--pu)">Confession &middot; Reconciliation</div>
@@ -3584,7 +3584,7 @@ input:focus,textarea:focus,select:focus{
     </div>
 
     <!-- Mass / Eucharist -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div style="flex:1">
           <div class="eyebrow" style="color:var(--go)">Mass &middot; Eucharist</div>
@@ -3637,7 +3637,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.55" data-intro-for="body">The result you can see. You trained, you fuelled — this is where the body answers back. Weight, photos, measures, sleep: the honest proof it’s working.</div>
   </div>
   <!-- Apple Health (native only): folds real steps + active energy in automatically, no manual logging. -->
-  <div id="health-connect-card" style="display:none;margin-bottom:14px" class="card">
+  <div id="health-connect-card" style="display:none" class="card">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-size:var(--t-2xl)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
       <div style="flex:1">
@@ -3664,19 +3664,20 @@ input:focus,textarea:focus,select:focus{
     </div>
   </div>
   <!-- ── DAILY LOGS (top — 5-second daily actions) ── -->
-  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
+  <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">Today</div>
       <div style="font-family:DM Mono,monospace;font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.12em">5 seconds each</div>
     </div>
     
     <!-- Today's weight — single tap to log -->
-    <div class="tracker-row">
+    <div class="tracker-row" style="flex-wrap:wrap">
       <span class="tr-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v18M7 21h10M5 8h14"/><path d="M5 8 2 14a3 3 0 0 0 6 0zM19 8l-3 6a3 3 0 0 0 6 0z"/></svg></span>
       <div style="flex:1"><div class="tr-label">Weight</div><div style="font-size:var(--t-mini);color:var(--tx3)" id="bod-current-summary">No log today</div></div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd);margin-right:6px" onclick="document.getElementById('eufy-shot-input').click()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Paste scale</button>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd);margin-right:6px" onclick="document.getElementById('eufy-csv-input').click()">Import CSV</button>
       <button class="btn" style="width:auto;padding:6px 12px;font-size:var(--t-cap)" onclick="openQuickWeightLog()">+ Log</button>
+      <!-- The two import tools are occasional; the row exists for a five-second daily log. Beside the
+           label they left it ~100px, so "Logged today: 84.2kg" wrapped onto three cramped lines. -->
+      <div style="flex-basis:100%;display:flex;gap:6px;padding-left:26px"><button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd)" onclick="document.getElementById('eufy-shot-input').click()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Paste scale</button><button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd)" onclick="document.getElementById('eufy-csv-input').click()">Import CSV</button></div>
       <input type="file" id="eufy-csv-input" accept=".csv,text/csv" style="display:none" onchange="importEufyCSV(event)">
       <input type="file" id="eufy-shot-input" accept="image/*" style="display:none" onchange="importScaleScreenshot(event)">
     </div>
@@ -3729,7 +3730,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Daily targets — set the goals for the trackers above (steps, sleep, water). Lives here in
        Track, next to what it governs (moved out of Settings). -->
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div class="card-hd" style="margin-bottom:8px">Daily targets</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Set your steps, sleep, and water goals. (Calorie &amp; protein goals are set in Nourish via the TDEE calculator.)</p>
     <div class="row"><input type="number" id="settings-steps-goal" placeholder="Steps target (default 8000)"><input type="number" id="settings-sleep-goal" placeholder="Sleep target (hours)"></div>
@@ -3740,7 +3741,7 @@ input:focus,textarea:focus,select:focus{
   <!-- ── BODY PROGRESS (measurements + photos, distinct from daily logs and weekly reflection) ── -->
   <div class="lbl" style="margin-top:6px;margin-bottom:8px">Body progress &mdash; measure &amp; photograph over time</div>
   <!-- Measurements -->
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M4.5 12.5 12.5 4.5a2 2 0 0 1 2.83 0l4.17 4.17a2 2 0 0 1 0 2.83l-8 8a2 2 0 0 1-2.83 0L4.5 15.33a2 2 0 0 1 0-2.83z"/><path d="M9 8.5 11 10.5M11.5 6 14 8.5M6.5 11 8.5 13"/></svg> Measurements</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd)" onclick="openMeasurementLogger()">+ Log today</button>
@@ -3750,7 +3751,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- Progress photos — single source of truth -->
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Progress photos</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;border:1px solid var(--bd)" onclick="document.getElementById('progress-photo-input').click()">+ Add</button>
@@ -3829,7 +3830,7 @@ input:focus,textarea:focus,select:focus{
        above (:3601) is already called that, and once a person has added a photo BOTH render inside one
        414x896 viewport showing the same two photos — two cards, one name, no way to tell them apart.
        This card's only unique job is the shareable side-by-side, so it is named for that. -->
-  <div class="card" id="body-collage-card" style="margin-bottom:12px;display:none">
+  <div class="card" id="body-collage-card" style="display:none">
     <div class="card-hd" style="margin-bottom:10px">Share your progress</div>
     <div id="body-collage" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
     <button class="btn" onclick="exportBodyCollage()" style="margin-top:10px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg> Share collage</button>
@@ -4043,7 +4044,7 @@ input:focus,textarea:focus,select:focus{
     </div>
     <!-- The thread closes: reflect this morning's intention back, so the day is one arc — set it at
          dawn, live it through, lay it down at dusk. Pure integration; only a whole-life home can. -->
-    <div id="evening-intention-recall" style="display:none;background:rgba(200,169,110,0.06);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
+    <div id="evening-intention-recall" style="display:none;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
       <div style="font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">This morning you set</div>
       <div id="evening-intention-text" style="font-family:'Cormorant Garamond',serif;font-size:var(--t-lg);font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px"></div>
       <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Did you live it? No score — just honesty. Carry what’s true into tomorrow.</div>
@@ -4113,7 +4114,7 @@ Not perfect. Just better.
 Amen.</div></div>
     <div id="partner-section" style="display:none">
       <div class="lbl">Tonight’s call</div>
-      <div class="card" style="margin-bottom:12px">
+      <div class="card">
         <div class="card-hd" style="margin-bottom:6px">Before you call</div>
         <div id="call-prompt" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
         <div class="card-hd" id="shared-prayer-label" style="margin-bottom:6px">A prayer to share</div>
@@ -4122,7 +4123,7 @@ Amen.</div></div>
     </div>
     <!-- The wind-down. Sits in the evening because that is when it is needed, and it ends by
          telling you to leave the room \u2014 the only feature here whose success is the app closing. -->
-    <div class="card" style="margin-bottom:12px;background:var(--bg3);cursor:pointer" onclick="openWindDown()">
+    <div class="card" style="background:var(--bg3);cursor:pointer" onclick="openWindDown()">
       <div style="display:flex;align-items:center;gap:11px">
         <div style="font-size:var(--t-xl)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
         <div style="flex:1"><div style="font-size:var(--t-md);color:var(--tx)">Land the day</div><div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">Four small things, then the phone goes down.</div></div>
@@ -4135,12 +4136,12 @@ Amen.</div></div>
          listing things to yourself. So the third slot quietly points at a person, and offers to
          carry it to them. A solo list is where gratitude goes to die; a message is where it lands. -->
     <div class="lbl" id="evening-good-lbl" style="margin-top:4px">Three good things</div>
-    <div class="card" id="tgt-card" style="margin-bottom:14px">
+    <div class="card" id="tgt-card">
       <div id="tgt-body"></div>
     </div>
     <!-- Ignatian Examen — THE FINAL, defining step of the evening. Once done, the day is closed. -->
     <div class="lbl" id="examen-label" style="margin-top:4px">The last step — your examen</div>
-    <div class="card" id="examen-card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+    <div class="card" id="examen-card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
       <div style="font-family:DM Mono,monospace;font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Ignatian Examen · 5 steps</div>
       <div style="font-family:Cormorant Garamond,serif;font-size:var(--t-hd);color:var(--tx);font-style:italic;margin-bottom:6px">Walk through your day with God.</div>
       <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:12px">A 600-year-old practice. Five questions. This closes your day — do it last.</p>
@@ -4171,7 +4172,7 @@ Amen.</div></div>
     <div class="lbl">Goal hierarchy</div>
     <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:14px">One yearly vision. Four quarterly outcomes. Twelve monthly milestones. Fifty-two weekly targets. Everything cascades down.</p>
     
-    <div id="goals-yearly-card" class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+    <div id="goals-yearly-card" class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> This year (<span id="goals-year">2026</span>)</div>
         <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;border:1px solid var(--bd)" onclick="editGoal('yearly')">Edit</button>
@@ -4179,7 +4180,7 @@ Amen.</div></div>
       <div id="goals-yearly-content" style="font-family:Cormorant Garamond,serif;font-size:var(--t-hd);color:var(--tx);font-style:italic;line-height:1.5;min-height:28px"></div>
     </div>
     
-    <div id="goals-quarterly-card" class="card" style="margin-bottom:12px">
+    <div id="goals-quarterly-card" class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> This quarter (<span id="goals-quarter">Q2</span>)</div>
         <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;border:1px solid var(--bd)" onclick="editGoal('quarterly')">Edit</button>
@@ -4187,7 +4188,7 @@ Amen.</div></div>
       <div id="goals-quarterly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
     </div>
     
-    <div id="goals-monthly-card" class="card" style="margin-bottom:12px">
+    <div id="goals-monthly-card" class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> This month (<span id="goals-month">May</span>)</div>
         <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;border:1px solid var(--bd)" onclick="editGoal('monthly')">Edit</button>
@@ -4195,7 +4196,7 @@ Amen.</div></div>
       <div id="goals-monthly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
     </div>
     
-    <div id="goals-weekly-card" class="card" style="margin-bottom:12px">
+    <div id="goals-weekly-card" class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> This week</div>
         <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;border:1px solid var(--bd)" onclick="editGoal('weekly')">Edit</button>
@@ -4203,7 +4204,7 @@ Amen.</div></div>
       <div id="goals-weekly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
     </div>
     
-    <div class="card" style="background:var(--bg3);margin-bottom:12px">
+    <div class="card" style="background:var(--bg3)">
       <div class="card-hd" style="margin-bottom:6px">On pace check</div>
       <div id="goals-pace" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Fill in your goals to see if you’re on pace.</div>
     </div>
@@ -4218,7 +4219,7 @@ Amen.</div></div>
     <div id="wins-log-list" style="margin-bottom:8px"></div>
 
     <!-- Promises (merged in from former Promises tab) -->
-    <div class="card" style="margin-top:20px;margin-bottom:14px;cursor:pointer" onclick="go('why')">
+    <div class="card" style="margin-top:20px;cursor:pointer" onclick="go('why')">
       <div class="card-hd" style="margin-bottom:6px">Promises &amp; letters moved</div>
       <p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:0">Your promises, letters to your future self, and your why now live together in <b style="color:var(--go)">Soul &rarr; Your Why</b>. Tap to go there. →</p>
       <div style="display:none"><input type="text" id="new-promise"><select id="promise-when"><option value="7">7</option></select><span id="promises-due"></span><span id="promises-list"></span></div>
@@ -4228,7 +4229,7 @@ Amen.</div></div>
   <!-- WEEKLY REVIEW PANEL -->
   <div id="reflect-panel-review" style="display:none">
     <div class="lbl">Weekly review</div>
-    <div class="card" style="margin-bottom:12px">
+    <div class="card">
       <div class="card-hd" style="margin-bottom:10px">This week</div>
       <div id="week-stats" class="mg3" style="margin-bottom:0"></div>
     </div>
@@ -4238,7 +4239,7 @@ Amen.</div></div>
     <textarea id="review-focus" placeholder="One thing that needs your most attention..." style="height:70px;resize:none;margin-bottom:12px"></textarea>
     <div class="lbl" id="wk-conscience-label">Examination of conscience</div>
     
-  <div class="card" style="margin-bottom:12px">
+  <div class="card">
       <div class="conscience-q">Did I give in to any vice I wish I hadn’t?</div>
       <div class="conscience-q">Was I honest with myself and others?</div>
       <div class="conscience-q">Did I treat the people around me with patience and respect?</div>
@@ -4265,7 +4266,7 @@ Amen.</div></div>
   <p style="font-size:var(--t-base);color:var(--tx3);margin-bottom:16px">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
 
   <!-- AI paste box -->
-  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
+  <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Add with AI</div>
     <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste a work roster email, your class timetable, or just type plainly — "gym Mon Wed Fri 6am, work Tue 9-5, class Thursday 2pm". The AI turns it into events.</p>
     <textarea id="cal-ai-input" placeholder="Paste or type your schedule..." style="height:90px;resize:none;font-size:var(--t-lg);margin-bottom:10px"></textarea>
@@ -4273,7 +4274,7 @@ Amen.</div></div>
   </div>
 
   <!-- Quick add + view switcher -->
-  <div class="card" style="margin-bottom:14px">
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="display:flex;gap:4px;background:var(--bg3);border-radius:var(--rm);padding:3px">
         <button id="calview-day" class="btn quiet" onclick="setCalView('day')" style="width:auto;padding:6px 12px">Day</button>
@@ -4302,7 +4303,7 @@ Amen.</div></div>
     <div class="page-title">Settings</div>
     <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.5" data-intro-for="settings">The quiet controls. And the most important one of all is here too: the person you’re becoming.</div>
   </div>
-  <div class="card" id="push-settings-card" style="margin-bottom:14px"></div>
+  <div class="card" id="push-settings-card"></div>
   <!-- Crisis resources always first, always visible -->
   <div class="crisis-card">
     <div class="crisis-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> If you need real help right now</div>
@@ -4319,14 +4320,14 @@ Amen.</div></div>
   </div>
 
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
-  <div class="card" style="margin-bottom:14px;border:1px solid var(--go-bd)">
+  <div class="card" style="border:1px solid var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">Share your journey with Alfy</div>
     <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">This is built by one person, for you. <span id="feedback-raffle-line">Tell me what’s improving and what’s missing — I read every note.</span></div>
     <button class="btn primary" onclick="openProgressCheckin()">How far have you come?</button>
   </div>
 
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
-  <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
+  <div id="beta-web-note" class="card" style="display:none;border:1px solid var(--go-bd);background:var(--go-bg)">
     <div class="card-hd" style="margin-bottom:6px">You’re on the ToTry beta</div>
     <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you’ll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
   </div>
@@ -5050,7 +5051,7 @@ Amen.</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
     <button class="btn primary" style="flex:1;padding:9px" id="pwa-install-btn">Add to home screen</button>
-    <button class="btn" style="flex:1;padding:9px" onclick="dismissPWA()">Maybe later</button>
+    <button class="btn" style="flex:1;padding:9px" onclick="dismissPWA()">No thanks</button>
   </div>
 </div>
 
@@ -5606,7 +5607,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v603';
+const APP_VERSION = 'v604';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10311,7 +10312,7 @@ function showCrisisResponse(containerId, type){
   const resHtml = resources.map(r =>
     '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">' + r.region + '</div>' +
-      '<div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
+      '<div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
       '<div style="font-size:13px;color:var(--tx2);font-family:DM Mono,monospace">' + _crisisContact(r.contact) + '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
     '</div>'
@@ -12259,7 +12260,7 @@ function _renderDailyPassage(el,t){
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
@@ -12729,7 +12730,7 @@ function renderPlans(){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
     const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
-    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer;margin-bottom:10px">'+
+    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
@@ -12759,15 +12760,15 @@ function renderPlanDay(id,i){
     '<button class="btn subtle" onclick="renderPlans()" style="width:auto;padding:7px 11px">\u2039 Plans</button>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
-    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px;margin-bottom:12px">'+
+    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px">'+
       '<div id="plan-day-text" style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
       '<div id="plan-day-ref" style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
       // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
       // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
       // that puts both on the morning verse works here unchanged.
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
-    '<div class="card" style="margin-bottom:12px"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
-    '<div class="card" style="margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
+    '<div class="card"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
+    '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
       '<button class="btn subtle" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
     '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
@@ -12805,7 +12806,7 @@ function _planClose(id,i,finished){
     h+='<div style="font-size:26px;margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
       '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
-      '<div class="card" style="text-align:left;margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
+      '<div class="card" style="text-align:left"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
   } else {
     h+='<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
@@ -12911,7 +12912,7 @@ function renderThread(){
   let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
   html+='<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
   order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
-    html+='<div class="card" style="margin-bottom:10px;'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
+    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
@@ -15768,7 +15769,7 @@ function _feelingNowStillHard(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Okay. Stay with me.</div>'+
     '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Picture it honestly: if you give in right now, how do you feel in twenty minutes? You already know \u2014 the shame, the same hole, a bit deeper. This moment is the whole fight. Winning it once makes the next one easier.</div>'+
     (why
-      ? ('<div style="padding:12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
+      ? ('<div style="padding:12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
       : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);margin-bottom:14px;font-size:13px">'+svgIcon("edit")+' Write what you\u2019re fighting for</button>'))+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();openNeedTalk()">Talk to my Coach now</button>'+
     '<button class="btn" onclick="_feelingNowWon()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px">It\u2019s passing \u2014 I got through it</button>'+
@@ -17007,7 +17008,7 @@ function openToolkit(){
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">The tools I use with you.</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Two minutes each. Learn one somewhere calm and it works far better at 11pm, because you\u2019ll recognise it. Nothing to finish here \u2014 no streak, no score. Pick one up and put me down.</div>'+
-    (myLine?'<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
+    (myLine?'<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
     _TOOLKIT.map(function(l){
       const hi=(l.id===sug);
       return '<button class="btn stack" onclick="openLesson(\''+l.id+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:'+(hi?'rgba(200,169,110,0.10)':'var(--bg3)')+';border:1px solid '+(hi?'var(--go-bd)':'var(--bd)')+';display:block;width:100%">'+
@@ -17744,7 +17745,7 @@ function openBreathMenu(){
   const _pf = _breathProof();
   const proofLine = (_pf && _pf.n>0) ? '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:14px;font-style:italic">Breathing brought the wave down '+_pf.n+' of your last '+_pf.m+' times.</div>' : '';
   let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Take a breath.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+((mw>0||proofLine)?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine+proofLine;
   ids.forEach(id=>{ const p=_protoFor(id); html+=
     '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
@@ -18100,7 +18101,7 @@ function _planCardHTML(i){
     let inner='';
     if(why) inner+='<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic;margin-bottom:'+(move?'8px':'0')+'">“'+String(why).replace(/</g,'&lt;')+'”</div>';
     if(move) inner+='<div style="font-size:11px;color:var(--tx3);line-height:1.5"><span style="color:var(--go)">Your move:</span> '+String(move).replace(/</g,'&lt;')+'</div>';
-    return '<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px;text-align:left">'+
+    return '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Your plan — in your words</div>'+inner+'</div>';
   }catch(_){ return ''; }
 }
@@ -18229,7 +18230,7 @@ function openNaturalHighs(){
   const _intro=_phase?'Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.':'A real hit of clean dopamine beats the fake one every time — no crash, and it makes the pull quieter. Pick one and go.';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Chase a real high.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">'+_intro+'</div>'+_phaseLine;
   HIGHS.forEach(h=>{ html+=
     '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
@@ -18286,7 +18287,7 @@ function openProgressCheckin(){
     '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
     '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
-    '<button class="btn quiet" onclick="closeModal(this)">Maybe later</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   const areasWrap=m.querySelector('.pc-areas');
@@ -18413,7 +18414,7 @@ function _breathProof(){
 function _hardHourBreath(viceName){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Get ahead of it</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Get ahead of it.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:18px">'+(viceName?('This is usually when '+String(viceName).replace(/</g,'&lt;')+' pulls. '):'')+'Nothing has to be happening yet — that’s the point. One slow minute now makes the next hour easier.</div>'+
     '<button class="btn primary" onclick="closeModal(this);openBreath(\'settle\',{reason:\'hard hour\'})" style="margin-bottom:8px">Breathe through it — 1 min</button>'+
     '<button class="btn subtle" onclick="closeModal(this);_feelThePull()" style="margin-bottom:8px">Talk it through instead</button>'+
@@ -18640,7 +18641,7 @@ function openMorningLight(){
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">A few minutes of real daylight in your eyes — no sunglasses, and a window does not count for much. Even grey and overcast is many times brighter than any room you own.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.65;margin-bottom:18px">It sets tonight’s sleep far more than anything you do at bedtime. Do it while the kettle boils.</div>'+
     '<button class="btn primary" onclick="_morningLightGo()" style="padding:14px">I’m going out</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Later</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
@@ -19484,7 +19485,7 @@ function promptMassAddLosses(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly.</div>'+
     '<div style="text-align:center;font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">For '+(v.n||'this habit')+'. Add each day it really happened — no more, no less. Your streak and totals will be rebuilt to match the true timeline.</div>'+
     '<div id="mal-rows" style="margin-bottom:10px"></div>'+
     '<button class="btn" onclick="addMassLossRow()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px;margin-bottom:14px">+ Add another day</button>'+
@@ -21052,7 +21053,7 @@ function openResetAll(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again</div>' +
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again.</div>' +
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">' + list.length + ' things you are fighting. Two ways to begin, and they are different.</div>' +
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);setTimeout(function(){resetAllVices(false)},220)">Day one again</button>' +
     '<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:14px;text-align:center">Each clean count goes to zero. Everything you have been through stays \u2014 the day of the fight does not move.</div>' +
@@ -22014,7 +22015,7 @@ function _bookRedirect(i, cash, target){
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Move the '+money(cash)+' to '+String(where||'it').replace(/</g,'&lt;')+' in your banking app — right now, before the moment cools. Then tell me it’s done and I’ll move your freedom date to match. I won’t log money you didn’t actually move.</div>'+
     '<button class="btn primary" onclick="_confirmRedirect('+i+','+cash+',\''+target+'\')" style="margin-bottom:8px">Done — I moved it</button>'+
     '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">Couldn’t right now, but I’m not gambling it</button>'+
@@ -28192,7 +28193,7 @@ async function estimateMealMacros(description){
       const isVague = meal.vague === true || itemsAllEstimated;
       if(isVague){
         const vagueNote=document.createElement('div');
-        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5';
+        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5';
         vagueNote.innerHTML='<span style="color:var(--go)">'+svgIcon("sparkle",14)+'</span> This was a little vague, so these are estimates. For a more accurate entry, add amounts \u2014 e.g. <span style="color:var(--tx)">\u201c200g chicken, 1 cup rice\u201d</span> \u2014 and search again. Or log the estimate as-is.';
         res.appendChild(vagueNote);
         const refineBtn=document.createElement('button');
@@ -29918,7 +29919,7 @@ function renderFoodGroups(){
   if(_seen > 0 && unknown / _seen > 0.33)
     nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
-  box.innerHTML = '<div class="card" style="margin-bottom:12px"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
+  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
     order.map(g => '<span style="font-family:DM Mono,monospace;font-size:10px;padding:4px 9px;border-radius:20px;background:var(--bg3);border:1px solid var(--bd);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
     '</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
@@ -32962,7 +32963,7 @@ function renderMoneyGate(){
 
   if(empty){
     readCard.innerHTML = '';
-    gate.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+    gate.innerHTML = '<div class="card">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
@@ -32987,7 +32988,7 @@ function renderMoneyGate(){
   const _spanLbl = 'over ' + Math.max(1, Math.round(r.spanDays || 0)) + ' days';
   const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
   const _negNow = _thin ? (_net < 0) : neg;
-  readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+  readCard.innerHTML = '<div class="card">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
       '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
       '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
@@ -33300,7 +33301,7 @@ function _fuelElicit(){
     '<input type="text" id="fuel-diet-free" placeholder="Allergies, foods you hate, anything else..." value="'+String(p.restrictions||'').replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px"><div><div style="font-size:13px;color:var(--tx);font-weight:500">Include supplements?</div><div style="font-size:11px;color:var(--tx3);line-height:1.4">Only real, evidence-backed, food-first. Optional.</div></div><button type="button" id="fuel-supp-toggle" data-on="'+(suppOn?'1':'0')+'" class="fuel-chip'+(suppOn?' on':'')+'" onclick="_fuelToggleSupp(this)" style="'+chipStyle+(suppOn?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+(suppOn?'Yes':'No')+'</button></div>'+
     '<button class="btn primary" onclick="_fuelElicitSave()">Next: pick my shop →</button>'+
-    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Maybe later</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -33396,7 +33397,7 @@ function _fuelShopPicker(){
     '<div id="fuel-shops-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn subtle" style="width:auto;padding:0 16px" onclick="_fuelAddShop()">Add</button></div>'+
     '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
-    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Later</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -33503,7 +33504,7 @@ function _fuelRenderPlan(plan){
   const _gentle = (typeof nutGentle==='function' && nutGentle());   // numbers off means numbers off
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:500;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:11px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
@@ -34052,7 +34053,7 @@ function openEventLogger(){
   for(let h=5; h<=23; h++){ for(let mn=0; mn<60; mn+=15){ const v=String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0'); const ampm=h<12?'am':'pm'; const h12=h%12===0?12:h%12; timeOpts+='<option value="'+v+'">'+h12+':'+String(mn).padStart(2,'0')+' '+ampm+'</option>'; } }
   const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:4px">Add to your week</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:4px">Add to your week.</div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:18px">Pick the day(s), set a time, done.</div>'+
     '<div class="lbl">What is it?</div>'+
     '<input type="text" id="ev-title" placeholder="e.g. Work shift, Lecture, Gym, Mass" style="margin-bottom:14px">'+
@@ -34992,7 +34993,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
       '<input type="'+(f.type==='date'?'date':'text')+'"'+inMode+' id="fm-'+f.id+'"'+val+' placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" style="'+pad+'"></div>';
   }).join('');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
     (subtitle?'<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+subtitle+'</div>':'<div style="margin-bottom:8px"></div>')+
     fieldHtml+
     '<div id="fm-error" role="alert" aria-live="assertive" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+
@@ -36696,7 +36697,7 @@ function renderMobilityPanel(){
   const prof = getMobilityProfile();
   let profHtml;
   if(!prof){
-    profHtml = '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
+    profHtml = '<div class="card"><div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
       '<button class="btn primary" onclick="openMobilityAssessment()">Take the mobility check</button></div>';
   } else {
     const items = MOBILITY_JOINTS.filter(j => prof[j.id]).map(j => {
@@ -36706,11 +36707,11 @@ function renderMobilityPanel(){
         '<span style="display:flex;gap:3px">' + [1,2,3,4,5].map(n=>'<span style="width:7px;height:7px;border-radius:50%;background:'+(n<=v?col:'var(--bg3)')+'"></span>').join('') + '</span></div>';
     }).join('');
     const when = prof._ts ? new Date(prof._ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
-    profHtml = '<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:10px;color:var(--tx3)">checked ' + when + '</span></div>'+
+    profHtml = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:10px;color:var(--tx3)">checked ' + when + '</span></div>'+
       items + '<button class="btn" onclick="openMobilityAssessment()" style="margin-top:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12px">Re-check mobility</button></div>';
   }
   box.innerHTML = profHtml +
-    '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
+    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("flame")+' Warm up for today</div>'+
       '<div id="mob-warmup-out"></div>'+
     '</div>'+
@@ -37235,7 +37236,7 @@ function renderReadinessCard(){
   const _sourceLine = _selfReported ? 'From your check-ins' : 'Tap to add how you slept';
   card.style.display = 'block';
   card.innerHTML = '<div class="lbl">Readiness</div>'+
-    '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="explainReadiness()">'+
+    '<div class="card" style="cursor:pointer" onclick="explainReadiness()">'+
       '<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="position:relative;width:52px;height:52px;flex-shrink:0">'+
           '<svg viewBox="0 0 36 36" style="width:52px;height:52px;transform:rotate(-90deg)"><circle cx="18" cy="18" r="16" fill="none" stroke="var(--bg3)" stroke-width="3"/><circle cx="18" cy="18" r="16" fill="none" stroke="'+col+'" stroke-width="3" stroke-dasharray="'+(r.score*1.005)+' 100" stroke-linecap="round"/></svg>'+
@@ -37266,7 +37267,7 @@ function renderWeeklyReflectionCard(){
   if(!show){ card.style.display='none'; return; }
   card.style.display='block';
   card.innerHTML = '<div class="lbl">Your week</div>'+
-    '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
+    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Take a moment to see your week honestly \u2014 body, discipline, and spirit, woven together.</div>'+
       '<button class="btn primary" id="weekly-reflection-btn" onclick="generateWeeklyReflection()" style="font-size:13px">Reflect on my week</button>'+
       '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:13px;margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go)">'+svgIcon("film",14)+' Make this week\u2019s content</button>'+
@@ -38834,7 +38835,7 @@ function renderWorkoutSession(){
       else if(rd.level === 'moderate'){ msg = 'Recovery\u2019s moderate today (' + rd.score + '/100). Train well, but quality over maxing out — hit your reps clean rather than grinding.'; }
       else { msg = 'You\u2019re well recovered (' + rd.score + '/100). Good day to push — this is when a PR or a load bump is earned.'; color='var(--gr)'; accent='var(--go-bd)'; }
       const banner = document.createElement('div');
-      banner.style.cssText = 'margin-bottom:12px;padding:11px 13px;background:rgba(200,169,110,0.06);border:1px solid '+accent+';border-radius:var(--rm);font-size:12px;color:var(--tx2);line-height:1.6';
+      banner.style.cssText = 'margin-bottom:12px;padding:11px 13px;background:var(--go-bg);border:1px solid '+accent+';border-radius:var(--rm);font-size:12px;color:var(--tx2);line-height:1.6';
       banner.innerHTML = '<span style="color:'+color+'">'+svgIcon("zap")+' Today:</span> ' + msg;
       container.appendChild(banner);
     }
@@ -38865,7 +38866,7 @@ function renderWorkoutSession(){
     if(ex.targetReps) targets.push('Target: ' + ex.targetReps + ' reps');
     if(ex.targetRest) targets.push('Rest: ' + ex.targetRest);
     const targetBadge = targets.length ?
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:6px;padding:4px 8px;background:rgba(200,169,110,0.08);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:6px;padding:4px 8px;background:var(--go-bg);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
     // Item 15 — light progression nudge, shown only when the data earns it (see suggestProgression).
     const prog = (typeof suggestProgression==='function') ? suggestProgression(ex, getLastPerformance(ex.name)) : null;
     const progBadge = prog ?
@@ -39417,7 +39418,7 @@ function openEditTraining(unifiedId){
     m.className = 'modal-bg open'; m.id = 'edit-training-modal';
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:#FC4C02;margin-bottom:4px">STRAVA</div>'+
-      '<div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+(a.type||'')+(when?' \u00b7 '+when:'')+'</div>'+
       (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
@@ -39460,7 +39461,7 @@ function openEditTraining(unifiedId){
     if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
-      '<div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
       (meta.length ? '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
       (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
@@ -39480,7 +39481,7 @@ function openEditTraining(unifiedId){
   const tsDate = w.ts ? new Date(w.ts) : new Date();
   const dateStr = tsDate.getFullYear()+'-'+String(tsDate.getMonth()+1).padStart(2,'0')+'-'+String(tsDate.getDate()).padStart(2,'0');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
     '<select id="edit-cardio-type" onchange="renderEditCardioFields()" style="margin-bottom:14px">'+
       types.map(t=>'<option value="'+t+'"'+(t===curType?' selected':'')+'>'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
@@ -39677,7 +39678,7 @@ function logCardioManually(){
   m.className = 'modal-bg open';
   m.id = 'cardio-log-modal';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
     '<select id="cardio-type" onchange="renderCardioFields()" style="margin-bottom:14px">'+
@@ -40416,7 +40417,7 @@ async function generateGoalRoutine(){
       window.__pendingGoalRoutine=plan;
       let html='';
       (plan.days||[]).forEach((d,di)=>{
-        html+='<div class="card" style="margin-bottom:10px"><div style="font-size:14px;color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
+        html+='<div class="card"><div style="font-size:14px;color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
           (d.focus?'<div style="font-size:11px;color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
           (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px;border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:10px">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
           '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
@@ -40464,7 +40465,7 @@ function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
   if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:13px;color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
   container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
 // renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
 // that is not in the shell — so it returned on its first line at both call sites. Its live
@@ -40655,7 +40656,7 @@ function renderWorkoutHistory(){
           noteHtml +
         '</div>';
       }).join('');
-      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
+      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -40818,7 +40819,7 @@ function _renderSetsPerMuscle(){
     let warnHtml = '';
     const warns = muscleBalanceWarnings();
     if(warns.length){
-      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
+      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
     }
     return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Weekly sets \u00b7 target 10\u201320 per muscle</div>'+
@@ -43583,7 +43584,7 @@ async function renderLiturgy(){
     const showBio = !_liturgyCelebrationMismatch(c);
     const q = showBio ? c.quote : null;
     const desc = showBio ? c.description : null;
-    html += '<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
+    html += '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today the Church remembers</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
       (q?'<div style="font-size:14px;color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
@@ -43593,7 +43594,7 @@ async function renderLiturgy(){
   if(d.readings){
     const r = d.readings;
     const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:13px;color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
-    html += '<div class="card" style="margin-bottom:14px"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
+    html += '<div class="card"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
       row('First Reading', r.firstReading)+
       row('Psalm', r.psalm)+
       row('Second Reading', r.secondReading)+
@@ -45491,7 +45492,7 @@ async function submitFeedback(){
       '<h3 style="margin-bottom:6px">Send via email instead?</h3>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Couldn\'t reach the server right now, but your feedback is saved. Tap below to send it by email so it reaches me directly.</p>' +
       '<a href="' + mailto + '" class="btn primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px" onclick="closeModal(this)">Open email</a>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Later</button>' +
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Not now</button>' +
     '</div>';
     document.body.appendChild(m);
   }
@@ -48807,7 +48808,7 @@ function renderLifeWoven(){
     ['flame','Spirit',spiritTxt,"go('soul')"],
     ['wallet','Money',moneyTxt,"go('money')"]
   ];
-  box.innerHTML='<div class="card" style="padding:4px 2px;margin-bottom:14px">'+
+  box.innerHTML='<div class="card" style="padding:4px 2px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
     rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
       '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+
@@ -50181,7 +50182,7 @@ function _showStravaModal(){
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
       '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open ToTry on the web</button>' +
-      '<button class="btn quiet" onclick="closeModal(this)">Later</button>' +
+      '<button class="btn quiet" onclick="closeModal(this)">Not now</button>' +
     '</div>';
     document.body.appendChild(m);
     return;

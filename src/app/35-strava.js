@@ -81,7 +81,7 @@ function _showStravaModal(){
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
       '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open ToTry on the web</button>' +
-      '<button class="btn quiet" onclick="closeModal(this)">Later</button>' +
+      '<button class="btn quiet" onclick="closeModal(this)">Not now</button>' +
     '</div>';
     document.body.appendChild(m);
     return;

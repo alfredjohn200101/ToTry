@@ -5,7 +5,7 @@
     const showBio = !_liturgyCelebrationMismatch(c);
     const q = showBio ? c.quote : null;
     const desc = showBio ? c.description : null;
-    html += '<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
+    html += '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today the Church remembers</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
       (q?'<div style="font-size:14px;color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
@@ -15,7 +15,7 @@
   if(d.readings){
     const r = d.readings;
     const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:13px;color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
-    html += '<div class="card" style="margin-bottom:14px"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
+    html += '<div class="card"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
       row('First Reading', r.firstReading)+
       row('Psalm', r.psalm)+
       row('Second Reading', r.secondReading)+

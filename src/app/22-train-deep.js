@@ -543,7 +543,7 @@ function renderWorkoutSession(){
       else if(rd.level === 'moderate'){ msg = 'Recovery\u2019s moderate today (' + rd.score + '/100). Train well, but quality over maxing out — hit your reps clean rather than grinding.'; }
       else { msg = 'You\u2019re well recovered (' + rd.score + '/100). Good day to push — this is when a PR or a load bump is earned.'; color='var(--gr)'; accent='var(--go-bd)'; }
       const banner = document.createElement('div');
-      banner.style.cssText = 'margin-bottom:12px;padding:11px 13px;background:rgba(200,169,110,0.06);border:1px solid '+accent+';border-radius:var(--rm);font-size:12px;color:var(--tx2);line-height:1.6';
+      banner.style.cssText = 'margin-bottom:12px;padding:11px 13px;background:var(--go-bg);border:1px solid '+accent+';border-radius:var(--rm);font-size:12px;color:var(--tx2);line-height:1.6';
       banner.innerHTML = '<span style="color:'+color+'">'+svgIcon("zap")+' Today:</span> ' + msg;
       container.appendChild(banner);
     }
@@ -574,7 +574,7 @@ function renderWorkoutSession(){
     if(ex.targetReps) targets.push('Target: ' + ex.targetReps + ' reps');
     if(ex.targetRest) targets.push('Rest: ' + ex.targetRest);
     const targetBadge = targets.length ?
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:6px;padding:4px 8px;background:rgba(200,169,110,0.08);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:6px;padding:4px 8px;background:var(--go-bg);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
     // Item 15 — light progression nudge, shown only when the data earns it (see suggestProgression).
     const prog = (typeof suggestProgression==='function') ? suggestProgression(ex, getLastPerformance(ex.name)) : null;
     const progBadge = prog ?
@@ -1126,7 +1126,7 @@ function openEditTraining(unifiedId){
     m.className = 'modal-bg open'; m.id = 'edit-training-modal';
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:#FC4C02;margin-bottom:4px">STRAVA</div>'+
-      '<div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+(a.type||'')+(when?' \u00b7 '+when:'')+'</div>'+
       (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
@@ -1169,7 +1169,7 @@ function openEditTraining(unifiedId){
     if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
-      '<div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
       (meta.length ? '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
       (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
@@ -1189,7 +1189,7 @@ function openEditTraining(unifiedId){
   const tsDate = w.ts ? new Date(w.ts) : new Date();
   const dateStr = tsDate.getFullYear()+'-'+String(tsDate.getMonth()+1).padStart(2,'0')+'-'+String(tsDate.getDate()).padStart(2,'0');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
     '<select id="edit-cardio-type" onchange="renderEditCardioFields()" style="margin-bottom:14px">'+
       types.map(t=>'<option value="'+t+'"'+(t===curType?' selected':'')+'>'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
@@ -1386,7 +1386,7 @@ function logCardioManually(){
   m.className = 'modal-bg open';
   m.id = 'cardio-log-modal';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
     '<select id="cardio-type" onchange="renderCardioFields()" style="margin-bottom:14px">'+
@@ -2125,7 +2125,7 @@ async function generateGoalRoutine(){
       window.__pendingGoalRoutine=plan;
       let html='';
       (plan.days||[]).forEach((d,di)=>{
-        html+='<div class="card" style="margin-bottom:10px"><div style="font-size:14px;color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
+        html+='<div class="card"><div style="font-size:14px;color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
           (d.focus?'<div style="font-size:11px;color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
           (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px;border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:10px">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
           '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
@@ -2173,7 +2173,7 @@ function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
   if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:13px;color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
   container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
 // renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
 // that is not in the shell — so it returned on its first line at both call sites. Its live
@@ -2364,7 +2364,7 @@ function renderWorkoutHistory(){
           noteHtml +
         '</div>';
       }).join('');
-      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
+      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -2527,7 +2527,7 @@ function _renderSetsPerMuscle(){
     let warnHtml = '';
     const warns = muscleBalanceWarnings();
     if(warns.length){
-      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
+      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
     }
     return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Weekly sets \u00b7 target 10\u201320 per muscle</div>'+

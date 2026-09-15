@@ -208,7 +208,7 @@ function promptMassAddLosses(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly.</div>'+
     '<div style="text-align:center;font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">For '+(v.n||'this habit')+'. Add each day it really happened — no more, no less. Your streak and totals will be rebuilt to match the true timeline.</div>'+
     '<div id="mal-rows" style="margin-bottom:10px"></div>'+
     '<button class="btn" onclick="addMassLossRow()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px;margin-bottom:14px">+ Add another day</button>'+
@@ -1776,7 +1776,7 @@ function openResetAll(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again</div>' +
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again.</div>' +
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">' + list.length + ' things you are fighting. Two ways to begin, and they are different.</div>' +
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);setTimeout(function(){resetAllVices(false)},220)">Day one again</button>' +
     '<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:14px;text-align:center">Each clean count goes to zero. Everything you have been through stays \u2014 the day of the fight does not move.</div>' +
@@ -2738,7 +2738,7 @@ function _bookRedirect(i, cash, target){
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Move the '+money(cash)+' to '+String(where||'it').replace(/</g,'&lt;')+' in your banking app — right now, before the moment cools. Then tell me it’s done and I’ll move your freedom date to match. I won’t log money you didn’t actually move.</div>'+
     '<button class="btn primary" onclick="_confirmRedirect('+i+','+cash+',\''+target+'\')" style="margin-bottom:8px">Done — I moved it</button>'+
     '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">Couldn’t right now, but I’m not gambling it</button>'+

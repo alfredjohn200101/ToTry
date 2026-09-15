@@ -1828,7 +1828,7 @@ function _feelingNowStillHard(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Okay. Stay with me.</div>'+
     '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Picture it honestly: if you give in right now, how do you feel in twenty minutes? You already know \u2014 the shame, the same hole, a bit deeper. This moment is the whole fight. Winning it once makes the next one easier.</div>'+
     (why
-      ? ('<div style="padding:12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
+      ? ('<div style="padding:12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
       : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);margin-bottom:14px;font-size:13px">'+svgIcon("edit")+' Write what you\u2019re fighting for</button>'))+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();openNeedTalk()">Talk to my Coach now</button>'+
     '<button class="btn" onclick="_feelingNowWon()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px">It\u2019s passing \u2014 I got through it</button>'+

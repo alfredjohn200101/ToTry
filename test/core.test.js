@@ -7591,4 +7591,34 @@ H.section('three more doors where a person’s own typing became live markup');
        'the quick-add meal buttons have a name now that their only content is a decorative icon');
 }
 
+H.section('one gap between stacked cards');
+{
+  // .card said 10px, and 61 cards said 12 or 14 inline, so a single column stepped 14, 14, 12, 12, 10
+  // and the Why tab ran 14px seven times and then 10px for its eighth card. Measured after the fix:
+  // twenty card-to-card gaps across Track, Why and Settings, all 12px.
+  const code = H.code(H.html);
+  H.ok(/\.card\{[^}]*margin-bottom:var\(--s3\)/.test(code), '.card owns its gap, on the spacing scale');
+  const restated = [...H.html.matchAll(/class=\\?["']card\\?["'][^>]*?style=\\?["'][^"'\\]*margin-bottom:\s*1[024]px|style=\\?["'][^"'\\]*margin-bottom:\s*1[024]px[^"'\\]*\\?["'][^>]*class=\\?["']card\\?["']/g)];
+  H.ok(restated.length === 0, 'no card overrides that gap with a near-miss inline' + (restated.length ? ' — ' + restated.length + ' do' : ''));
+  H.ok(/margin-bottom:\s*1[024]px/.test('class="card" style="margin-bottom:14px"'), 'and that detector fires on a planted one (calibration)');
+}
+
+H.section('a button that says "later" does not mean "never"');
+{
+  // The install banner's decline read "Maybe later" and called dismissPWA(), which writes
+  // totry_pwa_dismissed = true and never asks again. A label that promises another chance, on code
+  // that removes it, is the smallest lie an app can tell — and exactly the one a person remembers.
+  // Re-offered sheets (closeModal only) now all say "Not now"; permanent declines say "No thanks".
+  const code = H.code(H.html);
+  const laters = [...H.html.matchAll(/onclick=\\?["']([A-Za-z_$][\w$]*)\(\)\\?["'][^>]*>(?:Maybe later|Later)<\/button>/g)].map(m => m[1]);
+  const liars = laters.filter(fn => {
+    let body = ''; try { body = H.code(H.extractFn(fn)); } catch (e) { return false; }
+    return /ls\(\s*['"][a-z_]*dismiss[a-z_]*['"]\s*,\s*true\s*\)/.test(body);
+  });
+  H.ok(liars.length === 0, 'no "later" button permanently dismisses what it defers' + (liars.length ? ' — ' + liars.join(', ') : ''));
+  H.ok(/onclick="dismissPWA\(\)">No thanks<\/button>/.test(H.html), 'the install banner\u2019s permanent decline says so');
+  // CALIBRATION: the detector must recognise the exact shape that shipped.
+  H.ok(/ls\(\s*['"][a-z_]*dismiss[a-z_]*['"]\s*,\s*true\s*\)/.test("ls('totry_pwa_dismissed',true)"), 'and it recognises a permanent dismiss when it sees one (calibration)');
+}
+
 H.report();
