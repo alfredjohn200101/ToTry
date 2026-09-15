@@ -46,7 +46,7 @@ const srv = http.createServer((q, r) => {
   await pg.goto('http://localhost:4610/index.html', { waitUntil:'domcontentloaded' });
   await pg.waitForTimeout(1000);
 
-  // APPLE-NATIVE (Sep 2026): the launch mark is San Francisco on the system grouped background, rendered
+  // The launch mark is the ToTry wordmark in its own face on the system grouped background, rendered
   // TWICE — light and dark — from the app's own .logo-main and its own tokens, and written into the
   // imageset with luminosity appearances so iOS picks the one matching the phone. A dark-only splash
   // flashed black at every light-mode launch once the app itself started following the phone.
@@ -56,15 +56,17 @@ const srv = http.createServer((q, r) => {
     probe.textContent = 'ToTry';
     // The app's real stack. -apple-system alone is a WebKit keyword Chromium ignores, so a probe naming
     // only it measures the fallback and reports a face missing that is actually rendering.
-    probe.style.fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, serif'; document.body.appendChild(probe); const w1 = probe.getBoundingClientRect().width;
+    probe.style.fontFamily = "'Cormorant Garamond', serif"; probe.style.fontWeight = '300'; document.body.appendChild(probe); const w1 = probe.getBoundingClientRect().width;
     probe.style.fontFamily = 'serif'; const w2 = probe.getBoundingClientRect().width; probe.remove();
-    if (Math.abs(w1 - w2) < 0.5) return { err: 'the system face did not render — refusing to render a fallback splash' };
+    if (Math.abs(w1 - w2) < 0.5) return { err: 'Cormorant Garamond did not render — refusing to render a fallback splash' };
     document.documentElement.setAttribute('data-theme', appearance);
     document.body.innerHTML = '';
     document.documentElement.style.background = 'var(--bg)';
     const s = document.createElement('div');
     s.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center';
-    s.innerHTML = '<div class="logo-main" style="font-size:132px">To<em>Try</em></div>';
+    s.style.flexDirection = 'column';
+    s.innerHTML = '<div class="logo-main" style="font-size:170px">To<em>Try</em></div>' +
+                  '<div style="font-family:var(--font-brand);font-style:italic;font-size:44px;color:var(--tx2);margin-top:18px">by Alfred John</div>';
     document.body.appendChild(s);
     const r = s.querySelector('.logo-main').getBoundingClientRect();
     return { pct: +(r.width / 1366 * 100).toFixed(1), bg: getComputedStyle(s).backgroundColor };

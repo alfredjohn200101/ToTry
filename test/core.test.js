@@ -6422,9 +6422,17 @@ H.section('the name is one word everywhere the app says it, including the native
   // was fixed where somebody noticed it — the web splash was corrected while the native launch
   // screen still said "To Try" in Georgia.
   const marks = [...H.html.matchAll(/<div class="([a-z-]+)"[^>]*>To<em>Try<\/em>/g)].map(m => m[1]);
-  // The nav bar stopped printing the wordmark in the Apple-native redesign — first-party apps do not
-  // name themselves above every screen — so the count dropped by exactly that one. The rest remain.
+  // The nav bar prints it on Today only, from iosNavSync() — the owner kept the ToTry face after the
+  // Apple-native redesign ("not complete apple font"), so the static shell's count is the rest.
   H.ok(marks.length >= 4, 'the app paints the wordmark in several places (found ' + marks.length + ')');
+  H.ok(/classList\.add\('logo-main'\s*,\s*'nav-wordmark'\)|className\s*=\s*'logo-main nav-wordmark'/.test(H.code()),
+    'Today\'s nav bar carries the wordmark in its own face');
+  // The nav row is a three-column grid (lead | title | actions). Taking the hidden title OUT of the grid
+  // with display:none moved Settings into the middle column, mid-screen, on the one screen the wordmark
+  // is on. The hidden cell has to keep its place.
+  const homeTitle = css.match(/\.hdr\[data-tab="home"\] \.ios-nav-title\{([^}]*)\}/);
+  H.ok(homeTitle && !/display\s*:\s*none/.test(homeTitle[1]),
+    'Today hides the compact title without collapsing its grid column');
   const CLOSED = ['logo-main', 'ob-logo'];
   const stray = [...new Set(marks)].filter(c => !CLOSED.includes(c));
   H.ok(stray.length === 0,

@@ -4762,6 +4762,14 @@ function iosNavSync(name){
     const tab=document.getElementById('tab-'+name);
     if(!hdr || !slot || !tab) return;
     hdr.dataset.tab = name;
+    // The wordmark signs the home screen: in the bar's leading slot on Today, where no back button needs it.
+    const lead=document.getElementById('ios-nav-lead');
+    if(lead){
+      lead.querySelectorAll('.nav-wordmark').forEach(n=>n.remove());
+      if(name==='home' && !document.getElementById('hub-back-bar')){
+        const w=document.createElement('div'); w.className='logo-main nav-wordmark'; w.innerHTML='To<em>Try</em>'; lead.appendChild(w);
+      }
+    }
     const large=tab.querySelector('.page-title, .ios-large-title');
     slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
     const sync=()=>{

@@ -38,6 +38,14 @@
    face is actually rendering. Measure a string's WIDTH against a generic fallback instead. */
 </style>
 <style>
+/* THE BRAND FACE. The owner, on seeing the Apple-native build: "i still liked the totry font, not complete
+   apple font" — the wordmark in Cormorant Garamond is ToTry's identity, and setting it in San Francisco made
+   the app read as an Apple knock-off. So the system face runs the interface and this one signs it. */
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
 
 
 :root{
@@ -63,6 +71,7 @@
   --pu:#DA8FFF;--pu-bg:rgba(218,143,255,0.16);--pu-bd:rgba(218,143,255,0.42);
   --fill:rgba(120,120,128,0.24);--fill2:rgba(118,118,128,0.18);
   --bar:rgba(22,22,24,0.82);--on-tint:#FFFFFF;
+  --brand:#C8A96E;--font-brand:'Cormorant Garamond',ui-serif,Georgia,serif;
   /* Radii: inset grouped cells are 10pt, cards and large buttons 12pt, capsules fully round. */
   --r:12px;--rm:10px;--rs:8px;--rp:100px;
   /* Spacing — iOS layout margins are 16pt and sections breathe at 20–35pt. */
@@ -94,7 +103,7 @@
     --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
     --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
     --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
-    --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;
+    --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
   }
 }
 :root[data-theme="light"]{
@@ -108,7 +117,7 @@
   --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
   --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
   --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
-  --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;
+  --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
 }
 /* ── DESIGN SYSTEM UTILITIES ──
    Reusable classes so repeated patterns are pixel-identical everywhere.
@@ -160,7 +169,7 @@ button:focus:not(:focus-visible){outline:none}
 .ob>*{max-width:380px;margin-left:auto;margin-right:auto}
 .ob-step{width:100%;display:none}
 .ob-step.active{display:block}
-.ob-logo{font-family:var(--font-display);font-size:52px;font-weight:700;text-align:center;line-height:1;margin-bottom:4px}
+.ob-logo{font-family:var(--font-brand);font-size:52px;font-weight:300;text-align:center;line-height:1;margin-bottom:4px}
 /* THE NAME IS ONE WORD. The literal space was removed long ago (see #boot-splash's own
    comment), but the mark still RENDERED as two: Cormorant's italic T carries a left side
    bearing the roman o does not, so the join opened a real ink gap. Measured on the painted
@@ -169,7 +178,7 @@ button:focus:not(:focus-visible){outline:none}
    space is enough to read as one: the app switcher showed "To Try" and that is what a person
    met at the lock screen. −0.095em closes it to 0 at every size the mark is used (28/34/36/52);
    −0.115em is where the glyphs start to collide, so this is not near the edge. */
-.ob-logo em{font-style:italic;color:var(--go);margin-left:-0.095em}
+.ob-logo em{font-style:italic;color:var(--brand);margin-left:-0.095em}
 .ob-by{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;text-align:center;margin-bottom:32px}
 .ob-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--tx);margin-bottom:10px;line-height:1.25}
 .ob-desc{font-size:var(--t-md);color:var(--tx2);line-height:1.75;margin-bottom:28px}
@@ -185,8 +194,8 @@ button:focus:not(:focus-visible){outline:none}
 .hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,var(--go-bg) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
-.logo-main{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1}
-.logo-main em{font-style:italic;color:var(--go);margin-left:-0.095em}
+.logo-main{font-family:var(--font-brand);font-size:28px;font-weight:300;line-height:1}
+.logo-main em{font-style:italic;color:var(--brand);margin-left:-0.095em}
 .logo-sub{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;margin-top:3px}
 .day-chip{text-align:right;cursor:pointer}
 .day-n{font-family:var(--font-text);font-size:27px;font-weight:400;color:var(--go);line-height:1}
@@ -1599,10 +1608,9 @@ body::before,.hdr::before,.home-hero::before,.hero-aurora,.score-hero::before,.s
 .hdr{padding:calc(var(--st) + 2px) 16px 2px !important;background:var(--bg);border-bottom:.5px solid transparent;transition:background-color .2s,border-color .2s}
 .hdr.ios-scrolled{background:var(--bar);border-bottom-color:var(--bd);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
 .hdr-row{align-items:center !important;margin-bottom:0 !important;min-height:44px}
-/* The wordmark no longer sits in the nav bar (first-party apps do not name themselves above every
-   screen); what remains is the launch surfaces and sign-in, each of which sets its own size. */
-.logo-main{font-family:var(--font-display) !important;font-weight:700 !important;letter-spacing:-0.02em !important;color:var(--tx) !important;line-height:1.1}
-.logo-main em{font-style:normal !important;color:inherit !important;margin-left:0 !important}
+/* The wordmark keeps its own face — Cormorant, the italic join, the brand gold. The interface is San
+   Francisco; the name that signs it is not. Only colour of the roman half is set here, to the label. */
+.logo-main,.ob-logo{color:var(--tx)}
 .logo-sub{display:none !important}
 .day-chip{display:flex !important;align-items:baseline;gap:4px;text-align:right}
 .day-n{font-family:var(--font-text) !important;font-size:15px !important;font-weight:600 !important;color:var(--tx2) !important;letter-spacing:-0.01em !important;line-height:1.3 !important}
@@ -1773,6 +1781,10 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* Capsules at iOS proportions: 34pt tall, 15pt label. The old .qb padding made them 52px. */
 .qb,.meal-chip,.vchip,.sleep-opt,.dr-btn,.qa-meal{min-height:34px;padding:6px 14px !important;line-height:1.3 !important}
 
+/* The wordmark in the bar on Today. The greeting is Today's large title, so no compact title competes with it. */
+.nav-wordmark{font-size:27px !important;line-height:1 !important;padding-bottom:2px}
+.hdr[data-tab="home"] .ios-nav-title{visibility:hidden}
+
 </style>
 </head>
 <body>
@@ -1781,8 +1793,9 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
        a space in the name, so the very first thing a person saw did not match the app they were about
        to open. Size is the only override. -->
   <div class="logo-main" style="font-size:var(--t-2xl);letter-spacing:0.02em">To<em>Try</em></div>
-  <!-- Apple-native launch: the wordmark on the grouped background, nothing else. No web spinner — an iOS
-       launch surface never shows one, and this one is on screen for well under two seconds. -->
+  <div style="font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);margin-top:10px">by Alfred John</div>
+  <!-- The wordmark in its own face, and the byline the app icon carries, on the grouped background. No web
+       spinner: an iOS launch surface never shows one, and this one is on screen for well under two seconds. -->
 </div>
 <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
 <div class="app">
