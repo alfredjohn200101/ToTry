@@ -47,6 +47,8 @@ for (const scheme of (mode === 'both' ? ['light', 'dark'] : [mode])) {
   await pg.evaluate(t => { try { go(t); } catch (e) {} }, tab); await pg.waitForTimeout(700);
   await pg.evaluate(() => { ['companion-overlay', 'companion-backdrop'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.remove('open'); e.style.display = 'none'; } });
     document.body.classList.remove('sheet-open'); document.querySelectorAll('.milestone-toast').forEach(e => e.remove()); });
+  // Banners can arrive after load (the welcome-back greeting does); keep them off the capture entirely.
+  await pg.addStyleTag({ content: '.milestone-toast{display:none !important}' });
   if (SCROLL) { await pg.evaluate(([t, y]) => { const el = document.getElementById('tab-' + t); if (el) el.scrollTop = y; }, [tab, SCROLL]); await pg.waitForTimeout(300); }
   if (OPEN) { await pg.evaluate(expr => { try { (0, eval)(expr); } catch (e) { console.error(e); } }, OPEN); await pg.waitForTimeout(900); }
   const name = tab + (OPEN ? '-sheet' : '') + (SCROLL ? '-s' + SCROLL : '') + '-' + scheme + '.png';

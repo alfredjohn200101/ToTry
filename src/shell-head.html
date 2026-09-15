@@ -1767,6 +1767,12 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .ios-empty-title{font-size:20px;font-weight:600;letter-spacing:.01em;color:var(--tx)}
 .ios-empty-body{font-size:15px;line-height:1.33;color:var(--tx2);margin:6px auto 0;max-width:280px}
 
+/* The day count belongs to Today. On every other screen the bar carries a centred title and icon buttons,
+   as iOS bars do; a text counter beside a centred title crowded it. */
+.hdr:not([data-tab="home"]) .day-chip{display:none !important}
+/* Capsules at iOS proportions: 34pt tall, 15pt label. The old .qb padding made them 52px. */
+.qb,.meal-chip,.vchip,.sleep-opt,.dr-btn,.qa-meal{min-height:34px;padding:6px 14px !important;line-height:1.3 !important}
+
 </style>
 </head>
 <body>

@@ -6462,8 +6462,28 @@ H.section('the name is one word everywhere the app says it, including the native
     // PNG IHDR: width and height are big-endian uint32 at bytes 16 and 20.
     H.ok(b.readUInt32BE(16) === 2732 && b.readUInt32BE(20) === 2732,
       'at the 2732x2732 the storyboard and the imageset both declare');
-    // A flat fill is what shipped before — 26KB of solid black that read as "no splash at all".
-    H.ok(b.length > 40000, 'and it carries a mark rather than being a flat fill (' + b.length.toLocaleString() + ' bytes)');
+    // A flat fill is what shipped before — 26KB of solid black that read as "no splash at all". File SIZE
+    // was the first proxy for "has a mark", and it misfired the day the mark became cleaner: San Francisco
+    // bold compresses to 38KB, under the old 40KB line, while plainly carrying the wordmark. So measure the
+    // property itself: inflate the pixel data and count distinct byte values. A flat fill, once PNG's row
+    // filters have run, is a handful of values; an anti-aliased mark is dozens.
+    const zlib = require('zlib');
+    const distinctIn = (buf) => { const chunks = []; let o = 8;
+      while (o < buf.length) { const len = buf.readUInt32BE(o), type = buf.toString('ascii', o + 4, o + 8);
+        if (type === 'IDAT') chunks.push(buf.slice(o + 8, o + 8 + len)); o += 12 + len; if (type === 'IEND') break; }
+      const raw = zlib.inflateSync(Buffer.concat(chunks)); const seen = new Set();
+      for (let i = 0; i < raw.length; i += 7) seen.add(raw[i]); return seen.size; };
+    const markValues = distinctIn(b);
+    H.ok(markValues > 40, 'and it carries a mark rather than being a flat fill (' + markValues + ' distinct pixel values)');
+    // CALIBRATION: a synthetic flat fill run through the same measure must read as flat.
+    const flatRaw = Buffer.alloc(64 * (1 + 64 * 3), 0); for (let r = 0; r < 64; r++) flatRaw[r * (1 + 64 * 3)] = 2;
+    const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(64, 0); ihdr.writeUInt32BE(64, 4); ihdr[8] = 8; ihdr[9] = 2;
+    const chunk = (t, d) => { const h = Buffer.alloc(8); h.writeUInt32BE(d.length, 0); h.write(t, 4, 'ascii'); return Buffer.concat([h, d, Buffer.alloc(4)]); };
+    const flatPng = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(flatRaw)), chunk('IEND', Buffer.alloc(0))]);
+    H.ok(distinctIn(flatPng) <= 5, 'and the same measure reads a flat fill as flat (calibration)');
+    // Both appearances exist: the launch image follows the phone.
+    const dark = require('path').join(__dirname, '..', 'ios/App/App/Assets.xcassets/Splash.imageset/splash-dark-2732x2732.png');
+    H.ok(require('fs').existsSync(dark) && distinctIn(require('fs').readFileSync(dark)) > 40, 'and a dark-appearance launch image carries the mark too');
   }
 }
 

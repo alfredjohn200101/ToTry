@@ -4761,6 +4761,7 @@ function iosNavSync(name){
     const hdr=document.querySelector('.hdr'), slot=document.getElementById('ios-nav-title');
     const tab=document.getElementById('tab-'+name);
     if(!hdr || !slot || !tab) return;
+    hdr.dataset.tab = name;
     const large=tab.querySelector('.page-title, .ios-large-title');
     slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
     const sync=()=>{
