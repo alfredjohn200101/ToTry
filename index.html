@@ -1717,6 +1717,54 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 #hub-back-bar .ic{width:24px;height:24px;stroke-width:2.4}
 #hub-back-bar:active{opacity:.5}
 
+/* ── iOS lists: the pattern most iPhone screens are built from ─────────────────────────────────────
+   .ios-list is an inset grouped section; .ios-row is one 44pt+ row inside it. Separators are drawn
+   INSET from the leading edge (and inset further when the row has an icon tile), never full width. */
+.ios-section{margin:0 0 28px}
+.ios-header{font-family:var(--font-text);font-size:13px;font-weight:400;text-transform:uppercase;letter-spacing:0;color:var(--tx2);padding:0 16px 7px}
+.ios-footnote{font-family:var(--font-text);font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);padding:7px 16px 0}
+.ios-list{background:var(--bg2);border-radius:10px;overflow:hidden}
+.ios-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:11px 16px;background:transparent;border:0;margin:0;
+  text-align:left;color:var(--tx);font-family:var(--font-text);font-size:17px;letter-spacing:-.022em;-webkit-tap-highlight-color:transparent}
+button.ios-row,a.ios-row,.ios-row[onclick]{cursor:pointer}
+button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(--bg4)}
+.ios-row+.ios-row::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
+.ios-row.has-icon+.ios-row::before,.ios-row+.ios-row.has-icon::before{left:57px}
+.ios-row-icon{flex:none;width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--go)}
+.ios-row-icon .ic{width:18px;height:18px;stroke-width:2.1}
+.ios-row-body{flex:1;min-width:0}
+.ios-row-title{font-size:17px;line-height:1.29;color:var(--tx);overflow:hidden;text-overflow:ellipsis}
+.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.ios-row-value{flex:none;font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;max-width:45%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ios-row-chevron{flex:none;color:var(--tx3);margin-right:-4px}
+.ios-row-chevron .ic{width:14px;height:14px;stroke-width:2.6}
+.ios-row.destructive .ios-row-title{color:var(--re)}
+.ios-row.tint .ios-row-title{color:var(--go)}
+/* Settings-style tile colours: each is a system colour, used only as the ground of a white glyph. */
+.tone-blue{background:#0A84FF}.tone-green{background:#30B454}.tone-red{background:#FF3B30}.tone-orange{background:#FF9500}
+.tone-yellow{background:#F0B400}.tone-purple{background:#AF52DE}.tone-indigo{background:#5856D6}.tone-pink{background:#FF2D55}
+.tone-teal{background:#30B0C7}.tone-gray{background:#8E8E93}.tone-mint{background:#00B39B}.tone-brown{background:#A2845E}
+
+/* Stat tiles, as Fitness and Health draw a summary number. */
+.ios-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.ios-stat{background:var(--bg2);border-radius:12px;padding:12px 14px 14px}
+.ios-stat-label{font-size:13px;font-weight:600;letter-spacing:-.006em;color:var(--tx2)}
+.ios-stat-value{font-family:var(--font-rounded);font-size:28px;font-weight:600;line-height:1.15;letter-spacing:0;color:var(--tx);font-variant-numeric:tabular-nums;margin-top:2px}
+.ios-stat-unit{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);margin-left:2px}
+.ios-stat-note{font-size:13px;color:var(--tx2);margin-top:2px}
+
+/* Switch — a real checkbox, drawn as the iOS toggle. */
+.ios-switch{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;cursor:pointer;transition:background .2s;margin:0}
+.ios-switch::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .2s}
+.ios-switch:checked{background:#34C759}
+.ios-switch:checked::after{transform:translateX(20px)}
+
+/* Empty state, as ContentUnavailableView: centred, quiet, one action. */
+.ios-empty{text-align:center;padding:32px 24px}
+.ios-empty .ic{width:44px;height:44px;color:var(--tx3);stroke-width:1.5;margin-bottom:10px}
+.ios-empty-title{font-size:20px;font-weight:600;letter-spacing:.01em;color:var(--tx)}
+.ios-empty-body{font-size:15px;line-height:1.33;color:var(--tx2);margin:6px auto 0;max-width:280px}
+
 </style>
 </head>
 <body>
@@ -6417,6 +6465,36 @@ function svgIcon(name, size){
   if(!d) return '';
   const s = size || 16;
   return '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="'+s+'" height="'+s+'">'+d+'</svg>';
+}
+
+// ── iOS list helpers ────────────────────────────────────────────────────────────────────────────────
+// Every screen that shows rows builds them through these, so a row is the same row everywhere: one
+// height, one separator inset, one chevron, one tap highlight. Hand-writing the markup is how the old
+// design ended up with 190 different button recipes. Text passed in is ESCAPED here (title, sub, value,
+// header, footer) — callers pass plain text. Pass `html:true` only for trusted, app-authored markup.
+function iosRow(o){
+  o = o || {};
+  const esc = (v) => (o.html ? String(v == null ? '' : v) : String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const tag = o.onclick ? 'button' : 'div';
+  const cls = 'ios-row' + (o.icon ? ' has-icon' : '') + (o.destructive ? ' destructive' : '') + (o.tint ? ' tint' : '') + (o.cls ? ' ' + o.cls : '');
+  const attrs = (o.onclick ? ' type="button" onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"' : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
+  return '<' + tag + ' class="' + cls + '"' + attrs + '>' +
+    (o.icon ? '<span class="ios-row-icon tone-' + (o.tone || 'blue') + '">' + svgIcon(o.icon, 18) + '</span>' : '') +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + esc(o.title) + '</span>' +
+      (o.sub ? '<span class="ios-row-sub" style="display:block">' + esc(o.sub) + '</span>' : '') + '</span>' +
+    (o.value != null && o.value !== '' ? '<span class="ios-row-value">' + esc(o.value) + '</span>' : '') +
+    (o.trailing ? o.trailing : '') +
+    ((o.onclick && o.chevron !== false) ? '<span class="ios-row-chevron">' + svgIcon('chevronright', 14) + '</span>' : '') +
+  '</' + tag + '>';
+}
+function iosList(rows, o){
+  o = o || {};
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return '<div class="ios-section">' +
+    (o.header ? '<div class="ios-header">' + esc(o.header) + '</div>' : '') +
+    '<div class="ios-list">' + (rows || []).join('') + '</div>' +
+    (o.footer ? '<div class="ios-footnote">' + esc(o.footer) + '</div>' : '') +
+  '</div>';
 }
 // ═══════════════════════════════════════════════════════════════════════════
 // CLOUD-FIRST SYNC (v111). Supabase is the source of truth, the device is a cache.

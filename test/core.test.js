@@ -7650,4 +7650,25 @@ H.section('a button that says "later" does not mean "never"');
   H.ok(/ls\(\s*['"][a-z_]*dismiss[a-z_]*['"]\s*,\s*true\s*\)/.test("ls('totry_pwa_dismissed',true)"), 'and it recognises a permanent dismiss when it sees one (calibration)');
 }
 
+H.section('iOS rows: one row everywhere, and a row never runs what a person typed');
+{
+  // iosRow()/iosList() are how every redesigned screen draws a list row, so they are a SHARED SINK in
+  // exactly the sense showToast was: a debt name, a habit, a prayer title all reach them. Executed,
+  // not grepped — a regex over the source passes on a helper that forgets to escape one field.
+  const F = H.load(['svgIcon', 'iosRow', 'iosList']);
+  const bad = '<img src=x onerror=alert(1)>';
+  const row = F.iosRow({ title: bad, sub: bad, value: bad, icon: 'wallet', tone: 'green', onclick: "go('money')" });
+  H.ok(!/<img/.test(row), 'title, subtitle and value are escaped — no live <img> in the row');
+  H.ok(/&lt;img src=x onerror=alert\(1\)&gt;/.test(row), 'the text is still shown, as text');
+  H.ok(/^<button class="ios-row has-icon"/.test(row) && /type="button"/.test(row), 'a tappable row is a real button');
+  H.ok(/ios-row-chevron/.test(row), 'and carries the disclosure chevron');
+  H.ok(/tone-green/.test(row) && /<svg class="ic"/.test(row), 'the icon tile takes its tone and the app’s own glyph');
+  const still = F.iosRow({ title: 'Plain' });
+  H.ok(/^<div class="ios-row"/.test(still) && !/chevron/.test(still), 'a row with no action is not a button and has no chevron');
+  const list = F.iosList([row], { header: bad, footer: bad });
+  H.ok(!/<img/.test(list), 'section header and footer are escaped too');
+  // CALIBRATION: html:true exists for app-authored markup and must actually pass it through.
+  H.ok(/<b>x<\/b>/.test(F.iosRow({ title: '<b>x</b>', html: true })), 'and html:true passes trusted markup (calibration)');
+}
+
 H.report();

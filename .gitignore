@@ -22,3 +22,4 @@ build/
 # Recorded UGC clips and their raw frames — regenerable output of scripts/record-reels.js, and large
 # (~80MB a run). One stray webm was committed by accident in v371; see the note in that script.
 recordings/
+.ios-shots/

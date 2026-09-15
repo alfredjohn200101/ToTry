@@ -1158,3 +1158,33 @@ function svgIcon(name, size){
   const s = size || 16;
   return '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="'+s+'" height="'+s+'">'+d+'</svg>';
 }
+
+// ── iOS list helpers ────────────────────────────────────────────────────────────────────────────────
+// Every screen that shows rows builds them through these, so a row is the same row everywhere: one
+// height, one separator inset, one chevron, one tap highlight. Hand-writing the markup is how the old
+// design ended up with 190 different button recipes. Text passed in is ESCAPED here (title, sub, value,
+// header, footer) — callers pass plain text. Pass `html:true` only for trusted, app-authored markup.
+function iosRow(o){
+  o = o || {};
+  const esc = (v) => (o.html ? String(v == null ? '' : v) : String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const tag = o.onclick ? 'button' : 'div';
+  const cls = 'ios-row' + (o.icon ? ' has-icon' : '') + (o.destructive ? ' destructive' : '') + (o.tint ? ' tint' : '') + (o.cls ? ' ' + o.cls : '');
+  const attrs = (o.onclick ? ' type="button" onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"' : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
+  return '<' + tag + ' class="' + cls + '"' + attrs + '>' +
+    (o.icon ? '<span class="ios-row-icon tone-' + (o.tone || 'blue') + '">' + svgIcon(o.icon, 18) + '</span>' : '') +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + esc(o.title) + '</span>' +
+      (o.sub ? '<span class="ios-row-sub" style="display:block">' + esc(o.sub) + '</span>' : '') + '</span>' +
+    (o.value != null && o.value !== '' ? '<span class="ios-row-value">' + esc(o.value) + '</span>' : '') +
+    (o.trailing ? o.trailing : '') +
+    ((o.onclick && o.chevron !== false) ? '<span class="ios-row-chevron">' + svgIcon('chevronright', 14) + '</span>' : '') +
+  '</' + tag + '>';
+}
+function iosList(rows, o){
+  o = o || {};
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return '<div class="ios-section">' +
+    (o.header ? '<div class="ios-header">' + esc(o.header) + '</div>' : '') +
+    '<div class="ios-list">' + (rows || []).join('') + '</div>' +
+    (o.footer ? '<div class="ios-footnote">' + esc(o.footer) + '</div>' : '') +
+  '</div>';
+}
