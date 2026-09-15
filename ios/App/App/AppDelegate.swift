@@ -37,12 +37,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func showPrivacyCover() {
         guard lockIsOn(), privacyCover == nil, let window = self.window else { return }
         let cover = UIView(frame: window.bounds)
-        cover.backgroundColor = UIColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1.0)  // --bg, #0a0a0f
+        // Apple-native: the cover is the system grouped background and label colour, following the app's
+        // own Light/Dark choice (or the device when that choice is "System"), in San Francisco.
+        switch UserDefaults.standard.string(forKey: "CapacitorStorage.totry_theme") {
+        case "light": cover.overrideUserInterfaceStyle = .light
+        case "dark":  cover.overrideUserInterfaceStyle = .dark
+        default:      cover.overrideUserInterfaceStyle = .unspecified
+        }
+        cover.backgroundColor = .systemGroupedBackground
         cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         let label = UILabel()
-        label.text = "To Try"
-        label.textColor = UIColor(red: 0.784, green: 0.663, blue: 0.431, alpha: 1.0)        // --go
-        label.font = UIFont.systemFont(ofSize: 24, weight: .light)
+        label.text = "ToTry"
+        label.textColor = .label
+        label.font = UIFont.systemFont(ofSize: 28, weight: .bold)
         label.translatesAutoresizingMaskIntoConstraints = false
         cover.addSubview(label)
         NSLayoutConstraint.activate([

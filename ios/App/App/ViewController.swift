@@ -58,6 +58,7 @@ class ViewController: CAPBridgeViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        applyAppearance()
         // Repaint when the theme changes mid-session rather than waiting for the next launch.
         NotificationCenter.default.addObserver(
             self,
@@ -66,8 +67,33 @@ class ViewController: CAPBridgeViewController {
             object: nil)
     }
 
+    // ── THE GROUND BEHIND THE WEB VIEW ─────────────────────────────────────────────────────────────
+    // capacitor.config.json paints the web view one fixed hex, which was the old near-black. Since the
+    // Apple-native redesign the app follows the phone's appearance, so on a light-mode iPhone that fixed
+    // colour flashed dark before the first paint and showed through any overscroll. The native ground is
+    // now systemGroupedBackground — the same colour as the web --bg in both appearances — and the app's
+    // own Light/Dark choice is applied as an interface-style override so native colours agree with it.
+    private func storedInterfaceStyle() -> UIUserInterfaceStyle {
+        switch UserDefaults.standard.string(forKey: "CapacitorStorage.totry_theme") {
+        case "light": return .light
+        case "dark":  return .dark
+        default:      return .unspecified      // "system" or nothing stored: follow the device
+        }
+    }
+
+    private func applyAppearance() {
+        overrideUserInterfaceStyle = storedInterfaceStyle()
+        view.backgroundColor = .systemGroupedBackground
+        webView?.isOpaque = false
+        webView?.backgroundColor = .systemGroupedBackground
+        webView?.scrollView.backgroundColor = .systemGroupedBackground
+    }
+
     @objc private func themeMayHaveChanged() {
-        DispatchQueue.main.async { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
+        DispatchQueue.main.async { [weak self] in
+            self?.applyAppearance()
+            self?.setNeedsStatusBarAppearanceUpdate()
+        }
     }
 
     deinit { NotificationCenter.default.removeObserver(self) }
