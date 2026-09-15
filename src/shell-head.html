@@ -1599,7 +1599,9 @@ body::before,.hdr::before,.home-hero::before,.hero-aurora,.score-hero::before,.s
 .hdr{padding:calc(var(--st) + 2px) 16px 2px !important;background:var(--bg);border-bottom:.5px solid transparent;transition:background-color .2s,border-color .2s}
 .hdr.ios-scrolled{background:var(--bar);border-bottom-color:var(--bd);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
 .hdr-row{align-items:center !important;margin-bottom:0 !important;min-height:44px}
-.logo-main{font-family:var(--font-display) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.022em !important;color:var(--tx) !important;line-height:1.3}
+/* The wordmark no longer sits in the nav bar (first-party apps do not name themselves above every
+   screen); what remains is the launch surfaces and sign-in, each of which sets its own size. */
+.logo-main{font-family:var(--font-display) !important;font-weight:700 !important;letter-spacing:-0.02em !important;color:var(--tx) !important;line-height:1.1}
 .logo-main em{font-style:normal !important;color:inherit !important;margin-left:0 !important}
 .logo-sub{display:none !important}
 .day-chip{display:flex !important;align-items:baseline;gap:4px;text-align:right}
@@ -1768,13 +1770,13 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 </style>
 </head>
 <body>
-<div id="boot-splash" style="position:fixed;inset:0;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
+<div id="boot-splash" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
   <!-- .logo-main, not a third hand-rolled wordmark. This was 34px all-gold on a hardcoded var(--go) with
        a space in the name, so the very first thing a person saw did not match the app they were about
        to open. Size is the only override. -->
   <div class="logo-main" style="font-size:var(--t-2xl);letter-spacing:0.02em">To<em>Try</em></div>
-  <div style="font-family:var(--font-text);font-size:var(--t-micro);color:#6a6a72;text-transform:uppercase;letter-spacing:0.01em;margin-top:8px">by Alfred John</div>
-  <div style="margin-top:22px;width:26px;height:26px;border:2px solid var(--go-bd);border-top-color:var(--go);border-radius:50%;animation:bootspin 0.7s linear infinite"></div>
+  <!-- Apple-native launch: the wordmark on the grouped background, nothing else. No web spinner — an iOS
+       launch surface never shows one, and this one is on screen for well under two seconds. -->
 </div>
 <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
 <div class="app">
