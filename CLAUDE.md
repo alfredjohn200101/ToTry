@@ -44,6 +44,23 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
 - `APP_VERSION` in `src/app/00-boot.js` — currently **v604**. Bump it AND `CACHE` in sw.js together, always.
 
+## The design system — Apple-native (since 15 Sep 2026, branch `ios-native`)
+The owner rejected the old dark-gold/serif look as "vibe coded" even after two rounds of consistency
+work, and chose **fully Apple-native**. Read `docs/APPLE-NATIVE.md` before touching any UI. In short:
+- **iOS system colours**, light and dark, in `:root` + two light blocks (the phone's appearance, and an
+  explicit choice). Default appearance is **System**; `applyTheme()` only sets/removes `data-theme`.
+  The tint is iOS blue in ONE token, `--go` (the name is historical). Native side follows too:
+  `ViewController.applyAppearance()`, the privacy cover, and a light/dark launch image.
+- **San Francisco** everywhere (`--font-text`/`--font-display`), **New York** for scripture only
+  (`--font-serif`), **SF Rounded** for big numbers. No web fonts ship. The `--t-*` tokens ARE the iOS
+  Dynamic Type scale (17 body, 34 large title).
+- **Build from components, never paint inline**: `.page-title` (large title), `iosList([iosRow({...})])`
+  (inset grouped rows — they escape their text), `.card`, `.ios-stats`, `.btn.primary/.btn/.btn.quiet`,
+  segmented controls (`.fst`), `.ios-switch`, `.ios-empty`, `svgIcon()`. The back button lives in the
+  nav bar (`updateHubBackBar` → `#ios-nav-lead`); `iosNavSync()` fades the title into the bar on scroll.
+- Verify visually: `npm run build:index && node scripts/ios-shot.mjs <tab> both`, then LOOK at both.
+  Its seed uses the app's real storage keys — an invented key renders an empty screen.
+
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
   money, sex, activity, brief}. The brain everything reads.
