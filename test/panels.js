@@ -4719,7 +4719,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await page.waitForTimeout(2600);
     const r=await page.evaluate(async()=>{
       const wait=ms=>new Promise(r=>setTimeout(r,ms));
-      const BRAND=/Outfit|DM Mono|Cormorant/;
+      // Since the Apple-native redesign the app's face IS the system: San Francisco for everything, New York
+      // for scripture, SF Rounded for big numbers. A control that resolves to anything else — Arial from the
+      // UA button default being the historic one — is still the defect this check exists for.
+      const BRAND=/-apple-system|BlinkMacSystemFont|system-ui|SF Pro|ui-serif|New York|ui-rounded/;
       const CODE=/(function\s*\(|typeof\s|=>|localStorage|document\.)/;
       const BRACE=/\)\s*\{|;\s*\}|\}\s*\)\s*\(/;
       const looksLikeSource=t => t.length>=40 && CODE.test(t) && BRACE.test(t);
@@ -4728,7 +4731,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
 
       // ── CALIBRATION, all three, on controls that do not depend on the rules under test ──
       const cal=document.createElement('div');
-      cal.innerHTML='<div id="__cg" style="font-family:Outfit,sans-serif">x</div>'
+      cal.innerHTML='<div id="__cg" style="font-family:-apple-system,sans-serif">x</div>'
                    +'<button id="__cb" style="font-family:Arial">x</button>'
                    +'<p id="__p1" style="font-size:13px">calibration line one, long enough to be real</p>'
                    +'<p id="__p2" style="font-size:12.5px">calibration line two, long enough to be real</p>';
@@ -4748,9 +4751,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         const w=Math.round(sp.getBoundingClientRect().width); sp.remove(); return w; };
       const serifW=wid('serif'), sansW=wid('sans-serif');
       const rendering={};
-      for(const f of ['Cormorant Garamond','DM Mono','Outfit']){
-        const w=wid('"'+f+'", serif');
-        rendering[f] = (w!==serifW && w!==sansW);
+      // The UI face must really render. -apple-system is unquoted on purpose: quoted, it is a literal family
+      // name that exists nowhere and would measure as the fallback. (The scripture serif is not measured —
+      // its fallback chain ends in Georgia, which is an acceptable reading face on a machine without New York.)
+      for(const f of ['-apple-system']){
+        const w=wid(f+', serif');
+        rendering['San Francisco'] = (w!==serifW);
       }
       const calSrcPos=looksLikeSource("(function(el){ const v=parseInt(el.value,10); if(typeof showToast==='function') return; })");
       const calSrcNeg=looksLikeSource("You don’t have to carry this alone. Reach out to someone who knows you, today.");
@@ -4833,12 +4839,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
 
     // TYPEFACE
     if(!r.calFontGood || r.calFontBad)
-      findings.push(`typeface: the instrument is wrong, not the app (explicit-Outfit reads brand=${r.calFontGood}, explicit-Arial reads brand=${r.calFontBad})`);
+      findings.push(`typeface: the instrument is wrong, not the app (explicit system face reads brand=${r.calFontGood}, explicit-Arial reads brand=${r.calFontBad})`);
     else if(Object.values(r.rendering||{}).some(v=>!v))
       findings.push(`typeface: a brand face is DECLARED but not RENDERING — ${Object.entries(r.rendering).filter(([,v])=>!v).map(([k])=>k).join(', ')} measured the same width as a generic fallback, so the app is in system fonts however the stylesheet reads`);
     else if(r.controls < 150) findings.push(`typeface: only ${r.controls} controls reached — the scan is not walking the app`);
     else if(r.badFont.length) findings.push(`typeface: ${r.badFont.length} kind(s) of control render outside the app's three fonts — ${r.badFont.slice(0,5).join(', ')}`);
-    else console.log(`typeface: all three brand faces are really rendering (bundled, no network needed), and all ${r.controls} visible controls use one of them`);
+    else console.log(`typeface: San Francisco is really rendering, and all ${r.controls} visible controls use the system face`);
 
     // SOURCE ON SCREEN
     if(!r.calSrcPos || r.calSrcNeg)
