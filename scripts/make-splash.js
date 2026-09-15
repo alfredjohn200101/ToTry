@@ -44,39 +44,52 @@ const srv = http.createServer((q, r) => {
   const ctx = await b.newContext({ viewport:{width:1366,height:1366}, deviceScaleFactor:2, serviceWorkers:'block' });
   const pg = await ctx.newPage();
   await pg.goto('http://localhost:4610/index.html', { waitUntil:'domcontentloaded' });
-  await pg.waitForFunction(() => document.fonts && document.fonts.status === 'loaded', null, {timeout:20000})
-          .catch(() => console.warn('! fonts never reported loaded — check fonts/ in www'));
   await pg.waitForTimeout(1000);
 
-  const m = await pg.evaluate(() => {
-    // Fail loudly rather than render a fallback face: a splash in Times is worse than no splash,
-    // because it looks deliberate.
+  // APPLE-NATIVE (Sep 2026): the launch mark is San Francisco on the system grouped background, rendered
+  // TWICE — light and dark — from the app's own .logo-main and its own tokens, and written into the
+  // imageset with luminosity appearances so iOS picks the one matching the phone. A dark-only splash
+  // flashed black at every light-mode launch once the app itself started following the phone.
+  const render = async (appearance) => pg.evaluate((appearance) => {
     const probe = document.createElement('span');
-    probe.style.cssText = 'position:fixed;visibility:hidden;font-size:100px';
-    probe.style.fontFamily = "'Cormorant Garamond', serif"; probe.textContent = 'ToTry';
-    document.body.appendChild(probe); const w1 = probe.getBoundingClientRect().width;
-    probe.style.fontFamily = 'serif'; const w2 = probe.getBoundingClientRect().width;
-    probe.remove();
-    if (Math.abs(w1 - w2) < 0.5) return { err: 'Cormorant Garamond did not load — refusing to render the fallback face' };
-
+    probe.style.cssText = 'position:fixed;visibility:hidden;font-size:100px;font-weight:700';
+    probe.textContent = 'ToTry';
+    // The app's real stack. -apple-system alone is a WebKit keyword Chromium ignores, so a probe naming
+    // only it measures the fallback and reports a face missing that is actually rendering.
+    probe.style.fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, serif'; document.body.appendChild(probe); const w1 = probe.getBoundingClientRect().width;
+    probe.style.fontFamily = 'serif'; const w2 = probe.getBoundingClientRect().width; probe.remove();
+    if (Math.abs(w1 - w2) < 0.5) return { err: 'the system face did not render — refusing to render a fallback splash' };
+    document.documentElement.setAttribute('data-theme', appearance);
     document.body.innerHTML = '';
-    document.documentElement.style.background = '#0a0a0f';
+    document.documentElement.style.background = 'var(--bg)';
     const s = document.createElement('div');
-    s.style.cssText = 'position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center';
-    s.innerHTML = '<div class="logo-main" style="font-size:160px;letter-spacing:0.02em">To<em>Try</em></div>' +
-                  '<div style="font-family:\'DM Mono\',monospace;font-size:22px;color:#6a6a72;text-transform:uppercase;letter-spacing:0.2em;margin-top:26px">by Alfred John</div>';
+    s.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center';
+    s.innerHTML = '<div class="logo-main" style="font-size:132px">To<em>Try</em></div>';
     document.body.appendChild(s);
     const r = s.querySelector('.logo-main').getBoundingClientRect();
-    return { pct: +(r.width / 1366 * 100).toFixed(1) };
-  });
-  if (m.err) { console.error('✗ ' + m.err); await b.close(); srv.close(); process.exit(1); }
-  if (m.pct > 40) { console.error('✗ mark is ' + m.pct + '% of the square — aspectFill would crop it'); await b.close(); srv.close(); process.exit(1); }
+    return { pct: +(r.width / 1366 * 100).toFixed(1), bg: getComputedStyle(s).backgroundColor };
+  }, appearance);
 
-  const tmp = path.join(OUT, FILES[0]);
-  await pg.screenshot({ path: tmp, clip:{x:0,y:0,width:1366,height:1366} });
-  const buf = fs.readFileSync(tmp);
-  for (const f of FILES.slice(1)) fs.writeFileSync(path.join(OUT, f), buf);
-  console.log('✓ Splash.imageset regenerated — mark is ' + m.pct + '% of the square, ' + buf.length.toLocaleString() + ' bytes x' + FILES.length);
+  const written = [];
+  for (const appearance of ['light', 'dark']) {
+    const m = await render(appearance);
+    if (m.err) { console.error('✗ ' + m.err); await b.close(); srv.close(); process.exit(1); }
+    if (m.pct > 40) { console.error('✗ mark is ' + m.pct + '% of the square — aspectFill would crop it'); await b.close(); srv.close(); process.exit(1); }
+    await pg.waitForTimeout(150);
+    const names = FILES.map(f => appearance === 'light' ? f : f.replace('splash-', 'splash-dark-'));
+    const tmp = path.join(OUT, names[0]);
+    await pg.screenshot({ path: tmp, clip:{x:0,y:0,width:1366,height:1366} });
+    const buf = fs.readFileSync(tmp);
+    for (const f of names.slice(1)) fs.writeFileSync(path.join(OUT, f), buf);
+    written.push({ appearance, names, pct: m.pct, bg: m.bg, bytes: buf.length });
+  }
+  const scales = ['3x', '2x', '1x'];
+  const images = [];
+  for (const w of written) w.names.forEach((f, i) => images.push(Object.assign(
+    { idiom: 'universal', filename: f, scale: scales[i] },
+    w.appearance === 'dark' ? { appearances: [{ appearance: 'luminosity', value: 'dark' }] } : {})));
+  fs.writeFileSync(path.join(OUT, 'Contents.json'), JSON.stringify({ images, info: { version: 1, author: 'xcode' } }, null, 2) + '\n');
+  for (const w of written) console.log('✓ ' + w.appearance + ' splash — mark ' + w.pct + '% of the square on ' + w.bg + ', ' + w.bytes.toLocaleString() + ' bytes x' + w.names.length);
   console.log('  now run: npx cap sync');
   await b.close(); srv.close(); process.exit(0);
 })();

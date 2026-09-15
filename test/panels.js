@@ -4751,10 +4751,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         const w=Math.round(sp.getBoundingClientRect().width); sp.remove(); return w; };
       const serifW=wid('serif'), sansW=wid('sans-serif');
       const rendering={};
-      // The UI face must really render. -apple-system is unquoted on purpose: quoted, it is a literal family
-      // name that exists nowhere and would measure as the fallback. (The scripture serif is not measured —
-      // its fallback chain ends in Georgia, which is an acceptable reading face on a machine without New York.)
-      for(const f of ['-apple-system']){
+      // The UI face must really render. Measured with the app's REAL stack: -apple-system on its own is a
+      // WebKit keyword that Chromium (which runs this check) ignores, so a probe naming only it measures the
+      // serif fallback and reports San Francisco missing when BlinkMacSystemFont is rendering it — which is
+      // exactly what the first draft of this probe did. (The scripture serif is not measured: its chain ends
+      // in Georgia, an acceptable reading face on a machine without New York.)
+      for(const f of ['-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui']){
         const w=wid(f+', serif');
         rendering['San Francisco'] = (w!==serifW);
       }
