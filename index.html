@@ -38,6 +38,14 @@
    face is actually rendering. Measure a string's WIDTH against a generic fallback instead. */
 </style>
 <style>
+/* THE BRAND FACE. The owner, on seeing the Apple-native build: "i still liked the totry font, not complete
+   apple font" — the wordmark in Cormorant Garamond is ToTry's identity, and setting it in San Francisco made
+   the app read as an Apple knock-off. So the system face runs the interface and this one signs it. */
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
 
 
 :root{
@@ -63,6 +71,12 @@
   --pu:#DA8FFF;--pu-bg:rgba(218,143,255,0.16);--pu-bd:rgba(218,143,255,0.42);
   --fill:rgba(120,120,128,0.24);--fill2:rgba(118,118,128,0.18);
   --bar:rgba(22,22,24,0.82);--on-tint:#FFFFFF;
+  /* The glass: the thin material the bars are made of, the thick one sheets use, the hairline that
+     edges it and the specular highlight along its top. Content never sits on it — see ToTry × LIQUID
+     GLASS at the end of this file for why. */
+  --glass:rgba(30,30,32,0.58);--glass-2:rgba(28,28,30,0.84);--glass-line:rgba(255,255,255,0.10);
+  --glass-hi:rgba(255,255,255,0.14);--glass-shadow:0 12px 34px rgba(0,0,0,0.5);
+  --brand:#C8A96E;--font-brand:'Cormorant Garamond',ui-serif,Georgia,serif;
   /* Radii: inset grouped cells are 10pt, cards and large buttons 12pt, capsules fully round. */
   --r:12px;--rm:10px;--rs:8px;--rp:100px;
   /* Spacing — iOS layout margins are 16pt and sections breathe at 20–35pt. */
@@ -94,7 +108,9 @@
     --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
     --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
     --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
-    --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;
+    --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
+    --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
+    --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
   }
 }
 :root[data-theme="light"]{
@@ -108,7 +124,9 @@
   --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
   --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
   --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
-  --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;
+  --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
+  --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
+  --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
 }
 /* ── DESIGN SYSTEM UTILITIES ──
    Reusable classes so repeated patterns are pixel-identical everywhere.
@@ -160,7 +178,7 @@ button:focus:not(:focus-visible){outline:none}
 .ob>*{max-width:380px;margin-left:auto;margin-right:auto}
 .ob-step{width:100%;display:none}
 .ob-step.active{display:block}
-.ob-logo{font-family:var(--font-display);font-size:52px;font-weight:700;text-align:center;line-height:1;margin-bottom:4px}
+.ob-logo{font-family:var(--font-brand);font-size:52px;font-weight:300;text-align:center;line-height:1;margin-bottom:4px}
 /* THE NAME IS ONE WORD. The literal space was removed long ago (see #boot-splash's own
    comment), but the mark still RENDERED as two: Cormorant's italic T carries a left side
    bearing the roman o does not, so the join opened a real ink gap. Measured on the painted
@@ -169,7 +187,7 @@ button:focus:not(:focus-visible){outline:none}
    space is enough to read as one: the app switcher showed "To Try" and that is what a person
    met at the lock screen. −0.095em closes it to 0 at every size the mark is used (28/34/36/52);
    −0.115em is where the glyphs start to collide, so this is not near the edge. */
-.ob-logo em{font-style:italic;color:var(--go);margin-left:-0.095em}
+.ob-logo em{font-style:italic;color:var(--brand);margin-left:-0.095em}
 .ob-by{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;text-align:center;margin-bottom:32px}
 .ob-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--tx);margin-bottom:10px;line-height:1.25}
 .ob-desc{font-size:var(--t-md);color:var(--tx2);line-height:1.75;margin-bottom:28px}
@@ -185,8 +203,8 @@ button:focus:not(:focus-visible){outline:none}
 .hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,var(--go-bg) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
-.logo-main{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1}
-.logo-main em{font-style:italic;color:var(--go);margin-left:-0.095em}
+.logo-main{font-family:var(--font-brand);font-size:28px;font-weight:300;line-height:1}
+.logo-main em{font-style:italic;color:var(--brand);margin-left:-0.095em}
 .logo-sub{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;margin-top:3px}
 .day-chip{text-align:right;cursor:pointer}
 .day-n{font-family:var(--font-text);font-size:27px;font-weight:400;color:var(--go);line-height:1}
@@ -1599,10 +1617,9 @@ body::before,.hdr::before,.home-hero::before,.hero-aurora,.score-hero::before,.s
 .hdr{padding:calc(var(--st) + 2px) 16px 2px !important;background:var(--bg);border-bottom:.5px solid transparent;transition:background-color .2s,border-color .2s}
 .hdr.ios-scrolled{background:var(--bar);border-bottom-color:var(--bd);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
 .hdr-row{align-items:center !important;margin-bottom:0 !important;min-height:44px}
-/* The wordmark no longer sits in the nav bar (first-party apps do not name themselves above every
-   screen); what remains is the launch surfaces and sign-in, each of which sets its own size. */
-.logo-main{font-family:var(--font-display) !important;font-weight:700 !important;letter-spacing:-0.02em !important;color:var(--tx) !important;line-height:1.1}
-.logo-main em{font-style:normal !important;color:inherit !important;margin-left:0 !important}
+/* The wordmark keeps its own face — Cormorant, the italic join, the brand gold. The interface is San
+   Francisco; the name that signs it is not. Only colour of the roman half is set here, to the label. */
+.logo-main,.ob-logo{color:var(--tx)}
 .logo-sub{display:none !important}
 .day-chip{display:flex !important;align-items:baseline;gap:4px;text-align:right}
 .day-n{font-family:var(--font-text) !important;font-size:15px !important;font-weight:600 !important;color:var(--tx2) !important;letter-spacing:-0.01em !important;line-height:1.3 !important}
@@ -1773,6 +1790,86 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* Capsules at iOS proportions: 34pt tall, 15pt label. The old .qb padding made them 52px. */
 .qb,.meal-chip,.vchip,.sleep-opt,.dr-btn,.qa-meal{min-height:34px;padding:6px 14px !important;line-height:1.3 !important}
 
+/* The wordmark in the bar on Today. The greeting is Today's large title, so no compact title competes with it. */
+.nav-wordmark{font-size:27px !important;line-height:1 !important;padding-bottom:2px}
+.hdr[data-tab="home"] .ios-nav-title{visibility:hidden}
+
+/* ═══ ToTry × LIQUID GLASS ═══════════════════════════════════════════════════════════════════════
+   The correction to the first Apple-native pass, in the owner's words: "you went too far with the
+   apple conditioning ... i meant in fact of liquid glass, what the phones are capable of ... we have
+   a style dna sure". Stripping the brand out to reach first-party quality was the wrong reading.
+   The SYSTEM is Apple's — the type scale, the 44pt targets, the grouped lists, the controls. The
+   VOICE is ours. Two rules hold that line, and everything below is one of the two.
+
+   1. THE DISPLAY FACE IS THE BRAND'S. `--font-display` resolves to Cormorant Garamond, so every
+      headline role the app already declared — the greeting, the large titles, the ritual titles,
+      the sheet titles, the SOS vice name — speaks in the wordmark's own face again. San Francisco
+      keeps everything a person OPERATES: rows, buttons, fields, labels, numbers. `font-synthesis`
+      is off because this family ships ONE roman weight: the 700s declared at 86 call sites would
+      otherwise render as a smeared fake bold, which is exactly the tell being complained about.
+   2. GLASS IS THE NAVIGATION LAYER, NEVER THE CONTENT LAYER. The bars float over the scroll and let
+      it show through; what a person READS sits on an opaque surface. That is Apple's own rule for
+      the material, and the reason legibility survives it. Before this, the header and tab bar were
+      flex siblings of the scroller — nothing ever passed behind them, so a blur had nothing to
+      refract and the "glass" was decoration on an opaque bar. Chrome is absolutely positioned now
+      and the scroller runs the full height beneath it. */
+:root{--font-display:var(--font-brand)}
+*{font-synthesis:none;-webkit-font-synthesis:none}
+
+/* Display roles, at the serif's optical size — Cormorant's x-height is ~18% smaller than SF's, so
+   34px of San Francisco is 40px of this face for the same presence on the page. */
+.page-title,.ios-large-title{font-family:var(--font-display) !important;font-size:40px !important;font-weight:500 !important;letter-spacing:0 !important;line-height:1.06 !important;margin:4px 0 10px !important}
+.hero-greeting{font-size:40px;font-weight:500;letter-spacing:0;line-height:1.04}
+.ob-title{font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0}
+.ritual-title{font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0}
+.feel-greeting{font-size:34px;font-weight:500;letter-spacing:0}
+.comp-greeting{font-size:36px;font-weight:500;line-height:1.08;letter-spacing:0}
+.comp-meet-title{font-size:27px;font-weight:500;letter-spacing:0}
+.sos-vice-name{font-size:38px !important;font-weight:500 !important;letter-spacing:0 !important}
+.sos-phase-q{font-size:26px;font-weight:500;line-height:1.28;letter-spacing:0}
+.modal h3{font-size:26px !important;font-weight:500 !important;letter-spacing:0 !important;line-height:1.15 !important}
+.ob-logo,.logo-main{font-weight:400 !important}
+
+/* ── The chrome floats; the content runs under it ───────────────────────────────────────────────── */
+.app{position:relative}
+.hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
+.hdr.ios-scrolled{background:var(--glass) !important;-webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
+  border-bottom:.5px solid var(--glass-line) !important}
+.tab{padding-top:calc(var(--st) + 58px) !important}
+
+/* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
+   top edge that tells a person it is a material and not a painted strip. */
+.nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sb) + 10px);z-index:60;border-radius:27px;overflow:hidden;
+  padding:0 !important;border:.5px solid var(--glass-line) !important;background:var(--glass) !important;
+  -webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
+  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important}
+.nb{padding:9px 2px 9px !important}
+
+/* Sheets, the banner and the FAB are chrome too, so they are the same material. */
+.modal{background:var(--glass-2) !important;-webkit-backdrop-filter:blur(40px) saturate(180%) !important;backdrop-filter:blur(40px) saturate(180%) !important;
+  border-radius:28px 28px 0 0 !important;box-shadow:inset 0 .5px 0 var(--glass-hi),0 -20px 60px rgba(0,0,0,.35) !important}
+.milestone-toast{background:var(--glass-2) !important;border:.5px solid var(--glass-line) !important;
+  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important;-webkit-backdrop-filter:blur(30px) saturate(180%) !important;backdrop-filter:blur(30px) saturate(180%) !important}
+/* Clear of the floating tab bar, the way Mail's compose button clears iOS 26's. */
+#need-talk-btn{bottom:calc(var(--sb) + 94px) !important;right:16px !important}
+#need-talk-btn,.companion-orb{box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 .5px 0 var(--glass-hi) !important}
+
+/* Motion: the phone can do this, so a control should answer the finger. Spring, not fade. */
+.btn,.nb,.qb,.meal-chip,.vchip,.mood-btn,.sleep-opt,.dr-btn,#need-talk-btn,.companion-orb{transition:transform .18s cubic-bezier(.2,.8,.2,1),opacity .15s ease,background-color .15s ease}
+.btn:active{transform:scale(.97) !important;opacity:.9}
+.nb:active,.qb:active,.meal-chip:active,.vchip:active,.mood-btn:active{transform:scale(.93)}
+#need-talk-btn:active,.companion-orb:active{transform:scale(.92)}
+
+/* ── The small text, which is where "vibe coded" actually shows ──────────────────────────────────
+   A section header is 13pt uppercase with real tracking, in ONE secondary grey; a row title is one
+   line and truncates rather than wrapping ("The fight" broke across two lines under a value); a
+   footnote is 13pt and never 11. Three roles, no fourth grey, nothing improvised at the call site. */
+.eyebrow,.lbl,.hub-section-label,.ios-header,.ritual-eyebrow,.hero-lbl,.hero-dayl,.sc-ml,.met .ml,.score-lbl,.sos-phase-lbl,.ws-lbl,.df-lbl,.saved-lbl{
+  letter-spacing:.045em !important;font-size:13px !important;font-weight:400 !important;color:var(--tx2) !important}
+.ios-row-title{white-space:nowrap}
+.ios-row-sub{letter-spacing:-.01em}
+.ios-stat-label{font-size:13px;font-weight:400;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2)}
+
 </style>
 </head>
 <body>
@@ -1781,8 +1878,9 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
        a space in the name, so the very first thing a person saw did not match the app they were about
        to open. Size is the only override. -->
   <div class="logo-main" style="font-size:var(--t-2xl);letter-spacing:0.02em">To<em>Try</em></div>
-  <!-- Apple-native launch: the wordmark on the grouped background, nothing else. No web spinner — an iOS
-       launch surface never shows one, and this one is on screen for well under two seconds. -->
+  <div style="font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);margin-top:10px">by Alfred John</div>
+  <!-- The wordmark in its own face, and the byline the app icon carries, on the grouped background. No web
+       spinner: an iOS launch surface never shows one, and this one is on screen for well under two seconds. -->
 </div>
 <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
 <div class="app">
@@ -13391,6 +13489,14 @@ function iosNavSync(name){
     const tab=document.getElementById('tab-'+name);
     if(!hdr || !slot || !tab) return;
     hdr.dataset.tab = name;
+    // The wordmark signs the home screen: in the bar's leading slot on Today, where no back button needs it.
+    const lead=document.getElementById('ios-nav-lead');
+    if(lead){
+      lead.querySelectorAll('.nav-wordmark').forEach(n=>n.remove());
+      if(name==='home' && !document.getElementById('hub-back-bar')){
+        const w=document.createElement('div'); w.className='logo-main nav-wordmark'; w.innerHTML='To<em>Try</em>'; lead.appendChild(w);
+      }
+    }
     const large=tab.querySelector('.page-title, .ios-large-title');
     slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
     const sync=()=>{
@@ -49059,24 +49165,21 @@ function renderLifeWoven(){
   if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
   if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
   const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
+  // Four grouped rows, built from the components rather than painted here. The hand-rolled version
+  // gave the label a fixed 66px, so "The fight" — the row this app exists for — broke across two
+  // lines under its own value on every phone. A row cell is one line that truncates; the component
+  // knows that and no call site has to remember it.
   const rows=[
-    ['shield','The fight',fightTxt,"go('fight')"],
-    ['dumbbell','Body',bodyTxt,"go('grow')"],
-    ['flame','Spirit',spiritTxt,"go('soul')"],
-    ['wallet','Money',moneyTxt,"go('money')"]
+    iosRow({icon:'shield',tone:'blue',title:'The fight',value:fightTxt,onclick:"go('fight')"}),
+    iosRow({icon:'dumbbell',tone:'green',title:'Body',value:bodyTxt,onclick:"go('grow')"}),
+    iosRow({icon:'flame',tone:'orange',title:'Spirit',value:spiritTxt,onclick:"go('soul')"}),
+    iosRow({icon:'wallet',tone:'indigo',title:'Money',value:moneyTxt,onclick:"go('money')"})
   ];
-  box.innerHTML='<div class="card" style="padding:4px 2px">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
-    rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
-      '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+
-      '<span style="font-size:var(--t-base);color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
-      '<span style="flex:1;font-size:var(--t-sm);color:var(--tx3);text-align:right">'+r[2]+'</span>'+
-      '<span style="color:var(--tx3);font-size:var(--t-sm);flex-shrink:0;margin-left:6px">›</span>'+
-    '</button>').join('')+
-    // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
-    // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
-    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
-  '</div>';
+  // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
+  // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
+  const rc=(typeof releaseCount==='function')?releaseCount():0;
+  box.innerHTML=iosList(rows,{header:'Your life, woven',
+    footer: rc>=3 ? (rc+' times, you came here and walked back into your life.') : ''});
 }
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');

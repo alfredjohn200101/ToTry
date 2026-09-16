@@ -71,6 +71,11 @@
   --pu:#DA8FFF;--pu-bg:rgba(218,143,255,0.16);--pu-bd:rgba(218,143,255,0.42);
   --fill:rgba(120,120,128,0.24);--fill2:rgba(118,118,128,0.18);
   --bar:rgba(22,22,24,0.82);--on-tint:#FFFFFF;
+  /* The glass: the thin material the bars are made of, the thick one sheets use, the hairline that
+     edges it and the specular highlight along its top. Content never sits on it — see ToTry × LIQUID
+     GLASS at the end of this file for why. */
+  --glass:rgba(30,30,32,0.58);--glass-2:rgba(28,28,30,0.84);--glass-line:rgba(255,255,255,0.10);
+  --glass-hi:rgba(255,255,255,0.14);--glass-shadow:0 12px 34px rgba(0,0,0,0.5);
   --brand:#C8A96E;--font-brand:'Cormorant Garamond',ui-serif,Georgia,serif;
   /* Radii: inset grouped cells are 10pt, cards and large buttons 12pt, capsules fully round. */
   --r:12px;--rm:10px;--rs:8px;--rp:100px;
@@ -104,6 +109,8 @@
     --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
     --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
     --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
+    --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
+    --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
   }
 }
 :root[data-theme="light"]{
@@ -118,6 +125,8 @@
   --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
   --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
   --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
+  --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
+  --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
 }
 /* ── DESIGN SYSTEM UTILITIES ──
    Reusable classes so repeated patterns are pixel-identical everywhere.
@@ -1784,6 +1793,82 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* The wordmark in the bar on Today. The greeting is Today's large title, so no compact title competes with it. */
 .nav-wordmark{font-size:27px !important;line-height:1 !important;padding-bottom:2px}
 .hdr[data-tab="home"] .ios-nav-title{visibility:hidden}
+
+/* ═══ ToTry × LIQUID GLASS ═══════════════════════════════════════════════════════════════════════
+   The correction to the first Apple-native pass, in the owner's words: "you went too far with the
+   apple conditioning ... i meant in fact of liquid glass, what the phones are capable of ... we have
+   a style dna sure". Stripping the brand out to reach first-party quality was the wrong reading.
+   The SYSTEM is Apple's — the type scale, the 44pt targets, the grouped lists, the controls. The
+   VOICE is ours. Two rules hold that line, and everything below is one of the two.
+
+   1. THE DISPLAY FACE IS THE BRAND'S. `--font-display` resolves to Cormorant Garamond, so every
+      headline role the app already declared — the greeting, the large titles, the ritual titles,
+      the sheet titles, the SOS vice name — speaks in the wordmark's own face again. San Francisco
+      keeps everything a person OPERATES: rows, buttons, fields, labels, numbers. `font-synthesis`
+      is off because this family ships ONE roman weight: the 700s declared at 86 call sites would
+      otherwise render as a smeared fake bold, which is exactly the tell being complained about.
+   2. GLASS IS THE NAVIGATION LAYER, NEVER THE CONTENT LAYER. The bars float over the scroll and let
+      it show through; what a person READS sits on an opaque surface. That is Apple's own rule for
+      the material, and the reason legibility survives it. Before this, the header and tab bar were
+      flex siblings of the scroller — nothing ever passed behind them, so a blur had nothing to
+      refract and the "glass" was decoration on an opaque bar. Chrome is absolutely positioned now
+      and the scroller runs the full height beneath it. */
+:root{--font-display:var(--font-brand)}
+*{font-synthesis:none;-webkit-font-synthesis:none}
+
+/* Display roles, at the serif's optical size — Cormorant's x-height is ~18% smaller than SF's, so
+   34px of San Francisco is 40px of this face for the same presence on the page. */
+.page-title,.ios-large-title{font-family:var(--font-display) !important;font-size:40px !important;font-weight:500 !important;letter-spacing:0 !important;line-height:1.06 !important;margin:4px 0 10px !important}
+.hero-greeting{font-size:40px;font-weight:500;letter-spacing:0;line-height:1.04}
+.ob-title{font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0}
+.ritual-title{font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0}
+.feel-greeting{font-size:34px;font-weight:500;letter-spacing:0}
+.comp-greeting{font-size:36px;font-weight:500;line-height:1.08;letter-spacing:0}
+.comp-meet-title{font-size:27px;font-weight:500;letter-spacing:0}
+.sos-vice-name{font-size:38px !important;font-weight:500 !important;letter-spacing:0 !important}
+.sos-phase-q{font-size:26px;font-weight:500;line-height:1.28;letter-spacing:0}
+.modal h3{font-size:26px !important;font-weight:500 !important;letter-spacing:0 !important;line-height:1.15 !important}
+.ob-logo,.logo-main{font-weight:400 !important}
+
+/* ── The chrome floats; the content runs under it ───────────────────────────────────────────────── */
+.app{position:relative}
+.hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
+.hdr.ios-scrolled{background:var(--glass) !important;-webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
+  border-bottom:.5px solid var(--glass-line) !important}
+.tab{padding-top:calc(var(--st) + 58px) !important}
+
+/* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
+   top edge that tells a person it is a material and not a painted strip. */
+.nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sb) + 10px);z-index:60;border-radius:27px;overflow:hidden;
+  padding:0 !important;border:.5px solid var(--glass-line) !important;background:var(--glass) !important;
+  -webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
+  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important}
+.nb{padding:9px 2px 9px !important}
+
+/* Sheets, the banner and the FAB are chrome too, so they are the same material. */
+.modal{background:var(--glass-2) !important;-webkit-backdrop-filter:blur(40px) saturate(180%) !important;backdrop-filter:blur(40px) saturate(180%) !important;
+  border-radius:28px 28px 0 0 !important;box-shadow:inset 0 .5px 0 var(--glass-hi),0 -20px 60px rgba(0,0,0,.35) !important}
+.milestone-toast{background:var(--glass-2) !important;border:.5px solid var(--glass-line) !important;
+  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important;-webkit-backdrop-filter:blur(30px) saturate(180%) !important;backdrop-filter:blur(30px) saturate(180%) !important}
+/* Clear of the floating tab bar, the way Mail's compose button clears iOS 26's. */
+#need-talk-btn{bottom:calc(var(--sb) + 94px) !important;right:16px !important}
+#need-talk-btn,.companion-orb{box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 .5px 0 var(--glass-hi) !important}
+
+/* Motion: the phone can do this, so a control should answer the finger. Spring, not fade. */
+.btn,.nb,.qb,.meal-chip,.vchip,.mood-btn,.sleep-opt,.dr-btn,#need-talk-btn,.companion-orb{transition:transform .18s cubic-bezier(.2,.8,.2,1),opacity .15s ease,background-color .15s ease}
+.btn:active{transform:scale(.97) !important;opacity:.9}
+.nb:active,.qb:active,.meal-chip:active,.vchip:active,.mood-btn:active{transform:scale(.93)}
+#need-talk-btn:active,.companion-orb:active{transform:scale(.92)}
+
+/* ── The small text, which is where "vibe coded" actually shows ──────────────────────────────────
+   A section header is 13pt uppercase with real tracking, in ONE secondary grey; a row title is one
+   line and truncates rather than wrapping ("The fight" broke across two lines under a value); a
+   footnote is 13pt and never 11. Three roles, no fourth grey, nothing improvised at the call site. */
+.eyebrow,.lbl,.hub-section-label,.ios-header,.ritual-eyebrow,.hero-lbl,.hero-dayl,.sc-ml,.met .ml,.score-lbl,.sos-phase-lbl,.ws-lbl,.df-lbl,.saved-lbl{
+  letter-spacing:.045em !important;font-size:13px !important;font-weight:400 !important;color:var(--tx2) !important}
+.ios-row-title{white-space:nowrap}
+.ios-row-sub{letter-spacing:-.01em}
+.ios-stat-label{font-size:13px;font-weight:400;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2)}
 
 </style>
 </head>

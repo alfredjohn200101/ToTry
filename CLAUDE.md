@@ -44,22 +44,34 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
 - `APP_VERSION` in `src/app/00-boot.js` — currently **v604**. Bump it AND `CACHE` in sw.js together, always.
 
-## The design system — Apple-native (since 15 Sep 2026, branch `ios-native`)
-The owner rejected the old dark-gold/serif look as "vibe coded" even after two rounds of consistency
-work, and chose **fully Apple-native**. Read `docs/APPLE-NATIVE.md` before touching any UI. In short:
+## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
+Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
+is the lesson: the first pass read "Apple quality" as "look like Apple", stripped the brand out, and the
+owner corrected it — *"you went too far with the apple conditioning ... i meant in fact of liquid glass,
+what the phones are capable of ... we have a style dna sure but where there are little text and things
+it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short:
 - **iOS system colours**, light and dark, in `:root` + two light blocks (the phone's appearance, and an
   explicit choice). Default appearance is **System**; `applyTheme()` only sets/removes `data-theme`.
   The tint is iOS blue in ONE token, `--go` (the name is historical). Native side follows too:
   `ViewController.applyAppearance()`, the privacy cover, and a light/dark launch image.
-- **San Francisco** everywhere (`--font-text`/`--font-display`), **New York** for scripture only
-  (`--font-serif`), **SF Rounded** for big numbers. No web fonts ship. The `--t-*` tokens ARE the iOS
-  Dynamic Type scale (17 body, 34 large title).
+- **`--font-display` IS the ToTry face** (Cormorant Garamond): every headline role speaks in it, so the
+  app sounds like itself. **San Francisco** (`--font-text`) for everything a person OPERATES, **New
+  York** (`--font-serif`) for scripture, **SF Rounded** for numbers. `font-synthesis` is off globally —
+  the brand face has ONE roman weight and a `700` would otherwise render as a fake bold.
+- **Liquid Glass is the NAVIGATION layer only.** `.hdr` and `.nav` are absolutely positioned over a
+  full-height scroller (they were flex siblings of it, so nothing ever passed behind them and the blur
+  had nothing to refract); the tab bar is a floating capsule. `--glass`/`--glass-2`/`--glass-line`/
+  `--glass-hi`/`--glass-shadow`. **Content is never on glass** — cards and rows stay opaque.
 - **Build from components, never paint inline**: `.page-title` (large title), `iosList([iosRow({...})])`
   (inset grouped rows — they escape their text), `.card`, `.ios-stats`, `.btn.primary/.btn/.btn.quiet`,
   segmented controls (`.fst`), `.ios-switch`, `.ios-empty`, `svgIcon()`. The back button lives in the
   nav bar (`updateHubBackBar` → `#ios-nav-lead`); `iosNavSync()` fades the title into the bar on scroll.
+- **The small text is the tell**: three greys and no fourth, 13px section headers with .045em tracking,
+  a row title that truncates instead of wrapping, footnotes at 13 not 11.
 - Verify visually: `npm run build:index && node scripts/ios-shot.mjs <tab> both`, then LOOK at both.
-  Its seed uses the app's real storage keys — an invented key renders an empty screen.
+  For anything that depends on the MATERIAL or the display face, confirm in WebKit:
+  `node scripts/sim-serve.mjs` serves the real bundle to the booted simulator. Both it and `ios-shot`
+  seed from `scripts/seed-person.mjs` — one person, one source; an invented key renders an empty screen.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,

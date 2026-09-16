@@ -292,24 +292,21 @@ function renderLifeWoven(){
   if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
   if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
   const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
+  // Four grouped rows, built from the components rather than painted here. The hand-rolled version
+  // gave the label a fixed 66px, so "The fight" — the row this app exists for — broke across two
+  // lines under its own value on every phone. A row cell is one line that truncates; the component
+  // knows that and no call site has to remember it.
   const rows=[
-    ['shield','The fight',fightTxt,"go('fight')"],
-    ['dumbbell','Body',bodyTxt,"go('grow')"],
-    ['flame','Spirit',spiritTxt,"go('soul')"],
-    ['wallet','Money',moneyTxt,"go('money')"]
+    iosRow({icon:'shield',tone:'blue',title:'The fight',value:fightTxt,onclick:"go('fight')"}),
+    iosRow({icon:'dumbbell',tone:'green',title:'Body',value:bodyTxt,onclick:"go('grow')"}),
+    iosRow({icon:'flame',tone:'orange',title:'Spirit',value:spiritTxt,onclick:"go('soul')"}),
+    iosRow({icon:'wallet',tone:'indigo',title:'Money',value:moneyTxt,onclick:"go('money')"})
   ];
-  box.innerHTML='<div class="card" style="padding:4px 2px">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
-    rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
-      '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+
-      '<span style="font-size:var(--t-base);color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
-      '<span style="flex:1;font-size:var(--t-sm);color:var(--tx3);text-align:right">'+r[2]+'</span>'+
-      '<span style="color:var(--tx3);font-size:var(--t-sm);flex-shrink:0;margin-left:6px">›</span>'+
-    '</button>').join('')+
-    // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
-    // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
-    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
-  '</div>';
+  // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
+  // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
+  const rc=(typeof releaseCount==='function')?releaseCount():0;
+  box.innerHTML=iosList(rows,{header:'Your life, woven',
+    footer: rc>=3 ? (rc+' times, you came here and walked back into your life.') : ''});
 }
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');
