@@ -37,6 +37,13 @@ const Notify = {
       const sp = this._splash();
       if(sp && typeof sp.hide === 'function') sp.hide({ fadeOutDuration: 220 });
     }catch(_){ }
+    // AND the app's own cover, which is the one actually on screen. The plugin's launch splash never
+    // painted in this app (proved with a red storyboard, 16 Sep 2026), so ViewController.swift holds
+    // Splash.imageset over the web view itself and lifts it on this message. `typeof === 'function'`
+    // cannot tell you a Capacitor plugin is real — everything on that Proxy answers true — but a
+    // message handler that is not installed simply throws, which the catch absorbs. On the web there
+    // is no webkit bridge at all and this is a no-op.
+    try{ window.webkit.messageHandlers.totryReady.postMessage(1); }catch(_){ }
   },
 
   // Request permission through whichever channel is real. Returns a Promise<boolean>.

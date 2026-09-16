@@ -822,6 +822,25 @@ H.section('native plugin lookups must match the names the plugins register');
       H.ok(r[0].includes('P.' + id), 'and also Plugins.' + id + ' (its class identifier), since registration differs by build');
     }
   }
+
+  // THE SPLASH THE APP HOLDS HAS TO BE A SPLASH THAT SHOWED.
+  // Notify.hideSplash() carries a comment saying the launch image stays up until the app calls it —
+  // and the config said launchShowDuration: 0, which makes the plugin's showOnLaunch() RETURN before
+  // it paints anything (SplashScreen.swift: `if config.launchShowDuration == 0 { return }`). So the
+  // documented hold never happened and the app opened onto a black screen for about a second —
+  // measured frame by frame on the simulator, 16 Sep 2026. Two settings that each look reasonable
+  // and are contradictory together; nothing in the gate could see it because neither file is wrong
+  // on its own.
+  const capCfg = path.join(__dirname, '..', 'capacitor.config.json');
+  if (fs.existsSync(capCfg)) {
+    const sp = (JSON.parse(fs.readFileSync(capCfg, 'utf8')).plugins || {}).SplashScreen || {};
+    if (sp.launchAutoHide === false) {
+      H.ok(sp.launchShowDuration > 0,
+        'the launch splash the app promises to hide is one the plugin actually shows (launchShowDuration ' + sp.launchShowDuration + ' > 0)');
+      H.ok(/hideSplash\(\)\{[\s\S]{0,300}?\.hide\(/.test(H.html),
+        'and the app hides it, since nothing else will');
+    }
+  }
 }
 
 H.section('no code strings in the DOM — the next-step action is a key, not a script');
