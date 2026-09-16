@@ -4445,29 +4445,41 @@ function fnBodyOf(code, name){
   // reading source cannot know their background, so each is named here instead of guessed at.
   // Adding a tenth is the regression this catches: use a token, or add it here and say why.
   {
+    // The list shrank from nine to four in the ToTry × Liquid Glass rebuild and that is the direction
+    // it should only ever move: the gold-button inks and the boot splash's two went when those
+    // surfaces started taking their colour from tokens. Removing an entry is free; ADDING one is the
+    // regression this catches.
     const INK_ON_A_KNOWN_FILL = {
-      '#1A1505': 'near-black on the gold primary button and log bar',
       '#1A1205': 'near-black on the morning ritual’s gold',
       '#231803': 'near-black on the fuel plan’s gold chip',
-      '#0C0C0E': 'the app’s own black, on gold hero actions',
-      '#FC4C02': 'Strava’s brand orange, on Strava’s own chip',
-      '#6A6A72': 'boot splash — painted before any theme exists',
-      '#C8A96E': 'boot splash spinner — same, on the fixed dark splash',
       '#7A2E2E': 'dark red on a red-tinted fill',
       '#A8D8B9': 'pale green on a dark fill',
     };
+    const scanInk = (txt) => {
+      const hits = new Map();
+      txt.split('\n').forEach((line, i) => {
+        if (line.trimStart().startsWith('//')) return;
+        for (const m of line.matchAll(/color\s*:\s*(#[0-9a-fA-F]{6})\b/g))
+          if (!hits.has(m[1].toUpperCase())) hits.set(m[1].toUpperCase(), i + 1);
+      });
+      return hits;
+    };
+    // CALIBRATE THE SCAN, DO NOT ASSUME A COUNT. This asserted `found.size >= 5` — "under 5 means the
+    // scan broke, not the app" — which was true only while the app still HAD five. The rebuild removed
+    // literals the right way and the floor fired on correct code, which is a test telling you to stop
+    // improving. What actually needs proving is that the scanner still sees a literal when there is
+    // one, and still ignores a commented one, so prove it on text with a known answer.
+    const calInk = scanInk('  color:#ABCDEF;\n  // color:#BADBAD;\n  color : #123456\n');
+    H.ok(calInk.has('#ABCDEF') && calInk.has('#123456') && !calInk.has('#BADBAD'),
+      'the ink scan finds a literal (spaced or not) and skips a commented one — the instrument works');
+
     const files = ['src/shell-head.html', 'src/shell-tail.html']
       .concat(fs.readdirSync(path.join(root, 'src/app')).filter(f => f.endsWith('.js')).map(f => 'src/app/' + f));
     const found = new Map();
     for (const rel of files) {
       const txt = fs.readFileSync(path.join(root, rel), 'utf8');
-      txt.split('\n').forEach((line, i) => {
-        if (line.trimStart().startsWith('//')) return;
-        for (const m of line.matchAll(/color\s*:\s*(#[0-9a-fA-F]{6})\b/g))
-          if (!found.has(m[1].toUpperCase())) found.set(m[1].toUpperCase(), `${rel}:${i + 1}`);
-      });
+      for (const [hex, line] of scanInk(txt)) if (!found.has(hex)) found.set(hex, `${rel}:${line}`);
     }
-    H.ok(found.size >= 5, `the ink scan found ${found.size} literal(s) — under 5 means the scan broke, not the app`);
 
     // AND 3-DIGIT HEX AND rgba(), WHICH THE 6-DIGIT SCAN ABOVE NEVER SAW. That hole let a real defect
     // reach a device: `.feel-greeting{color:#fff}` on the Feeling Door — the orb's primary action and
