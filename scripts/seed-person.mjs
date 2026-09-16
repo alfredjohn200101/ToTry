@@ -12,6 +12,12 @@ export function seedSource() {
   return `(() => {
     const ago = d => new Date(Date.now() - d * 864e5).toISOString();
     const today = new Date().toISOString().slice(0, 10);
+    // The food diary is keyed and shaped by nutDayKey() + the five addFoodToLog/quickAddLog write
+    // sites, NOT by ISO dates: "16/09/2026", and every row carries name/pro/carb/fat/meal, not
+    // n/p/c/f. Seeded the ISO way this key read back as a day with nothing in it, so Nourish
+    // rendered "0 eaten", an empty plate and the first-run "Let's start simple" card — a review of
+    // this screen was a review of its empty state. Match the WRITER; see CLAUDE.md on seeds.
+    const dayKey = new Date().toLocaleDateString('en-AU');
     const a = [ago(9), ago(160), ago(30), ago(14)];
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     S('totry_onboarded', true); S('totry_name', 'Alfred'); S('totry_sex', 'male'); S('totry_faith_tradition', 'christianity');
@@ -28,7 +34,13 @@ export function seedSource() {
     S('totry_prayers', [{ t: 'For Dad’s health', at: a[2], answered: false }, { t: 'Patience with the kids', at: a[2], answered: true }]);
     S('totry_journal', [{ ts: a[2], text: 'Held the line tonight. It wanted me tired.' }]);
     S('totry_workouts', [{ ts: a[2], kind: 'strength', name: 'Push', sets: [{ ex: 'Bench Press', w: 80, r: 6 }] }]);
-    S('totry_nutlog', { [today]: [{ n: 'Oats & whey', cal: 520, p: 38, c: 62, f: 11 }, { n: 'Chicken rice', cal: 730, p: 52, c: 81, f: 14 }] });
+    const H = (h, m) => { const d = new Date(); d.setHours(h, m || 0, 0, 0); return d.toISOString(); };
+    S('totry_nutlog', { [dayKey]: [
+      { id: 1, ts: H(7, 20), name: 'Oats & whey', brand: '', serving: '80g oats + 1 scoop', qty: 1, cal: 520, pro: 38, carb: 62, fat: 11, meal: 'breakfast', source: 'Common' },
+      { id: 2, ts: H(8, 5), name: 'Flat white', brand: '', serving: 'Regular', qty: 1, cal: 120, pro: 7, carb: 10, fat: 6, meal: 'breakfast', source: 'Common' },
+      { id: 3, ts: H(12, 40), name: 'Chicken & rice', brand: '', serving: '200g chicken, 1 cup rice', qty: 1, cal: 730, pro: 52, carb: 81, fat: 14, meal: 'lunch', source: 'USDA' },
+      { id: 4, ts: H(15, 30), name: 'Banana', brand: '', serving: '1 medium', qty: 1, cal: 105, pro: 1, carb: 27, fat: 0, meal: 'snack', source: 'Common' }
+    ] });
     S('totry_trackers', { [today]: { sleep: 7.5, water: 6 } });
   })()`;
 }

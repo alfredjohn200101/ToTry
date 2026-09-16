@@ -461,30 +461,30 @@ function nutMicroKeys(){
 }
 
 function openMoreWaysToLog(){
+  // Eight destinations, so: iosList/iosRow, the same inset grouped cells and Settings.app glyph
+  // tiles the rest of the app uses for a menu. The hand-rolled .mw-* rows drew their subtitle at
+  // 13px in the TERTIARY grey (a subtitle is 15px secondary) and ran every separator to the sheet's
+  // left edge instead of insetting it past the icon, which is the one detail that makes a grouped
+  // list read as a list rather than as eight stacked divs.
   const ways = [
     // "Opens the camera" is only true where a camera can be opened. On the web and in the PWA
     // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
-    ['camera','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
-    ['image','Photo from your library','A plate you already shot','chooseMealPhoto()'],
-    ['barcode','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
-    ['mic','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
-    ['book','My recipes','Something you make often','openRecipeBuilder()'],
-    ['repeat','Repeat a day','Copy everything from another day','openRepeatDay()'],
-    ['bulb','Am I actually hungry?','Six seconds, before you eat','openHungerCheck()'],
-    ['file','Import a CSV','Bring a log over from another app','document.getElementById(\'food-csv-input\').click()']
+    ['camera','red','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
+    ['image','purple','Photo from your library','A plate you already shot','chooseMealPhoto()'],
+    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
+    ['mic','orange','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
+    ['book','brown','My recipes','Something you make often','openRecipeBuilder()'],
+    ['repeat','green','Repeat a day','Copy everything from another day','openRepeatDay()'],
+    ['bulb','yellow','Am I actually hungry?','Six seconds, before you eat','openHungerCheck()'],
+    ['file','gray','Import a CSV','Bring a log over from another app','document.getElementById(\'food-csv-input\').click()']
   ];
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">More ways to log</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">' +
       'Whatever gets the meal down. None of them is better than the others.</p>' +
-    '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">' +
-    ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsCode(w[3]) + '},220)">' +
-      '<span class="mw-ic" style="color:var(--go)">' + svgIcon(w[0],18) + '</span>' +
-      '<span class="mw-txt"><span class="mw-t">' + w[1] + '</span>' +
-        '<span class="mw-s">' + w[2] + '</span></span>' +
-      '<span class="mw-ch">›</span></button>').join('') +
-    '</div>' +
+    iosList(ways.map(w => iosRow({ icon: w[0], tone: w[1], title: w[2], sub: w[3],
+      onclick: 'closeModal(this);setTimeout(function(){' + _jsCode(w[4]) + '},220)' })), {}) +
     '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -522,19 +522,24 @@ function renderQuickFoods(){
 
 function openQuickAdd(){
   const meal = (typeof currentMealSlot==='function') ? currentMealSlot() : 'snack';
-  const meals=[['breakfast','sunrise'],['lunch','sun'],['dinner','moon'],['snack','apple']];
+  const meals=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
   window.__qaMeal=meal;
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Quick add</h3>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
-    '<div class="lbl" style="margin-bottom:6px">Which meal?</div>'+
-    '<div id="qa-meals" style="display:flex;gap:6px;margin-bottom:14px">'+meals.map(x=>'<button class="qa-meal" data-meal="'+x[0]+'" aria-label="'+x[0].charAt(0).toUpperCase()+x[0].slice(1)+'" onclick="_qaMeal(\''+x[0]+'\')" style="flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid '+(x[0]===meal?'var(--go)':'var(--bd)')+';background:'+(x[0]===meal?'var(--go-bg)':'var(--bg3)')+';color:var(--go);font-size:var(--t-base);cursor:pointer">'+svgIcon(x[1],18)+'</button>').join('')+'</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
+    // FOUR GLYPHS AND NO WORDS. The meal picker was four capsules carrying only an icon — a sunrise,
+    // a sun, a moon and an apple — with the name hidden in aria-label, so a sighted person had to
+    // decode a pictogram to answer "which meal?", and the selected one was a hand-painted border and
+    // tinted fill rather than any state this app has a name for. It is the segmented control now:
+    // words, the system's own selected treatment, same four values, same _qaMeal().
+    '<div class="lbl" style="margin-bottom:6px">Which meal</div>'+
+    '<div id="qa-meals" class="seg">'+meals.map(x=>'<button class="fst qa-meal'+(x[0]===meal?' active':'')+'" type="button" data-meal="'+x[0]+'" onclick="_qaMeal(\''+x[0]+'\')">'+x[1]+'</button>').join('')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">'+
       '<div><div class="lbl" style="margin-bottom:4px">Calories</div><input type="number" id="qa-cal" inputmode="numeric" placeholder="e.g. 350" style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Carbs (g)</div><input type="number" id="qa-carb" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Fat (g)</div><input type="number" id="qa-fat" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Carbs (g)</div><input type="number" id="qa-carb" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Fat (g)</div><input type="number" id="qa-fat" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
     '</div>'+
     '<button class="btn primary" onclick="quickAddLog()" style="margin-bottom:8px">Add to diary</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
@@ -542,7 +547,8 @@ function openQuickAdd(){
   document.body.appendChild(m);
   setTimeout(()=>document.getElementById('qa-cal')?.focus(),80);
 }
-function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ const on=b.dataset.meal===m; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }
+// The selected meal is a CLASS now, not two inline colours painted on by hand at four call sites.
+function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ b.classList.toggle('active', b.dataset.meal===m); }); }
 function quickAddLog(){
   const cal=parseFloat(document.getElementById('qa-cal')?.value)||0;
   if(cal<=0){ if(typeof showToast==='function') showToast('Add calories','Enter at least the calories.'); return; }
@@ -736,10 +742,13 @@ function _makeFoodResultRow(food){
   //
   // 40px of right margin puts the "+" at 75px in, clear of the orb at any scroll position, and the
   // gutter reads as deliberate spacing rather than as a gap.
+  // A 700-weight text "+" in a 34px gold square was the app painting its own button. It is the
+  // app's own plus icon on a tinted round control now, which is what iOS uses for "add this".
   const plus=document.createElement('button');
   plus.title='Log instantly';
-  plus.style.cssText='background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
-  plus.textContent='+';
+  plus.setAttribute('aria-label','Log '+String(food.name||'this food'));
+  plus.className='fr-add';
+  plus.innerHTML=svgIcon('plus',18);
   plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
   el.appendChild(plus);
   return el;
@@ -3332,7 +3341,7 @@ function renderSavedMeals(){
   if(!box) return;
   const saved = ls('totry_saved_meals')||[];
   if(!saved.length){ box.innerHTML=''; return; }
-  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">My meals · one tap to log</div>' +
+  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">My meals</div>' +
     saved.map(m => {
       const totCal = Math.round(m.items.reduce((a,i)=>a+(i.cal||0),0));
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
@@ -3345,7 +3354,9 @@ function renderSavedMeals(){
           ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')
           : ('<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')) +
         '<button class="fli-del" onclick="deleteSavedMeal('+m.id+')" title="Delete this saved meal">&times;</button>' +
-        '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        // The same hand-painted gold square with a 700-weight text "+" that _makeFoodResultRow had.
+        // Three call sites, one class, and now a name a screen reader can read.
+        '<button class="fr-add" style="margin-right:0" onclick="logSavedMeal('+m.id+')" aria-label="Log '+_escFew(m.name)+'">'+svgIcon('plus',18)+'</button>' +
       '</div>';
     }).join('');
 }
@@ -3476,7 +3487,7 @@ function renderRecentFoods(){
   const rest = scored.filter(s => !s.f.fav).sort((a,b) => b.score - a.score).slice(0, 8).map(s => s.f);
   const show = [...favs, ...rest];
   if(!show.length){ box.innerHTML = ''; return; }
-  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">Your usual for ' + slotLabel + ' · tap + to log</div>' +
+  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">Your usual for ' + slotLabel + '</div>' +
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
@@ -3502,8 +3513,10 @@ function renderRecentFoods(){
                '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
                (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')) +
         '</div>' +
-        '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:var(--t-hd);cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
-        '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        // A bare ★/☆ with no accessible name: a screen reader read "white medium star" and nothing
+        // about which food it belonged to or what tapping it would do.
+        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + safe + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
+        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + safe + '">' + svgIcon('plus',18) + '</button>' +
       '</div>';
     }).join('');
 }
@@ -3578,10 +3591,15 @@ function renderFoodGroups(){
   if(_seen > 0 && unknown / _seen > 0.33)
     nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
-  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
-    order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-mini);padding:4px 9px;border-radius:20px;background:var(--bg3);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
-    '</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
+  // The headline was "Food groups \u00b7 last 7 days" \u2014 a dot-strip title. The window it covers is a
+  // caption, so it is the card's footnote, where the honesty note about the classifier already is.
+  // The chips were 12px with a 20px radius and an OPACITY MULTIPLIER on the caption, which is how a
+  // fourth grey gets into an app that has decided on three.
+  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:8px">Food groups</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
+    order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;padding:5px 11px;border-radius:var(--rp);background:var(--fill2);color:'+(counts[g]>0?'var(--tx)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
+    '</div><div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.4">'+nudge+'</div>'+
+    '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">Last 7 days \u2014 a rough read from food names.</div></div>';
 }
 
 // ── NOURISHMENT SCORE ──────────────────────────────────────────────────────────────────────────
@@ -3691,24 +3709,27 @@ function renderNourishmentScore(totals, goals){
   if(!r){ box.innerHTML=''; return; }
   const C=2*Math.PI*22;
   box.innerHTML=
-    '<div class="card" style="background:var(--bg2)">'+
+    // Four type sizes and an OPACITY MULTIPLIER on the third grey, which is how a fourth grey gets
+    // into an app: 11px caps eyebrow, 17px tier, 13px tip, 12px basis at .75 alpha. The eyebrow was
+    // also "NOURISHMENT · TODAY" — a dot-strip in caps. .eyebrow, headline, subhead, footnote.
+    '<div class="card">'+
       '<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="position:relative;width:54px;height:54px;flex:none">'+
           '<svg viewBox="0 0 54 54" style="width:54px;height:54px;transform:rotate(-90deg)">'+
             '<circle cx="27" cy="27" r="22" fill="none" stroke="var(--bg4)" stroke-width="5"/>'+
             '<circle cx="27" cy="27" r="22" fill="none" stroke="'+r.col+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-r.score/100)).toFixed(1)+'"/>'+
           '</svg>'+
-          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-text);font-size:var(--t-base);color:var(--tx)">'+r.score+'</div>'+
+          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-rounded);font-weight:600;font-size:var(--t-base);color:var(--tx);font-variant-numeric:tabular-nums">'+r.score+'</div>'+
         '</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Nourishment · ' + ((typeof nutDayLabel==='function') ? nutDayLabel().toLowerCase() : 'today') + '</div>'+
-          '<div style="font-size:var(--t-base);color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
-          '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
-      (r.basis ? '<div style="font-size:var(--t-mini);color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
+          '<div class="eyebrow" style="margin-bottom:1px">Nourishment</div>'+
+          '<div class="card-hd" style="color:'+r.col+';margin-bottom:2px">'+r.tier+'</div>'+
+          '<div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.34">'+r.tip+'</div>'+
+      (r.basis ? '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">'+
         _escFew(r.basis)+'</div>' : '')+
         '</div>'+
       '</div>'+
-      (r.microsHit>0?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
+      (r.microsHit>0?'<div style="font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);margin-top:10px;padding-top:10px;border-top:.5px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
     '</div>';
 }
 // ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
@@ -3754,7 +3775,10 @@ function toggleNutGentle(){
   try{ renderNutritionLog(); }catch(_){}
 }
 function _gentleWord(eaten, goal){
-  if(!(eaten>0)) return { w:'—', s:'nothing logged yet' };
+  // The second field is printed into .ch-lbl, which is the 13px caps header role — so this read
+  // "NOTHING LOGGED YET" inside the ring: a sentence set in capitals, which is the shape
+  // docs/DESIGN.md names. Every other value here is already one or two words; this one is now too.
+  if(!(eaten>0)) return { w:'—', s:'nothing yet' };
   if(!(goal>0))  return { w:'Fed', s:'today' };
   const p = eaten/goal;
   if(p<0.35) return { w:'Started', s:'early yet' };
@@ -3828,7 +3852,13 @@ function applyNutGentle(eaten, goalCal){
   const on = nutGentle();
   const g = function(id){ return document.getElementById(id); };
   const tb = g('nut-gentle-toggle');
-  if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
+  // Sentence case, and the two greys the app has. It was lowercase text set in CSS caps at 11px in
+  // the TERTIARY grey — the size and weight of a disabled placeholder, for the control that turns
+  // the calorie numbers off for someone in recovery from disordered eating.
+  // The WORD already says which state it is in, so the colour does not have to: it is a control, and
+  // a control is the tint. Off-state used to be the tertiary grey — placeholder colour, at 11px, in
+  // caps, for the switch that turns the calorie numbers off for someone in recovery.
+  if(tb){ tb.textContent = on ? 'Numbers off' : 'Numbers on'; tb.style.color = 'var(--go)'; }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
@@ -3844,13 +3874,23 @@ function applyNutGentle(eaten, goalCal){
     HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
     const num=g('nut-cal'), lbl=g('nut-cal-hero-lbl');
     const w=_gentleWord(eaten, goalCal);
-    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>8?'12px':(w.w.length>6?'14px':'18px')); num.style.lineHeight='1.15'; num.style.maxWidth='74px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
+    // ONE size, not a ladder keyed off the word's length. The ladder gave "Nourished" 12px — the
+    // same size as the 13px caps caption directly beneath it, so in numbers-off mode the subject of
+    // the whole screen and its own label were indistinguishable, inside a 128px ring. 22px over a
+    // 13px caption is a hierarchy; 98px of width and normal wrapping fits every word the function
+    // can return, including "On your way", without asking the size to guess.
+    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize='18px'; num.style.lineHeight='1.15'; num.style.maxWidth='96px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
     if(lbl) lbl.textContent=w.s;
     ['nut-pro-goal-lbl','nut-carb-goal-lbl','nut-fat-goal-lbl'].forEach(function(id){ const el=g(id); if(el) el.textContent=''; });
     if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border-radius:var(--rm)">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
   } else {
     Object.keys(RESTORE).forEach(function(id){ const el=g(id); if(el && el.style.display==='none') el.style.display=RESTORE[id]; });
-    const num=g('nut-cal'); if(num){ num.style.fontSize='var(--t-title1)'; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; }
+    // CLEAR the inline size rather than writing one. This wrote font-size:var(--t-title1) — 28px —
+    // on every render, which is how the one number this whole screen exists for came to be painted
+    // at 28px while .cal-hero .ch-num declared 52 and .cal-ring-mid .ch-num declared 38: three
+    // declarations, and the winner was an inline restore in a function about gentle mode. The class
+    // owns the size (38px SF Rounded); gentle mode only has to put back what it took.
+    const num=g('nut-cal'); if(num){ num.style.fontSize=''; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; num.style.textAlign=''; }
     if(line){ line.style.display='none'; line.innerHTML=''; }
   }
   try{ _renderNourishCare(); }catch(_){}
@@ -3939,11 +3979,12 @@ function renderNutDayNav(){
   const lbl=document.getElementById('nut-day-nav-lbl');
   const prev=document.getElementById('nut-day-prev');
   const next=document.getElementById('nut-day-next');
-  const title=document.getElementById('nut-day-title');
+  // #nut-day-title is gone. It sat inside the hero card at 17px and printed the same word the
+  // navigator prints eight pixels above it, so the screen said "Today" twice in two type sizes.
+  // The id-sweep in npm test catches exactly this: an element updated that can never exist.
   const ban=document.getElementById('nut-day-banner');
   const name=nutDayLabel();
   if(lbl) lbl.textContent=name;
-  if(title) title.textContent=name;
   if(prev){ const cap=_nutDayOff<=NUT_DAY_MIN; prev.disabled=cap; prev.style.opacity=cap?'0.28':'1'; }
   if(next){ const t=nutIsToday(); next.disabled=t; next.style.opacity=t?'0.28':'1'; }
   if(!ban) return;
@@ -4253,68 +4294,93 @@ function renderNutritionLog(){
         // logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
-        list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
-          '<div style="font-size:var(--t-title1);margin-bottom:10px">'+svgIcon("utensils",24)+'</div>'+
-          '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
-          '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
-          '<button class="btn" style="width:auto;padding:10px 20px;font-size:var(--t-base)" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
+        // .ios-empty is the component for this — a 44px glyph, a 20px title, a 15px body and one
+        // button. It was a 24px icon over a 17px line over a 15px line in the TERTIARY grey, each
+        // with its own margin: the first thing a brand-new person sees on this tab, improvised.
+        list.innerHTML='<div class="ios-empty">'+svgIcon("utensils",44)+
+          '<div class="ios-empty-title">Let’s start simple</div>'+
+          '<div class="ios-empty-body">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we’ll learn your rhythm from there.</div>'+
+          '<button class="btn" style="margin-top:16px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
         return;
       }
-      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:var(--t-sm);color:var(--tx3);line-height:1.6"><div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("utensils",22)+'</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:var(--t-cap)">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
-        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);font-size:var(--t-sm);width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
+      list.innerHTML='<div class="ios-empty">'+svgIcon("utensils",44)+
+        '<div class="ios-empty-title">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'’s plate is empty'):'Today’s plate is empty')+'</div>'+
+        '<div class="ios-empty-body">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
+        (hadYesterday ? '<button class="btn" style="margin-top:16px" onclick="repeatYesterdayMeals()">Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday’s') + ' ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
       _nutTailRenders(totals, goalCal);
       return;
     }
     
-    // Group entries by meal type
+    // THE DIARY IS A LIST, so it is inset grouped lists — one section per meal: header, rows,
+    // footnote. What it was: a hand-drawn header row at 12px caps with 0.01em tracking, carrying an
+    // 11px lowercase "save meal" ONE PIXEL smaller in the same line (the exact shape npm run panels
+    // fails a build for), over rows that stacked an 11px serving and an 11px "P 38g · C 62g · F 11g"
+    // — both in the TERTIARY grey — under a 17px name. Four type sizes and the third grey doing the
+    // second grey's job, on the surface a person opens a food diary to read.
+    // Now: a 17px title that truncates on one line, one 15px subhead, a 17px tabular value, and the
+    // meal's total in the section's own 13px footnote, which is where iOS puts a total.
     const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
-    const _mlIc = n => '<span style="color:var(--go)">'+svgIcon(n,13)+'</span> ';
-    const mealLabels = {breakfast: _mlIc('sunrise')+'Breakfast', lunch: _mlIc('sun')+'Lunch', dinner: _mlIc('moon')+'Dinner', snack: _mlIc('apple')+'Snacks'};
+    const mealLabels = {breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks'};
+    const mealIcons = {breakfast: 'sunrise', lunch: 'sun', dinner: 'moon', snack: 'apple'};
     const grouped = {breakfast: [], lunch: [], dinner: [], snack: []};
     entries.forEach(en => {
       const meal = en.meal || 'snack';
       (grouped[meal] || grouped.snack).push(en);
     });
-    
-    list.innerHTML = '';
+
+    const focusSearch = "selectMealChip('MEAL');var s=document.getElementById('nut-search-in');if(s){s.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){s.focus();},300);}";
+    let html = '';
     mealOrder.forEach(meal => {
       const mealEntries = grouped[meal];
       const has = mealEntries.length > 0;
       const mealCals = Math.round(mealEntries.reduce((a,en)=>a+(en.cal||0),0));
       const mealPro = Math.round(mealEntries.reduce((a,en)=>a+(en.pro||0),0));
-      
-      const header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
-      header.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em">' + mealLabels[meal] + '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:var(--font-text);font-size:var(--t-micro);cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.01em">save meal</button>' : '') +
-          // Numbers off → the meal still lists what you ate, just not what it "cost".
-          ((has && !_gentleOn) ? '<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
-        '</div>';
-      list.appendChild(header);
-      
-      mealEntries.forEach(en => {
-        const row=document.createElement('div');
-        row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:var(--t-sm);color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">'+svgIcon("edit")+'</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
-        // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
-        // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
-        if(_gentleOn){
-          try{
-            const c=row.querySelector('.fli-cal'); if(c) c.remove();
-            row.querySelectorAll('div[style*="margin-top:2px"]').forEach(function(s){ s.remove(); });
-          }catch(_){}
-        }
-        list.appendChild(row);
+      const rows = mealEntries.map(en => {
+        const R = n => Math.round((n||0)*10)/10;
+        // ONE subhead line, ONE line deep, and it is the SERVING: the portion is what a person
+        // checks when a calorie figure looks wrong, and it is what makes the row correctable.
+        // The three macros used to stack under it on a second 11px line in the tertiary grey. Folded
+        // onto the same line they simply wrapped — and because the value is flex:none, the wrapped
+        // half ran UNDERNEATH "520 cal", which is the shape docs/DESIGN.md names outright. Per-item
+        // grams are the third thing anybody reads on this row: the meal's own total carries protein
+        // in the section footnote directly below, and the day's P/C/F is three bars up the screen.
+        // A row with no serving — Quick add writes one — still shows them, or it would say nothing.
+        // "\u00d7 1" is noise on every row that has it: a quantity of one is the absence of a quantity.
+        const qty = (en.qty && Number(en.qty) !== 1) ? (' \u00d7 ' + en.qty) : '';
+        let sub = en.serving ? (String(en.serving) + qty) : '';
+        // NUMBERS OFF — the meal still lists what you ate, never what it "cost". The old row built
+        // the figures and then deleted the nodes afterwards by matching an inline style STRING;
+        // a promise that serious is kept by not writing the number in the first place.
+        if(!sub && !_gentleOn) sub = 'P ' + R(en.pro) + ' \u00b7 C ' + R(en.carb) + ' \u00b7 F ' + R(en.fat);
+        // Edit and delete stay two separate buttons with their own accessible names and their own
+        // 40x34 hit boxes — three earlier attempts at this pair are documented in shell-head.html.
+        const acts = '<span class="ios-row-acts">' +
+          '<button class="fli-del" onclick="editFoodEntry(\'' + today + '\',' + _jsCode(JSON.stringify(en.id)) + ')" aria-label="Edit ' + _escFew(en.name) + '">' + svgIcon('edit') + '</button>' +
+          '<button class="fli-del" onclick="deleteFoodEntry(\'' + today + '\',' + _jsCode(JSON.stringify(en.id)) + ')" aria-label="Delete ' + _escFew(en.name) + '">&#215;</button></span>';
+        return iosRow({ title: en.name, sub: sub,
+                        value: _gentleOn ? '' : (Math.round(en.cal||0) + ' cal'),
+                        trailing: acts });
       });
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
-      const add=document.createElement('div');
-      add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
-      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:var(--font-text);font-size:var(--t-sm);cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
-      list.appendChild(add);
+      rows.push(iosRow({ title: 'Add food', tint: true, chevron: false,
+                         onclick: focusSearch.split('MEAL').join(meal) }));
+      // "save meal" was 11px lowercase tint text wedged into a 12px caps header. It is an action on
+      // the meal, so it is the last row of the meal — where iOS puts an action on a section.
+      if(has) rows.push(iosRow({ title: 'Save these as a meal', tint: true, chevron: false,
+                                 onclick: "saveMealGroup('" + meal + "')" }));
+      html += iosList(rows, { header: mealLabels[meal],
+        footer: (has && !_gentleOn) ? (mealCals + ' cal \u00b7 ' + mealPro + 'g protein') : '' });
+    });
+    list.innerHTML = html;
+    // The meal's own glyph leads its header, the way Health leads a section. iosList escapes header
+    // text (it must — headers elsewhere carry user data), so the icon goes in afterwards.
+    list.querySelectorAll('.ios-header').forEach((h, i) => {
+      const meal = mealOrder[i]; if(!meal) return;
+      h.classList.add('nut-meal-hd');
+      h.insertAdjacentHTML('afterbegin', svgIcon(mealIcons[meal], 13));
     });
   }
   _nutTailRenders(totals, goalCal);
@@ -4440,12 +4506,14 @@ function renderNutWeeklyDigest(){
 
 // Calorie-by-meal split bar (MFP's glanceable nutrition insight).
 function renderMealSplit(){
-  // The heading said "today's" whatever day you were looking at. nutDayLabel() is the same
-  // source the day-nav prints, so the card and the nav cannot disagree.
+  // The heading said "today's" whatever day you were looking at, so it was rebuilt from nutDayLabel()
+  // to name the right day — and ended up as "WHERE THE MON 8 SEP'S CALORIES CAME FROM", a sentence
+  // set in caps and used as a section header, which is one of the shapes docs/DESIGN.md names as the
+  // loudest "generated" tell in the app. A section header is a LABEL of one to three words. Two words
+  // that say nothing about which day also cannot be wrong about which day — the day navigator at the
+  // top of the screen is what scopes everything under it, including this.
   try{ const _hd=document.getElementById('meal-split-hd');
-    if(_hd) _hd.textContent = 'Where ' + ((typeof nutIsToday==='function' && nutIsToday()) ? "today's"
-      : (function(){ const _l = (typeof nutDayLabel==='function' ? nutDayLabel() : 'that day');
-          return /^(Today|Yesterday)$/.test(_l) ? (_l.toLowerCase() + "'s") : ("the " + _l + "'s"); })()) + ' calories came from';
+    if(_hd) _hd.textContent = 'By meal';
   }catch(_){ }
   const wrap = document.getElementById('nut-meal-split');
   const bar = document.getElementById('nut-meal-split-bar');
@@ -5641,8 +5709,13 @@ function renderNutSetupNudge(){
       '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
         ? 'Your target is a generic starting point.'
         : ('Your ' + ((g && g.cal) || def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
-      '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
-      '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
+      // The dismiss was a bare \u00d7 glyph. It is the only "no" on this prompt, and iOS gives a "no" a
+      // word \u2014 the aria-label already said "Dismiss" to anybody using a screen reader, so the
+      // sighted person was the one being asked to read a multiplication sign.
+      '<span class="setup-strip-acts">' +
+        '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
+        '<button class="setup-strip-x" onclick="dismissNutSetup()">Not now</button>' +
+      '</span>' +
     '</div>';
 }
 function openNutSetup(){
