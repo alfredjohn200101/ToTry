@@ -44,7 +44,10 @@ function renderFinanceGoals(){
     localStorage.removeItem('totry_savings_india');
   }
   if(!goals.length){
-    container.innerHTML='<p class="empty-note">No savings goals yet. Add some below.</p>';
+    // It was an italic, centred, 15px grey sentence floating between two cards with nothing around
+    // it — the shape a screen takes when nobody decided what the empty state is. The section below
+    // already says how to add one, so an empty list says nothing at all.
+    container.innerHTML=''; container.className='money-more';
     return;
   }
   // Sort by progress (most behind first = highest priority)
@@ -53,28 +56,35 @@ function renderFinanceGoals(){
     const bProg=b.target>0?b.current/b.target:0;
     return aProg-bProg; // furthest from goal first
   });
+  // ONE CARD, NAMED ROLES. Every line of this used to be an inline recipe: a gold 11px "PRIORITY" set
+  // INSIDE the goal's own name, a 12px percentage beside it, a bar the card drew itself at a fifth
+  // height and radius, a 13px two-column strip, and three controls at 13px squeezed to 6px of padding
+  // — under the 44pt floor, and the red one a bare × that deletes a savings goal. The card keeps its
+  // name in the headline role, the numbers in the footnote role, the app's own bar component, and
+  // three controls a thumb can actually hit.
   container.innerHTML='';
+  container.className='ios-section money-more';
+  const hd=document.createElement('div'); hd.className='ios-header'; hd.textContent='Savings goals';
+  container.appendChild(hd);
   sorted.forEach((g,idx)=>{
     const pct=g.target>0?Math.min(100,(g.current/g.target)*100):0;
     const card=document.createElement('div');
     card.className='card';
-    card.style.cssText='margin-bottom:8px;padding:12px 14px;background:var(--bg3);cursor:pointer';
     card.innerHTML=
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-        '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+(idx===0?'<span style="color:var(--go);font-family:var(--font-text);font-size:var(--t-micro);margin-right:6px">PRIORITY</span>':'')+g.name+'</div>'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+pct.toFixed(0)+'%</div>'+
+      (idx===0?'<div class="eyebrow">Priority</div>':'')+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">'+
+        '<div class="card-hd" style="margin-bottom:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(g.name)+'</div>'+
+        '<div class="ios-row-value">'+pct.toFixed(0)+'%</div>'+
       '</div>'+
-      '<div style="background:var(--bg4);height:5px;border-radius:3px;overflow:hidden;margin-bottom:6px">'+
-        '<div style="background:var(--gr);height:100%;width:'+pct+'%;transition:width 0.3s"></div>'+
-      '</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:var(--t-cap);color:var(--tx2)">'+
-        '<span>'+curSym()+Math.round(g.current).toLocaleString()+' / '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
+      '<div class="bar-wrap" style="margin:8px 0 7px"><div class="bar" style="width:'+pct+'%"></div></div>'+
+      '<div class="ios-footnote" style="padding:0;display:flex;justify-content:space-between;gap:10px">'+
+        '<span>'+curSym()+Math.round(g.current).toLocaleString()+' of '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
         '<span>'+curSym()+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
       '</div>'+
-      '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:var(--t-base)">'+
-        '<button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="addToGoal('+g.id+')">+ Add</button>'+
-        '<button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
+      '<div class="row" style="margin:12px 0 0">'+
+        '<input type="number" placeholder="Add '+curSym()+'" aria-label="Amount to add to '+_jsAttr(g.name)+'" id="goal-add-'+g.id+'">'+
+        '<button class="btn" style="width:auto;flex:none;padding-left:20px;padding-right:20px" onclick="addToGoal('+g.id+')">Add</button>'+
+        '<button class="btn danger" style="width:auto;flex:none;padding-left:16px;padding-right:16px" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
       '</div>';
     container.appendChild(card);
   });
