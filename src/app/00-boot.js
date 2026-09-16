@@ -1151,7 +1151,11 @@ function svgIcon(name, size){
     lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
     upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>',
     gem:'<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M8.5 3 6 9l6 12M15.5 3 18 9l-6 12"/>',
-    apple:'<path d="M12 7c-1.5-2-4-2.5-5.5-1C4.5 7.5 4 11 5.5 15c1 2.6 2.3 4.5 4 4.5 1 0 1.5-.6 2.5-.6s1.5.6 2.5.6c1.7 0 3-1.9 4-4.5 1.5-4 1-7.5-1-9-1.5-1.5-4-1-5.5 1z"/><path d="M12 7c0-1.7 1-3.3 2.5-4"/>'
+    apple:'<path d="M12 7c-1.5-2-4-2.5-5.5-1C4.5 7.5 4 11 5.5 15c1 2.6 2.3 4.5 4 4.5 1 0 1.5-.6 2.5-.6s1.5.6 2.5.6c1.7 0 3-1.9 4-4.5 1.5-4 1-7.5-1-9-1.5-1.5-4-1-5.5 1z"/><path d="M12 7c0-1.7 1-3.3 2.5-4"/>',
+    // The warning triangle on the Fight's urge door. It was an inline <svg> literal at three call
+    // sites, drawn outside the icon set and so outside everything that keeps the set consistent —
+    // the same path, now on the grid with the other sixty-six.
+    alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
   });
   const d = P[name];
   if(!d) return '';

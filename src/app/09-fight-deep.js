@@ -638,6 +638,12 @@ function renderVices(){
     return due >= 0 ? due : recent >= 0 ? recent : 0;
   })();
   const _many = (vices||[]).length > 1;
+  // The closed fights are collected and rendered as ONE inset grouped list beneath the open card,
+  // rather than appended between cards in index order. They were separate hand-rolled buttons on the
+  // page ground, so a list of three fights was three floating strips with nothing holding them
+  // together; a grouped list is one surface with hairlines between the rows, which is how iOS says
+  // "these are the same kind of thing" and how the rest of this app already says it.
+  const _closedRows = [];
   vices.forEach((v,i)=>{
     // a closed row in a multi-fight list: the name, how long, and the one number that is moving
     if(_many && i !== _openIdx){
@@ -659,20 +665,18 @@ function renderVices(){
             const _c = viceCleanDays(v);
             return _c + ' day' + (_c === 1 ? '' : 's') + ' clean';
           })();
-      const col = fr && fr.direction === 'down' ? 'var(--gr)' : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx3)';
-      const row = document.createElement('button');
-      row.className = 'vice-row';
-      row.setAttribute('aria-label', 'Open ' + (v.n || 'this fight'));
-      row.onclick = function(){ window.__fightOpen = i; renderVices();
-        try{ if(typeof haptic === 'function') haptic('tap'); }catch(_){ } };
-      row.innerHTML =
-        '<div style="flex:1;min-width:0;text-align:left">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx2)">' + _escFew(v.n) + '</div>' +
-          '<div style="font-size:var(--t-sm);color:' + col + ';margin-top:3px">' + _escFew(sub) + '</div>' +
-        '</div>' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);white-space:nowrap">Day ' + viceFightDays(v) + '</div>' +
-        '<div style="color:var(--tx3);font-size:var(--t-sm);margin-left:8px">\u203a</div>';
-      list.appendChild(row);
+      // A CLOSED FIGHT IS A ROW, AND THE APP HAS A ROW. This was hand-rolled: the name in 12px
+      // CAPITALS where a row title is sentence case at 17, the day count in 12px, and a "\u203a" typed as
+      // a character rather than the chevron every other row in the app draws. iosRow escapes its own
+      // text, which is what makes passing the person's own vice name through it safe.
+      _closedRows.push(iosRow({
+        cls: 'vice-row',
+        title: v.n || 'this fight',
+        sub: sub,
+        value: 'Day ' + viceFightDays(v),
+        label: 'Open ' + (v.n || 'this fight'),
+        onclick: '_openFight(' + i + ')'
+      }));
       return;
     }
     tw+=v.w||0;
@@ -696,7 +700,10 @@ function renderVices(){
     let totalInsight='';
     if(v.relapseCount&&v.relapseCount>0){
       const total=(v.cleanDaysTotal||0)+cleanDays;
-      totalInsight='<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--bl);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">' + total + ' total clean days &middot; ' + v.relapseCount + ' reset' + (v.relapseCount===1?'':'s') + ' &middot; you keep going</div>';
+      // This was a 12px teal line under its own full-width rule, centred, which made a sentence of
+      // grace read like a caption on a chart. It is the card's closing footnote: 13px, left, in the
+      // secondary grey, under the rows.
+      totalInsight='<div class="vice-note">' + total + ' total clean days &middot; ' + v.relapseCount + ' reset' + (v.relapseCount===1?'':'s') + ' &middot; you keep going</div>';
     }
     
     // Live HH:MM:SS clock for hours-precision when day < 7
@@ -716,8 +723,10 @@ function renderVices(){
     }
     
     const c=document.createElement('div');
-    c.className='vice-card';
-    c.style.cssText = 'background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px';
+    // .vice-card already IS this surface (and the design system already strips the border and sets
+    // the radius); the cssText re-painted it by hand at 14px padding while every other card in the
+    // app sits at 16, so the Fight's own card was 2px tighter than the two beneath it.
+    c.className='card vice-card';
     c.dataset.viceIdx = i;
     if(v.startDate) c.dataset.viceStart = v.startDate;
 
@@ -731,18 +740,24 @@ function renderVices(){
     // eleven pixels above it. Two buttons, one outcome, on a card whose entire purpose at that
     // moment is to ask whether someone has been honest. While the question stands it is the only
     // thing on the card, so both fragments below collapse to nothing.
+      // Rebuilt from the components, like the quit card: the day count is SF Rounded at hero size,
+      // the dove that floated at 22px in the corner is gone (the copy already says what this is, and
+      // a picture beside a grief counter is decoration), the buttons are .btn.primary / .btn, and
+      // Manage is a row instead of 13px of centred grey.
       c.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
-          '<div style="flex:1">'+
-            '<div class="eyebrow">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
-            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--go)">'+lgDays+' <span style="font-size:var(--t-cap);color:var(--tx3)">day'+(lgDays===1?'':'s')+' of choosing yourself</span></div>'+
-          '</div>'+
-          '<div style="font-size:var(--t-xl)">🕊️</div>'+
-        '</div>'+
-        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.55">Grief isn’t linear — going back is part of letting go, not a failure. Nothing resets here.</div>'+
-        '<button class="vice-btn" onclick="openLettingGo()" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer">Feeling the pull? Come here first</button>'+
-        '<button onclick="_letGoWentBack('+i+')" style="width:100%;margin-top:8px;background:none;color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">I reached out / looked them up</button>'+
-        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:6px">Manage &middot; rename, remove</button>';
+        '<div class="eyebrow">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+        '<div class="vice-day"><span class="vice-day-pre">Day</span>'+
+          '<span class="vice-day-num">'+lgDays+'</span>'+
+          '<span class="vice-day-lbl">of choosing yourself</span></div>'+
+        '<div class="vice-meta">Grief isn\u2019t linear \u2014 going back is part of letting go, not a failure. Nothing resets here.</div>'+
+        '<div class="vice-gap"></div>'+
+        '<button class="btn primary" onclick="openLettingGo()">Feeling the pull? Come here first</button>'+
+        '<button class="btn" onclick="_letGoWentBack('+i+')">I reached out / looked them up</button>'+
+        '<div class="vice-rows">'+
+          '<button class="vice-inrow" onclick="openViceManage('+i+')">'+
+            '<span class="body"><span class="t">Manage</span><span class="s">Rename, remove</span></span>'+
+            '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>'+
+        '</div>';
       list.appendChild(c);
       return;
     }
@@ -765,29 +780,33 @@ function renderVices(){
       // never again once they have answered it. An offer that repeats is a nag.
       const _enough = _uses.length >= 6 && _days30 >= 3;
       const _offer = (_enough && !v.goalOffered)
-        ? '<div style="margin-top:12px;padding:11px 12px;background:var(--bg3);border-radius:var(--rm)">'+
-            '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:9px">You have been watching this a while now. Want to name what you actually want with it \u2014 or keep just watching? Either is a real answer.</div>'+
-            '<div style="display:flex;gap:8px">'+
-              '<button onclick="_watchSetGoal('+i+')" style="flex:1;background:var(--bg2);color:var(--go);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer">Set a goal</button>'+
-              '<button onclick="_watchKeepWatching('+i+')" style="flex:1;background:none;color:var(--tx3);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">Keep watching</button>'+
+        ? '<div class="vice-ask">'+
+            '<div class="vice-ask-q">You have been watching this a while now. Want to name what you actually want with it \u2014 or keep just watching? Either is a real answer.</div>'+
+            '<div class="vice-2up">'+
+              '<button class="btn" onclick="_watchSetGoal('+i+')">Set a goal</button>'+
+              '<button class="btn" onclick="_watchKeepWatching('+i+')">Keep watching</button>'+
             '</div></div>'
         : '';
+      // Same rebuild: the count is the hero number, the eye that sat at 22px in the corner is gone,
+      // the log button is .btn and Manage is a row. Nothing about what this card SAYS changes — it is
+      // still a mirror with no streak, no line and no verdict.
       c.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
-          '<div style="flex:1">'+
-            '<div class="eyebrow">'+_escFew(v.n)+' &middot; just watching</div>'+
-            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--tx2)">'+_n30+' <span style="font-size:var(--t-cap);color:var(--tx3)">in the last 30 days'+(_days30?(' \u00b7 '+_days30+' day'+(_days30===1?'':'s')):'')+'</span></div>'+
-          '</div>'+
-          '<div style="font-size:var(--t-xl)">'+svgIcon("eye")+'</div>'+
-        '</div>'+
-        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.55">'+
+        '<div class="eyebrow">'+_escFew(v.n)+' &middot; just watching</div>'+
+        '<div class="vice-day"><span class="vice-day-num">'+_n30+'</span>'+
+          '<span class="vice-day-lbl">in the last 30 days'+(_days30?(' \u00b7 '+_days30+' day'+(_days30===1?'':'s')):'')+'</span></div>'+
+        '<div class="vice-meta">'+
           (_uses.length
             ? ('This week: '+_n7+'.'+(_since!=null?(' Last: '+(_since===0?'today':_since===1?'yesterday':_since+' days ago')+'.'):'')+' No goal set \u2014 nothing here to keep or break. I am just holding the mirror.')
             : 'Nothing logged yet. Log it honestly when it happens and I will show you the shape of it \u2014 no target, no streak, no verdict.')+
         '</div>'+
-        '<button class="vice-btn" onclick="openLogUse('+i+')" style="width:100%;background:var(--bg3);color:var(--tx);border-radius:var(--rm);padding:11px;font-size:var(--t-base);cursor:pointer">Log honestly</button>'+
+        '<div class="vice-gap"></div>'+
+        '<button class="btn" onclick="openLogUse('+i+')">Log honestly</button>'+
         _offer+
-        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:4px">Manage</button>';
+        '<div class="vice-rows">'+
+          '<button class="vice-inrow" onclick="openViceManage('+i+')">'+
+            '<span class="body"><span class="t">Manage</span></span>'+
+            '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>'+
+        '</div>';
       list.appendChild(c);
       return;
     }
@@ -799,24 +818,22 @@ function renderVices(){
       const over = v.modOver || 0;
       const totalChecks = within + over;
       const holdRate = totalChecks > 0 ? Math.round((within / totalChecks) * 100) : null;
+      // The same rebuild as the quit card. The right-hand stack — an 11px caps "HELD IT", a 15px
+      // percentage in one of three colours, and "3/7" at 11px under it — was three type sizes and a
+      // conditional colour competing with the count beside it. It is one line of fact underneath.
       c.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
-          '<div style="flex:1">' +
-            '<div class="eyebrow">' + String(v.n||'').replace(/</g,'&lt;') + ' &middot; keeping in check</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--go)">' + within + ' <span style="font-size:var(--t-cap);color:var(--tx3)">time' + (within===1?'':'s') + ' within limit</span></div>' +
-            (v.limit ? '<div style="font-size:var(--t-cap);color:var(--tx2);margin-top:3px">Your limit: ' + String(v.limit).replace(/</g,'&lt;') + '</div>' : '') +
-          '</div>' +
-          (holdRate !== null ? '<div style="text-align:right">' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Held it</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-sm);color:' + (holdRate >= 70 ? 'var(--gr)' : holdRate >= 40 ? 'var(--go)' : 'var(--tx2)') + ';margin-top:2px">' + holdRate + '%</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
-          '</div>' : '') +
-        '</div>' +
+        '<div class="eyebrow">' + String(v.n||'').replace(/</g,'&lt;') + ' &middot; keeping in check</div>' +
+        '<div class="vice-day"><span class="vice-day-num">' + within + '</span>' +
+          '<span class="vice-day-lbl">time' + (within===1?'':'s') + ' within limit</span></div>' +
+        (holdRate !== null
+          ? '<div class="vice-meta">Held it ' + holdRate + '% of the time \u00b7 ' + within + ' of ' + totalChecks + '</div>'
+          : '') +
+        (v.limit ? '<div class="vice-meta">Your limit: ' + String(v.limit).replace(/</g,'&lt;') + '</div>' : '') +
         // Same rule as the quit card: say nothing rather than 'various times', which is the app
         // admitting it has no pattern while formatted as though it found one. This is the moderate
         // card's own render — v546 fixed the quit one and left this untouched.
         ((v.t || insight)
-          ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">' +
+          ? '<div class="vice-meta">' +
               // Same leading-middot bug as the quit card 95 lines below, which I fixed and this one
               // did not get: insight carries its own ' · ', so with no known time the line began
               // "· Peaks late night" — a separator joined to nothing.
@@ -835,105 +852,128 @@ function renderVices(){
               : count < thr ? ('Within your line of ' + thr + '. ' + (thr-count) + ' to go.')
               : count === thr ? ('At your limit of ' + thr + '. Be intentional from here.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''))
               : ('Past your line of ' + thr + ' \u2014 noticed, not judged.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''));
-            return '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:8px">'+
-              '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
-                '<button onclick="modCountDown('+i+')" aria-label="minus" style="width:40px;height:40px;border-radius:50%;background:var(--bg);color:var(--tx2);font-size:var(--t-xl);cursor:pointer">\u2212</button>'+
-                '<div style="text-align:center;flex:1"><div style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:var(--t-2xl);font-weight:600;color:'+col+';line-height:1">'+count+'</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:2px">'+unit+' so far</div></div>'+
-                '<button onclick="modCountUp('+i+')" aria-label="plus" style="width:40px;height:40px;border-radius:50%;background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-xl);font-weight:600;cursor:pointer">+</button>'+
+            // The counter itself: it was a --bg3 panel (a card inside a card) with two 40px circles
+            // painted by hand and the number in one of four colours. It is a hairline-grouped block
+            // now, the number is the same SF Rounded hero the other cards use, and the two controls
+            // are the app's own capsules.
+            return '<div class="vice-ask"><div class="mod-count">'+
+                '<button class="mod-step" onclick="modCountDown('+i+')" aria-label="minus">\u2212</button>'+
+                '<div class="mod-n"><div class="vice-day-num">'+count+'</div><div class="vice-day-lbl">'+unit+' so far</div></div>'+
+                '<button class="mod-step on" onclick="modCountUp('+i+')" aria-label="plus">+</button>'+
               '</div>'+
-              '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-top:10px;line-height:1.5">'+statusLine+'</div>'+
-              (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer;background:var(--fill2)">Close this session \u00b7 log it</button>' : '')+
+              '<div class="vice-note">'+statusLine+'</div>'+
+              (s ? '<button class="btn" onclick="modEndSession('+i+')">Close this session \u00b7 log it</button>' : '')+
             '</div>'+
             (function(){
               // The counter above is tonight. This is the truth of the week — the number that
               // actually tells you whether "limiting it" is happening or just being said.
               const wk = viceUsesInWeek(v.n); if(!wk) return '';
               const spend = viceSpendInWeek(v.n);
-              return '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
+              return '<div class="vice-note">'+
                 wk+' '+unit+' logged in the last 7 days'+(spend>0?' · '+curSym()+Math.round(spend)+' spent':'')+'</div>';
             })()+
-            '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;color:var(--go);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;margin-bottom:6px;background:var(--fill2)">Feeling the pull? Come here first</button>'+
+            '<button class="btn" onclick="openMomentStakes(' + i + ')">Feeling the pull? Come here first</button>'+
             // TIER 1.4 — HALT lived only behind the mid-craving door, which is the worst moment to
             // learn a tool. Most urges are a body asking for food, rest, or a person; naming that
             // BEFORE the pull starts is the cheap version of the same skill. Same openHALT(), one tap
             // from the card they already look at.
-            '<button onclick="openHALT()" style="width:100%;background:none;border:1px dashed var(--bd);color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:var(--t-cap);cursor:pointer;margin-bottom:6px">'+svgIcon("utensils")+' What\u2019s underneath it right now?</button>'+
-            '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:var(--t-cap);cursor:pointer;margin-bottom:6px;background:var(--fill2)">Log a day I missed</button>';
+            // A DASHED BORDER is the one border iOS never draws: it reads as a placeholder somebody
+            // forgot to finish. Both of these are destinations, so both are rows.
+            '<div class="vice-rows">'+
+              '<button class="vice-inrow" onclick="openHALT()">'+
+                '<span class="body"><span class="t">What\u2019s underneath it right now?</span></span>'+
+                '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>'+
+              '<button class="vice-inrow" onclick="openLogUse(' + i + ')">'+
+                '<span class="body"><span class="t">Log a day I missed</span></span>'+
+                '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>'+
+            '</div>';
           }
-          return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+
-            '<div style="display:flex;gap:8px;margin-top:8px">'+
-              '<button onclick="curVice=' + i + ';logModerateWithin()" style="flex:1;background:var(--gr-bg);color:var(--gr);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer">Stayed within \u2713</button>'+
-              '<button onclick="curVice=' + i + ';logModerateOver()" style="flex:1;background:var(--bg3);color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer">Went over</button>'+
+          return '<button class="btn primary" onclick="fightVice(' + i + ')">I\'m in a situation now</button>'+
+            '<div class="vice-2up" style="margin-top:8px">'+
+              '<button class="btn success" onclick="curVice=' + i + ';logModerateWithin()">Stayed within</button>'+
+              '<button class="btn" onclick="curVice=' + i + ';logModerateOver()">Went over</button>'+
             '</div>';
         })() +
-        '<div style="display:flex;gap:10px;margin-top:8px;font-size:var(--t-mini);align-items:center">' +
-          '<button onclick="openRecoveryTimeline(' + i + ')" style="background:none;border:none;color:var(--gr);cursor:pointer;padding:4px 0">'+svgIcon("leaf")+' What moderation is earning you</button>' +
-          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:10px 8px;min-height:34px;margin-left:auto">Manage</button>' +
+        // Two 12px links sharing one flex row, one green with a leaf glued to it and one shoved to
+        // the far right by margin-left:auto. They are the same two destinations the quit card
+        // carries, so they are the same two rows.
+        '<div class="vice-rows">' +
+          '<button class="vice-inrow" onclick="openRecoveryTimeline(' + i + ')">' +
+            '<span class="body"><span class="t">What moderation is earning you</span></span>' +
+            '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>' +
+          '<button class="vice-inrow" onclick="openViceManage(' + i + ')">' +
+            '<span class="body"><span class="t">Manage</span><span class="s">Start date, cost, mode, remove</span></span>' +
+            '<span class="chev">'+svgIcon('chevronright', 14)+'</span></button>' +
         '</div>';
       list.appendChild(c);
       return;
     }
 
+    // ── THE CARD THIS APP EXISTS FOR ────────────────────────────────────────────────────────────
+    // Rebuilt from the components instead of painted at the call site. What a person sees change:
+    // the day count is SF Rounded at 40 rather than San Francisco at 28, because it is the number
+    // they open the screen to read; the right-hand "HOW OFTEN" column of 11px capitals that sat
+    // level with it — a second heading competing with the first, and the smaller one winning — is
+    // an ordinary line of fact underneath; the two supporting lines were 12px and 13px in --tx3,
+    // the faintest ink in the app, on the sentence that says how long they have held.
     c.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
-        '<div style="flex:1">' +
-          '<div class="eyebrow">' + _escFew(v.n) + '</div>' +
-          // THE FIGHT LEADS, THE STREAK FOLLOWS. A streak measures the gap since the last fall and
-          // says nothing about how long someone has refused to walk away — so a person who has been
-          // at this for months but falls often read as a permanent zero, and the only way to tell the
-          // truth was to wipe everything. Day N of the fight never resets. The streak is still here,
-          // said plainly, and "came back N times" counts the returning rather than the falling.
-          '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--tx)">Day ' + viceFightDays(v) +
-            ' <span style="font-size:var(--t-cap);color:var(--tx3)">of the fight</span></div>' +
-          (function(){
-            const back = viceCameBack(v);
-            const streak = '<span style="color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx3)') + '">' +
-              cleanDays + ' day' + (cleanDays === 1 ? '' : 's') + ' clean</span>';
-            const came = back > 0
-              ? ' &middot; came back ' + back + (back === 1 ? ' time' : ' times')
-              : '';
-            return '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:3px">' + streak + came + '</div>';
-          })() +
-          (liveClock ? '<div class="vice-live-clock" style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
-        '</div>' +
-        // NOT a win rate. See viceFrequencyRead: a percentage of wins over battles told a person who
-        // had been honest fifteen days running that they had won 0%. This says the two things that
-        // are actually true — how often it is happening now against last week, and how long they have
-        // kept coming back — and it says nothing at all when there is nothing yet to say.
-        (function(){
-          const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
-          if(!fr) return '<div style="text-align:right"></div>';
-          const col = fr.direction === 'down' ? 'var(--gr)' : fr.direction === 'up' ? 'var(--go)' : 'var(--tx2)';
-          const head = fr.direction
-            ? fr.thisWeek + ' this week'
-            : (fr.daysLogged + ' day' + (fr.daysLogged === 1 ? '' : 's') + ' logged');
-          const sub = fr.direction === 'down' ? 'down from ' + fr.lastWeek
-                    : fr.direction === 'up'   ? 'was ' + fr.lastWeek + ' last week'
-                    : fr.direction === 'level'? 'same as last week'
-                    : 'honestly';
-          return '<div style="text-align:right">' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">How often</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-base);color:' + col + ';margin-top:2px">' + head + '</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + sub + '</div>' +
-          '</div>';
-        })() +
-      '</div>' +
+      '<div class="eyebrow">' + _escFew(v.n) + '</div>' +
+      // THE FIGHT LEADS, THE STREAK FOLLOWS. A streak measures the gap since the last fall and
+      // says nothing about how long someone has refused to walk away — so a person who has been
+      // at this for months but falls often read as a permanent zero, and the only way to tell the
+      // truth was to wipe everything. Day N of the fight never resets. The streak is still here,
+      // said plainly, and "came back N times" counts the returning rather than the falling.
+      // The words are untouched — "Day N of the fight" is the sentence this screen is built on, and
+      // panels asserts the card leads with it. Only N is promoted to the hero size and face.
+      '<div class="vice-day"><span class="vice-day-pre">Day</span>' +
+        '<span class="vice-day-num">' + viceFightDays(v) + '</span>' +
+        '<span class="vice-day-lbl">of the fight</span></div>' +
+      (function(){
+        const back = viceCameBack(v);
+        const streak = '<span class="' + (cleanDays >= 7 ? 'clean' : cleanDays >= 1 ? 'hold' : '') + '">' +
+          cleanDays + ' day' + (cleanDays === 1 ? '' : 's') + ' clean</span>';
+        const came = back > 0
+          ? ' &middot; came back ' + back + (back === 1 ? ' time' : ' times')
+          : '';
+        const clock = liveClock ? ' &middot; <span class="vice-live-clock">' + liveClock.replace(' &middot; ', '') + '</span>' : '';
+        return '<div class="vice-meta">' + streak + came + clock + '</div>';
+      })() +
+      // NOT a win rate. See viceFrequencyRead: a percentage of wins over battles told a person who
+      // had been honest fifteen days running that they had won 0%. This says the two things that
+      // are actually true — how often it is happening now against last week, and how long they have
+      // kept coming back — and it says nothing at all when there is nothing yet to say.
+      (function(){
+        const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
+        if(!fr) return '';
+        const head = fr.direction
+          ? fr.thisWeek + ' this week'
+          : (fr.daysLogged + ' day' + (fr.daysLogged === 1 ? '' : 's') + ' logged');
+        const sub = fr.direction === 'down' ? 'down from ' + fr.lastWeek
+                  : fr.direction === 'up'   ? 'was ' + fr.lastWeek + ' last week'
+                  : fr.direction === 'level'? 'same as last week'
+                  : 'honestly';
+        return '<div class="vice-meta">' + head + ' &middot; ' + sub + '</div>';
+      })() +
       // "Usually hits: various times" is filler — it is what the app says when it does not know,
       // dressed as if it does. Say nothing until there is a real pattern to report.
       ((v.t || insight)
-        ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">' +
+        ? '<div class="vice-meta">' +
             // insight carried its own leading ' · ', so with no v.t the line began with a middle dot
             // joined to nothing: "· Peaks late night". Join the halves here, where both are in hand.
             [(v.t ? 'Usually hits: ' + _escFew(v.t) : ''), String(insight || '').replace(/^\s*\u00b7\s*/, '')]
               .filter(function(x){ return x && x.trim(); }).join(' \u00b7 ') + '</div>'
         : '') +
+      '<div class="vice-gap"></div>' +
       (_asking ? '' : _stageStripHTML(i) + _pledgeRowHTML(i)) +
+      // The question sat in a tint-filled box inside the card — a card inside a card. Inside a card
+      // you group with space or a hairline, and this is the app speaking, so it is body size rather
+      // than the 15px it had been shrunk to.
       (viceNeedsCheckIn(v) ?
-        '<div style="background:var(--go-bg);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button onclick="confirmViceClean(' + i + ')" style="flex:1;background:var(--gr-bg);color:var(--gr);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer">Still clean</button>' +
-            '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;color:var(--tx2);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">No — I\'ve used</button>' +
+        '<div class="vice-ask">' +
+          '<div class="vice-ask-q">It\u2019s been a week since you last said anything here, and the count kept climbing on its own. I\u2019d rather it be true than tidy — are you still clean?</div>' +
+          '<div class="vice-2up">' +
+            '<button class="btn success" onclick="confirmViceClean(' + i + ')">Still clean</button>' +
+            '<button class="btn" onclick="openLogUse(' + i + ')">No — I\u2019ve used</button>' +
           '</div>' +
         '</div>' : '') +
       // v552 gave the check-in question the card to itself, so that one question is asked at a time.
@@ -953,22 +993,40 @@ function renderVices(){
       '' +
       (function(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
-        // never show, because they only track the fall.
+        // never show, because they only track the fall. Left-aligned like the rest of the card: it
+        // was the only centred line in it, which is what made it read as a pull-quote.
         const tw=momentsWonInWeek(v.n); if(!tw) return '';
-        return '<div style="text-align:center;font-size:var(--t-cap);color:var(--gr);margin-top:8px;line-height:1.5">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
+        return '<div class="vice-note win">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
       })() +
+      // A plain grey button, under the red one. It was painted --fill2 with --tx2 ink at 15px, which
+      // is neither the app's button nor anything else; .btn IS that control.
       (_asking ? '' :
-      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">I used — log it honestly</button>') +
-      // The recovery timeline stays — SOUL-ARCHITECTURE names it as what the 11pm man is owed — but
-      // as a quiet line, not a third full-width button arguing with the door that matters.
-      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:8px 6px;min-height:44px">What this is earning you</button>' +
-      totalInsight +
-      // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
-      // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
-      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:14px 6px;min-height:44px">Manage &middot; start date, cost, mode, remove</button>';
+      '<button class="btn" onclick="openLogUse(' + i + ')">I used — log it honestly</button>') +
+      // THE QUIET LINKS ARE ROWS. These three were centred micro-copy at 13px in the faintest grey —
+      // "What this is earning you", then a 12px blue evidence line, then "Manage · start date, cost,
+      // mode, remove", a comma-separated strip of everything behind a door rather than the name of
+      // the door. Two destinations, so: two rows with chevrons, and the evidence line between them
+      // as a left-aligned footnote, which is what it always was.
+      '<div class="vice-rows">' +
+        '<button class="vice-inrow" onclick="openRecoveryTimeline(' + i + ')">' +
+          '<span class="body"><span class="t">What this is earning you</span></span>' +
+          '<span class="chev">' + svgIcon('chevronright', 14) + '</span></button>' +
+        // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes
+        // any date), so the old "log a past slip / add several" buttons are gone — same thing twice.
+        '<button class="vice-inrow" onclick="openViceManage(' + i + ')">' +
+          '<span class="body"><span class="t">Manage</span>' +
+            '<span class="s">Start date, cost, mode, remove</span></span>' +
+          '<span class="chev">' + svgIcon('chevronright', 14) + '</span></button>' +
+      '</div>' +
+      totalInsight;
     list.appendChild(c);
   });
-  
+  if(_closedRows.length){
+    const grp = document.createElement('div');
+    grp.innerHTML = iosList(_closedRows, { header:'Your other fights' });
+    list.appendChild(grp.firstElementChild);
+  }
+
   // Add-a-vice form: expanded for the first-time user (they need it), collapsed behind a button
   // once there's at least one vice — so the screen stays about the fight, not the setup form.
   const avBody=document.getElementById('add-vice-body');
@@ -977,7 +1035,10 @@ function renderVices(){
     const has=vices.length>0;
     avBody.style.display = has ? 'none' : 'block';
     avTog.style.display  = has ? 'block' : 'none';
-    avTog.textContent = '+ Add another to the fight';
+    // A centred tint link alone in a white card is a box drawn round a link. It is the Add row iOS
+    // uses everywhere: a tinted plus tile, a left-aligned label, 44pt.
+    avTog.innerHTML = '<span class="ios-row-icon tone-green">' + svgIcon('plus', 18) + '</span>' +
+                      '<span>Add another to the fight</span>';
   }
   const tapHint=document.getElementById('fight-tap-hint');
   if(tapHint) tapHint.style.display = vices.length>0 ? '' : 'none';
@@ -1027,12 +1088,23 @@ function _renderVicesBulk(){
     const n = (typeof _resettableVices === 'function') ? _resettableVices().length : 0;
     if(n < 2){ box.style.display = 'none'; box.innerHTML = ''; return; }
     box.style.display = 'block';
-    const link = 'background:none;border:none;color:var(--tx3);font-size:12px;padding:8px 10px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:3px';
-    box.innerHTML =
-      '<button style="' + link + '" onclick="openMultiSlip()">A night that touched more than one</button>' +
-      '<span style="color:var(--bd);font-size:var(--t-cap)">&middot;</span>' +
-      '<button style="' + link + '" onclick="openResetAll()">Start everything again</button>';
+    // These were two 12px UNDERLINED text links joined by a middle dot and centred — the shape this
+    // whole pass exists to remove, and the place it was loudest, because it sat directly under the
+    // card. They are still quiet: two plain rows in a grouped list, no tint, no fill, nothing the
+    // app is offering. What changed is that they are now legible, tappable at 44pt, and clearly two
+    // separate things rather than one strip of small print.
+    box.innerHTML = iosList([
+      iosRow({ title:'A night that touched more than one', onclick:'openMultiSlip()' }),
+      iosRow({ title:'Start everything again', onclick:'openResetAll()' })
+    ], { header:'Across every fight' });
   }catch(_){ }
+}
+// Tapping a closed fight opens it and closes the other. It was an inline onclick assigned to a
+// hand-built <button>; iosRow takes an onclick STRING, so the behaviour needs a name.
+function _openFight(i){
+  window.__fightOpen = i;
+  try{ renderVices(); }catch(_){ }
+  try{ if(typeof haptic === 'function') haptic('tap'); }catch(_){ }
 }
 
 // ── TRIGGER PATTERN ANALYSIS ────────────────────────────────────
@@ -1209,19 +1281,26 @@ async function removeVice(i){
 let viceModeChoice = 'quit';
 function setViceMode(mode){
   viceModeChoice = mode;
+  // The selected state is the class, not three inline paints. .btn already owns the fill and the ink
+  // (with !important), so an inline background could not have won anyway once these became .btn.stack
+  // — and a selected capsule is a tint fill everywhere else in the app.
   document.querySelectorAll('.v-mode-btn').forEach(b=>{
-    const on = b.dataset.mode === mode;
-    b.classList.toggle('on', on);
-    b.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
-    b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
-    b.style.color = on ? 'var(--tx)' : 'var(--tx2)';
+    b.classList.toggle('on', b.dataset.mode === mode);
   });
   const limitBox = document.getElementById('v-moderate-limit');
   if(limitBox) limitBox.style.display = mode === 'moderate' ? 'block' : 'none';
+  // A LABEL, NOT A SENTENCE. These three were the caps header above the date field, so the screen read
+  // "ALREADY QUIT? SET YOUR REAL START DATE (OPTIONAL)" across two wrapped lines of small capitals —
+  // the loudest generated-looking shape in the app. The header names the field; the sentence it used
+  // to carry is the footnote underneath, which is where iOS puts it.
   const startLbl = document.getElementById('v-start-lbl');
-  if(startLbl) startLbl.textContent = mode === 'moderate' ? 'Tracking since (optional)'
-                                    : mode === 'watch'    ? 'Watching since (optional)'
-                                    :                       'Already quit? Set your real start date (optional)';
+  if(startLbl) startLbl.textContent = mode === 'moderate' ? 'Tracking since'
+                                    : mode === 'watch'    ? 'Watching since'
+                                    :                       'Start date';
+  const startNote = document.getElementById('v-start-note');
+  if(startNote) startNote.textContent = mode === 'quit'
+    ? 'Optional — if you already quit, set the real date and the count picks up from there.'
+    : 'Optional — if you have been at this a while, set the real date.';
 }
 
 function addVice(){
@@ -1607,15 +1686,19 @@ function renderFightEvidence(){
   const stayed = (typeof fightStayedInLine === 'function') ? fightStayedInLine() : '';
   if(!bits.length && !stayed){ el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'block';
+  // THE SENTENCE WAS CENTRED, AND A CENTRED SENTENCE IS THE TELL. It was set at 22px in the display
+  // face with font-weight:700 — a fake bold, since that family ships one roman weight — and broken
+  // across two centred lines under the segmented control, with the evidence beneath it as a strip of
+  // 12px blue CAPITALS joined by middle dots. iOS does not centre a paragraph and it does not shout
+  // a fact in small capitals.
+  //
+  // So: the screen's large title is "Fight", and this is its lede — left-aligned, body size, in the
+  // secondary label colour, with the counted evidence as a footnote under it. The app is still the
+  // one speaking; it has simply stopped raising its voice to do it.
   el.innerHTML =
-    (stayed
-      ? '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;line-height:1.35;color:var(--tx);' +
-        'text-align:center;margin-bottom:' + (bits.length ? '8px' : '14px') + '">' + _escFew(stayed) + '</div>'
-      : '') +
+    (stayed ? '<div class="fight-lede">' + _escFew(stayed) + '</div>' : '') +
     (bits.length
-      ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;' +
-        'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
-        bits.map(b => _escFew(b)).join(' &middot; ') + '</div>'
+      ? '<div class="fight-evidence-line">' + bits.map(b => _escFew(b)).join(' &middot; ') + '</div>'
       : '');
 }
 // ── STAYING IN IT IS THE WIN ─────────────────────────────────────────────────────────────────
