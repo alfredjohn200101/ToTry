@@ -73,11 +73,14 @@ function renderScoreboard(){
   // printed the same number the 64px hero prints 15px above it — the screen's two biggest figures
   // reading 106 and 106. A repeated number does not reinforce; it teaches the eye that nothing on the
   // panel is worth reading closely. When it has nothing of its own to add, it says so instead.
-  const _streakTile = e('sc-streak') ? e('sc-streak').closest('.sc-met') : null;
+  const _streakTile = e('sc-streak') ? e('sc-streak').closest('.ios-stat') : null;
   if(e('sc-streak')) e('sc-streak').textContent = str;
   if(_streakTile) _streakTile.style.display = (str === _fightMax) ? 'none' : '';
-  const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
+  // A typographic apostrophe, like the rest of the app's prose. It was the straight one, set in
+  // italics and centred under the hero; the italics are gone too.
+  const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\u2019re becoming over who you used to be.';
   const bv=e('score-by-vice');
+  const _bvRows = [];
   if(bv){bv.innerHTML='';vices.forEach(v=>{
     if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
     // THE SAME SHAME, ONE TAP AWAY. v546 took "WIN RATE 0% · 0/15" off the vice card and left the
@@ -92,8 +95,6 @@ function renderScoreboard(){
     const head = fr && fr.direction ? fr.thisWeek + ' this week'
                : fr ? fr.daysLogged + ' logged'
                : (viceCleanDays(v) + 'd clean');
-    const headCol = fr && fr.direction === 'down' ? 'var(--gr)'
-                  : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx2)';
     const meta = [
       fightDays ? ('Day ' + fightDays + ' of the fight') : '',
       back ? ('came back ' + back + (back === 1 ? ' time' : ' times')) : '',
@@ -101,15 +102,19 @@ function renderScoreboard(){
         : fr && fr.direction === 'up' ? ('was ' + fr.lastWeek)
         : fr && fr.direction === 'level' ? 'same as last week' : ''
     ].filter(Boolean).join(' \u00b7 ');
-    const row=document.createElement('div');row.className='vsr';
-    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span>'+
-      '<div style="text-align:right"><div class="vsr-pct" style="font-size:var(--t-base);color:'+headCol+'">'+head+'</div></div></div>'+
-      '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
-    bv.appendChild(row);
+    // A BORDERED BOX PER VICE, with an 11px meta row split hard left and hard right, is a row — and
+    // the app has one. iosRow escapes its own text, which is what makes the vice name safe here; the
+    // colour that used to encode the direction is gone because the sub already says 'down from 8' in
+    // words, and a value in three different greens and golds down one column is noise, not meaning.
+    _bvRows.push(iosRow({
+      title: v.n,
+      sub: [meta, (v.lastWin ? 'last win ' + new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '')]
+             .filter(Boolean).join(' \u00b7 '),
+      value: head
+    }));
   });
-    const _bvLbl = bv.previousElementSibling;
-    if(_bvLbl && _bvLbl.classList.contains('lbl')) _bvLbl.style.display = bv.children.length ? '' : 'none';
-    bv.style.display = bv.children.length ? '' : 'none';
+    bv.innerHTML = _bvRows.length ? iosList(_bvRows, { header:'By vice' }) : '';
+    bv.style.display = _bvRows.length ? '' : 'none';
   }
   // ONCE EARNED, EARNED. Every achievement was recomputed live from CURRENT state, so "Faithful"
   // (check: str >= 7, the LIVE clean streak) vanished from the trophy case the moment a person
@@ -127,10 +132,18 @@ function renderScoreboard(){
   if(_achAll.length !== _achSeen.length){ try{ ls(_achKey, _achAll); }catch(_){ } }
   const _achHas = function(a){ return _achAll.indexOf(a.title) !== -1; };
 
+  // TWELVE TINT-FILLED, TINT-BORDERED BOXES STACKED read as a wall of blue, and the thing each one
+  // actually is — an icon, a name and a line about it — is a row in a grouped list with a coloured
+  // tile, exactly as Settings draws one. The icons were already svgIcon(); only the box around them
+  // was invented.
   const ael=e('achievements');
-  if(ael){ael.innerHTML='';let earned=0;
-    ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon" style="color:var(--go);line-height:1">'+(svgIcon(a.icon,22)||a.icon)+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
-    if(!earned)ael.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
+  if(ael){
+    const rows = ACHS.filter(a => _achHas(a)).map(a => iosRow({ icon:a.icon, tone:'yellow', title:a.title, sub:a.desc }));
+    ael.innerHTML = rows.length
+      ? iosList(rows, { header:'Achievements' })
+      : '<div class="ios-empty">' + svgIcon('trophy', 44) +
+        '<div class="ios-empty-title">Nothing here yet</div>' +
+        '<div class="ios-empty-body">Fight your first urge to unlock achievements.</div></div>';
   }
 }
 

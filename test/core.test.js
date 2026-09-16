@@ -7434,8 +7434,14 @@ H.section('there is more than one thing a person means by "reset", and more than
   const bulk = H.code(H.extractFn('_renderVicesBulk'));
   H.ok(/n < 2/.test(bulk), 'the bulk links are hidden below two things');
   H.ok(/openMultiSlip\(\)/.test(bulk) && /openResetAll\(\)/.test(bulk), 'and offer both when there are');
-  // Not buttons: this is not something the app should invite anyone to do.
-  H.ok(/var\(--tx3\)/.test(bulk), 'rendered quietly');
+  // Not buttons: this is not something the app should invite anyone to do. This asked for
+  // `var(--tx3)`, which was the hand-painted link recipe these two used to carry — 12px, underlined,
+  // joined by a middle dot and centred, i.e. exactly the shape the ToTry x Liquid Glass pass exists
+  // to remove. They are plain grouped rows now, which is quieter in the way that matters (nothing
+  // filled, nothing tinted, nothing offered) and legible and 44pt besides. The invariant is what it
+  // always was: rows, never a button the app is holding out.
+  H.ok(/iosRow\(/.test(bulk) && /iosList\(/.test(bulk), 'rendered as plain rows in a grouped list');
+  H.ok(!/class="btn|btn primary|btn danger|\.primary/.test(bulk), 'and never as a button the app is offering');
 
   // THE BULK RESET ASKS WHICH DEPTH rather than guessing.
   const ora = H.code(H.extractFn('openResetAll'));

@@ -599,12 +599,11 @@ function _pledgeRowHTML(i){
   const n=v.pledgeDays||0;
   const line=(viceMode(v)==='moderate')?'Today, I hold my line':viceMode(v)==='watch'?'Today, I just look at it honestly':'Today, not this';
   if(vicePledgedToday(v)){
-    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border-radius:var(--rm);padding:9px 11px;margin-bottom:10px">'+
-      '<span style="font-size:var(--t-base);flex:none">'+svgIcon("users")+'</span>'+
-      '<div style="flex:1;text-align:left">'+
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
-        (n>1?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
-      '</div></div>';
+    // A tint-filled panel inside the card, with its count set at 11px underneath — a card in a card
+    // and a fourth text size. It is one line of the app confirming something, in the colour that
+    // means kept, at the size the rest of the card's facts are set in.
+    return '<div class="vice-pledge">'+svgIcon('check', 17)+
+      '<span>Pledged today. '+line+'.'+(n>1?' '+n+' days you\u2019ve chosen this.':'')+'</span></div>';
   }
   // NO PLEDGE CTA ON THE CARD. The pledge is a morning act — you make it while you are clear,
   // before the day has had a go at you — and it lives in the morning ritual, at the step about
@@ -651,45 +650,52 @@ function _stageStripHTML(i){
   // is asked once inside the plan sheet that opens when a fight is named, and lives in Manage after
   // that. Once it IS set it earns its line, because then it changes what the card offers.
   if(!set) return '';
-  return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
-    '<div style="font-size:var(--t-sm);line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
-      (set ? s.label+' <span style="color:var(--tx3)">\u2014 '+s.blurb+'</span>'
-           : 'Not set \u2014 tell me, and I\u2019ll change what I offer you')+'</div>'+
+  // It was a full-width button under its own rule, headed by an 11px caps line that read "Where you
+  // are with this \u00b7 tap to change" — a label, an instruction and a separator doing the work a
+  // chevron does. It is a row: the setting on the left, its value on the right, the chevron saying
+  // it opens. The blurb it used to carry is in the sheet that opens, beside all five choices, which
+  // is where an explanation belongs.
+  return '<button class="vice-inrow lead" onclick="openViceStage('+i+')">'+
+    '<span class="body"><span class="t">Where you are with this</span></span>'+
+    '<span class="val">'+s.label+'</span>'+
+    '<span class="chev">'+svgIcon('chevronright', 14)+'</span>'+
   '</button>';
 }
 function _stageCtaHTML(i){
   const v=vices[i]; if(!v) return '';
   const s=VICE_STAGES[viceStage(v)];
   if(!s.cta || !s.act) return '';
-  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
+  // A tint fill written out at the call site is .btn.primary, which is the same thing with a name.
+  return '<button class="btn primary" onclick="'+s.act.replace('IDX', i)+'">'+s.cta+'</button>';
 }
 // The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
 // At every other stage the stage-matched move leads and the urge door stays, one tap away.
 // Just the urge door, nothing else. Used while a check-in question owns the card: one question is
 // still asked, and the way through a moment is still on the screen. Same markup as the RED primary in
 // _stagePrimaryHTML below, so the two cannot drift into looking like different things.
+function _urgeDoorHTML(i, quiet){
+  // ONE DOOR, ONE TREATMENT. This was painted at three call sites in three ways: a solid red fill
+  // with #fff ink, a --fill2 tint with --re ink, and a third at 15px with a bare "\u26A0" character
+  // glued to the front of the label where every other icon in the app is a stroke SVG on the 24x24
+  // grid. .btn.vice-btn IS the door now \u2014 iOS\u2019s filled destructive control, 50pt, white on
+  // systemRed \u2014 and nothing about it is named at a call site. Quiet only demotes it to the
+  // tinted red; it is never a different-looking control, because a person reaching for it at 11pm
+  // should not have to find it twice.
+  return '<button class="btn ' + (quiet ? 'danger' : 'vice-btn') + '" onclick="openMomentStakes(' + i + ')">' +
+    svgIcon('alert', 17) + 'I\u2019m feeling it \u2014 come here first</button>';
+}
 function _urgeDoorOnlyHTML(i){
   const v = (typeof vices !== 'undefined' && vices) ? vices[i] : null; if(!v) return '';
-  return '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" ' +
-    'style="width:100%;margin-top:10px;background:none;color:var(--re);' +
-    'border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:500;cursor:pointer;display:flex;' +
-    'align-items:center;justify-content:center;gap:8px;background:var(--fill2)">' +
-    '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
-      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/>' +
-      '<path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>' +
-    'I’m feeling it — come here first</button>';
+  return _urgeDoorHTML(i, false);
 }
 
 function _stagePrimaryHTML(i){
   const v=vices[i]; if(!v) return '';
-  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
-    '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'+
-    'I\u2019m feeling it \u2014 come here first</button>';
-  if(viceStage(v)==='ready') return RED;
-  return _stageCtaHTML(i)+
-    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;color:var(--re);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">\u26A0 I\u2019m feeling it right now</button>';
+  if(viceStage(v)==='ready') return _urgeDoorHTML(i, false);
+  // At every other stage the stage-matched move leads and the door stays, one tap away.
+  return _stageCtaHTML(i) + _urgeDoorHTML(i, true);
 }
+
 
 // B4 — the chooser
 function openViceStage(i){
@@ -1771,7 +1777,7 @@ async function _feelingNowGo(){
       const _c = detectCrisis(feeling);
       if(_c){
         b.innerHTML = '<div id="fn-crisis-slot"></div>'+
-          '<button class="btn" style="margin-top:10px" onclick="_feelNowClose()">Close</button>';
+          '<button class="btn" onclick="_feelNowClose()">Close</button>';
         if(typeof showCrisisResponse==='function') showCrisisResponse('fn-crisis-slot', _c);
         return;
       }
