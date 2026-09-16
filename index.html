@@ -339,47 +339,99 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .btn.outline{background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-sm)}
 .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
-/* The log bar. One field, the two methods that get used daily beside it, one door for the rest. */
-.logbar{display:flex;align-items:stretch;gap:0;margin-bottom:6px;background:var(--bg3);
-  border:1px solid var(--bd);border-radius:var(--rm);overflow:hidden}
+/* The log bar. One field, the two methods that get used daily beside it, one door for the rest.
+   It is an iOS SEARCH FIELD, not a segmented strip: one translucent fill, no internal hairlines, and
+   the actions inside it as tint glyphs. It used to weld a filled-blue "Search" block onto the right
+   end of a grey bordered box — two radii, two fills and a bare text "+" nobody could read as a
+   control, which is the shape that reads as generated. A filled button is the ONE main action on a
+   screen (see docs/DESIGN.md); a search field's submit is a tint word, the way Mail draws it. */
+.logbar{display:flex;align-items:center;gap:0;margin-bottom:10px;background:var(--fill2);
+  border:0;border-radius:var(--rm);overflow:hidden;min-height:44px}
 .logbar-in{flex:1;min-width:0;background:transparent;border:0;color:var(--tx);font-size:var(--t-base);
-  padding:12px 12px;outline:none;font-family:inherit}
+  letter-spacing:-.022em;padding:11px 14px;outline:none;font-family:var(--font-text)}
 .logbar-in::placeholder{color:var(--tx3)}
-.logbar-in:focus{background:var(--bg2)}
-.logbar-ic{flex:0 0 auto;width:42px;background:transparent;border:0;border-left:1px solid var(--bd);
-  color:var(--tx2);font-size:var(--t-lg);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.logbar-ic:active{background:var(--bg2)}
-.logbar-go{flex:0 0 auto;padding:0 15px;border:0;font-size:var(--t-base);font-weight:600;cursor:pointer;
-  font-family:inherit;background:var(--go);color:var(--on-tint)}
-.logbar-go:active{filter:brightness(.93)}
-.logbar-more{width:100%;background:transparent;border:0;color:var(--tx3);font-size:var(--t-sm);
-  padding:7px 0 12px;cursor:pointer;text-align:left;font-family:inherit;letter-spacing:.01em}
-.logbar-more:active{color:var(--tx2)}
+.logbar-in:focus{background:transparent}
+.logbar-ic{flex:0 0 auto;width:38px;align-self:stretch;background:transparent;border:0;
+  color:var(--go);font-size:var(--t-base);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.logbar-ic .ic{width:20px;height:20px}
+.logbar-ic:active{opacity:.45}
+.logbar-go{flex:0 0 auto;padding:0 14px;align-self:stretch;border:0;font-size:var(--t-base);font-weight:400;
+  letter-spacing:-.022em;cursor:pointer;font-family:var(--font-text);background:transparent;color:var(--go)}
+.logbar-go:active{opacity:.45}
+/* "More ways to log ›" was a 15px grey micro-link floating under the bar with no surface of its own.
+   It is a destination, so it is a row: the inset grouped cell every other destination in the app uses. */
+.logbar-more{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  min-height:44px;padding:11px 16px;margin-bottom:14px;background:var(--bg2);border:0;border-radius:var(--rm);
+  color:var(--tx);font-size:var(--t-base);letter-spacing:-.022em;cursor:pointer;text-align:left;font-family:var(--font-text)}
+.logbar-more::after{content:'\203A';color:var(--tx3);font-size:var(--t-hd);line-height:1;margin-right:-2px}
+.logbar-more:active{background:var(--bg4)}
 
 /* One row per way in — icon, what it is, what it's for. A list a person can read, not six equal chips. */
 /* The one row that stands for four cards until they are wanted. */
 /* The ring owns the fold. Its own arithmetic sits under it, quiet, in one line. */
 /* One line and a link, not an essay and a billboard. */
-.setup-strip{display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:12px;
-  background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm)}
-.setup-strip-t{flex:1;min-width:0;font-size:var(--t-cap);color:var(--tx2);line-height:1.4}
-.setup-strip-go{flex:0 0 auto;background:transparent;border:0;color:var(--go);font-size:var(--t-cap);
-  font-weight:600;cursor:pointer;font-family:inherit;padding:5px 2px;white-space:nowrap;
-  text-decoration:underline;text-underline-offset:2px;min-height:26px}
-.setup-strip-x{flex:0 0 auto;background:none;border:0;color:var(--tx3);font-size:var(--t-md);
-  cursor:pointer;line-height:1;min-width:26px;min-height:26px;display:flex;
-  align-items:center;justify-content:center}
+/* It is a FOOTNOTE about the target, so it is drawn as one: 13px secondary under the list, with a
+   tint word to act on. It was a tinted panel with a bordered edge and an UNDERLINED link — a web
+   hyperlink, which iOS does not draw anywhere, sitting in a coloured box loud enough to outrank the
+   ring above it. Same words, same two taps, no billboard. */
+/* It STACKS, and that is not only taste. The help orb is fixed at right:16px and 54px wide, so it
+   owns the right-hand 70px of the screen at whatever scrolls past it — and "Set a real one" sat in
+   exactly that column, half under the orb, at the one width every iPhone in this range renders. Both
+   controls are on the left now, clear of it at any scroll position. */
+.setup-strip{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:0 16px;
+  margin:-4px 0 18px;background:transparent;border:0}
+.setup-strip-t{font-size:var(--t-cap);color:var(--tx2);line-height:1.38;letter-spacing:-.006em}
+.setup-strip-go{background:transparent;border:0;color:var(--go);font-size:var(--t-cap);
+  font-weight:400;cursor:pointer;font-family:var(--font-text);padding:9px 12px 9px 0;white-space:nowrap;
+  text-decoration:none;min-height:34px;letter-spacing:-.006em}
+.setup-strip-go:active{opacity:.45}
+.setup-strip-x{background:none;border:0;color:var(--tx2);font-size:var(--t-cap);
+  cursor:pointer;line-height:1;padding:9px 12px;margin-left:-4px;min-height:34px;
+  font-family:var(--font-text);letter-spacing:-.006em}
+.setup-strip-x:active{opacity:.45}
+.setup-strip-acts{display:flex;align-items:center;gap:6px}
 
-.cal-hero{display:flex;flex-direction:column;align-items:center;gap:11px;padding:4px 0 2px}
+/* The ring owns the fold. One definition of the number in the middle of it — this block used to
+   declare 38px and the .cal-hero block 700 lines below declared 52px, and neither was what shipped,
+   because applyNutGentle() wrote an inline 28px on every render. Three sizes for the one number the
+   screen exists for. It is SF Rounded now, like every other number in the app. */
+.cal-hero{display:flex;flex-direction:column;align-items:center;gap:10px;padding:2px 0 0}
 .cal-ring{position:relative;width:128px;height:128px;flex-shrink:0}
 .cal-ring svg{width:128px;height:128px;transform:rotate(-90deg)}
 .cal-ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.cal-ring-mid .ch-num{font-size:38px;line-height:1;letter-spacing:-.02em}
-.cal-ring-mid .ch-lbl{font-size:var(--t-micro);margin-top:3px;letter-spacing:.11em}
 .cal-eq{display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;
-  font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:.01em}
-.cal-eq b{font-weight:500;color:var(--tx2);font-variant-numeric:tabular-nums}
-.cal-eq-op{color:var(--tx3);opacity:.55}
+  font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);letter-spacing:-.006em}
+.cal-eq b{font-weight:500;color:var(--tx);font-variant-numeric:tabular-nums}
+.cal-eq-op{color:var(--tx3)}
+/* The hero's own header: the date and the numbers-off switch, one 13px line, one grey. It was a
+   17px "Today" (already said by the day navigator eight pixels above it), an 11px caps toggle and a
+   12px date — three sizes and a duplicate in a 30px row. */
+/* The day navigator: the day itself, then two tint chevrons. No boxes, no caps. */
+.nut-daynav{display:flex;align-items:center;gap:2px;margin:0 0 12px;padding:0 2px}
+.nut-daynav-lbl{flex:1;min-width:0;background:none;border:0;padding:6px 0;margin:0;text-align:left;
+  font-family:var(--font-text);font-size:var(--t-base);font-weight:600;letter-spacing:-.022em;
+  color:var(--tx);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nut-daynav-lbl:active{opacity:.45}
+.nut-daynav-ch{flex:0 0 auto;width:40px;height:36px;background:none;border:0;padding:0;
+  color:var(--go);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nut-daynav-ch .ic{width:16px;height:16px;stroke-width:2.6}
+.nut-daynav-ch:active{opacity:.45}
+.cal-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cal-date{font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);font-variant-numeric:tabular-nums;letter-spacing:-.006em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-gentle{background:none;border:0;padding:12px 0 12px 8px;margin:-12px 0;font-family:var(--font-text);
+  font-size:var(--t-cap);color:var(--go);letter-spacing:-.006em;cursor:pointer;white-space:nowrap}
+.cal-gentle:active{opacity:.45}
+/* One macro, its numbers and its bar. The label was 11px in the macro's own colour with the value
+   11px in the tertiary grey — two of the smallest things on the screen carrying the day's protein. */
+.macro-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:var(--t-sm);letter-spacing:-.016em;margin-bottom:4px}
+/* The wrapper carries the size too, so the label row and the bar under it agree — a textless div at
+   the inherited 16px beside a 15px label is a one-pixel disagreement waiting to be counted. */
+.nut-macros{font-size:var(--t-sm)}
+.macro-row .mr-n{color:var(--tx)}
+.macro-row .mr-v{color:var(--tx2);font-variant-numeric:tabular-nums}
+.macro-row+.goal-bar-wrap{margin:0 0 12px}
+.nut-macros .goal-bar-wrap:last-child{margin-bottom:0}
 
 .sec-open{display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;margin-bottom:12px;
   background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);color:var(--tx2);
@@ -388,18 +440,15 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .sec-open-t{flex:0 0 auto;font-size:var(--t-base);color:var(--tx)}
 .sec-open-c{flex:1;min-width:0;font-size:var(--t-cap);color:var(--tx3);text-align:right;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sec-open-ch{flex:0 0 auto;color:var(--tx3);font-size:var(--t-md);transition:transform .18s}
+/* 16px beside a 17px title in the same row is a one-pixel disagreement nobody can see and
+   everybody feels — the shape npm run panels fails a build for. Chevrons are 20px. */
+.sec-open-ch{flex:0 0 auto;color:var(--tx3);font-size:var(--t-hd);line-height:1;transition:transform .18s}
 .sec-open[aria-expanded="true"] .sec-open-ch{transform:rotate(90deg)}
 
-.mw-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;background:transparent;
-  border:0;border-bottom:1px solid var(--bd);color:var(--tx);cursor:pointer;text-align:left;font-family:inherit}
-.mw-row:last-child{border-bottom:0}
-.mw-row:active{background:var(--bg3)}
-.mw-ic{flex:0 0 26px;font-size:var(--t-lg);line-height:1;text-align:center}
-.mw-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.mw-t{font-size:var(--t-base);color:var(--tx);line-height:1.25}
-.mw-s{font-size:var(--t-cap);color:var(--tx3);line-height:1.3}
-.mw-ch{flex:0 0 auto;color:var(--tx3);font-size:var(--t-md)}
+/* "More ways to log" is eight destinations, so it is iosList/iosRow now — the same inset grouped
+   cells as every other menu in the app, with the tinted glyph tiles Settings.app uses. The .mw-*
+   classes it used to hand-roll drew a 13px TERTIARY subtitle under a 17px title and ran its
+   separators to the sheet's left edge instead of insetting them past the icon. */
 
 /* NO NEGATIVE VERTICAL MARGINS. padding grew to 14px to clear the 24pt tap floor, but the -9px
    top and bottom stayed — so a 44px pill sat on a 31px pitch and every wrapped row overlapped the
@@ -882,7 +931,7 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .btab{flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-size:var(--t-sm);font-weight:500;cursor:pointer;font-family:var(--font-text)}
 .btab.active{color:var(--go);border-bottom-color:var(--go)}
 /* ── NUTRITION ── */
-.nutrition-hero{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.nutrition-hero{background:var(--bg2);border:0;border-radius:var(--r);padding:14px 16px 16px;margin-bottom:18px}
 /* Calories is the HERO — one big glanceable number (MFP's lesson). The other three macros
    are smaller and neutral-coloured so the gold calorie figure stays the single focal point
    (Hevy's restraint: one accent, not five competing colours). */
@@ -890,22 +939,24 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .macro-met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 8px;text-align:center}
 .macro-met .mm-l{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px}
 .macro-met .mm-v{font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx2);line-height:1;font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
-/* The hero calorie block spans the full width above the three macros */
-.cal-hero{text-align:center;padding:6px 0 14px;border-bottom:1px solid var(--bd);margin-bottom:12px}
-.cal-hero .ch-num{font-family:var(--font-text);font-size:52px;font-weight:300;color:var(--go);line-height:0.95;letter-spacing:-0.01em}
-.cal-hero .ch-lbl{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:4px}
-.food-result{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;margin-bottom:6px;cursor:pointer;transition:border-color 0.15s}
-.food-result:active{border-color:var(--go-bd)}
-.fr-name{font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px}
-.fr-brand{font-size:var(--t-cap);color:var(--tx3);margin-bottom:4px}
-.fr-macros{display:flex;gap:10px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2)}
-.fr-cal{color:var(--go);font-weight:500}
+/* The hero calorie block spans the full width above the three macros. The number is SF Rounded, like
+   every other number in this app; "CAL LEFT" is the 13px header role with the tracking that makes
+   caps look set rather than typed, not an 11px .01em improvisation. */
+.cal-hero{text-align:center;padding:2px 0 12px;border-bottom:.5px solid var(--bd);margin-bottom:14px}
+.cal-hero .ch-num{font-family:var(--font-rounded);font-size:38px;font-weight:600;color:var(--go);line-height:1.02;letter-spacing:0;font-variant-numeric:tabular-nums}
+.cal-hero .ch-lbl{font-family:var(--font-text);font-size:var(--t-cap);font-weight:400;color:var(--tx2);text-transform:uppercase;letter-spacing:.045em;margin-top:3px}
+.food-result{background:var(--bg2);border:0;border-radius:var(--rm);padding:11px 16px;margin-bottom:8px;cursor:pointer}
+.food-result:active{background:var(--bg4)}
+.fr-name{font-size:var(--t-base);font-weight:400;letter-spacing:-.022em;color:var(--tx);line-height:1.29;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-brand{font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.fr-macros{display:flex;flex-wrap:wrap;gap:8px;font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);margin-top:2px}
+.fr-cal{color:var(--tx);font-variant-numeric:tabular-nums}
 /* Source badges (STRAVA / HEVY / COMMUNITY / CUSTOM) — base style; color set per-source. */
 .src-tag{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)}
-.food-log-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd)}
-.food-log-item:last-child{border-bottom:none}
-.fli-name{font-size:var(--t-base);color:var(--tx)}
-.fli-cal{font-family:var(--font-text);font-size:var(--t-sm);color:var(--go)}
+/* .food-log-item / .fli-name / .fli-cal are gone: the diary is iosList/iosRow now. The row they drew
+   stacked an 11px serving over an 11px "P 38g · C 62g · F 11g", both in the TERTIARY grey, under a
+   17px name — the two smallest, faintest lines on the screen carrying what a person opens a food
+   diary to check. .fli-del stays; Body and the saved meals use it too. */
 /* These are the edit and delete on every logged food — the core daily loop — and they measured 19x17
    and 17x18 CSS px. A destructive control a third the width of a fingertip, 8px from its neighbour,
    so a thumb aiming for "fix the numbers" deletes the meal instead. The visual size is deliberate and
@@ -927,8 +978,8 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
   align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
   font-size:var(--t-md);color:var(--tx3);font-family:inherit}
 .fli-del:active{color:var(--tx2)}
-.goal-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:6px 0 2px}
-.goal-bar{height:8px;border-radius:4px;transition:width 0.4s}
+.goal-bar-wrap{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:6px 0 2px}
+.goal-bar{height:6px;border-radius:3px;transition:width 0.4s}
 .goal-bar.ok{background:var(--gr)}.goal-bar.warn{background:var(--go)}.goal-bar.over{background:var(--re)}
 .serving-modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px 20px 0 0;padding:22px 20px calc(var(--sb) + 40px);width:100%;max-width:430px;max-height:88vh;overflow-y:auto}
 
@@ -1091,7 +1142,9 @@ details[open]>summary::after{transform:rotate(180deg)}
    the multiplier the option exists to convey. Give these two the full row. */
 .tdee-field.tdee-wide{flex:1 0 100%}
 .pref-wide{grid-column:1 / -1}
-.tdee-label{font-size:var(--t-mini);color:var(--tx3);margin-bottom:4px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em}
+/* A field label is the section-header role: 13px, secondary, .045em. It was 12px tertiary at .01em
+   — one pixel off the app's own label size, in the grey reserved for placeholders and disabled. */
+.tdee-label{font-size:var(--t-cap);color:var(--tx2);margin-bottom:5px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:.045em}
 /* ── CONNECTED APPS ── */
 .connected-app{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:8px}
 .ca-icon{width:38px;height:38px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:var(--t-xl);flex-shrink:0}
@@ -1647,7 +1700,10 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
   min-height:50px;border-radius:12px !important;border:0 !important;box-shadow:none !important;
   background:var(--fill) !important;color:var(--go) !important;transition:opacity .15s,transform .1s}
 .btn:active{opacity:.6;transform:none !important}
-.btn.primary,.logbar-go,.hero-action{background:var(--go) !important;color:var(--on-tint) !important;box-shadow:none !important}
+/* .logbar-go was in this list, so Nourish's "Search" rendered as a filled-blue block welded onto the
+   right end of the search field — a second .btn.primary in the first screenful, which docs/DESIGN.md
+   allows exactly one of. A search field's submit is a tint WORD; the Nourish block below sets it. */
+.btn.primary,.hero-action{background:var(--go) !important;color:var(--on-tint) !important;box-shadow:none !important}
 .btn.primary svg,.hero-action svg{color:var(--on-tint)}
 .btn.quiet{background:transparent !important;color:var(--go) !important;font-weight:400 !important;min-height:44px}
 .btn.subtle,.btn.outline{background:var(--fill) !important;color:var(--go) !important}
@@ -2140,6 +2196,64 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 .saved-big{font-family:var(--font-rounded);font-size:34px;font-weight:600;color:var(--gr);line-height:1.12;letter-spacing:0;font-variant-numeric:tabular-nums;margin-top:1px}
 .df-lbl,.saved-lbl{margin-top:0 !important}
 .df-desc,.saved-desc{font-size:13px;line-height:1.38;color:var(--tx2);margin-top:5px}
+/* ═══ NOURISH ════════════════════════════════════════════════════════════════════════════════════
+   The tab's own roles, named. Everything here replaces an inline recipe at a call site: the survey
+   of what this screen RENDERED found eight type sizes, twenty-four elements at 11px and twenty-one
+   at 12px, and the third grey doing the second grey's job forty-eight times. */
+/* The disclosure that holds the target and the TDEE calculator, drawn as the row it is. */
+.nut-target-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:11px 16px;
+  background:var(--bg2);border-radius:var(--rm);cursor:pointer;list-style:none;
+  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-.022em;color:var(--tx)}
+.nut-target-row::-webkit-details-marker{display:none}
+.nut-target-row .ic{color:var(--tx2);flex:none}
+.nut-target-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nut-target-v{flex:none;color:var(--tx2)}
+#nut-goals-details[open] .nut-target-row{border-radius:var(--rm) var(--rm) 0 0}
+/* The vitamins panel opener: a row, in sentence case, at the row size. */
+.nut-micro-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  min-height:44px;margin-top:14px;padding:11px 16px;background:var(--bg2);border:0;border-radius:var(--rm);
+  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-.022em;color:var(--tx);cursor:pointer;text-align:left}
+.nut-micro-toggle:active{background:var(--bg4)}
+#micro-panel-arrow{color:var(--tx3);font-size:var(--t-sm);transition:transform .2s}
+/* The diary. Four grouped sections with 28px between them is a screen and a half of air for four
+   meals, so they close up to 18 — the grouping still reads, the day still fits. */
+.nut-diary .ios-section{margin-bottom:18px}
+.nut-diary .ios-section:last-child{margin-bottom:0}
+.nut-diary .ios-row-value{font-variant-numeric:tabular-nums}
+/* Edit and delete live at the end of a diary row; .fli-del already holds the 40x34 hit box that
+   three separate attempts proved must not be pulled back with a negative margin. */
+.nut-diary .ios-row-acts{flex:none;display:flex;align-items:center;gap:2px;margin-right:-8px}
+.nut-diary .ios-row-acts .ic{width:17px;height:17px}
+.nut-diary .ios-row-acts .fli-del{font-size:var(--t-base)}
+/* "Log instantly" on a search result: a tinted round add control, not a hand-painted gold square
+   with a 700-weight text "+" in it. 34px still clears the 24pt floor, and the 40px right margin
+   stays — it is what keeps the button out of the floating orb's column (see _makeFoodResultRow). */
+.fr-add{flex:none;width:34px;height:34px;margin-right:40px;border:0;border-radius:var(--rp);
+  background:var(--go);color:var(--on-tint);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.fr-add .ic{width:18px;height:18px;stroke-width:2.4}
+.fr-add:active{opacity:.7}
+.fr-fav{flex:none;width:36px;height:36px;background:none;border:0;padding:0;cursor:pointer;
+  font-size:var(--t-hd);line-height:1;font-family:var(--font-text)}
+.fr-fav:active{opacity:.45}
+/* Quick add's meal picker is a segmented control; .qa-meal's older capsule paddings, which land
+   later in this file than the .fst rules, would otherwise blow four words past the sheet's width. */
+#qa-meals.seg .qa-meal{flex:1 1 0;min-width:0;padding:6px 4px !important;font-size:13px !important;min-height:32px}
+/* THE FIELD IS THE BAR. The global input rule paints every field its own --fill2 with a 10px radius,
+   so the search input drew a second grey pill INSIDE the grey bar — a capsule within a capsule, with
+   the camera, the plus and Search stranded on the strip beside it. One surface, nothing nested.
+   The ID is not decoration: the global rule is `input:not([type="checkbox"]):not([type="radio"])
+   :not([type="range"]):not([type="file"])`, and although :not() adds no specificity its ARGUMENTS
+   do — four attribute selectors plus the element, which outranks any two classes. Both carry
+   !important, so specificity decides and .logbar .logbar-in quietly lost. */
+#nut-search-in.logbar-in{background:transparent !important;border-radius:0 !important;box-shadow:none !important}
+#nut-search-in.logbar-in:focus{box-shadow:none !important}
+.logbar .logbar-go{background:transparent !important;color:var(--go) !important}
+/* A row's subhead is ONE line. .ios-row-sub wraps by default, and the value is flex:none, so the
+   second line of "80g oats + 1 scoop · P 38 · C 62 · F 11" ran underneath "520 cal" — the exact
+   shape docs/DESIGN.md names: a row that wraps under its own value. */
+.nut-diary .ios-row-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nut-meal-hd{display:flex;align-items:center;gap:5px}
+.nut-meal-hd .ic{width:13px;height:13px;stroke-width:2.2;color:var(--tx2);flex:none;position:relative;top:-.5px}
 
 </style>
 </head>
@@ -3427,22 +3541,31 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
        A diary you can only write in "now" quietly teaches you it's unreliable: you forget one
        evening and the day is simply gone. Everything below this strip — ring, macros, meals,
        add/edit/delete — follows the day selected here. Never a future day. -->
-  <div id="nut-day-nav" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-    <button id="nut-day-prev" type="button" onclick="nutShiftDay(-1)" aria-label="Previous day" style="flex-shrink:0;width:38px;height:38px;border-radius:var(--rm);background:var(--bg3);color:var(--tx2);font-size:var(--t-lg);line-height:1;cursor:pointer">&lsaquo;</button>
-    <button type="button" onclick="nutPickDay()" title="Pick a day" style="flex:1;min-width:0;height:38px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:0.01em;text-transform:uppercase;cursor:pointer"><span id="nut-day-nav-lbl">Today</span></button>
-    <button id="nut-day-next" type="button" onclick="nutShiftDay(1)" aria-label="Next day" style="flex-shrink:0;width:38px;height:38px;border-radius:var(--rm);background:var(--bg3);color:var(--tx2);font-size:var(--t-lg);line-height:1;cursor:pointer">&rsaquo;</button>
+  <!-- The screen says its own name, in the app's own face, like every other screen. Nourish was the
+       one tab with no large title at all: it opened straight onto three bordered boxes reading
+       "‹ TODAY ›", so the nav bar had nothing to fade the title in FROM on scroll (iosNavSync reads
+       .page-title) and the first thing a person met was a control, not a place. -->
+  <div class="page-title">Nourish</div>
+  <!-- The day navigator, drawn the way Fitness and Health draw one: the day in the row's own voice
+       with two tint chevrons, no boxes. Three 1px-bordered rounded rectangles around a caps "TODAY"
+       is the single loudest hand-painted shape on this tab — iOS has not put a border around a
+       chevron since iOS 6. Same three controls, same three handlers. -->
+  <div id="nut-day-nav" class="nut-daynav">
+    <button type="button" class="nut-daynav-lbl" onclick="nutPickDay()" title="Pick a day"><span id="nut-day-nav-lbl">Today</span></button>
+    <button id="nut-day-prev" type="button" class="nut-daynav-ch" onclick="nutShiftDay(-1)" aria-label="Previous day"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="15,4 7,12 15,20"/></svg></button>
+    <button id="nut-day-next" type="button" class="nut-daynav-ch" onclick="nutShiftDay(1)" aria-label="Next day"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="9,4 17,12 9,20"/></svg></button>
   </div>
   <div id="nut-day-banner" style="display:none"></div>
   <div class="nutrition-hero">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-      <span id="nut-day-title" style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Today</span>
-      <span style="display:flex;align-items:baseline;gap:10px">
-        <!-- 59×12 measured. This one matters more than its size suggests: it is how someone in
-             recovery from disordered eating turns the calorie numbers off, and a 12px-tall target is
-             a poor way to offer that. Padding + equal negative margin, so nothing moves. -->
-        <button type="button" id="nut-gentle-toggle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories" style="background:none;border:none;padding:16px 8px;margin:-16px -8px;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;cursor:pointer;text-transform:uppercase">numbers on</button>
-        <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)" id="nut-date"></span>
-      </span>
+    <!-- One line, one size, one grey: the date (and the streak, when there is one) on the left and
+         the numbers switch on the right. It was a 17px "Today" — which the day navigator directly
+         above already says — beside an 11px CAPS toggle and a 12px date. Three type sizes and a
+         duplicate in a thirty-pixel row is exactly what "it looks vibe coded" is pointing at.
+         The toggle keeps its padded hit box: it is how someone in recovery from disordered eating
+         turns the calorie numbers off, and it must not be a 12px-tall target. -->
+    <div class="cal-head">
+      <span class="cal-date" id="nut-date"></span>
+      <button type="button" id="nut-gentle-toggle" class="cal-gentle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories">Numbers on</button>
     </div>
     <!-- The ring was 96px sitting beside a 122px table that ended in the SAME number it displayed:
          "970 cal left" and "Remaining 970", eight pixels apart, each shrinking the other. The number a
@@ -3469,14 +3592,18 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
         <span class="cal-eq-op">=</span>
         <span><b id="eq-rem">0</b> <span id="eq-rem-lbl">left</span></span>
       </div>
-      <div id="eq-burn" style="display:none;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;line-height:1.3;margin-top:4px"></div>
+      <div id="eq-burn" class="ios-footnote" style="display:none;text-align:center;padding:2px 0 0"></div>
     </div>
-    <div>
-      <div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-micro);margin-bottom:2px"><span style="color:var(--gr)">Protein</span><span style="color:var(--tx3)" id="nut-pro-goal-lbl">0 / 170g</span></div>
+    <!-- Three macros at the subheadline size, in the label grey, with the colour left to the bar
+         directly beneath each one — which is where it carries meaning. These were 11px labels in
+         three different accent colours against 11px values in the tertiary grey: five text colours
+         and the smallest type on the screen, for the day's protein. -->
+    <div class="nut-macros">
+      <div class="macro-row"><span class="mr-n">Protein</span><span class="mr-v" id="nut-pro-goal-lbl">0 / 170g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-pro-bar" style="width:0%;background:var(--gr)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-micro);margin-bottom:2px;margin-top:7px"><span style="color:var(--bl)">Carbs</span><span style="color:var(--tx3)" id="nut-carb-goal-lbl">0 / 230g</span></div>
+      <div class="macro-row"><span class="mr-n">Carbs</span><span class="mr-v" id="nut-carb-goal-lbl">0 / 230g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-carb-bar" style="width:0%;background:var(--bl)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-micro);margin-bottom:2px;margin-top:7px"><span style="color:var(--go)">Fat</span><span style="color:var(--tx3)" id="nut-fat-goal-lbl">0 / 60g</span></div>
+      <div class="macro-row"><span class="mr-n">Fat</span><span class="mr-v" id="nut-fat-goal-lbl">0 / 60g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--go)"></div></div>
     </div>
 
@@ -3496,21 +3623,26 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
        half-built — not one of them was wrong, but presenting every capability at equal weight leaves
        the person to do the prioritising the app should have done. One field, the two methods actually
        used daily beside it, the rest behind one door, and chips drawn from what HE eats. -->
-  <div class="lbl">Log food</div>
+  <!-- "LOG FOOD" was a caps header over a search field. iOS puts no header over a search field —
+       the placeholder is the label — and removing it is also what buys the large title its 45px
+       without pushing the log bar or the diary further down the screen. -->
   <div class="logbar">
     <!-- oninput was lost in this morning's log-bar rewrite, so nutSearchTypeahead() — the instant
          local match that puts staples on screen with zero network — has been live, reachable by
          nothing, and every search since has waited for four databases before showing anything. -->
+    <!-- The placeholder was "Search a food, or describe your meal…" and truncated at "desc" on every
+         iPhone, so the AI-estimate half of the field was invisible. Shorter, and it fits. -->
     <input type="text" id="nut-search-in" class="logbar-in" autocomplete="off"
-           placeholder="Search a food, or describe your meal…"
+           placeholder="Search or describe a meal"
            oninput="nutSearchTypeahead(this.value)"
            onkeydown="if(event.key==='Enter')searchFood(this.value)">
     <button class="logbar-ic" aria-label="Snap a photo of your meal"
             onclick="snapMeal()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-    <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()">+</button>
+    <!-- A bare text "+" at 17px is not a control anybody can read. Same handler, the app's own icon. -->
+    <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     <button class="logbar-go" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
   </div>
-  <button class="logbar-more" onclick="openMoreWaysToLog()">More ways to log ›</button>
+  <button class="logbar-more" onclick="openMoreWaysToLog()">More ways to log</button>
   <!-- BELOW THE LOG BAR, ABOVE THE DAY. Moving this down with the CALCULATOR in v570 left the one-line
        "your 2100 cal target is a generic starting point · Set a real one" prompt 1,275px down a 2,226px
        tab, directly above the very accordion it exists to compensate for — the app's own comment says
@@ -3532,9 +3664,12 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
   <div id="nut-saved-meals" style="margin-bottom:12px"></div>
   <!-- His foods, not a stock list. renderQuickFoods() counts what he has actually logged. -->
-  <div id="nut-quick-foods" style="display:flex;column-gap:5px;row-gap:23px;margin-bottom:10px;flex-wrap:wrap"></div>
-  <!-- Today's diary: what you've logged, right under the log box -->
-  <div class="card"><div id="nut-log-list"><p style="font-size:var(--t-base);color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
+  <!-- row-gap was 23px against a 5px column-gap: two wrapped lines of chips with four times the air
+       between the rows as between the chips, which reads as a layout nobody looked at. -->
+  <div id="nut-quick-foods" style="display:flex;column-gap:8px;row-gap:8px;margin-bottom:20px;flex-wrap:wrap"></div>
+  <!-- Today's diary. It is a LIST, so it is inset grouped lists — one section per meal — not one
+       bordered card holding four hand-drawn header rows. renderNutritionLog builds it. -->
+  <div id="nut-log-list" class="nut-diary"><div class="ios-empty"><div class="ios-empty-title">Nothing logged yet</div></div></div>
 
   <!-- The CALCULATOR stays down here: it is 170px of settings and no reason to make a person scroll
        past it before they can type what they just ate. The one-line NUDGE is not the calculator, and
@@ -3546,8 +3681,11 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
          activity, "Save my goals"). It suppressed the browser marker and never added an affordance of
          its own, so nothing on the row told a person it opens at all — the worst of the two failures,
          and the reason the marker-kill above could not ship on its own. -->
-    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border-radius:var(--r);font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em;list-style:none">
-      <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Your target · goals &amp; TDEE calculator
+    <!-- "YOUR TARGET · GOALS & TDEE CALCULATOR" — a 37-character SENTENCE set in caps and used as a
+         row title, which is the shape docs/DESIGN.md names outright. A row title is sentence case,
+         one line; what it needs to explain goes in the row's value. -->
+    <summary class="nut-target-row">
+      <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nut-target-t">Your target</span><span class="nut-target-v">Goals &amp; TDEE</span>
     </summary>
     <div class="card" style="margin-top:8px">
       <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
@@ -3608,55 +3746,59 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
       <div id="nut-care" style="display:none;margin-top:12px"></div>
     <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
     <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div class="eyebrow" id="meal-split-hd" style="margin-bottom:6px">Where today's calories came from</div>
+      <!-- "WHERE TODAY'S CALORIES CAME FROM" in caps is a sentence, not a label. Two words. -->
+      <div class="eyebrow" id="meal-split-hd" style="margin-bottom:6px">By meal</div>
       <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
-      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)"></div>
+      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:12px;font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2)"></div>
     </div>
     
-    <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
-    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Fibre</div><div id="nut-fiber" style="font-family:var(--font-text);font-size:var(--t-md);color:var(--gr)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:var(--font-text);font-size:var(--t-md);color:var(--go)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:var(--font-text);font-size:var(--t-md);color:var(--bl)">0mg</div></div>
-      <div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:var(--font-text);font-size:var(--t-md);color:var(--tx2)">0g</div></div>
+    <!-- Fibre / Sugar / Sodium / Sat fat. Four 90px columns of 11px caps over a 16px figure in four
+         different colours; .ios-stats is the component for exactly this and gives them the rounded
+         numerals every other figure in the app is set in. -->
+    <div id="nut-extended" class="ios-stats" style="display:grid;margin:16px 0 18px">
+      <div class="ios-stat"><div class="ios-stat-label">Fibre</div><div class="ios-stat-value" id="nut-fiber">0g</div></div>
+      <div class="ios-stat"><div class="ios-stat-label">Sugar</div><div class="ios-stat-value" id="nut-sugar">0g</div></div>
+      <div class="ios-stat"><div class="ios-stat-label">Sodium</div><div class="ios-stat-value" id="nut-sodium">0mg</div></div>
+      <div class="ios-stat"><div class="ios-stat-label">Sat fat</div><div class="ios-stat-value" id="nut-satfat">0g</div></div>
     </div>
     
     <!-- Micronutrients expandable -->
-    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" style="width:100%;background:transparent;border:none;border-top:1px solid var(--bd);padding:14px 0 14px 0;/*was*/10px 0 0 0;margin-top:12px;color:var(--go);font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <span>Show vitamins &amp; minerals</span>
-      <span id="micro-panel-arrow" style="font-size:var(--t-sm);transition:transform 0.2s">▾</span>
+    <!-- The inline style carried a stranded `/*was*/10px 0 0 0;` in the middle of its padding — a
+         CSS comment and three orphan lengths inside a style ATTRIBUTE, where comments do not exist.
+         It parsed as far as the comment and threw the rest away. A 12px CAPS tint strip with a ▾
+         glyph is also not how iOS opens a panel: it is a row, in sentence case, at the row size. -->
+    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" class="nut-micro-toggle">
+      <span>Vitamins &amp; minerals</span>
+      <span id="micro-panel-arrow">▾</span>
     </button>
     <div id="micro-panel" style="display:none;margin-top:12px"></div>
 
   <!-- ══ SECTION 3 · THIS WEEK — how to actually HIT your target: real meals + a priced shopping list ══ -->
-  <div class="card" id="fuel-plan-card" style="background:linear-gradient(135deg,var(--go-bg),transparent)">
-    <div style="display:flex;align-items:flex-start;gap:11px">
-      <div style="font-size:var(--t-xl);line-height:1.1"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2c-1.7 1-3 3-3 6v4h3"/><path d="M18 2v20"/></svg></div>
-      <div style="flex:1">
-        <div style="font-size:var(--t-md);font-weight:600;color:var(--tx);margin-bottom:3px">Your fuel plan · this week</div>
-        <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:10px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
-        <div id="fuel-plan-summary"></div>
-        <button class="btn" id="fuel-plan-btn" style="font-size:var(--t-base);padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
-      </div>
-    </div>
+  <!-- The gradient wash under this card was the only tinted content surface on the tab, and content
+       surfaces are opaque (docs/DESIGN.md). The headline is the headline role; the icon sits on the
+       row with it rather than in a column of its own that pushed every line 31px inward. -->
+  <div class="card" id="fuel-plan-card">
+    <div class="card-hd" style="display:flex;align-items:center;gap:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2c-1.7 1-3 3-3 6v4h3"/><path d="M18 2v20"/></svg>Your fuel plan</div>
+    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4;letter-spacing:-.016em;margin-bottom:12px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
+    <div id="fuel-plan-summary"></div>
+    <button class="btn" id="fuel-plan-btn" onclick="openFuelPlan()">Build my fuel plan</button>
   </div>
 
   <!-- ══ SECTION 4 · MORE — depth on demand (the result, trends, water, fasting, extras) ══ -->
-  <div class="lbl" style="margin-top:4px">More · your day in depth</div>
+  <!-- "MORE · YOUR DAY IN DEPTH" is a sentence in caps with a middot in it. One word. -->
+  <div class="lbl" style="margin-top:4px">In depth</div>
 
   <!-- Nourishment quality score — beyond calories: how nourishing was today, populated by renderNourishmentScore() -->
   <div id="nourishment-score" style="margin-top:14px"></div>
 
   <!-- Net calories card (consumed − burned from training) -->
-  <div class="card" id="nut-net-card" style="background:var(--bg3)">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+  <div class="card" id="nut-net-card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
       <div>
-        <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Net today</div>
-        <div id="nut-net-calories" style="font-size:var(--t-xl);font-weight:500;color:var(--tx)">0 cal</div>
+        <div class="ios-stat-label">Net today</div>
+        <div id="nut-net-calories" class="ios-stat-value">0 cal</div>
       </div>
-      <div style="text-align:right">
-        <div id="nut-net-detail" style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);line-height:1.5">In: 0 · Burned: 0</div>
-      </div>
+      <div id="nut-net-detail" class="ios-footnote" style="padding:0;text-align:right;flex:none">In: 0 · Burned: 0</div>
     </div>
     <div id="nut-fuel-earned" style="margin-top:8px;font-size:var(--t-sm);color:var(--tx2);line-height:1.6;display:none"></div>
     <div id="nut-training-today" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);display:none"></div>
@@ -3668,9 +3810,13 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
   <!-- (Fuel plan moved up to Section 3 · This week, right after Today) -->
 
   <!-- Migration card: make it effortless for MyFitnessPal/Cronometer/etc users to bring history in -->
-  <div id="nut-migrate-card" class="card" style="display:none;background:linear-gradient(135deg,var(--go-bg),transparent)">
+  <div id="nut-migrate-card" class="card" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-      <div class="eyebrow" style="color:var(--go);margin-bottom:0">Already use MyFitnessPal or another tracker?</div>
+      <!-- "ALREADY USE MYFITNESSPAL OR ANOTHER TRACKER?" wrapped across TWO lines of caps — the
+           shape docs/DESIGN.md calls the loudest generated-looking thing in the app. It is a card
+           headline, not a section label, so it is a .card-hd; the question it was asking is already
+           the first sentence of the paragraph under it. -->
+      <div class="card-hd" style="margin-bottom:0">Bring your history over</div>
       <!-- 9.3×16 measured — the smallest control in the app. Padding cancelled by an equal negative
            margin grows the hit box to ~44 without moving anything on screen; a ::after overlay was
            tried for this class and reverted because a click 14px outside the box did not fire. -->
@@ -3678,7 +3824,9 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
     </div>
     <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.6;margin:8px 0 10px">Bring your whole food history with you — no re-logging. Export a CSV from your current app, then import it here once.</p>
     <details style="margin-bottom:10px">
-      <summary style="font-size:var(--t-sm);color:var(--go);cursor:pointer">How to export from MyFitnessPal</summary>
+      <!-- Measured 329x18: a control eighteen pixels tall, under the 24pt floor the rest of the app
+           holds. Padding only — nothing around it moves, and the text stays where it was. -->
+      <summary style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--go);cursor:pointer;padding:9px 0;min-height:34px;display:flex;align-items:center">How to export from MyFitnessPal</summary>
       <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-top:6px">On a computer, sign in at myfitnesspal.com → your username → <em>Settings</em> → <em>Export Data / Reports</em> → request a CSV of your diary. They email you a file. Import it below.</div>
     </details>
     <button class="btn" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>
@@ -3687,8 +3835,10 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
   <!-- "📥 Import food CSV" lived here and fired the same input as "Import my history" in the card
        above — which also explains where the file comes from. One door, in the place that teaches
        you how to get through it. Export keeps the row. -->
-  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" id="nut-export-btn" style="width:100%;padding:9px;font-size:var(--t-cap);background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export my food log</button>
+  <!-- A DASHED border is a placeholder in every design tool on earth and a real control nowhere in
+       iOS; .btn.quiet is the component for a secondary full-width action. -->
+  <div style="margin-bottom:14px">
+    <button class="btn quiet" id="nut-export-btn" onclick="exportFoodCSV()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export my food log</button>
   </div>
   
   <!-- Trends & reports (the diary itself lives up top). Hidden until there's actually something to
@@ -3765,7 +3915,10 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
   </div>
 
 
-  <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:8px;letter-spacing:0.01em">USDA · FatSecret · Open Food Facts · AI estimate</div>
+  <!-- An 11px centred "A · B · C · D" strip in the third grey, running under the floating help orb.
+       It is a footnote about where the numbers come from, so it is the footnote role: 13px, the
+       secondary grey, left-aligned in the list gutter, and a sentence rather than a dot-strip. -->
+  <div class="ios-footnote" style="margin-top:10px">Food data from USDA, FatSecret and Open Food Facts, with AI estimates for anything they don’t have.</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -27703,30 +27856,30 @@ function nutMicroKeys(){
 }
 
 function openMoreWaysToLog(){
+  // Eight destinations, so: iosList/iosRow, the same inset grouped cells and Settings.app glyph
+  // tiles the rest of the app uses for a menu. The hand-rolled .mw-* rows drew their subtitle at
+  // 13px in the TERTIARY grey (a subtitle is 15px secondary) and ran every separator to the sheet's
+  // left edge instead of insetting it past the icon, which is the one detail that makes a grouped
+  // list read as a list rather than as eight stacked divs.
   const ways = [
     // "Opens the camera" is only true where a camera can be opened. On the web and in the PWA
     // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
-    ['camera','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
-    ['image','Photo from your library','A plate you already shot','chooseMealPhoto()'],
-    ['barcode','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
-    ['mic','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
-    ['book','My recipes','Something you make often','openRecipeBuilder()'],
-    ['repeat','Repeat a day','Copy everything from another day','openRepeatDay()'],
-    ['bulb','Am I actually hungry?','Six seconds, before you eat','openHungerCheck()'],
-    ['file','Import a CSV','Bring a log over from another app','document.getElementById(\'food-csv-input\').click()']
+    ['camera','red','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
+    ['image','purple','Photo from your library','A plate you already shot','chooseMealPhoto()'],
+    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
+    ['mic','orange','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
+    ['book','brown','My recipes','Something you make often','openRecipeBuilder()'],
+    ['repeat','green','Repeat a day','Copy everything from another day','openRepeatDay()'],
+    ['bulb','yellow','Am I actually hungry?','Six seconds, before you eat','openHungerCheck()'],
+    ['file','gray','Import a CSV','Bring a log over from another app','document.getElementById(\'food-csv-input\').click()']
   ];
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">More ways to log</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">' +
       'Whatever gets the meal down. None of them is better than the others.</p>' +
-    '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">' +
-    ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsCode(w[3]) + '},220)">' +
-      '<span class="mw-ic" style="color:var(--go)">' + svgIcon(w[0],18) + '</span>' +
-      '<span class="mw-txt"><span class="mw-t">' + w[1] + '</span>' +
-        '<span class="mw-s">' + w[2] + '</span></span>' +
-      '<span class="mw-ch">›</span></button>').join('') +
-    '</div>' +
+    iosList(ways.map(w => iosRow({ icon: w[0], tone: w[1], title: w[2], sub: w[3],
+      onclick: 'closeModal(this);setTimeout(function(){' + _jsCode(w[4]) + '},220)' })), {}) +
     '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -27764,19 +27917,24 @@ function renderQuickFoods(){
 
 function openQuickAdd(){
   const meal = (typeof currentMealSlot==='function') ? currentMealSlot() : 'snack';
-  const meals=[['breakfast','sunrise'],['lunch','sun'],['dinner','moon'],['snack','apple']];
+  const meals=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
   window.__qaMeal=meal;
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Quick add</h3>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
-    '<div class="lbl" style="margin-bottom:6px">Which meal?</div>'+
-    '<div id="qa-meals" style="display:flex;gap:6px;margin-bottom:14px">'+meals.map(x=>'<button class="qa-meal" data-meal="'+x[0]+'" aria-label="'+x[0].charAt(0).toUpperCase()+x[0].slice(1)+'" onclick="_qaMeal(\''+x[0]+'\')" style="flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid '+(x[0]===meal?'var(--go)':'var(--bd)')+';background:'+(x[0]===meal?'var(--go-bg)':'var(--bg3)')+';color:var(--go);font-size:var(--t-base);cursor:pointer">'+svgIcon(x[1],18)+'</button>').join('')+'</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
+    // FOUR GLYPHS AND NO WORDS. The meal picker was four capsules carrying only an icon — a sunrise,
+    // a sun, a moon and an apple — with the name hidden in aria-label, so a sighted person had to
+    // decode a pictogram to answer "which meal?", and the selected one was a hand-painted border and
+    // tinted fill rather than any state this app has a name for. It is the segmented control now:
+    // words, the system's own selected treatment, same four values, same _qaMeal().
+    '<div class="lbl" style="margin-bottom:6px">Which meal</div>'+
+    '<div id="qa-meals" class="seg">'+meals.map(x=>'<button class="fst qa-meal'+(x[0]===meal?' active':'')+'" type="button" data-meal="'+x[0]+'" onclick="_qaMeal(\''+x[0]+'\')">'+x[1]+'</button>').join('')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">'+
       '<div><div class="lbl" style="margin-bottom:4px">Calories</div><input type="number" id="qa-cal" inputmode="numeric" placeholder="e.g. 350" style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Carbs (g)</div><input type="number" id="qa-carb" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
-      '<div><div class="lbl" style="margin-bottom:4px">Fat (g)</div><input type="number" id="qa-fat" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Carbs (g)</div><input type="number" id="qa-carb" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Fat (g)</div><input type="number" id="qa-fat" inputmode="numeric" placeholder="Optional" style="width:100%"></div>'+
     '</div>'+
     '<button class="btn primary" onclick="quickAddLog()" style="margin-bottom:8px">Add to diary</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
@@ -27784,7 +27942,8 @@ function openQuickAdd(){
   document.body.appendChild(m);
   setTimeout(()=>document.getElementById('qa-cal')?.focus(),80);
 }
-function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ const on=b.dataset.meal===m; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }
+// The selected meal is a CLASS now, not two inline colours painted on by hand at four call sites.
+function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ b.classList.toggle('active', b.dataset.meal===m); }); }
 function quickAddLog(){
   const cal=parseFloat(document.getElementById('qa-cal')?.value)||0;
   if(cal<=0){ if(typeof showToast==='function') showToast('Add calories','Enter at least the calories.'); return; }
@@ -27978,10 +28137,13 @@ function _makeFoodResultRow(food){
   //
   // 40px of right margin puts the "+" at 75px in, clear of the orb at any scroll position, and the
   // gutter reads as deliberate spacing rather than as a gap.
+  // A 700-weight text "+" in a 34px gold square was the app painting its own button. It is the
+  // app's own plus icon on a tinted round control now, which is what iOS uses for "add this".
   const plus=document.createElement('button');
   plus.title='Log instantly';
-  plus.style.cssText='background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
-  plus.textContent='+';
+  plus.setAttribute('aria-label','Log '+String(food.name||'this food'));
+  plus.className='fr-add';
+  plus.innerHTML=svgIcon('plus',18);
   plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
   el.appendChild(plus);
   return el;
@@ -30574,7 +30736,7 @@ function renderSavedMeals(){
   if(!box) return;
   const saved = ls('totry_saved_meals')||[];
   if(!saved.length){ box.innerHTML=''; return; }
-  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">My meals · one tap to log</div>' +
+  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">My meals</div>' +
     saved.map(m => {
       const totCal = Math.round(m.items.reduce((a,i)=>a+(i.cal||0),0));
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
@@ -30587,7 +30749,9 @@ function renderSavedMeals(){
           ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')
           : ('<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')) +
         '<button class="fli-del" onclick="deleteSavedMeal('+m.id+')" title="Delete this saved meal">&times;</button>' +
-        '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        // The same hand-painted gold square with a 700-weight text "+" that _makeFoodResultRow had.
+        // Three call sites, one class, and now a name a screen reader can read.
+        '<button class="fr-add" style="margin-right:0" onclick="logSavedMeal('+m.id+')" aria-label="Log '+_escFew(m.name)+'">'+svgIcon('plus',18)+'</button>' +
       '</div>';
     }).join('');
 }
@@ -30718,7 +30882,7 @@ function renderRecentFoods(){
   const rest = scored.filter(s => !s.f.fav).sort((a,b) => b.score - a.score).slice(0, 8).map(s => s.f);
   const show = [...favs, ...rest];
   if(!show.length){ box.innerHTML = ''; return; }
-  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">Your usual for ' + slotLabel + ' · tap + to log</div>' +
+  box.innerHTML = '<div class="eyebrow" style="margin:4px 0 8px">Your usual for ' + slotLabel + '</div>' +
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
@@ -30744,8 +30908,10 @@ function renderRecentFoods(){
                '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
                (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')) +
         '</div>' +
-        '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:var(--t-hd);cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
-        '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        // A bare ★/☆ with no accessible name: a screen reader read "white medium star" and nothing
+        // about which food it belonged to or what tapping it would do.
+        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + safe + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
+        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + safe + '">' + svgIcon('plus',18) + '</button>' +
       '</div>';
     }).join('');
 }
@@ -30820,10 +30986,15 @@ function renderFoodGroups(){
   if(_seen > 0 && unknown / _seen > 0.33)
     nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
-  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
-    order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-mini);padding:4px 9px;border-radius:20px;background:var(--bg3);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
-    '</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
+  // The headline was "Food groups \u00b7 last 7 days" \u2014 a dot-strip title. The window it covers is a
+  // caption, so it is the card's footnote, where the honesty note about the classifier already is.
+  // The chips were 12px with a 20px radius and an OPACITY MULTIPLIER on the caption, which is how a
+  // fourth grey gets into an app that has decided on three.
+  box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:8px">Food groups</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
+    order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;padding:5px 11px;border-radius:var(--rp);background:var(--fill2);color:'+(counts[g]>0?'var(--tx)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
+    '</div><div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.4">'+nudge+'</div>'+
+    '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">Last 7 days \u2014 a rough read from food names.</div></div>';
 }
 
 // ── NOURISHMENT SCORE ──────────────────────────────────────────────────────────────────────────
@@ -30933,24 +31104,27 @@ function renderNourishmentScore(totals, goals){
   if(!r){ box.innerHTML=''; return; }
   const C=2*Math.PI*22;
   box.innerHTML=
-    '<div class="card" style="background:var(--bg2)">'+
+    // Four type sizes and an OPACITY MULTIPLIER on the third grey, which is how a fourth grey gets
+    // into an app: 11px caps eyebrow, 17px tier, 13px tip, 12px basis at .75 alpha. The eyebrow was
+    // also "NOURISHMENT · TODAY" — a dot-strip in caps. .eyebrow, headline, subhead, footnote.
+    '<div class="card">'+
       '<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="position:relative;width:54px;height:54px;flex:none">'+
           '<svg viewBox="0 0 54 54" style="width:54px;height:54px;transform:rotate(-90deg)">'+
             '<circle cx="27" cy="27" r="22" fill="none" stroke="var(--bg4)" stroke-width="5"/>'+
             '<circle cx="27" cy="27" r="22" fill="none" stroke="'+r.col+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-r.score/100)).toFixed(1)+'"/>'+
           '</svg>'+
-          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-text);font-size:var(--t-base);color:var(--tx)">'+r.score+'</div>'+
+          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-rounded);font-weight:600;font-size:var(--t-base);color:var(--tx);font-variant-numeric:tabular-nums">'+r.score+'</div>'+
         '</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Nourishment · ' + ((typeof nutDayLabel==='function') ? nutDayLabel().toLowerCase() : 'today') + '</div>'+
-          '<div style="font-size:var(--t-base);color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
-          '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
-      (r.basis ? '<div style="font-size:var(--t-mini);color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
+          '<div class="eyebrow" style="margin-bottom:1px">Nourishment</div>'+
+          '<div class="card-hd" style="color:'+r.col+';margin-bottom:2px">'+r.tier+'</div>'+
+          '<div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.34">'+r.tip+'</div>'+
+      (r.basis ? '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">'+
         _escFew(r.basis)+'</div>' : '')+
         '</div>'+
       '</div>'+
-      (r.microsHit>0?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
+      (r.microsHit>0?'<div style="font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);margin-top:10px;padding-top:10px;border-top:.5px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
     '</div>';
 }
 // ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
@@ -30996,7 +31170,10 @@ function toggleNutGentle(){
   try{ renderNutritionLog(); }catch(_){}
 }
 function _gentleWord(eaten, goal){
-  if(!(eaten>0)) return { w:'—', s:'nothing logged yet' };
+  // The second field is printed into .ch-lbl, which is the 13px caps header role — so this read
+  // "NOTHING LOGGED YET" inside the ring: a sentence set in capitals, which is the shape
+  // docs/DESIGN.md names. Every other value here is already one or two words; this one is now too.
+  if(!(eaten>0)) return { w:'—', s:'nothing yet' };
   if(!(goal>0))  return { w:'Fed', s:'today' };
   const p = eaten/goal;
   if(p<0.35) return { w:'Started', s:'early yet' };
@@ -31070,7 +31247,13 @@ function applyNutGentle(eaten, goalCal){
   const on = nutGentle();
   const g = function(id){ return document.getElementById(id); };
   const tb = g('nut-gentle-toggle');
-  if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
+  // Sentence case, and the two greys the app has. It was lowercase text set in CSS caps at 11px in
+  // the TERTIARY grey — the size and weight of a disabled placeholder, for the control that turns
+  // the calorie numbers off for someone in recovery from disordered eating.
+  // The WORD already says which state it is in, so the colour does not have to: it is a control, and
+  // a control is the tint. Off-state used to be the tertiary grey — placeholder colour, at 11px, in
+  // caps, for the switch that turns the calorie numbers off for someone in recovery.
+  if(tb){ tb.textContent = on ? 'Numbers off' : 'Numbers on'; tb.style.color = 'var(--go)'; }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
@@ -31086,13 +31269,23 @@ function applyNutGentle(eaten, goalCal){
     HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
     const num=g('nut-cal'), lbl=g('nut-cal-hero-lbl');
     const w=_gentleWord(eaten, goalCal);
-    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>8?'12px':(w.w.length>6?'14px':'18px')); num.style.lineHeight='1.15'; num.style.maxWidth='74px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
+    // ONE size, not a ladder keyed off the word's length. The ladder gave "Nourished" 12px — the
+    // same size as the 13px caps caption directly beneath it, so in numbers-off mode the subject of
+    // the whole screen and its own label were indistinguishable, inside a 128px ring. 22px over a
+    // 13px caption is a hierarchy; 98px of width and normal wrapping fits every word the function
+    // can return, including "On your way", without asking the size to guess.
+    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize='18px'; num.style.lineHeight='1.15'; num.style.maxWidth='96px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
     if(lbl) lbl.textContent=w.s;
     ['nut-pro-goal-lbl','nut-carb-goal-lbl','nut-fat-goal-lbl'].forEach(function(id){ const el=g(id); if(el) el.textContent=''; });
     if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border-radius:var(--rm)">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
   } else {
     Object.keys(RESTORE).forEach(function(id){ const el=g(id); if(el && el.style.display==='none') el.style.display=RESTORE[id]; });
-    const num=g('nut-cal'); if(num){ num.style.fontSize='var(--t-title1)'; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; }
+    // CLEAR the inline size rather than writing one. This wrote font-size:var(--t-title1) — 28px —
+    // on every render, which is how the one number this whole screen exists for came to be painted
+    // at 28px while .cal-hero .ch-num declared 52 and .cal-ring-mid .ch-num declared 38: three
+    // declarations, and the winner was an inline restore in a function about gentle mode. The class
+    // owns the size (38px SF Rounded); gentle mode only has to put back what it took.
+    const num=g('nut-cal'); if(num){ num.style.fontSize=''; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; num.style.textAlign=''; }
     if(line){ line.style.display='none'; line.innerHTML=''; }
   }
   try{ _renderNourishCare(); }catch(_){}
@@ -31181,11 +31374,12 @@ function renderNutDayNav(){
   const lbl=document.getElementById('nut-day-nav-lbl');
   const prev=document.getElementById('nut-day-prev');
   const next=document.getElementById('nut-day-next');
-  const title=document.getElementById('nut-day-title');
+  // #nut-day-title is gone. It sat inside the hero card at 17px and printed the same word the
+  // navigator prints eight pixels above it, so the screen said "Today" twice in two type sizes.
+  // The id-sweep in npm test catches exactly this: an element updated that can never exist.
   const ban=document.getElementById('nut-day-banner');
   const name=nutDayLabel();
   if(lbl) lbl.textContent=name;
-  if(title) title.textContent=name;
   if(prev){ const cap=_nutDayOff<=NUT_DAY_MIN; prev.disabled=cap; prev.style.opacity=cap?'0.28':'1'; }
   if(next){ const t=nutIsToday(); next.disabled=t; next.style.opacity=t?'0.28':'1'; }
   if(!ban) return;
@@ -31495,68 +31689,93 @@ function renderNutritionLog(){
         // logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
-        list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
-          '<div style="font-size:var(--t-title1);margin-bottom:10px">'+svgIcon("utensils",24)+'</div>'+
-          '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
-          '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
-          '<button class="btn" style="width:auto;padding:10px 20px;font-size:var(--t-base)" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
+        // .ios-empty is the component for this — a 44px glyph, a 20px title, a 15px body and one
+        // button. It was a 24px icon over a 17px line over a 15px line in the TERTIARY grey, each
+        // with its own margin: the first thing a brand-new person sees on this tab, improvised.
+        list.innerHTML='<div class="ios-empty">'+svgIcon("utensils",44)+
+          '<div class="ios-empty-title">Let’s start simple</div>'+
+          '<div class="ios-empty-body">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we’ll learn your rhythm from there.</div>'+
+          '<button class="btn" style="margin-top:16px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
         return;
       }
-      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:var(--t-sm);color:var(--tx3);line-height:1.6"><div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("utensils",22)+'</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:var(--t-cap)">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
-        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);font-size:var(--t-sm);width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
+      list.innerHTML='<div class="ios-empty">'+svgIcon("utensils",44)+
+        '<div class="ios-empty-title">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'’s plate is empty'):'Today’s plate is empty')+'</div>'+
+        '<div class="ios-empty-body">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
+        (hadYesterday ? '<button class="btn" style="margin-top:16px" onclick="repeatYesterdayMeals()">Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday’s') + ' ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
       _nutTailRenders(totals, goalCal);
       return;
     }
     
-    // Group entries by meal type
+    // THE DIARY IS A LIST, so it is inset grouped lists — one section per meal: header, rows,
+    // footnote. What it was: a hand-drawn header row at 12px caps with 0.01em tracking, carrying an
+    // 11px lowercase "save meal" ONE PIXEL smaller in the same line (the exact shape npm run panels
+    // fails a build for), over rows that stacked an 11px serving and an 11px "P 38g · C 62g · F 11g"
+    // — both in the TERTIARY grey — under a 17px name. Four type sizes and the third grey doing the
+    // second grey's job, on the surface a person opens a food diary to read.
+    // Now: a 17px title that truncates on one line, one 15px subhead, a 17px tabular value, and the
+    // meal's total in the section's own 13px footnote, which is where iOS puts a total.
     const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
-    const _mlIc = n => '<span style="color:var(--go)">'+svgIcon(n,13)+'</span> ';
-    const mealLabels = {breakfast: _mlIc('sunrise')+'Breakfast', lunch: _mlIc('sun')+'Lunch', dinner: _mlIc('moon')+'Dinner', snack: _mlIc('apple')+'Snacks'};
+    const mealLabels = {breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks'};
+    const mealIcons = {breakfast: 'sunrise', lunch: 'sun', dinner: 'moon', snack: 'apple'};
     const grouped = {breakfast: [], lunch: [], dinner: [], snack: []};
     entries.forEach(en => {
       const meal = en.meal || 'snack';
       (grouped[meal] || grouped.snack).push(en);
     });
-    
-    list.innerHTML = '';
+
+    const focusSearch = "selectMealChip('MEAL');var s=document.getElementById('nut-search-in');if(s){s.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){s.focus();},300);}";
+    let html = '';
     mealOrder.forEach(meal => {
       const mealEntries = grouped[meal];
       const has = mealEntries.length > 0;
       const mealCals = Math.round(mealEntries.reduce((a,en)=>a+(en.cal||0),0));
       const mealPro = Math.round(mealEntries.reduce((a,en)=>a+(en.pro||0),0));
-      
-      const header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
-      header.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em">' + mealLabels[meal] + '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:var(--font-text);font-size:var(--t-micro);cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.01em">save meal</button>' : '') +
-          // Numbers off → the meal still lists what you ate, just not what it "cost".
-          ((has && !_gentleOn) ? '<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
-        '</div>';
-      list.appendChild(header);
-      
-      mealEntries.forEach(en => {
-        const row=document.createElement('div');
-        row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:var(--t-sm);color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">'+svgIcon("edit")+'</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
-        // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
-        // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
-        if(_gentleOn){
-          try{
-            const c=row.querySelector('.fli-cal'); if(c) c.remove();
-            row.querySelectorAll('div[style*="margin-top:2px"]').forEach(function(s){ s.remove(); });
-          }catch(_){}
-        }
-        list.appendChild(row);
+      const rows = mealEntries.map(en => {
+        const R = n => Math.round((n||0)*10)/10;
+        // ONE subhead line, ONE line deep, and it is the SERVING: the portion is what a person
+        // checks when a calorie figure looks wrong, and it is what makes the row correctable.
+        // The three macros used to stack under it on a second 11px line in the tertiary grey. Folded
+        // onto the same line they simply wrapped — and because the value is flex:none, the wrapped
+        // half ran UNDERNEATH "520 cal", which is the shape docs/DESIGN.md names outright. Per-item
+        // grams are the third thing anybody reads on this row: the meal's own total carries protein
+        // in the section footnote directly below, and the day's P/C/F is three bars up the screen.
+        // A row with no serving — Quick add writes one — still shows them, or it would say nothing.
+        // "\u00d7 1" is noise on every row that has it: a quantity of one is the absence of a quantity.
+        const qty = (en.qty && Number(en.qty) !== 1) ? (' \u00d7 ' + en.qty) : '';
+        let sub = en.serving ? (String(en.serving) + qty) : '';
+        // NUMBERS OFF — the meal still lists what you ate, never what it "cost". The old row built
+        // the figures and then deleted the nodes afterwards by matching an inline style STRING;
+        // a promise that serious is kept by not writing the number in the first place.
+        if(!sub && !_gentleOn) sub = 'P ' + R(en.pro) + ' \u00b7 C ' + R(en.carb) + ' \u00b7 F ' + R(en.fat);
+        // Edit and delete stay two separate buttons with their own accessible names and their own
+        // 40x34 hit boxes — three earlier attempts at this pair are documented in shell-head.html.
+        const acts = '<span class="ios-row-acts">' +
+          '<button class="fli-del" onclick="editFoodEntry(\'' + today + '\',' + _jsCode(JSON.stringify(en.id)) + ')" aria-label="Edit ' + _escFew(en.name) + '">' + svgIcon('edit') + '</button>' +
+          '<button class="fli-del" onclick="deleteFoodEntry(\'' + today + '\',' + _jsCode(JSON.stringify(en.id)) + ')" aria-label="Delete ' + _escFew(en.name) + '">&#215;</button></span>';
+        return iosRow({ title: en.name, sub: sub,
+                        value: _gentleOn ? '' : (Math.round(en.cal||0) + ' cal'),
+                        trailing: acts });
       });
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
-      const add=document.createElement('div');
-      add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
-      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:var(--font-text);font-size:var(--t-sm);cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
-      list.appendChild(add);
+      rows.push(iosRow({ title: 'Add food', tint: true, chevron: false,
+                         onclick: focusSearch.split('MEAL').join(meal) }));
+      // "save meal" was 11px lowercase tint text wedged into a 12px caps header. It is an action on
+      // the meal, so it is the last row of the meal — where iOS puts an action on a section.
+      if(has) rows.push(iosRow({ title: 'Save these as a meal', tint: true, chevron: false,
+                                 onclick: "saveMealGroup('" + meal + "')" }));
+      html += iosList(rows, { header: mealLabels[meal],
+        footer: (has && !_gentleOn) ? (mealCals + ' cal \u00b7 ' + mealPro + 'g protein') : '' });
+    });
+    list.innerHTML = html;
+    // The meal's own glyph leads its header, the way Health leads a section. iosList escapes header
+    // text (it must — headers elsewhere carry user data), so the icon goes in afterwards.
+    list.querySelectorAll('.ios-header').forEach((h, i) => {
+      const meal = mealOrder[i]; if(!meal) return;
+      h.classList.add('nut-meal-hd');
+      h.insertAdjacentHTML('afterbegin', svgIcon(mealIcons[meal], 13));
     });
   }
   _nutTailRenders(totals, goalCal);
@@ -31682,12 +31901,14 @@ function renderNutWeeklyDigest(){
 
 // Calorie-by-meal split bar (MFP's glanceable nutrition insight).
 function renderMealSplit(){
-  // The heading said "today's" whatever day you were looking at. nutDayLabel() is the same
-  // source the day-nav prints, so the card and the nav cannot disagree.
+  // The heading said "today's" whatever day you were looking at, so it was rebuilt from nutDayLabel()
+  // to name the right day — and ended up as "WHERE THE MON 8 SEP'S CALORIES CAME FROM", a sentence
+  // set in caps and used as a section header, which is one of the shapes docs/DESIGN.md names as the
+  // loudest "generated" tell in the app. A section header is a LABEL of one to three words. Two words
+  // that say nothing about which day also cannot be wrong about which day — the day navigator at the
+  // top of the screen is what scopes everything under it, including this.
   try{ const _hd=document.getElementById('meal-split-hd');
-    if(_hd) _hd.textContent = 'Where ' + ((typeof nutIsToday==='function' && nutIsToday()) ? "today's"
-      : (function(){ const _l = (typeof nutDayLabel==='function' ? nutDayLabel() : 'that day');
-          return /^(Today|Yesterday)$/.test(_l) ? (_l.toLowerCase() + "'s") : ("the " + _l + "'s"); })()) + ' calories came from';
+    if(_hd) _hd.textContent = 'By meal';
   }catch(_){ }
   const wrap = document.getElementById('nut-meal-split');
   const bar = document.getElementById('nut-meal-split-bar');
@@ -32883,8 +33104,13 @@ function renderNutSetupNudge(){
       '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
         ? 'Your target is a generic starting point.'
         : ('Your ' + ((g && g.cal) || def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
-      '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
-      '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
+      // The dismiss was a bare \u00d7 glyph. It is the only "no" on this prompt, and iOS gives a "no" a
+      // word \u2014 the aria-label already said "Dismiss" to anybody using a screen reader, so the
+      // sighted person was the one being asked to read a multiplication sign.
+      '<span class="setup-strip-acts">' +
+        '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
+        '<button class="setup-strip-x" onclick="dismissNutSetup()">Not now</button>' +
+      '</span>' +
     '</div>';
 }
 function openNutSetup(){

@@ -7667,10 +7667,20 @@ H.section('three more doors where a person’s own typing became live markup');
   H.ok(/toggle\.innerHTML = svgIcon\("edit",12\)\+' Notes: "' \+ _escFew\(text/.test(sen),
        'the keystroke-by-keystroke update of that toggle escapes what is being typed');
 
-  // The four "Which meal?" buttons held only an emoji, which a screen reader spoke as the name.
-  // The icon sweep replaced it with an aria-hidden SVG, so all four became nameless controls.
-  H.ok(/class="qa-meal"[^>]*aria-label="'\+x\[0\]\.charAt\(0\)\.toUpperCase\(\)/.test(code),
-       'the quick-add meal buttons have a name now that their only content is a decorative icon');
+  // The four "Which meal?" buttons held only an emoji, which a screen reader spoke as the name. The
+  // icon sweep replaced it with an aria-hidden SVG, so all four became nameless controls, and an
+  // aria-label was bolted on to give them one back — which left the SIGHTED person decoding a
+  // sunrise, a sun, a moon and an apple to answer "which meal?". The ToTry × Liquid Glass rebuild of
+  // Nourish made it a segmented control whose content is the meal's own WORD, a name a screen reader
+  // and a person both read, so this now asserts the stronger property: the word is really there. An
+  // aria-label is the repair for a control that cannot say its own name; a visible label is better.
+  const qa = H.code(H.extractFn('openQuickAdd'));
+  H.ok(/\['breakfast','Breakfast'\],\['lunch','Lunch'\],\['dinner','Dinner'\],\['snack','Snack'\]/.test(qa),
+       'each quick-add meal carries its own word, not just its storage key');
+  H.ok(/class="fst qa-meal[^"]*"[\s\S]{0,90}>'\+x\[1\]\+'<\/button>/.test(qa),
+       'and the button renders that word as its own content, so it needs no aria-label to have a name');
+  H.ok(!/class="[^"]*qa-meal[^"]*"[^>]*aria-label=/.test(qa),
+       'calibration: no aria-label is left standing in for a name the button now says out loud');
 }
 
 H.section('one gap between stacked cards');
