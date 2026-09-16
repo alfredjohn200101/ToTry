@@ -387,7 +387,11 @@ const INCOME_CATEGORIES = ['Salary','Side income','Gift','Refund','Other'];
 // ── SMART CALENDAR ────────────────────────────────────────────
 // Events: { id, title, type, day(0-6 Mon-Sun), start('HH:MM'), end('HH:MM'), recurring(bool), date(ISO if one-off) }
 const CAL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const CAL_TYPE_COLORS = { work:'var(--go)', class:'var(--pu)', gym:'#5BA88A', personal:'#6B8CB6', other:'rgba(255,255,255,0.4)' };
+// WHITE AT 40% IS INVISIBLE ON A WHITE CARD. "other" is the default type — the one every event the
+// roster parser is unsure about gets — and its dot was a fixed white rgba, so in the light theme the
+// month grid drew it onto a white surface at about 1.2:1. Two of the others were fixed hexes for the
+// same reason nothing else in the app is: they predate the tokens. All five are system colours now.
+const CAL_TYPE_COLORS = { work:'var(--go)', class:'var(--pu)', gym:'var(--gr)', personal:'var(--bl)', other:'var(--tx3)' };
 // Keep the nutrition log from growing forever (it's a {date:[entries]} map that otherwise
 // accumulates a key per day indefinitely and re-syncs the whole thing on every meal). 120 days
 // of history is plenty for trends; older days are dropped. Mutates the passed object in place.

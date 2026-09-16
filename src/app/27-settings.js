@@ -543,19 +543,22 @@ function renderTourPrompt(){
     // Don't ambush someone with an 8-step tour the second they finish onboarding — that's the whole
     // cathedral before they've touched anything. Land them on the home (hero + the one next step),
     // and OFFER the tour gently. One clear thing first; the guided walk is one tap away if they want it.
+    // The headline named its own family and set font-weight:700 on it. This face ships ONE roman
+    // weight and font-synthesis is off globally, so the 700 declared an intention the font cannot
+    // honour; .card-say is the role, and it already speaks in our face.
     card.style.display='block';
-    card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me around</button>'+
-      '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
+    card.innerHTML='<div class="card-say">Welcome in.</div>'+
+      '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>'+
+      '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<button class="btn" onclick="dismissTourPrompt()">I\u2019ll explore</button></div>';
     return;
   }
   // Returning user: gentle one-time offer.
   card.style.display='block';
-  card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me</button>'+
-    '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">No thanks</button></div>';
+  card.innerHTML='<div class="card-say">A quick look around?</div>'+
+    '<div class="card-body">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
+    '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me</button>'+
+    '<button class="btn" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
 function dismissTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; }

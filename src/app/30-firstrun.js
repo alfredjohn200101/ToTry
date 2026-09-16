@@ -95,9 +95,12 @@ function renderFirstRun(){
   const stepsEl = document.getElementById('firstrun-steps');
   if(stepsEl){
     stepsEl.innerHTML = steps.map(s => {
+      // The tick was a text glyph at 17px/700 in hardcoded black on the green disc; it is the app's
+      // own check icon now, in the ink that belongs on a filled tint, and the empty ring is a
+      // hairline rather than a 2px border.
       const check = s.done
-        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:var(--t-base);font-weight:700">✓</div>'
-        : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
+        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--on-tint)">'+svgIcon('check',13)+'</div>'
+        : '<div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
       // A DIV WITH AN ONCLICK IS NOT A BUTTON. These four rows are the app's own "four quick things
       // to start" — the first thing a new person is offered — and a keyboard or Full Keyboard Access
@@ -107,18 +110,19 @@ function renderFirstRun(){
         ' role="button" tabindex="0"' +
         ' onclick="' + s.action.replace(/"/g,'&quot;') + '"' +
         ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}"';
-      return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
+      return '<div' + tap + ' style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:.5px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
-        '<div style="flex:1">' +
-          '<div style="font-size:var(--t-base);font-weight:500;' + textStyle + '">' + s.label + '</div>' +
-          (s.done ? '' : '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:1px">' + s.desc + '</div>') +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:17px;letter-spacing:-.022em;' + textStyle + '">' + s.label + '</div>' +
+          (s.done ? '' : '<div style="font-size:13px;color:var(--tx2);margin-top:1px;line-height:1.38">' + s.desc + '</div>') +
         '</div>' +
-        (s.done ? '' : '<span style="color:var(--go);font-size:var(--t-base)">›</span>') +
+        (s.done ? '' : '<span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span>') +
       '</div>';
     }).join('');
   }
   const prog = document.getElementById('firstrun-progress');
-  if(prog) prog.textContent = doneCount + ' OF ' + steps.length + ' DONE';
+  // It was typed in capitals and printed at 11px, centred — caps as a decoration rather than a role.
+  if(prog) prog.textContent = doneCount + ' of ' + steps.length + ' done';
 }
 // ── WHAT'S NEW ────────────────────────────────────────────────
 // Shows a one-time card when the user opens a version they haven't seen the changelog for.

@@ -45,12 +45,14 @@ function renderWeeklyCheckin(){
   else if(proDays >= 3 && proAvg < goals.pro * 0.85) focus = 'Protein ran ' + (goals.pro - proAvg) + 'g/day under target. One extra serve at lunch closes it.';
   else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + _wkStr + ' in a week \u2014 faster than intended. Worth a look.';
   else focus = 'No weak link stands out. Hold the line and let the weeks stack.';
-  box.innerHTML = '<div style="background:var(--bg2);border-radius:var(--r);padding:16px;position:relative">'+
-    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:var(--t-base);padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly check-in</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
-    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:var(--t-base);padding:10px;background:var(--bg3)">Read the full week \u2192</button></div>';
+  // Every label here was hand-painted: an 11px tint caps eyebrow, a 15px body, a 17px sentence and a
+  // button carrying three declarations its own class already makes. Same content, named roles.
+  box.innerHTML = '<div class="card home-card" style="position:relative">'+
+    '<button class="card-x" onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:8px;right:8px;margin:0">\u00d7</button>'+
+    '<div class="eyebrow">Weekly check-in</div>'+
+    '<div class="card-body" style="margin-bottom:4px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
+    '<div class="card-say">'+focus+'</div>'+
+    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')">Read the full week</button></div>';
   box.style.display = 'block';
 }
 
@@ -267,20 +269,20 @@ function renderProactiveNudge(){
   // Respect a recent dismissal of this exact nudge.
   const dismissed = ls('totry_nudge_dismissed') || {};
   if(dismissed[n.id] && (Date.now() - dismissed[n.id]) < 20*3600000){ box.style.display='none'; return false; }
-  const accent = 'var(--go)';
-  const bg = n.tone==='care'
-    ? 'var(--go-bg)'
-    : 'var(--bg2)';
+  // A 'care' nudge used to paint itself onto a tinted fill so it would feel softer. Content never
+  // sits on a tint here: the card is opaque like every other card, and the warmth is in the words.
+  // Stacked, not side by side: these labels are whole phrases ("Open my fuel plan"), and two of them
+  // sharing a row means the longer one wraps mid-phrase inside a 50pt button. Full width each.
   const btns = (n.actions||[]).map(a =>
     a.ghost
-      ? '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="'+a.onclick+'">'+a.label+'</button>'
-      : '<button class="btn primary" style="flex:1;font-size:var(--t-base)" onclick="'+a.onclick+'">'+a.label+'</button>'
+      ? '<button class="btn" onclick="'+a.onclick+'">'+a.label+'</button>'
+      : '<button class="btn primary" onclick="'+a.onclick+'">'+a.label+'</button>'
   ).join('');
   box.innerHTML =
-    '<div style="background:'+bg+';border-radius:var(--r);padding:15px 16px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+accent+';text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+n.eyebrow+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:'+(btns?'12px':'0')+'">'+n.text+'</div>'+
-      (btns ? '<div style="display:flex;gap:8px">'+btns+'</div>' : '')+
+    '<div class="card home-card">'+
+      '<div class="eyebrow">'+n.eyebrow+'</div>'+
+      '<div class="card-body"'+(btns?'':' style="margin-bottom:0"')+'>'+n.text+'</div>'+
+      btns+
     '</div>';
   box.style.display = 'block';
   return true;
@@ -344,8 +346,8 @@ function renderHomeInsight(){
   if(!insights.length){ box.style.display = 'none'; return; }
   // Rotate which insight shows by day so it doesn't feel static.
   const pick = insights[getDayCount() % insights.length];
-  box.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">What I\u2019m noticing</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + pick + '</div>';
+  box.innerHTML = '<div class="eyebrow">What I\u2019m noticing</div>' +
+    '<div class="card-body" style="margin-bottom:0">' + pick + '</div>';
   box.style.display = 'block';
 }
 

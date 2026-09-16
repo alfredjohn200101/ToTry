@@ -30,5 +30,17 @@ export function seedSource() {
     S('totry_workouts', [{ ts: a[2], kind: 'strength', name: 'Push', sets: [{ ex: 'Bench Press', w: 80, r: 6 }] }]);
     S('totry_nutlog', { [today]: [{ n: 'Oats & whey', cal: 520, p: 38, c: 62, f: 11 }, { n: 'Chicken rice', cal: 730, p: 52, c: 81, f: 14 }] });
     S('totry_trackers', { [today]: { sleep: 7.5, water: 6 } });
+    // A week, in the shape _saveEventFromModal() writes one. Without it every review of the Calendar
+    // was a review of its empty state — which is how a whole screen goes unlooked-at for a year.
+    S('totry_cal_events', [
+      { id: 7001, title: 'Work', type: 'work', day: 0, start: '09:00', end: '17:00', recurring: true, weekStamp: null },
+      { id: 7002, title: 'Gym — push', type: 'gym', day: 0, start: '18:00', end: '19:15', recurring: true, weekStamp: null },
+      { id: 7003, title: 'Work', type: 'work', day: 1, start: '09:00', end: '17:00', recurring: true, weekStamp: null },
+      { id: 7004, title: 'Work', type: 'work', day: 2, start: '09:00', end: '17:00', recurring: true, weekStamp: null },
+      { id: 7005, title: 'Gym — pull', type: 'gym', day: 2, start: '18:00', end: '19:15', recurring: true, weekStamp: null },
+      { id: 7006, title: 'Night class', type: 'class', day: 3, start: '18:30', end: '21:00', recurring: true, weekStamp: null },
+      { id: 7007, title: 'Work', type: 'work', day: 4, start: '09:00', end: '17:00', recurring: true, weekStamp: null },
+      { id: 7008, title: 'Mass', type: 'personal', day: 6, start: '09:30', end: '10:30', recurring: true, weekStamp: null }
+    ]);
   })()`;
 }

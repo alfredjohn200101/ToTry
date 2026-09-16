@@ -4714,7 +4714,11 @@ function showV(v){
   }
   document.getElementById('hdr-verse').textContent=v.t;
   document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
-  document.getElementById('vsave-btn').textContent='\u2661';
+  // The two controls on the verse were text glyphs \u2014 a WHITE HEART SUIT at 20px beside a SHARE ARROW
+  // at 16px, the app's own icon language nowhere near them and two neighbouring controls four pixels
+  // apart. Both are svgIcon() now, at one size; "saved" fills the same heart rather than swapping it
+  // for a different character in a different font.
+  document.getElementById('vsave-btn').innerHTML=svgIcon('heart',20);
   document.getElementById('vsave-btn').classList.remove('saved');
   // Persist the current verse so the scripture share card can use it.
   try{ ls('totry_hdr_verse_text', v.t); ls('totry_hdr_verse_ref', v.r); }catch(_){ }
@@ -4734,7 +4738,7 @@ function saveHdrVerse(){
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('vsave-btn');
-  btn.textContent='\u2665';btn.classList.add('saved');
+  btn.innerHTML=svgIcon('heart',20);btn.classList.add('saved');
 }
 
 // ── NAV ───────────────────────────────────────────────────────

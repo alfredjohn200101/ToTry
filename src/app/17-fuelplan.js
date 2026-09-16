@@ -623,14 +623,9 @@ function renderCalendar(){
   // AND PAINT THE SWITCHER TO MATCH. The selected-segment styling lived only in setCalView(), and
   // the markup hardcodes Week as the selected one — so reopening the app on Day or Month restored
   // the right pane under a switcher still saying Week.
-  ['day','week','month'].forEach(function(x){
-    const b = document.getElementById('calview-'+x);
-    if(!b) return;
-    const on = x === view;
-    b.style.background = on ? 'var(--bg)' : 'transparent';
-    b.style.border = on ? '1px solid var(--bd)' : 'none';
-    b.style.color = on ? 'var(--tx)' : 'var(--tx3)';
-  });
+  // It is the app's own segmented control now, so "selected" is a class, not three inline
+  // declarations written out in two places that had to agree with each other.
+  _calPaintSeg(view);
   const wk=document.getElementById('cal-week-view'), dy=document.getElementById('cal-day-view'), mo=document.getElementById('cal-month-view');
   if(wk) wk.style.display = view==='week'?'block':'none';
   if(dy) dy.style.display = view==='day'?'block':'none';
@@ -639,15 +634,48 @@ function renderCalendar(){
   if(view==='month') return renderCalendarMonth();
   return renderCalendarWeek();
 }
+function _calPaintSeg(view){
+  ['day','week','month'].forEach(function(x){
+    const b = document.getElementById('calview-'+x);
+    if(!b) return;
+    b.classList.toggle('active', x === view);
+    b.setAttribute('aria-selected', x === view ? 'true' : 'false');
+  });
+}
 function setCalView(v){
   ls('totry_cal_view', v);
-  ['day','week','month'].forEach(x=>{
-    const b=document.getElementById('calview-'+x);
-    if(b){ const on = x===v; b.style.background = on?'var(--bg)':'transparent'; b.style.border = on?'1px solid var(--bd)':'none'; b.style.color = on?'var(--tx)':'var(--tx3)'; }
-  });
+  _calPaintSeg(v);
   haptic('tap');
   renderCalendar();
 }
+// One event, one row, everywhere the calendar shows one. It was hand-painted twice over — a --bg3
+// chip with a 3px coloured left border inside a card (a card inside a card), a 12px time in the
+// third grey, and a delete glyph at 15px. The tile colour is the type; the row is the row.
+const CAL_TYPE_TILE = {
+  work:     { icon:'briefcase', tone:'indigo' },
+  class:    { icon:'school',    tone:'purple' },
+  gym:      { icon:'dumbbell',  tone:'green'  },
+  personal: { icon:'user',      tone:'blue'   },
+  other:    { icon:'calendar',  tone:'gray'   }
+};
+function calEventRow(e, opts){
+  const t = CAL_TYPE_TILE[e.type] || CAL_TYPE_TILE.other;
+  const time = (e.start || '') + (e.end ? '–' + e.end : '');
+  // A <button> cannot contain the delete <button>, so the row is a div carrying the same onclick it
+  // has always had — tap the row to edit, tap the x to remove. Both routes are unchanged.
+  return iosRow({
+    tag:'div', icon:t.icon, tone:t.tone,
+    title: e.title,
+    sub: time + (e.recurring ? ' · weekly' : ''),
+    onclick: 'editCalEvent(' + e.id + ')',
+    // No chevron: the row already carries a control at its end, and two trailing marks on one row is
+    // the shape iOS never draws. Calendar.app's own list rows are tappable without one.
+    chevron: false,
+    cls: 'cal-row' + ((opts && opts.past) ? ' is-past' : ''),
+    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">×</button>'
+  });
+}
+const CAL_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 // DAY VIEW — today's events as a simple ordered timeline.
 function renderCalendarDay(){
   const wrap = document.getElementById('cal-day-view');
@@ -655,12 +683,12 @@ function renderCalendarDay(){
   const events = _calEvents();
   const today = (typeof _calDayISO !== 'undefined' && _calDayISO) ? new Date(_calDayISO + 'T12:00:00') : new Date();
   const todayDow = (today.getDay()+6)%7;
-  const dayName = CAL_DAYS[todayDow];
   const dateLabel = today.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long'});
   const dayEvents = events.filter(e => e.day === todayDow).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-  let html = '<div style="font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;color:var(--go);margin-bottom:10px">'+dateLabel+'</div>';
+  let html;
   if(!dayEvents.length){
-    html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
+    html = iosList([iosRow({ title:'Nothing scheduled', cls:'cal-free' })],
+      { header: dateLabel, footer:'Tap “Add an event” to block something in.' });
   } else {
     // "PASSED" MEANS PASSED NOW, ON THE DAY YOU ARE LOOKING AT. `today` is noon of the VIEWED date
     // when you arrive from the month grid, so this made nowMin a hard 720 — an event at 09:00 next
@@ -669,9 +697,7 @@ function renderCalendarDay(){
     const _real = new Date();
     const _viewingToday = today.toDateString() === _real.toDateString();
     const nowMin = _viewingToday ? (_real.getHours()*60 + _real.getMinutes()) : null;
-    dayEvents.forEach(e => {
-      const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
-      const time = e.start + (e.end ? '\u2013'+e.end : '');
+    const rows = dayEvents.map(e => {
       const [sh,sm]=(e.start||'0:0').split(':').map(Number);
       // AND AN END TIME IS A REASON TO DECIDE, NOT TO GIVE UP. `e.end ? false` meant the events the
       // app knows most about — a 12:00-13:00 lift, a 9-5 shift, anything the roster parser fills an
@@ -685,12 +711,9 @@ function renderCalendarDay(){
       }
       const isPast = (nowMin == null) ? false
         : (_endMin != null ? (_endMin < nowMin) : (_startMin < nowMin - 60));
-      html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-sm);color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-        '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
+      return calEventRow(e, { past: isPast });
     });
+    html = iosList(rows, { header: dateLabel });
   }
   wrap.innerHTML = html;
   renderCalInsight(events);
@@ -701,29 +724,20 @@ function renderCalendarWeek(){
   const events = _calEvents();
   const todayDow = (new Date().getDay()+6)%7; // 0=Mon
   if(!events.length){
-    wrap.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--tx3)"><div style="font-size:var(--t-2xl);margin-bottom:8px">'+svgIcon("calendar",29)+'</div><div style="font-size:var(--t-base);line-height:1.5">Nothing scheduled yet.<br>Paste a roster above, or tap "+ Add one".</div></div>';
+    wrap.innerHTML = '<div class="card"><div class="ios-empty">'+svgIcon('calendar',44)+
+      '<div class="ios-empty-title">Nothing scheduled yet</div>'+
+      '<div class="ios-empty-body">Add an event below, or paste a roster and let the app read it for you.</div></div></div>';
     const ic = document.getElementById('cal-insight-card'); if(ic) ic.style.display='none';
     return;
   }
   let html = '';
-  CAL_DAYS.forEach((dayName, dow) => {
+  CAL_DAY_FULL.forEach((dayName, dow) => {
     const dayEvents = events.filter(e => e.day === dow).sort((a,b) => (a.start||'').localeCompare(b.start||''));
-    const isToday = dow === todayDow;
-    html += '<div style="margin-bottom:12px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;color:'+(isToday?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+dayName+(isToday?' \u00b7 today':'')+'</div>';
-    if(!dayEvents.length){
-      html += '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding-left:2px">\u2014</div>';
-    } else {
-      dayEvents.forEach(e => {
-        const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
-        const time = e.start + (e.end ? '\u2013'+e.end : '');
-        html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-          '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
-      });
-    }
-    html += '</div>';
+    // An empty day is a row that says so, the way Calendar.app draws one — not an italic dash
+    // hanging under a label.
+    const rows = dayEvents.length ? dayEvents.map(e => calEventRow(e))
+                                  : [iosRow({ title:'Nothing on', cls:'cal-free' })];
+    html += iosList(rows, { header: dayName + (dow === todayDow ? ' · Today' : '') });
   });
   wrap.innerHTML = html;
   renderCalInsight(events);
@@ -741,23 +755,26 @@ function renderCalendarMonth(){
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const todayStr = new Date().toDateString();
   const monthLabel = ref.toLocaleDateString('en-AU', {month:'long', year:'numeric'});
-  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-    '<button class="btn subtle" onclick="calMonthShift(-1)" style="width:auto;padding:4px 10px">\u2039</button>'+
-    '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx)">'+monthLabel+'</div>'+
-    '<button class="btn subtle" onclick="calMonthShift(1)" style="width:auto;padding:4px 10px">\u203a</button></div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">';
-  ['M','T','W','T','F','S','S'].forEach(d => html += '<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">'+d+'</div>');
-  html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  // The month name set its own family and a font-weight:700 the brand face cannot render, and every
+  // cell was a --bg3 tile with a border. iOS draws a month as numerals on the ground, with today as
+  // one filled tint disc. The arrows are the app's own icons rather than two guillemets.
+  let html = '<div class="card"><div class="cal-month-bar">'+
+    '<button class="cal-arrow" onclick="calMonthShift(-1)" aria-label="Previous month">'+svgIcon('chevronleft',20)+'</button>'+
+    '<div class="cal-month-name">'+monthLabel+'</div>'+
+    '<button class="cal-arrow" onclick="calMonthShift(1)" aria-label="Next month">'+svgIcon('chevronright',20)+'</button></div>';
+  html += '<div class="cal-month-grid cal-month-dow">';
+  ['M','T','W','T','F','S','S'].forEach(d => html += '<div>'+d+'</div>');
+  html += '</div><div class="cal-month-grid">';
   for(let i=0;i<startDow;i++) html += '<div></div>';
   for(let d=1; d<=daysInMonth; d++){
     const cellDate = new Date(year, month, d);
     const dow = (cellDate.getDay()+6)%7;
     // LOCAL midnight, formatted as UTC, is the day BEFORE at any positive offset. cellDate is
-    // new Date(year, month, d) \u2014 local midnight \u2014 so at UTC+10 toISOString() returned the 5th
+    // new Date(year, month, d) — local midnight — so at UTC+10 toISOString() returned the 5th
     // for the cell painted as the 6th: the grid highlighted today in gold and opened yesterday,
     // with yesterday's events. Everything from UTC+1 to UTC+14, all 24 hours of every day, which
     // includes this app's own home timezone and all of Europe on summer time.
-    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) \u2014 it
+    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) — it
     // replaced one wrong day with another, which is why the dots two lines down disagree with it:
     // they scope off local `dow` and `cellDate` and are right, while the onclick was not.
     const _calCellISO = _todayLocalISO(cellDate);
@@ -766,12 +783,12 @@ function renderCalendarMonth(){
     // non-recurring event to the week it actually belongs to.
     const dayEvents = events.filter(e => e.day === dow && (e.recurring !== false || _calSameWeek(e, cellDate)));
     const isToday = cellDate.toDateString() === todayStr;
-    const dots = dayEvents.slice(0,4).map(e => '<span style="width:5px;height:5px;border-radius:50%;background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
-    html += '<div onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:var(--rs);cursor:pointer;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
-      '<div style="font-size:var(--t-sm);color:'+(isToday?'var(--go)':'var(--tx2)')+'">'+d+'</div>'+
-      '<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%">'+dots+'</div></div>';
+    const dots = dayEvents.slice(0,4).map(e => '<span style="background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
+    html += '<button type="button" class="cal-cell" onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" aria-label="'+cellDate.toLocaleDateString('en-AU',{day:'numeric',month:'long'})+'">'+
+      '<span class="cal-cell-n'+(isToday?' is-today':'')+'">'+d+'</span>'+
+      '<span class="cal-cell-dots">'+dots+'</span></button>';
   }
-  html += '</div>';
+  html += '</div></div>';
   wrap.innerHTML = html;
   renderCalInsight(events);
 }
