@@ -478,13 +478,14 @@ function renderHealthWriteRow(){
     const btn=document.getElementById('health-write-btn');
     const canWrite = (typeof HealthWrite!=='undefined') && HealthWrite.isNative() && !!HealthWrite._p();
     if(!canWrite){ row.style.display='none'; return; }   // never show a switch that cannot work
-    row.style.display='flex';
+    // '' and not 'flex': the row is an .ios-row now, and an inline display would outrank the class
+    // that makes a row a row. The three inline paints below it were the same mistake in colour —
+    // .btn already has an on-state (.blue is the tinted fill), so the state is a CLASS, not a recipe.
+    row.style.display='';
     const on = HealthWrite.enabled();
     if(btn){
       btn.textContent = on ? 'On' : 'Turn on';
-      btn.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
-      btn.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
-      btn.style.color = on ? 'var(--go)' : 'var(--tx2)';
+      btn.className = 'btn row-btn' + (on ? ' blue' : '');
     }
   }catch(_){}
 }
@@ -525,7 +526,7 @@ function renderHealthCard(){
     }
     if(btn) btn.style.display='';
     if(Health.connected()){
-      if(off) off.style.display='block';
+      if(off) off.style.display='';          // an .ios-row: let the class decide how it lays out
       if(title) title.textContent='Apple Health connected';
       if(sub) sub.textContent='Steps & activity sync automatically each time you open the app.';
       if(btn){ btn.textContent='Sync now'; btn.disabled=false; btn.onclick=async function(){ btn.textContent='Syncing…'; btn.disabled=true; const s=await Health.syncToday(); const b=[]; if(s&&s.steps)b.push(s.steps.toLocaleString()+' steps'); if(s&&s.active)b.push(s.active+' cal'); if(typeof showToast==='function') showToast('Synced', b.length?('Apple Health · '+b.join(' · ')):'Up to date.'); btn.textContent='Sync now'; btn.disabled=false; }; }
