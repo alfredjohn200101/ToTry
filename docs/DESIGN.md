@@ -128,6 +128,28 @@ This is the part the owner is pointing at, and it is invisible in a wireframe. R
 - **Icons** — `svgIcon(name, size)` only. Never emoji for chrome (moods, the traditions' marks and
   third-party brand tiles are content and stay).
 
+### Roles named while rebuilding Grow and Track
+
+Each of these replaced an inline recipe that was written out two to nine times. Use them; do not
+re-paint them at a call site.
+
+- `.page-intro` — a screen's opening sentence under the large title. 15/secondary.
+- `.card-display` / `.card-sub` / `.card-note` — inside a `.card`: the headline in the ToTry face
+  (26), the line under it (15 secondary), fine print (13 secondary). The last two replaced centred
+  italics.
+- `.btn.row-btn` — the small capsule control on a row's trailing edge (Connect, Turn on). `.btn` is
+  the 50pt full-width button; this is the other one.
+- `.ios-stepper` holding two `.tr-btn`s — a − / + stepper as one capsule, not two bordered boxes.
+- `input.row-field` — a value field on a row whose label is the row's. Right-aligned, no fill.
+  Its selector deliberately matches the base field rule's specificity, or the field's `!important`
+  fill wins and the row grows a grey pill.
+- `.ios-stats.trio` — three stats across. Plain `.ios-stats` is auto-fit at 140px, which on a 393pt
+  phone gives two columns and a widow, and clipped the third label.
+- `.ios-row.has-del` — a row carrying a `.fli-del`; the row gives way so the 34px control fits a
+  44pt row. Never shrink `.fli-del` or pull it with a negative margin (it has overlapped twice).
+- `.footnote-link` — a footnote a thumb can land on (44pt), for the one that is really a control.
+- `.disclosure` — a `<summary>` as an iOS row with a chevron, instead of caps with an icon.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

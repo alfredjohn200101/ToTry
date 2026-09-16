@@ -451,14 +451,14 @@ function adjustCaloriesFromWeightTrend(){
         m.style.alignItems = 'center';
         m.innerHTML = '<div class="modal" style="max-width:90vw">' +
           '<div class="modal-handle"></div>' +
-          '<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Coach update</div>' +
-          '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:14px">Your targets shifted.</div>' +
+          '<div class="lbl">Coach update</div>' +
+          '<div class="card-display">Your targets shifted.</div>' +
           '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
               '<div style="font-size:var(--t-sm);color:var(--tx3)">Daily calories</div>' +
               '<div style="font-family:var(--font-text);font-size:var(--t-base)"><span style="color:var(--tx3);text-decoration:line-through">' + oldCal + '</span> <span style="color:var(--go);font-weight:700;margin-left:8px">' + newCal + '</span></div>' +
             '</div>' +
-            '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + reason + '</div>' +
+            '<div class="card-sub">' + reason + '</div>' +
           '</div>' +
           '<button class="btn primary" onclick="closeModal(this);go(\'nourish\')" style="margin-bottom:6px">Got it &mdash; show me</button>' +
           '<button class="btn" onclick="closeModal(this)">Dismiss</button>' +
@@ -586,23 +586,25 @@ function renderWeightHistory(){
   // however wrong it was. deleteWeightEntry() handles any key; only the render withheld it.
   const _shown = _weighShowAll ? entries : entries.slice(0,8);
   const _thisYear = new Date().getFullYear();
-  wrap.innerHTML = '<div class="lbl" style="margin-bottom:6px">Recent weigh-ins</div>' +
+  // A grouped list, through the app's own row builder \u2014 it was hand-rolled rows on the bare screen
+  // background with full-width hairlines, the date set at 12px in the tertiary grey beside a 17px
+  // weight. iosRow gives one height, one inset separator, one escaping rule.
+  wrap.innerHTML = '<div class="ios-section"><div class="ios-header">Recent weigh-ins</div><div class="ios-list">' +
     _shown.map(e => {
       // ...and dated unambiguously. "5 Sep" on two entries a year apart is the same label twice.
       const _d = e.ts ? new Date(e.ts) : null;
       const _opts = (_d && _d.getFullYear() !== _thisYear)
         ? {day:'numeric',month:'short',year:'numeric'} : {day:'numeric',month:'short'};
       const when = _d ? _d.toLocaleDateString('en-AU',_opts) : (e.date||'');
-      return '<div class="body-entry"><span style="font-size:var(--t-base);color:var(--tx)">'+wFmt(e.weight)+'</span>'+
-        '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+when+'</span>'+
-        '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button></span></div>';
-    }).join('') +
+      return iosRow({ cls:'has-del', title: when, value: wFmt(e.weight),
+        trailing: '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button>' });
+    }).join('') + '</div>' +
     // The way back to the rest of them. Without this the list simply stopped at eight with no
     // sign there were more, which is why nobody noticed the older ones were unreachable.
     (entries.length > 8
-      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);font-family:var(--font-text);cursor:pointer">'
+      ? '<button class="btn quiet" onclick="toggleWeighShowAll()">'
         + (_weighShowAll ? 'Show fewer' : 'Show all ' + entries.length + ' weigh-ins') + '</button>'
-      : '');
+      : '') + '</div>';
 }
 async function deleteWeightEntry(key){
   // A WEIGH-IN IS NOT ONLY A WEIGHT. The weekly check-in is stored on the SAME entry — the six
@@ -685,22 +687,22 @@ function renderBodyGoalCard(){
     const n = (ls('totry_body') || []).filter(e => e && e.weight > 0).length;
     if(n < 3){ box.style.display = 'none'; return; }
     box.style.display = '';
-    box.innerHTML = '<div class="card" style="padding:14px">' +
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:10px">' +
+    box.innerHTML = '<div class="card">' +
+      '<div class="card-sub">' +
         'Want me to tell you where this is heading? Give me a weight to aim at and I will work out ' +
         'when you get there — from your own trend, not a formula.</div>' +
-      '<button class="btn" onclick="openGoalWeight()" style="background:var(--bg3);font-size:var(--t-base)">Set a goal weight</button>' +
+      '<button class="btn" onclick="openGoalWeight()">Set a goal weight</button>' +
     '</div>';
     return;
   }
   if(!p){
     // A goal, but not enough behind it yet. Say so, rather than showing an empty card or a fake date.
     box.style.display = '';
-    box.innerHTML = '<div class="card" style="padding:14px">' +
-      '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(goal)) + '</div>' +
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
+    box.innerHTML = '<div class="card">' +
+      '<div class="lbl">Goal ' + _escFew(wf(goal)) + '</div>' +
+      '<div class="card-sub">Three weeks of weigh-ins and I can tell you when. ' +
         'Until then a date would be a guess dressed up as a fact.</div>' +
-      '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change it</button>' +
+      '<button class="btn quiet" onclick="openGoalWeight()">Change it</button>' +
     '</div>';
     return;
   }
@@ -750,12 +752,14 @@ function renderBodyGoalCard(){
     body = 'The trend is moving your way but slowly enough that any date I gave you would be fiction.';
   }
   box.style.display = '';
-  box.innerHTML = '<div class="card" style="padding:14px">' +
-    '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(p.goal)) + '</div>' +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
-      _escFew(head) + '</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
-    '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change the goal</button>' +
+  // New York is the reading face for scripture; a headline the app says in its own voice is the
+  // DISPLAY face, and it was italic on top of that. .card-display is that role, and the one colour
+  // left on it is the verdict's own (green when it is going well, tint when it is only news).
+  box.innerHTML = '<div class="card">' +
+    '<div class="lbl">Goal ' + _escFew(wf(p.goal)) + '</div>' +
+    '<div class="card-display" style="color:' + col + '">' + _escFew(head) + '</div>' +
+    '<div class="card-sub">' + _escFew(body) + '</div>' +
+    '<button class="btn quiet" onclick="openGoalWeight()">Change the goal</button>' +
   '</div>';
 }
 
@@ -944,14 +948,14 @@ function renderRecompInsight(){
   const box=document.getElementById('recomp-insight'); if(!box) return;
   const r=(typeof recompRead==='function')?recompRead():null;
   if(!r){ box.style.display='none'; return; }
+  // It painted a green gradient (or a tint wash) and a matching border over a .card. A card is one
+  // surface; the verdict's colour belongs on the headline, which is where a person reads it.
   const col=r.tone==='warn'?'var(--go)':'var(--gr)';
   box.style.display='block';
-  box.style.background=r.tone==='warn'?'var(--go-bg)':'linear-gradient(135deg,rgba(91,185,125,0.10),rgba(91,185,125,0.02))';
-  box.style.borderColor=r.tone==='warn'?'var(--go-bd)':'var(--gr-bd)';
   box.innerHTML=
-    '<div class="eyebrow" style="color:'+col+';margin-bottom:6px">Weight × strength · what the scale can’t see</div>'+
-    '<div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:6px">'+r.head+'</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+r.body+'</div>';
+    '<div class="lbl">Weight × strength</div>'+
+    '<div class="card-display" style="color:'+col+'">'+r.head+'</div>'+
+    '<div class="card-sub">'+r.body+'</div>';
 }
 function renderBody(){
   const entries=ls('totry_body')||[];
@@ -974,10 +978,10 @@ function renderBody(){
       todaySummary.style.color = 'var(--gr)';
     } else if(entries.length && entries[0].weight > 0){
       todaySummary.textContent = 'Last: ' + wFmt(entries[0].weight) + ' (' + (entries[0].date || (entries[0].ts ? new Date(entries[0].ts).toLocaleDateString('en-AU') : 'earlier')) + ')';
-      todaySummary.style.color = 'var(--tx3)';
+      todaySummary.style.color = '';          // the row's own subtitle grey, not a third one
     } else {
       todaySummary.textContent = 'No log yet';
-      todaySummary.style.color = 'var(--tx3)';
+      todaySummary.style.color = '';
     }
   }
   
@@ -999,17 +1003,14 @@ function renderBody(){
     if(bmiEl){
       if(h > 0){
         const bmi = Math.round((cur/((h/100)**2))*10)/10;
-        bmiEl.textContent = bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
-        bmiEl.onclick = null; bmiEl.style.cursor = ''; bmiEl.removeAttribute('role');
+        bmiEl.textContent = 'BMI ' + bmi + ' \u00b7 ' + (bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese');
+        bmiEl.className = 'ios-footnote';
+        bmiEl.onclick = null; bmiEl.removeAttribute('role'); bmiEl.removeAttribute('tabindex');
       } else {
         bmiEl.textContent = 'Add your height for BMI';
-        bmiEl.style.cursor = 'pointer';
-        // A working button 13px tall. It has a role and a handler; it needed a box a thumb can find.
-        bmiEl.style.padding = '7px 10px';
-        bmiEl.style.minHeight = '24px';
-        bmiEl.style.display = 'inline-flex';
-        bmiEl.style.alignItems = 'center';
-        bmiEl.style.justifyContent = 'center';
+        // A working button 13px tall. It has a role and a handler; it needed a box a thumb can find —
+        // and it needed to stop being six inline style assignments. .footnote-link is that box.
+        bmiEl.className = 'ios-footnote footnote-link';
         bmiEl.setAttribute('tabindex','0');
         bmiEl.onkeydown = function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); bmiEl.onclick(); } };
         bmiEl.setAttribute('role','button');
@@ -1068,7 +1069,7 @@ function renderBody(){
     // dark theme and completely invisible on the light one, where --bg3 is #EBE4D2. Every number on
     // the weight chart simply was not there. An SVG fill= is an attribute, not a CSS declaration, so
     // the no-hardcoded-ink check never looked at it and the whole light-theme sweep walked past.
-    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="var(--tx3)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
+    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
   } else {
     // Same for the trend line, and note the threshold is >= 2: one weigh-in is not a trend, so a chart
     // left over from when there were two is a line the person's data no longer supports.
@@ -1078,7 +1079,7 @@ function renderBody(){
   if(hist){
     hist.innerHTML='';
     if(!entries.length){
-      hist.innerHTML='<p class="empty-note">No check-ins yet</p>';
+      hist.innerHTML='<p class="card-note">No check-ins yet</p>';
       // Run the tail before bailing. Measurements, progress photos and the body-comp insight do NOT
       // depend on a weight check-in existing, and skipping them meant someone who tracked their waist
       // or took photos but never weighed themselves saw none of their own data.
@@ -1108,25 +1109,28 @@ function renderBody(){
         // over 5, so a person's own record read "Train 9/5 · Faith 10/5" — impossible fractions on the
         // one screen that is meant to be their honest history. The stored values were always right.
         .filter(x=>x[1]>0).map(x=>x[0]+' '+x[1]+'/10').join(' \u00b7 ');
+      // A card inside a card inside a card: each check-in drew its own bordered tertiary box inside
+      // #body-history, which is itself a .card. One surface, entries separated by a hairline — the
+      // same way a grouped list separates its rows. The label roles are named, not improvised: the
+      // date is a section label, the weight a headline, the reflections body copy.
       const card=document.createElement('div');
-      card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px';
-      let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
-        '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
-        (e.weight>0?'<span style="font-size:var(--t-base);color:var(--tx)">'+wFmt(e.weight)+' <span style="font-size:var(--t-cap);color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
+      card.className='hist-entry';
+      let html='<div class="hist-top">'+
+        '<span class="lbl">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
+        (e.weight>0?'<span class="hist-w">'+wFmt(e.weight)+' <span class="hist-d '+cls+'">'+cs+'</span></span>':'')+
         '</div>';
-      if(e.bf>0) html+='<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px">Body fat: '+e.bf+'%</div>';
-      if(scoreLine) html+='<div style="font-size:var(--t-cap);color:var(--tx2);margin-bottom:6px">'+scoreLine+'</div>';
-      if(e.win) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--gr)">Win:</span> '+e.win.replace(/</g,'&lt;')+'</div>';
-      if(e.struggle) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--go)">Struggle:</span> '+e.struggle.replace(/</g,'&lt;')+'</div>';
-      if(e.focus) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--tx3)">Next:</span> '+e.focus.replace(/</g,'&lt;')+'</div>';
-      if(e.note) html+='<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;font-style:italic">'+e.note.replace(/</g,'&lt;')+'</div>';
+      if(e.bf>0) html+='<div class="hist-meta">Body fat: '+e.bf+'%</div>';
+      if(scoreLine) html+='<div class="hist-meta">'+scoreLine+'</div>';
+      if(e.win) html+='<div class="hist-said"><b class="good">Win:</b> '+e.win.replace(/</g,'&lt;')+'</div>';
+      if(e.struggle) html+='<div class="hist-said"><b class="warm">Struggle:</b> '+e.struggle.replace(/</g,'&lt;')+'</div>';
+      if(e.focus) html+='<div class="hist-said"><b class="quiet">Next:</b> '+e.focus.replace(/</g,'&lt;')+'</div>';
+      if(e.note) html+='<div class="hist-said">'+e.note.replace(/</g,'&lt;')+'</div>';
       card.innerHTML=html;
       hist.appendChild(card);
     });
     if(entries.length > 12){
       const more=document.createElement('button');
-      more.className='btn';
-      more.style.cssText='width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-sm);min-height:34px';
+      more.className='btn quiet';
       more.textContent = _bodyHistShowAll ? 'Show fewer' : ('Show all ' + entries.length + ' check-ins');
       more.onclick = toggleBodyHistShowAll;
       hist.appendChild(more);
@@ -1170,11 +1174,11 @@ function renderBodyCompInsight(){
     const dMuscle = (recent.comp.muscleKg!=null && earlier.comp.muscleKg!=null) ? Math.round((recent.comp.muscleKg - earlier.comp.muscleKg)*10)/10 : null;
     // Recomp win: weight roughly flat (or up) but fat down — the scale lies, the body's improving.
     if(dFat!=null && dFat < -0.3 && Math.abs(dWeight) <= 1.5){
-      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+wDelta(dWeight)+'), but you\'ve lost '+wFmt(Math.abs(dFat))+' of fat'+(dMuscle!=null && dMuscle>0?' and gained '+wFmt(dMuscle)+' of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
+      html += '<div class="card-sub"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+wDelta(dWeight)+'), but you\'ve lost '+wFmt(Math.abs(dFat))+' of fat'+(dMuscle!=null && dMuscle>0?' and gained '+wFmt(dMuscle)+' of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
     } else if(dFat!=null && dMuscle!=null && dFat < 0 && dMuscle > 0){
-      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
+      html += '<div class="card-sub"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
     } else if(dMuscle!=null && dMuscle > 0.3){
-      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+wFmt(dMuscle)+' of muscle. The work is showing.</div>';
+      html += '<div class="card-sub"><span style="color:var(--gr)">Building.</span> You\'ve added '+wFmt(dMuscle)+' of muscle. The work is showing.</div>';
     }
     // Protein ↔ muscle context (item 10): pair the muscle trend with recent protein intake.
     if(dMuscle!=null){
@@ -1182,7 +1186,7 @@ function renderBodyCompInsight(){
       Object.keys(log).forEach(k=>{const en=log[k]||[];if(!en.length)return;const ts=en[0].ts?new Date(en[0].ts).getTime():null;if(!ts||now-ts>14*86400000)return;const p=en.reduce((a,e)=>a+(e.pro||0),0);if(p>0){pT+=p;pD++;}});
       if(pD>=3){
         const avgPro=Math.round(pT/pD);
-        html += '<div style="margin-top:8px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">Muscle '+wDelta(dMuscle)+' · avg protein '+avgPro+'g/day over 2 weeks</div>';
+        html += '<div class="card-note">Muscle '+wDelta(dMuscle)+' · avg protein '+avgPro+'g/day over 2 weeks</div>';
       }
     }
   }
@@ -1280,7 +1284,9 @@ function openMeasurementLogger(){
     '</div>' +
     // Evolt 360 body scan section — for Revo gym users with access to the scanner
     '<details style="margin-bottom:14px">' +
-      '<summary style="cursor:pointer;padding:10px 12px;background:var(--bg3);border-radius:var(--rs);font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em;list-style:none">'+svgIcon("search")+' Add Evolt 360 scan data</summary>' +
+      // A disclosure control is a CONTROL, not a section header: it was 12px capitals with a
+      // magnifier beside it, which is the one shape a person reads as a search box.
+      '<summary class="disclosure">Add Evolt 360 scan data</summary>' +
       '<div style="padding:12px 2px 0">' +
         '<p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Got a body scan at the gym (Evolt 360 / InBody)? Enter the key numbers from your printout to track composition over time.</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
@@ -1337,7 +1343,7 @@ function renderMeasurements(){
   if(!summary || !history) return;
   
   if(!list.length){
-    summary.textContent = 'Track waist, chest, arms, thighs. Tap "Log today" to add a snapshot.';
+    summary.textContent = 'Waist, chest, arms, thighs — tap to add a snapshot.';
     history.innerHTML = '';
     return;
   }
@@ -1365,26 +1371,22 @@ function renderMeasurements(){
     }
   });
   
-  summary.innerHTML = list.length === 1 ?
-    '<span style="font-family:var(--font-text)">First snapshot logged ' + cur.date + ' — baseline set.</span>' :
-    '<span style="font-family:var(--font-text);color:var(--tx2)">' + list.length + ' snapshots · Change since baseline: ' + (changes.join(' · ') || 'no change yet') + '</span>';
+  // The row above owns the label, so this is its SUBTITLE — one line of plain text, not two spans
+  // re-declaring the text face inside an element that already has it.
+  summary.textContent = list.length === 1
+    ? ('First snapshot logged ' + cur.date + ' — baseline set.')
+    : (list.length + ' snapshots · since baseline: ' + (changes.join(' · ') || 'no change yet'));
   
-  // Show last 5
-  history.innerHTML = '';
-  list.slice(0, 5).forEach((e, i) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'padding:8px 0;border-top:1px solid var(--bd);font-size:var(--t-cap)';
+  // Show last 5, as rows in their own group: the date is the row's title, the numbers its subtitle.
+  // They were 13px blocks separated by full-width hairlines inside somebody else's card.
+  history.innerHTML = list.slice(0, 5).map((e, i) => {
     const parts = [];
     Object.keys(labels).forEach(k => {
       if(e[k] !== undefined) parts.push(labels[k] + ' ' + e[k] + (units[k] || ''));
     });
-    row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-      '<div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + e.date + '</div>' +
-      '<div style="color:var(--tx2);margin-top:2px;line-height:1.5">' + parts.join(' · ') + '</div></div>' +
-      '<button class="fli-del" onclick="deleteMeasurement(' + i + ')" aria-label="Delete this snapshot" style="min-width:32px;min-height:32px">\u00d7</button>' +
-    '</div>';
-    history.appendChild(row);
-  });
+    return iosRow({ title: e.date, sub: parts.join(' \u00b7 '),
+      trailing: '<button class="fli-del" onclick="deleteMeasurement(' + i + ')" aria-label="Delete this snapshot">\u00d7</button>' });
+  }).join('');
 }
 async function deleteMeasurement(idx){
   if(!(await askConfirm('Delete this measurement snapshot?'))) return;
@@ -1472,8 +1474,10 @@ function renderProgressPhotos(){
   if(!grid) return;
   const photos = ls('totry_progress_photos') || [];
   if(!photos.length){
+    // A footnote, not a centred italic. The row above already says "Add a progress photo", so the
+    // empty state's only job is to say the timeline has not started yet.
     grid.style.display = 'block';
-    grid.innerHTML = '<div class="empty-note">No photos yet. Add one to start your timeline.</div>';
+    grid.innerHTML = '<div class="ios-footnote">No photos yet. Add one to start your timeline.</div>';
     return;
   }
   // Group photos by upload date so each date is its own labeled section
@@ -1492,9 +1496,11 @@ function renderProgressPhotos(){
         '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover" alt="' + date + '">' +
       '</div>'
     ).join('');
-    return '<div style="margin-bottom:14px">' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + date + ' · ' + byDate[date].length + (byDate[date].length === 1 ? ' photo' : ' photos') + '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + tiles + '</div>' +
+    // The date label was 12px tint capitals with its own letter-spacing — a fourth kind of section
+    // header. It is the app's section-header role, which already knows how capitals are set.
+    return '<div class="photo-group">' +
+      '<div class="ios-header">' + date + ' \u00b7 ' + byDate[date].length + (byDate[date].length === 1 ? ' photo' : ' photos') + '</div>' +
+      '<div class="photo-grid">' + tiles + '</div>' +
     '</div>';
   }).join('');
 }
@@ -1506,7 +1512,7 @@ function openProgressPhotoViewer(id){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + p.date + '</div>' +
+    '<div class="lbl">' + p.date + '</div>' +
     '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;border-radius:var(--rm);background:#000;margin-bottom:12px">' +
     '<button class="btn danger" onclick="deleteProgressPhoto(' + p.id + ')" style="margin-bottom:8px">Delete this photo</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
@@ -1620,7 +1626,7 @@ function updateTrackerDisplay(){
       sum.style.color='var(--gr)';
     } else {
       sum.textContent='No log today';
-      sum.style.color='var(--tx3)';
+      sum.style.color='';                     // the row's own subtitle grey, not a third one
     }
   }
 }
