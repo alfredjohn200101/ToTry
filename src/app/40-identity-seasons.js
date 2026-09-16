@@ -49,8 +49,11 @@ function renderIdentity(){
       return !!hr && getComputedStyle(hr).display!=='none' && (hr.innerText||'').trim().length>0;
     }catch(_){ return false; } })();
     if(heroHasIt && bits.length){
+      // It read as a centred ITALIC sentence with a bare \u2713 glyph in front of it under a gold 11px
+      // caps label. Same words, same evidence, in the card's own body role \u2014 left-aligned, upright,
+      // and the tick is the icon language rather than a character borrowed from a font.
       if(labelEl)labelEl.textContent='Proof you are living it';
-      el.innerHTML='<span style="color:var(--tx)">\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
+      el.innerHTML='<span style="color:var(--tx)">'+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
       if(evEl) evEl.style.display='none';
     } else {
       if(labelEl)labelEl.textContent='Who you are becoming';
@@ -58,7 +61,7 @@ function renderIdentity(){
       if(evEl){
         if(bits.length){
           evEl.style.display='block';
-          evEl.textContent='\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
+          evEl.textContent=bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
         } else { evEl.style.display='none'; }
       }
     }
@@ -294,10 +297,12 @@ function renderDualStreaks(){
     if(el){
       const n=(ls('totry_moments_won')||[]).length;
       if(n>0){
+        // It floated between two cards, centred, at 12px in the third grey with a gold bold numeral
+        // inside it — naked micro-copy at a size nothing else on the screen uses. It is the section's
+        // footnote now: 13pt, secondary, left-aligned under the tiles it is talking about.
         el.style.display='block';
-        el.innerHTML='<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em">'+
-          '<b style="color:var(--go)">'+n+'</b> urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it</span>';
-      } else { el.style.display='none'; el.innerHTML=''; }
+        el.textContent=n+' urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it.';
+      } else { el.style.display='none'; el.textContent=''; }
     }
   }catch(_){}
   // The tile counts the FIGHT now, not the clean streak, so "Days clean" here was relabelling the

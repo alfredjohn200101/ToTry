@@ -346,10 +346,16 @@ function renderHomeGreeting(){
   try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ let _t=identity.replace(/^I am\s+/i,'').trim(); _t=_t.charAt(0).toUpperCase()+_t.slice(1);   // stripping "I am" left a lowercase fragment in italic serif under the greeting; a capital makes it a line rather than a truncation
     idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
-  // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
-  try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
+  // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently. The verse
+  // has its own section now, so hide the SECTION: hiding only the pill left its header stranded over
+  // nothing — a caps label introducing empty space, which is the shape this rebuild is removing.
+  try{ const vs=document.getElementById('home-verse-section') || document.querySelector('.hero-verse');
+    if(vs) vs.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
   subEl.textContent = sub;
-  if(actLabel){ actEl.style.display='block'; actEl.textContent = actLabel; actEl.dataset.act = actType; }
+  // display:'' , not 'block': .btn is a flex box that centres its own label, and forcing it to block
+  // would drop the centring and start the label at the left edge — the trap this codebase has already
+  // met from the other side (`text-align:left` on a flex .btn doing nothing).
+  if(actLabel){ actEl.style.display=''; actEl.textContent = actLabel; actEl.dataset.act = actType; }
   else { actEl.style.display='none'; }
 }
 function homeGreetingAction(){
@@ -363,8 +369,12 @@ function homeGreetingAction(){
 function renderNextStep(){
   const el = document.getElementById('next-step-anchor');
   if(!el) return;
+  // The row lives in a grouped section with its own header, so hiding the ROW alone would leave a
+  // "NEXT" label sitting over an empty list. Hide the section; the row's own display stays in step.
+  const sec = document.getElementById('next-step-section');
+  const _hide = () => { el.style.display='none'; if(sec) sec.style.display='none'; };
   // Don't compete with the first-run card for brand-new users.
-  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ el.style.display='none'; return; }
+  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ _hide(); return; }
   const step = getNextStep();
   const t = document.getElementById('next-step-text');
   const sub = document.getElementById('next-step-sub');
@@ -389,6 +399,7 @@ function renderNextStep(){
   else delete el.dataset.actionArg;
   el.style.opacity = step.done ? '0.75' : '1';
   el.style.display = 'flex';
+  if(sec) sec.style.display = '';
 }
 // Count the open daily loops (used only to soften the framing on heavy days — never to nag).
 function _countOpenLoops(){
@@ -432,14 +443,21 @@ function renderHomeHabits(){
   const list = document.getElementById('home-habit-list');
   if(!list) return;
   list.innerHTML = '';
-  
+  // The two scores and the instructions are a stat pair ABOVE the card and a footnote BELOW it now,
+  // so the card holds only the grid. Both are hidden until there is something to put in them.
+  const sumBox = document.getElementById('home-habit-summary');
+  const noteBox = document.getElementById('home-habit-note');
+  if(sumBox){ sumBox.innerHTML=''; sumBox.style.display='none'; }
+  if(noteBox){ noteBox.textContent=''; noteBox.style.display='none'; }
+
   if(!habits.length){
     // Used to read "Add them in Settings" — there is no habit UI in Settings, so this sent every new
-    // user looking for something that does not exist. Now it offers the thing directly.
-    list.innerHTML = '<div style="text-align:center;padding:16px 8px 6px">'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">No habits yet. Pick one small thing you want to be true of you most days.</div>'+
-      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:var(--t-base)" onclick="openAddHabit()">Add your first habit</button>'+
-    '</div>';
+    // user looking for something that does not exist. Now it offers the thing directly, in the
+    // standard empty state rather than a hand-centred block at an improvised size.
+    list.innerHTML = '<div class="ios-empty">'+svgIcon('target',44)+
+      '<div class="ios-empty-title">No habits yet</div>'+
+      '<div class="ios-empty-body">Pick one small thing you want to be true of you most days.</div>'+
+    '</div><button class="btn primary" onclick="openAddHabit()">Add your first habit</button>';
     return;
   }
   
@@ -510,22 +528,26 @@ function renderHomeHabits(){
   const todayDone = habits.filter(h => cellFor(h, 0)).length;
   const todayTotal = habits.length;
   
-  const summary = document.createElement('div');
-  summary.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:14px';
-  summary.innerHTML = 
-    '<div>' +
-      '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
-      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx)">' +
+  // THE SCORES ARE STAT TILES, NOT A PANEL INSIDE THE CARD. This was a --bg3 box nested inside the
+  // habit card \u2014 a card inside a card \u2014 with the two labels in one grey and the two numbers in two
+  // different greys, the right-hand one wearing a DOTTED UNDERLINE to suggest it could be tapped.
+  // They are the same tiles Money and Grow use, on the ground above the card, and the tappable one
+  // says so in the tint, which is how iOS says it.
+  const summary = sumBox || list;
+  summary.innerHTML =
+    '<div class="ios-stat">' +
+      '<div class="ios-stat-label">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
+      '<div class="ios-stat-value" style="font-size:22px">' +
         (knowable
           ? (_weeklyOnly ? (_wkHits + ' of ' + _wkTarget + ' this week' + (_wkHits >= _wkTarget ? ' \u2713' : ''))
                          : (pastPerfect + '/' + elapsed + ' perfect'))
           : 'starts today') + '</div>' +
     '</div>' +
-    '<div style="text-align:right;cursor:pointer;min-height:34px" id="home-habit-today">' +
-      '<div class="eyebrow">Today so far</div>' +
-      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx2);border-bottom:1px dotted var(--bd);display:inline-block">' + todayDone + '/' + todayTotal + '</div>' +
+    '<div class="ios-stat" style="cursor:pointer" id="home-habit-today">' +
+      '<div class="ios-stat-label">Today so far</div>' +
+      '<div class="ios-stat-value" style="font-size:22px;color:var(--go)">' + todayDone + '/' + todayTotal + '</div>' +
     '</div>';
-  list.appendChild(summary);
+  if(sumBox) sumBox.style.display = '';
   // This card counted the day and offered no way to move it. The grid is deliberately read-only
   // (ticking belongs to the evening, where it is one step of closing the day) \u2014 but "0/3" with no
   // route is a scoreboard with no game. The score itself is now the door to the tick list.
@@ -553,16 +575,16 @@ function renderHomeHabits(){
   // The name column used to be 1 of 8 EQUAL columns, which on a 375px iPhone left it 36px wide — so
   // every habit rendered as "Mor…", "No v…", "Pra…" and the grid became unreadable at a glance. The day
   // cells only ever hold a tick or a dot, so they are clamped small and the name takes what is left.
-  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;margin-bottom:6px;padding:0 4px;max-width:100%';
-  headerRow.innerHTML = '<div></div>' + dayLabels.map(d => 
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
+  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.6fr) repeat(7,minmax(16px,22px));gap:3px;align-items:center;margin-bottom:4px;padding:0;max-width:100%';
+  headerRow.innerHTML = '<div></div>' + dayLabels.map(d =>
+    '<div style="font-family:var(--font-text);font-size:13px;text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
   ).join('');
   list.appendChild(headerRow);
   
   // Each habit as a row: name on left, last 7 day cells on right (oldest left, today right)
   habits.forEach((h, hi) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;padding:8px 4px;border-top:1px solid var(--bd);max-width:100%';
+    row.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.6fr) repeat(7,minmax(16px,22px));gap:3px;align-items:center;padding:10px 0;border-top:.5px solid var(--bd);max-width:100%';
     
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
@@ -583,12 +605,15 @@ function renderHomeHabits(){
     // The name is the door to the anchor. The 7 cells stay read-only exactly as before — this is
     // not ticking, so it doesn't break the "ticking lives in the evening" rule.
     nameCell.style.cursor = 'pointer';
+    // The name carried a DOTTED UNDERLINE to advertise its tap, and its two sub-lines sat at 11px in
+    // two different colours. The name is a plain row title; both sub-lines are the one 13pt footnote
+    // size, and the tap is advertised the way iOS advertises one \u2014 the anchor line in the tint.
     nameCell.innerHTML =
-      '<div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px dotted var(--bd);display:inline-block;max-width:100%">' + _escFew(h.n) + '</div>' +
+      '<div style="font-size:17px;letter-spacing:-.022em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + _escFew(h.n) + '</div>' +
       (_anc
-        ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
-        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
+        ? '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
+        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px">Anchor it to a cue</div>') : '')) +
+      '<div style="font-family:var(--font-text);font-size:13px;color:' + pastColor + ';margin-top:1px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
@@ -605,31 +630,37 @@ function renderHomeHabits(){
       const cell = document.createElement('div');
       let bg, border, color, mark;
       
+      // FILLED OR EMPTY, NEVER DOTTED. Each state here was a different BORDER — dotted for no record,
+      // dashed for today, solid green for done — so one row of seven days read as four kinds of sketch
+      // outline, which is as generated-looking as this screen gets. A day is a dot: filled when it
+      // happened, an empty recess when it did not, a tint ring on today. And the mark inside was set
+      // in "DM Mono, monospace", a family this app does not ship — every one of these cells has been
+      // rendering in the browser's own Courier.
       if(unknown){
         bg = 'transparent';
-        border = '1px dotted var(--bd)';
-        color = 'rgba(242,239,232,0.22)';
+        border = '0';
+        color = 'var(--tx3)';
         mark = '\u2013';                       // en dash: no record, not a miss
       } else if(done){
-        bg = isToday ? 'var(--go-bg)' : 'rgba(89,164,103,0.18)';
-        border = isToday ? '1.5px solid var(--go)' : '1px solid var(--gr)';
-        color = isToday ? 'var(--go)' : 'var(--gr)';
+        bg = isToday ? 'var(--go)' : 'var(--gr)';
+        border = '0';
+        color = 'var(--on-tint)';
         mark = '✓';
       } else if(isToday){
-        bg = 'transparent';
-        border = '1.5px dashed var(--go)';
-        color = 'var(--tx3)';
-        mark = '·';
+        bg = 'var(--fill2)';
+        border = '1.5px solid var(--go)';
+        color = 'var(--go)';
+        mark = '';
       } else {
-        bg = 'transparent';
-        border = '1px solid var(--bd)';
+        bg = 'var(--fill2)';
+        border = '0';
         color = 'var(--tx3)';
-        mark = '·';
+        mark = '';
       }
-      
-      cell.style.cssText = 
-        'width:100%;max-width:32px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;' +
-        'font-family:DM Mono,monospace;font-size:12px;font-weight:600;box-sizing:border-box;' +
+
+      cell.style.cssText =
+        'width:100%;max-width:26px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+        'font-family:var(--font-rounded);font-size:13px;font-weight:600;box-sizing:border-box;' +
         'background:' + bg + ';border:' + border + ';color:' + color + ';user-select:none' +
         '';   // no cursor:pointer — this grid is deliberately read-only (see below), so it must not
               // advertise a tap it will not honour.
@@ -643,10 +674,14 @@ function renderHomeHabits(){
     list.appendChild(row);
   });
   
-  const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;letter-spacing:0.01em;line-height:1.5';
-footer.innerHTML = 'Tap a name to anchor it to something you already do \u00b7 tap today\'s score to tick them off \u00b7 past 6 days on the left';
-  list.appendChild(footer);
+  // THE INSTRUCTIONS ARE A FOOTNOTE, NOT A STRIP. This was three separate instructions joined by
+  // middots, centred, at 11px, inside the card \u2014 the "Manage \u00b7 edit \u00b7 remove" shape that reads as
+  // generated wherever it appears. Two sentences, at the one footnote size, outside the card, where
+  // iOS puts the note that explains a grouped section.
+  if(noteBox){
+    noteBox.textContent = 'Tap a name to anchor it to something you already do. Tap today\u2019s score to tick them off \u2014 the last six days run to the left.';
+    noteBox.style.display = '';
+  }
 }
 
 

@@ -113,8 +113,23 @@ This is the part the owner is pointing at, and it is invisible in a wireframe. R
   ```
   `iosRow` escapes `title`/`sub`/`value`; pass plain text. Tones: blue green red orange yellow purple
   indigo pink teal gray mint brown (each a white glyph on a system-colour tile, like Settings.app).
+  `chevron:false` for a row that already ends in a control; `tag:'div'` for the one shape a
+  `<button>` cannot hold — a tappable row that also carries its own button (the calendar's delete).
+  A `<button>` inside a `<button>` is not parseable HTML: the parser closes the outer one.
+- **Screen subtitle** `.page-sub` — the sentence under a `.page-title`. 17px, `--tx2`.
+- **Section header with an action** — `<div class="ios-header home-section-hd"><span>Today's
+  habits</span><button class="hd-action" onclick="…">Add or edit</button></div>`. That is Settings'
+  "Edit": the label at 13 caps, the verb at 15 in the tint. Not an 11px caps micro-link.
 - **Card** `.card` — for rich content that is not a list (a chart, a hero number with context, a
   scripture passage). No borders. No nested cards: inside a card, group with space or a hairline.
+  Inside one, use the three roles rather than sizing anything by hand — Today's hand-painted cards
+  re-invented them eleven times between them, at 11px, 12px, 15px and 17px, half of them italic:
+  - `.card-say` — **the app SPEAKING**: the coach's sentence, the welcome, the hand after a slip.
+    22px in the ToTry face, upright, weight 500. Never bold it and never set italic on it.
+  - `.card-body` — the sentence that supports it. 15px, `--tx2`.
+  - `.card-foot` — the footnote under it. 13px, `--tx2`; `.card-foot.tint` when it is an action.
+  - `.home-card-top` (title row with a `.card-x` dismiss) and `.btn-row` (two choices side by side;
+    stack them instead when either label is a phrase, or the longer one wraps inside its button).
 - **Stat tiles** — `<div class="ios-stats"><div class="ios-stat"><div class="ios-stat-label">Paid off</div><div class="ios-stat-value">$3,300</div></div>…</div>`
 - **Buttons** — `.btn.primary` (filled tint, the ONE main action on a screen), `.btn` (gray fill,
   tint label), `.btn.quiet` (plain tint text), `.btn.danger` / `.btn.success` (tinted). Full-width

@@ -1171,9 +1171,12 @@ function svgIcon(name, size){
 function iosRow(o){
   o = o || {};
   const esc = (v) => (o.html ? String(v == null ? '' : v) : String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
-  const tag = o.onclick ? 'button' : 'div';
+  // `tag:'div'` for the one shape a <button> cannot hold: a tappable row that also carries its own
+  // control (the calendar's delete). A <button> inside a <button> is not parseable HTML — the parser
+  // closes the outer one — so that row is a div with the same onclick it has always had.
+  const tag = o.tag || (o.onclick ? 'button' : 'div');
   const cls = 'ios-row' + (o.icon ? ' has-icon' : '') + (o.destructive ? ' destructive' : '') + (o.tint ? ' tint' : '') + (o.cls ? ' ' + o.cls : '');
-  const attrs = (o.onclick ? ' type="button" onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"' : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
+  const attrs = (o.onclick ? ((tag === 'button' ? ' type="button"' : '') + ' onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"') : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
   return '<' + tag + ' class="' + cls + '"' + attrs + '>' +
     (o.icon ? '<span class="ios-row-icon tone-' + (o.tone || 'blue') + '">' + svgIcon(o.icon, 18) + '</span>' : '') +
     '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + esc(o.title) + '</span>' +

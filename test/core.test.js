@@ -7734,4 +7734,100 @@ H.section('iOS rows: one row everywhere, and a row never runs what a person type
   H.ok(/<b>x<\/b>/.test(F.iosRow({ title: '<b>x</b>', html: true })), 'and html:true passes trusted markup (calibration)');
 }
 
+
+H.section('Today and the week: the title is not in a box, and the small text has one size each');
+{
+  const html = H.html;
+  const code = H.code(html);
+
+  // ── 1. A ROW THAT CARRIES ITS OWN CONTROL IS A DIV ────────────────────────────────────────────
+  // The calendar event row is tappable (edit) AND holds a delete. A <button> inside a <button> is
+  // not parseable HTML — the parser closes the outer one — so iosRow takes an explicit tag. The
+  // regression this catches is the tag being ignored: the row comes back a <button>, the delete
+  // lands outside it, and every event row in the week loses its editor.
+  const F = H.load(['svgIcon', 'iosRow', 'iosList']);
+  const bad = '<img src=x onerror=alert(1)>';
+  const calRow = F.iosRow({ tag:'div', icon:'briefcase', tone:'indigo', title: bad, sub:'09:00–17:00',
+    onclick:'editCalEvent(7)', chevron:false, cls:'cal-row',
+    trailing:'<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(7)" aria-label="Remove this event">×</button>' });
+  H.ok(/^<div class="ios-row has-icon cal-row"/.test(calRow), 'tag:"div" gives a div row, so its delete button is not nested inside a button');
+  H.ok(/onclick="editCalEvent\(7\)"/.test(calRow), 'and the row still carries its own tap — editing an event is unchanged');
+  H.ok(calRow.indexOf('<button') === calRow.lastIndexOf('<button'), 'exactly one <button> in the row: the delete');
+  H.ok(!/<img/.test(calRow) && /&lt;img/.test(calRow), 'a div row escapes the title exactly as a button row does');
+  H.ok(!/ios-row-chevron/.test(calRow), 'chevron:false leaves one trailing mark, not two');
+  // CALIBRATION: without tag, the same options still produce a button — so the assertion above is
+  // testing the tag and not something else about this row.
+  H.ok(/^<button class="ios-row/.test(F.iosRow({ icon:'briefcase', title:'x', onclick:'editCalEvent(7)' })),
+    'and a row with no tag is still a button (calibration)');
+
+  // ── 2. THE HERO IS NOT A BOX, AND NOTHING INSIDE IT IS GLASS ──────────────────────────────────
+  // Today's greeting, the day's action, the next step and the scripture all lived in ONE card:
+  // the largest type in the app inside a box, with a translucent blurred panel painted inside it.
+  H.ok(!/class="hero-nextstep"/.test(html), 'the next step is no longer a translucent panel inside the hero');
+  H.ok(!/class="hero-aurora"/.test(html) && !/\.hero-aurora\s*\{/.test(code),
+    'and the hardcoded-dark aurora behind it is gone with it');
+  H.ok(!/type="button"/.test(calRow), 'and a div row is not given a button attribute it cannot honour');
+  H.ok(/#home-hero\.home-hero\{[^}]*background:transparent[^}]*\}/.test(code),
+    'the hero sits on the grouped background, not on a card surface');
+  H.ok(/id="next-step-anchor" class="ios-row"/.test(html), 'the next step is a grouped row');
+  H.ok(/id="next-step-text"/.test(html) && /ios-row-title" id="next-step-text"/.test(html),
+    'its headline is a row title — one line, truncating, never wrapping under its own subtitle');
+
+  // ── 3. A SECTION HEADER OVER NOTHING ──────────────────────────────────────────────────────────
+  // Both of these sections have a header of their own, so hiding only the CONTENT would leave a
+  // caps label introducing empty space. Fault-injectable by name: delete the id from either
+  // function and the header strands.
+  const ns = H.code(H.extractFn('renderNextStep'));
+  H.ok(/next-step-section/.test(ns), 'renderNextStep hides the SECTION, not only the row');
+  const gr = H.code(H.extractFn('renderHomeGreeting'));
+  H.ok(/home-verse-section/.test(gr), 'and a light-faith reader hides the verse SECTION, header included');
+  // A FLEX BUTTON IS NOT A BLOCK. The day's one action is a .btn, which centres its label with
+  // justify-content; setting display:'block' would drop the centring and start the label at the
+  // left edge. The same family as text-align:left on a flex .btn doing nothing.
+  H.ok(/actEl\.style\.display=''/.test(gr) && !/actEl\.style\.display='block'/.test(gr),
+    'showing the day’s action restores its own display, rather than forcing block on a flex button');
+
+  // ── 4. THE SMALL TEXT ON TODAY'S HABITS ───────────────────────────────────────────────────────
+  // The card held a nested --bg3 panel with two scores (a card inside a card), dotted underlines
+  // standing in for tap affordances, seven day cells drawn in four kinds of sketch outline, and a
+  // centred 11px strip of three instructions joined by middots.
+  const hh = H.code(H.extractFn('renderHomeHabits'));
+  H.ok(!/DM Mono/.test(hh), 'the day cells no longer name a font the app does not ship');
+  H.ok(!/dotted/.test(hh) && !/dashed/.test(hh), 'and no cell or label is drawn with a dotted or dashed border');
+  H.ok(!/--t-micro/.test(hh) && !/\b11(\.5)?px/.test(hh), 'nothing in the habit card is set at 11px');
+  H.ok(/home-habit-summary/.test(hh) && /ios-stat-value/.test(hh), 'the two scores are stat tiles, not a panel nested in the card');
+  H.ok(/home-habit-note/.test(hh), 'and the instructions are the section footnote, outside the card');
+
+  // ── 5. THE TWO STREAK TILES SPEAK THE SAME LANGUAGE AS EVERY OTHER TILE ───────────────────────
+  H.ok(/streak-card sober ios-stat/.test(html) && /streak-card resilience ios-stat/.test(html),
+    'the streak tiles are the app’s stat tiles');
+  H.ok(/streak-lbl ios-stat-label/.test(html) && /streak-num ios-stat-value/.test(html) && /streak-sub ios-stat-note/.test(html),
+    'label, number and note each take the named role');
+  H.ok(/\.streak-card\.sober \.streak-num|\.streak-card \.streak-num\{[^}]*color:var\(--tx\)/.test(code),
+    'and the number is the label ink, not a tinted colour of its own');
+
+  // ── 6. THE VERSE'S TWO CONTROLS ARE ONE ICON LANGUAGE AT ONE SIZE ─────────────────────────────
+  // A WHITE HEART SUIT at 20px beside a SHARE ARROW at 16px: two neighbouring controls, two sizes,
+  // neither of them the app's own icons. Both are svgIcon() paths now, both at 20.
+  H.ok(!/>&#9825;<\/button>/.test(html) && !/>&#10548;<\/button>/.test(html),
+    'the verse controls are not text glyphs any more');
+  const showV = H.code(H.extractFn('showV'));
+  H.ok(/svgIcon\('heart',20\)/.test(showV), 'the unsaved heart is drawn by svgIcon');
+  const saveV = H.code(H.extractFn('saveHdrVerse'));
+  H.ok(/svgIcon\('heart',20\)/.test(saveV), 'and saving fills the SAME heart rather than swapping in another character');
+  H.ok(/\.vsave\.saved \.ic\{fill:currentColor\}/.test(code), 'saved is the same glyph, filled');
+
+  // ── 7. THE WEEK IS A LIST, AND ITS DOTS ARE VISIBLE IN BOTH THEMES ────────────────────────────
+  // CAL_TYPE_COLORS.other was rgba(255,255,255,0.4) — the DEFAULT type, drawn white-on-white on a
+  // light card in the month grid. Two of the five were fixed hexes for the same historical reason.
+  const cal = code.match(/const CAL_TYPE_COLORS = \{[^}]*\}/);
+  H.ok(!!cal, 'the calendar type colours were found');
+  H.ok(!/#[0-9a-fA-F]{6}|rgba?\(/.test(cal[0]), 'every calendar type colour is a token, so none can be invisible in one theme');
+  const cw = H.code(H.extractFn('renderCalendarWeek'));
+  H.ok(/iosList\(/.test(cw) && !/--bg3/.test(cw), 'the week is grouped lists, not chips painted on a card inside a card');
+  const seg = H.code(H.extractFn('_calPaintSeg'));
+  H.ok(/classList\.toggle\('active'/.test(seg) && !/style\.background/.test(seg),
+    'the view switcher is the app’s segmented control, selected by class rather than repainted inline');
+}
+
 H.report();

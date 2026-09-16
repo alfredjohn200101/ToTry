@@ -473,20 +473,12 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .hero-lbl{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px}
 .hero-quote{font-family:var(--font-serif);font-size:var(--t-md);font-style:italic;color:var(--tx2);margin-top:10px;line-height:1.6;padding:0 8px}
 .streak-dots{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px}
-/* ════ THE FRONT-DOOR HERO ════ a tall, lit, breathing first-screen — a place, not a card. */
-#home-hero.home-hero{text-align:left;padding:0;border:none;background:transparent;margin-bottom:18px;border-radius:24px;display:flex;overflow:hidden;position:relative}
-.hero-aurora{position:absolute;inset:0;border-radius:24px;z-index:0;background:
-  radial-gradient(120% 80% at 80% 0%, var(--go-bd), transparent 60%),
-  radial-gradient(120% 90% at 0% 100%, rgba(140,107,182,0.20), transparent 55%),
-  linear-gradient(160deg, #16141b 0%, #0e0d12 100%);
-  transition:background 1.2s ease}
-.hero-aurora::after{content:'';position:absolute;inset:0;border-radius:24px;box-shadow:0 1px 0 rgba(255,255,255,0.06) inset, var(--e2)}
-/* Time-of-day skins — set via body[data-daypart] from renderHomeGreeting(). */
-body[data-daypart="dawn"] .hero-aurora{background:radial-gradient(120% 80% at 80% 0%,rgba(255,183,107,0.26),transparent 60%),radial-gradient(120% 90% at 0% 100%,rgba(200,140,150,0.18),transparent 55%),linear-gradient(160deg,#1b1518 0%,#100c10 100%)}
-body[data-daypart="day"] .hero-aurora{background:radial-gradient(120% 80% at 80% 0%,var(--go-bd),transparent 60%),radial-gradient(120% 90% at 0% 100%,rgba(120,150,180,0.16),transparent 55%),linear-gradient(160deg,#16161c 0%,#0e0e13 100%)}
-body[data-daypart="dusk"] .hero-aurora{background:radial-gradient(120% 80% at 80% 0%,rgba(220,130,90,0.24),transparent 60%),radial-gradient(120% 90% at 0% 100%,rgba(140,107,182,0.22),transparent 55%),linear-gradient(160deg,#191319 0%,#0f0c12 100%)}
-body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 80% 0%,rgba(120,130,200,0.20),transparent 60%),radial-gradient(120% 90% at 0% 100%,rgba(90,80,150,0.20),transparent 55%),linear-gradient(160deg,#101018 0%,#08080d 100%)}
-.hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;width:100%}
+/* ════ THE FRONT DOOR ════ not a card any more: the greeting is Today's large title and on iOS a
+   large title sits on the grouped background. .hero-aurora and its four time-of-day skins went with
+   the box — they painted a hardcoded near-black gradient behind the biggest type in the app, in
+   BOTH themes, which is why every child of this hero needed its own pinned light ink. */
+#home-hero.home-hero{text-align:left;padding:0;border:none;background:transparent;margin:0 0 20px}
+.hero-inner{display:block;width:100%}
 .hero-greeting{font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--tx);line-height:1.12;letter-spacing:-0.01em}
 .hero-sub{font-size:var(--t-base);color:var(--tx2);margin-top:7px;line-height:1.55;max-width:300px}
 /* 4px of vertical padding, and 18px -> 14px of margin to give it back, so the row grows from 20.5px
@@ -498,11 +490,9 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-identity-text{font-size:var(--t-base);color:var(--tx2);font-style:italic;font-family:var(--font-text);flex-basis:100%;margin-top:3px;line-height:1.35}
 .hero-action{margin-top:18px;background:var(--go);border:none;color:var(--bg);border-radius:var(--r);padding:15px 18px;font-size:var(--t-md);font-weight:600;cursor:pointer;width:100%;box-shadow:var(--e-gold);transition:transform .18s var(--spring)}
 .hero-action:active{transform:scale(0.97)}
-.hero-nextstep{margin-top:16px;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:var(--r);padding:14px 16px;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .18s var(--spring)}
-.hero-nextstep:active{transform:scale(0.98)}
-.hero-ns-text{font-size:var(--t-md);color:var(--tx);font-weight:500;line-height:1.3}
-.hero-ns-sub{font-size:var(--t-cap);color:var(--tx2);margin-top:3px;line-height:1.4}
-.hero-ns-arrow{color:var(--go);font-size:var(--t-hd);flex-shrink:0}
+/* .hero-nextstep and its three children are gone: the next step was a translucent panel painted
+   INSIDE the hero — a blurred rectangle on a blurred rectangle, with its own border and its own
+   arrow character. Glass belongs to the navigation layer; the next step is an iosRow now. */
 /* .verse-pill is shared: on an ordinary card it correctly uses var(--tx2), but inside the hero it sits
    on .hero-aurora, which is hardcoded dark in EVERY theme (:296). So in the light theme its ink
    turned #3D3D45 on a near-black ground — 1.74:1, against 6.26:1 in dark. Seen on the device: the
@@ -1652,7 +1642,7 @@ input:focus,textarea:focus,select:focus{
 html,body{background:var(--bg)}
 body{font-family:var(--font-text);color:var(--tx);letter-spacing:-0.022em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 /* Ambient glows, auroras, daypart skins: first-party apps are flat. */
-body::before,.hdr::before,.home-hero::before,.hero-aurora,.score-hero::before,.sob-clock::before,
+body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::before,
 .companion-orb::before,.ritual-hero-glow,#tab-morning.dawn::before,#tab-reflect.dusk::before,.vice-card::before{display:none !important;background:none !important}
 
 /* ── Navigation bar ─────────────────────────────────────────────────────────────────────────────── */
@@ -2515,6 +2505,114 @@ a.ios-row{text-decoration:none}
 .tr-plate-sum b{color:var(--tx);font-weight:600}
 .tr-plate-note{font-size:15px;line-height:1.33;color:var(--tx2);margin-top:8px}
 .tr-plate-note b{color:var(--go);font-weight:400}
+/* ═══ TODAY, and the shapes every screen borrows from it ═════════════════════════════════════════
+   Today was ONE card holding the greeting, the identity, the action, the next step and the day's
+   scripture: the largest type in the app inside a box, and a card inside a card inside a card. On
+   iOS a large title sits on the grouped background and each thing under it is its own section,
+   separated by space. Below are the three roles the hand-painted cards on this tab kept reinventing
+   — the app's voice, its supporting sentence, its footnote — so no call site improvises them again. */
+/* THE DAY COUNT IS A CONTROL. "161 days in" opens the evening, and it was a 68x20 box — a third of
+   the 44pt target iOS asks for, and under the 24pt floor this repo's own walk enforces. Measured at
+   20px on the foundation commit too, so this is not new; it is simply on the screen I own, and it is
+   the only tab that shows the chip. Same pixels, a real hit box. */
+.hdr[data-tab="home"] .day-chip{min-height:44px;align-items:center;white-space:nowrap}
+#home-hero.home-hero{background:transparent !important;padding:0 !important;margin:0 0 20px !important;display:block !important;border-radius:0 !important}
+#home-hero .hero-inner{padding:0 !important;display:block}
+.hero-sub{font-size:17px;color:var(--tx2);margin-top:6px;line-height:1.35;max-width:none;letter-spacing:-.022em}
+/* The identity line was 17px ITALIC — a caption in italics is the loudest of the small-text tells.
+   It is the subheadline role: 15pt, secondary, upright, under the sentence it belongs to. */
+.hero-identity{margin-top:10px !important;padding:5px 0 !important}
+.hero-identity-text{font-size:15px !important;font-style:normal !important;color:var(--tx2) !important;line-height:1.33;margin-top:0 !important;letter-spacing:-.016em}
+.hero-journey{font-size:13px;color:var(--go);line-height:1.38;margin-top:8px;padding:5px 0;cursor:pointer;letter-spacing:-.006em}
+.hero-action{margin-top:18px !important;border-radius:12px !important}
+
+/* The day's word on a surface of its own: no border, no tint, a reading face at reading size. The
+   reference under it was 11px in the tint, which read as a link to somewhere it does not go. */
+.verse-pill.hero-verse{background:var(--bg2) !important;border:0 !important;border-radius:var(--r) !important;padding:16px !important;margin-top:0 !important}
+.verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45;padding-right:76px}
+.verse-pill.hero-verse .vr{font-size:13px !important;color:var(--tx2) !important;margin-top:6px;letter-spacing:-.006em}
+.verse-pill.hero-verse .vsave,.verse-pill.hero-verse .vshare{color:var(--go)}
+/* Saved is the same heart, filled — not a different character in a different font. */
+.vsave.saved .ic{fill:currentColor}
+
+/* The card roles. .card-say is the app SPEAKING — the coach's sentence, the welcome, the hand after
+   a slip — so it keeps the ToTry face, upright and unbolded (this family has one roman weight).
+   .card-body is the sentence that supports it, .card-foot the footnote under it, at 13 and never 11. */
+.home-card{margin-bottom:14px}
+.home-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.card-say{font-family:var(--font-display);font-size:22px;font-weight:500;font-style:normal;color:var(--tx);line-height:1.26;letter-spacing:0;margin-bottom:8px}
+.card-body{font-size:15px;color:var(--tx2);line-height:1.45;letter-spacing:-.016em;margin-bottom:12px}
+.card-foot{font-size:13px;color:var(--tx2);line-height:1.38;letter-spacing:-.006em;margin-top:8px}
+.card-foot.tint{color:var(--go)}
+.card-x{background:none;border:0;color:var(--tx3);font-size:20px;line-height:1;cursor:pointer;flex:none;padding:12px;margin:-12px -12px -12px 0}
+.card>.btn+.btn{margin-top:8px}
+/* Two choices side by side. Written out with `flex:1;font-size:17px` at every call site before. */
+.btn-row{display:flex;gap:8px}
+.btn-row>.btn{flex:1}
+
+/* The sentence under a large title. On the week it was a 17px paragraph in --tx3, the grey reserved
+   for chevrons and placeholders; a sentence a person is meant to read is the secondary label. */
+.page-sub{font-size:17px;color:var(--tx2);line-height:1.35;letter-spacing:-.022em;margin:0 0 20px}
+/* A section header with an action on its end — Settings' "Edit". 13pt caps on the left, a 15pt tint
+   verb on the right, and a 44pt hit box that hangs DOWN rather than up over the tile above it. */
+.ios-header.home-section-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.hd-action{background:none;border:0;cursor:pointer;flex:none;font-family:var(--font-text);font-size:15px;font-weight:400;
+  letter-spacing:-.016em;text-transform:none;color:var(--go);padding:6px 0 14px;margin:-6px 0 -14px}
+.hd-action:active{opacity:.4}
+
+/* The identity strip: a centred tint panel with an 11px gold caps label and an italic line, now an
+   ordinary card that reads left to right like everything else on the screen. */
+.identity-strip{text-align:left !important;padding:16px !important}
+.identity-strip:active{transform:none}
+.id-label{font-size:13px !important;color:var(--tx2) !important;opacity:1 !important;margin-bottom:6px !important}
+.id-text{font-size:17px !important;font-style:normal !important;line-height:1.35;letter-spacing:-.022em}
+.id-text em{color:var(--tx) !important;font-weight:500}
+.id-empty{font-size:17px !important;color:var(--tx2) !important;letter-spacing:-.022em}
+
+/* The two streaks, as the stat tiles the rest of the app uses. They were tinted boxes with coloured
+   borders, a coloured number and an italic caption — a second visual language for two numbers. */
+.dual-streaks{margin-bottom:22px}
+.streak-card{background:var(--bg2) !important;border:0 !important;border-radius:12px !important;
+  padding:12px 14px 14px !important;text-align:left !important}
+.streak-card:active{background:var(--bg4) !important}
+.streak-card .streak-num{font-family:var(--font-rounded) !important;font-size:28px !important;font-weight:600 !important;
+  color:var(--tx) !important;line-height:1.15;margin:2px 0 0 !important;letter-spacing:0}
+.streak-card .streak-sub{font-size:13px !important;font-style:normal !important;color:var(--tx2) !important;margin-top:2px !important}
+
+/* Today's habits. The card carried a nested --bg3 panel (a card inside a card) holding two scores,
+   a dotted underline standing in for a tap affordance, and a centred 11px strip of three
+   instructions joined by middots. Scores are stat tiles above the card; the strip is the section's
+   footnote below it; the affordances are the tint, which is what iOS uses to say "this is a link". */
+#home-habit-summary .ios-stat-value{font-size:22px}
+#home-habit-note{padding-top:9px}
+/* The last row in a grouped set does not draw a separator — iOS ends the group with the surface. */
+#firstrun-steps>div:last-child{border-bottom:0 !important}
+
+/* ═══ THE WEEK ═══════════════════════════════════════════════════════════════════════════════════
+   Events are rows. The delete lives at the end of the row, sized like a control rather than a 15px
+   glyph, and an event that has already happened dims rather than changing colour. */
+.cal-row-x{flex:none;background:none;border:0;cursor:pointer;color:var(--tx3);font-size:20px;line-height:1;
+  width:44px;height:44px;margin:-8px -12px -8px 0;display:flex;align-items:center;justify-content:center}
+.cal-row-x:active{opacity:.4}
+.cal-row.is-past{opacity:.5}
+.cal-row.cal-free .ios-row-title,.cal-free .ios-row-title{color:var(--tx3)}
+/* A month is numerals on the ground with one filled disc on today — not 31 bordered tiles. */
+.cal-month-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cal-month-name{font-family:var(--font-display);font-size:22px;font-weight:500;letter-spacing:0;color:var(--tx)}
+.cal-arrow{flex:none;width:44px;height:44px;margin:-10px 0;background:none;border:0;cursor:pointer;color:var(--go);
+  display:flex;align-items:center;justify-content:center}
+.cal-arrow:active{opacity:.4}
+.cal-month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-month-dow{margin-bottom:4px}
+.cal-month-dow>div{text-align:center;font-family:var(--font-text);font-size:13px;letter-spacing:.045em;color:var(--tx2)}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;
+  padding:4px 0 0;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cal-cell:active{opacity:.4}
+.cal-cell-n{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;
+  font-family:var(--font-rounded);font-size:16px;font-weight:500;color:var(--tx);font-variant-numeric:tabular-nums}
+.cal-cell-n.is-today{background:var(--go);color:var(--on-tint);font-weight:600}
+.cal-cell-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%;min-height:5px}
+.cal-cell-dots>span{width:5px;height:5px;border-radius:50%}
 
 </style>
 </head>
@@ -3245,36 +3343,48 @@ a.ios-row{text-decoration:none}
 <!-- TAB 1: HOME -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-home" class="tab active">
-  <!-- ════ THE FRONT DOOR ════ A single breathing hero that fills the first screen and changes with
-       the day — greeting, identity (days in), and THE one action, as one cinematic unit. Not a pile
-       of cards: a place. The aurora behind it shifts hue by time of day (dawn→day→dusk→night). -->
+  <!-- ════ THE FRONT DOOR ════ The greeting is Today's large title, and on iOS a large title sits on
+       the grouped background — not inside a box. This was ONE card carrying the greeting, the
+       identity line, the day's action, the next step AND the day's scripture, so the biggest type on
+       the screen was boxed and the verse was a card inside a card inside a card. Title and sentence
+       on the ground; the one action under them; everything that followed is now its own section,
+       separated by space instead of by a border. -->
   <div id="home-hero" class="home-hero">
-    <div class="hero-aurora" id="hero-aurora"></div>
     <div class="hero-inner">
       <div id="home-greeting-hi" class="hero-greeting"></div>
       <div id="home-greeting-sub" class="hero-sub"></div>
-      <div id="journey-badge" onclick="editJourneyStart()" style="display:none;margin-top:10px;color:var(--go);cursor:pointer;line-height:1.5;font-family:var(--font-text);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:0.01em"></div>
 
       <div class="hero-identity" id="hero-identity" onclick="go('settings')" style="display:none">
         <span class="hero-identity-text" id="hero-identity-text"></span>
       </div>
+      <div id="journey-badge" class="hero-journey" onclick="editJourneyStart()" style="display:none"></div>
 
       <!-- THE one action — the single most important thing right now, big and reachable. -->
-      <button id="home-greeting-action" onclick="homeGreetingAction()" class="hero-action" style="display:none"></button>
-      <div id="next-step-anchor" onclick="doNextStep()" class="hero-nextstep" style="display:none">
-        <div style="flex:1;min-width:0">
-          <div id="next-step-text" class="hero-ns-text"></div>
-          <div id="next-step-sub" class="hero-ns-sub"></div>
-        </div>
-        <span class="hero-ns-arrow">→</span>
-      </div>
+      <button id="home-greeting-action" onclick="homeGreetingAction()" class="btn primary hero-action" style="display:none"></button>
+    </div>
+  </div>
 
-      <div class="verse-pill hero-verse" onclick="nextVerse()">
-        <p id="hdr-verse">Loading today&#8217;s word...</p>
-        <div class="vr" id="hdr-ref"></div>
-                <button class="vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')">&#10548;</button>
-<button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()">&#9825;</button>
-      </div>
+  <!-- THE ONE NEXT THING. It was a translucent panel painted inside the hero — a blurred rectangle on
+       top of a blurred rectangle, with its own border and its own arrow glyph. It is a grouped row
+       now: a title that stays on one line, a subtitle under it, and the system chevron. -->
+  <div class="ios-section" id="next-step-section" style="display:none">
+    <div class="ios-header">Next</div>
+    <div class="ios-list">
+      <button type="button" id="next-step-anchor" class="ios-row" onclick="doNextStep()">
+        <span class="ios-row-body"><span class="ios-row-title" id="next-step-text" style="display:block"></span><span class="ios-row-sub" id="next-step-sub" style="display:block"></span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- The day's word, on a surface of its own. Scripture keeps New York — a reading face. -->
+  <div class="ios-section" id="home-verse-section">
+    <div class="ios-header">Today&#8217;s word</div>
+    <div class="verse-pill hero-verse" onclick="nextVerse()">
+      <p id="hdr-verse">Loading today&#8217;s word...</p>
+      <div class="vr" id="hdr-ref"></div>
+      <button class="vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+      <button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
   </div>
 
@@ -3282,23 +3392,23 @@ a.ios-row{text-decoration:none}
        One line per domain, each a door. This is the app's thesis made visible in the first second. -->
   <div id="home-woven"></div>
   <!-- Tester setup card — shows once for allowlisted Strava testers who haven't connected yet. -->
-  <div id="tester-setup-card" style="display:none;background:linear-gradient(135deg,rgba(252,76,2,0.12),var(--go-bg));border:1px solid rgba(252,76,2,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:#FC4C02;text-transform:uppercase;letter-spacing:0.01em">You’re a Strava tester</div>
-      <button onclick="dismissTesterCard()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
+  <div id="tester-setup-card" class="card home-card" style="display:none">
+    <div class="home-card-top">
+      <div class="eyebrow">You’re a Strava tester</div>
+      <button class="card-x" onclick="dismissTesterCard()" aria-label="Dismiss">×</button>
     </div>
-    <div style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;margin-bottom:8px">Thanks for testing this. Two taps to connect Strava:</div>
-    <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;margin-bottom:12px">1. Tap below to open Connected apps.<br>2. Find Strava → tap <b>Connect</b> → authorize.<br>Your runs and rides will start syncing in.</div>
-    <button class="btn primary" onclick="dismissTesterCard();go('settings');setTimeout(()=>document.getElementById('connected-apps-section')?.scrollIntoView({behavior:'smooth',block:'center'}),300)" style="padding:10px 16px;font-size:var(--t-base);margin-bottom:0">Connect Strava now</button>
+    <div class="card-say">Thanks for testing this. Two taps to connect Strava:</div>
+    <div class="card-body">1. Tap below to open Connected apps.<br>2. Find Strava → tap <b>Connect</b> → authorize.<br>Your runs and rides will start syncing in.</div>
+    <button class="btn primary" onclick="dismissTesterCard();go('settings');setTimeout(()=>document.getElementById('connected-apps-section')?.scrollIntoView({behavior:'smooth',block:'center'}),300)">Connect Strava now</button>
   </div>
 
   <!-- Post-relapse compassion — shows for 72h after a slip, leads with grace not "0 days" -->
-  <div id="postrelapse-card" style="display:none;background:var(--go-bg);border:1px solid rgba(140,107,182,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">You’re still here</div>
-    <div id="postrelapse-text" style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;line-height:1.45;margin-bottom:8px"></div>
-    <div id="postrelapse-sub" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
-    <button class="btn primary" onclick="ackRelapseAndTalk()" style="padding:10px 16px;font-size:var(--t-base);margin-bottom:8px">Talk it through with your Coach</button>
-    <button class="btn" onclick="dismissRelapseCard()" style="padding:9px 16px;font-size:var(--t-sm);background:var(--bg3)">I’m okay for now</button>
+  <div id="postrelapse-card" class="card home-card" style="display:none">
+    <div class="eyebrow">You’re still here</div>
+    <div id="postrelapse-text" class="card-say"></div>
+    <div id="postrelapse-sub" class="card-body"></div>
+    <button class="btn primary" onclick="ackRelapseAndTalk()">Talk it through with your Coach</button>
+    <button class="btn" onclick="dismissRelapseCard()">I’m okay for now</button>
   </div>
 
   <!-- "Today, for you" — the adaptive daily presence. Meets the man where he is:
@@ -3307,127 +3417,140 @@ a.ios-row{text-decoration:none}
   <div id="weekly-checkin" style="display:none"></div>
   <!-- Proactive coach nudge — fires only when a real pattern is detected (overtrained, gone quiet,
        streak at risk, momentum worth naming). Sits above the static insight and takes priority. -->
-  <div id="home-nudge" style="display:none;margin-bottom:14px"></div>
-  <div id="home-insight" style="display:none;background:var(--bg2);border-radius:var(--r);padding:15px 16px;margin-bottom:14px"></div>
-  <div id="today-for-you" style="display:none;background:var(--bg2);border-radius:var(--r);padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="eyebrow" id="tfy-eyebrow" style="margin-bottom:0;color:var(--go)">Today</div>
-      <button id="tfy-low-toggle" onclick="toggleLowEnergyDay()" style="background:none;border-radius:100px;color:var(--tx3);font-size:var(--t-mini);min-height:26px;padding:0 11px;font-family:var(--font-text);padding:4px 10px;cursor:pointer;background:var(--fill2)">Low day?</button>
+  <div id="home-nudge" style="display:none"></div>
+  <div id="home-insight" class="card home-card" style="display:none"></div>
+  <div id="today-for-you" class="card home-card" style="display:none">
+    <div class="home-card-top">
+      <div class="eyebrow" id="tfy-eyebrow">Today</div>
+      <button id="tfy-low-toggle" class="qb" onclick="toggleLowEnergyDay()">Low day?</button>
     </div>
-    <div id="tfy-message" style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:10px"></div>
+    <div id="tfy-message" class="card-say"></div>
     <div id="tfy-action"></div>
   </div>
 
   <!-- First-run guidance — only for brand-new users, dismisses as steps complete -->
-  <div id="firstrun-card" style="display:none;background:var(--go-bg);border-radius:var(--r);padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px">
-      <div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic">Welcome. Let’s set the foundation.</div>
-      <button onclick="dismissFirstRun()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
+  <div id="firstrun-card" class="card home-card" style="display:none">
+    <div class="home-card-top">
+      <div class="card-say">Welcome. Let’s set the foundation.</div>
+      <button class="card-x" onclick="dismissFirstRun()" aria-label="Dismiss">×</button>
     </div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:12px">This app comes alive as you use it. Four quick things to start — tap any to do it now.</p>
+    <p class="card-body">This app comes alive as you use it. Four quick things to start — tap any to do it now.</p>
     <div id="firstrun-steps"></div>
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:10px;letter-spacing:0.01em" id="firstrun-progress"></div>
+    <div class="card-foot" id="firstrun-progress"></div>
   </div>
 
   <!-- New user preview banner — shows for first 7 days unless dismissed -->
-  <div id="newuser-preview-banner" style="display:none;background:var(--go-bg);border:1px solid rgba(140,107,182,0.35);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
-      <div style="flex:1">
-        <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">New here</div>
-        <div style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;line-height:1.4">This app comes alive with data. Here’s what it looks like after 60 days.</div>
+  <div id="newuser-preview-banner" class="card home-card" style="display:none">
+    <div class="home-card-top">
+      <div style="flex:1;min-width:0">
+        <div class="eyebrow">New here</div>
+        <div class="card-say">This app comes alive with data. Here’s what it looks like after 60 days.</div>
       </div>
-      <button onclick="dismissPreviewBanner()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;padding:0 4px;line-height:1">×</button>
+      <button class="card-x" onclick="dismissPreviewBanner()" aria-label="Dismiss">×</button>
     </div>
-    <button class="btn primary" onclick="showAppPreview()" style="padding:10px 16px;font-size:var(--t-base)">Preview Day 60</button>
+    <button class="btn primary" onclick="showAppPreview()">Preview Day 60</button>
   </div>
 
-  <!-- AI Morning Sentence — peer of identity strip, only when active -->
-  <div class="ai-morning-card" id="ai-morning-card" style="display:none;background:var(--go-bg);border:1px solid rgba(140,107,182,0.4);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;cursor:pointer" onclick="refreshAIMorning()">
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Your coach says</div>
-    <div id="ai-morning-text" style="font-family:var(--font-serif);font-size:var(--t-lg);color:var(--tx);line-height:1.55;font-style:italic">Loading...</div>
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:right;margin-top:6px;letter-spacing:0.01em">Tap to refresh</div>
+  <!-- YOUR COACH SAYS — it was a purple 11px caps label on a blue-tinted card with a hardcoded
+       rgba border, a serif ITALIC sentence, and a right-aligned 11px "Tap to refresh". The coach
+       speaking is the app's own voice, so the sentence keeps the ToTry face — upright, at a size
+       you can read — on an ordinary opaque card, under the one section-header role. -->
+  <div class="ai-morning-card card home-card" id="ai-morning-card" style="display:none;cursor:pointer" onclick="refreshAIMorning()">
+    <div class="eyebrow">Your coach says</div>
+    <div id="ai-morning-text" class="card-say">Loading...</div>
+    <div class="card-foot tint">Tap to refresh</div>
   </div>
 
-  <!-- Identity strip (now standalone — AI morning is a peer above) -->
-  <div class="identity-strip" id="identity-strip" onclick="go('settings')">
-    <div class="id-label">Who you are becoming</div>
+  <!-- Identity strip (now standalone — AI morning is a peer above). Was a centred tint-filled panel
+       with an 11px gold caps label and an italic line; it is a card with the same section header as
+       every other section, and its sentence reads left-aligned like everything else on the screen. -->
+  <div class="identity-strip card home-card" id="identity-strip" onclick="go('settings')">
+    <div class="id-label eyebrow">Who you are becoming</div>
     <div class="id-text" id="identity-text">
       <span class="id-empty">Name the person you’re becoming &mdash; I’ll hold you to it, gently</span>
     </div>
-    <div id="identity-evidence" style="display:none;font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-top:8px;padding-top:8px;border-top:1px solid var(--go-bd);letter-spacing:0.02em"></div>
+    <div id="identity-evidence" class="card-foot" style="display:none"></div>
   </div>
 
-  <!-- The two streaks that matter, as a clean pair below the hero. -->
-  <div class="dual-streaks" style="margin-bottom:14px">
-    <!-- This said "Sober streak · Days clean" — the same number as the "🛡️ The fight · 9 days clean"
+  <!-- The two streaks that matter. They were colour-tinted boxes with coloured borders, a coloured
+       number and an ITALIC caption — two tiles painted in a language nothing else on the screen
+       speaks. They are stat tiles now, the same ones Money and Grow use: an opaque surface, a
+       13pt section label, an SF Rounded number, a 13pt note. The words and the numbers are
+       unchanged, and so are the class names the renderer writes into. -->
+  <div class="dual-streaks ios-stats">
+    <!-- This said "Sober streak · Days clean" — the same number as the "The fight · 9 days clean"
          card 656px above it, in a second visual language, going to the same screen. Home said one
          truth twice and never said the one that matters more: the fight does not reset, and a person
          carrying a broken streak still has it. -->
-    <div class="streak-card sober" onclick="go('fight')">
-      <div class="streak-num" id="streak-sober">0</div>
+    <div class="streak-card sober ios-stat" onclick="go('fight')">
       <!-- I changed this from "Sober streak · Days clean" earlier today because it repeated the woven
-           row's NUMBER, and in doing so gave it the row's WORDS instead: "🛡️ The fight · 9 days clean"
+           row's NUMBER, and in doing so gave it the row's WORDS instead: "The fight · 9 days clean"
            656px above, and "The fight · 10 · Days in" here — two controls labelled the same thing,
            carrying different numbers, opening the same tab. The fact is right and worth keeping; the
            label had to stop colliding with the row that owns that name. -->
-      <div class="streak-lbl">Still in it</div>
-      <div class="streak-sub">Days since day 0</div>
+      <div class="streak-lbl ios-stat-label">Still in it</div>
+      <div class="streak-num ios-stat-value" id="streak-sober">0</div>
+      <div class="streak-sub ios-stat-note">Days since day 0</div>
     </div>
-    <div class="streak-card resilience" onclick="showResilienceInfo()">
-      <div class="streak-num" id="streak-resilience">0</div>
-      <div class="streak-lbl">Resilience streak</div>
-      <div class="streak-sub">Days you tried</div>
+    <div class="streak-card resilience ios-stat" onclick="showResilienceInfo()">
+      <div class="streak-lbl ios-stat-label">Resilience streak</div>
+      <div class="streak-num ios-stat-value" id="streak-resilience">0</div>
+      <div class="streak-sub ios-stat-note">Days you tried</div>
     </div>
   </div>
   <!-- Lifetime coping deposits. Clean-days measure abstinence and reset; THIS measures the skill you
        actually built, and a slip can never take it off you. (Marlatt: each urge you cope with raises
-       self-efficacy, which is what predicts the next one going better.) -->
-  <div id="urges-survived" style="display:none;text-align:center;margin:-4px 0 14px"></div>
+       self-efficacy, which is what predicts the next one going better.) It was centred 12px micro-copy
+       floating between two cards; it is the section's footnote now, at the one footnote size. -->
+  <div id="urges-survived" class="ios-footnote" style="display:none"></div>
   <span id="hero-quote" style="display:none"></span>
   <span id="streak-dots" style="display:none"></span>
 
   <!-- Today's habits — primary daily action. The manage/add affordance has to live here: it is the only
        route to creating a habit, and before this there was none anywhere in the app. -->
-    <!-- "+ Add / edit" uses the 44px-hit-box trick (padding 17px, margin -17px), so its tap area
-         reaches 17px ABOVE the label and clipped the streak card sitting on top of it. Only a 3px
-         band, but in it a tap meant for the resilience tile opened the habit editor. Clearance
-         here, rather than a smaller target there. -->
-  <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:22px">
+    <!-- It read "+ ADD / EDIT" in 11px caps in the third grey, hanging off the end of the section
+         header — the improvised micro-link this rebuild exists to remove. It is a 15pt tint action
+         now, the word iOS uses, and its 44pt hit box no longer reaches up over the tile above it. -->
+  <div class="ios-header home-section-hd">
     <span>Today&#8217;s habits</span>
-    <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:17px 12px;margin:-17px -12px -17px -12px;margin-right:0;padding-right:0;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
+    <button class="hd-action" onclick="openManageHabits()" aria-label="Add or edit your habits">Add or edit</button>
   </div>
+  <div id="home-habit-summary" class="ios-stats" style="display:none;margin-bottom:12px"></div>
   <div class="card">
     <div id="home-habit-list"></div>
   </div>
+  <div id="home-habit-note" class="ios-footnote" style="display:none"></div>
 
   <!-- DEPTH FOLD — the everyday home is the hero + spine + habits. The deeper day (schedule,
        in-the-moment help, readiness, weekly reflection) tucks behind ONE tap so home stays a glance,
        not a wall. Depth on-demand (review #2). renderHomeDepthFold() shows the toggle only when
        there's something inside, and remembers open/closed in totry_home_depth_open. -->
-  <div id="home-depth-toggle" style="display:none;margin-bottom:12px">
-    <button onclick="toggleHomeDepth()" style="width:100%;background:none;border:1px dashed var(--bd);border-radius:var(--r);color:var(--tx3);font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:0.01em;text-transform:uppercase;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+  <div id="home-depth-toggle" style="display:none">
+    <button class="btn quiet" onclick="toggleHomeDepth()">
       <span id="home-depth-label">More of your day</span><span id="home-depth-caret">&#8964;</span>
     </button>
   </div>
   <div id="home-depth-body" style="display:none">
   <!-- Calendar quick-entry — today's schedule at a glance, links to the smart calendar -->
   <div id="home-calendar-card" onclick="go('calendar')" style="display:none;cursor:pointer">
-    <div class="lbl">Today’s schedule</div>
+    <div class="ios-header">Today’s schedule</div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div id="home-calendar-summary" style="font-size:var(--t-base);color:var(--tx2);line-height:1.5;flex:1"></div>
-        <span style="color:var(--go);font-size:var(--t-hd);flex-shrink:0">›</span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
       </div>
     </div>
   </div>
 
   <!-- Quick vice wins — one tap from home, no navigating to Fight -->
   <div id="home-quickwin-wrap" style="display:none">
-    <div class="lbl">Feeling something right now?</div>
+    <!-- A section header is a label, not a sentence. This was "FEELING SOMETHING RIGHT NOW?" — a
+         question set in capitals, and the question is already the first line of the button below. -->
+    <div class="ios-header">Right now</div>
     <div class="card">
-      <button onclick="openFeelingNow()" style="width:100%;padding:16px;border-radius:var(--rm);background:var(--go-bg);color:var(--tx);text-align:left;cursor:pointer">
-        <div style="font-size:var(--t-md);font-weight:600;margin-bottom:3px">I’m feeling it right now</div>
-        <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.45;font-weight:400">An urge, a craving, a heaviness — whatever it is. Tap and I’ll help you get through it, before you act on it.</div>
+      <button class="btn stack" onclick="openFeelingNow()">
+        <div>I’m feeling it right now</div>
+        <div>An urge, a craving, a heaviness — whatever it is. Tap and I’ll help you get through it, before you act on it.</div>
       </button>
       <div id="home-quickwin-list" style="margin-top:12px"></div>
     </div>
@@ -3442,14 +3565,14 @@ a.ios-row{text-decoration:none}
 
   <!-- Guided-tour offer (shown once): auto for brand-new users, a gentle one-time prompt for
        people who were already signed in before the tour existed. Never nags after a choice. -->
-  <div id="home-tour-prompt" style="display:none;background:var(--go-bg);border-radius:var(--r);padding:16px;margin-bottom:14px"></div>
+  <div id="home-tour-prompt" class="card home-card" style="display:none"></div>
 
   <!-- Today's training mission — only when there's a real plan, populated by renderHome() -->
   <div id="home-today-mission-wrap" style="display:none">
-    <div class="lbl">Today’s mission</div>
+    <div class="ios-header">Today’s mission</div>
     <div class="card">
       <div class="card-hd" id="today-focus">Loading...</div>
-      <div id="today-detail" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-top:5px"></div>
+      <div id="today-detail" class="card-body" style="margin-top:5px"></div>
     </div>
   </div>
 
@@ -3460,7 +3583,7 @@ a.ios-row{text-decoration:none}
   </div>
 
   <!-- Share Day X (moved to bottom — celebratory, not primary) -->
-  <button class="btn" style="background:var(--go-bg);color:var(--go);font-size:var(--t-base);margin-bottom:14px;min-height:44px" onclick="generateShareCard()">
+  <button class="btn" onclick="generateShareCard()">
     <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Share my Day <span id="share-day-num"></span>
   </button>
 </div>
@@ -5433,36 +5556,40 @@ Amen.</div></div>
 <!-- TAB: SMART CALENDAR -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-calendar" class="tab">
+  <!-- The week WAS the third thing on this screen: a tinted AI paste box came first, then a card
+       holding a fake segmented control (three .btn's in a box, repainted by hand on every switch)
+       with a "+ Add one" chip beside it, and the days themselves inside that same card. The view a
+       person came for is first now — a standard segmented control on the grouped background, then
+       the days as rows — and the two utilities sit under it, in the order you reach for them. -->
   <h2 class="page-title">Your week</h2>
-  <p style="font-size:var(--t-base);color:var(--tx3);margin-bottom:16px">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
+  <p class="page-sub">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
 
-  <!-- AI paste box -->
-  <div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Add with AI</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste a work roster email, your class timetable, or just type plainly — "gym Mon Wed Fri 6am, work Tue 9-5, class Thursday 2pm". The AI turns it into events.</p>
-    <textarea id="cal-ai-input" placeholder="Paste or type your schedule..." style="height:90px;resize:none;font-size:var(--t-lg);margin-bottom:10px"></textarea>
-    <button class="btn primary" onclick="parseCalendarAI()" id="cal-ai-btn">Add to my week</button>
+  <div class="seg" role="tablist" aria-label="Calendar view">
+    <button id="calview-day" class="fst" role="tab" onclick="setCalView('day')">Day</button>
+    <button id="calview-week" class="fst active" role="tab" onclick="setCalView('week')">Week</button>
+    <button id="calview-month" class="fst" role="tab" onclick="setCalView('month')">Month</button>
   </div>
 
-  <!-- Quick add + view switcher -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="display:flex;gap:4px;background:var(--bg3);border-radius:var(--rm);padding:3px">
-        <button id="calview-day" class="btn quiet" onclick="setCalView('day')" style="width:auto;padding:6px 12px">Day</button>
-        <button id="calview-week" class="btn" onclick="setCalView('week')" style="width:auto;padding:6px 12px;font-size:var(--t-sm);background:var(--bg);color:var(--tx)">Week</button>
-        <button id="calview-month" class="btn quiet" onclick="setCalView('month')" style="width:auto;padding:6px 12px">Month</button>
-      </div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openEventLogger()">+ Add one</button>
-    </div>
-    <div id="cal-week-view"></div>
-    <div id="cal-day-view" style="display:none"></div>
-    <div id="cal-month-view" style="display:none"></div>
-  </div>
+  <div id="cal-week-view"></div>
+  <div id="cal-day-view" style="display:none"></div>
+  <div id="cal-month-view" style="display:none"></div>
+
+  <button class="btn" onclick="openEventLogger()">Add an event</button>
 
   <!-- Time insight -->
-  <div class="card" id="cal-insight-card" style="display:none">
-    <div class="card-hd" style="margin-bottom:8px">⏳ Your time</div>
-    <div id="cal-insight-body" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6"></div>
+  <div class="card home-card" id="cal-insight-card" style="display:none;margin-top:22px">
+    <div class="eyebrow">Your time</div>
+    <div id="cal-insight-body" class="card-body" style="margin-bottom:0"></div>
+  </div>
+
+  <!-- AI paste box -->
+  <div class="ios-section" style="margin-top:22px">
+    <div class="ios-header">Add with AI</div>
+    <div class="card">
+      <p class="card-body">Paste a work roster email, your class timetable, or just type plainly — “gym Mon Wed Fri 6am, work Tue 9-5, class Thursday 2pm”. It turns into events.</p>
+      <textarea id="cal-ai-input" placeholder="Paste or type your schedule..." style="height:96px;resize:none;margin-bottom:12px"></textarea>
+      <button class="btn primary" onclick="parseCalendarAI()" id="cal-ai-btn">Add to my week</button>
+    </div>
   </div>
 </div>
 
@@ -7420,9 +7547,12 @@ function svgIcon(name, size){
 function iosRow(o){
   o = o || {};
   const esc = (v) => (o.html ? String(v == null ? '' : v) : String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
-  const tag = o.onclick ? 'button' : 'div';
+  // `tag:'div'` for the one shape a <button> cannot hold: a tappable row that also carries its own
+  // control (the calendar's delete). A <button> inside a <button> is not parseable HTML — the parser
+  // closes the outer one — so that row is a div with the same onclick it has always had.
+  const tag = o.tag || (o.onclick ? 'button' : 'div');
   const cls = 'ios-row' + (o.icon ? ' has-icon' : '') + (o.destructive ? ' destructive' : '') + (o.tint ? ' tint' : '') + (o.cls ? ' ' + o.cls : '');
-  const attrs = (o.onclick ? ' type="button" onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"' : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
+  const attrs = (o.onclick ? ((tag === 'button' ? ' type="button"' : '') + ' onclick="' + String(o.onclick).replace(/"/g, '&quot;') + '"') : '') + (o.id ? ' id="' + o.id + '"' : '') + (o.label ? ' aria-label="' + esc(o.label) + '"' : '');
   return '<' + tag + ' class="' + cls + '"' + attrs + '>' +
     (o.icon ? '<span class="ios-row-icon tone-' + (o.tone || 'blue') + '">' + svgIcon(o.icon, 18) + '</span>' : '') +
     '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + esc(o.title) + '</span>' +
@@ -14288,7 +14418,11 @@ function showV(v){
   }
   document.getElementById('hdr-verse').textContent=v.t;
   document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
-  document.getElementById('vsave-btn').textContent='\u2661';
+  // The two controls on the verse were text glyphs \u2014 a WHITE HEART SUIT at 20px beside a SHARE ARROW
+  // at 16px, the app's own icon language nowhere near them and two neighbouring controls four pixels
+  // apart. Both are svgIcon() now, at one size; "saved" fills the same heart rather than swapping it
+  // for a different character in a different font.
+  document.getElementById('vsave-btn').innerHTML=svgIcon('heart',20);
   document.getElementById('vsave-btn').classList.remove('saved');
   // Persist the current verse so the scripture share card can use it.
   try{ ls('totry_hdr_verse_text', v.t); ls('totry_hdr_verse_ref', v.r); }catch(_){ }
@@ -14308,7 +14442,7 @@ function saveHdrVerse(){
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('vsave-btn');
-  btn.textContent='\u2665';btn.classList.add('saved');
+  btn.innerHTML=svgIcon('heart',20);btn.classList.add('saved');
 }
 
 // ── NAV ───────────────────────────────────────────────────────
@@ -34586,7 +34720,11 @@ const INCOME_CATEGORIES = ['Salary','Side income','Gift','Refund','Other'];
 // ── SMART CALENDAR ────────────────────────────────────────────
 // Events: { id, title, type, day(0-6 Mon-Sun), start('HH:MM'), end('HH:MM'), recurring(bool), date(ISO if one-off) }
 const CAL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const CAL_TYPE_COLORS = { work:'var(--go)', class:'var(--pu)', gym:'#5BA88A', personal:'#6B8CB6', other:'rgba(255,255,255,0.4)' };
+// WHITE AT 40% IS INVISIBLE ON A WHITE CARD. "other" is the default type — the one every event the
+// roster parser is unsure about gets — and its dot was a fixed white rgba, so in the light theme the
+// month grid drew it onto a white surface at about 1.2:1. Two of the others were fixed hexes for the
+// same reason nothing else in the app is: they predate the tokens. All five are system colours now.
+const CAL_TYPE_COLORS = { work:'var(--go)', class:'var(--pu)', gym:'var(--gr)', personal:'var(--bl)', other:'var(--tx3)' };
 // Keep the nutrition log from growing forever (it's a {date:[entries]} map that otherwise
 // accumulates a key per day indefinitely and re-syncs the whole thing on every meal). 120 days
 // of history is plenty for trends; older days are dropped. Mutates the passed object in place.
@@ -35292,14 +35430,9 @@ function renderCalendar(){
   // AND PAINT THE SWITCHER TO MATCH. The selected-segment styling lived only in setCalView(), and
   // the markup hardcodes Week as the selected one — so reopening the app on Day or Month restored
   // the right pane under a switcher still saying Week.
-  ['day','week','month'].forEach(function(x){
-    const b = document.getElementById('calview-'+x);
-    if(!b) return;
-    const on = x === view;
-    b.style.background = on ? 'var(--bg)' : 'transparent';
-    b.style.border = on ? '1px solid var(--bd)' : 'none';
-    b.style.color = on ? 'var(--tx)' : 'var(--tx3)';
-  });
+  // It is the app's own segmented control now, so "selected" is a class, not three inline
+  // declarations written out in two places that had to agree with each other.
+  _calPaintSeg(view);
   const wk=document.getElementById('cal-week-view'), dy=document.getElementById('cal-day-view'), mo=document.getElementById('cal-month-view');
   if(wk) wk.style.display = view==='week'?'block':'none';
   if(dy) dy.style.display = view==='day'?'block':'none';
@@ -35308,15 +35441,48 @@ function renderCalendar(){
   if(view==='month') return renderCalendarMonth();
   return renderCalendarWeek();
 }
+function _calPaintSeg(view){
+  ['day','week','month'].forEach(function(x){
+    const b = document.getElementById('calview-'+x);
+    if(!b) return;
+    b.classList.toggle('active', x === view);
+    b.setAttribute('aria-selected', x === view ? 'true' : 'false');
+  });
+}
 function setCalView(v){
   ls('totry_cal_view', v);
-  ['day','week','month'].forEach(x=>{
-    const b=document.getElementById('calview-'+x);
-    if(b){ const on = x===v; b.style.background = on?'var(--bg)':'transparent'; b.style.border = on?'1px solid var(--bd)':'none'; b.style.color = on?'var(--tx)':'var(--tx3)'; }
-  });
+  _calPaintSeg(v);
   haptic('tap');
   renderCalendar();
 }
+// One event, one row, everywhere the calendar shows one. It was hand-painted twice over — a --bg3
+// chip with a 3px coloured left border inside a card (a card inside a card), a 12px time in the
+// third grey, and a delete glyph at 15px. The tile colour is the type; the row is the row.
+const CAL_TYPE_TILE = {
+  work:     { icon:'briefcase', tone:'indigo' },
+  class:    { icon:'school',    tone:'purple' },
+  gym:      { icon:'dumbbell',  tone:'green'  },
+  personal: { icon:'user',      tone:'blue'   },
+  other:    { icon:'calendar',  tone:'gray'   }
+};
+function calEventRow(e, opts){
+  const t = CAL_TYPE_TILE[e.type] || CAL_TYPE_TILE.other;
+  const time = (e.start || '') + (e.end ? '–' + e.end : '');
+  // A <button> cannot contain the delete <button>, so the row is a div carrying the same onclick it
+  // has always had — tap the row to edit, tap the x to remove. Both routes are unchanged.
+  return iosRow({
+    tag:'div', icon:t.icon, tone:t.tone,
+    title: e.title,
+    sub: time + (e.recurring ? ' · weekly' : ''),
+    onclick: 'editCalEvent(' + e.id + ')',
+    // No chevron: the row already carries a control at its end, and two trailing marks on one row is
+    // the shape iOS never draws. Calendar.app's own list rows are tappable without one.
+    chevron: false,
+    cls: 'cal-row' + ((opts && opts.past) ? ' is-past' : ''),
+    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">×</button>'
+  });
+}
+const CAL_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 // DAY VIEW — today's events as a simple ordered timeline.
 function renderCalendarDay(){
   const wrap = document.getElementById('cal-day-view');
@@ -35324,12 +35490,12 @@ function renderCalendarDay(){
   const events = _calEvents();
   const today = (typeof _calDayISO !== 'undefined' && _calDayISO) ? new Date(_calDayISO + 'T12:00:00') : new Date();
   const todayDow = (today.getDay()+6)%7;
-  const dayName = CAL_DAYS[todayDow];
   const dateLabel = today.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long'});
   const dayEvents = events.filter(e => e.day === todayDow).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-  let html = '<div style="font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;color:var(--go);margin-bottom:10px">'+dateLabel+'</div>';
+  let html;
   if(!dayEvents.length){
-    html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
+    html = iosList([iosRow({ title:'Nothing scheduled', cls:'cal-free' })],
+      { header: dateLabel, footer:'Tap “Add an event” to block something in.' });
   } else {
     // "PASSED" MEANS PASSED NOW, ON THE DAY YOU ARE LOOKING AT. `today` is noon of the VIEWED date
     // when you arrive from the month grid, so this made nowMin a hard 720 — an event at 09:00 next
@@ -35338,9 +35504,7 @@ function renderCalendarDay(){
     const _real = new Date();
     const _viewingToday = today.toDateString() === _real.toDateString();
     const nowMin = _viewingToday ? (_real.getHours()*60 + _real.getMinutes()) : null;
-    dayEvents.forEach(e => {
-      const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
-      const time = e.start + (e.end ? '\u2013'+e.end : '');
+    const rows = dayEvents.map(e => {
       const [sh,sm]=(e.start||'0:0').split(':').map(Number);
       // AND AN END TIME IS A REASON TO DECIDE, NOT TO GIVE UP. `e.end ? false` meant the events the
       // app knows most about — a 12:00-13:00 lift, a 9-5 shift, anything the roster parser fills an
@@ -35354,12 +35518,9 @@ function renderCalendarDay(){
       }
       const isPast = (nowMin == null) ? false
         : (_endMin != null ? (_endMin < nowMin) : (_startMin < nowMin - 60));
-      html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-sm);color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-        '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
+      return calEventRow(e, { past: isPast });
     });
+    html = iosList(rows, { header: dateLabel });
   }
   wrap.innerHTML = html;
   renderCalInsight(events);
@@ -35370,29 +35531,20 @@ function renderCalendarWeek(){
   const events = _calEvents();
   const todayDow = (new Date().getDay()+6)%7; // 0=Mon
   if(!events.length){
-    wrap.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--tx3)"><div style="font-size:var(--t-2xl);margin-bottom:8px">'+svgIcon("calendar",29)+'</div><div style="font-size:var(--t-base);line-height:1.5">Nothing scheduled yet.<br>Paste a roster above, or tap "+ Add one".</div></div>';
+    wrap.innerHTML = '<div class="card"><div class="ios-empty">'+svgIcon('calendar',44)+
+      '<div class="ios-empty-title">Nothing scheduled yet</div>'+
+      '<div class="ios-empty-body">Add an event below, or paste a roster and let the app read it for you.</div></div></div>';
     const ic = document.getElementById('cal-insight-card'); if(ic) ic.style.display='none';
     return;
   }
   let html = '';
-  CAL_DAYS.forEach((dayName, dow) => {
+  CAL_DAY_FULL.forEach((dayName, dow) => {
     const dayEvents = events.filter(e => e.day === dow).sort((a,b) => (a.start||'').localeCompare(b.start||''));
-    const isToday = dow === todayDow;
-    html += '<div style="margin-bottom:12px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;color:'+(isToday?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+dayName+(isToday?' \u00b7 today':'')+'</div>';
-    if(!dayEvents.length){
-      html += '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding-left:2px">\u2014</div>';
-    } else {
-      dayEvents.forEach(e => {
-        const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
-        const time = e.start + (e.end ? '\u2013'+e.end : '');
-        html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-          '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
-      });
-    }
-    html += '</div>';
+    // An empty day is a row that says so, the way Calendar.app draws one — not an italic dash
+    // hanging under a label.
+    const rows = dayEvents.length ? dayEvents.map(e => calEventRow(e))
+                                  : [iosRow({ title:'Nothing on', cls:'cal-free' })];
+    html += iosList(rows, { header: dayName + (dow === todayDow ? ' · Today' : '') });
   });
   wrap.innerHTML = html;
   renderCalInsight(events);
@@ -35410,23 +35562,26 @@ function renderCalendarMonth(){
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const todayStr = new Date().toDateString();
   const monthLabel = ref.toLocaleDateString('en-AU', {month:'long', year:'numeric'});
-  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-    '<button class="btn subtle" onclick="calMonthShift(-1)" style="width:auto;padding:4px 10px">\u2039</button>'+
-    '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx)">'+monthLabel+'</div>'+
-    '<button class="btn subtle" onclick="calMonthShift(1)" style="width:auto;padding:4px 10px">\u203a</button></div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">';
-  ['M','T','W','T','F','S','S'].forEach(d => html += '<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">'+d+'</div>');
-  html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  // The month name set its own family and a font-weight:700 the brand face cannot render, and every
+  // cell was a --bg3 tile with a border. iOS draws a month as numerals on the ground, with today as
+  // one filled tint disc. The arrows are the app's own icons rather than two guillemets.
+  let html = '<div class="card"><div class="cal-month-bar">'+
+    '<button class="cal-arrow" onclick="calMonthShift(-1)" aria-label="Previous month">'+svgIcon('chevronleft',20)+'</button>'+
+    '<div class="cal-month-name">'+monthLabel+'</div>'+
+    '<button class="cal-arrow" onclick="calMonthShift(1)" aria-label="Next month">'+svgIcon('chevronright',20)+'</button></div>';
+  html += '<div class="cal-month-grid cal-month-dow">';
+  ['M','T','W','T','F','S','S'].forEach(d => html += '<div>'+d+'</div>');
+  html += '</div><div class="cal-month-grid">';
   for(let i=0;i<startDow;i++) html += '<div></div>';
   for(let d=1; d<=daysInMonth; d++){
     const cellDate = new Date(year, month, d);
     const dow = (cellDate.getDay()+6)%7;
     // LOCAL midnight, formatted as UTC, is the day BEFORE at any positive offset. cellDate is
-    // new Date(year, month, d) \u2014 local midnight \u2014 so at UTC+10 toISOString() returned the 5th
+    // new Date(year, month, d) — local midnight — so at UTC+10 toISOString() returned the 5th
     // for the cell painted as the 6th: the grid highlighted today in gold and opened yesterday,
     // with yesterday's events. Everything from UTC+1 to UTC+14, all 24 hours of every day, which
     // includes this app's own home timezone and all of Europe on summer time.
-    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) \u2014 it
+    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) — it
     // replaced one wrong day with another, which is why the dots two lines down disagree with it:
     // they scope off local `dow` and `cellDate` and are right, while the onclick was not.
     const _calCellISO = _todayLocalISO(cellDate);
@@ -35435,12 +35590,12 @@ function renderCalendarMonth(){
     // non-recurring event to the week it actually belongs to.
     const dayEvents = events.filter(e => e.day === dow && (e.recurring !== false || _calSameWeek(e, cellDate)));
     const isToday = cellDate.toDateString() === todayStr;
-    const dots = dayEvents.slice(0,4).map(e => '<span style="width:5px;height:5px;border-radius:50%;background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
-    html += '<div onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:var(--rs);cursor:pointer;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
-      '<div style="font-size:var(--t-sm);color:'+(isToday?'var(--go)':'var(--tx2)')+'">'+d+'</div>'+
-      '<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%">'+dots+'</div></div>';
+    const dots = dayEvents.slice(0,4).map(e => '<span style="background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
+    html += '<button type="button" class="cal-cell" onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" aria-label="'+cellDate.toLocaleDateString('en-AU',{day:'numeric',month:'long'})+'">'+
+      '<span class="cal-cell-n'+(isToday?' is-today':'')+'">'+d+'</span>'+
+      '<span class="cal-cell-dots">'+dots+'</span></button>';
   }
-  html += '</div>';
+  html += '</div></div>';
   wrap.innerHTML = html;
   renderCalInsight(events);
 }
@@ -47664,19 +47819,22 @@ function renderTourPrompt(){
     // Don't ambush someone with an 8-step tour the second they finish onboarding — that's the whole
     // cathedral before they've touched anything. Land them on the home (hero + the one next step),
     // and OFFER the tour gently. One clear thing first; the guided walk is one tap away if they want it.
+    // The headline named its own family and set font-weight:700 on it. This face ships ONE roman
+    // weight and font-synthesis is off globally, so the 700 declared an intention the font cannot
+    // honour; .card-say is the role, and it already speaks in our face.
     card.style.display='block';
-    card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me around</button>'+
-      '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
+    card.innerHTML='<div class="card-say">Welcome in.</div>'+
+      '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>'+
+      '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<button class="btn" onclick="dismissTourPrompt()">I\u2019ll explore</button></div>';
     return;
   }
   // Returning user: gentle one-time offer.
   card.style.display='block';
-  card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me</button>'+
-    '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">No thanks</button></div>';
+  card.innerHTML='<div class="card-say">A quick look around?</div>'+
+    '<div class="card-body">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
+    '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me</button>'+
+    '<button class="btn" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
 function dismissTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; }
@@ -49833,9 +49991,12 @@ function renderFirstRun(){
   const stepsEl = document.getElementById('firstrun-steps');
   if(stepsEl){
     stepsEl.innerHTML = steps.map(s => {
+      // The tick was a text glyph at 17px/700 in hardcoded black on the green disc; it is the app's
+      // own check icon now, in the ink that belongs on a filled tint, and the empty ring is a
+      // hairline rather than a 2px border.
       const check = s.done
-        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:var(--t-base);font-weight:700">✓</div>'
-        : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
+        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--on-tint)">'+svgIcon('check',13)+'</div>'
+        : '<div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
       // A DIV WITH AN ONCLICK IS NOT A BUTTON. These four rows are the app's own "four quick things
       // to start" — the first thing a new person is offered — and a keyboard or Full Keyboard Access
@@ -49845,18 +50006,19 @@ function renderFirstRun(){
         ' role="button" tabindex="0"' +
         ' onclick="' + s.action.replace(/"/g,'&quot;') + '"' +
         ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}"';
-      return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
+      return '<div' + tap + ' style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:.5px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
-        '<div style="flex:1">' +
-          '<div style="font-size:var(--t-base);font-weight:500;' + textStyle + '">' + s.label + '</div>' +
-          (s.done ? '' : '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:1px">' + s.desc + '</div>') +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:17px;letter-spacing:-.022em;' + textStyle + '">' + s.label + '</div>' +
+          (s.done ? '' : '<div style="font-size:13px;color:var(--tx2);margin-top:1px;line-height:1.38">' + s.desc + '</div>') +
         '</div>' +
-        (s.done ? '' : '<span style="color:var(--go);font-size:var(--t-base)">›</span>') +
+        (s.done ? '' : '<span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span>') +
       '</div>';
     }).join('');
   }
   const prog = document.getElementById('firstrun-progress');
-  if(prog) prog.textContent = doneCount + ' OF ' + steps.length + ' DONE';
+  // It was typed in capitals and printed at 11px, centred — caps as a decoration rather than a role.
+  if(prog) prog.textContent = doneCount + ' of ' + steps.length + ' done';
 }
 // ── WHAT'S NEW ────────────────────────────────────────────────
 // Shows a one-time card when the user opens a version they haven't seen the changelog for.
@@ -50446,10 +50608,16 @@ function renderHomeGreeting(){
   try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ let _t=identity.replace(/^I am\s+/i,'').trim(); _t=_t.charAt(0).toUpperCase()+_t.slice(1);   // stripping "I am" left a lowercase fragment in italic serif under the greeting; a capital makes it a line rather than a truncation
     idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
-  // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
-  try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
+  // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently. The verse
+  // has its own section now, so hide the SECTION: hiding only the pill left its header stranded over
+  // nothing — a caps label introducing empty space, which is the shape this rebuild is removing.
+  try{ const vs=document.getElementById('home-verse-section') || document.querySelector('.hero-verse');
+    if(vs) vs.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
   subEl.textContent = sub;
-  if(actLabel){ actEl.style.display='block'; actEl.textContent = actLabel; actEl.dataset.act = actType; }
+  // display:'' , not 'block': .btn is a flex box that centres its own label, and forcing it to block
+  // would drop the centring and start the label at the left edge — the trap this codebase has already
+  // met from the other side (`text-align:left` on a flex .btn doing nothing).
+  if(actLabel){ actEl.style.display=''; actEl.textContent = actLabel; actEl.dataset.act = actType; }
   else { actEl.style.display='none'; }
 }
 function homeGreetingAction(){
@@ -50463,8 +50631,12 @@ function homeGreetingAction(){
 function renderNextStep(){
   const el = document.getElementById('next-step-anchor');
   if(!el) return;
+  // The row lives in a grouped section with its own header, so hiding the ROW alone would leave a
+  // "NEXT" label sitting over an empty list. Hide the section; the row's own display stays in step.
+  const sec = document.getElementById('next-step-section');
+  const _hide = () => { el.style.display='none'; if(sec) sec.style.display='none'; };
   // Don't compete with the first-run card for brand-new users.
-  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ el.style.display='none'; return; }
+  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ _hide(); return; }
   const step = getNextStep();
   const t = document.getElementById('next-step-text');
   const sub = document.getElementById('next-step-sub');
@@ -50489,6 +50661,7 @@ function renderNextStep(){
   else delete el.dataset.actionArg;
   el.style.opacity = step.done ? '0.75' : '1';
   el.style.display = 'flex';
+  if(sec) sec.style.display = '';
 }
 // Count the open daily loops (used only to soften the framing on heavy days — never to nag).
 function _countOpenLoops(){
@@ -50532,14 +50705,21 @@ function renderHomeHabits(){
   const list = document.getElementById('home-habit-list');
   if(!list) return;
   list.innerHTML = '';
-  
+  // The two scores and the instructions are a stat pair ABOVE the card and a footnote BELOW it now,
+  // so the card holds only the grid. Both are hidden until there is something to put in them.
+  const sumBox = document.getElementById('home-habit-summary');
+  const noteBox = document.getElementById('home-habit-note');
+  if(sumBox){ sumBox.innerHTML=''; sumBox.style.display='none'; }
+  if(noteBox){ noteBox.textContent=''; noteBox.style.display='none'; }
+
   if(!habits.length){
     // Used to read "Add them in Settings" — there is no habit UI in Settings, so this sent every new
-    // user looking for something that does not exist. Now it offers the thing directly.
-    list.innerHTML = '<div style="text-align:center;padding:16px 8px 6px">'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">No habits yet. Pick one small thing you want to be true of you most days.</div>'+
-      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:var(--t-base)" onclick="openAddHabit()">Add your first habit</button>'+
-    '</div>';
+    // user looking for something that does not exist. Now it offers the thing directly, in the
+    // standard empty state rather than a hand-centred block at an improvised size.
+    list.innerHTML = '<div class="ios-empty">'+svgIcon('target',44)+
+      '<div class="ios-empty-title">No habits yet</div>'+
+      '<div class="ios-empty-body">Pick one small thing you want to be true of you most days.</div>'+
+    '</div><button class="btn primary" onclick="openAddHabit()">Add your first habit</button>';
     return;
   }
   
@@ -50610,22 +50790,26 @@ function renderHomeHabits(){
   const todayDone = habits.filter(h => cellFor(h, 0)).length;
   const todayTotal = habits.length;
   
-  const summary = document.createElement('div');
-  summary.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:14px';
-  summary.innerHTML = 
-    '<div>' +
-      '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
-      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx)">' +
+  // THE SCORES ARE STAT TILES, NOT A PANEL INSIDE THE CARD. This was a --bg3 box nested inside the
+  // habit card \u2014 a card inside a card \u2014 with the two labels in one grey and the two numbers in two
+  // different greys, the right-hand one wearing a DOTTED UNDERLINE to suggest it could be tapped.
+  // They are the same tiles Money and Grow use, on the ground above the card, and the tappable one
+  // says so in the tint, which is how iOS says it.
+  const summary = sumBox || list;
+  summary.innerHTML =
+    '<div class="ios-stat">' +
+      '<div class="ios-stat-label">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
+      '<div class="ios-stat-value" style="font-size:22px">' +
         (knowable
           ? (_weeklyOnly ? (_wkHits + ' of ' + _wkTarget + ' this week' + (_wkHits >= _wkTarget ? ' \u2713' : ''))
                          : (pastPerfect + '/' + elapsed + ' perfect'))
           : 'starts today') + '</div>' +
     '</div>' +
-    '<div style="text-align:right;cursor:pointer;min-height:34px" id="home-habit-today">' +
-      '<div class="eyebrow">Today so far</div>' +
-      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx2);border-bottom:1px dotted var(--bd);display:inline-block">' + todayDone + '/' + todayTotal + '</div>' +
+    '<div class="ios-stat" style="cursor:pointer" id="home-habit-today">' +
+      '<div class="ios-stat-label">Today so far</div>' +
+      '<div class="ios-stat-value" style="font-size:22px;color:var(--go)">' + todayDone + '/' + todayTotal + '</div>' +
     '</div>';
-  list.appendChild(summary);
+  if(sumBox) sumBox.style.display = '';
   // This card counted the day and offered no way to move it. The grid is deliberately read-only
   // (ticking belongs to the evening, where it is one step of closing the day) \u2014 but "0/3" with no
   // route is a scoreboard with no game. The score itself is now the door to the tick list.
@@ -50653,16 +50837,16 @@ function renderHomeHabits(){
   // The name column used to be 1 of 8 EQUAL columns, which on a 375px iPhone left it 36px wide — so
   // every habit rendered as "Mor…", "No v…", "Pra…" and the grid became unreadable at a glance. The day
   // cells only ever hold a tick or a dot, so they are clamped small and the name takes what is left.
-  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;margin-bottom:6px;padding:0 4px;max-width:100%';
-  headerRow.innerHTML = '<div></div>' + dayLabels.map(d => 
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
+  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.6fr) repeat(7,minmax(16px,22px));gap:3px;align-items:center;margin-bottom:4px;padding:0;max-width:100%';
+  headerRow.innerHTML = '<div></div>' + dayLabels.map(d =>
+    '<div style="font-family:var(--font-text);font-size:13px;text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
   ).join('');
   list.appendChild(headerRow);
   
   // Each habit as a row: name on left, last 7 day cells on right (oldest left, today right)
   habits.forEach((h, hi) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;padding:8px 4px;border-top:1px solid var(--bd);max-width:100%';
+    row.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.6fr) repeat(7,minmax(16px,22px));gap:3px;align-items:center;padding:10px 0;border-top:.5px solid var(--bd);max-width:100%';
     
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
@@ -50683,12 +50867,15 @@ function renderHomeHabits(){
     // The name is the door to the anchor. The 7 cells stay read-only exactly as before — this is
     // not ticking, so it doesn't break the "ticking lives in the evening" rule.
     nameCell.style.cursor = 'pointer';
+    // The name carried a DOTTED UNDERLINE to advertise its tap, and its two sub-lines sat at 11px in
+    // two different colours. The name is a plain row title; both sub-lines are the one 13pt footnote
+    // size, and the tap is advertised the way iOS advertises one \u2014 the anchor line in the tint.
     nameCell.innerHTML =
-      '<div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px dotted var(--bd);display:inline-block;max-width:100%">' + _escFew(h.n) + '</div>' +
+      '<div style="font-size:17px;letter-spacing:-.022em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + _escFew(h.n) + '</div>' +
       (_anc
-        ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
-        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
+        ? '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
+        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px">Anchor it to a cue</div>') : '')) +
+      '<div style="font-family:var(--font-text);font-size:13px;color:' + pastColor + ';margin-top:1px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
@@ -50705,31 +50892,37 @@ function renderHomeHabits(){
       const cell = document.createElement('div');
       let bg, border, color, mark;
       
+      // FILLED OR EMPTY, NEVER DOTTED. Each state here was a different BORDER — dotted for no record,
+      // dashed for today, solid green for done — so one row of seven days read as four kinds of sketch
+      // outline, which is as generated-looking as this screen gets. A day is a dot: filled when it
+      // happened, an empty recess when it did not, a tint ring on today. And the mark inside was set
+      // in "DM Mono, monospace", a family this app does not ship — every one of these cells has been
+      // rendering in the browser's own Courier.
       if(unknown){
         bg = 'transparent';
-        border = '1px dotted var(--bd)';
-        color = 'rgba(242,239,232,0.22)';
+        border = '0';
+        color = 'var(--tx3)';
         mark = '\u2013';                       // en dash: no record, not a miss
       } else if(done){
-        bg = isToday ? 'var(--go-bg)' : 'rgba(89,164,103,0.18)';
-        border = isToday ? '1.5px solid var(--go)' : '1px solid var(--gr)';
-        color = isToday ? 'var(--go)' : 'var(--gr)';
+        bg = isToday ? 'var(--go)' : 'var(--gr)';
+        border = '0';
+        color = 'var(--on-tint)';
         mark = '✓';
       } else if(isToday){
-        bg = 'transparent';
-        border = '1.5px dashed var(--go)';
-        color = 'var(--tx3)';
-        mark = '·';
+        bg = 'var(--fill2)';
+        border = '1.5px solid var(--go)';
+        color = 'var(--go)';
+        mark = '';
       } else {
-        bg = 'transparent';
-        border = '1px solid var(--bd)';
+        bg = 'var(--fill2)';
+        border = '0';
         color = 'var(--tx3)';
-        mark = '·';
+        mark = '';
       }
-      
-      cell.style.cssText = 
-        'width:100%;max-width:32px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;' +
-        'font-family:DM Mono,monospace;font-size:12px;font-weight:600;box-sizing:border-box;' +
+
+      cell.style.cssText =
+        'width:100%;max-width:26px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+        'font-family:var(--font-rounded);font-size:13px;font-weight:600;box-sizing:border-box;' +
         'background:' + bg + ';border:' + border + ';color:' + color + ';user-select:none' +
         '';   // no cursor:pointer — this grid is deliberately read-only (see below), so it must not
               // advertise a tap it will not honour.
@@ -50743,10 +50936,14 @@ function renderHomeHabits(){
     list.appendChild(row);
   });
   
-  const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;letter-spacing:0.01em;line-height:1.5';
-footer.innerHTML = 'Tap a name to anchor it to something you already do \u00b7 tap today\'s score to tick them off \u00b7 past 6 days on the left';
-  list.appendChild(footer);
+  // THE INSTRUCTIONS ARE A FOOTNOTE, NOT A STRIP. This was three separate instructions joined by
+  // middots, centred, at 11px, inside the card \u2014 the "Manage \u00b7 edit \u00b7 remove" shape that reads as
+  // generated wherever it appears. Two sentences, at the one footnote size, outside the card, where
+  // iOS puts the note that explains a grouped section.
+  if(noteBox){
+    noteBox.textContent = 'Tap a name to anchor it to something you already do. Tap today\u2019s score to tick them off \u2014 the last six days run to the left.';
+    noteBox.style.display = '';
+  }
 }
 
 
@@ -50799,12 +50996,14 @@ function renderWeeklyCheckin(){
   else if(proDays >= 3 && proAvg < goals.pro * 0.85) focus = 'Protein ran ' + (goals.pro - proAvg) + 'g/day under target. One extra serve at lunch closes it.';
   else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + _wkStr + ' in a week \u2014 faster than intended. Worth a look.';
   else focus = 'No weak link stands out. Hold the line and let the weeks stack.';
-  box.innerHTML = '<div style="background:var(--bg2);border-radius:var(--r);padding:16px;position:relative">'+
-    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:var(--t-base);padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly check-in</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
-    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:var(--t-base);padding:10px;background:var(--bg3)">Read the full week \u2192</button></div>';
+  // Every label here was hand-painted: an 11px tint caps eyebrow, a 15px body, a 17px sentence and a
+  // button carrying three declarations its own class already makes. Same content, named roles.
+  box.innerHTML = '<div class="card home-card" style="position:relative">'+
+    '<button class="card-x" onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:8px;right:8px;margin:0">\u00d7</button>'+
+    '<div class="eyebrow">Weekly check-in</div>'+
+    '<div class="card-body" style="margin-bottom:4px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
+    '<div class="card-say">'+focus+'</div>'+
+    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')">Read the full week</button></div>';
   box.style.display = 'block';
 }
 
@@ -51021,20 +51220,20 @@ function renderProactiveNudge(){
   // Respect a recent dismissal of this exact nudge.
   const dismissed = ls('totry_nudge_dismissed') || {};
   if(dismissed[n.id] && (Date.now() - dismissed[n.id]) < 20*3600000){ box.style.display='none'; return false; }
-  const accent = 'var(--go)';
-  const bg = n.tone==='care'
-    ? 'var(--go-bg)'
-    : 'var(--bg2)';
+  // A 'care' nudge used to paint itself onto a tinted fill so it would feel softer. Content never
+  // sits on a tint here: the card is opaque like every other card, and the warmth is in the words.
+  // Stacked, not side by side: these labels are whole phrases ("Open my fuel plan"), and two of them
+  // sharing a row means the longer one wraps mid-phrase inside a 50pt button. Full width each.
   const btns = (n.actions||[]).map(a =>
     a.ghost
-      ? '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="'+a.onclick+'">'+a.label+'</button>'
-      : '<button class="btn primary" style="flex:1;font-size:var(--t-base)" onclick="'+a.onclick+'">'+a.label+'</button>'
+      ? '<button class="btn" onclick="'+a.onclick+'">'+a.label+'</button>'
+      : '<button class="btn primary" onclick="'+a.onclick+'">'+a.label+'</button>'
   ).join('');
   box.innerHTML =
-    '<div style="background:'+bg+';border-radius:var(--r);padding:15px 16px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+accent+';text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+n.eyebrow+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:'+(btns?'12px':'0')+'">'+n.text+'</div>'+
-      (btns ? '<div style="display:flex;gap:8px">'+btns+'</div>' : '')+
+    '<div class="card home-card">'+
+      '<div class="eyebrow">'+n.eyebrow+'</div>'+
+      '<div class="card-body"'+(btns?'':' style="margin-bottom:0"')+'>'+n.text+'</div>'+
+      btns+
     '</div>';
   box.style.display = 'block';
   return true;
@@ -51098,8 +51297,8 @@ function renderHomeInsight(){
   if(!insights.length){ box.style.display = 'none'; return; }
   // Rotate which insight shows by day so it doesn't feel static.
   const pick = insights[getDayCount() % insights.length];
-  box.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">What I\u2019m noticing</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + pick + '</div>';
+  box.innerHTML = '<div class="eyebrow">What I\u2019m noticing</div>' +
+    '<div class="card-body" style="margin-bottom:0">' + pick + '</div>';
   box.style.display = 'block';
 }
 
@@ -53796,8 +53995,11 @@ function renderIdentity(){
       return !!hr && getComputedStyle(hr).display!=='none' && (hr.innerText||'').trim().length>0;
     }catch(_){ return false; } })();
     if(heroHasIt && bits.length){
+      // It read as a centred ITALIC sentence with a bare \u2713 glyph in front of it under a gold 11px
+      // caps label. Same words, same evidence, in the card's own body role \u2014 left-aligned, upright,
+      // and the tick is the icon language rather than a character borrowed from a font.
       if(labelEl)labelEl.textContent='Proof you are living it';
-      el.innerHTML='<span style="color:var(--tx)">\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
+      el.innerHTML='<span style="color:var(--tx)">'+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
       if(evEl) evEl.style.display='none';
     } else {
       if(labelEl)labelEl.textContent='Who you are becoming';
@@ -53805,7 +54007,7 @@ function renderIdentity(){
       if(evEl){
         if(bits.length){
           evEl.style.display='block';
-          evEl.textContent='\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
+          evEl.textContent=bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
         } else { evEl.style.display='none'; }
       }
     }
@@ -54041,10 +54243,12 @@ function renderDualStreaks(){
     if(el){
       const n=(ls('totry_moments_won')||[]).length;
       if(n>0){
+        // It floated between two cards, centred, at 12px in the third grey with a gold bold numeral
+        // inside it — naked micro-copy at a size nothing else on the screen uses. It is the section's
+        // footnote now: 13pt, secondary, left-aligned under the tiles it is talking about.
         el.style.display='block';
-        el.innerHTML='<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em">'+
-          '<b style="color:var(--go)">'+n+'</b> urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it</span>';
-      } else { el.style.display='none'; el.innerHTML=''; }
+        el.textContent=n+' urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it.';
+      } else { el.style.display='none'; el.textContent=''; }
     }
   }catch(_){}
   // The tile counts the FIGHT now, not the clean streak, so "Days clean" here was relabelling the
