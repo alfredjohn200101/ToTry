@@ -407,18 +407,23 @@ function renderGiving(){
   }
   const list = givingLog();
   let body;
-  if(!list.length) body = '<p class="empty-note">Nothing logged yet.</p>';
-  else if(p.quiet) body = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
+  if(!list.length) body = '';
+  else if(p.quiet) body = '<p class="ios-footnote" style="padding:8px 0 0">'+list.length+' kept quietly. Amounts hidden.</p>';
   else body = list.slice(0,10).map(x => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
       '<div><div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
       (x.to ? '<div style="font-size:var(--t-cap);color:var(--tx3)">'+_escFew(x.to)+'</div>' : '')+'</div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+new Date(x.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</span>'+
       '<button onclick="deleteGiving('+x.id+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer">×</button></div></div>').join('')+
       '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-top:10px">'+curSym()+Math.round(t.year).toLocaleString()+' this year · '+curSym()+Math.round(t.all).toLocaleString()+' all time</div>';
-  el.innerHTML = '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">'+cg.sub+'</div>'+
-    '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:12px">'+strip+'</div>'+
+  // NO BOX INSIDE A BOX. The suggestion sat in its own --bg3 panel inside this card — a nested
+  // surface the design system does not have, and on the Money rebuild it read as a card with a
+  // slightly different card drawn inside it. Space separates it now, as it does everywhere else.
+  el.innerHTML = '<div class="say-body" style="margin-bottom:12px">'+cg.sub+'</div>'+
+    '<div style="margin-bottom:14px">'+strip+'</div>'+
     body+
-    '<div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:10px;font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+
+    // The quiet paragraph under the hairline is a footnote, so it wears the footnote role rather than
+    // a fourth grey at its own line-height.
+    '<div class="ios-footnote" style="border-top:.5px solid var(--bd);margin-top:14px;padding:12px 0 0">'+
       cg.quiet+' <button onclick="toggleGivingQuiet()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap);padding:16px 0;margin:-16px 0;position:relative">'+(p.quiet?'Show amounts':'Hide amounts')+'</button><br>'+
       'Spending on others tends to lift mood a little more than spending on yourself — real, but modest, and strongest when it’s your own choice and you can see who it reaches (Dunn, Aknin &amp; Norton). That’s the whole claim. Giving isn’t a mood technique, and there’s no score here: nothing is shared, ranked or counted against you.'+
     '</div>';

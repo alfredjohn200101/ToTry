@@ -773,17 +773,11 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .be-weight{font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx);font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .be-change{font-family:var(--font-text);font-size:var(--t-cap);font-variant-numeric:tabular-nums}
 .be-change.down{color:var(--gr)}.be-change.up{color:var(--re)}.be-change.same{color:var(--tx3)}
-.debt-row{padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:opacity 0.15s}
-.debt-row:last-child{border-bottom:none}
-.debt-row:active{opacity:0.7}
-.dr-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
-.dr-name{font-size:var(--t-base);font-weight:500}
-.dr-amt{font-family:var(--font-text);font-size:var(--t-base);font-weight:500;color:var(--re);font-variant-numeric:tabular-nums}
-.dr-date{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);display:block;margin-bottom:4px}
+/* The debt row's eight bespoke classes are gone — it is an .ios-row like every other row in the app.
+   .bar-wrap / .bar stay: the debt and budget rows still carry a progress line, drawn by the one
+   component that draws every other progress line here. */
 .bar-wrap{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:4px}
 .bar{height:3px;background:var(--gr);border-radius:2px;transition:width 0.4s}
-.dr-meta{display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)}
-.dr-paid{color:var(--gr)}
 .payday-result{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:none}
 .payday-result h4{font-size:var(--t-base);font-weight:500;color:var(--gr);margin-bottom:10px}
 .pay-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(46,204,113,0.12)}
@@ -1045,10 +1039,9 @@ details[open]>summary::after{transform:rotate(180deg)}
    names var(--go) inline (16 of them, including the pre-sign-in gate and the ED support sheet),
    and only the safety-net card inherited this rule's blue. Same numbers, same purpose, two inks.
    Gold is the app's "reach for this" accent and it is the majority; the minority moved. */
-/* ── DEBT STRATEGY ── */
-.strategy-card{border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer;border:2px solid var(--bd)}
-.strategy-card.active{border-color:var(--go-bd);background:var(--go-bg)}
-.sc-title{font-size:var(--t-base);font-weight:600;color:var(--tx);margin-bottom:3px}
+/* The payoff strategy was two bordered cards nested inside a card; it is a pick-one list now, so the
+   .strategy-card / .sc-title rules that painted them are gone. .sc-desc stays — the identity-seasons
+   picker uses it. */
 .sc-desc{font-size:var(--t-sm);color:var(--tx2);line-height:1.4}
 /* ── WATER / SLEEP ──
    .tracker-row and its tr-icon / tr-label / tr-val / tr-btns family were Track's hand-built row:
@@ -2065,6 +2058,88 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 .sc-grid{grid-template-columns:repeat(auto-fit,minmax(104px,1fr)) !important;gap:10px !important;margin-bottom:28px !important}
 .sc-grid .ios-stat{padding:11px 12px 13px}
 .sc-grid .ios-stat-label{letter-spacing:.03em}
+/* ── MONEY, REBUILT FROM THE COMPONENTS ─────────────────────────────────────────────────────────────
+   Stewardship held more hand-painted small text than any other screen: eleven .card headings each
+   with an icon and a grey "+ Add" crowded against it, nine 11px caps labels tracked at 0.01em, four
+   italic centred empty notes, an underlined 11px "Edit" micro-link inside every debt row, an 11px
+   three-column meta strip under it, and a right-aligned "debts · bills · subscriptions · budgets ·
+   giving" dot strip. None of that is a layout problem, which is why it survived two design passes —
+   it is precisely the "little text ... looks vibe coded" the owner is pointing at. Every rule below
+   names a role that eleven call sites were improvising, so the call sites can stop. */
+
+/* A screen's opening sentence is a footnote, but it belongs to the title rather than to a list, so it
+   keeps the title's own left edge instead of a list's 16px inset. */
+.page-intro{padding:0;margin:-2px 0 24px}
+
+/* THE APP SPEAKING, inside a card. The money gate said its one sentence in an inline
+   font-family:var(--font-serif) at 22px with font-style:italic — the READING face, slanted by the
+   browser, on the line where the app introduces itself. It is the display face at the sheet-title
+   size: our own voice, upright, the way every other headline in the app now speaks. */
+.say{font-family:var(--font-display);font-size:26px;font-weight:500;line-height:1.16;letter-spacing:0;color:var(--tx);margin-bottom:8px}
+.say-body{font-size:15px;line-height:1.42;color:var(--tx2);margin-bottom:16px}
+/* The line under a sheet's title — the subheadline role, so two sheets cannot disagree about it, and
+   one gap under every sheet title whether or not there is a subtitle beneath it. */
+.modal h3{margin-bottom:14px}
+.modal h3+.modal-sub{margin-top:-8px}
+.modal-sub{font-size:15px;line-height:1.4;color:var(--tx2);margin:0 0 16px}
+
+/* A row that has to stay a plain container because it carries its own trailing control: a button
+   nested inside a button is not markup a browser will honour. Same tap feedback as the real thing. */
+.ios-row.tap{cursor:pointer}
+.ios-row.tap:active{background:var(--bg4)}
+
+/* "This is the one in force" — the mark iOS puts on a pick-one list. */
+.ios-row-check{flex:none;color:var(--go);opacity:0;transition:opacity .15s}
+.ios-row.active .ios-row-check{opacity:1}
+.ios-row-check .ic{width:16px;height:16px;stroke-width:2.6}
+
+/* Remove. It was a bare × at 15px in the tertiary grey with about 18px of tappable area inside a 44pt
+   row — right size for the eye, wrong size for a thumb. A real 44x44 target, which is the floor
+   npm run panels measures. */
+.ios-row-x{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-11px -12px -11px 0;
+  background:none;border:0;padding:0;color:var(--tx3);font-family:var(--font-text);font-size:19px;line-height:1;cursor:pointer}
+.ios-row-x:active{opacity:.45}
+/* The progress line a debt or budget row carries, drawn by the app's one bar component. Both halves
+   are <span>s inside a row, so they have to be told to be blocks. */
+.ios-row-body>.bar-wrap{display:block;margin:7px 0 1px}
+.ios-row-body>.bar-wrap .bar{display:block}
+.bar.warn{background:var(--go)}
+.bar.over{background:var(--re)}
+.money-gauge{margin-bottom:28px}
+
+/* THREE TILES DO NOT FIT A PHONE AT THE DEFAULT MINIMUM. .ios-stats auto-fits at minmax(140px,1fr),
+   which on a 393pt screen wraps a three-up into 2 + 1 — In and Out side by side and Net orphaned on
+   its own row, which reads as a layout accident. The three-up is its own, tighter variant, the way
+   Fitness draws a row of three. */
+.ios-stats.three{grid-template-columns:repeat(3,1fr);gap:8px}
+.ios-stats.three .ios-stat{padding:10px 11px 12px}
+.ios-stats.three .ios-stat-value{font-size:22px}
+.ios-stats.three .ios-stat-label{font-size:12px;letter-spacing:.03em}
+
+/* A stat tile's figure carries the two money meanings, and only those two. */
+.ios-stat-value.good{color:var(--gr)}
+.ios-stat-value.bad{color:var(--re)}
+.ios-section>.ios-stats+*{margin-top:12px}
+.ios-section>.card+.ios-list,.ios-section>div[id]:not(:empty)+.ios-list{margin-top:12px}
+
+/* A labelled field inside a .row — the target-date box built itself an 11px caps span on the spot.
+   .row is align-items:stretch, so a column with a label over it made the plain field beside it grow
+   to the label's height as well: two boxes the same shape, one a third taller for no reason. */
+.field-col{display:flex;flex-direction:column;gap:2px;max-width:150px;flex:none}
+.field-col input{width:100%}
+.row.row-end{align-items:flex-end}
+
+/* The two heroes. Both were centred tinted panels with a 1px border, a 28px/44px figure and the label
+   BELOW it in 11px caps — a shape nothing else in the app uses, and the tint made the whole screen
+   read as a dashboard of coloured boxes. They are ordinary cards now: the label above in the
+   section-header role, the figure in SF Rounded, the sentence under it as a footnote, left-aligned
+   like every other piece of content here. */
+.df-hero,.saved-hero{background:var(--bg2);border:0;border-radius:12px;padding:13px 16px 15px;margin:0 0 28px;text-align:left;box-shadow:none}
+.df-hero{display:none}
+.df-date{font-family:var(--font-rounded);font-size:34px;font-weight:600;color:var(--bl);line-height:1.12;letter-spacing:0;margin-top:1px}
+.saved-big{font-family:var(--font-rounded);font-size:34px;font-weight:600;color:var(--gr);line-height:1.12;letter-spacing:0;font-variant-numeric:tabular-nums;margin-top:1px}
+.df-lbl,.saved-lbl{margin-top:0 !important}
+.df-desc,.saved-desc{font-size:13px;line-height:1.38;color:var(--tx2);margin-top:5px}
 
 </style>
 </head>
@@ -4447,179 +4522,213 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 <!-- TAB 9: MONEY -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-money" class="tab">
-  <div style="margin-bottom:10px">
-    <div class="page-title">Stewardship</div>
-    <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.55" data-intro-for="money">Money is freedom, not just numbers. Everything reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
-  </div>
+  <div class="page-title">Stewardship</div>
+  <div class="ios-footnote page-intro" data-intro-for="money">Money is freedom, not just numbers. Everything reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   <!-- The impulse door. A spending urge is a threshold moment exactly like a craving — same dopamine
        spike, same crash, same shame loop — so it gets the same before-it-takes-over treatment rather
-       than a budget lecture. Sits at the top because it's needed BEFORE the money is gone. -->
-  <button class="btn" onclick="openImpulsePause()" style="display:block;margin-bottom:12px;text-align:left;padding:13px 15px;background:var(--bg3)">
-    <div style="font-size:var(--t-md);color:var(--go)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polygon points="7.86,2 16.14,2 22,7.86 22,16.14 16.14,22 7.86,22 2,16.14 2,7.86"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>&nbsp;&nbsp;About to buy something?</div>
-    <div style="font-size:var(--t-cap);color:var(--tx3);margin-left:26px;line-height:1.5">Let’s look at it together first — no lecture.</div>
-  </button>
+       than a budget lecture. Sits at the top because it's needed BEFORE the money is gone. It was a
+       .btn carrying its own padding and background, with a second line hand-indented 26px to clear an
+       icon; it is one grouped row now, which is what a destination looks like everywhere else. -->
+  <div class="ios-section">
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="openImpulsePause()">
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><polygon points="7.86,2 16.14,2 22,7.86 22,16.14 16.14,22 7.86,22 2,16.14 2,7.86"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">About to buy something?</span><span class="ios-row-sub" style="display:block">Let’s look at it together first — no lecture.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+    </div>
+  </div>
   <!-- Before it knows anything, this tab has exactly one job: get something real in. -->
   <div id="money-gate"></div>
 
   <!-- Nothing is removed — it is reachable in one tap, and it names what is in there so the tap is an
-       informed one. The moment there is any real money data the cards come back on their own. -->
-  <button id="money-more-row" class="sec-open" style="display:none" onclick="showMoneyMore()">
-    <span class="sec-open-t">Also here</span>
-    <span class="sec-open-c">debts · bills · subscriptions · budgets · giving</span>
-    <span class="sec-open-ch">›</span>
-  </button>  <div id="money-read-card"></div>
-  <div class="mg">
-    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid" data-cur-text="{c}0">$0</div></div>
-    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt" data-cur-text="{c}0">$0</div></div>
+       informed one. The moment there is any real money data the cards come back on their own. It was
+       a bespoke .sec-open whose contents were a right-aligned 13px strip reading "debts · bills ·
+       subscriptions · budgets · giving"; the dot-separated micro-strip is one of the shapes that reads
+       as generated, so it is a row with a subtitle like every other destination in the app. -->
+  <div class="ios-section" id="money-more-row" style="display:none">
+    <div class="ios-list">
+      <button type="button" class="ios-row" onclick="showMoneyMore()">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Also here</span><span class="ios-row-sub" style="display:block">Debts, bills, subscriptions, budgets and giving</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+    </div>
+  </div>
+  <div id="money-read-card"></div>
+  <!-- A DIRECT CHILD OF THE TAB, deliberately: renderFinance moves the reclaimed hero to sit before or
+       after this block depending on whether there is anything reclaimed yet, and npm run panels reads
+       the two as siblings of #tab-money to prove the freedom story leads once it is real. -->
+  <div class="ios-stats money-gauge">
+    <div class="ios-stat"><div class="ios-stat-label">Paid off</div><div class="ios-stat-value good" id="f-paid" data-cur-text="{c}0">$0</div></div>
+    <div class="ios-stat"><div class="ios-stat-label">Debt left</div><div class="ios-stat-value bad" id="f-debt" data-cur-text="{c}0">$0</div></div>
   </div>
   <!-- Dynamic goals list, sorted by priority -->
-  <div class="money-more" id="finance-goals-list" style="margin-bottom:14px"></div>
-  <div class="df-hero" id="df-hero"><div class="df-date" id="df-date">&#8212;</div><div class="df-lbl">Projected debt-free date</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
-  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num" data-cur-text="{c}0">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
-  <!-- Strategy -->
-  <div class="card money-more" style="margin-bottom:12px">
-    <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
-    <div class="strategy-card active" id="strategy-snowball" onclick="setDebtStrategy('snowball', true)">
-      <div class="sc-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="2" x2="12" y2="22"/><line x1="3.3" y1="7" x2="20.7" y2="17"/><line x1="3.3" y1="17" x2="20.7" y2="7"/><path d="M9 4.5 12 7l3-2.5M9 19.5 12 17l3 2.5"/></svg> Snowball &#8212; smallest debt first</div>
-      <div class="sc-desc">Builds momentum. Every paid-off debt is a win that keeps you going.</div>
-    </div>
-    <div class="strategy-card" id="strategy-avalanche" onclick="setDebtStrategy('avalanche', true)">
-      <div class="sc-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M2 20h20L14.5 5.5 11 12l-2.5-3z"/></svg> Avalanche &#8212; highest interest first</div>
-      <div class="sc-desc">Saves the most money mathematically.</div>
-    </div>
-  </div>
-  <button class="btn primary money-more" style="margin-bottom:12px" onclick="openPayday()">
-    <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1.4"/></svg>
-    I just got paid &#8212; allocate my money
-  </button>
-  <div class="payday-result" id="payday-result"></div>
-  <div class="card money-more"><div class="card-hd" style="margin-bottom:10px">Debts &#8212; tap to log a payment</div><div id="debt-list"></div></div>
-  <div class="card money-more">
-    <div class="card-hd" style="margin-bottom:10px">Add / update</div>
-    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
-    <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><label for="dd" style="display:flex;flex-direction:column;gap:3px;max-width:145px;flex:none"><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Target date</span><input type="date" id="dd" aria-label="Target date to clear this debt" style="width:100%"></label></div>
-    <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
-    <button class="btn" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
-    <div class="divider"></div>
-    <div class="card-hd" style="margin-bottom:6px;margin-top:8px">Your savings goals</div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px;line-height:1.5">Add as many goals as you want. They appear at the top in priority order.</p>
-    <input type="text" id="goal-name" placeholder="Goal name (e.g. USA Trip, Emergency Fund)" style="margin-bottom:6px">
-    <div class="row"><input type="number" id="goal-target" data-cur-ph="Target {c}" placeholder="Target $"><input type="number" id="goal-current" data-cur-ph="Saved so far {c}" placeholder="Saved so far $"></div>
-    <button class="btn" onclick="addFinanceGoal()" style="margin-bottom:10px">Add goal</button>
-    <div class="divider"></div>
-    <div class="card-hd" style="margin-bottom:6px">Vice savings calculator</div>
-    <div class="row"><input type="number" id="weed-s" data-cur-ph="Vice 1 weekly {c}" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" data-cur-ph="Vice 2 weekly {c}" placeholder="Vice 2 weekly $"></div>
-    <div class="row"><input type="number" id="gamb-s" data-cur-ph="Vice 3 weekly {c}" placeholder="Vice 3 weekly $"><input type="number" id="other-s" data-cur-ph="Other {c}" placeholder="Other $"></div>
-    <input type="date" id="sober-since" style="margin-bottom:10px">
-    <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
-  </div>
-  
-  <!-- QUICK SPEND ENTRY — fast inline path -->
-  <div class="card money-more" style="margin-top:14px;background:var(--bg3)">
-    <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg> Quick spend</div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">One tap to log a recent expense. Just the amount and the category.</p>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input type="number" id="qs-amount" inputmode="decimal" step="0.01" data-cur-ph="{c} amount" placeholder="$ amount" style="flex:1;font-size:var(--t-lg);padding:12px">
-      <select id="qs-cat" style="width:auto;padding:12px 10px;font-size:var(--t-lg);background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx)">
-        <option value="">Category…</option>
-        <option value="Food">Food</option>
-        <option value="Transport">Transport</option>
-        <option value="Bills">Bills</option>
-        <option value="Shopping">Shopping</option>
-        <option value="Entertainment">Entertainment</option>
-        <option value="Health">Health</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-    <button class="btn" onclick="quickSpend()" style="padding:10px;font-size:var(--t-base)">Log expense</button>
-  </div>
-  
-  <!-- INCOME & EXPENSE TRACKING -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> This month</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openCSVImport()">↑ Import CSV</button>
-        <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openTransactionLogger()">+ Add full</button>
+  <div class="money-more" id="finance-goals-list"></div>
+  <!-- The two heroes. Both were centred tinted panels with a 1px border and a caps label under the
+       number — the shape a generated screen reaches for. They are cards now: the label above in the
+       section-header role, the figure in SF Rounded, the sentence underneath as a footnote, all left
+       aligned like every other piece of content on the screen. -->
+  <div class="df-hero" id="df-hero"><div class="df-lbl">Projected debt-free date</div><div class="df-date" id="df-date">&#8212;</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
+  <div class="saved-hero" id="saved-hero"><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-big" id="saved-num" data-cur-text="{c}0">$0</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
+
+  <!-- Strategy — two mutually exclusive choices, so it is a list with a checkmark on the one in force,
+       the way iOS asks any "pick one of these". It was two bordered cards nested inside a card, with
+       the choice carried by a 2px border colour and a snowflake glyph in the title. -->
+  <div class="ios-section money-more">
+    <div class="ios-header">Payoff strategy</div>
+    <div class="ios-list">
+      <div class="ios-row tap active" id="strategy-snowball" onclick="setDebtStrategy('snowball', true)" role="button" tabindex="0" aria-label="Snowball, smallest debt first">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Snowball</span><span class="ios-row-sub" style="display:block">Smallest debt first. Builds momentum — every paid-off debt is a win that keeps you going.</span></span>
+        <span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span>
+      </div>
+      <div class="ios-row tap" id="strategy-avalanche" onclick="setDebtStrategy('avalanche', true)" role="button" tabindex="0" aria-label="Avalanche, highest interest first">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Avalanche</span><span class="ios-row-sub" style="display:block">Highest interest first. Saves the most money mathematically.</span></span>
+        <span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span>
       </div>
     </div>
-    <div id="money-month-summary" style="margin-bottom:10px"></div>
-    <div id="money-category-breakdown" style="margin-bottom:10px"></div>
-    <div id="money-recent-transactions"></div>
   </div>
+
+  <div class="ios-section money-more">
+    <button class="btn primary" onclick="openPayday()">I just got paid — allocate my money</button>
+    <div class="payday-result" id="payday-result"></div>
+  </div>
+
+  <!-- DEBTS. The header read "Debts — tap to log a payment", which is a sentence wearing a header's
+       clothes; the instruction is the section's footnote now and the header is the one word it is. -->
+  <div class="ios-section money-more">
+    <div class="ios-header">Debts</div>
+    <div class="ios-list" id="debt-list"></div>
+    <div class="ios-footnote" id="debt-foot">Tap a debt to log a payment.</div>
+  </div>
+
+  <div class="ios-section money-more">
+    <div class="ios-header">Add a debt</div>
+    <div class="card">
+      <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
+      <div class="row row-end"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><label for="dd" class="field-col"><span class="lbl">Target date</span><input type="date" id="dd" aria-label="Target date to clear this debt"></label></div>
+      <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
+      <button class="btn" onclick="addDebt()">Add this debt</button>
+    </div>
+  </div>
+
+  <div class="ios-section money-more">
+    <div class="ios-header">Savings goals</div>
+    <div class="card">
+      <input type="text" id="goal-name" placeholder="Goal name (e.g. USA Trip, Emergency Fund)" style="margin-bottom:8px">
+      <div class="row"><input type="number" id="goal-target" data-cur-ph="Target {c}" placeholder="Target $"><input type="number" id="goal-current" data-cur-ph="Saved so far {c}" placeholder="Saved so far $"></div>
+      <button class="btn" onclick="addFinanceGoal()">Add goal</button>
+    </div>
+    <div class="ios-footnote">Add as many goals as you want. They appear at the top in priority order.</div>
+  </div>
+
+  <div class="ios-section money-more">
+    <div class="ios-header">Vice savings calculator</div>
+    <div class="card">
+      <div class="row"><input type="number" id="weed-s" data-cur-ph="Vice 1 weekly {c}" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" data-cur-ph="Vice 2 weekly {c}" placeholder="Vice 2 weekly $"></div>
+      <div class="row"><input type="number" id="gamb-s" data-cur-ph="Vice 3 weekly {c}" placeholder="Vice 3 weekly $"><input type="number" id="other-s" data-cur-ph="Other {c}" placeholder="Other $"></div>
+      <span class="lbl">Clean since</span>
+      <input type="date" id="sober-since" aria-label="Clean since" style="margin-bottom:10px">
+      <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
+    </div>
+  </div>
+
+  <!-- QUICK SPEND ENTRY — fast inline path -->
+  <div class="ios-section money-more">
+    <div class="ios-header">Quick spend</div>
+    <div class="card">
+      <div class="row">
+        <input type="number" id="qs-amount" inputmode="decimal" step="0.01" data-cur-ph="{c} amount" placeholder="$ amount">
+        <select id="qs-cat" aria-label="Category" style="max-width:150px;flex:none">
+          <option value="">Category…</option>
+          <option value="Food">Food</option>
+          <option value="Transport">Transport</option>
+          <option value="Bills">Bills</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Health">Health</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <button class="btn" onclick="quickSpend()">Log expense</button>
+    </div>
+    <div class="ios-footnote">One tap to log a recent expense. Just the amount and the category.</div>
+  </div>
+
+  <!-- INCOME & EXPENSE TRACKING. Every one of these sections used to be a .card whose heading carried
+       an icon and a small grey "+ Add" button crowded against it; the two ways in are rows at the foot
+       of the list now, which is where iOS puts them. -->
+  <div class="ios-section money-more">
+    <div class="ios-header">This month</div>
+    <div id="money-month-summary"></div>
+    <div class="ios-list">
+      <button type="button" class="ios-row tint" onclick="openTransactionLogger()">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Add a transaction</span></span>
+      </button>
+      <button type="button" class="ios-row tint" onclick="openCSVImport()">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Import a bank statement</span></span>
+      </button>
+    </div>
+  </div>
+  <div class="money-more" id="money-category-breakdown"></div>
+  <div class="money-more" id="money-recent-transactions"></div>
   <input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none" onchange="handleCSVFile(event)">
-  
+
   <!-- SUBSCRIPTIONS -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Subscriptions</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn’t serve you.</p>
-  <div id="sub-detect" style="display:none"></div>
-    <div id="subscriptions-list"></div>
-    <div id="subscriptions-total" style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx3);text-align:center;margin-top:10px"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Subscriptions</div>
+    <div id="sub-detect" style="display:none"></div>
+    <div class="ios-list" id="subscriptions-list"></div>
+    <div class="ios-footnote" id="subscriptions-total"></div>
+    <div class="ios-footnote">Track recurring expenses. Cancel what doesn’t serve you.</div>
   </div>
-  
+
   <!-- UPCOMING BILLS -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Upcoming bills</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openBillLogger()" aria-label="Add a bill">+ Add</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">One-off or annual bills with a due date. We’ll surface the closest first.</p>
-    <div id="bills-list"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Upcoming bills</div>
+    <div class="ios-list" id="bills-list"></div>
+    <div class="ios-footnote">One-off or annual bills with a due date. We’ll surface the closest first.</div>
   </div>
-  
+
   <!-- CATEGORY BUDGETS -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Category budgets</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openBudgetLogger()">+ Set</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Set a monthly limit per category. See how close you are.</p>
-    <div id="budgets-list"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Category budgets</div>
+    <div class="ios-list" id="budgets-list"></div>
+    <div class="ios-footnote">Set a monthly limit per category. See how close you are.</div>
   </div>
-  
+
   <!-- NET WORTH -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M8.5 3 6 9l6 12M15.5 3 18 9l-6 12"/></svg> Net worth</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openAssetLogger()">+ Add asset</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Assets minus debts. Track over time.</p>
-    <div id="networth-summary" style="margin-bottom:10px"></div>
-    <div id="assets-list"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Net worth</div>
+    <div id="networth-summary"></div>
+    <div class="ios-list" id="assets-list"></div>
+    <div class="ios-footnote">Assets minus debts. Track over time.</div>
   </div>
 
   <!-- FAMILY CONTRIBUTION -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Family contribution</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openFamilyContribution()" aria-label="Log a family contribution">+ Log</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Money you give to family. Track what you contribute over time.</p>
-    <div id="family-contribution-list"></div>
-    <div id="family-contribution-total" style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx3);text-align:center;margin-top:10px"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Family contribution</div>
+    <div class="ios-list" id="family-contribution-list"></div>
+    <div class="ios-footnote" id="family-contribution-total"></div>
+    <div class="ios-footnote">Money you give to family. Track what you contribute over time.</div>
   </div>
 
   <!-- GIVING — tradition-swapped maths on one backbone. Private. Never a score. -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span id="giving-title">Giving</span></div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openGivingLog()" aria-label="Log giving">+ Log</button>
+  <div class="ios-section money-more">
+    <div class="ios-header" id="giving-title">Giving</div>
+    <div class="card" id="giving-body"></div>
+    <div class="ios-list">
+      <button type="button" class="ios-row tint" onclick="openGivingLog()" aria-label="Log giving">
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Log giving</span></span>
+      </button>
     </div>
-    <div id="giving-body"></div>
   </div>
+
   <!-- POKER TRACKER (optional — second from bottom) -->
-  <div class="card money-more" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0">🃏 Poker sessions</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="openPokerSession()">+ Session</button>
-    </div>
-    <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Log each session’s buy-in and cash-out. See if you’re up or down over time. Optional — only if you play.</p>
-    <div id="poker-summary" style="margin-bottom:10px"></div>
-    <div id="poker-list"></div>
+  <div class="ios-section money-more">
+    <div class="ios-header">Poker sessions</div>
+    <div id="poker-summary"></div>
+    <div class="ios-list" id="poker-list"></div>
+    <div class="ios-footnote">Log each session’s buy-in and cash-out. See if you’re up or down over time. Optional — only if you play.</div>
   </div>
 </div>
 

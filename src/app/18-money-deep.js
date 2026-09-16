@@ -305,10 +305,13 @@ function renderTransactions(){
   const outR = Math.round(expenses);
   const net  = inR - outR;
   
-  summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">In</div><div style="font-size:var(--t-base);color:var(--gr);margin-top:3px">'+curSym() + inR.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Out</div><div style="font-size:var(--t-base);color:var(--re);margin-top:3px">'+curSym() + outR.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Net</div><div style="font-size:var(--t-base);color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
+  // Three stat tiles, drawn by the tile component. They were three hand-built boxes with an 11px caps
+  // label tracked at 0.01em and a 17px figure \u2014 the same shape, drawn by hand, in four places on this
+  // screen alone, each with a slightly different padding.
+  summary.innerHTML = '<div class="ios-stats three">' +
+    '<div class="ios-stat"><div class="ios-stat-label">In</div><div class="ios-stat-value good">'+curSym() + inR.toLocaleString() + '</div></div>' +
+    '<div class="ios-stat"><div class="ios-stat-label">Out</div><div class="ios-stat-value">'+curSym() + outR.toLocaleString() + '</div></div>' +
+    '<div class="ios-stat"><div class="ios-stat-label">Net</div><div class="ios-stat-value ' + (net >= 0 ? 'good' : 'bad') + '">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses
@@ -329,15 +332,18 @@ function renderTransactions(){
     });
     const cats = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
     if(cats.length){
-      breakdown.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px;margin-top:8px">Spending by category</div>' +
+      breakdown.className = 'ios-section money-more';
+      breakdown.innerHTML = '<div class="ios-header">Spending by category</div><div class="ios-list">' +
         cats.map(([cat, amt]) => {
           const pct = expenses > 0 ? Math.round((amt / expenses) * 100) : 0;
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
-            '<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="color:var(--tx2)">' + cat + '</span><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">' + pct + '%</span></div>' +
-            '<span style="font-family:var(--font-text);color:var(--re)">'+curSym() + Math.round(amt).toLocaleString() + '</span>' +
+          return '<div class="ios-row">' +
+            '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(cat) + '</span>' +
+              '<span class="ios-row-sub" style="display:block">' + pct + '% of what went out</span></span>' +
+            '<span class="ios-row-value">'+curSym() + Math.round(amt).toLocaleString() + '</span>' +
           '</div>';
-        }).join('');
+        }).join('') + '</div>';
     } else {
+      breakdown.className = 'money-more';
       breakdown.innerHTML = '';
     }
   }
@@ -353,21 +359,30 @@ function renderTransactions(){
       return (isFinite(tb)?tb:0) - (isFinite(ta)?ta:0);
     }).slice(0, 8);
     if(!recentList.length){
-      recent.innerHTML = '<p class="empty-note">No transactions this month yet</p>';
+      recent.className = 'money-more';
+      recent.innerHTML = '';
     } else {
-      recent.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px;margin-top:8px">Recent (this month)</div>' +
+      // "RECENT (THIS MONTH)" was an 11px caps label with a parenthesis inside it — a sentence in a
+      // header's clothes. The header is the one word, the parenthesis is the section's footnote, and
+      // the eight lines under it are rows: what it was, when and which category, the amount as the
+      // row's value. The sign already says which way the money went, so only INCOMING is tinted — a
+      // column of eight red amounts is the screen shouting at somebody for buying groceries.
+      recent.className = 'ios-section money-more';
+      recent.innerHTML = '<div class="ios-header">Recent</div><div class="ios-list">' +
         recentList.map(t => {
-          const sign = t.type === 'expense' ? '−' : '+';
-          const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
-            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
-              ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--font-text);color:' + color + '">' + sign + curSym() + _moneyG(t.amount) + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">×</button></div>' +
+          const sign = t.type === 'expense' ? '\u2212' : '+';
+          const when = t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '');
+          return '<div class="ios-row tap" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')">' +
+            '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(t.note || t.category || 'Transaction') + '</span>' +
+              '<span class="ios-row-sub" style="display:block">' + _escFew(when) + ((t.category || t.cat) ? ' \u00b7 ' + _escFew(t.category || t.cat) : '') + '</span></span>' +
+            '<span class="ios-row-value"' + (t.type === 'expense' ? '' : ' style="color:var(--gr)"') + '>' + sign + curSym() + _moneyG(t.amount) + '</span>' +
+            '<button class="ios-row-x" aria-label="Delete this transaction" onclick="event.stopPropagation();deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')">&#215;</button>' +
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
-          ? '<button class="btn outline" onclick="openAllTransactions()" style="margin-top:10px">See all ' + list.length + ' \u2192</button>'
-          : '');
+          ? '<button type="button" class="ios-row tint" onclick="openAllTransactions()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">See all ' + list.length + '</span></span><span class="ios-row-chevron">' + svgIcon('chevronright', 14) + '</span></button>'
+          : '') +
+        '</div><div class="ios-footnote">This month only. Tap a row to correct it.</div>';
     }
   }
   
@@ -458,7 +473,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     // second category beside "Food", and the budget for Food never saw that spend again.
     if(f.type === 'select' && Array.isArray(f.options)){
       const _esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-      return '<label for="fm-'+f.id+'" style="display:block;font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+(f.label||'')+'</label>'+
+      return '<label for="fm-'+f.id+'" class="eyebrow" style="display:block">'+(f.label||'')+'</label>'+
         '<div style="position:relative;margin-bottom:14px">'+
         '<select id="fm-'+f.id+'" style="width:100%;min-height:44px">'+
         f.options.map(function(o){
@@ -467,19 +482,24 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
         }).join('')+'</select></div>';
     }
     if(f.type === 'textarea'){
-      return '<label for="fm-'+f.id+'" style="display:block;font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+f.label+'</label>'+
+      return '<label for="fm-'+f.id+'" class="eyebrow" style="display:block">'+f.label+'</label>'+
         '<div style="position:relative;margin-bottom:14px">'+
         '<textarea id="fm-'+f.id+'" rows="3" placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" '+
         'style="width:100%;min-height:74px;resize:vertical;line-height:1.55">'+
         String(f.value==null?'':f.value).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea></div>';
     }
-    return '<label for="fm-'+f.id+'" style="display:block;font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+f.label+'</label>'+
+    return '<label for="fm-'+f.id+'" class="eyebrow" style="display:block">'+f.label+'</label>'+
       '<div style="position:relative;margin-bottom:14px">'+pre+
       '<input type="'+(f.type==='date'?'date':'text')+'"'+inMode+' id="fm-'+f.id+'"'+val+' placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" style="'+pad+'"></div>';
   }).join('');
+  // THE SHEET TITLE IS A SHEET TITLE. Five money sheets are built by this helper \u2014 log a payment,
+  // edit a debt, a family contribution, a monthly target, a poker session \u2014 and every one of them
+  // announced itself in 17px semibold San Francisco, the same size as the row it was opened from,
+  // while every other sheet in the app speaks its title in the ToTry serif at 26. One <h3>, and the
+  // app sounds like itself on all five.
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
-    (subtitle?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">'+subtitle+'</div>':'<div style="margin-bottom:8px"></div>')+
+    '<h3>'+title+'</h3>'+
+    (subtitle?'<div class="modal-sub">'+subtitle+'</div>':'<div style="margin-bottom:8px"></div>')+
     fieldHtml+
     '<div id="fm-error" role="alert" aria-live="assertive" style="display:none;color:var(--re);font-size:var(--t-sm);margin-bottom:10px"></div>'+
     '<button class="btn primary" id="fm-submit" style="margin-bottom:8px">'+submitLabel+'</button>'+
@@ -557,29 +577,38 @@ function renderFamilyContribution(){
     const remaining = Math.max(0, target.amount - monthGiven);
     const met = monthGiven >= target.amount;
     const dueStr = target.dueDay + (target.dueDay===1?'st':target.dueDay===2?'nd':target.dueDay===3?'rd':'th');
-    targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rm);padding:12px;margin-bottom:12px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:var(--t-cap);cursor:pointer;padding:16px 13px;margin:-16px -13px;position:relative">Edit</button></div>'+
-      '<div style="font-size:var(--t-base);color:'+(met?'var(--gr)':'var(--tx)')+'">'+curSym()+monthGiven.toLocaleString()+' / '+curSym()+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
-      '<div style="height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(met?'var(--gr)':'var(--go)')+'"></div></div>'+
-      (met?'':'<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:5px">'+curSym()+remaining.toLocaleString()+' to go this month</div>')+
+    // It was a bordered panel whose 11px caps label carried a whole phrase ("THIS MONTH'S TARGET \u00b7
+    // DUE 1ST") with an "Edit" link crowded beside it. One row: what is given against the target,
+    // the remainder underneath, and the bar the rest of the app uses.
+    targetHtml = '<div class="ios-row tap" onclick="setFamilyTarget()">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">This month\u2019s target</span>'+
+        '<span class="ios-row-sub" style="display:block">due the '+dueStr+(met?' \u00b7 met':' \u00b7 '+curSym()+remaining.toLocaleString()+' to go')+'</span>'+
+        '<span class="bar-wrap"><span class="bar'+(met?'':' warn')+'" style="width:'+pct+'%"></span></span></span>'+
+      '<span class="ios-row-value"'+(met?' style="color:var(--gr)"':'')+'>'+curSym()+monthGiven.toLocaleString()+' / '+curSym()+target.amount.toLocaleString()+'</span>'+
       '</div>';
   }
+  // Two ways in, as rows, instead of an italic centred sentence with a blue micro-link inside it and
+  // a dashed-border "+ Set a recurring monthly target" strip under it.
+  const famRows = '<button type="button" class="ios-row tint" onclick="openFamilyContribution()" aria-label="Log a family contribution">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Log a contribution</span></span></button>'+
+    (target ? '' : '<button type="button" class="ios-row tint" onclick="setFamilyTarget()">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Set a monthly target</span></span></button>');
   if(!list.length){
-    wrap.innerHTML = targetHtml + '<p class="empty-note">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-sm);padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
+    wrap.innerHTML = targetHtml + famRows;
     if(totalEl) totalEl.textContent='';
     return;
   }
   wrap.__targetHtml = targetHtml;
-  wrap.innerHTML = (wrap.__targetHtml||'') + (target ? '' : '<button onclick="setFamilyTarget()" style="width:100%;background:var(--bg3);border:1px dashed var(--bd);color:var(--go);border-radius:var(--rs);padding:8px;font-size:var(--t-sm);cursor:pointer;margin-bottom:10px">+ Set a recurring monthly target</button>') + list.slice(0,12).map(c=>{
+  wrap.innerHTML = (wrap.__targetHtml||'') + list.slice(0,12).map(c=>{
     const when = new Date(c.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:var(--t-cap);color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
-      '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+when+'</span>'+
-      '<button onclick="deleteFamilyContribution('+c.id+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer">\u00d7</button></div></div>';
-  }).join('');
+    return '<div class="ios-row">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+curSym()+c.amount.toLocaleString()+'</span>'+
+        '<span class="ios-row-sub" style="display:block">'+when+(c.note?' \u00b7 '+c.note.replace(/</g,'&lt;'):'')+'</span></span>'+
+      '<button class="ios-row-x" aria-label="Delete this contribution" onclick="deleteFamilyContribution('+c.id+')">&#215;</button></div>';
+  }).join('') + famRows;
   const total = list.reduce((a,c)=>a+c.amount,0);
   // monthGiven was already computed above for the target strip — reuse it.
-  if(totalEl) totalEl.textContent = curSym()+total.toLocaleString()+' all time \u00b7 '+curSym()+monthGiven.toLocaleString()+' this month';
+  if(totalEl) totalEl.textContent = curSym()+total.toLocaleString()+' all time, '+curSym()+monthGiven.toLocaleString()+' this month.';
 }
 
 // ── POKER TRACKER ────────────────────────────────────────────
@@ -617,26 +646,26 @@ function renderPoker(){
   const sumEl = document.getElementById('poker-summary');
   if(!wrap) return;
   const list = ls('totry_poker_sessions') || [];
-  if(!list.length){ wrap.innerHTML = '<p class="empty-note">No sessions logged yet.</p>'; if(sumEl) sumEl.innerHTML=''; return; }
+  const addPoker = '<button type="button" class="ios-row tint" onclick="openPokerSession()" aria-label="Log a poker session">'+
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Log a session</span></span></button>';
+  if(!list.length){ wrap.innerHTML = addPoker; if(sumEl) sumEl.innerHTML=''; return; }
   const totalNet = list.reduce((a,s)=>a+s.net,0);
   const sessions = list.length;
   const wins = list.filter(s=>s.net>0).length;
   if(sumEl){
-    const col = totalNet>=0 ? 'var(--gr)' : 'var(--re)';
-    sumEl.innerHTML = '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;text-align:center">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Lifetime net</div>'+
-      '<div style="font-size:var(--t-title1);color:'+col+'">'+(totalNet>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(totalNet).toLocaleString()+'</div>'+
-      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">'+sessions+' session'+(sessions===1?'':'s')+' \u00b7 '+wins+' winning</div></div>';
+    sumEl.innerHTML = '<div class="ios-stats"><div class="ios-stat">'+
+      '<div class="ios-stat-label">Lifetime net</div>'+
+      '<div class="ios-stat-value '+(totalNet>=0?'good':'bad')+'">'+(totalNet>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(totalNet).toLocaleString()+'</div>'+
+      '<div class="ios-stat-note">'+sessions+' session'+(sessions===1?'':'s')+', '+wins+' winning</div></div></div>';
   }
   wrap.innerHTML = list.slice(0,15).map(p=>{
     const when = new Date(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
-    const col = p.net>=0 ? 'var(--gr)' : 'var(--re)';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:var(--t-base);color:'+col+'">'+(p.net>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(p.net).toLocaleString()+'</div>'+
-      '<div style="font-size:var(--t-mini);color:var(--tx3)">in '+curSym()+p.buyin.toLocaleString()+' \u2192 out '+curSym()+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</div></div>'+
-      '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+when+'</span>'+
-      '<button onclick="deletePokerSession('+p.id+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer">\u00d7</button></div></div>';
-  }).join('');
+    return '<div class="ios-row">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+when+'</span>'+
+      '<span class="ios-row-sub" style="display:block">in '+curSym()+p.buyin.toLocaleString()+', out '+curSym()+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</span></span>'+
+      '<span class="ios-row-value" style="color:'+(p.net>=0?'var(--gr)':'var(--re)')+'">'+(p.net>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(p.net).toLocaleString()+'</span>'+
+      '<button class="ios-row-x" aria-label="Delete this session" onclick="deletePokerSession('+p.id+')">&#215;</button></div>';
+  }).join('') + addPoker;
 }
 
 
@@ -843,9 +872,13 @@ function renderSubscriptions(){
   const box = document.getElementById('subscriptions-list');
   const totalBox = document.getElementById('subscriptions-total');
   if(!box) return;
+  // ONE ADD ROW, AT THE FOOT OF THE LIST. The way in used to be a small grey "+ Add" crowded against
+  // the section heading; iOS puts it in the list, at full row height, saying what it adds.
+  const addRow = '<button type="button" class="ios-row tint" onclick="openSubscriptionLogger()" aria-label="Add a subscription">' +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Add a subscription</span></span></button>';
   if(!list.length){
-    box.innerHTML = '<p class="empty-note">No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring.</p>';
-    if(totalBox) totalBox.textContent = '';
+    box.innerHTML = addRow;
+    if(totalBox) totalBox.textContent = 'Netflix, Spotify, the gym \u2014 anything that leaves every month.';
     return;
   }
   // Sort by monthly equivalent descending
@@ -856,19 +889,19 @@ function renderSubscriptions(){
     const monthly = monthlyEquivalent(s);
     monthlyTotal += monthly;
     annualTotal += monthly * 12;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(s.name) + '</div>' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">'+curSym() + _money2(s.amount) + ' / ' + _escFew(_period1(s.period)) + (s.note ? ' · ' + _escFew(s.note) : '') + '</div>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-text);color:var(--re)">~'+curSym() + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">×</button></div>' +
+    return '<div class="ios-row">' +
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(s.name) + '</span>' +
+        '<span class="ios-row-sub" style="display:block">'+curSym() + _money2(s.amount) + ' / ' + _escFew(_period1(s.period)) + (s.note ? ' · ' + _escFew(s.note) : '') + '</span></span>' +
+      '<span class="ios-row-value">~'+curSym() + monthly.toFixed(2) + '/mo</span>' +
+      '<button class="ios-row-x" aria-label="Stop tracking ' + _jsAttr(s.name) + '" onclick="deleteSubscription(' + s.id + ')">&#215;</button>' +
     '</div>';
-  }).join('');
+  }).join('') + addRow;
   if(totalBox){
     // ROUND ONCE, THEN DERIVE. The two figures were rounded independently, so the same line could
     // say ~$81/mo and ~$977/year — and 81 x 12 is 972. Whichever a person checked, the app was wrong.
     const _mo = Math.round(monthlyTotal);
-    totalBox.textContent = 'Total: ~'+curSym() + Math.round(_mo).toLocaleString() + '/mo · ~'+curSym() + Math.round(_mo * 12).toLocaleString() + '/year';
+    // It was centred, 15px, third grey, under a hairline of its own; it is the section's footnote.
+    totalBox.textContent = 'About '+curSym() + Math.round(_mo).toLocaleString() + ' a month, '+curSym() + Math.round(_mo * 12).toLocaleString() + ' a year.';
   }
 }
 
@@ -1063,8 +1096,10 @@ function renderBills(){
   }
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
+  const addBill = '<button type="button" class="ios-row tint" onclick="openBillLogger()" aria-label="Add a bill">' +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Add a bill</span></span></button>';
   if(!unpaid.length){
-    box.innerHTML = '<p class="empty-note">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
+    box.innerHTML = addBill;
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
@@ -1077,17 +1112,17 @@ function renderBills(){
     else if(daysUntil <= 3) urgency = {color: 'var(--re)', label: daysUntil === 0 ? 'Due today' : daysUntil + ' day' + (daysUntil===1?'':'s'), bg: 'rgba(216,93,75,0.08)', border: 'var(--re-bd)'};
     else if(daysUntil <= 7) urgency = {color: 'var(--go)', label: daysUntil + ' days', bg: 'var(--go-bg)', border: 'var(--go-bd)'};
     else urgency = {color: 'var(--tx3)', label: daysUntil + ' days', bg: 'var(--bg3)', border: 'var(--bd)'};
-    return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(b.name||b.n||'Bill') + '</div>' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:' + urgency.color + ';margin-top:2px">'+curSym() + _moneyG(Number(b.amount!=null?b.amount:b.amt)||0) + ' · ' + urgency.label + '</div>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button class="btn" aria-label="Mark paid" style="width:auto;padding:13px 15px;font-size:var(--t-mini);background:var(--gr);color:#000;border:none" onclick="markBillPaid(' + b.id + ')">✓</button>' +
-        '<button onclick="deleteBill(' + b.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">×</button>' +
-      '</div>' +
+    // Each bill was its own tinted, bordered, rounded panel in one of four urgency skins, so a list of
+    // bills read as a stack of alerts. They are rows now and the urgency lives where it belongs — in
+    // the subtitle's colour. The tick was a 12px glyph on a solid green block with black ink on it.
+    return '<div class="ios-row">' +
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(b.name||b.n||'Bill') + '</span>' +
+        '<span class="ios-row-sub" style="display:block;color:' + urgency.color + '">' + urgency.label + '</span></span>' +
+      '<span class="ios-row-value">'+curSym() + _moneyG(Number(b.amount!=null?b.amount:b.amt)||0) + '</span>' +
+      '<button class="ios-row-x" style="color:var(--gr)" aria-label="Mark ' + _jsAttr(b.name||b.n||'bill') + ' paid" onclick="markBillPaid(' + b.id + ')">' + svgIcon('check', 18) + '</button>' +
+      '<button class="ios-row-x" aria-label="Delete ' + _jsAttr(b.name||b.n||'bill') + '" onclick="deleteBill(' + b.id + ')">&#215;</button>' +
     '</div>';
-  }).join('');
+  }).join('') + addBill;
 }
 
 // ── CATEGORY BUDGETS ─────────────────────────────────────────
@@ -1129,13 +1164,15 @@ function openBudgetLogger(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:14px">Set category budgets</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Monthly limit per expense category. Leave blank to skip.</p>' +
-    CATS.map(cat => 
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-        '<div style="flex:1;font-size:var(--t-base);color:var(--tx)">' + cat + '</div>' +
-        '<input type="number" id="' + _budgetInputId(cat) + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
+    '<p class="modal-sub">Monthly limit per expense category. Leave blank to skip.</p>' +
+    // Rows, not a hand-built flex line per category: one height, one separator inset, the field on
+    // the trailing edge the way a value sits on any other row in the app.
+    '<div class="ios-list" style="margin-bottom:16px">' + CATS.map(cat =>
+      '<div class="ios-row">' +
+        '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(cat) + '</span></span>' +
+        '<input type="number" id="' + _budgetInputId(cat) + '" step="10" aria-label="Monthly limit for ' + _jsAttr(cat) + '" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:104px;text-align:right;margin:0">' +
       '</div>'
-    ).join('') +
+    ).join('') + '</div>' +
     '<button class="btn primary" onclick="saveBudgets()" style="margin-top:14px;margin-bottom:8px">Save budgets</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
@@ -1186,8 +1223,10 @@ function renderBudgets(){
   const box = document.getElementById('budgets-list');
   if(!box) return;
   const cats = Object.keys(budgets);
+  const addBudget = '<button type="button" class="ios-row tint" onclick="openBudgetLogger()" aria-label="Set category budgets">' +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Set monthly limits</span></span></button>';
   if(!cats.length){
-    box.innerHTML = '<p class="empty-note">No budgets set yet. Tap "+ Set" to assign monthly limits.</p>';
+    box.innerHTML = addBudget;
     return;
   }
   // Get this month's transactions by category
@@ -1197,24 +1236,27 @@ function renderBudgets(){
   const spentByCat = {};
   transactions.forEach(t => { const c = _budgetBucket(t.category, cats); spentByCat[c] = (spentByCat[c] || 0) + (parseFloat(t.amount)||0); });
   
+  // A budget was three stacked lines at 15px, 11px and a bar the block drew itself at a fourth height
+  // and a fourth radius \u2014 so the "$512 left" that is the whole point of the row was the smallest
+  // type on the screen. One row: the category, what is left, the spend against the limit as the
+  // value, and the app's own bar under it.
   box.innerHTML = cats.map(cat => {
     const limit = budgets[cat];
     const spent = spentByCat[cat] || 0;
     const pct = Math.min(100, Math.round((spent / limit) * 100));
     const over = spent > limit;
-    const barColor = over ? 'var(--re)' : pct >= 80 ? 'var(--go)' : 'var(--gr)';
+    const barCls = over ? ' over' : pct >= 80 ? ' warn' : '';
     const remaining = limit - spent;
-    return '<div style="margin-bottom:14px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:var(--t-sm);margin-bottom:4px">' +
-        '<span style="color:var(--tx)">' + cat + '</span>' +
-        '<span style="font-family:var(--font-text);color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">'+curSym() + _moneyG(spent) + ' / '+curSym() + _moneyG(limit) + '</span>' +
-      '</div>' +
-      '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:4px">' +
-        '<div style="height:100%;background:' + barColor + ';width:' + pct + '%;transition:width 0.3s"></div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + (over ? 'var(--re)' : 'var(--tx3)') + '">' + (over ? curSym() + Math.round(Math.abs(remaining)) + ' over' : curSym() + Math.round(remaining) + ' left') + '</div>' +
+    // WHAT IS LEFT IS THE ANSWER, so it is the row's value; the spend against the limit is the
+    // working, so it is the subtitle. The other way round put "$88.40 / $600.00" in a column capped
+    // at 45% of the row and it was clipped mid-number on a 393pt screen.
+    return '<div class="ios-row">' +
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(cat) + '</span>' +
+        '<span class="ios-row-sub" style="display:block">'+curSym() + _moneyG(spent) + ' of '+curSym() + Math.round(limit).toLocaleString() + '</span>' +
+        '<span class="bar-wrap"><span class="bar' + barCls + '" style="width:' + pct + '%"></span></span></span>' +
+      '<span class="ios-row-value"' + (over ? ' style="color:var(--re)"' : '') + '>' + (over ? curSym() + Math.round(Math.abs(remaining)).toLocaleString() + ' over' : curSym() + Math.round(remaining).toLocaleString() + ' left') + '</span>' +
     '</div>';
-  }).join('');
+  }).join('') + addBudget;
 }
 
 // ── NET WORTH (assets + linked to debts) ─────────────────────
@@ -1223,7 +1265,7 @@ function openAssetLogger(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:14px">Add asset</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Cash, savings accounts, investments, property, vehicles. Anything that has value.</p>' +
+    '<p class="modal-sub">Cash, savings accounts, investments, property, vehicles. Anything that has value.</p>' +
     '<div class="eyebrow">Asset name</div>' +
     '<input type="text" id="asset-name" placeholder="e.g. Savings account, car, ETF holdings" style="margin-bottom:10px">' +
     '<div class="eyebrow">Current value ('+curSym()+')</div>' +
@@ -1287,22 +1329,26 @@ function renderNetWorth(){
   const _rDebts = Math.round(totalDebts);
   const netWorth = _rAssets - _rDebts;
   
-  summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Assets</div><div style="font-size:var(--t-base);color:var(--gr);margin-top:3px">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Debts</div><div style="font-size:var(--t-base);color:var(--re);margin-top:3px">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Net</div><div style="font-size:var(--t-base);color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
+  summary.innerHTML = '<div class="ios-stats three">' +
+    '<div class="ios-stat"><div class="ios-stat-label">Assets</div><div class="ios-stat-value good">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
+    '<div class="ios-stat"><div class="ios-stat-label">Debts</div><div class="ios-stat-value bad">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
+    '<div class="ios-stat"><div class="ios-stat-label">Net</div><div class="ios-stat-value ' + (netWorth >= 0 ? 'good' : 'bad') + '">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
   '</div>';
   
+  const addAsset = '<button type="button" class="ios-row tint" onclick="openAssetLogger()" aria-label="Add an asset">' +
+    '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Add an asset</span></span></button>';
   if(!assets.length){
-    box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:14px;font-style:italic">Add assets to see your full net worth.</p>';
+    box.innerHTML = addAsset;
     return;
   }
-  box.innerHTML = assets.map(a => 
-    '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
-      '<div style="flex:1;min-width:0;cursor:pointer" onclick="updateAsset(' + a.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(a.name) + '</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">Tap to update</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-text);color:var(--gr)">'+curSym() + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">×</button></div>' +
+  // "Tap to update" was an 11px instruction repeated under every asset's name. The row says it.
+  box.innerHTML = assets.map(a =>
+    '<div class="ios-row tap" onclick="updateAsset(' + a.id + ')">' +
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">' + _escFew(a.name) + '</span></span>' +
+      '<span class="ios-row-value">'+curSym() + Math.round(a.value).toLocaleString() + '</span>' +
+      '<button class="ios-row-x" aria-label="Delete ' + _jsAttr(a.name) + '" onclick="event.stopPropagation();deleteAsset(' + a.id + ')">&#215;</button>' +
     '</div>'
-  ).join('');
+  ).join('') + addAsset;
 }
 function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value,interest=parseFloat(document.getElementById('di')?.value||'0')||0;
   // Was a bare `if(!n||t<=0)return;`. Someone who filled in the amount and the due date but tapped
@@ -1365,9 +1411,12 @@ async function editDebt(idx){
     const m = document.getElementById('form-modal');
     const box = m && m.querySelector('.modal');
     if(box){
+      // .btn carries `color:var(--go) !important`, so the inline `color:var(--re)` this used to set
+      // could not apply and "Remove this debt" rendered in the tint, reading as an ordinary action.
+      // .btn.danger is the role and it is declared at the same weight, so it wins.
       const del = document.createElement('button');
-      del.className='btn';
-      del.style.cssText='margin-top:8px;background:none;border:1px solid var(--re-bd);color:var(--re)';
+      del.className='btn danger';
+      del.style.marginTop='8px';
       del.textContent='Remove this debt';
       del.onclick=async function(){
         if(!(await askConfirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.'))) return;

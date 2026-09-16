@@ -22,9 +22,13 @@ function setDebtStrategy(type, fromUser){
 // The two things a stewardship tool owes you that we were never saying: what the debt actually
 // COSTS you each month, and whether the strategy you picked is genuinely the cheaper one. Honest and
 // non-partial — snowball really does win on adherence, so we say that rather than just pushing math.
+const DEBT_FOOT = 'Tap a debt to log a payment.';
 function renderDebtTruth(){
-  const dl=document.getElementById('debt-list'); if(!dl) return;
-  const old=document.getElementById('debt-truth'); if(old) old.remove();
+  // It used to build its own <div> with an inline font-size/colour/line-height and insert it after the
+  // list — a fourth grey at a fifth size, sitting directly above the section's real footnote. There is
+  // one footnote under the debts and this writes into it.
+  const foot=document.getElementById('debt-foot'); if(!foot) return;
+  foot.textContent = DEBT_FOOT;
   loadF();
   const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
   const bits=[];
@@ -43,10 +47,7 @@ function renderDebtTruth(){
     }
   }
   if(!bits.length) return;
-  const el=document.createElement('div'); el.id='debt-truth';
-  el.style.cssText='margin-top:10px;font-size:var(--t-sm);color:var(--tx3);line-height:1.6';
-  el.innerHTML=bits.join(' ');
-  dl.after(el);
+  foot.innerHTML = DEBT_FOOT + ' ' + bits.join(' ');
 }
 
 // What the vice was costing, per MONTH — the money that's now free to go somewhere.
@@ -93,9 +94,11 @@ function renderReclaimedBuysFreedom(){
       (saved>0?(' and saves <b style="color:var(--gr)">'+curSym()+saved.toLocaleString()+'</b> in interest'):'')+
       '. That’s what staying clean is worth, in months of your life.';
   } else { return; }
+  // Same role as the sentence above it, so it wears the same class rather than a sixth improvised
+  // size with a tinted rule over the top of it.
   const el=document.createElement('div');
   el.id='reclaim-buys-freedom';
-  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:var(--t-sm);color:var(--tx2);line-height:1.6';
+  el.className='saved-desc';
   el.innerHTML=line;
   host.after(el);
 }
@@ -210,7 +213,7 @@ function renderMoneyGate(){
   // whether there is an honest date to show. Force the hide here; leave the show to it.
   const _sh = document.getElementById('saved-hero'); if(_sh) _sh.style.display = empty ? 'none' : '';
   const _dfh = document.getElementById('df-hero');   if(_dfh && empty) _dfh.style.display = 'none';
-  const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
+  const mg = document.querySelector('#tab-money .money-gauge'); if(mg) mg.style.display = empty ? 'none' : '';
 
   // Thirteen fully-built empty forms used to sit directly beneath the sentence "I don't know anything
   // about your money yet" — 2,839px of debt fields, subscription rows, budget setters and a poker
@@ -229,10 +232,12 @@ function renderMoneyGate(){
   }
 
   if(empty){
+    // The app speaking is the app speaking, so it speaks in the app's own face — .say is the display
+    // role, not an inline font-family and a fake italic on the reading serif.
     readCard.innerHTML = '';
     gate.innerHTML = '<div class="card">'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<div class="say">I don’t know anything about your money yet.</div>'+
+      '<div class="say-body">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
       '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
     '</div>';
@@ -255,20 +260,34 @@ function renderMoneyGate(){
   const _spanLbl = 'over ' + Math.max(1, Math.round(r.spanDays || 0)) + ' days';
   const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
   const _negNow = _thin ? (_net < 0) : neg;
-  readCard.innerHTML = '<div class="card">'+
-    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
-      '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
-      '<span style="font-family:var(--font-text);font-size:var(--t-base);color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
+  // THE LEAD OF THE SCREEN, BUILT FROM THE SYSTEM. It was a card with five hand-sized paragraphs —
+  // 13px, 15px, 13px tinted, 13px grey — a 17px figure floated to the right of the heading, and two
+  // half-width buttons squeezed to 9px of padding and a 15px label. The figure is a stat tile now,
+  // the sentences are the section's footnote, and the two ways on are full rows.
+  readCard.innerHTML = '<div class="ios-section">'+
+    '<div class="ios-header">Your money, honestly</div>'+
+    '<div class="ios-stats">'+
+      '<div class="ios-stat">'+
+        '<div class="ios-stat-label">'+(_thin?'Net':'Net per month')+'</div>'+
+        '<div class="ios-stat-value '+(_negNow?'bad':'good')+'">'+(_negNow?'−':'+')+money(_net)+'</div>'+
+        (_thin?'<div class="ios-stat-note">'+_spanLbl+'</div>':'')+
+      '</div>'+
+      // The "biggest movable cost" is a per-MONTH number too, so it waits for the same evidence.
+      (r.lockIn && !_thin
+        ? '<div class="ios-stat"><div class="ios-stat-label">Biggest movable cost</div>'+
+          '<div class="ios-stat-value">'+money(r.lockIn.perMonth)+'</div>'+
+          '<div class="ios-stat-note">'+_escFew(r.lockIn.name)+', a month</div></div>'
+        : '')+
     '</div>'+
-    (_thin ? '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
-    // The "biggest movable cost" is a per-MONTH number too, so it waits for the same evidence.
-    (r.lockIn && !_thin ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
-    (staleDays > 9
-      ? '<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
-      : '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
-    '<div style="display:flex;gap:8px">'+
-      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:var(--t-sm)" onclick="openSpendingRead()">See the full read</button>'+
-      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:var(--t-sm);background:transparent;background:var(--fill2)" onclick="openCSVImport()">Update</button>'+
+    '<div class="ios-list">'+
+      '<button type="button" class="ios-row" onclick="openSpendingRead()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">See the full read</span></span><span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span></button>'+
+      '<button type="button" class="ios-row tint" onclick="openCSVImport()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Update from a statement</span></span></button>'+
+    '</div>'+
+    '<div class="ios-footnote">'+
+      (_thin ? 'That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest. ' : '')+
+      (staleDays > 9
+        ? 'Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.'
+        : 'Up to date as of '+r.to.toLocaleDateString('en-AU')+'.')+
     '</div>'+
   '</div>';
 }
@@ -282,7 +301,9 @@ function renderFinance(){
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
   const _noDebts = !debts.length;
   if(_noDebts){
-    dl.innerHTML='<p class="empty-note">No debts added yet</p>';
+    // An italic, centred "No debts added yet" was the app's empty-state tell in eleven places. A list
+    // with nothing in it says so in its own row, in the same type as every other row.
+    dl.innerHTML='<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block;color:var(--tx3)">No debts added yet</span></span></div>';
   } else {
   const strategy=ls('totry_debt_strategy')||'snowball';
   const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
@@ -295,12 +316,21 @@ function renderFinance(){
   sorted.forEach((d,si)=>{
     const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
     const cleared = rem <= 0.005;
-    const item=document.createElement('div');item.className='debt-row';
+    // ONE ROW LANGUAGE. This was eight bespoke classes: a name and an amount on one baseline, a
+    // separate 11px due line, a bar, then an 11px three-column strip whose third column was an
+    // UNDERLINED micro-link reading "Edit" and whose second repeated the section's own instruction
+    // on every row. It is an .ios-row now \u2014 title, one subtitle, the value on the right, the bar, and
+    // the edit control as a real 44pt trailing button with the name in its label.
+    const item=document.createElement('div');item.className='ios-row tap';
     if(cleared) item.style.opacity='0.62';
-    item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' <span style="color:var(--go)">'+svgIcon("target",13)+'</span>':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
-      (d.due&&!cleared?'<span class="dr-date" style="color:'+_dueColor(d.due)+'">'+_escFew(_dueLabel(d.due)||('Due: '+d.due))+'</span>':'')+
-      '<div class="bar-wrap"><div class="bar" style="width:'+Math.min(100,pct)+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:14px 12px;margin:-12px -12px;min-height:40px;text-decoration:underline">Edit</button></div>';
+    const dueBit = (d.due&&!cleared) ? ' \u00b7 <span style="color:'+_dueColor(d.due)+'">'+_escFew(_dueLabel(d.due)||('Due '+d.due))+'</span>' : '';
+    item.innerHTML='<span class="ios-row-body">'+
+        '<span class="ios-row-title" style="display:block">'+_escFew(d.n)+(si===starIdx?' <span style="color:var(--go)">'+svgIcon("target",13)+'</span>':'')+(cleared?' '+svgIcon('check',13):'')+'</span>'+
+        '<span class="ios-row-sub" style="display:block">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)'+dueBit+'</span>'+
+        '<span class="bar-wrap"><span class="bar" style="width:'+Math.min(100,pct)+'%"></span></span>'+
+      '</span>'+
+      '<span class="ios-row-value">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span>'+
+      '<button class="ios-row-x" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')">'+svgIcon('edit',17)+'</button>';
     item.onclick=()=>{ if(cleared){ editDebt(d.idx); return; } openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
@@ -331,7 +361,7 @@ function renderFinance(){
     // empty-state-that-lies problem renderMoneyGate already guards, moved to the top of the page.
     // Idempotent — it only moves when it is not already in place.
     try{
-      const mg = document.querySelector('#tab-money .mg');
+      const mg = document.querySelector('#tab-money .money-gauge');
       const sh = document.getElementById('saved-hero');
       if(mg && sh){
         if(reclaimed > 0){ if(mg.previousElementSibling !== sh) mg.before(sh); }
@@ -348,8 +378,7 @@ function renderFinance(){
       const oldN=document.getElementById('reclaim-owed-note'); if(oldN) oldN.remove();
       if(owedTotal>0 && sd){
         const left=Math.max(0, owedTotal-avoidedTotal);
-        const n=document.createElement('div'); n.id='reclaim-owed-note';
-        n.style.cssText='margin-top:8px;font-size:var(--t-sm);color:var(--tx3);line-height:1.55';
+        const n=document.createElement('div'); n.id='reclaim-owed-note'; n.className='saved-desc';
         // "That's after clearing it" was a claim the figure above could not support. totalReclaimed()
         // nets owed PER VICE and floors each at zero, so a debt on one vice never reduces the savings
         // from another — yet this compared the POOLED totals and, whenever avoided won, announced the

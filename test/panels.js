@@ -1171,7 +1171,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
           const q = el.getBoundingClientRect(); return q.width>0 && q.height>0; };
         const order = [...pane.children].filter(vis);
         const hero = document.getElementById('saved-hero');
-        const gauge = pane.querySelector('.mg');
+        // .money-gauge is the Paid off / Debt left pair. It was a .mg grid of two bordered .met boxes
+        // until the Money rebuild made it a pair of .ios-stat tiles; the invariant this check exists
+        // for — which of the two blocks the thumb meets first — is untouched. Both spellings accepted
+        // so the check does not depend on which branch has landed.
+        const gauge = pane.querySelector('.money-gauge, .mg');
         return { heroAt: order.indexOf(hero), gaugeAt: order.indexOf(gauge),
                  heroText:(hero&&hero.innerText||'').replace(/\s+/g,' ').trim().slice(0,40) };
       });
