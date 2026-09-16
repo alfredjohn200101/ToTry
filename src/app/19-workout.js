@@ -559,35 +559,39 @@ function buildMobilityRoutine(minutes){
   return { moves:chosen, minutes:minutes||8, tight:[...tight] };
 }
 function _mobMoveRow(m){
-  return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid var(--bd)">'+
-    '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);line-height:1.35">'+m.name+'</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.45;margin-top:2px">'+m.cue+'</div></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);white-space:nowrap">'+m.dur+'</div></div>';
+  // The cue — the sentence that tells you HOW to do the move — was 13px tertiary, the dimmest ink
+  // the app has, under a 17px name. It is the instruction; it is a subheadline now.
+  return '<div class="tr-mob-row">'+
+    '<div class="tr-mob-main"><div class="tr-mob-name">'+_escFew(m.name)+'</div>'+
+    '<div class="tr-mob-cue">'+_escFew(m.cue)+'</div></div>'+
+    '<div class="tr-mob-dur">'+_escFew(m.dur)+'</div></div>';
 }
 // Warm-up renders directly in the panel \u2014 instant, so there's no "Generate" button to tap.
 function renderWarmupInline(){
   const box=document.getElementById('mob-warmup-out'); if(!box) return;
   const w=buildWarmup();
   const rd=(typeof computeReadiness==='function')?computeReadiness():null;
-  const section=(label,moves)=>moves.length?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin:12px 0 0">'+label+'</div>'+moves.map(_mobMoveRow).join(''):'';
+  const section=(label,moves)=>moves.length?'<div class="tr-mob-hd">'+label+'</div>'+moves.map(_mobMoveRow).join(''):'';
   const musc=w.muscles.length?w.muscles.slice(0,5).join(', '):'a general session';
   box.style.display='block';
   box.innerHTML=
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:2px">Prepping '+musc+(w.tight.length?' \u00b7 easing your tight '+w.tight.map(_jointLabel).join(', '):'')+'.</div>'+
-    (rd&&rd.level==='rest'?'<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-top:4px">Readiness is low today \u2014 keep it gentle, don\u2019t force range.</div>':'')+
+    '<div class="tr-mob-lede">Prepping '+musc+(w.tight.length?' \u00b7 easing your tight '+w.tight.map(_jointLabel).join(', '):'')+'.</div>'+
+    (rd&&rd.level==='rest'?'<div class="tr-mob-note">Readiness is low today \u2014 keep it gentle, don\u2019t force range.</div>':'')+
     section('Raise',w.raise)+section('Mobilise',w.mobility)+section('Activate',w.activation);
 }
 // Daily flow renders on tap of a duration (5 / 8 / 12) \u2014 the duration is a real choice, so it stays.
 function generateMobilityRoutine(minutes){
   const box=document.getElementById('mob-daily-out'); if(!box) return;
-  ['5','8','12'].forEach(v=>{ const b=document.getElementById('mob-daily-'+v); if(b){ const on=String(minutes)===v;
-    b.style.background=on?'var(--go)':'var(--bg3)'; b.style.color=on?'var(--on-tint)':'var(--tx2)'; b.style.border='1px solid '+(on?'var(--go)':'var(--bd)'); } });
+  // Three full-width buttons repainted by hand on every tap — background, colour and a 1px border —
+  // which is a segmented control written the long way. It is a segmented control now, so the
+  // selected state is the same selected state as every other one in the app.
+  ['5','8','12'].forEach(v=>{ const b=document.getElementById('mob-daily-'+v); if(b) b.classList.toggle('active', String(minutes)===v); });
   const r=buildMobilityRoutine(minutes);
   const total=Math.round(r.moves.reduce((a,m)=>a+m.secs,0)/60);
   box.style.display='block';
-  box.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+svgIcon("sparkle")+' '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
+  box.innerHTML='<div class="tr-mob-hd tint">'+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
     r.moves.map(_mobMoveRow).join('')+
-    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:8px">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
+    '<div class="tr-mob-foot">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
 }
 // WS-I: form-check from a single photo via AI vision. Heavily caveated — "things to look at",
 // never medical/coaching certainty, and honest that one still can't capture a full movement.
@@ -639,33 +643,38 @@ function renderMobilityPanel(){
   const prof = getMobilityProfile();
   let profHtml;
   if(!prof){
-    profHtml = '<div class="card"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
-      '<button class="btn primary" onclick="openMobilityAssessment()">Take the mobility check</button></div>';
+    profHtml = '<div class="card"><div class="tr-card-body">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
+      '<button class="btn primary tr-card-btn" onclick="openMobilityAssessment()">Take the mobility check</button></div>';
   } else {
+    // Each joint was a flex row painted inline with a 15px secondary label and five 7px dots whose
+    // colour was chosen per row. Inset rows, and the dots are the row's trailing value.
     const items = MOBILITY_JOINTS.filter(j => prof[j.id]).map(j => {
       const v = prof[j.id];
-      const col = v <= 2 ? 'var(--re)' : (v >= 4 ? 'var(--gr)' : 'var(--go)');
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + j.label + '</span>'+
-        '<span style="display:flex;gap:3px">' + [1,2,3,4,5].map(n=>'<span style="width:7px;height:7px;border-radius:50%;background:'+(n<=v?col:'var(--bg3)')+'"></span>').join('') + '</span></div>';
-    }).join('');
+      const tone = v <= 2 ? 'low' : (v >= 4 ? 'high' : 'mid');
+      return iosRow({ title:j.label, trailing:'<span class="tr-dots '+tone+'">' + [1,2,3,4,5].map(n=>'<span'+(n<=v?' class="on"':'')+'></span>').join('') + '</span>' });
+    });
     const when = prof._ts ? new Date(prof._ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
-    profHtml = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:var(--t-mini);color:var(--tx3)">checked ' + when + '</span></div>'+
-      items + '<button class="btn" onclick="openMobilityAssessment()" style="margin-top:10px;background:var(--bg3);font-size:var(--t-sm)">Re-check mobility</button></div>';
+    items.push(iosRow({ title:'Re-check mobility', onclick:'openMobilityAssessment()', cls:'tint' }));
+    profHtml = iosList(items, { header:'Your mobility', footer: when ? 'Checked ' + when + '.' : '' });
   }
   box.innerHTML = profHtml +
-    '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
-      '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("flame")+' Warm up for today</div>'+
-      '<div id="mob-warmup-out"></div>'+
+    // Was a card painted with the tint as its fill and a tinted border — content on a coloured panel.
+    // Content is opaque; the section header carries the name.
+    '<div class="ios-section">'+
+      '<div class="ios-header">Warm up for today</div>'+
+      '<div class="card"><div id="mob-warmup-out"></div></div>'+
     '</div>'+
-    '<div class="card">'+
-      '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("breath")+' Daily mobility</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
-      '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-        '<button class="btn" id="mob-daily-5" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);font-size:var(--t-sm)">5 min</button>'+
-        '<button class="btn primary" id="mob-daily-8" onclick="generateMobilityRoutine(8)" style="flex:1;font-size:var(--t-sm)">8 min</button>'+
-        '<button class="btn" id="mob-daily-12" onclick="generateMobilityRoutine(12)" style="flex:1;background:var(--bg3);font-size:var(--t-sm)">12 min</button>'+
+    '<div class="ios-section">'+
+      '<div class="ios-header">Daily mobility</div>'+
+      // No segment starts selected: the comment below says the flow waits for a tap, and a control
+      // showing a selection that has produced nothing is the app claiming a state it is not in.
+      '<div class="seg tr-seg">'+
+        '<button class="fst" id="mob-daily-5" onclick="generateMobilityRoutine(5)">5 min</button>'+
+        '<button class="fst" id="mob-daily-8" onclick="generateMobilityRoutine(8)">8 min</button>'+
+        '<button class="fst" id="mob-daily-12" onclick="generateMobilityRoutine(12)">12 min</button>'+
       '</div>'+
-      '<div id="mob-daily-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
+      '<div class="card" id="mob-daily-out" style="display:none"></div>'+
+      '<div class="ios-footnote">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
     '</div>';
   // Warm-up shows immediately (deterministic + instant); daily flow waits for a duration tap.
   if(typeof renderWarmupInline==='function') renderWarmupInline();
