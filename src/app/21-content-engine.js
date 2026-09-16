@@ -276,15 +276,17 @@ function renderUnifiedTraining(){
       if(hasHevy) connected.push('Hevy');
       let body;
       if(connected.length){
-        body = '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">'+connected.join(' &amp; ')+' connected \u2713</div>'+
-          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">No workouts have come through yet — that\u2019s normal before your first session. Record a workout in '+connected.join(' or ')+', then tap Refresh below and it\u2019ll appear here with your stats.</div>'+
-          (hasStrava ? '<button class="btn primary" onclick="syncStravaActivities();showToast(\'Syncing\',\'Checking Strava\u2026\')" style="width:auto;padding:10px 18px;font-size:var(--t-base)">Refresh now</button>' : '');
+        body = '<div class="ios-empty-title">'+connected.join(' &amp; ')+' connected</div>'+
+          '<div class="ios-empty-body">No workouts have come through yet — that\u2019s normal before your first session. Record a workout in '+connected.join(' or ')+', then tap Refresh below and it\u2019ll appear here with your stats.</div>'+
+          (hasStrava ? '<button class="btn primary tr-empty-btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Checking Strava\u2026\')">Refresh now</button>' : '');
       } else {
-        body = '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">Let’s get you training</div>'+
-          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I’ll build you a plan and tell you today’s session — no guesswork.</div>'+
-          '<button class="btn primary" onclick="setupTraining()" style="width:auto;padding:10px 18px;font-size:var(--t-base)">Set up my training</button>';
+        body = '<div class="ios-empty-title">Let\u2019s get you training</div>'+
+          '<div class="ios-empty-body">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I\u2019ll build you a plan and tell you today\u2019s session — no guesswork.</div>'+
+          '<button class="btn primary tr-empty-btn" onclick="setupTraining()">Set up my training</button>';
       }
-      emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:var(--t-2xl);margin-bottom:10px">'+svgIcon("dumbbell",28)+'</div>'+body+'</div>';
+      // Was a centred .card with a 34px icon block, a 17px line, a 15px line and a width:auto
+      // button — the ContentUnavailableView shape, hand-drawn. It is the component now.
+      emptyBox.innerHTML = '<div class="ios-empty">'+svgIcon("dumbbell",44)+body+'</div>';
       emptyBox.style.display = 'block';
     }
     card.style.display = 'none';
@@ -304,12 +306,19 @@ function renderUnifiedTraining(){
     if(x.includes('walk')||x.includes('hike')) return 'walk';
     return 'zap';
   };
-  const srcDot = (src) => {
-    if(src === 'strava') return '<span class="src-tag" style="color:#FC4C02">STRAVA</span>';
-    if(src === 'hevy') return '<span class="src-tag" style="color:var(--go)">HEVY</span>';
-    if(src === 'screenshot') return '<span class="src-tag">SCREENSHOT</span>';
-    if(src === 'manual') return '<span class="src-tag">LOGGED</span>';
-    return '';
+  // The source was an 11px caps tag jammed against the session title, one of them in Strava's own
+  // orange — so a row carried two ranks of type and a fourth accent colour. It is a word in the
+  // row's subtitle now, where the rest of the session's facts already live.
+  const srcName = (src) => src === 'strava' ? 'Strava' : src === 'hevy' ? 'Hevy' : src === 'screenshot' ? 'Screenshot' : src === 'manual' ? 'Logged' : '';
+  const toneFor = (t) => {
+    const item = t || {};
+    if(item.kind === 'strength') return 'blue';
+    const x = (item.activityType||'').toLowerCase();
+    if(x.includes('run')) return 'green';
+    if(x.includes('ride')||x.includes('cycl')||x.includes('bike')) return 'orange';
+    if(x.includes('swim')) return 'teal';
+    if(x.includes('walk')||x.includes('hike')) return 'mint';
+    return 'gray';
   };
   const fmtMeta = (t) => {
     const parts = [];
@@ -319,46 +328,51 @@ function renderUnifiedTraining(){
     if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
     // GENTLE MODE IS A PROMISE, NOT A NOURISH-TAB SETTING. Somebody who turned numbers off often
     // did it because counting is the thing that hurt them, and this row is a calorie figure on
-    // every session in their training history \u2014 on the same screen whose session-summary sheet
+    // every session in their training history — on the same screen whose session-summary sheet
     // was deliberately gated. The distance and the minutes are the training; the calories are the
     // counting.
     if(t.calories && !(typeof nutGentle==='function' && nutGentle())) parts.push(Math.round(t.calories)+' cal');
     if(t.hr) parts.push(Math.round(t.hr)+' bpm');
-    return parts.join(' \u00b7 ');
+    // THREE FACTS FIT ON A ROW. Five did not: the subtitle wrapped to a second line under the date
+    // on every single session, which is the shape that made this list look untended. The row opens a
+    // sheet with all of them.
+    return parts.slice(0,3).join(' \u00b7 ');
   };
+  const _multiSrc = new Set(all.map(t=>t.source||'manual')).size > 1;
   const rows = all.slice(0,10).map(t => {
     const when = t.ts ? new Date(t.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
-    return '<div class="strava-activity" onclick="openEditTraining(&quot;'+t.id+'&quot;)" style="display:flex;align-items:center;gap:10px;cursor:pointer">'+
-      '<span style="flex-shrink:0;display:flex;align-items:center;color:var(--go)">'+svgIcon(typeEmoji(t),18)+'</span>'+
-      '<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t.title||'Session').replace(/</g,'&lt;')+'</span>'+srcDot(t.source)+'</div>'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:2px">'+fmtMeta(t)+'</div></div>'+
-      '<span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);flex-shrink:0">'+when+' ›</span></div>';
+    // The source word only earns its place when there is more than one source to tell apart —
+    // otherwise the section's own footnote already says where every row came from, and repeating it
+    // on each row pushed the subtitle onto a second line under the date.
+    const sub = [(_multiSrc ? srcName(t.source) : ''), fmtMeta(t)].filter(Boolean).join(' \u00b7 ');
+    return iosRow({ icon:typeEmoji(t), tone:toneFor(t), title:(t.title||'Session'), sub:sub, value:when,
+      onclick:'openEditTraining('+JSON.stringify(String(t.id))+')' });
   }).join('');
-  // Weekly summary strip
+  // THE WEEK, ON ONE LINE. It was two: "This week: 3 strength · 1 cardio" at 15px in the tint, and
+  // "210 min · 12,400kg lifted" at 12px in tertiary directly under it — same fact, two ranks, two
+  // colours, three pixels apart. And the footer under the list read "From your logged", which is
+  // not a sentence; it was built by gluing 'From your ' onto a source keyword.
   const summaryBits = [];
   if(w.strengthCount) summaryBits.push(w.strengthCount + ' strength');
   if(w.cardioCount) summaryBits.push(w.cardioCount + ' cardio');
-  const detailBits = [];
-  if(w.totalMinutes) detailBits.push(w.totalMinutes + ' min');
-  if(w.totalVolumeKg) detailBits.push(w.totalVolumeKg.toLocaleString() + 'kg lifted');
-  if(w.totalDistanceKm) detailBits.push(w.totalDistanceM != null ? dFmt(w.totalDistanceM) : (w.totalDistanceKm + 'km'));
-  const refreshBtn = hasStrava ? '<button class="btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')" style="width:auto;padding:5px 10px;font-size:var(--t-cap);background:var(--bg3)">Refresh</button>' : '';
-  card.innerHTML = '<div class="card">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
-      '<div class="card-hd" style="margin-bottom:0">All training</div>'+ refreshBtn +
-    '</div>'+
-    (summaryBits.length ? '<div style="font-size:var(--t-sm);color:var(--go);margin-bottom:2px">This week: '+summaryBits.join(' \u00b7 ')+'</div>' : '')+
-    (detailBits.length ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-bottom:12px">'+detailBits.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:10px"></div>')+
-    (function(){ const tr = (typeof getTrainingTrend==='function') ? getTrainingTrend() : ''; return tr ? '<div style="font-size:var(--t-cap);color:var(--bl);background:var(--bg3);border-radius:var(--rs);padding:9px 11px;margin-bottom:12px;line-height:1.5">'+svgIcon("chart")+' '+tr+'</div>' : ''; })()+
-    rows +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:10px">' + (function(){
-      const srcs = new Set(all.map(t=>t.source));
-      const names = []; if(srcs.has('hevy')) names.push('Hevy'); if(srcs.has('strava')) names.push('Strava'); if(srcs.has('screenshot')) names.push('screenshots'); if(srcs.has('manual')||srcs.has(undefined)) names.push('logged');
-      if(names.length>1) return names.join(' + ') + ', merged \u00b7 duplicates removed';
-      if(names.length===1) return 'From your ' + names[0];
-      return 'All your training';
-    })() + '</div>'+
-    '</div>';
+  if(w.totalMinutes) summaryBits.push(w.totalMinutes + ' min');
+  if(w.totalVolumeKg) summaryBits.push(w.totalVolumeKg.toLocaleString() + 'kg lifted');
+  if(w.totalDistanceKm) summaryBits.push(w.totalDistanceM != null ? dFmt(w.totalDistanceM) : (w.totalDistanceKm + 'km'));
+  const refreshBtn = hasStrava ? '<button class="btn quiet tr-hdr-btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')">Refresh</button>' : '';
+  const trend = (typeof getTrainingTrend==='function') ? getTrainingTrend() : '';
+  const provenance = (function(){
+    const srcs = new Set(all.map(t=>t.source));
+    const names = []; if(srcs.has('hevy')) names.push('Hevy'); if(srcs.has('strava')) names.push('Strava'); if(srcs.has('screenshot')) names.push('screenshots'); if(srcs.has('manual')||srcs.has(undefined)) names.push('sessions you logged here');
+    if(names.length>1) return names.join(' + ') + ', merged \u00b7 duplicates removed.';
+    if(names.length===1) return 'From ' + names[0] + '.';
+    return 'All your training.';
+  })();
+  card.innerHTML =
+    '<div class="tr-hdr-row"><div class="ios-header tr-hdr-hd">All training</div>'+ refreshBtn +'</div>'+
+    (summaryBits.length ? '<div class="tr-week">This week: '+summaryBits.join(' \u00b7 ')+'</div>' : '')+
+    (trend ? '<div class="tr-trend">'+svgIcon("chart",15)+' '+trend+'</div>' : '')+
+    '<div class="ios-list">'+ rows +'</div>'+
+    '<div class="ios-footnote">'+ provenance +'</div>';
   card.style.display = 'block';
 }
 
@@ -415,7 +429,7 @@ function loadTodaySplitCard(){
       const list = ls('totry_routines') || [];
       const match = list.find(r => r && (r.name === d.routine || r.title === d.routine));
       if(!match){
-        if(typeof showToast==='function') showToast('That routine is gone', '“' + (d.routine||'It') + '” was deleted or renamed. Pick another in Routines & Split.');
+        if(typeof showToast==='function') showToast('That routine is gone', '“' + (d.routine||'It') + '” was deleted or renamed. Pick another in Routines.');
         return;
       }
       if(typeof setPTTab==='function') setPTTab('log');
@@ -439,7 +453,9 @@ function loadTodaySplitCard(){
   if(!today || !today.focus){
     // No routine assigned for today
     if(nameEl)nameEl.textContent='No routine set for today';
-    if(detailEl)detailEl.innerHTML='Build a routine in <span class="tlink" onclick="setPTTab(\'routines\')">Routines &amp; Split</span> and assign it to today.';
+    // The segment this sends you to is called "Routines". It has not been called "Routines & Split"
+    // since the split planner moved into Log — the app was naming a screen that no longer exists.
+    if(detailEl)detailEl.innerHTML='Build a routine in <span class="tlink" onclick="setPTTab(\'routines\')">Routines</span> and assign it to today.';
     if(wrap) wrap.style.display='none';
     return;
   }
@@ -458,10 +474,14 @@ function loadTodaySplitCard(){
     return;
   }
   
-  if(nameEl)nameEl.textContent='\u2605 Today: '+today.focus;
+  // The black-star glyph in front of this was the only one in the app, and it was built twice \u2014
+  // once for Train's card, once for Home's mission \u2014 so the two could drift apart. One string, and
+  // the app draws its own icons or none.
+  const todayLabel = 'Today: '+today.focus;
+  if(nameEl)nameEl.textContent=todayLabel;
   if(detailEl)detailEl.textContent=today.detail||'';
   if(hf){
-    hf.textContent='\u2605 Today: '+today.focus;
+    hf.textContent=todayLabel;
     if(hd)hd.textContent=(today.detail||'')+(today.detail?'\n\n':'')+'Log your session in the Workout tab.';
   }
   if(wrap) wrap.style.display='block';

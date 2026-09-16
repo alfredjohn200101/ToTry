@@ -96,7 +96,7 @@ async function searchExercises(query, opts){
   const _typeahead = !!(opts && opts.typeahead);
   const res=document.getElementById('pt-ex-results');
   if(!res)return;
-  res.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:16px">Finding exercises...</p>';
+  res.className='tr-results'; res.innerHTML='<div class="tr-loading pulsing">Finding exercises\u2026</div>';
   
   const q=query.toLowerCase().trim();
   let exercises=[];
@@ -150,10 +150,12 @@ async function searchExercises(query, opts){
   // is describing a query the person has moved on from.
   if(_superseded()) return;
   if(!exercises.length){
-    if(_typeahead){ res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
+    if(_typeahead){ res.className='tr-results'; res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
     const safeQ = query.replace(/'/g,"\\'").replace(/</g,'&lt;');
-    res.innerHTML='<div style="text-align:center;padding:16px"><p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px">No exercises found for "'+query.replace(/</g,'&lt;')+'".</p>'+
-      '<button class="btn primary" onclick="openCreateExercise(\''+safeQ+'\')" style="width:auto;padding:10px 18px;font-size:var(--t-base)">+ Create "'+query.replace(/</g,'&lt;')+'"</button></div>';
+    res.className='tr-results';
+    res.innerHTML='<div class="ios-empty">'+svgIcon('search',44)+'<div class="ios-empty-title">Nothing found</div>'+
+      '<div class="ios-empty-body">No exercises found for \u201c'+_escFew(query)+'\u201d.</div>'+
+      '<button class="btn primary tr-empty-btn" onclick="openCreateExercise(\''+safeQ+'\')">Create \u201c'+_escFew(query)+'\u201d</button></div>';
     return;
   }
   
@@ -166,12 +168,15 @@ async function searchExercises(query, opts){
     return true;
   });
   
+  // Each result was its own 1px-bordered box with a 6px gap — a stack of cards where iOS has a
+  // list. The source tag was 11px caps with no tracking, jammed against the name.
+  res.className='tr-results ios-list';
   res.innerHTML='';
   exercises.forEach(ex=>{
     const el=document.createElement('div');
     el.className='ex-result';
-    const srcTag = ex.source==='Custom' ? '<span class="src-tag" style="color:var(--go);margin-left:6px">CUSTOM</span>'
-      : ex.source==='Community' ? '<span class="src-tag" style="margin-left:6px">COMMUNITY</span>' : '';
+    const srcTag = ex.source==='Custom' ? '<span class="src-tag tint">Custom</span>'
+      : ex.source==='Community' ? '<span class="src-tag">Community</span>' : '';
     // ex can come from three untrusted places: the community library (any signed-in user can write to
     // it), a third-party exercise API, and raw AI output from the api() call in this same flow. Escape
     // every field. Once an item is approved this list renders for EVERY user, not just the reviewer.
@@ -182,9 +187,8 @@ async function searchExercises(query, opts){
   });
   // Persistent "create your own" option at the bottom, like Hevy — for anything not listed.
   const createEl=document.createElement('div');
-  createEl.className='ex-result';
-  createEl.style.cssText='border:1px dashed var(--go-bd);text-align:center';
-  createEl.innerHTML='<div class="ex-name" style="color:var(--go)">+ Create a new exercise</div><div class="ex-meta">Can\u2019t find it? Add your own movement.</div>';
+  createEl.className='ex-result tr-create';
+  createEl.innerHTML='<div class="ex-name">'+svgIcon('plus',17)+' Create a new exercise</div><div class="ex-meta">Can\u2019t find it? Add your own movement.</div>';
   createEl.onclick=()=>openCreateExercise('');
   res.appendChild(createEl);
 }
@@ -348,25 +352,20 @@ function platesForSide(target, bar, plates){
 function _plateChipsHTML(r){
   if(!r) return '';
   if(r.under){
-    return '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.6">That’s under the bar on its own — the bar is ' +
-      r.bar + 'kg.</div>';
+    return '<div class="tr-plate-note">That’s under the bar on its own — the bar is ' + r.bar + 'kg.</div>';
   }
   const chips = r.perSide.length
-    ? r.perSide.map(function(p){
-        return '<span style="display:inline-block;background:var(--bg3);border-radius:var(--rs);' +
-          'padding:6px 11px;font-family:var(--font-text);font-size:var(--t-base);color:var(--tx);margin:0 5px 5px 0">' + p + '</span>';
-      }).join('')
-    : '<span style="font-size:var(--t-sm);color:var(--tx3)">Just the bar.</span>';
+    ? r.perSide.map(function(p){ return '<span class="tr-plate">' + p + '</span>'; }).join('')
+    : '<span class="tr-plate-none">Just the bar.</span>';
   const off = r.off === 0
     ? ''
-    : '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.55;margin-top:8px">Closest you can actually load is <b>' +
+    : '<div class="tr-plate-note">Closest you can actually load is <b>' +
       r.achieved + 'kg</b> — ' + (r.off > 0 ? r.off + 'kg over' : Math.abs(r.off) + 'kg under') +
       ' what you asked for. Plates go on both sides, so the total can only move in 2.5kg steps.</div>';
-  return '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;' +
-      'letter-spacing:0.01em;margin-bottom:7px">Per side</div>' +
-    '<div>' + chips + '</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);margin-top:9px">' + r.bar + 'kg bar + ' +
-      r.perSide.length + ' plate' + (r.perSide.length === 1 ? '' : 's') + ' each side = <b style="color:var(--tx)">' +
+  return '<div class="ios-header tr-flush">Per side</div>' +
+    '<div class="tr-plate-row">' + chips + '</div>' +
+    '<div class="tr-plate-sum">' + r.bar + 'kg bar + ' +
+      r.perSide.length + ' plate' + (r.perSide.length === 1 ? '' : 's') + ' each side = <b>' +
       r.achieved + 'kg</b></div>' + off;
 }
 
@@ -385,12 +384,7 @@ function _plateSetBar(b){
   try{
     BARS_KG.forEach(function(x){
       const el = document.getElementById('plate-bar-' + x);
-      if(el){
-        const on = (x === b);
-        el.style.background = on ? 'var(--go-bg)' : 'transparent';
-        el.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
-        el.style.color = on ? 'var(--go)' : 'var(--tx3)';
-      }
+      if(el) el.classList.toggle('active', x === b);
     });
   }catch(_){}
   _plateRender();
@@ -410,20 +404,19 @@ function openPlateMath(exIndex){
   }catch(_){}
   const m = document.createElement('div');
   m.className = 'modal-bg open';
+  // Three bar buttons repainted by hand on every tap (background, border and colour, in _plateSetBar)
+  // is a segmented control written the long way — same shape as the mobility durations.
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Load the bar</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">What you want on the bar, and what goes on each side.</p>' +
-    '<input type="number" id="plate-target" inputmode="decimal" step="2.5" value="' + _escFew(prefill) + '" placeholder="102.5" ' +
-      'oninput="_plateRender()" style="font-family:var(--font-text);font-size:var(--t-xl);text-align:center;padding:12px;margin-bottom:12px">' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:7px">Bar</div>' +
-    '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+    '<h3>Load the bar</h3>' +
+    '<div class="tr-sheet-sub">What you want on the bar, and what goes on each side.</div>' +
+    '<input type="number" id="plate-target" class="tr-bignum" inputmode="decimal" step="2.5" value="' + _escFew(prefill) + '" placeholder="102.5" oninput="_plateRender()">' +
+    '<div class="ios-header tr-flush">Bar</div>' +
+    '<div class="seg tr-seg">' +
       BARS_KG.map(function(b){
-        return '<button id="plate-bar-' + b + '" onclick="_plateSetBar(' + b + ')" class="btn" ' +
-          'style="flex:1;font-family:var(--font-text);font-size:var(--t-sm);padding:9px;margin:0;background:transparent;color:var(--tx3);background:var(--fill2)">' +
-          b + 'kg</button>';
+        return '<button type="button" id="plate-bar-' + b + '" onclick="_plateSetBar(' + b + ')" class="fst">' + b + 'kg</button>';
       }).join('') +
     '</div>' +
-    '<div id="plate-out" style="min-height:64px;margin-bottom:12px"></div>' +
+    '<div id="plate-out" class="tr-plate-out"></div>' +
     '<button class="btn quiet" onclick="closeModal(this)">Done</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -498,26 +491,30 @@ function renderWorkoutSession(){
         // so the old argument was the literal string "undefined".
         const _rid = String(r.hevyId != null ? r.hevyId : (r.id != null ? r.id : '')).replace(/[\\'"]/g, '');
         const fn = isHevy ? ("startHevyRoutine('"+_rid+"')") : ('loadRoutine('+r.id+')');
-        return '<button class="routine-row" onclick="'+fn+'" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border-radius:var(--rm);cursor:pointer">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name.replace(/</g,'&lt;')+'</div>'+
-          '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub.replace(/</g,'&lt;')+'</div></div>'+
-          '<span style="color:var(--go);font-size:var(--t-base);flex-shrink:0">Start &rarr;</span></button>';
+        // Was a hand-rolled .routine-row: its own background, its own radius, a 17px title over a
+        // 13px TERTIARY sub, and a tint "Start →" standing in for a chevron. It is an inset grouped
+        // row now — same height, same separator inset, same chevron as every other destination in
+        // the app — and iosRow escapes the name, which a person types.
+        return iosRow({ title:name, sub:sub, value:'Start', onclick:fn });
       };
       // Reform: if Hevy routines exist (Pro live-sync OR free import/export), Hevy is the source of
       // truth — one clean list, no "From Hevy" split, no native builder competing. No Hevy routines
       // → native user: show their routines + a build option. Single coherent surface either way.
       const hevyAll = (ls('totry_hevy_routines')||[]).filter(hr=>hr&&(hr.title||hr.name));
       const hevyOwns = hevyAll.length > 0;
+      // One section, one header, one footnote \u2014 instead of a .lbl carrying a second 12px tertiary
+      // badge inside it, and a centred 12px line at the bottom that belonged in the footnote.
       let html='';
       if(hevyOwns){
-        html+='<div class="lbl" style="margin-top:2px;display:flex;justify-content:space-between;align-items:center"><span>Your routines</span><span style="font-weight:400;color:var(--tx3);font-size:var(--t-mini)">via Hevy</span></div>';
         const list = hevyAll.length>6 ? hevyAll.slice(0,6) : hevyAll;
-        html+= list.map(r=>rowFor(r,true)).join('');
-        if(hevyAll.length>6) html+='<button class="btn" onclick="_showAllHevyRoutines()" style="font-size:var(--t-sm);background:none;color:var(--tx3);margin-top:2px;background:var(--fill2)">Show all '+hevyAll.length+' routines</button>';
-        html+='<div style="font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:8px;line-height:1.5">Managed in Hevy &amp; synced here \u00b7 edit them in Hevy</div>';
+        const rows = list.map(r=>rowFor(r,true));
+        if(hevyAll.length>6) rows.push(iosRow({ title:'Show all '+hevyAll.length+' routines', onclick:'_showAllHevyRoutines()', cls:'tint' }));
+        html = iosList(rows, { header:'Your routines', footer:'Managed in Hevy and synced here \u00b7 edit them in Hevy.' });
       } else {
-        if(own.length){ html+='<div class="lbl" style="margin-top:2px">Your routines</div>'+own.map(r=>rowFor(r,false)).join(''); }
-        html+='<button class="btn" onclick="setPTTab(\'routines\')" style="font-size:var(--t-sm);background:none;border:1px dashed var(--go-bd);color:var(--go);margin-top:'+(own.length?'8px':'2px')+'">+ Build a routine</button>';
+        // The dashed 1px border was the only dashed border in the app. A destination is a row.
+        const rows = own.map(r=>rowFor(r,false));
+        rows.push(iosRow({ icon:'plus', tone:'blue', title:'Build a routine', onclick:'setPTTab(\'routines\')' }));
+        html = iosList(rows, { header: own.length ? 'Your routines' : 'Routines' });
       }
       rBox.innerHTML = html;
     }
@@ -536,15 +533,17 @@ function renderWorkoutSession(){
   // When recovery is low, gently suggest going lighter today; when you're primed, encourage the push.
   // Only speaks when there's a real signal; silent otherwise.
   try{
+    // The banner below was 12px — a size that exists nowhere else in the app — inside a 1px
+    // tinted border. Footnote size on a tinted fill, no border; the level tints the fill.
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     if(rd && rd.level){
-      let msg = '', accent = 'var(--go-bd)', color = 'var(--go)';
-      if(rd.level === 'rest'){ msg = 'Your recovery\u2019s low today (' + rd.score + '/100' + (rd.reasons&&rd.reasons.length?' · '+rd.reasons.slice(0,2).join(', '):'') + '). No shame in keeping today light — drop a set or two, leave a rep in the tank. Showing up easy still counts.'; color='var(--go)'; }
+      let msg = '';
+      if(rd.level === 'rest'){ msg = 'Your recovery\u2019s low today (' + rd.score + '/100' + (rd.reasons&&rd.reasons.length?' · '+rd.reasons.slice(0,2).join(', '):'') + '). No shame in keeping today light — drop a set or two, leave a rep in the tank. Showing up easy still counts.'; }
       else if(rd.level === 'moderate'){ msg = 'Recovery\u2019s moderate today (' + rd.score + '/100). Train well, but quality over maxing out — hit your reps clean rather than grinding.'; }
-      else { msg = 'You\u2019re well recovered (' + rd.score + '/100). Good day to push — this is when a PR or a load bump is earned.'; color='var(--gr)'; accent='var(--go-bd)'; }
+      else { msg = 'You\u2019re well recovered (' + rd.score + '/100). Good day to push — this is when a PR or a load bump is earned.'; }
       const banner = document.createElement('div');
-      banner.style.cssText = 'margin-bottom:12px;padding:11px 13px;background:var(--go-bg);border:1px solid '+accent+';border-radius:var(--rm);font-size:12px;color:var(--tx2);line-height:1.6';
-      banner.innerHTML = '<span style="color:'+color+'">'+svgIcon("zap")+' Today:</span> ' + msg;
+      banner.className = 'tr-readiness' + (rd.level === 'go' ? ' tr-good' : '');
+      banner.innerHTML = '<b>'+svgIcon("zap",14)+' Today:</b> ' + msg;
       container.appendChild(banner);
     }
   }catch(_){}
@@ -552,54 +551,65 @@ function renderWorkoutSession(){
     const card=document.createElement('div');
     card.className='session-exercise';
     card.id='ex-card-'+ei;
-    // Superset visual: if paired with previous, show connector
-    if(ex.superset && ei > 0){
-      card.style.borderLeft = '3px solid var(--go)';
-      card.style.marginTop = '-4px';
-    }
+    // Superset visual: if paired with previous, show connector. A class, not two inline styles —
+    // the card's border is `border:0 !important` in the design system, so an inline borderLeft here
+    // painted nothing at all and the pair read as two unrelated cards.
+    if(ex.superset && ei > 0) card.classList.add('tr-paired');
     // Escapes the apostrophe and NOT the double quote, while the value goes into a double-quoted
   // attribute — so a name like 5\" deficit deadlift ends the attribute early and sprays the rest of
   // the handler into the markup as stray attributes. _jsAttr does both.
   const safeName = (typeof _jsAttr === 'function') ? _jsAttr(ex.name) : ex.name.replace(/'/g, "\\'");
+    // SEVEN CONTROLS ON ONE 17px TITLE LINE, each hand-painted at its own size and grey: FORM in
+    // 13px tint caps with no tracking, a swap arrow at 15px, a superset arrow at 13px, two 15px
+    // reorder arrows and a delete — so the exercise NAME, which is the only thing on the card a
+    // person is looking for, was squeezed to whatever was left and wrapped. The name and the two
+    // actions that belong to it (form, remove) stay on the title line; the four that act on the
+    // session — swap, pair, move up, move down — move to the card's own utility row at the bottom,
+    // beside Add set and Plates, as icon buttons on the same 34px target. Every handler is the
+    // handler it always was. The arrow glyphs become the app's own icons: ⇆ and ⇄ were two
+    // characters doing an icon's job in a build that has one icon language.
     const supersetBadge = ex.superset && ei > 0 ?
-      '<span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-left:8px;letter-spacing:0.01em">⇆ SUPERSET</span>' : '';
+      '<span class="tr-ex-pair">Superset</span>' : '';
     const supersetBtn = ei > 0 ?
-      '<button class="se-superset" title="' + (ex.superset ? 'Unpair from previous exercise' : 'Pair with previous exercise as a superset') + '" onclick="toggleSuperset(' + ei + ')" style="background:none;border:none;color:' + (ex.superset ? 'var(--go)' : 'var(--tx3)') + ';font-size:var(--t-cap);cursor:pointer;padding:0 6px;margin-left:4px;font-family:var(--font-text)">' + (ex.superset ? '⇆' : '⇆') + '</button>' : '';
+      '<button class="tr-ex-btn' + (ex.superset ? ' on' : '') + '" title="' + (ex.superset ? 'Unpair from previous exercise' : 'Pair with previous exercise as a superset') + '" aria-label="' + (ex.superset ? 'Unpair from the previous exercise' : 'Pair with the previous exercise as a superset') + '" onclick="toggleSuperset(' + ei + ')">' + svgIcon('link',17) + '</button>' : '';
     // Reorder controls — move an exercise up/down in the session (Hevy lets you drag-reorder).
-    const upBtn = ei > 0 ? '<button title="Move up" onclick="moveExercise('+ei+',-1)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 4px">↑</button>' : '';
-    const downBtn = ei < currentSession.length-1 ? '<button title="Move down" onclick="moveExercise('+ei+',1)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 4px">↓</button>' : '';
-    
+    const upBtn = ei > 0 ? '<button class="tr-ex-btn tr-up" title="Move up" aria-label="Move this exercise up" onclick="moveExercise('+ei+',-1)">'+svgIcon('chevronright',15)+'</button>' : '';
+    const downBtn = ei < currentSession.length-1 ? '<button class="tr-ex-btn tr-down" title="Move down" aria-label="Move this exercise down" onclick="moveExercise('+ei+',1)">'+svgIcon('chevronright',15)+'</button>' : '';
+
     // Target reps/rest badge (from routine builder)
     const targets = [];
     if(ex.targetReps) targets.push('Target: ' + ex.targetReps + ' reps');
     if(ex.targetRest) targets.push('Rest: ' + ex.targetRest);
     const targetBadge = targets.length ?
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:6px;padding:4px 8px;background:var(--go-bg);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
+      '<div class="tr-ex-badge">' + targets.join(' \u00b7 ') + '</div>' : '';
     // Item 15 — light progression nudge, shown only when the data earns it (see suggestProgression).
     const prog = (typeof suggestProgression==='function') ? suggestProgression(ex, getLastPerformance(ex.name)) : null;
     const progBadge = prog ?
-      '<div style="font-size:var(--t-cap);color:var(--tx2);line-height:1.5;margin-bottom:6px;padding:6px 9px;background:rgba(91,185,125,0.08);border-radius:var(--rs)">↗ <span style="color:var(--gr)">'+prog.text+'</span></div>' : '';
-    
+      '<div class="tr-ex-prog"><b>' + prog.text + '</b></div>' : '';
+
     // A THIRD EXECUTING SINK, same class as the routine name and the bank-CSV description. Exercise
     // names are not all from the catalogue — addCustomExercise() lets a person type their own, and
     // that name lands here raw. Driven with `<img src=x onerror=...>`: it fired.
-    card.innerHTML='<div class="se-name">'+_escFew(ex.name) + supersetBadge +
-      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:var(--t-cap);cursor:pointer;padding:0 6px;font-family:var(--font-text)">FORM</button>'+
-      '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 5px;font-family:var(--font-text)">\u21c4</button>'+
-      supersetBtn + upBtn + downBtn +
+    card.innerHTML='<div class="se-name"><span class="tr-ex-title">'+_escFew(ex.name)+'</span>' + supersetBadge +
+      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')">Form</button>'+
       '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Remove this exercise from the session">&#215;</button></div>'+
       targetBadge +
       progBadge +
       '<div id="sets-'+ei+'"></div>'+
-      '<div style="margin-top:6px">' +
-        '<button onclick="toggleExerciseNotes('+ei+')" id="ex-notes-toggle-'+ei+'" style="background:none;border:none;color:var(--tx3);font-size:var(--t-mini);font-family:var(--font-text);cursor:pointer;padding:4px 0;letter-spacing:0.01em">' + (ex.notes ? svgIcon("edit",12)+' Notes: "' + _escFew(ex.notes.length > 40 ? ex.notes.slice(0,40)+'…' : ex.notes) + '"' : '+ Add note') + '</button>' +
+      '<div class="tr-ex-notes">' +
+        '<button class="tr-ex-note" onclick="toggleExerciseNotes('+ei+')" id="ex-notes-toggle-'+ei+'">' + (ex.notes ? svgIcon("edit",13)+' Notes: "' + _escFew(ex.notes.length > 40 ? ex.notes.slice(0,40)+'\u2026' : ex.notes) + '"' : '+ Add note') + '</button>' +
         '<div id="ex-notes-wrap-'+ei+'" style="display:none;margin-top:4px">' +
-          '<textarea id="ex-notes-input-'+ei+'" placeholder="Form cue, how it felt, what to try next..." style="min-height:50px;font-size:var(--t-base);line-height:1.5" oninput="saveExerciseNote('+ei+',this.value)">' + _escFew(ex.notes || '') + '</textarea>' +
+          '<textarea id="ex-notes-input-'+ei+'" class="tr-ex-notes-in" placeholder="Form cue, how it felt, what to try next..." oninput="saveExerciseNote('+ei+',this.value)">' + _escFew(ex.notes || '') + '</textarea>' +
         '</div>' +
       '</div>' +
-      '<button class="add-set-btn" onclick="addSetToEx('+ei+')">+ Add set</button>' +
-      // Right where the weight is being typed: the rack question, answered.
-      '<button class="add-set-btn" onclick="openPlateMath('+ei+')" style="margin-left:16px;color:var(--tx3)"><span style="color:var(--go)">'+svgIcon("dumbbell",14)+'</span> Plates</button>';
+      '<div class="tr-ex-foot">' +
+        '<button class="add-set-btn" onclick="addSetToEx('+ei+')">'+svgIcon('plus',15)+' Add set</button>' +
+        // Right where the weight is being typed: the rack question, answered.
+        '<button class="add-set-btn" onclick="openPlateMath('+ei+')">'+svgIcon('scale',15)+' Plates</button>' +
+        '<span class="tr-ex-spacer"></span>' +
+        '<button class="tr-ex-btn" title="Swap exercise \u2014 keeps your sets" aria-label="Swap this exercise, keeping your sets" onclick="swapExercise('+ei+')">'+svgIcon('repeat',16)+'</button>' +
+        supersetBtn + upBtn + downBtn +
+      '</div>';
     container.appendChild(card);renderSets(ei);
   });
 }
@@ -700,20 +710,28 @@ function renderSets(ei){
   try{ _saveSessionDraft(); }catch(_){ }
   const ex=currentSession[ei];const lastSets=getLastPerformance(ex.name);
   container.innerHTML='';
-  // Hevy-style column header so the set rows read like a clean table, not loose inputs.
+  // A SET ROW IS A TABLE, AND ITS HEADER HAD ITS OWN HAND-TYPED WIDTHS. Nine 11px cells with no
+  // tracking, whose widths did not match the cells under them — so on a 393px phone "TYPE" and
+  // "PREV" ran into each other with no gap and read as one word, TYPEPREV. Header and cells share
+  // the .tr-c-* classes now, which is the only way the two can stay agreed.
+  // The unit moved INTO the header. There was a "kg" column label AND a per-row "kg" span beside
+  // every weight box, saying the same thing twice — and the header's was a literal "kg" while the
+  // span was the real unit, so a distance or time exercise showed "kg" over a field measuring
+  // metres. One unit, read from the exercise, in the place a table puts it.
+  const _trk0 = ex.tracking || 'weight_reps';
+  const _unit = _trk0==='assisted' ? 'assist' : _trk0==='time' ? 'sec' : _trk0==='distance' ? 'm' : 'kg';
   const hdr=document.createElement('div');
-  hdr.style.cssText='display:flex;align-items:center;gap:0;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px;padding:0 2px';
-  hdr.innerHTML='<span style="min-width:20px;text-align:center">#</span>'+
-    '<span style="width:20px;text-align:center;margin-left:0">Type</span>'+
-    '<span style="min-width:46px;text-align:center">Prev</span>'+
-    '<span style="width:58px;text-align:center">kg</span>'+
-    '<span style="width:24px"></span>'+
-    '<span style="width:65px;text-align:center">Reps</span>'+
-    '<span style="flex:1"></span>'+
-    '<span style="margin-right:4px">Done</span>'+
-    '<span style="width:28px;text-align:center;margin-left:4px">RPE</span>';
+  hdr.className='tr-set-hd';
+  hdr.innerHTML='<span class="tr-c-num">#</span>'+
+    '<span class="tr-c-type"></span>'+
+    '<span class="tr-c-prev">Prev</span>'+
+    '<span class="tr-c-w">'+_unit+'</span>'+
+    '<span class="tr-c-r">Reps</span>'+
+    '<span class="tr-ex-spacer"></span>'+
+    '<span class="tr-c-done"></span>'+
+    '<span class="tr-c-rpe">RPE</span>';
   container.appendChild(hdr);
-  if(lastSets){const lr=document.createElement('div');lr.style.cssText='font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:6px;letter-spacing:0.01em';lr.innerHTML='<span style="color:var(--bl)">Tap the blue numbers</span> to reuse last session\'s weight \u00d7 reps.';container.appendChild(lr);}
+  if(lastSets){const lr=document.createElement('div');lr.className='tr-set-hint';lr.innerHTML='<b>Tap the blue numbers</b> to reuse last session\'s weight \u00d7 reps.';container.appendChild(lr);}
   const tl={normal:'S',warmup:'W',drop:'D',failure:'F'};
   ex.sets.forEach((s,si)=>{
     const lastSet=lastSets?.[si];
@@ -732,17 +750,21 @@ function renderSets(ei){
     row.addEventListener('touchend',()=>{ _drag=false; if(_dx<-60){ _doDelete(); } else { _resetSwipe(); } _dx=0; });
     // Set number prefix
     const numEl=document.createElement('span');
-    numEl.style.cssText='font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);font-weight:600;min-width:20px;text-align:center';
+    numEl.className='tr-c-num';
     numEl.textContent=(si+1);
     row.appendChild(numEl);
-    const tb=document.createElement('button');tb.style.cssText='background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:var(--t-micro);font-family:var(--font-text);min-width:24px;height:28px;cursor:pointer;flex-shrink:0';
+    // A 1px-bordered 11px box was the only outlined control on the screen. Same size, iOS fill,
+    // and the tint tells you at a glance that this set is not an ordinary one.
+    const tb=document.createElement('button');tb.className='tr-c-type tr-type-btn'+((s.type&&s.type!=='normal')?' on':'');tb.title='Set type: normal, warm-up, drop set, to failure';tb.setAttribute('aria-label','Set type');
     tb.textContent=tl[s.type||'normal'];tb.onclick=()=>{const types=['normal','warmup','drop','failure'];const cur=types.indexOf(s.type||'normal');currentSession[ei].sets[si].type=types[(cur+1)%types.length];renderSets(ei);};row.appendChild(tb);
     // Hevy's killer feature: tap your previous-session number to instantly fill this set.
     // The single biggest friction-remover for progressive overload.
     const prevBtn=document.createElement('button');
     prevBtn.title='Tap to use last time';
     if(lastSet && (lastSet.weight || lastSet.reps)){
-      prevBtn.style.cssText='background:none;border:none;color:var(--bl);font-size:var(--t-micro);font-family:var(--font-text);min-width:46px;text-align:center;cursor:pointer;flex-shrink:0;opacity:0.75;line-height:1.2';
+      // Was --bl (teal) at 11px under an opacity multiplier: a fourth accent colour, dimmed, on the
+      // one control this screen exists to make easy to hit. Tint, at footnote size, at full strength.
+      prevBtn.className='tr-c-prev tr-prev-btn';
       prevBtn.innerHTML=(lastSet.weight||'?')+'<br>×'+(lastSet.reps||'?');
       prevBtn.onclick=()=>{
         currentSession[ei].sets[si].weight=lastSet.weight||'';
@@ -751,8 +773,8 @@ function renderSets(ei){
         renderSets(ei);
       };
     } else {
-      prevBtn.style.cssText='background:none;border:none;color:var(--tx3);font-size:var(--t-micro);font-family:var(--font-text);min-width:46px;text-align:center;flex-shrink:0;opacity:0.4';
-      prevBtn.innerHTML='—<br>—';
+      prevBtn.className='tr-c-prev tr-prev-btn';
+      prevBtn.innerHTML='\u2013';
       prevBtn.disabled=true;
     }
     row.appendChild(prevBtn);
@@ -765,7 +787,7 @@ function renderSets(ei){
     const wIn=document.createElement('input');wIn.type='number';wIn.className='set-input';wIn.placeholder=wPlaceholder||'kg';
     // Display assisted weight as positive (the assistance amount); store as negative internally.
     wIn.value = (s.weight!==''&&s.weight!=null) ? (trk==='assisted' ? Math.abs(parseFloat(s.weight)) : s.weight) : '';
-    wIn.style.cssText='width:58px;padding:7px 6px;font-size:var(--t-base);flex:none';
+    wIn.classList.add('tr-c-w');
     if(trk==='bodyweight'){ wIn.disabled=true; wIn.style.opacity='0.4'; }
     // ONE READER FOR THIS FIELD. The input shows assistance as a positive number and stores it as
     // NEGATIVE ("less help = stronger", 19-workout.js). This did the negation; the ✓ handler below
@@ -782,9 +804,11 @@ function renderSets(ei){
     };
     wIn.onchange=()=>{ currentSession[ei].sets[si].weight = _readWeight(); };
     row.appendChild(wIn);
-    const ks=document.createElement('span');ks.className='set-unit';ks.textContent=unitLabel;row.appendChild(ks);
-    const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.style.cssText='width:65px;padding:7px 6px;font-size:var(--t-base);flex:none';rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
-    const db=document.createElement('button');db.className='set-done'+(s.done?' on':'');db.textContent='\u2713';
+    // The unit span that used to sit here said the same word as the column header directly above it.
+    // It is in the header now — see the note there.
+    const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.classList.add('tr-c-r');rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
+    const spacer=document.createElement('span');spacer.className='tr-ex-spacer';row.appendChild(spacer);
+    const db=document.createElement('button');db.className='set-done tr-c-done'+(s.done?' on':'');db.setAttribute('aria-label','Mark set '+(si+1)+' done');db.textContent='\u2713';
     db.onclick=()=>{
       currentSession[ei].sets[si].weight=_readWeight();currentSession[ei].sets[si].reps=rIn.value;
       const wasDone=currentSession[ei].sets[si].done;currentSession[ei].sets[si].done=!wasDone;
@@ -823,12 +847,17 @@ function renderSets(ei){
     row.appendChild(db);
     
     // RPE — native select: one tap opens the iOS wheel, pick the number directly.
-    const rpeColors = {'':'var(--tx3)','6':'#A8D8B9','6.5':'#A8D8B9','7':'var(--gr)','7.5':'var(--gr)','8':'var(--go)','8.5':'var(--go)','9':'#E89B5C','9.5':'#E89B5C','10':'var(--re)'};
+    // Two of these six colours were hex literals (#A8D8B9, #E89B5C) that no theme could follow, and
+    // the select they painted named "DM Mono" — a font this app does not ship, so every RPE control
+    // in the logger rendered in the system monospace. One app, one typeface; system colours only.
+    const rpeColors = {'':'var(--tx3)','6':'var(--gr)','6.5':'var(--gr)','7':'var(--gr)','7.5':'var(--gr)','8':'var(--tx)','8.5':'var(--tx)','9':'var(--re)','9.5':'var(--re)','10':'var(--re)'};
     const curRpe = (s.rpe || '') + '';
     const rpeSel = document.createElement('select');
     rpeSel.title = 'RPE (rate of perceived exertion)';
-    ['','6','6.5','7','7.5','8','8.5','9','9.5','10'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'\u2014';if(v===curRpe)o.selected=true;rpeSel.appendChild(o);});
-    rpeSel.style.cssText = 'background:var(--bg);border:1px solid var(--bd);border-radius:4px;color:' + (rpeColors[curRpe]||'var(--tx3)') + ';font-size:10px;font-family:"DM Mono",monospace;font-weight:600;width:34px;height:28px;flex-shrink:0;margin-left:4px;text-align:center;text-align-last:center;-webkit-appearance:none;appearance:none;padding:0';
+    ['','6','6.5','7','7.5','8','8.5','9','9.5','10'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'\u2013';if(v===curRpe)o.selected=true;rpeSel.appendChild(o);});
+    rpeSel.className = 'tr-c-rpe tr-rpe';
+    rpeSel.style.color = rpeColors[curRpe] || 'var(--tx3)';
+    rpeSel.setAttribute('aria-label','RPE, rate of perceived exertion');
     rpeSel.onchange = () => { currentSession[ei].sets[si].rpe = rpeSel.value || null; haptic('tick'); renderSets(ei); };
     row.appendChild(rpeSel);
     
@@ -951,8 +980,8 @@ function showWorkoutSummary(s){
   m.className='modal-bg open';
   m.style.alignItems='center';
   const prLines = (s.prs && s.prs.length)
-    ? '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)"><div class="eyebrow" style="color:var(--go);margin-bottom:8px">'+svgIcon("award")+' New personal record'+(s.prs.length>1?'s':'')+'</div>'+
-      s.prs.slice(0,5).map(p=>'<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:3px">'+p.name.replace(/</g,'&lt;')+' — est. 1RM '+p.orm+'kg</div>').join('')+'</div>'
+    ? '<div class="tr-sheet-block"><div class="ios-header tr-flush tint">New personal record'+(s.prs.length>1?'s':'')+'</div>'+
+      s.prs.slice(0,5).map(p=>'<div class="tr-sheet-line">'+_escFew(p.name)+' \u2014 est. 1RM '+p.orm+'kg</div>').join('')+'</div>'
     : '';
   // ── THE LOOP: Train → Nourish handoff. Training creates a fueling need; bridge straight
   // into it: rough burn estimate, today's protein status, one tap to log a meal.
@@ -976,30 +1005,35 @@ function showWorkoutSummary(s){
     // leaks a figure two cards down is worse than no promise at all. The handoff itself still stands —
     // it just says the true thing without the arithmetic.
     const _gentle = (typeof nutGentle==='function') && nutGentle();
-    fuelBlock = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">'+
-      '<div class="eyebrow" style="margin-bottom:6px">Now fuel it</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+
+    fuelBlock = '<div class="tr-sheet-block">'+
+      '<div class="ios-header tr-flush">Now fuel it</div>'+
+      '<div class="tr-sheet-body">'+
         (_gentle
           ? 'You have just asked something of your body \u2014 give it what it needs. The meal after training is the one that matters most.'
           : ((burnEst ? 'Roughly <span style="color:var(--go)">~'+burnEst+' cal</span> burned (added to today\'s net). ' : '')+
              (proLeft > 0 ? 'Protein: <span style="color:var(--gr)">'+proSoFar+'g of '+proGoal+'g</span> — '+proLeft+'g to go. The next meal matters most after training.' : 'Protein: <span style="color:var(--gr)">'+proSoFar+'g</span> — goal hit. Well fuelled.')))+
       '</div>'+
-      '<button class="btn" onclick="closeModal(this);go(\'nourish\')" style="margin-top:10px;background:var(--bg3);font-size:var(--t-base)">Log a meal →</button>'+
+      '<button class="btn tr-sheet-go" onclick="closeModal(this);go(\'nourish\')">Log a meal</button>'+
     '</div>';
   }catch(_){ fuelBlock=''; }
+  // FOUR HAND-PAINTED STAT TILES where the app has .ios-stats: a 22px number over an 11px caps
+  // label with 0.01em of tracking, on --bg3, four times. And the title was centred italic serif in
+  // the TINT with an icon after the words — the reading face doing a display face's job. The sheet
+  // title role is the brand serif, which is what this sheet should have been speaking in all along.
+  const tile = (v,l) => '<div class="ios-stat"><div class="ios-stat-value">'+v+'</div><div class="ios-stat-label">'+l+'</div></div>';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-title1);color:var(--go);font-style:italic;margin-bottom:4px">Session complete '+svgIcon("dumbbell",26)+'</div>'+
-    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">Logged and saved. Strong work.</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+
-      (s.durationMin?'<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+(s.durationMin>=60?Math.floor(s.durationMin/60)+'h '+(s.durationMin%60)+'m':s.durationMin+'m')+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Duration</div></div>':'')+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+(s.vol>0?s.vol.toLocaleString():'—')+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">kg volume</div></div>'+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+s.sets+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Sets done</div></div>'+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+s.exercises+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Exercises</div></div>'+
+    '<h3>Session complete</h3>'+
+    '<div class="tr-sheet-sub">Logged and saved. Strong work.</div>'+
+    '<div class="ios-stats">'+
+      (s.durationMin?tile((s.durationMin>=60?Math.floor(s.durationMin/60)+'h '+(s.durationMin%60)+'m':s.durationMin+'m'),'Duration'):'')+
+      tile((s.vol>0?s.vol.toLocaleString():'\u2014'),'kg volume')+
+      tile(s.sets,'Sets done')+
+      tile(s.exercises,'Exercises')+
     '</div>'+
     prLines+
     fuelBlock+
-    '<button class="btn primary" onclick="closeModal(this)" style="margin-top:16px">Done</button>'+
+    '<button class="btn primary tr-sheet-go" onclick="closeModal(this)">Done</button>'+
     '</div>';
   document.body.appendChild(m);
   haptic('celebrate');
@@ -1089,10 +1123,11 @@ function _renderProofChips(unifiedId){
   const arr=_getSessionProof(unifiedId);
   const chips = arr.map((p,i)=> p.kind==='photo'
     ? '<div style="position:relative;display:inline-block"><img loading="lazy" decoding="async" src="'+p.thumb+'" style="width:54px;height:54px;object-fit:cover;border-radius:var(--rs)"><button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="position:absolute;top:-6px;right:-6px;background:var(--re);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:var(--t-cap);cursor:pointer">&times;</button></div>'
-    : '<div style="display:inline-flex;align-items:center;gap:5px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+(p.name||'clip').slice(0,16)+'<button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:var(--t-sm)">&times;</button></div>'
+    : '<div class="tr-proof-clip">'+svgIcon("film",15)+' '+_escFew((p.name||'clip').slice(0,16))+'<button class="tr-proof-x" onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" aria-label="Remove this clip">&times;</button></div>'
   ).join('');
-  return '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">'+chips+
-    '<button class="btn" onclick="attachSessionProof(&quot;'+unifiedId+'&quot;)" style="width:auto;padding:8px 12px;font-size:var(--t-sm);background:none;border:1px dashed var(--go-bd);color:var(--go)">'+svgIcon("image",14)+' Add proof</button></div>';
+  // The add button was the app's second dashed border. A quiet tint button is the iOS shape.
+  return '<div class="tr-proof-row">'+chips+
+    '<button class="btn quiet tr-proof-add" onclick="attachSessionProof(&quot;'+unifiedId+'&quot;)">'+svgIcon("image",15)+' Add proof</button></div>';
 }
 function _removeProof(unifiedId, i){
   const arr=_getSessionProof(unifiedId); arr.splice(i,1); _saveSessionProof(unifiedId, arr);
@@ -1113,7 +1148,9 @@ function openEditTraining(unifiedId){
     const _pp = _paceParts(pace);
     const paceStr = _pp ? (_pp.m + ':' + _pp.s + ' /' + _pp.unit) : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
-    const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--tx)">'+val+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">'+label+'</div></div>' : '';
+    // Six hand-painted tiles — a 20px number over an 11px caps label with 0.01em of tracking — where
+    // the app has .ios-stat. Same numbers, in the rounded face with tabular figures.
+    const stat = (label,val) => val ? '<div class="ios-stat"><div class="ios-stat-value">'+val+'</div><div class="ios-stat-label">'+label+'</div></div>' : '';
     const stats = [
       stat('distance', km ? km.toFixed(2)+dUnit() : null),   // km holds mToDisp(...) — the person's unit
       stat('time', mins ? mins+' min' : null),
@@ -1124,16 +1161,17 @@ function openEditTraining(unifiedId){
     ].filter(Boolean).join('');
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.id = 'edit-training-modal';
+    // The source was 11px caps in Strava's own orange above the title — a brand colour used as ink
+    // on the app's own surface. It is the sheet's subtitle now, in words.
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-      '<div class="src-tag" style="color:#FC4C02;margin-bottom:4px">STRAVA</div>'+
-      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">'+(a.type||'')+(when?' \u00b7 '+when:'')+'</div>'+
-      (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
-      '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
+      '<h3>'+_escFew(a.name||a.type||'Activity')+'</h3>'+
+      '<div class="tr-sheet-sub">From Strava \u00b7 '+_escFew((a.type||'')+(when?' \u00b7 '+when:''))+'</div>'+
+      (stats ? '<div class="ios-stats tr-sheet-stats">'+stats+'</div>' : '<div class="tr-sheet-body">No detailed metrics on this activity.</div>')+
+      '<div class="tr-sheet-block"><div class="ios-header tr-flush">Proof</div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from ToTry here.</div>'+
-      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
-      '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
+      '<div class="ios-footnote tr-flush">For your weekly review. Synced from Strava \u2014 edit it in Strava; you can remove it from ToTry here.</div></div>'+
+      '<button class="btn danger tr-sheet-go" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)">Remove from ToTry</button>'+
+      '<button class="btn tr-sheet-alt" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
   }
@@ -1159,25 +1197,25 @@ function openEditTraining(unifiedId){
         const wt = (s.weight!=null && s.weight!=='') ? s.weight+'kg' : '';
         const rp = (s.reps!=null && s.reps!=='') ? s.reps+' reps' : '';
         const meta = [wt,rp].filter(Boolean).join(' \u00d7 ') || '\u2014';
-        return '<div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);padding:2px 0"><span>Set '+(i+1)+'</span><span style="color:var(--tx2)">'+meta+'</span></div>';
+        return '<div class="tr-setline"><span>Set '+(i+1)+'</span><span>'+meta+'</span></div>';
       }).join('');
-      return '<div style="margin-bottom:12px"><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">'+(ex.name||'Exercise').replace(/</g,'&lt;')+'</div>'+(setRows||'<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">No sets recorded</div>')+'</div>';
+      return '<div class="tr-hist-ex"><div class="tr-hist-ex-name">'+_escFew(ex.name||'Exercise')+'</div>'+(setRows||'<div class="tr-setline"><span>No sets recorded</span></div>')+'</div>';
     }).join('');
     const meta = [];
     if(w.volume) meta.push(Math.round(w.volume).toLocaleString()+'kg volume');
     if(w.completedSets||w.totalSets){ const _n = (w.completedSets||w.totalSets); meta.push(_n + (_n === 1 ? ' set' : ' sets')); }
     if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
+    // Three stacked lines at three sizes and three colours opened this sheet — an 11px caps source,
+    // a 17px name, a 15px tertiary date and a 13px tint metrics line. One title, one subtitle.
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-      '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
-      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
-      (meta.length ? '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
-      (exList || '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
-      '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
+      '<h3>'+_escFew(w.splitFocus||w.type||'Workout')+'</h3>'+
+      '<div class="tr-sheet-sub">'+(fromHevy?'From Hevy':'Logged here')+(when?' \u00b7 '+_escFew(when):'')+(meta.length?' \u00b7 '+meta.join(' \u00b7 '):'')+'</div>'+
+      '<div class="tr-sheet-scroll">'+(exList || '<div class="tr-hist-ex"><div class="tr-setline"><span>No exercise detail came through on this session.</span></div></div>')+'</div>'+
+      '<div class="tr-sheet-block"><div class="ios-header tr-flush">Proof</div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      (fromHevy ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
-      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
-      '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
+      (fromHevy ? '<div class="ios-footnote tr-flush">For your weekly review. Synced from Hevy \u2014 edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div class="ios-footnote tr-flush">For your weekly review. You logged this one here; set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+'</div>'+
+      '<button class="btn danger tr-sheet-go" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)">Remove from ToTry</button>'+
+      '<button class="btn tr-sheet-alt" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
   }
@@ -1189,17 +1227,17 @@ function openEditTraining(unifiedId){
   const tsDate = w.ts ? new Date(w.ts) : new Date();
   const dateStr = tsDate.getFullYear()+'-'+String(tsDate.getMonth()+1).padStart(2,'0')+'-'+String(tsDate.getDate()).padStart(2,'0');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">Activity</div>'+
-    '<select id="edit-cardio-type" onchange="renderEditCardioFields()" style="margin-bottom:14px">'+
-      types.map(t=>'<option value="'+t+'"'+(t===curType?' selected':'')+'>'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
+    '<h3>Edit workout</h3>'+
+    '<div class="ios-header tr-flush">Activity</div>'+
+    '<select id="edit-cardio-type" class="tr-field" onchange="renderEditCardioFields()">'+
+      types.map(t=>'<option value="'+t+'"'+(t===curType?' selected':'')+'>'+t+'</option>').join('')+
     '</select>'+
     '<div id="edit-cardio-fields"></div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">When</div>'+
-    '<input type="date" id="edit-cardio-date" value="'+dateStr+'" style="margin-bottom:14px">'+
-    '<button class="btn primary" onclick="saveEditTraining(&quot;'+w.id+'&quot;)" style="margin-bottom:8px">Save changes</button>'+
-    '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Delete workout</button>'+
-    '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
+    '<div class="ios-header tr-flush">When</div>'+
+    '<input type="date" id="edit-cardio-date" class="tr-field" value="'+dateStr+'">'+
+    '<button class="btn primary tr-sheet-go" onclick="saveEditTraining(&quot;'+w.id+'&quot;)">Save changes</button>'+
+    '<button class="btn danger tr-sheet-alt" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)">Delete workout</button>'+
+    '<button class="btn tr-sheet-alt" onclick="closeModal(this)">Cancel</button></div>';
   document.body.appendChild(m);
   // Pre-fill fields after the select renders them.
   renderEditCardioFields();
@@ -1385,18 +1423,22 @@ function logCardioManually(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.id = 'cardio-log-modal';
+  // The sheet's own title was a 17px div, so this sheet was the one place in the app where a sheet
+  // did not speak in the app's face. <h3> is the sheet-title role. Every field label was 13px caps
+  // in TERTIARY grey with 0.01em of tracking — caps with no tracking is the shape that reads as
+  // typed rather than set — and they are .ios-header now, at the section-header tracking.
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">Activity</div>'+
-    '<select id="cardio-type" onchange="renderCardioFields()" style="margin-bottom:14px">'+
-      types.map(t=>'<option value="'+t+'">'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
+    '<h3>Log a workout</h3>'+
+    '<div class="tr-sheet-sub">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
+    '<div class="ios-header tr-flush">Activity</div>'+
+    '<select id="cardio-type" class="tr-field" onchange="renderCardioFields()">'+
+      types.map(t=>'<option value="'+t+'">'+t+'</option>').join('')+
     '</select>'+
     '<div id="cardio-fields"></div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em;margin-top:4px">When</div>'+
-    '<input type="date" id="cardio-date" style="margin-bottom:14px">'+
-    '<button class="btn primary" onclick="saveCardioManually()" style="margin-bottom:8px">Save workout</button>'+
-    '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
+    '<div class="ios-header tr-flush">When</div>'+
+    '<input type="date" id="cardio-date" class="tr-field">'+
+    '<div class="tr-session-actions"><button class="btn primary" onclick="saveCardioManually()">Save workout</button>'+
+    '<button class="btn" onclick="closeModal(this)">Cancel</button></div></div>';
   document.body.appendChild(m);
   // Default the date to today.
   const di = document.getElementById('cardio-date');
@@ -1422,28 +1464,29 @@ function renderCardioFields(){
     const [lab,ph,id] = labels[f];
     // Distance row gets a km/miles toggle on the right.
     if(f==='distance'){
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-        '<span style="font-size:var(--t-cap);color:var(--tx3);font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</span>'+
-        '<span style="font-family:var(--font-text);font-size:var(--t-mini)">'+
-          '<span onclick="setCardioUnit(&quot;km&quot;)" style="cursor:pointer;color:'+(unit==='km'?'var(--go)':'var(--tx3)')+'">km</span>'+
-          '<span style="color:var(--tx3)"> / </span>'+
-          '<span onclick="setCardioUnit(&quot;mi&quot;)" style="cursor:pointer;color:'+(unit==='mi'?'var(--go)':'var(--tx3)')+'">mi</span>'+
+      // km / mi was two tappable <span>s at 12px with a slash between them — the "Manage · edit ·
+      // remove" strip this design brief names by hand, on a 12px target. It is a segmented control,
+      // which is what a two-way exclusive choice is on iOS, and it clears the 44pt floor.
+      html += '<div class="tr-label-row"><span class="ios-header tr-flush">'+lab.replace(/\s*\([^)]*\)$/,'')+'</span>'+
+        '<span class="seg tr-unit-seg">'+
+          '<button type="button" class="fst'+(unit==='km'?' active':'')+'" onclick="setCardioUnit(&quot;km&quot;)">km</button>'+
+          '<button type="button" class="fst'+(unit==='mi'?' active':'')+'" onclick="setCardioUnit(&quot;mi&quot;)">mi</button>'+
         '</span></div>'+
-        '<input type="text" id="'+id+'" inputmode="decimal" placeholder="'+ph+'" oninput="updateCardioPace()" style="margin-bottom:12px">';
+        '<input type="text" id="'+id+'" class="tr-field" inputmode="decimal" placeholder="'+ph+'" oninput="updateCardioPace()">';
     } else if(f==='effort'){
       // Effort as an RPE 1–10 dropdown — feeds training-load + interference awareness (WS4/WS6).
-      html += '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</div>'+
-        '<select id="'+id+'" style="margin-bottom:12px"><option value="">\u2014</option>'+
+      html += '<div class="ios-header tr-flush">'+lab+'</div>'+
+        '<select id="'+id+'" class="tr-field"><option value="">\u2014</option>'+
         [1,2,3,4,5,6,7,8,9,10].map(n=>'<option value="'+n+'">'+n+(n<=3?' (easy)':n<=6?' (moderate)':n<=8?' (hard)':' (max)')+'</option>').join('')+
         '</select>';
     } else {
-      html += '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</div>'+
-        '<input type="text" id="'+id+'" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateCardioPace()" style="margin-bottom:12px">';
+      html += '<div class="ios-header tr-flush">'+lab+'</div>'+
+        '<input type="text" id="'+id+'" class="tr-field" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateCardioPace()">';
     }
   });
   // Live pace readout for distance-based activities (e.g. Indoor Walk → min/km or min/mi).
   if(cfg.pace){
-    html += '<div id="cardio-pace" style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>';
+    html += '<div id="cardio-pace" class="tr-pace"></div>';
   }
   wrap.innerHTML = html;
   updateCardioPace();
@@ -1889,7 +1932,7 @@ async function startHevyRoutine(id){
   const list = ls('totry_hevy_routines')||[];
   const r = list.find(x => x && x.hevyId != null && String(x.hevyId) === key)
          || list.find(x => x && x.id != null && String(x.id) === key);
-  if(!r){ showToast('Routine not found','Try Refresh in Routines & Split.'); return; }
+  if(!r){ showToast('Routine not found','Try Refresh in Routines.'); return; }
   currentSession = (r.exercises||[]).map(ex => {
     const n = Math.max(1, Math.min(10, parseInt(ex.targetSets)||3));
     const reps = (ex.targetReps!=null && ex.targetReps!=='') ? String(ex.targetReps) : '';
@@ -2171,9 +2214,22 @@ function saveAllGoalRoutineDays(){
 
 function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
-  if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:var(--t-sm);color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
-  container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:var(--t-sm);padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  // Same two defects as the history list: a centred italic serif empty state, and — when there ARE
+  // routines — one .card per routine, each holding a name, a delete x, a grey line and a full-width
+  // tint button reading "Load this routine →". Five stacked cards for five routines. One list.
+  if(!routines.length){container.className='';container.innerHTML='<div class="ios-empty">'+svgIcon('book',44)+'<div class="ios-empty-title">No routines saved yet</div><div class="ios-empty-body">Log a session and save it as a routine.</div></div>';return;}
+  container.className='ios-list';
+  // Built here rather than through iosRow because iosRow emits a <button> when it is given an
+  // onclick, and a button may not contain a button \u2014 the delete has to stay a real control. Same
+  // classes, same escaper, so it is the same row.
+  container.innerHTML=routines.map(r=>{
+    const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];
+    const sub=_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'\u2026':'');
+    return '<div class="ios-row" onclick="loadRoutine('+r.id+')">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(r.name||'Routine')+'</span>'+
+      '<span class="ios-row-sub" style="display:block">'+_escFew(sub)+'</span></span>'+
+      '<button type="button" class="tr-row-del" onclick="event.stopPropagation();deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div>';
+  }).join('');
 }
 // renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
 // that is not in the shell — so it returned on its first line at both call sites. Its live
@@ -2260,7 +2316,7 @@ function renderExerciseProgressChart(exName){
   [maxV, mid, minV].forEach(v => {
     const yy = y(v);
     svg += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W-padR) + '" y2="' + yy.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
-    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" font-family="DM Mono,monospace" font-size="8" fill="var(--tx3)">' + v + '</text>';
+    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + v + '</text>';
   });
   // area fill
   svg += '<polygon points="' + areaPts + '" fill="var(--go-bg)"/>';
@@ -2271,8 +2327,8 @@ function renderExerciseProgressChart(exName){
     svg += '<circle cx="' + x(p.ts).toFixed(1) + '" cy="' + y(p.e1rm).toFixed(1) + '" r="2.5" fill="var(--go)"/>';
   });
   // first + last date labels
-  svg += '<text x="' + padL + '" y="' + (H-6) + '" font-family="DM Mono,monospace" font-size="8" fill="var(--tx3)">' + points[0].date + '</text>';
-  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" font-family="DM Mono,monospace" font-size="8" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
+  svg += '<text x="' + padL + '" y="' + (H-6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[0].date + '</text>';
+  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
   svg += '</svg>';
   
   // Summary line: change from first to last
@@ -2321,7 +2377,10 @@ function renderExerciseProgressChart(exName){
 function renderWorkoutHistory(){
   renderPersonalRecords();
   const history=ls('totry_workouts')||[];const container=document.getElementById('pt-history-list');if(!container)return;
-  if(!history.length){container.innerHTML='<div style="text-align:center;padding:32px 16px"><div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx3);margin-bottom:6px">No sessions logged yet.</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">Log a workout in the <span style="color:var(--go)">Log</span> tab, or sync Hevy to import your history.</div></div>';return;}
+  // Was a centred ITALIC SERIF line over a 15px tertiary one — the reading face used as a shrug.
+  // ContentUnavailableView: an icon, a title, a sentence. Same words.
+  if(!history.length){container.className='';container.innerHTML='<div class="ios-empty">'+svgIcon('dumbbell',44)+'<div class="ios-empty-title">No sessions logged yet</div><div class="ios-empty-body">Log a workout in the Log tab, or sync Hevy to import your history.</div></div>';return;}
+  container.className='ios-list';
   container.innerHTML='';
   history.forEach(s=>{
     const item=document.createElement('div');item.className='workout-history-item';
@@ -2347,24 +2406,38 @@ function renderWorkoutHistory(){
     if(displayVolume(s)) _meta.push(displayVolume(s).toLocaleString()+'kg vol');
     if(_totSets) _meta.push(_doneSets+'/'+_totSets+' sets');
     if(!_exN&&_mins) _meta.push(_mins+' min');
-    item.innerHTML='<div class="whi-date">'+_when+_dayLbl+'</div><div class="whi-name">'+_focus+'</div><div class="whi-meta">'+_meta.join(' \u00b7 ')+'</div>';
+    // The date led the row in 11px TINT caps above the session name, which read as a label nobody
+    // sized; iOS puts the name first. _focus is a split focus the person typed, so it is escaped —
+    // it was not, here or in the sheet below.
+    item.innerHTML='<div class="tr-whi-body"><div class="whi-name">'+_escFew(_focus)+'</div><div class="whi-date">'+_escFew(_when+_dayLbl)+'</div><div class="whi-meta">'+_meta.join(' \u00b7 ')+'</div></div>'+
+      '<span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span>';
     item.onclick=()=>{
       const m=document.createElement('div');m.className='modal-bg open';
       // Build per-exercise block: sets (with RPE) + notes (if any)
       const exList = s.exercises.map(ex => {
         const setsHtml = (ex.sets || []).map((set, i) => {
-          const rpe = set.rpe ? ' <span style="color:var(--go);font-weight:600">@' + set.rpe + '</span>' : '';
-          return '<span style="font-family:var(--font-text);font-size:var(--t-mini);color:' + (set.done ? 'var(--gr)' : 'var(--tx3)') + ';margin-right:10px;display:inline-block">S' + (i+1) + ': ' + (set.weight||'?') + 'kg×' + (set.reps||'?') + rpe + '</span>';
+          const rpe = set.rpe ? ' <b>@' + set.rpe + '</b>' : '';
+          return '<span class="tr-hist-set' + (set.done ? ' done' : '') + '">S' + (i+1) + ': ' + (set.weight||'?') + 'kg\u00d7' + (set.reps||'?') + rpe + '</span>';
         }).join('');
         const noteHtml = ex.notes && ex.notes.trim() ?
-          '<div style="margin-top:6px;padding:6px 8px;background:var(--bg3);border-left:2px solid var(--go);border-radius:0 4px 4px 0;font-size:var(--t-cap);color:var(--tx2);line-height:1.5;font-style:italic">'+svgIcon("edit")+' ' + ex.notes.replace(/</g, '&lt;') + '</div>' : '';
-        return '<div style="padding:10px 0;border-bottom:1px solid var(--bd)">' +
-          '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:6px">' + ex.name + '</div>' +
-          '<div style="line-height:1.7">' + setsHtml + '</div>' +
+          '<div class="tr-hist-note">' + _escFew(ex.notes) + '</div>' : '';
+        return '<div class="tr-hist-ex">' +
+          '<div class="tr-hist-ex-name">' + _escFew(ex.name) + '</div>' +
+          '<div class="tr-hist-sets">' + setsHtml + '</div>' +
           noteHtml +
         '</div>';
       }).join('');
-      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;color:var(--re);font-size:var(--t-cap);margin-top:8px;background:var(--fill2)">Delete this session</button></div>';
+      // The sheet opened with an 11px tint date at 0.1em tracking, then a 17px name, then a 12px
+      // tint volume line — three sizes, three colours, three trackings, in the first 60px. Sheet
+      // title, one subtitle line, then the record.
+      const _vol = displayVolume(s);
+      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>'+
+        '<h3>'+_escFew(_focus)+'</h3>'+
+        '<div class="tr-sheet-sub">'+_escFew(_when)+(_vol?' \u00b7 '+_vol.toLocaleString()+'kg volume'+(ls('totry_bw_volume')?' (incl. bodyweight)':''):'')+'</div>'+
+        '<div class="tr-sheet-scroll">'+exList+'</div>'+
+        '<div class="tr-session-actions"><button class="btn primary" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button>'+
+        '<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>'+
+        '<button class="btn quiet tr-delete" onclick="deleteWorkoutFromHistory('+s.id+')">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -2476,7 +2549,7 @@ function renderMuscleHeatmap(){
     '<rect x="62" y="112" width="15" height="50" rx="6" '+st('quads')+'/>'+
     '<rect x="44" y="166" width="13" height="38" rx="5" '+st('calves')+'/>'+
     '<rect x="63" y="166" width="13" height="38" rx="5" '+st('calves')+'/>'+
-    '<text x="60" y="232" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.35)" font-family="DM Mono,monospace">FRONT</text></svg>';
+    '<text x="60" y="232" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.35)" style="font-family:var(--font-rounded)">FRONT</text></svg>';
   const back =
     '<svg aria-hidden="true" viewBox="0 0 120 250" style="width:46%;max-width:130px">'+
     '<circle cx="60" cy="18" r="13" fill="rgba(255,255,255,0.06)"/>'+
@@ -2491,9 +2564,9 @@ function renderMuscleHeatmap(){
     '<rect x="62" y="130" width="15" height="34" rx="6" '+st('hams')+'/>'+
     '<rect x="44" y="166" width="13" height="38" rx="5" '+st('calves')+'/>'+
     '<rect x="63" y="166" width="13" height="38" rx="5" '+st('calves')+'/>'+
-    '<text x="60" y="232" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.35)" font-family="DM Mono,monospace">BACK</text></svg>';
-  box.innerHTML = '<div class="card" style="margin-top:8px"><div class="card-hd" style="margin-bottom:4px">Muscle map &middot; last 7 days</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">Brighter gold = more sets this week. Dark = untouched.</div>'+
+    '<text x="60" y="232" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.35)" style="font-family:var(--font-rounded)">BACK</text></svg>';
+  box.innerHTML = '<div class="card tr-map-card"><div class="card-hd">Muscle map &middot; last 7 days</div>'+
+    '<div class="tr-note tr-map-note">Brighter gold = more sets this week. Dark = untouched.</div>'+
     // AN ALWAYS-DARK PANEL, the way .breath-overlay already does it. This diagram is built entirely
     // out of white-on-dark alphas — untouched muscles are rgba(255,255,255,0.05) and the card's own
     // caption says "Dark = untouched" — so on the light theme the whole body went invisible on cream
@@ -2519,18 +2592,19 @@ function _renderSetsPerMuscle(){
       const col = status==='in' ? 'var(--gr)' : (status==='under' ? 'var(--tx3)' : 'var(--go)');
       const tag = status==='in' ? 'in range' : (status==='under' ? 'build up' : 'high');
       const pct = Math.min(100, (n/20)*100);
-      return '<div style="margin-bottom:7px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-cap);margin-bottom:2px"><span style="color:var(--tx2)">'+labels[g]+'</span><span style="color:'+col+';font-family:var(--font-text);font-size:var(--t-mini)">'+n+' sets \u00b7 '+tag+'</span></div>'+
-        '<div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div>'+
+      // A 13px label beside a 12px tag — one pixel apart, same row, same ink. One size.
+      return '<div class="tr-sets-row">'+
+        '<div class="tr-sets-top"><span class="tr-sets-name">'+labels[g]+'</span><span class="tr-sets-tag" style="color:'+col+'">'+plural(n,'set')+' \u00b7 '+tag+'</span></div>'+
+        '<div class="tr-sets-track"><div class="tr-sets-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
         '</div>';
     }).join('');
     let warnHtml = '';
     const warns = muscleBalanceWarnings();
     if(warns.length){
-      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:var(--go-bg);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
+      warnHtml = warns.map(w => '<div class="tr-balance">'+svgIcon("scale",15)+' '+w+'</div>').join('');
     }
-    return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Weekly sets \u00b7 target 10\u201320 per muscle</div>'+
+    return '<div class="tr-sets-block">'+
+      '<div class="tr-vol-hd">Weekly sets \u00b7 target 10\u201320</div>'+
       rows + warnHtml + '</div>';
   }catch(e){ return ''; }
 }
@@ -2683,7 +2757,7 @@ function renderMuscleGroupCard(){
   const totalVol = Object.values(volumes).reduce((s,v) => s+v, 0);
   
   if(totalVol === 0){
-    container.innerHTML = '<div style="text-align:center;padding:20px 12px;font-size:var(--t-sm);color:var(--tx3);font-style:italic">Log some workouts to see your weekly volume + frequency.</div>';
+    container.innerHTML = '<div class="tr-quiet">Log some workouts to see your weekly volume + frequency.</div>';
     return;
   }
   
@@ -2696,20 +2770,17 @@ function renderMuscleGroupCard(){
       const v = volumes[g];
       const pct = maxVol > 0 ? Math.round((v / maxVol) * 100) : 0;
       const days = freq[g];
-      let freqLabel = '';
-      if(days === 0) freqLabel = '<span style="color:var(--gr)">today</span>';
-      else if(days === 1) freqLabel = '<span style="color:var(--gr)">yesterday</span>';
-      else if(days <= 3) freqLabel = '<span style="color:var(--gr)">' + days + 'd ago</span>';
-      else if(days <= 7) freqLabel = '<span style="color:var(--go)">' + days + 'd ago</span>';
-      else freqLabel = '<span style="color:var(--re)">' + days + 'd ago</span>';
-      
-      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:var(--t-cap)">' +
-        '<div style="min-width:80px;color:var(--tx2)">' + groupLabels[g] + '</div>' +
-        '<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">' +
-          '<div style="height:100%;background:var(--go);width:' + pct + '%;transition:width 0.4s"></div>' +
-        '</div>' +
-        '<div style="min-width:80px;text-align:right;font-family:var(--font-text);color:var(--tx2)">' + _volLabel(v) + '</div>' +
-        '<div style="min-width:60px;text-align:right;font-family:var(--font-text);font-size:var(--t-mini)">' + freqLabel + '</div>' +
+      // Four cells at three sizes — 13px label, 13px volume, 12px freshness — plus a bar. Volume is
+      // a NUMBER, so it is set in the rounded face with tabular figures like every other metric in
+      // the app, and the freshness is the same footnote size as its neighbours.
+      const tone = days <= 3 ? 'fresh' : days <= 7 ? 'due' : 'cold';
+      const freqLabel = days === 0 ? 'today' : days === 1 ? 'yesterday' : days + 'd ago';
+
+      return '<div class="tr-vol-row">' +
+        '<div class="tr-vol-name">' + groupLabels[g] + '</div>' +
+        '<div class="tr-vol-track"><div class="tr-vol-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="tr-vol-val">' + _volLabel(v) + '</div>' +
+        '<div class="tr-vol-age ' + tone + '">' + freqLabel + '</div>' +
       '</div>';
     }).join('');
   
@@ -2717,14 +2788,14 @@ function renderMuscleGroupCard(){
   const notHitThisWeek = groups.filter(g => !volumes[g] || volumes[g] === 0);
   const neglected = notHitThisWeek.length ? notHitThisWeek.map(g => groupLabels[g]).join(', ') : null;
   
+  // The definition of "volume" was set in ITALIC SERIF and centred — the reading face used for a
+  // technical footnote — and the warning sat on a hardcoded rgba red no theme could follow.
   container.innerHTML =
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Weekly volume · last hit</div>' +
+    '<div class="tr-vol-hd">Weekly volume \u00b7 last hit</div>' +
     volumeRows +
     (neglected ?
-      '<div style="margin-top:14px;padding:10px;background:rgba(216,93,75,0.08);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2);line-height:1.5">' +
-        '<strong style="color:var(--re)">Not trained this week:</strong> ' + neglected +
-      '</div>' : '') +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-cap);font-style:italic;color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">Volume = weight × reps for completed sets. Volume per group hit by multi-joint lifts counts once per primary muscle.</div>';
+      '<div class="tr-warn"><b>Not trained this week:</b> ' + neglected + '</div>' : '') +
+    '<div class="tr-note">Volume = weight \u00d7 reps for completed sets. Volume per group hit by multi-joint lifts counts once per primary muscle.</div>';
 }
 
 // ── STARTER ROUTINE TEMPLATES ────────────────────────────────
@@ -2893,7 +2964,9 @@ function importTemplate(idx){
 function renderPersonalRecords(){
   const prs=ls('totry_prs')||{};const container=document.getElementById('pt-pr-list');if(!container)return;
   const keys=Object.keys(prs);
-  if(!keys.length){container.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:8px 0">Log workouts to track personal records.</p>';return;}
+  // A centred 15px tertiary paragraph floating with no container was the "nothing here" state.
+  if(!keys.length){container.className='';container.innerHTML='<div class="ios-empty">'+svgIcon('trophy',44)+'<div class="ios-empty-title">No records yet</div><div class="ios-empty-body">Log workouts to track personal records.</div></div>';return;}
+  container.className='ios-list';
   container.innerHTML='';
   keys.sort().forEach(name=>{
     const pr=prs[name];
@@ -2901,7 +2974,11 @@ function renderPersonalRecords(){
     card.className='pr-card';
     card.style.cursor = 'pointer';
     card.title = 'Tap to see progress chart';
-    card.innerHTML='<div><div class="pr-ex">'+_escFew(name)+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:2px">'+svgIcon("chart")+' Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
+    // "Tap to chart" was an 11px tint line under every single row — 11px, and the same instruction
+    // repeated as many times as you have records. The row is tappable; a chevron says so once.
+    card.innerHTML='<div class="tr-pr-l"><div class="pr-ex">'+_escFew(name)+'</div><div class="pr-date">est. 1RM '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>'+
+      '<div class="tr-pr-r"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div></div>'+
+      '<span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span>';
     card.onclick = () => showExerciseProgress(name);
     container.appendChild(card);
   });
@@ -2972,12 +3049,12 @@ function showExerciseProgress(exName){
   });
   
   const svg = '<svg aria-hidden="true" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;background:var(--bg3);border-radius:var(--rs)">' +
-    '<text x="4" y="14" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
-    '<text x="4" y="' + (h - 26) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + minOrm + 'kg</text>' +
+    '<text x="4" y="14" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
+    '<text x="4" y="' + (h - 26) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + minOrm + 'kg</text>' +
     '<path d="' + pathData + '" stroke="var(--go)" stroke-width="2" fill="none"/>' +
     points +
-    '<text x="' + padL + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
-    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + padL + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
   '</svg>';
   
   // Last 5 sessions table

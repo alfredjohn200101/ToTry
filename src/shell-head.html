@@ -2254,6 +2254,267 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 .nut-diary .ios-row-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nut-meal-hd{display:flex;align-items:center;gap:5px}
 .nut-meal-hd .ic{width:13px;height:13px;stroke-width:2.2;color:var(--tx2);flex:none;position:relative;top:-.5px}
+/* ═══ TRAIN ══════════════════════════════════════════════════════════════════════════════════════
+   Train and the workout logger, rebuilt on the components. Everything here replaces an inline style
+   that was written at the call site — nothing new is invented, and no rule reaches outside the Train
+   tab, the session logger and the sheets those two open.
+
+   The one thing that WAS invented is the column grid for a set row, because a set row genuinely is a
+   table and a table needs its header and its cells to agree on a width. They share the .tr-c-*
+   classes for exactly that reason: the old header was a separate list of hand-typed widths, which is
+   why "TYPE" and "PREV" ran into each other with no gap on a 393px phone. */
+.tr-intro{font-size:15px;line-height:1.4;letter-spacing:-.01em;color:var(--tx2);margin:0 0 22px;max-width:36em}
+.tr-card-body{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);margin-top:2px}
+.tr-strong{color:var(--tx)}
+.tr-card-btn{margin-top:12px}
+.tr-card-out{margin-top:12px;padding-top:12px;border-top:.5px solid var(--bd)}
+.tr-block{margin-bottom:28px}
+.tr-chart{margin-top:12px}
+.tr-field-btn{margin-top:8px}
+a.ios-row{text-decoration:none}
+/* Third-party marks keep their own tile; it just becomes a row icon like every other row's. */
+.ios-row .app-link-icon{width:29px;height:29px;border-radius:7px;font-size:17px !important;line-height:1;flex:none;overflow:hidden}
+/* The routines list under the Log panel's empty state is one section inside another, so it must not
+   also pay the 28px gap — the sentence below it is that list's footnote. */
+#pt-session-empty .ios-section{margin-bottom:0}
+
+/* A disclosure that looks like the rows around it, rather than a grey bar of its own invention. */
+.tr-disclose{margin:0 0 28px}
+.tr-disclose>summary{list-style:none;cursor:pointer;background:var(--bg2);border-radius:10px}
+/* BOTH spellings. -webkit-details-marker alone left the native triangle sitting beside the row's own
+   chevron on Chromium — two disclosure indicators, one of them not ours. */
+.tr-disclose>summary::-webkit-details-marker{display:none}
+.tr-disclose>summary::marker{content:''}
+/* The app draws a '▾' on EVERY details>summary (shell-head :1036). This summary carries the
+   row's own chevron, so without this it showed two disclosure indicators side by side. */
+.tr-disclose>summary::after{content:none !important}
+.tr-disclose>summary:active{background:var(--bg4)}
+.tr-disclose>summary .ios-row-chevron{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.tr-disclose[open]>summary .ios-row-chevron{transform:rotate(90deg)}
+.tr-disclose-body{padding-top:12px}
+
+/* Search: the field is the control, the button is secondary to it. */
+.tr-searchbar{display:flex;gap:8px;margin-bottom:10px}
+.tr-searchbar input{flex:1;min-width:0}
+.tr-find{width:auto !important;white-space:nowrap;padding:0 16px !important}
+.tr-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tr-results{margin-bottom:20px}
+.tr-results:empty{margin-bottom:0;background:none}
+/* A search result was a 1px-bordered box with a 6px gap under it — a stack of cards where iOS has
+   one list. Same height and separator inset as every other row in the app. */
+.ex-result{background:transparent !important;border:0 !important;border-radius:0 !important;padding:11px 16px !important;margin-bottom:0 !important;position:relative;min-height:44px}
+.ex-result+.ex-result::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
+.ex-result:active{background:var(--bg4) !important}
+.ex-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;margin-bottom:1px !important;display:flex;align-items:center;gap:6px}
+.ex-meta{font-size:15px !important;color:var(--tx2) !important;letter-spacing:-.016em !important;font-family:var(--font-text)}
+/* 11px caps with no tracking, jammed against the name. Footnote size, real tracking, its own space. */
+.src-tag{font-size:13px !important;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2) !important;font-weight:400}
+.src-tag.tint{color:var(--go) !important}
+.tr-create .ex-name{color:var(--go) !important}
+.tr-loading{font-size:15px;color:var(--tx2);text-align:center;padding:16px}
+.tr-empty-btn{width:auto !important;padding:0 20px !important;margin:16px auto 0}
+
+/* The session bar: header left, elapsed time beside it, tools right — one line, never wrapping. */
+.tr-session-bar{display:flex;align-items:center;gap:8px;margin:22px 0 8px}
+.tr-session-hd{padding:0 !important;margin:0 !important;flex:none}
+.tr-session-time{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--go);font-variant-numeric:tabular-nums;flex:1;min-width:0}
+.btn.tr-tool{width:auto !important;min-height:34px !important;padding:0 12px !important;font-size:15px !important;font-weight:400 !important;background:var(--fill2) !important;border-radius:100px !important;display:inline-flex;align-items:center;gap:5px;flex:none}
+#pt-session-wrap{margin-bottom:28px}
+.tr-session-actions{display:flex;gap:10px;margin-top:16px}
+.tr-session-actions .btn{flex:1}
+.tr-connect{color:var(--go) !important}
+.btn.tr-change{width:auto !important;min-height:32px !important;padding:0 10px !important;font-size:15px !important;background:var(--fill2) !important;border-radius:100px !important;flex:none}
+
+/* ── The exercise card, as Fitness draws a workout: opaque, dense, no borders. ─────────────────── */
+.session-exercise{background:var(--bg2) !important;border:0 !important;border-radius:12px !important;padding:12px 14px 10px !important;margin-bottom:10px !important;box-shadow:none !important}
+.se-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;gap:0 !important;margin-bottom:8px !important;min-width:0}
+.tr-ex-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.se-name button{min-width:34px;min-height:34px;border-radius:8px;color:var(--tx3);background:none;border:0;cursor:pointer;font-family:var(--font-text);font-size:15px;padding:0}
+.se-name button:active{background:var(--bg4)}
+.se-name .se-form{margin-left:0;color:var(--go);font-size:15px;min-width:auto;padding:0 8px}
+.se-name .ic{stroke-width:2}
+.se-del{font-size:17px !important;color:var(--tx3) !important}
+.session-exercise.tr-paired{border-left:3px solid var(--go) !important;border-top-left-radius:0 !important;border-bottom-left-radius:0 !important;margin-top:-2px !important}
+.tr-ex-pair{flex:none;font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--go);font-weight:400;margin-left:8px}
+.tr-ex-btn{width:34px;height:34px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;border-radius:8px;color:var(--tx3);cursor:pointer;padding:0}
+.tr-ex-btn:active{background:var(--bg4)}
+.tr-ex-btn.on{color:var(--go)}
+.tr-up .ic{transform:rotate(-90deg)}
+.tr-down .ic{transform:rotate(90deg)}
+.tr-ex-spacer{flex:1;min-width:0}
+.tr-ex-badge{display:inline-block;font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--go);margin-bottom:8px}
+.tr-ex-prog{font-size:13px;line-height:1.38;color:var(--tx2);margin-bottom:8px}
+.tr-ex-prog b{color:var(--gr);font-weight:400}
+.tr-ex-notes{margin-top:4px}
+.tr-ex-note{background:none;border:0;padding:6px 0;cursor:pointer;font-family:var(--font-text);font-size:13px;color:var(--tx2);letter-spacing:-.006em;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-ex-notes-in{min-height:56px;font-size:17px !important;line-height:1.4}
+.tr-ex-foot{display:flex;gap:2px;align-items:center;margin-top:4px}
+.add-set-btn{font-size:15px !important;color:var(--go) !important;font-weight:400;padding:8px 10px !important;border-radius:8px;display:inline-flex;align-items:center;gap:5px;min-height:34px;flex:none}
+.add-set-btn:active{background:var(--bg4)}
+.tr-readiness{margin-bottom:12px;padding:11px 13px;background:var(--go-bg);border-radius:10px;font-size:13px;line-height:1.45;color:var(--tx2)}
+.tr-readiness b{color:var(--go);font-weight:400}
+.tr-readiness.tr-good{background:var(--gr-bg)}
+.tr-readiness.tr-good b{color:var(--gr)}
+
+/* The set table. Header cells and body cells share these widths — that is the whole point. */
+.tr-set-hd{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2);margin:2px 0 6px}
+.tr-set-hint{font-size:13px;line-height:1.38;color:var(--tx2);margin-bottom:8px}
+.tr-set-hint b{color:var(--go);font-weight:400}
+.set-row{gap:6px !important}
+.tr-c-num{width:26px;text-align:center;flex:none;font-size:15px;color:var(--tx2);font-variant-numeric:tabular-nums}
+.tr-c-type{width:26px;flex:none}
+.tr-c-prev{width:44px;flex:none}
+.tr-c-w{width:62px;flex:none}
+.tr-c-r{width:58px;flex:none}
+.tr-c-done{width:28px;flex:none}
+.tr-c-rpe{width:42px;flex:none}
+.tr-set-hd .tr-c-w,.tr-set-hd .tr-c-r{text-align:center}
+.tr-set-hd .tr-c-prev,.tr-set-hd .tr-c-rpe{text-align:center}
+.tr-type-btn{height:30px;border:0;border-radius:8px;background:var(--fill);color:var(--tx2);font-family:var(--font-text);font-size:13px;font-weight:600;cursor:pointer;padding:0}
+.tr-type-btn.on{background:var(--go-bg);color:var(--go)}
+.tr-prev-btn{background:none;border:0;color:var(--go);font-family:var(--font-rounded);font-size:13px;font-weight:600;line-height:1.15;text-align:center;cursor:pointer;font-variant-numeric:tabular-nums;padding:0}
+.tr-prev-btn:disabled{color:var(--tx3);cursor:default}
+/* No width here on purpose: the .tr-c-* column classes above own it, so the header and the cell
+   cannot drift apart again. 17px stays — iOS zooms the whole page for any focused field under 16. */
+.set-input{padding:7px 6px !important;font-size:17px !important;text-align:center;font-variant-numeric:tabular-nums}
+.set-done{width:28px !important;height:28px !important;border:0 !important;background:var(--fill) !important;color:var(--tx2)}
+.set-done.on{background:var(--gr) !important;color:#fff}
+/* 17px, not the 10px it was: iOS zooms the whole page when a field under 16px takes focus, and a
+   <select> is a field. The old size was inline, which is why no check could see it. */
+.tr-rpe{background:var(--fill);border:0;border-radius:8px;font-family:var(--font-text);font-size:17px;font-weight:600;width:42px;height:32px;text-align:center;text-align-last:center;-webkit-appearance:none;appearance:none;padding:0;cursor:pointer}
+
+/* History and PR rows, as inset cells. */
+.workout-history-item{padding:11px 16px !important;border-bottom:0 !important;background:var(--bg2);position:relative}
+.workout-history-item:first-child{border-radius:10px 10px 0 0}
+.workout-history-item:last-child{border-radius:0 0 10px 10px}
+.workout-history-item:only-child{border-radius:10px}
+.workout-history-item+.workout-history-item::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
+.workout-history-item:active{background:var(--bg4)}
+.whi-date{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em !important;margin-bottom:2px !important;text-transform:none}
+.whi-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;margin-bottom:1px !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The date above this line is 13. Two secondary lines, stacked, in the same ink, two pixels
+   apart is the shape the owner is pointing at — they agree now. */
+.whi-meta{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em;font-variant-numeric:tabular-nums}
+.pr-card{background:var(--bg2) !important;border:0 !important;border-radius:0 !important;padding:11px 16px !important;margin-bottom:0 !important;gap:12px;position:relative;align-items:center !important}
+.pr-card:first-child{border-radius:10px 10px 0 0 !important}
+.pr-card:last-child{border-radius:0 0 10px 10px !important}
+.pr-card:only-child{border-radius:10px !important}
+.pr-card+.pr-card::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
+.pr-card:active{background:var(--bg4)}
+.tr-pr-l{flex:1;min-width:0}
+.tr-pr-r{text-align:right;flex:none}
+.pr-ex{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-val{font-family:var(--font-rounded) !important;font-size:17px !important;font-weight:600;color:var(--tx) !important;font-variant-numeric:tabular-nums;line-height:1.29 !important}
+/* 11px, under every row, is the size the owner is pointing at. Footnote size, secondary grey. */
+.pr-date{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em;margin-top:1px !important}
+/* A routine subtitle is a preview of what is in it, so it truncates like a row title rather than
+   wrapping to a second line and pushing the delete control off-centre. */
+#pt-routines-list .ios-row-sub,#pt-empty-routines .ios-row-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-row-del{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:none;border:0;border-radius:8px;color:var(--tx3);font-size:17px;cursor:pointer;padding:0}
+.tr-row-del:active{background:var(--bg4)}
+
+/* The per-session sheet. */
+.tr-sheet-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin:2px 0 16px}
+.tr-sheet-scroll{max-height:55vh;overflow-y:auto;background:var(--bg2);border-radius:10px;padding:0 16px}
+.tr-hist-ex{padding:12px 0;border-bottom:.5px solid var(--bd)}
+.tr-hist-ex:last-child{border-bottom:0}
+.tr-hist-ex-name{font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--tx);margin-bottom:4px}
+.tr-hist-sets{display:flex;flex-wrap:wrap;gap:4px 14px}
+.tr-hist-set{font-size:15px;letter-spacing:-.016em;color:var(--tx2);font-variant-numeric:tabular-nums}
+.tr-hist-set.done{color:var(--gr)}
+.tr-hist-set b{color:var(--go);font-weight:400}
+/* The note a person wrote mid-set was set in italic on a grey block with a tint bar down its left —
+   three decorations for one sentence. It is their own words at body size. */
+.tr-hist-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx);margin-top:6px}
+/* .btn.quiet sets color with !important, so a bare .tr-delete lost to it and the destructive
+   action rendered in the tint — the one colour it must never be. */
+.btn.tr-delete{color:var(--re) !important;margin-top:4px}
+
+/* Mobility: a move is a title, the cue that tells you how to do it, and a duration. */
+.tr-mob-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:.5px solid var(--bd)}
+.tr-mob-main{flex:1;min-width:0}
+.tr-mob-name{font-size:17px;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
+.tr-mob-cue{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.tr-mob-dur{flex:none;font-size:15px;color:var(--tx2);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px}
+.tr-mob-hd{font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2);margin:16px 0 0}
+.tr-mob-hd.tint{color:var(--go);margin-top:0}
+.tr-mob-lede{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2)}
+.tr-mob-note{font-size:13px;line-height:1.38;color:var(--go);margin-top:4px}
+.tr-mob-foot{font-size:13px;color:var(--tx2);margin-top:10px}
+.tr-seg{margin-bottom:12px !important}
+.tr-dots{display:flex;gap:4px;align-items:center;flex:none}
+.tr-dots span{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
+.tr-dots.low span.on{background:var(--re)}
+.tr-dots.mid span.on{background:var(--go)}
+.tr-dots.high span.on{background:var(--gr)}
+
+/* "All training": one header line with its action, one summary line, one list, one footnote. */
+.tr-hdr-row{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.tr-hdr-hd{flex:1;padding:0 16px 0 16px !important}
+.tr-hdr-btn{width:auto !important;min-height:32px !important;padding:0 8px !important;font-size:15px !important;flex:none}
+.tr-week{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);padding:0 16px;margin-bottom:10px}
+.tr-trend{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);padding:0 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:6px}
+.tr-trend .ic{flex:none;color:var(--go);margin-top:2px}
+
+/* Weekly volume: a label, a bar, a number, a freshness. Four cells, two sizes, tabular figures. */
+.tr-vol-hd{font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px}
+.tr-vol-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+.tr-vol-name{min-width:78px;font-size:15px;letter-spacing:-.016em;color:var(--tx)}
+.tr-vol-track{flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.tr-vol-fill{height:100%;background:var(--go);transition:width .4s}
+.tr-vol-val{min-width:60px;text-align:right;font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
+.tr-vol-age{min-width:64px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.tr-vol-age.fresh{color:var(--gr)}.tr-vol-age.due{color:var(--go)}.tr-vol-age.cold{color:var(--re)}
+/* Grace over shame: "you have not trained biceps" is an observation, not an alarm. iOS puts the
+   red on the LABEL, not on a red panel behind the whole sentence. */
+.tr-warn{margin-top:14px;padding:11px 13px;background:var(--fill2);border-radius:10px;font-size:13px;line-height:1.45;color:var(--tx2)}
+.tr-warn b{color:var(--re);font-weight:400}
+/* A technical definition set in italic serif and centred. It is a footnote; footnotes are SF, 13, left. */
+.tr-note{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:14px}
+.tr-quiet{font-size:15px;line-height:1.33;color:var(--tx2);padding:16px 0}
+.tr-map-card{margin-top:14px}
+.tr-map-note{margin:2px 0 12px}
+.tr-sets-block{margin-top:16px;padding-top:14px;border-top:.5px solid var(--bd)}
+.tr-sets-row{margin-bottom:9px}
+.tr-sets-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px}
+.tr-sets-name{font-size:15px;letter-spacing:-.016em;color:var(--tx)}
+.tr-sets-tag{font-size:15px;letter-spacing:-.016em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tr-sets-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.tr-sets-fill{height:100%}
+.tr-balance{margin-top:10px;padding:11px 13px;background:var(--go-bg);border-radius:10px;font-size:13px;line-height:1.45;color:var(--tx2);display:flex;gap:7px;align-items:flex-start}
+.tr-balance .ic{flex:none;color:var(--go);margin-top:1px}
+.tr-whi-body{flex:1;min-width:0}
+.workout-history-item{display:flex;align-items:center;gap:12px}
+
+/* Sheets. A sheet has its own 16px gutter, so a section header inside one does not pay a second. */
+.tr-flush{padding:0 0 7px !important;margin:0 !important}
+.ios-header.tint{color:var(--go) !important}
+.tr-field{margin-bottom:16px}
+.tr-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tr-unit-seg{margin:0 0 7px !important;width:96px;flex:none}
+.tr-pace{font-size:13px;color:var(--go);margin:-8px 0 16px;min-height:16px}
+.tr-sheet-block{margin-top:20px;padding-top:16px;border-top:.5px solid var(--bd)}
+.tr-sheet-line{font-size:17px;letter-spacing:-.022em;color:var(--tx);margin-bottom:2px}
+.tr-sheet-body{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2)}
+.tr-sheet-go{margin-top:14px}
+.tr-sheet-alt{margin-top:10px}
+.tr-sheet-stats{margin-bottom:4px}
+.tr-setline{display:flex;justify-content:space-between;gap:12px;font-size:15px;letter-spacing:-.016em;color:var(--tx2);padding:2px 0;font-variant-numeric:tabular-nums}
+.tr-proof-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.tr-proof-clip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;background:var(--fill2);border-radius:8px;font-size:15px;color:var(--tx2)}
+.tr-proof-clip .ic{color:var(--go)}
+.tr-proof-x{background:none;border:0;color:var(--tx3);cursor:pointer;font-size:17px;padding:0 0 0 2px;min-width:24px}
+.btn.tr-proof-add{width:auto !important;min-height:38px !important;padding:0 12px !important;font-size:15px !important;background:var(--fill2) !important;border-radius:100px !important;display:inline-flex;align-items:center;gap:6px}
+/* Plate maths: one big number to type into, one segmented bar choice, the plates as capsules. */
+.tr-bignum{font-family:var(--font-rounded) !important;font-size:28px !important;font-weight:600;text-align:center;padding:12px !important;margin-bottom:18px;font-variant-numeric:tabular-nums}
+.tr-plate-out{min-height:64px;margin-bottom:14px}
+.tr-plate-row{display:flex;flex-wrap:wrap;gap:6px}
+.tr-plate{display:inline-block;background:var(--fill);border-radius:100px;padding:6px 13px;font-family:var(--font-rounded);font-size:17px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
+.tr-plate-none{font-size:15px;color:var(--tx2)}
+.tr-plate-sum{font-size:15px;line-height:1.33;color:var(--tx2);margin-top:10px}
+.tr-plate-sum b{color:var(--tx);font-weight:600}
+.tr-plate-note{font-size:15px;line-height:1.33;color:var(--tx2);margin-top:8px}
+.tr-plate-note b{color:var(--go);font-weight:400}
 
 </style>
 </head>
@@ -3925,73 +4186,91 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 <!-- TAB 5: TRAIN -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-train" class="tab">
-  <div style="margin-bottom:12px">
-    <div class="page-title">Train</div>
-    <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.55" data-intro-for="train">The forge. Every rep is a vote for the person you’re becoming. Show up even when it’s heavy — especially then.</div>
-  </div>
-  <div class="bible-tab-row" style="margin-bottom:14px">
-    <button class="btab active" id="pt-sub-log" onclick="setPTTab('log')">Log</button>
+  <div class="page-title">Train</div>
+  <div class="tr-intro" data-intro-for="train">The forge. Every rep is a vote for the person you’re becoming. Show up even when it’s heavy — especially then.</div>
+  <!-- These five were .btab, the underline strip Soul's prayer filter uses. They are one control
+       with five mutually exclusive states, which on iOS is a segmented control — and the app already
+       had one (.pt-tabs + .fst). Naming it is the whole fix; no new CSS. -->
+  <div class="pt-tabs">
+    <button class="fst active" id="pt-sub-log" onclick="setPTTab('log')">Log</button>
     <!-- setPTTab() has always toggled 'routines' and looked for #pt-sub-routines; the button was
          never added. So #pt-panel-routines sat at display:none with no way to reach it, and with it
          the whole routine feature: build one, save it, assign it to a day, browse starter templates.
          openRoutineBuilder() and openRoutineTemplates() are called ONLY from inside that panel, so
          they were unreachable too. Sits next to Log because the panel's own copy pairs them. -->
-    <button class="btab" id="pt-sub-routines" onclick="setPTTab('routines')">Routines</button>
-    <button class="btab" id="pt-sub-history" onclick="setPTTab('history')">History</button>
-    <button class="btab" id="pt-sub-mobility" onclick="setPTTab('mobility')">Mobility</button>
-    <button class="btab" id="pt-sub-ptcoach" onclick="setPTTab('ptcoach')">Coach</button>
+    <button class="fst" id="pt-sub-routines" onclick="setPTTab('routines')">Routines</button>
+    <button class="fst" id="pt-sub-history" onclick="setPTTab('history')">History</button>
+    <button class="fst" id="pt-sub-mobility" onclick="setPTTab('mobility')">Mobility</button>
+    <button class="fst" id="pt-sub-ptcoach" onclick="setPTTab('ptcoach')">Coach</button>
   </div>
 
   <!-- LOG PANEL -->
   <div id="pt-panel-log">
-    <!-- Native logging front and center: ToTry IS a full strength + cardio tracker on its own,
-         no Strava/Hevy required. These two actions make that obvious to every user. -->
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <button onclick="document.getElementById('pt-ex-search')?.focus();document.getElementById('pt-ex-search')?.scrollIntoView({behavior:'smooth',block:'center'})" style="flex:1;background:var(--go-bg);border-radius:var(--rm);padding:14px 10px;cursor:pointer;text-align:center">
-        <div style="font-size:var(--t-xl);margin-bottom:4px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg></div>
-        <div style="font-size:var(--t-base);color:var(--tx);font-weight:500">Strength workout</div>
-        <div style="font-size:var(--t-mini);color:var(--tx3);margin-top:2px">Log sets, reps & weight</div>
-      </button>
-      <button onclick="logCardioManually()" style="flex:1;background:var(--go-bg);border-radius:var(--rm);padding:14px 10px;cursor:pointer;text-align:center">
-        <div style="font-size:var(--t-xl);margin-bottom:4px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></div>
-        <div style="font-size:var(--t-base);color:var(--tx);font-weight:500">Cardio session</div>
-        <div style="font-size:var(--t-mini);color:var(--tx3);margin-top:2px">Run, ride, walk, swim…</div>
-      </button>
+    <!-- THREE WAYS IN, ONE LIST. ToTry IS a full strength + cardio tracker on its own, no Strava or
+         Hevy required — and that was said twice: two tinted boxes here with 12px sub-labels, then
+         300px further down a third tinted panel with its own tint eyebrow, heading, paragraph and
+         two full-width buttons, one of which just called logCardioManually() again. Same decision,
+         painted twice, in two visual languages. It is one inset list of three destinations now, and
+         the paragraph is the section's footnote, which is where iOS puts that sentence. -->
+    <div class="ios-section">
+      <div class="ios-header">Start a session</div>
+      <div class="ios-list">
+        <button type="button" class="ios-row has-icon" onclick="document.getElementById('pt-ex-search')?.focus();document.getElementById('pt-ex-search')?.scrollIntoView({behavior:'smooth',block:'center'})">
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Strength workout</span><span class="ios-row-sub" style="display:block">Log sets, reps &amp; weight</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+        <button type="button" class="ios-row has-icon" onclick="logCardioManually()">
+          <span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Cardio session</span><span class="ios-row-sub" style="display:block">Run, ride, walk, swim…</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+        <button type="button" class="ios-row has-icon" onclick="document.getElementById('workout-screenshot-input').click()">
+          <span class="ios-row-icon tone-indigo"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Log from a screenshot</span><span class="ios-row-sub" style="display:block">The fastest way in</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+      </div>
+      <div class="ios-footnote">A workout summary from any watch or app — Garmin, Apple Watch, Fitbit, Strava, Fitness. AI reads it for you.</div>
     </div>
+    <input type="file" id="workout-screenshot-input" accept="image/*" style="display:none" onchange="handleWorkoutScreenshot(event)">
+    <div id="workout-screenshot-result"></div>
     <div id="cycle-train-note"></div>          <!-- E: Train, before pt-session-empty -->
-    <div id="pt-session-empty" style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:14px 8px;border:1px dashed var(--bd);border-radius:var(--rm);margin-bottom:14px">
-      <div id="pt-empty-routines" style="margin-bottom:10px"></div>
-      Pick an exercise below to start a strength session — or use the buttons above.
+    <!-- Was a dashed box with centred 15px tertiary text — the "placeholder" look. The routines it
+         holds are the real content; the sentence is a footnote under them. -->
+    <div id="pt-session-empty" class="ios-section">
+      <div id="pt-empty-routines"></div>
+      <div class="ios-footnote">Pick an exercise below to start a strength session — or use the buttons above.</div>
     </div>
 
     <div class="card" id="pt-today-split-card">
       <div class="card-hd" id="pt-today-split-name">Loading your split...</div>
-      <div id="pt-today-split-detail" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-top:4px"></div>
+      <div id="pt-today-split-detail" class="tr-card-body"></div>
     </div>
 
     <!-- Weekly split planner — folded in from the old "Routines & Split" tab. Collapsed by default
-         so Log stays clean; tap to plan your Mon–Sun split and build/assign routines. -->
-    <details id="pt-weekly-split-details" style="margin-bottom:12px">
-      <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-base);color:var(--tx2);display:flex;justify-content:space-between;align-items:center">
-        <span><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Weekly split &amp; routines</span>
+         so Log stays clean; tap to plan your Mon–Sun split and build/assign routines. The summary
+         is an inset row now, so a disclosure looks like every other destination on the screen. -->
+    <details id="pt-weekly-split-details" class="tr-disclose">
+      <summary class="ios-row has-icon">
+        <span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Weekly split &amp; routines</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
       </summary>
-      <div style="padding-top:12px">
-        <div class="card">
-          <div class="card-hd" style="margin-bottom:10px">Your weekly split</div>
-          <div id="pt-split-overview"></div>
-        </div>
+      <div class="tr-disclose-body">
+        <div id="pt-split-overview"></div>
       </div>
     </details>
     <div class="lbl">Add exercise</div>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
+    <div class="tr-searchbar">
       <!-- Enter-only, so typing "bench" showed nothing until you found the Go key — the same defect the
            food search had. The library is 324 exercises deep and the only way in was to type blind. -->
       <input type="text" id="pt-ex-search" placeholder="Search exercises..." autocomplete="off"
              oninput="exSearchInput(this.value)"
              onkeydown="if(event.key==='Enter')searchExercises(this.value)">
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
+      <button class="btn tr-find" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
     </div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+    <div class="tr-chips">
       <button class="qb" onclick="searchExercises('chest')">Chest</button>
       <button class="qb" onclick="searchExercises('back')">Back</button>
       <button class="qb" onclick="searchExercises('shoulders')">Shoulders</button>
@@ -4004,111 +4283,125 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
       <button class="qb" onclick="searchExercises('glutes')">Glutes</button>
       <button class="qb" onclick="searchExercises('forearms')">Forearms</button>
     </div>
-    <div id="pt-ex-results" style="margin-bottom:12px"></div>
-    
-    <!-- Quick option: any watch / fitness-app workout screenshot -->
-    <div id="screenshot-quick-card" style="background:var(--go-bg);border-radius:var(--r);padding:12px;margin-bottom:14px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Fastest option</div>
-      <div class="card-hd" style="margin-bottom:4px;font-size:var(--t-md)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Log from a screenshot</div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:8px">A workout summary from any watch or app — Garmin, Apple Watch, Fitbit, Strava, Fitness. AI reads it for you.</p>
-      <input type="file" id="workout-screenshot-input" accept="image/*" style="display:none" onchange="handleWorkoutScreenshot(event)">
-      <button class="btn primary" onclick="document.getElementById('workout-screenshot-input').click()" style="font-size:var(--t-base);padding:10px">Upload workout screenshot</button>
-      <button class="btn outline" onclick="logCardioManually()" style="padding:9px;margin-top:8px">Or log it manually instead</button>
-      <div id="workout-screenshot-result" style="margin-top:10px"></div>
-    </div>
-    
+    <div id="pt-ex-results" class="tr-results"></div>
+
     <!-- Current session — only shows when exercises added -->
     <div id="pt-session-wrap" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div class="lbl" style="margin-bottom:0">This session <span id="session-duration" style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--go);font-weight:400;margin-left:6px"></span></div>
-        <div style="display:flex;gap:6px">
-          <button class="btn outline" style="width:auto;padding:6px 10px" onclick="openWarmupCalc()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Warmup</button>
-          <button class="btn outline" style="width:auto;padding:6px 10px" onclick="openPlateMath()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v18M7 21h10M5 8h14"/><path d="M5 8 2 14a3 3 0 0 0 6 0zM19 8l-3 6a3 3 0 0 0 6 0z"/></svg> Plates</button>
-        </div>
+      <!-- The duration used to live INSIDE the .lbl, at a second size and the tint colour, so
+           "THIS SESSION 0M 01S" wrapped onto two lines of caps on every phone the moment the timer
+           passed a minute. Header left, elapsed time right, both on one line. -->
+      <div class="tr-session-bar">
+        <div class="ios-header tr-session-hd">This session</div>
+        <span id="session-duration" class="tr-session-time"></span>
+        <button class="btn quiet tr-tool" onclick="openWarmupCalc()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Warmup</button>
+        <button class="btn quiet tr-tool" onclick="openPlateMath()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v18M7 21h10M5 8h14"/><path d="M5 8 2 14a3 3 0 0 0 6 0zM19 8l-3 6a3 3 0 0 0 6 0z"/></svg> Plates</button>
       </div>
       <div id="pt-session-exercises"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn success" style="flex:1" onclick="saveWorkoutSession()">Save session</button>
-        <button class="btn subtle" style="flex:1" onclick="clearWorkoutSession()">Clear</button>
+      <div class="tr-session-actions">
+        <button class="btn primary" onclick="saveWorkoutSession()">Save session</button>
+        <button class="btn" onclick="clearWorkoutSession()">Clear</button>
       </div>
     </div>
-    
-    <!-- Empty state when no exercises and no upload yet -->
-    
-    
-    <!-- Tracker app links — moved to bottom as supplementary -->
-    <div style="border-top:1px solid var(--bd);margin-top:14px;padding-top:12px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Connect a tracker app</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div class="app-link" onclick="openLinkedApp('hevy')" style="margin-bottom:0;padding:10px 12px;cursor:pointer">
-          <div class="app-link-icon" style="background:#1C1C3A;width:30px;height:30px;font-size:var(--t-lg)">&#x1F4AA;</div>
-          <div><div class="aln" style="font-size:var(--t-sm)">Hevy</div><div style="font-size:var(--t-mini);color:var(--gr);margin-top:1px">sync workouts</div></div>
-          <span style="margin-left:auto;color:var(--go);font-size:var(--t-lg)">+</span>
+
+    <!-- Tracker app links — supplementary, so they are a list at the bottom rather than a 2x2 grid
+         of bordered tiles whose green 12px sub-labels wrapped ("sync / workouts") and whose fourth
+         tile put a Change chip beside a title that broke across three lines. The tiles keep their
+         emoji: they are other companies' marks, named in core.test.js as content, not chrome. -->
+    <div class="ios-section">
+      <div class="ios-header">Connect a tracker app</div>
+      <div class="ios-list">
+        <div class="ios-row has-icon" onclick="openLinkedApp('hevy')">
+          <span class="app-link-icon ios-row-icon" style="background:#1C1C3A">&#x1F4AA;</span>
+          <span class="ios-row-body"><span class="ios-row-title aln" style="display:block">Hevy</span><span class="ios-row-sub" style="display:block">Sync workouts</span></span>
+          <span class="ios-row-value tr-connect">Connect</span>
         </div>
-        <div class="app-link" onclick="openLinkedApp('strava')" style="margin-bottom:0;padding:10px 12px;cursor:pointer">
-          <div class="app-link-icon" style="background:#FC4C02;width:30px;height:30px;font-size:var(--t-lg)">&#x1F6B4;</div>
-          <div><div class="aln" style="font-size:var(--t-sm)">Strava</div><div style="font-size:var(--t-mini);color:var(--gr);margin-top:1px">sync activities</div></div>
-          <span style="margin-left:auto;color:var(--go);font-size:var(--t-lg)">+</span>
+        <div class="ios-row has-icon" onclick="openLinkedApp('strava')">
+          <span class="app-link-icon ios-row-icon" style="background:#FC4C02">&#x1F6B4;</span>
+          <span class="ios-row-body"><span class="ios-row-title aln" style="display:block">Strava</span><span class="ios-row-sub" style="display:block">Sync activities</span></span>
+          <span class="ios-row-value tr-connect">Connect</span>
         </div>
-        <a class="app-link" href="strong://" onclick="tryApp(event,'strong://','https://apps.apple.com/app/strong-workout-tracker-gym-log/id464254577')" style="margin-bottom:0;padding:10px 12px">
-          <div class="app-link-icon" style="background:#1A2A1A;width:30px;height:30px;font-size:var(--t-lg)">&#x1F3CB;</div>
-          <div><div class="aln" style="font-size:var(--t-sm)">Strong</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:1px">opens app</div></div>
-          <span style="margin-left:auto;color:var(--tx3);font-size:var(--t-sm)">&#8599;</span>
+        <a class="ios-row has-icon" href="strong://" onclick="tryApp(event,'strong://','https://apps.apple.com/app/strong-workout-tracker-gym-log/id464254577')">
+          <span class="app-link-icon ios-row-icon" style="background:#1A2A1A">&#x1F3CB;</span>
+          <span class="ios-row-body"><span class="ios-row-title aln" style="display:block">Strong</span><span class="ios-row-sub" style="display:block">Opens the app</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
         </a>
-        <div class="app-link" onclick="smartCalAppClick()" style="margin-bottom:0;padding:10px 12px;cursor:pointer">
-          <div class="app-link-icon" style="background:#1A2A1A;width:30px;height:30px;font-size:var(--t-lg)" id="cal-icon">&#x1F957;</div>
-          <div><div class="aln" style="font-size:var(--t-sm)" id="cal-name">Tap to choose app</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:1px" id="cal-sub">Calorie tracker</div></div>
-          <span onclick="event.stopPropagation();changeCalApp()" style="margin-left:auto;color:var(--go);font-size:var(--t-cap);padding:4px 8px;border-radius:var(--rs);background:var(--fill2)">Change</span>
+        <div class="ios-row has-icon" onclick="smartCalAppClick()">
+          <span class="app-link-icon ios-row-icon" style="background:#1A2A1A" id="cal-icon">&#x1F957;</span>
+          <span class="ios-row-body"><span class="ios-row-title aln" style="display:block" id="cal-name">Tap to choose app</span><span class="ios-row-sub" style="display:block" id="cal-sub">Calorie tracker</span></span>
+          <button type="button" class="btn quiet tr-change" onclick="event.stopPropagation();changeCalApp()">Change</button>
         </div>
       </div>
-      <div id="cal-picker" style="display:none;margin-top:8px" class="card">
-        <div class="card-hd" style="margin-bottom:8px">Choose your calorie app</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <button class="btn" onclick="setCalApp('MyFitnessPal','&#x1F957;','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')">MyFitnessPal</button>
-          <button class="btn" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
-          <button class="btn" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
+      <div id="cal-picker" class="ios-section" style="display:none">
+        <div class="ios-header">Choose your calorie app</div>
+        <div class="ios-list">
+          <button type="button" class="ios-row tint" onclick="setCalApp('MyFitnessPal','&#x1F957;','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">MyFitnessPal</span></span></button>
+          <button type="button" class="ios-row tint" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">CalAI</span></span></button>
+          <button type="button" class="ios-row tint" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cronometer</span></span></button>
+          <button type="button" class="ios-row tint" onclick="useToTryTracker()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Use ToTry’s built-in tracker</span></span></button>
         </div>
-        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;color:var(--go);font-size:var(--t-sm);background:var(--fill2)">Use ToTry’s built-in tracker</button>
       </div>
     </div>
   </div>
 
-  <!-- ROUTINES PANEL -->
+  <!-- ROUTINES PANEL
+       Everything below used to live inside ONE card: a heading, a 13px grey sentence, an empty
+       state in centred italic serif, a disclosure, a hairline, another improvised 13px label, a
+       field, and then four full-width buttons each hand-painted a different colour — plus a second
+       card for the fifth. Four things are happening here and they are four sections now: what you
+       have saved, saving the open session, making a new one, and asking for a recommendation. -->
   <div id="pt-panel-routines" style="display:none">
-    <div class="lbl">Build a routine</div>
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:12px">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</p>
-    
-    <!-- Saved routines -->
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">Saved routines</div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Build a session in the Log tab, save it here, then assign it to a day.</p>
+    <div class="tr-intro">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</div>
+
+    <div class="ios-section">
+      <div class="ios-header">Saved routines</div>
       <div id="pt-routines-list"></div>
-      <!-- renderTemplates() ran only from proceedAfterAuth() at boot, so on any later visit this
-           opened to an empty 348x0 box — six real programs sitting behind a disclosure that showed
-           nothing. Fill it when it is opened, which is the moment it is wanted. -->
-      <details style="margin-top:10px" ontoggle="if(this.open &amp;&amp; typeof renderTemplates==='function') renderTemplates()">
-        <summary style="font-size:var(--t-base);color:var(--tx2);cursor:pointer;padding:6px 0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Start from a proven program</summary>
-        <div id="pt-templates" style="margin-top:8px"></div>
-      </details>
-      <div style="border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-        <div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px">Save your current Log session as a routine:</div>
-        <input type="text" id="pt-routine-name" placeholder="Routine name (e.g. Push Day A)..." style="margin-bottom:8px">
-        <button class="btn primary" onclick="saveRoutine()" style="margin-bottom:8px">Save as routine</button>
-        <button class="btn" onclick="openRoutineBuilder()" style="background:transparent;color:var(--go);background:var(--fill2)">+ Build new routine from scratch</button>
-        <button class="btn" onclick="openGoalRoutine()" style="margin-top:8px;background:var(--go-bg);color:var(--go)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Build a routine from my goal</button>
-      </div>
-      <div style="border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-        <div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px">Or start from a proven template:</div>
-        <button class="btn" onclick="openRoutineTemplates()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> Browse starter templates</button>
-      </div>
     </div>
-    
-    <!-- AI recommendation -->
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Need a recommendation?</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Not sure what split to do? Answer a few questions and the AI will recommend one.</p>
-      <button class="btn" onclick="showRoutineRecommender()">Get a split recommendation</button>
+
+    <div class="ios-section">
+      <div class="ios-header">Save the open session</div>
+      <input type="text" id="pt-routine-name" placeholder="Routine name (e.g. Push Day A)…">
+      <button class="btn primary tr-field-btn" onclick="saveRoutine()">Save as routine</button>
+      <div class="ios-footnote">Build a session in the Log tab, save it here, then assign it to a day.</div>
     </div>
+
+    <div class="ios-section">
+      <div class="ios-header">Make a new one</div>
+      <div class="ios-list">
+        <button type="button" class="ios-row has-icon" onclick="openRoutineBuilder()">
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Build new routine from scratch</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+        <button type="button" class="ios-row has-icon" onclick="openGoalRoutine()">
+          <span class="ios-row-icon tone-purple"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Build a routine from my goal</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+        <button type="button" class="ios-row has-icon" onclick="openRoutineTemplates()">
+          <span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Browse starter templates</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+        <button type="button" class="ios-row has-icon" onclick="showRoutineRecommender()">
+          <span class="ios-row-icon tone-teal"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Get a split recommendation</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+      </div>
+      <div class="ios-footnote">Not sure what split to do? Answer a few questions and the AI will recommend one.</div>
+    </div>
+
+    <!-- renderTemplates() ran only from proceedAfterAuth() at boot, so on any later visit this
+         opened to an empty 348x0 box — six real programs sitting behind a disclosure that showed
+         nothing. Fill it when it is opened, which is the moment it is wanted. -->
+    <details class="tr-disclose" ontoggle="if(this.open &amp;&amp; typeof renderTemplates==='function') renderTemplates()">
+      <summary class="ios-row has-icon">
+        <span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Start from a proven program</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </summary>
+      <div class="tr-disclose-body"><div id="pt-templates"></div></div>
+    </details>
   </div>
 
   <!-- SPLIT PANEL (kept for backwards compat - empty) -->
@@ -4120,55 +4413,67 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
     <!-- Everything below is the populated view; hidden by JS until there's real data. -->
     <div id="pt-history-populated">
     <!-- Synced cardio (Strava) — only shows when connected & has activities -->
-    <div id="pt-strava-card" style="display:none;margin-bottom:14px"></div>
+    <div id="pt-strava-card" class="tr-block" style="display:none"></div>
 
     <!-- YOUR OWN SESSIONS — the concrete record, above the analytics. renderWorkoutHistory() has
          always built this list AND a per-session modal (every set, its RPE, the notes he wrote at
          the time), but its container was never in the file, so the function was unreachable and a
          workout logged in the app could never be opened again. The analytics below describe the
          training; this is the training. -->
-    <div class="lbl">Your sessions</div>
-    <div id="pt-history-list" style="margin-bottom:14px"></div>
+    <div class="ios-section">
+      <div class="ios-header">Your sessions</div>
+      <div id="pt-history-list"></div>
+    </div>
 
-    <div class="lbl">Personal records</div>
-    <div id="pt-pr-list" style="margin-bottom:14px"></div>
+    <div class="ios-section">
+      <div class="ios-header">Personal records</div>
+      <div id="pt-pr-list"></div>
+    </div>
 
     <!-- Plateau explainer (WS-C) — only surfaces when a genuine stall is detected. -->
-    <div id="pt-plateau-card" style="display:none;margin-bottom:14px"></div>
-    
-    <!-- Muscle group volume + frequency -->
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg> Weekly muscle volume</div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Last 7 days. Spot which muscles you’re hitting hard and which you’re skipping.</p>
-      <div id="pt-muscle-card"></div>
-      <div id="pt-heatmap"></div>
-      <div id="pt-load-card"></div>
+    <div id="pt-plateau-card" class="tr-block" style="display:none"></div>
+
+    <!-- Muscle group volume + frequency. The heading was a .card-hd with an icon spliced in front of
+         it and a 13px tertiary sentence underneath; on iOS that sentence is the section's footnote
+         and the heading is the section's header. -->
+    <div class="ios-section">
+      <div class="ios-header">Weekly muscle volume</div>
+      <div class="card">
+        <div id="pt-muscle-card"></div>
+        <div id="pt-heatmap"></div>
+        <div id="pt-load-card"></div>
+      </div>
+      <div class="ios-footnote">Last 7 days. Spot which muscles you’re hitting hard and which you’re skipping.</div>
     </div>
-    
+
     <!-- Per-exercise progress over time (Hevy-style strength curve) -->
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> Strength over time</div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Pick a lift to see your estimated 1RM climb. This is the proof you’re getting stronger.</p>
-      <select id="pt-exercise-select" onchange="renderExerciseProgressChart(this.value)" style="margin-bottom:12px">
+    <div class="ios-section">
+      <div class="ios-header">Strength over time</div>
+      <select id="pt-exercise-select" onchange="renderExerciseProgressChart(this.value)">
         <option value="">Select an exercise...</option>
       </select>
-      <div id="pt-exercise-chart"></div>
+      <div id="pt-exercise-chart" class="tr-chart"></div>
+      <div class="ios-footnote">Pick a lift to see your estimated 1RM climb. This is the proof you’re getting stronger.</div>
     </div>
     </div><!-- /pt-history-populated -->
   </div>
 
   <!-- MOBILITY PANEL (WS5) -->
   <div id="pt-panel-mobility" style="display:none">
-    <div class="lbl">Mobility &amp; warm-ups</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Mobility is part of training, not an afterthought. Warm up the muscles you’re about to work, and keep your joints moving well over time.</p>
+    <!-- The .lbl above this said "MOBILITY & WARM-UPS", which is the name of the segment the person
+         just tapped. A section header that repeats the screen's own title is noise; the sentence
+         that was under it is the intro. -->
+    <div class="tr-intro">Mobility is part of training, not an afterthought. Warm up the muscles you’re about to work, and keep your joints moving well over time.</div>
     <div id="pt-mobility-body"></div>
     <!-- Form-check via photo (WS-I) — NOT medical/coaching certainty; "things to look at" only. -->
-    <div class="card" style="margin-top:14px">
-      <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Form check</div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Snap a photo at a key position (e.g. bottom of a squat, top of a deadlift) and I’ll point out things to look at. This is general guidance from a single still — <span style="color:var(--tx2)">not a substitute for a coach or medical advice</span>, and it can’t see your full movement.</div>
-      <input type="file" id="formcheck-input" accept="image/*" capture="environment" style="display:none" onchange="runFormCheck(event)">
-      <button class="btn" onclick="document.getElementById('formcheck-input').click()" style="background:var(--bg3)">Take / choose a photo</button>
-      <div id="formcheck-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>
+    <div class="ios-section">
+      <div class="ios-header">Form check</div>
+      <div class="card">
+        <div class="tr-card-body">Snap a photo at a key position (e.g. bottom of a squat, top of a deadlift) and I’ll point out things to look at. This is general guidance from a single still — <span class="tr-strong">not a substitute for a coach or medical advice</span>, and it can’t see your full movement.</div>
+        <input type="file" id="formcheck-input" accept="image/*" capture="environment" style="display:none" onchange="runFormCheck(event)">
+        <button class="btn tr-card-btn" onclick="document.getElementById('formcheck-input').click()">Take / choose a photo</button>
+        <div id="formcheck-out" class="tr-card-out" style="display:none"></div>
+      </div>
     </div>
   </div>
 
@@ -4183,7 +4488,7 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
       <button class="qb" onclick="goPTCoach('How do I progressively overload this week?')">Progressive overload</button>
       <button class="qb" onclick="goPTCoach('High protein meal prep for the week. Budget-friendly.')">Meal prep</button>
     </div>
-    <div class="msgs" id="pt-msgs" style="max-height:260px"><div class="msg coach">Ask me anything about training or nutrition.</div></div>
+    <div class="msgs" id="pt-msgs"><div class="msg coach">Ask me anything about training or nutrition.</div></div>
     <div class="irow">
       <textarea id="pt-in" placeholder="Ask your PT..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPT()}" oninput="ar(this)"></textarea>
       <button class="sbtn" onclick="sendPT()"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
