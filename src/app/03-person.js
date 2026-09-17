@@ -3095,14 +3095,15 @@ function renderFaithDoor(){
     const day = (typeof getDayCount==='function') ? getDayCount() : 1;
     if(faithChosen() || dismissed || day < 7){ el.style.display='none'; el.innerHTML=''; return; }
     el.style.display='block';
+    // An ordinary card: the label in the header role, the sentence as the card's body, the offer as the
+    // card's one button and the refusal as a quiet one under it. It was a --bg3 panel with an 11px
+    // tertiary caps label and two auto-width buttons painted two different ways.
     el.innerHTML =
-      '<div style="border-radius:var(--rm);padding:14px;margin-bottom:14px;background:var(--bg3)">'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:7px">One thing worth saying</div>'+
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:12px">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</div>'+
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="_faithDoorOpen()">Show me the options</button>'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:transparent;color:var(--tx3);background:var(--fill2)" onclick="_faithDoorNo()">No thanks</button>'+
-        '</div>'+
+      '<div class="card">'+
+        '<div class="eyebrow">One thing worth saying</div>'+
+        '<p class="card-body">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</p>'+
+        '<button class="btn" onclick="_faithDoorOpen()">Show me the options</button>'+
+        '<button class="btn quiet" onclick="_faithDoorNo()">No thanks</button>'+
       '</div>';
   }catch(_){}
 }
@@ -3410,6 +3411,13 @@ function applyFaithLabels(){
     }catch(_){ }
     set('soul-practice-title', f.practiceTitle || '');
     set('soul-practice-desc', f.practiceDesc || '');
+    // The row's mark follows the practice. Prayer beads are the rosary, the misbaha and the mala; a
+    // secular person's practice here is Stillness, and handing them a string of prayer beads for it would
+    // be the quiet kind of religious nudge "full but never forced" exists to refuse.
+    try{
+      const _pi = document.querySelector('#soul-practice-card .ios-row-icon');
+      if(_pi && typeof svgIcon === 'function') _pi.innerHTML = svgIcon(t === 'secular' ? 'leaf' : 'beads', 18);
+    }catch(_){ }
     const still={
       christianity:'A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.',
       islam:'A minute of guided breathing — or dhikr carried on your breath. The one work you can always do.',
@@ -3439,10 +3447,10 @@ function applyFaithLabels(){
     set('soul-bless-title', blessT[t]||blessT.christianity);
     const _bl=(typeof blessLastLine==='function')?blessLastLine():'';
     set('soul-bless-desc', (blessD[t]||blessD.christianity)+(_bl?' \u00B7 '+_bl:''));
-    set('soul-drawnear-label',
-      t==='secular' ? 'Steady yourself — reflection & stillness, all in one place'
-      : t==='buddhism' ? 'Draw near — teachings & stillness, all in one place'
-      : 'Draw near — ' + f.scriptureWord + ' & stillness, all in one place');
+    // A section header is a label, and it has to fit one line. This was a whole sentence set in
+    // capitals — "DRAW NEAR — SCRIPTURE & STILLNESS, ALL IN ONE PLACE" — which wrapped on every phone,
+    // and its second half only named the rows directly beneath it. The secular name stays its own.
+    set('soul-drawnear-label', t==='secular' ? 'Steady yourself' : 'Draw near');
     const introTail={
       christianity:'to Christ, to the sacraments, to the people who love you',
       islam:'to Allah, to prayer, to the people who love you',
@@ -3550,15 +3558,18 @@ function _fetchT(u, ms, init){
     return r;
   }, function(e){ clearTimeout(t); throw e; });
 }
-function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:var(--t-sm)">Loading…</div>'; }
-function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:var(--t-sm);padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
-function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:var(--rs);padding:9px 11px;font-size:13px;max-width:100%'; }
-function _readBtnStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:14px;padding:8px 13px'; }
+// The loading line and the error are Train's loading role and the empty-state body — the tertiary
+// grey at 15px was the one colour a sentence a person is waiting on should never be in.
+function _readLoading(){ return '<div class="tr-loading">Loading…</div>'; }
+function _readErr(msg){ return '<div class="card ios-empty"><div class="ios-empty-body">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div></div>'; }
 function openReader(t){
   const f=FAITHS[t]||curFaith();
   if(typeof go==='function') go('read');
   const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'The Dhammapada \u2014 all 26 chapters, translated by Bhikkhu Sujato.',secular:'Meditations \u2014 Marcus Aurelius, all 12 books, trans. George Long.'};
   const ttl=document.getElementById('read-title'); if(ttl) ttl.textContent=f.bookName.replace(/^the /,'').replace(/^./,c=>c.toUpperCase());
+  // go() named the bar from the static "Read" before the line above renamed the page, so the title
+  // that fades into the bar on scroll said "Read" over a page called "Qur’an". Name it again.
+  try{ if(typeof iosNavSync==='function') iosNavSync('read'); }catch(_){ }
   const sub=document.getElementById('read-sub'); if(sub) sub.textContent=subs[t]||'';
   const sel=document.getElementById('read-selector'), content=document.getElementById('read-content');
   if(content) content.innerHTML=_readLoading();
@@ -3622,7 +3633,9 @@ function _readBundled(sel,content,bank){
   // a designed fallback.
   const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  content.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-base);line-height:1.75;color:var(--tx)">“'+_escFew(v.t)+'”</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:6px">— '+_escFew(v.r)+'</div></div>').join('')+'</div>';
+  // The note is the page's footnote, left and at 13 — it was 11px, centred, in the tertiary grey. Each
+  // passage is the passage role, parted by the reader's own hairline.
+  content.innerHTML='<p class="ios-footnote read-kept">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</p>'+'<div class="card">'+bank.map(v=>'<div class="rd-v"><div class="passage">“'+_escFew(v.t)+'”</div><div class="passage-ref">'+_escFew(v.r)+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -3631,7 +3644,8 @@ async function _readQuranInit(sel,content){
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
   try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+_escFew(s.englishName)+'</option>').join('')+'</select>' : ''; }
+  // A plain field: the app's own select styling at 17, not a 13px one iOS zooms the page to read.
+  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" aria-label="Surah">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+_escFew(s.englishName)+'</option>').join('')+'</select>' : ''; }
   _readQuranLoad(String(start));
 }
 async function _readQuranLoad(n){
@@ -3642,7 +3656,11 @@ async function _readQuranLoad(n){
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:var(--t-xl);line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+_escFew(a.text)+' <span style="color:var(--tx3);font-size:var(--t-cap)">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    // The ayah number leads, as the other three readers' do; the Arabic keeps its own size and line
+    // height; the English is the passage role. It was 15px in the secondary grey with the number
+    // trailing in a 13px tertiary bracket. The ARABIC went in unescaped while the English beside it was
+    // escaped — the same third-party response, one field apart — so it is escaped too.
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'"><div class="rd-n">'+_escFew(n)+':'+_escFew(a.numberInSurah)+'</div>'+(ar&&ar[i]?'<div dir="rtl" class="rd-src ar">'+_escFew(ar[i].text)+'</div>':'')+'<div class="passage">'+_escFew(a.text)+'</div></div>').join('')+'</div>';
     _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -3673,7 +3691,7 @@ async function _readStoicInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%STOIC_BOOKS.length; }catch(_){ }
   // A plan day asked for a specific book; honour it and clear the request, as the Qur'an reader does.
   try{ if(window.__stoicJump){ const j=STOIC_BOOKS.indexOf(window.__stoicJump); if(j>-1) i=j; window.__stoicJump=0; } }catch(_){ }
-  if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" style="'+_selStyle()+'">'+
+  if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" aria-label="Book">'+
     STOIC_BOOKS.map((b,n)=>'<option value="'+b+'"'+(n===i?' selected':'')+'>Book '+b+'</option>').join('')+'</select>';
   _readStoicLoad(STOIC_BOOKS[i]);
 }
@@ -3701,7 +3719,7 @@ async function _readStoicLoad(book){
     if(!paras.length) throw new Error('empty');
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
+      '<div class="eyebrow">Meditations &middot; Book '+_escFew(book)+'</div>'+
       paras.map(function(t,n){
         // The text carries its own section numbers from section 2 on ("2. Whatever this is that I am"),
         // so adding an index as well would print "1" above "2.". Use the number the translation gives
@@ -3715,12 +3733,14 @@ async function _readStoicLoad(book){
         const label=m?m[1]:'';
         const bodyText=m?m[2]:t;
         _svItems.push({ text:bodyText, ref:'Meditations '+book+(label?'.'+label:'') });
-        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          (label?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
-          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'">'+
+          (label?'<div class="rd-n">'+_escFew(label)+'</div>':'')+
+          '<div class="passage">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
+      // The credit is a sentence at footnote size. It was a centred strip of 11px capitals joined by
+      // middots — the exact shape of the "Manage · edit · remove" strips this app has been removing.
+      '<p class="card-note">Marcus Aurelius, translated by George Long (1862), via Wikisource. Public domain.</p>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -3758,7 +3778,7 @@ const DHP_CHAPTERS = [
 async function _readDhammapadaInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%DHP_CHAPTERS.length; }catch(_){ }
   try{ if(window.__dhpJump){ const j=DHP_CHAPTERS.findIndex(c=>c[0]===window.__dhpJump); if(j>-1) i=j; window.__dhpJump=0; } }catch(_){ }
-  if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" style="'+_selStyle()+'">'+
+  if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" aria-label="Chapter">'+
     DHP_CHAPTERS.map((c,n)=>'<option value="'+c[0]+'"'+(n===i?' selected':'')+'>'+_escFew(c[1])+'</option>').join('')+'</select>';
   _readDhammapadaLoad(DHP_CHAPTERS[i][0]);
 }
@@ -3790,17 +3810,19 @@ async function _readDhammapadaLoad(uid){
     const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
+      '<div class="eyebrow">Dhammapada &middot; '+_escFew(title)+'</div>'+
       seen.map(function(n){
         const v=verses[n];
         _svItems.push({ text:v.en.join(' ').trim(), ref:'Dhammapada '+n });
-        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
-          (v.pli.length?'<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
-          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
+        // The Pāli keeps the reading face at 15 in the secondary grey — the source language on the page,
+        // quieter than the translation; it was italic in the TERTIARY grey, the ink of a placeholder.
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'">'+
+          '<div class="rd-n">'+_escFew(n)+'</div>'+
+          (v.pli.length?'<div class="rd-src pli">'+_escFew(v.pli.join(' '))+'</div>':'')+
+          '<div class="passage">'+_escFew(v.en.join(' '))+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
+      '<p class="card-note">Translated by Bhikkhu Sujato, via SuttaCentral. Public domain.</p>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -3818,7 +3840,10 @@ const GITA_COUNTS=[47,72,43,42,29,47,30,28,34,42,55,20,35,27,20,24,28,78]; // ve
 function _gitaCount(ch){ return GITA_COUNTS[ch-1] || 40; }
 async function _readGitaInit(sel,content){
   if(!window.__gita){ let ch=1; try{ if(typeof getDayCount==='function') ch=(getDayCount()%18)+1; }catch(_){ } window.__gita={ch:ch,v:1}; }
-  if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:var(--t-sm);color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
+  // The field says what it picks ("Chapter 2"), and previous/next verse is ONE stepper capsule — the
+  // component Track's sleep row uses — instead of a tertiary 15px label and two 14px bordered boxes.
+  if(sel){ sel.innerHTML='<div class="read-gita"><select id="gita-ch" aria-label="Chapter" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">Chapter '+(i+1)+'</option>').join('')+'</select>'+
+    '<span class="ios-stepper"><button type="button" class="tr-btn" onclick="_gitaNav(-1)" aria-label="Previous verse">'+svgIcon('chevronleft',16)+'</button><button type="button" class="tr-btn" onclick="_gitaNav(1)" aria-label="Next verse">'+svgIcon('chevronright',16)+'</button></span></div>'; }
   const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
   _readGitaLoad();
 }
@@ -3857,14 +3882,20 @@ async function _readGitaLoad(){
     // when context is stacked on top of the thing someone came to see.
     const _esc = t => String(t==null?'':t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const chName = meta && (meta.translation || meta.name)
-      ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
-        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</div>'
+      // A sentence-case footnote, not a caps label: a chapter name and its meaning run to two lines,
+      // and two lines of tracked capitals is the shape this rebuild exists to remove.
+      ? '<p class="card-foot rd-chapter">Chapter '+_esc(g.ch)+' · '+_esc(meta.translation||meta.name)+
+        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</p>'
       : '';
     const chSummary = meta && meta.summary && meta.summary.en
-      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
+      ? '<div class="rd-about"><div class="eyebrow">About this chapter</div><p class="card-body flush">'+_esc(meta.summary.en)+'</p></div>'
       : '';
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:var(--t-sm);color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:var(--t-base);line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
+    // The reference is the verse's label; the Sanskrit is the source text at body size; the
+    // transliteration is the reading face, quieter; the English is the passage role — it was 15px in
+    // the secondary grey under an italic TERTIARY transliteration, the translation a person reads set
+    // as the least of the three.
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div class="eyebrow">Bhagavad Gita '+_escFew(g.ch)+'.'+_escFew(g.v)+'</div>'+(j.slok?'<div class="rd-src dev">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div class="rd-src pli">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div class="passage">'+_escFew(en)+'</div><div class="passage-ref">Verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -4365,21 +4396,29 @@ function openPlans(){ if(typeof go==='function') go('plans'); renderPlans(); }
 function renderPlans(){
   const el=document.getElementById('plans-content'); if(!el) return;
   const f=curFaith(), t=faithTradition(), st=_plans();
-  let h='<div style="text-align:center;margin-bottom:16px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Guided reading</div>'+
-    '<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);margin:6px 0 8px">Short plans</h2>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;max-width:330px;margin:0 auto">Five to seven days on one thing you’re actually carrying. Finishable \u2014 not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p></div>';
+  // A large title on the left, like every other screen — the nav bar fades it in on scroll — and the
+  // sentence under it as the page's intro. It was a centred "GUIDED READING" in 12px tertiary caps over
+  // a 28px title at a fake 700 and a centred tertiary paragraph: a landing page inside a tab.
+  let h='<h2 class="page-title">Short plans</h2>'+
+    '<p class="page-intro">Five to seven days on one thing you’re actually carrying. Finishable — not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p>';
   READING_PLANS.forEach(function(p){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
-    const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
-    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
-      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--go);margin-top:10px">'+((s&&!s.done&&d>0)?'Continue':'Begin')+' \u203A</div></div>';
+    const going=!!(s&&!s.done&&d>0);
+    const line=(s&&s.done)?'Finished · read it again any time':(d>0?'Day '+(d+1)+' of '+n+' · whenever you’re ready':n+' days');
+    // The name speaks in the ToTry face with the chevron that says the whole card is the way in, the
+    // line under it says what the plan is for, and where a person has got to is the footnote — in the
+    // tint while it is under way. The status was 12px caps OVER the title, which for a plan not yet
+    // begun printed "7 DAYS" directly above "7 days · …"; and the "Begin ›" micro-link under each card
+    // is gone, because the card was already the control.
+    h+='<div class="card plan-card" role="button" tabindex="0" aria-label="'+(going?'Continue ':'Begin ')+_escFew(p.title)+'" onclick="openPlan(\''+p.id+'\')">'+
+      '<div class="home-card-top"><div class="card-title">'+p.title+'</div><span class="plan-chev">'+svgIcon('chevronright',14)+'</span></div>'+
+      '<p class="card-body flush">'+p.sub+'</p>'+
+      ((going||(s&&s.done))?'<p class="card-foot'+(going?' tint':'')+'">'+line+'</p>':'')+'</div>';
   });
-  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 8px 4px">Written for your path \u2014 '+f.label+' \u2014 not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
+  h+='<p class="ios-footnote">Written for your path — '+f.label+' — not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
   el.innerHTML=h;
+  try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
 }
 function openPlan(id){
   const p=_planById(id); if(!p) return;
@@ -4398,33 +4437,39 @@ function renderPlanDay(id,i){
   // Buddhism and Secular — so someone reading a plan day had no way through to the Dhammapada or the
   // Stoics, even though openReader() serves both. Every tradition has a bookName; use it.
   const readLbl = (function(){ try{ const bn=(FAITHS[t]||curFaith()).bookName; return bn?('Open it in '+bn):''; }catch(_){ return ''; } })();
-  let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">'+
-    '<button class="btn subtle" onclick="renderPlans()" style="width:auto;padding:7px 11px">\u2039 Plans</button>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
-    '<div class="card" style="border-color:var(--go-bd);background:var(--go-bg);padding:22px 18px">'+
-      '<div id="plan-day-text" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
-      '<div id="plan-day-ref" style="font-size:var(--t-sm);color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
+  // The plan's name is the screen's large title and "Day 3 of 7" is its subtitle; the way back to the
+  // list is a tint control with the chevron iOS uses. It was a grey "‹ Plans" box facing a 12px
+  // tertiary "DAY 3 OF 7", over a 22px title at a fake 700.
+  let h='<button class="btn quiet plan-back" onclick="renderPlans()">'+svgIcon('chevronleft',17)+'Plans</button>'+
+    '<h2 class="page-title">'+p.title+'</h2>'+
+    '<p class="page-intro plan-day-of">Day '+(i+1)+' of '+days.length+'</p>'+
+    // The passage on an ordinary card, upright in the reading face, its source at footnote size. It was
+    // a tint-filled card with a tint border and the reference in the tint as well: three blues for one
+    // verse, which made the whole card read as a button.
+    '<div class="card">'+
+      '<div id="plan-day-text" class="passage lg">“'+day.t+'”</div>'+
+      '<div id="plan-day-ref" class="passage-ref">'+day.r+'</div>'+
       // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
       // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
       // that puts both on the morning verse works here unchanged.
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
-    '<div class="card"><div style="font-size:var(--t-sm);line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
-    '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
-      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
-      '<button class="btn subtle" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
-    '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
-    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-      (readLbl?'<button class="btn subtle" onclick="_planOpenFull(\''+id+'\','+i+')" style="flex:1">'+readLbl+'</button>':'')+
-      '<button class="btn subtle" onclick="_planCarry(\''+id+'\','+i+')" style="flex:1">Carry this passage</button></div>';
+    '<div class="card"><p class="card-body flush">'+day.w+'</p></div>'+
+    '<div class="card"><div class="eyebrow">One question</div>'+
+      '<div class="card-text plan-q">'+day.q+'</div>'+
+      '<button class="btn" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
+    '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')">That’s today</button>'+
+    // Two phrases do not share a row — the longer one wraps inside its half. They stack, quiet.
+    (readLbl?'<button class="btn quiet" onclick="_planOpenFull(\''+id+'\','+i+')">'+readLbl+'</button>':'')+
+    '<button class="btn quiet" onclick="_planCarry(\''+id+'\','+i+')">Carry this passage</button>';
   const seen=Math.max(typeof s.d==='number'?s.d:0, i);
   let nav='';
-  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">\u2039 Day '+i+'</button>';
-  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Day '+(i+2)+' \u203A</button>';
-  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Read it again</button>';
-  if(nav) h+='<div style="display:flex;gap:8px;margin-top:4px">'+nav+'</div>';
-  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 10px 4px">One day at a time is the whole design. Come back tomorrow, or in a fortnight \u2014 day '+(i+1)+' will still be here.</p>';
+  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')">'+svgIcon('chevronleft',16)+'Day '+i+'</button>';
+  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')">Day '+(i+2)+svgIcon('chevronright',16)+'</button>';
+  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')">Read it again</button>';
+  if(nav) h+='<div class="btn-row">'+nav+'</div>';
+  h+='<p class="ios-footnote">One day at a time is the whole design. Come back tomorrow, or in a fortnight — day '+(i+1)+' will still be here.</p>';
   el.innerHTML=h;
+  try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
   try{ const tab=document.getElementById('tab-plans'); if(tab) tab.scrollTop=0; }catch(_){}
 }
 function _planDone(id,i){
@@ -4442,20 +4487,23 @@ function _planClose(id,i,finished){
   const el=document.getElementById('plans-content'); if(!el) return;
   const p=_planById(id); if(!p) return;
   const days=_planDays(p), f=curFaith(), t=faithTradition();
-  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha \u2014 someone further down the path',secular:'one person who’ll actually hear it \u2014 a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
-  let h='<div style="text-align:center;padding:14px 4px 0">';
+  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha — someone further down the path',secular:'one person who’ll actually hear it — a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
+  // A completion is the one place a screen may centre: the empty-state component, with its title in the
+  // ToTry face at the greeting's size. The "take it past the app" card beneath it reads left to right,
+  // like every card. Every line here was 15px in a hand-set colour, the title a fake 700.
+  let h='<div class="plan-done"><div class="ios-empty">';
   if(finished){
-    h+='<div style="font-size:var(--t-title1);margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
-      '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
-      '<div class="card" style="text-align:left"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
+    h+='<div class="plan-dove">\u{1F54A}️</div>'+
+      '<div class="ios-empty-title">You finished it.</div>'+
+      '<div class="ios-empty-body">'+days.length+' days on '+p.short+'. No badge for this, and no streak — you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div></div>'+
+      '<div class="card"><div class="eyebrow">Now take it past the app</div>'+
+      '<p class="card-body flush">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</p></div>';
   } else {
-    h+='<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 18px">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready \u2014 tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div>';
+    h+='<div class="ios-empty-title">That’s today.</div>'+
+      '<div class="ios-empty-body">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready — tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div></div>';
   }
-  h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})" style="margin-bottom:8px">Put it down and carry it</button>'+
-    '<button class="btn subtle" onclick="renderPlans()">Back to the plans</button></div>';
+  h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})">Put it down and carry it</button>'+
+    '<button class="btn quiet" onclick="renderPlans()">Back to the plans</button></div>';
   el.innerHTML=h;
 }
 function _planRestart(id){
@@ -4468,13 +4516,16 @@ function _planAnswer(id,i){
   const days=_planDays(p); if(!days.length) return;
   i=_planClamp(i,days.length); const day=days[i];
   const m=document.createElement('div'); m.className='modal-bg open';
+  // The question is what this sheet is about, so it is the sheet's title; the plan and the passage it
+  // came from are the label above it and the line beneath it. They were 12px tertiary caps, a 17px
+  // paragraph and a 13px tertiary line, with "Not now" drawn as a second full grey button.
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">'+p.title+' \u00B7 day '+(i+1)+'</div>'+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;margin-bottom:5px">'+day.q+'</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:13px">'+day.r+'</div>'+
-    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;font-size:var(--t-base);line-height:1.6;margin-bottom:12px"></textarea>'+
-    '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)" style="margin-bottom:8px">Keep it in my journal</button>'+
-    '<button class="btn" onclick="closeModal(this)">Not now</button></div>';
+    '<div class="eyebrow">'+p.title+' · day '+(i+1)+'</div>'+
+    '<h3>'+day.q+'</h3>'+
+    '<p class="modal-sub">'+day.r+'</p>'+
+    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;margin-bottom:12px"></textarea>'+
+    '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)">Keep it in my journal</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button></div>';
   document.body.appendChild(m);
   setTimeout(function(){ const ta=document.getElementById('plan-answer'); if(ta) ta.focus(); },120);
 }
@@ -4778,6 +4829,10 @@ function iosNavSync(name){
     slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
     const sync=()=>{
       if(!tab.classList.contains('active')) return;
+      // Looked up on every scroll, not captured once: the listener below is attached only the first
+      // time, so a title a screen writes AFTER go() — Plans renders its own, per state — would leave
+      // it measuring a detached node forever (offsetTop 0), and the bar would show its title at rest.
+      const large=tab.querySelector('.page-title, .ios-large-title');
       const edge = large ? (large.offsetTop + large.offsetHeight - 6) : 12;
       hdr.classList.toggle('ios-scrolled', tab.scrollTop > edge);
     };
@@ -4823,14 +4878,16 @@ function highlightSoulByTime(){
   if(hr < 12) targetFn = "go('morning')";
   else if(hr >= 17) targetFn = "go('reflect')";
   if(!targetFn) return;
-  const card = soul.querySelector('.hub-card[onclick="' + targetFn + '"]');
+  // The hub is rows now, so this looks for the ROW — a selector still naming .hub-card would find
+  // nothing and the nudge would vanish without an error. "Now" is the row's trailing value in the tint,
+  // the way Settings marks the one that applies; it was an 11px caps pill pinned over the card's corner.
+  const card = soul.querySelector('.ios-row[onclick="' + targetFn + '"]');
   if(card){
-    const badge = document.createElement('div');
-    badge.className = 'soul-now-badge';
-    badge.textContent = hr < 12 ? 'now' : 'now';
-    badge.style.cssText = 'position:absolute;top:10px;right:10px;font-family:var(--font-text);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:0.01em;color:var(--on-tint);background:var(--go);padding:2px 7px;border-radius:100px';
-    card.style.position = 'relative';
-    card.appendChild(badge);
+    const badge = document.createElement('span');
+    badge.className = 'ios-row-value soul-now-badge';
+    badge.textContent = 'Now';
+    const chev = card.querySelector('.ios-row-chevron');
+    card.insertBefore(badge, chev || null);
   }
 }
 
@@ -5096,9 +5153,14 @@ const PRAYERS=new Proxy({},{get:(t,k)=>pickPrayer(k)});
 function setPrayerMode(mode){
   const w=document.getElementById('prayer-mode-write-body'), a=document.getElementById('prayer-mode-ai-body');
   const wb=document.getElementById('prayer-mode-write'), ab=document.getElementById('prayer-mode-ai');
-  const on='background:var(--bg);border:1px solid var(--bd);color:var(--tx)', off='background:transparent;border:1px solid transparent;color:var(--tx3)';
-  if(mode==='ai'){ if(w)w.style.display='none'; if(a)a.style.display='block'; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
-  else{ if(w)w.style.display='block'; if(a)a.style.display='none'; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
+  // The two modes are segments of one .seg control, so choosing one is the .active class — the same
+  // state every segmented control in the app carries. This used to rewrite each button's cssText with
+  // a hand-mixed "on" and "off" paint, including --tx3 on the unchosen label.
+  const ai = (mode==='ai');
+  if(w) w.style.display = ai ? 'none' : 'block';
+  if(a) a.style.display = ai ? 'block' : 'none';
+  if(wb) wb.classList.toggle('active', !ai);
+  if(ab) ab.classList.toggle('active', ai);
 }
 // Lowkey, honest "this was AI-generated" label that names the model that actually answered (the
 // proxy reports it; the model can vary per call due to provider fallback). Used wherever the app

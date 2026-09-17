@@ -209,9 +209,11 @@ function _promptSacramentDate(kind){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">When was this '+label+'?</div>'+
-    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;font-size:var(--t-base);padding:11px;color-scheme:dark;width:100%">'+
-    (kind==='mass' ? '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:var(--t-sm);color:var(--tx2);cursor:pointer"><input type="checkbox" id="sacrament-euch-input" checked style="width:18px;height:18px;accent-color:var(--go)">I received the Eucharist</label>' : '')+
+    // The sheet title role, not a centred italic New York line; the date field without the
+    // color-scheme:dark that painted a DARK picker into the light sheet; the Eucharist as a switch row.
+    '<h3>When was this '+label+'?</h3>'+
+    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;width:100%">'+
+    (kind==='mass' ? '<label class="card-toggle"><span>I received the Eucharist</span><input type="checkbox" class="ios-switch" id="sacrament-euch-input" checked></label>' : '')+
     '<button class="btn primary" onclick="(function(){var d=document.getElementById(\'sacrament-date-input\').value;var iso=d?new Date(d+\'T12:00:00\').toISOString():null;'+
       (kind==='confession'
         ? 'closeModal(this);logConfession(iso);'
@@ -247,7 +249,9 @@ function renderSacraments(){
       const d = _daysAgo(cLast.date);
       if(cSinceEl){
         cSinceEl.textContent = confessions.length + ' logged' + (d >= 40 ? ' · it may be time to return' : '');
-        cSinceEl.style.color = d >= 40 ? 'var(--pu)' : 'var(--tx3)';
+        // The gentle "it may be time" keeps its purple; the ordinary count is the footnote's own grey
+        // (the class), not the tertiary one this used to write inline.
+        cSinceEl.style.color = d >= 40 ? 'var(--pu)' : '';
       }
     } else {
       cLastEl.textContent = 'No confession logged yet';
@@ -273,6 +277,9 @@ function renderSacraments(){
   }
 
   // Combined history (most recent 12)
+  // An inset list under a section header: the kind as the row's title, the day as its subtitle, and a
+  // remove control a thumb can land on, named for a screen reader. Each entry was a hand-built flex row
+  // with a 17px dove or cross glyph, the date at 12px tertiary, and a bare × with 4px of padding.
   const histEl = document.getElementById('sacrament-history');
   if(histEl){
     const combined = [
@@ -280,22 +287,13 @@ function renderSacraments(){
       ...masses.map(m => ({...m, kind:'mass'}))
     ].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
     if(!combined.length){ histEl.innerHTML = ''; return; }
-    histEl.innerHTML = '<div class="eyebrow" style="margin:6px 0 8px">Recent</div>' +
-      combined.map(item => {
-        const isC = item.kind === 'confession';
-        const icon = isC ? '\u{1F54A}' : '\u271D';
-        const label = isC ? 'Confession' : (item.eucharist ? 'Mass &amp; Eucharist' : 'Mass');
-        const color = isC ? 'var(--pu)' : 'var(--go)';
-        const dateStr = new Date(item.date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
-        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">' +
-          '<div style="display:flex;align-items:center;gap:10px">' +
-            '<span style="font-size:var(--t-base)">' + icon + '</span>' +
-            '<div><div style="font-size:var(--t-base);color:var(--tx)">' + label + '</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + dateStr + '</div></div>' +
-          '</div>' +
-          '<button onclick="deleteSacrament(\'' + item.kind + '\',' + item.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:4px">&times;</button>' +
-        '</div>';
-      }).join('');
+    histEl.innerHTML = iosList(combined.map(item => {
+      const isC = item.kind === 'confession';
+      const label = isC ? 'Confession' : (item.eucharist ? 'Mass & Eucharist' : 'Mass');
+      const dateStr = new Date(item.date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
+      return iosRow({ title: label, sub: dateStr, chevron: false,
+        trailing: '<button type="button" class="ios-row-x" aria-label="Delete this record" onclick="deleteSacrament(\'' + item.kind + '\',' + Number(item.id) + ')">&times;</button>' });
+    }), { header: 'Recent' });
   }
 }
 
@@ -370,61 +368,68 @@ function renderPrayers(){
   const prayers = ls('totry_prayers') || [];
   const open = prayers.filter(p => p.status === 'open');
   const answered = prayers.filter(p => p.status === 'answered');
-  
+
   const openCountEl = document.getElementById('prayer-open-count');
   const answeredCountEl = document.getElementById('prayer-answered-count');
   if(openCountEl) openCountEl.textContent = open.length;
   if(answeredCountEl) answeredCountEl.textContent = answered.length;
-  
+
   const list = document.getElementById('prayer-list');
   if(!list) return;
-  
+
   let filtered;
   if(_prayerFilter === 'open') filtered = open;
   else if(_prayerFilter === 'answered') filtered = answered;
   else filtered = prayers;
-  
+
+  // Everything a person typed into this journal is escaped, every field. The TEXT was; the CATEGORY —
+  // typed into its own box one line below, and written by the AI composer from the person's intention —
+  // went into innerHTML raw, and it is the first line of every card.
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if(!filtered.length){
     const empty = _prayerFilter === 'answered' ?
       'No answered prayers yet. They come — keep praying and watching.' :
       _prayerFilter === 'open' ?
       'No active prayers. Add one above to start.' :
       'Your prayer journal is empty. Add your first one above.';
-    list.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:20px;font-style:italic">' + empty + '</p>';
+    // The empty-state body, upright; it was a centred italic in the tertiary grey.
+    list.innerHTML = '<div class="ios-empty"><div class="ios-empty-body">' + empty + '</div></div>';
   } else {
     list.innerHTML = '';
     filtered.forEach(p => {
       const created = new Date(p.createdAt);
       const ago = Math.floor((Date.now() - created.getTime()) / 86400000);
       const agoLabel = ago === 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago';
-      
+
+      // One card per prayer, drawn from the card roles: the prayer itself at body size beside the card's
+      // own remove control, and its category and start as one footnote. It was a bordered box
+      // (green-bordered once answered) holding 11px tint caps, an 11px tertiary date, a green-tinted
+      // panel inside the card, a bare × in a grey box, and "✓ God answered this" painted black on green.
       const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid ' + (p.status === 'answered' ? 'var(--gr-bd)' : 'var(--bd)') + ';border-radius:var(--rm);padding:12px;margin-bottom:8px';
-      
-      let html = '';
-      if(p.category){
-        html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + p.category + '</div>';
-      }
-      html += '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.55;margin-bottom:6px">' + p.text.replace(/</g, '&lt;') + '</div>';
-      html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:8px">Started ' + agoLabel + '</div>';
-      
+      card.className = 'card prayer-card';
+
+      let html = '<div class="home-card-top"><div class="card-text">' + esc(p.text) + '</div>' +
+        '<button type="button" class="card-x" aria-label="Delete this prayer" onclick="deletePrayer(' + Number(p.id) + ')">&times;</button></div>';
+      html += '<div class="card-foot">' + (p.category ? esc(p.category) + ' · started ' : 'Started ') + agoLabel + '</div>';
+
       if(p.status === 'answered'){
         const ansAgo = Math.floor((Date.now() - new Date(p.answeredAt).getTime()) / 86400000);
         const ansLabel = ansAgo === 0 ? 'today' : ansAgo === 1 ? 'yesterday' : ansAgo + ' days ago';
-        html += '<div style="background:var(--gr-bg);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--gr);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Answered ' + ansLabel + '</div>' +
-          (p.answerNote ? '<div style="font-size:var(--t-sm);color:var(--tx);line-height:1.5">' + p.answerNote.replace(/</g, '&lt;') + '</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);font-style:italic">No note added</div>') +
+        // The answer is grouped with a hairline inside the card — a card does not hold a card.
+        html += '<div class="prayer-answer">' +
+          '<div class="eyebrow">Answered ' + ansLabel + '</div>' +
+          (p.answerNote ? '<div class="card-text">' + esc(p.answerNote) + '</div>' : '<div class="card-foot">No note added</div>') +
         '</div>';
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:6px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="unanswerPrayer(' + p.id + ')">Reopen</button><button class="btn danger" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="deletePrayer(' + p.id + ')">Delete</button></div>';
+        html += '<button class="btn" onclick="unanswerPrayer(' + Number(p.id) + ')">Reopen</button>';
       } else {
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:8px;font-size:var(--t-sm);background:var(--gr);color:#000;border:none" onclick="markPrayerAnswered(' + p.id + ')">✓ God answered this</button><button class="btn" style="width:auto;padding:8px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="deletePrayer(' + p.id + ')">×</button></div>';
+        html += '<button class="btn success" onclick="markPrayerAnswered(' + Number(p.id) + ')">' + svgIcon('check', 18) + 'God answered this</button>';
       }
-      
+
       card.innerHTML = html;
       list.appendChild(card);
     });
   }
-  
+
   // Stats
   const statsBox = document.getElementById('prayer-stats');
   const statsText = document.getElementById('prayer-stats-text');
