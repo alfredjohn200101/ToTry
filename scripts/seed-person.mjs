@@ -53,7 +53,17 @@ export function seedSource() {
     S('totry_budgets', { Food: 600, 'Rent/bills': 900, Entertainment: 120 });
     S('totry_assets', [{ id: 7301, name: 'Savings account', value: 4200, addedAt: a[1], updatedAt: a[2] }, { id: 7302, name: 'Car', value: 11500, addedAt: a[1], updatedAt: a[2] }]);
     S('totry_finance_goals', [{ id: 7401, name: 'Emergency fund', target: 5000, current: 1850, created: a[1], priority: 1 }]);
-    S('totry_prayers', [{ t: 'For Dad’s health', at: a[2], answered: false }, { t: 'Patience with the kids', at: a[2], answered: true }]);
+    // addPrayer() writes {id,text,category,status,createdAt,answeredAt,answerNote}. This line was
+    // {t, at, answered} — no write site has ever produced that — so the prayer list filtered on a
+    // status nothing carried and rendered its EMPTY state, and "All" threw on p.text.replace.
+    S('totry_prayers', [{ id: 7501, text: 'For Dad’s health', category: 'Family', status: 'open', createdAt: a[2], answeredAt: null, answerNote: '' },
+                        { id: 7502, text: 'Patience with the kids', category: '', status: 'answered', createdAt: a[1], answeredAt: a[3], answerNote: 'A calmer fortnight than I have had in months.' }]);
+    // The Word's shelf (saveVerseFromReader), the sacraments (logConfession/logMass) and a plan in
+    // progress (_planDone). Without them Saved, Sacraments and the Soul plans row were empty states.
+    S('totry_sv', [{ verse: 'Come to me, all who labor and are heavy laden, and I will give you rest.', reference: 'Matthew 11:28', date: '2 Sep' }]);
+    S('totry_confessions', [{ id: 7601, date: a[2] }]);
+    S('totry_masses', [{ id: 7701, date: ago(4), eucharist: true }, { id: 7702, date: ago(11), eucharist: false }]);
+    S('totry_read_plans', { pull: { d: 2, tr: 'christianity', ts: a[3], done: false } });
     S('totry_journal', [{ ts: a[2], text: 'Held the line tonight. It wanted me tired.' }]);
     S('totry_workouts', [{ ts: a[2], kind: 'strength', name: 'Push', sets: [{ ex: 'Bench Press', w: 80, r: 6 }] }]);
     const H = (h, m) => { const d = new Date(); d.setHours(h, m || 0, 0, 0); return d.toISOString(); };

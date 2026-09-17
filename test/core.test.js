@@ -2842,7 +2842,10 @@ H.section('a Buddhist reads their own scripture, not a selection of it')
   H.ok(/suttacentral\.net\/api\/bilarasuttas/.test(load), 'it reads the real text');
   H.ok(!/Authorization/.test(load), 'with no credential — SuttaCentral is keyless');
   H.ok(/VS_BUDDHIST/.test(load), 'and falls back to the bundled verses when offline, so the tab is never empty');
-  H.ok(/SUJATO/.test(load), 'the translator is credited');
+  // The credit is a sentence-case footnote now (.card-note); it was typed in capitals as an 11px strip.
+  // "Bhikkhu Sujato", not bare /sujato/i — the endpoint URL above ends in /sujato, which would pass this
+  // with no credit on screen at all.
+  H.ok(/Bhikkhu Sujato/i.test(load), 'the translator is credited');
   // Keys are dhp{verse}:{line}; the dotted ones (dhp1:0.1) are headers, not text.
   H.ok(/\^dhp\(\\d\+\):\(\\d\+\)\$/.test(load) || /dhp\(\\d\+\)/.test(load),
     'verse lines are grouped by verse, and headers are excluded');
@@ -2858,7 +2861,7 @@ H.section('a Buddhist reads their own scripture, not a selection of it')
   H.ok(/en\.wikisource\.org/.test(sload), 'it reads the real text');
   H.ok(!/Authorization/.test(sload), 'with no credential — Wikisource is keyless');
   H.ok(/VS_SECULAR/.test(sload), 'and falls back to the bundled passages when offline');
-  H.ok(/GEORGE LONG/.test(sload), 'the translator is credited');
+  H.ok(/George Long/i.test(sload), 'the translator is credited');   // sentence case since the rebuild
   // Sections are separated by SINGLE newlines. Splitting on blank lines returned Book II as one 12KB
   // paragraph — checked against the live response, not assumed.
   H.ok(/split\(\/\\n\+\//.test(sload), 'sections split on single newlines, not blank lines');
@@ -6165,7 +6168,10 @@ H.section('waiting is not the same as broken, and a dead end is not an answer');
     'each source reports its own failure, not the first one recorded');
   H.ok(/navigator\.onLine === false/.test(lbc), 'and being offline is detected and said plainly');
   // Not a dead end: the app carries 127 verses, so it can still put scripture in front of someone.
-  H.ok(/ON THIS PHONE, WHILE YOU WAIT/.test(lbc), 'a failed chapter still offers scripture that is on the phone');
+  // Case-insensitive: the label is the .eyebrow role now, which sets the capitals in CSS with real
+  // tracking — the words were typed in upper case in the hand-painted version this first matched.
+  H.ok(/on this phone, while you wait/i.test(lbc) && /CONTEXTUAL_VERSES/.test(lbc),
+    'a failed chapter still offers scripture that is on the phone');
   H.ok(/Try again/.test(lbc), 'and a way to retry');
 
   // The nutrition module wrote foodWorking() for exactly this and one food path ignored it.

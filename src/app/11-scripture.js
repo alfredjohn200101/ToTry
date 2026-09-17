@@ -70,7 +70,7 @@ Return ONLY a raw JSON array. No markdown.
     if(card)card.style.display='block';
   } else if(card){
     card.style.display='block';
-    card.innerHTML='<div style="text-align:center;padding:20px;font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3)">Could not find verses right now. Check your connection and try again.</div>';
+    card.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
   }
 }
 function saveCurrentVerse(){
@@ -90,24 +90,30 @@ function renderSavedVerses(containerId){
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
   if(!saved.length){
-    list.innerHTML = '<p class="empty-note">No saved verses yet.<br>Tap any verse to save it.</p>';
+    // The empty-state component — the shelf's own icon, a title and one line — instead of a centred
+    // italic in the tertiary grey.
+    list.innerHTML = '<div class="ios-empty">' + svgIcon('book', 44) + '<div class="ios-empty-title">No saved verses yet</div><div class="ios-empty-body">Tap any verse to save it.</div></div>';
     return;
   }
+  // One inset list, a row per passage (.sv-list / .sv-item): the passage in the reading face, its source
+  // and the day it was kept on one footnote line, and the app's 44pt remove control.
+  const shelf = document.createElement('div');
+  shelf.className = 'sv-list';
   saved.forEach((v, i) => {
     const el = document.createElement('div');
     el.className = 'sv-item';
-    el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">' +
-      '<div style="flex:1">' +
+    const meta = [v.reference, v.date].filter(Boolean).map(x => _escFew(x)).join(' \u00B7 ');
+    el.innerHTML =
+      '<div class="sv-body">' +
         // v581 escaped the verse CARD and not the shelf it saves to. The shelf re-renders the
         // model's own output every time Saved is opened, so this was the durable half of that door.
         '<div class="sv-v">\u201C' + _escFew(v.verse || '') + '\u201D</div>' +
-        '<div class="sv-r">' + _escFew(v.reference || '') + '</div>' +
-        '<div class="sv-d">' + _escFew(v.date || '') + '</div>' +
+        (meta ? '<div class="sv-r">' + meta + '</div>' : '') +
       '</div>' +
-      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:var(--t-hd);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
-    '</div>';
-    list.appendChild(el);
+      '<button type="button" class="ios-row-x" onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse">\u00D7</button>';
+    shelf.appendChild(el);
   });
+  list.appendChild(shelf);
 }
 
 // THE SHELF IS PAINTED IN TWO PLACES AND ONLY ONE OF THEM WAS EVER REPAINTED.
@@ -164,8 +170,11 @@ function renderVerseResults(verses,feeling){
   const card=document.getElementById('bible-card');
   if(!card)return;
   card.innerHTML='';
+  // The header is the card's footnote, in sentence case. It was 11px tint capitals with no tracking —
+  // and because it ends in the person's own words, a long feeling became two lines of shouted caps,
+  // which is also why it is not simply the caps label role: their words are not a label.
   const hdr=document.createElement('div');
-  hdr.style.cssText='font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px';
+  hdr.className='card-foot verse-for';
   hdr.textContent=plural(verses.length,'verse')+' for: '+feeling.slice(0,50)+(feeling.length>50?'...':'');
   card.appendChild(hdr);
   verses.forEach((v,i)=>{
@@ -173,20 +182,24 @@ function renderVerseResults(verses,feeling){
     block.className='verse-result-block';
     // Same as the search block above: these fields are the MODEL'S, and the model was handed
     // this person's own free text. Not app-authored content, so not app-trusted markup.
+    // The passage first and its source under it, the way every verse in the app now reads; the two
+    // actions are full-size buttons in a row. They were 13px labels in 7px of padding, under an 11px
+    // tint reference that sat ABOVE the verse it named.
     block.innerHTML=
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:8px">'+_escFew(v.reference)+'</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">'+_escFew(v.reflection)+'</div>'+
-      '<div style="display:flex;gap:6px">'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
+      '<div class="passage">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
+      '<div class="passage-ref">'+_escFew(v.reference)+'</div>'+
+      (v.reflection ? '<p class="card-body flush verse-why">'+_escFew(v.reflection)+'</p>' : '')+
+      '<div class="btn-row">'+
+        '<button class="btn" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
+        '<button class="btn" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
       '</div>';
     card.appendChild(block);
   });
   window._currentVerses=verses;
-  const footer=document.createElement('div');
-  footer.style.cssText='display:flex;gap:8px;margin-top:4px';
-  footer.innerHTML='<button class="btn" style="flex:1" onclick="findVerse(document.getElementById(\'bible-in\').value)">Find more verses</button>';
+  const footer=document.createElement('button');
+  footer.className='btn quiet';
+  footer.setAttribute('onclick',"findVerse(document.getElementById('bible-in').value)");
+  footer.textContent='Find more verses';
   card.appendChild(footer);
 }
 
@@ -1080,7 +1093,7 @@ async function loadBibleChapter(){
       notesWrap.style.cssText = 'margin-top:18px';
       container.parentNode.appendChild(notesWrap);
     }
-    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()" style="background:var(--bg3);color:var(--go);font-size:var(--t-base);width:100%">Show study notes for this chapter</button><div id="br-notes-body" style="margin-top:12px"></div>';
+    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()">Show study notes for this chapter</button><div id="br-notes-body"></div>';
     window.__currentChapterRef = { bookId: bookId, bookName: book.name, chapter: chapter };
   }else{
     document.getElementById('br-chapter-display').style.display='block';
@@ -1096,21 +1109,24 @@ async function loadBibleChapter(){
     const _off = (typeof navigator !== 'undefined' && navigator.onLine === false);
     const _why = _off ? 'You are offline \u2014 the chapter text lives online.'
                       : (lastError ? _escFew(lastError) : '');
-    let _html = '<p style="font-size:var(--t-sm);color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
+    // The reason is the card's supporting sentence, the kept verse is the passage role under the label
+    // role, and "Try again" is the quiet action — each was a hand-set size in a hand-set grey, and the
+    // label was 11px tint capitals typed in upper case.
+    let _html = '<p class="card-body flush">Could not load ' +
       _escFew(book.name + ' ' + chapter) + '. ' + _why + '</p>';
     try{
       const _pool = [].concat.apply([], Object.keys(CONTEXTUAL_VERSES || {}).map(function(k){ return CONTEXTUAL_VERSES[k] || []; }));
       if(_pool.length){
         // Deterministic pick, so re-opening offline does not shuffle scripture at a person.
         const _pick = _pool[(String(bookId).length + Number(chapter||1)) % _pool.length];
-        _html += '<div style="padding:10px 8px;border-top:1px solid var(--bd);margin-top:6px">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
-          '<div style="font-family:var(--font-serif);font-size:var(--t-base);line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
+        _html += '<div class="br-offline">' +
+          '<div class="eyebrow">On this phone, while you wait</div>' +
+          '<div class="passage">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
+          '<div class="passage-ref">' + _escFew(_pick.ref) + '</div>' +
           '</div>';
       }
     }catch(_){ }
-    _html += '<button class="btn subtle" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;min-height:34px">Try again</button>';
+    _html += '<button class="btn quiet" onclick="loadBibleChapter()">Try again</button>';
     document.getElementById('br-verses').innerHTML = _html;
   }
 }
@@ -1119,7 +1135,7 @@ async function loadStudyNotes(){
   const body = document.getElementById('br-notes-body');
   const ref = window.__currentChapterRef;
   if(!body || !ref) return;
-  body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);padding:8px;font-style:italic">Loading study notes…</div>';
+  body.innerHTML = '<div class="tr-loading">Loading study notes…</div>';
   // helloao commentary endpoint uses USFM-style book IDs (e.g. GEN, JHN). Map common names.
   const bookCode = bibleBookToUSFM(ref.bookName);
   let notes = null;
@@ -1128,18 +1144,23 @@ async function loadStudyNotes(){
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
-    body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:var(--rs)">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
+    body.innerHTML = '<p class="card-foot">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</p>';
     return;
   }
   // Render notes — each item may be {type, verseNumber, content[]}
-  let html = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Tyndale Open Study Notes</div>';
+  // The notes sit inside the chapter card, so they are its label role and hairline-parted rows at the
+  // supporting size, each led by its verse number in the same figures as the chapter's own numbers. The
+  // label was 11px tint caps, the numbers 12px tint, and the verse LABEL went into the markup raw while
+  // the note text beside it was escaped — one third-party object, two fields, one escaped.
+  const _e = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let html = '<div class="eyebrow br-notes-hd">Tyndale Open Study Notes</div>';
   notes.forEach(n => {
     const txt = Array.isArray(n.content) ? n.content.map(c => typeof c==='string'?c:(c.text||'')).join(' ') : (n.content || n.text || '');
     if(!txt) return;
     const label = n.verseNumber ? ('v'+n.verseNumber) : (n.reference || '');
-    html += '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--bd)">'+
-      (label?'<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-right:6px">'+label+'</span>':'')+
-      '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+txt.replace(/</g,'&lt;')+'</span></div>';
+    html += '<div class="br-note card-body flush">'+
+      (label?'<span class="br-note-v">'+_e(label)+'</span>':'')+
+      txt.replace(/</g,'&lt;')+'</div>';
   });
   body.innerHTML = html;
 }
@@ -1195,7 +1216,7 @@ async function searchBible(query){
   if(!query)return;
   const res=document.getElementById('br-search-results');
   if(!res) return;   // never throw on a missing container — the crisis gate above has already run
-  res.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:16px">Listening to what you wrote...</p>';
+  res.innerHTML='<p class="pulsing tr-loading">Listening to what you wrote...</p>';
   
   // Direct reference lookup (e.g. "John 3:16", "Romans 8:28-30")
   const refMatch=query.match(/^(\d?\s?[A-Za-z]+)\s+(\d+):(\d+)(-\d+)?$/);
@@ -1255,9 +1276,15 @@ async function searchBible(query){
       if(verses.length){
         res.innerHTML='';
         if(data.reading){
+          // The app answering the person, so it is the app's sentence on an ordinary card at body size.
+          // It was New York ITALIC — the scripture face, slanted — on a tint panel with a tint border,
+          // which set the model's words in the same voice as the verses it was introducing.
           const reading=document.createElement('div');
-          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.6;color:var(--tx)';
-          reading.textContent=data.reading;
+          reading.className='card';
+          const readingText=document.createElement('div');
+          readingText.className='card-text';
+          readingText.textContent=data.reading;
+          reading.appendChild(readingText);
           res.appendChild(reading);
         }
         verses.forEach(v=>{
@@ -1266,22 +1293,23 @@ async function searchBible(query){
           // These three fields are the MODEL'S output, and the model was handed the person's own
           // free text. A crafted query can make it emit markup, so it is not app-authored content.
           // data.reading above already goes through textContent; these went out as live HTML.
-          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div style="font-size:var(--t-sm);color:var(--bl);margin-top:6px;line-height:1.5">'+_escFew(v.relevance)+'</div>':'');
+          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div class="bsr-why">'+_escFew(v.relevance)+'</div>':'');
           el.onclick=()=>saveVerseFromReader(v.text,v.reference);
           res.appendChild(el);
           if(!shown.includes(v.reference))shown.push(v.reference);
         });
         ls(histKey,shown.slice(-25));
+        // Two short labels side by side, in the one button treatment; "Pray with this" was repainted
+        // in a tint fill with a tint border, a third look for the same control.
         const actions=document.createElement('div');
-        actions.style.cssText='display:flex;gap:8px;margin-top:12px';
+        actions.className='btn-row bsr-actions';
         const more=document.createElement('button');
-        more.className='btn';more.style.cssText='flex:1;font-size:var(--t-sm)';
+        more.className='btn';
         more.textContent='Show me more';
         more.onclick=()=>searchBible(query);
         actions.appendChild(more);
         const pray=document.createElement('button');
         pray.className='btn';
-        pray.style.cssText='flex:1;font-size:var(--t-sm);background:var(--go-bg);border-color:var(--go-bd);color:var(--go)';
         pray.textContent='Pray with this';
         pray.onclick=()=>generatePrayerFor(query, verses[0]);
         actions.appendChild(pray);
@@ -1292,9 +1320,9 @@ async function searchBible(query){
   }catch(e){console.error('Bible search failed:',e);}
   
   if(!navigator.onLine){
-    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">You\'re offline. Scripture search needs a connection.</p>';
+    res.innerHTML='<div class="ios-empty"><div class="ios-empty-body">You\'re offline. Scripture search needs a connection.</div></div>';
   } else {
-    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">Couldn\'t reach scripture right now. Try again in a moment.</p>';
+    res.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Couldn\'t reach scripture right now. Try again in a moment.</div></div>';
   }
 }
 
@@ -1368,11 +1396,20 @@ async function generateIntentionPrayer(pfx){
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
       out.style.display='block';
-      out.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
-    } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
-  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
+      // THE PERSON'S OWN WORDS NEVER GO INTO A HANDLER. The category was spliced into this onclick as
+      // a quoted string with ' and " stripped — but the attribute is decoded before the script runs, so
+      // typing the six characters &apos; put a real quote back and ended the string: an intention could
+      // run code, and the same text was then saved as the category renderPrayers() printed raw. It rides
+      // on window beside the prayer it belongs to, exactly as the prayer already did.
+      window.__lastAIPrayerCat = intention.trim().slice(0,30);
+      // The label role, the prayer as prayer text (upright, in the reading face), and the two actions
+      // stacked — "Save to my prayers" is a phrase, and side by side it wrapped inside half a button.
+      // They were an 11px tint caps label, italic serif, and two 15px buttons painted two ways.
+      out.innerHTML = '<div class="eyebrow">A '+_prayerNoun()+' for this</div>'+
+        '<div class="passage prayer-words">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
+        '<div class="prayer-acts"><button class="btn" onclick="savePrayerToList(window.__lastAIPrayer, window.__lastAIPrayerCat)">Save to my '+_prayerNoun()+'s</button><button class="btn quiet" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+    } else if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t write that just now. Try again in a moment.</p>'; }
+  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t reach the coach right now.</p>'; } }
   // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write
   // my reflection" for a secular person, "Write my du'a" for a Muslim — and this finally block put
   // 'Write my prayer' back regardless, on success AND on failure. So the composer was correct until you
@@ -1384,26 +1421,28 @@ async function showSaintPrayer(saint, title){
   const out = document.getElementById('saint-prayer-out');
   if(!out) return;
   out.style.display='block';
-  out.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center;padding:8px">Bringing '+saint+'\u2019s words...</p>';
+  out.innerHTML='<p class="pulsing tr-loading">Bringing '+saint+'\u2019s words...</p>';
   try{
     const sys='You provide the authentic, traditional text of well-known Catholic prayers exactly as commonly prayed. Return only the prayer text, no commentary or title.';
     const prompt='Give the traditional English text of the prayer "'+title+'" attributed to '+saint+'. Just the prayer itself, line breaks preserved.';
     const text=await api(sys,[],prompt,600);
     if(text && text.trim()){
       window.__lastSaintPrayer = text.trim();
-      out.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
-        '<button class="btn" style="background:var(--bg3);font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
-    } else { out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
-  }catch(e){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
+      // The prayer's name is its title in the ToTry face, the saint the line under it, and the words
+      // are prayer text: it was all one 11px tint caps strip joined by a middot, over italic serif.
+      out.innerHTML='<div class="card-title">'+title+'</div><p class="card-foot saint-by">'+saint+'</p>'+
+        '<div class="passage prayer-words">'+text.trim().replace(/</g,'&lt;')+'</div>'+
+        '<button class="btn prayer-save" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
+    } else { out.innerHTML='<p class="card-foot">Couldn\u2019t load that prayer right now.</p>'; }
+  }catch(e){ out.innerHTML='<p class="card-foot">Couldn\u2019t reach the library right now.</p>'; }
 }
 
 async function generatePrayerFor(situation, verse){
   const res=document.getElementById('br-search-results');
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');
-  prayerBox.style.cssText='padding:16px;margin-top:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)';
-  prayerBox.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center">Writing a prayer...</p>';
+  prayerBox.className='card bsr-prayer';
+  prayerBox.innerHTML='<p class="pulsing tr-loading">Writing a prayer...</p>';
   res.appendChild(prayerBox);
   
   const name=ls('totry_name')||'';
@@ -1411,8 +1450,11 @@ async function generatePrayerFor(situation, verse){
   try{
     const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
-      prayerBox.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
+      // A MODEL'S REPLY IS NOT APP CONTENT. The prompt above carries the person's own search text, and
+      // this wrote the reply into innerHTML untouched — the one AI output on this screen left unescaped
+      // while the verses beside it were. A prayer is prayer text, so it is the passage role.
+      prayerBox.innerHTML='<div class="eyebrow">A '+_prayerNoun()+' for this moment</div>'+
+        '<div class="passage prayer-words">'+_escFew(prayer.trim())+'</div>';
     } else {
       prayerBox.remove();
     }

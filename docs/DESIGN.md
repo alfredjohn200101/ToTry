@@ -200,6 +200,26 @@ re-paint them at a call site.
 - `.ios-row.is-next` / `.is-dim` / `.is-done` / `.is-broken` — one row in a set called out, dimmed,
   finished, or not kept.
 
+### Roles named while rebuilding Soul, the Word, Read and Plans
+
+- **Scripture on a surface** is the Soul rooms' `.passage` / `.passage.lg` / `.passage-ref`, used as they
+  are. The same verse was drawn eleven ways across these four screens — italic 20, italic 16, SF 17 in
+  `--tx2`, an 11px tint reference above it. A written or generated prayer is the same role
+  (`.prayer-words` adds only its own line breaks). A chapter's verses (`.bvt`), a search result
+  (`.bsr-text`) and the saved shelf (`.sv-v`) are that role at the same size.
+- `.card-text` — a sentence that IS the content of a card (a prayer, the model's reading of what a person
+  typed): 17, label ink. `.card-body.flush` is `.card-body` as a card's last line.
+- `.card-toggle` — a label with an `.ios-switch` on its trailing edge, inside a card or a sheet.
+- `.sv-list` / `.sv-item` — the saved-passages shelf as one inset list with a 44pt `.ios-row-x`.
+- `svgIcon('beads')` — the practice row (rosary, misbaha, mala). Same grid as the other icons.
+- **A hub is rows.** Soul is `.ios-section`s like Grow; a header is one to three words ("Daily rhythm",
+  "Draw near"). A row whose subtitle is long keeps it all — never line-clamp a row that ends in "…go to
+  one real person": that clause is the soul of the row.
+- **A screen whose title changes with its state** (Plans: the list, then the plan) writes its own
+  `.page-title` and calls `iosNavSync(tab)` after rendering, so the bar's title follows.
+- **A caps label never holds a person's own words** — "2 verses for: tired and alone" is a
+  `.card-foot`, because their words are not a label and will wrap.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

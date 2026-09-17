@@ -1220,7 +1220,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         if(!el) return null;
         const pane = document.getElementById('tab-soul');
         const visible = [...pane.children].filter(e => getComputedStyle(e).display !== 'none');
-        const grids = visible.filter(e => e.classList.contains('hub-grid') || e.classList.contains('hub-common-grid'));
+        // The menu was .hub-grid poster cards; since the ToTry × Liquid Glass rebuild it is inset grouped
+        // lists (.ios-section), the shape Grow already is. Both are named, so this can never pass by
+        // finding no menu at all: with neither present, beforeGrids below is vacuously true.
+        const grids = visible.filter(e => e.classList.contains('hub-grid') || e.classList.contains('hub-common-grid') || e.classList.contains('ios-section'));
+        if (!grids.length) return { pos: -1, beforeGrids: false, text: 'no menu found under Soul', hasAction: false };
         return { pos: visible.indexOf(el),
                  beforeGrids: grids.length ? visible.indexOf(el) < visible.indexOf(grids[0]) : true,
                  text:(el.innerText||'').replace(/\s+/g,' ').trim(),
@@ -4201,7 +4205,8 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const r = await page.evaluate(() => { go('soul');
         return new Promise(res => setTimeout(() => {
           const d = document.getElementById('hub-fast-desc');
-          const c = d ? d.closest('.hub-card') : null;
+          // The season is a row in an inset list now, not a .hub-card; either is the tappable destination.
+          const c = d ? d.closest('.ios-row, .hub-card') : null;
           const rc = c ? c.getBoundingClientRect() : null;
           const g = document.getElementById('hub-common-grid');
           res({ vis: !!(rc && rc.width > 0 && rc.height > 0), desc: d ? (d.textContent||'') : '',

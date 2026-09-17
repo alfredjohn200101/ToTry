@@ -1125,6 +1125,10 @@ function svgIcon(name, size){
     sprout:'<path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 2.5-5.5 6-5.5 0 3.5-2.5 5.5-6 5.5z"/>',
     map:'<polygon points="1,6 8,3 16,6 23,3 23,18 16,21 8,18 1,21"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/>',
     breath:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8"/>',
+    // A loop of prayer beads with its pendant bead: the rosary, the misbaha and the mala are all this
+    // shape, so one mark serves the practice row for every tradition that has one. It was a one-off
+    // literal on the Soul hub, outside the set.
+    beads:'<circle cx="12" cy="3" r="1.3"/><circle cx="16.6" cy="4.9" r="1.3"/><circle cx="18.5" cy="9.5" r="1.3"/><circle cx="16.6" cy="14.1" r="1.3"/><circle cx="12" cy="16" r="1.3"/><circle cx="7.4" cy="14.1" r="1.3"/><circle cx="5.5" cy="9.5" r="1.3"/><circle cx="7.4" cy="4.9" r="1.3"/><path d="M12 17.3v3.4"/><circle cx="12" cy="22" r="1.2"/>',
     heartbreak:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/><path d="M12 5.67 9.5 10l4 2.5-2.5 4.2"/>',
     snow:'<line x1="12" y1="2" x2="12" y2="22"/><line x1="3.3" y1="7" x2="20.7" y2="17"/><line x1="3.3" y1="17" x2="20.7" y2="7"/><path d="M9 4.5 12 7l3-2.5M9 19.5 12 17l3 2.5"/>',
     phoneoff:'<path d="M10.7 13.3a16 16 0 0 1-2.6-3.4l1.3-1.3a2 2 0 0 0 .5-2.1c-.3-.9-.6-1.8-.7-2.8A2 2 0 0 0 7.1 2h-3a2 2 0 0 0-2 2.2 19.8 19.8 0 0 0 5.4 11.6"/><path d="M14 16.4a16 16 0 0 0 2 1.1l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-9.7-4.1"/><line x1="2" y1="2" x2="22" y2="22"/>',

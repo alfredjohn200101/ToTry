@@ -61,17 +61,19 @@ function renderSoulStill(){
     ? _escFew(line)
     : 'One minute of stillness. Nothing to believe, nothing to say \u2014 just your breath, and the room.';
 
+  // A word from a tradition is SCRIPTURE, so it is set in the reading face (.passage) with its source
+  // under it at footnote size — it was the display face at weight 700, a fake bold on a family with
+  // one roman weight, over an 11px tertiary citation. The secular line is the app itself speaking, so
+  // it takes .card-say, the ToTry face upright. Card, eyebrow and button are the components; the
+  // inline tint on the eyebrow and the border on the button were never visible under their classes.
   el.style.display = 'block';
   el.innerHTML =
-    '<div style="border-radius:var(--r);padding:20px 18px;margin-bottom:18px;' +
-      'background:var(--bg2)">' +
-      '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
-      '<div style="font-family:var(--font-display);font-weight:700;font-size:' + (line ? '21px' : '19px') + ';' +
-        'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
-      (ref ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;' +
-             'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
-      '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
-        'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
+    '<div class="card">' +
+      '<div class="eyebrow">' + _escFew(eyebrow) + '</div>' +
+      (line
+        ? '<div class="passage lg">' + body + '</div>' + (ref ? '<div class="passage-ref">' + _escFew(ref) + '</div>' : '')
+        : '<div class="card-say">' + body + '</div>') +
+      '<button class="btn" onclick="soulBeStill()">Be still for a minute</button>' +
     '</div>';
 }
 function soulBeStill(){
