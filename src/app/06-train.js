@@ -121,7 +121,7 @@ function companionStruggling(){
     const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices : (ls('totry_v')||[]);
     const named = vs.filter(v=>v&&v.n);
     wrap.innerHTML = named.map(v =>
-      '<button class="comp-vice-chip" onclick="companionPickVice('+JSON.stringify(String(v.n)).replace(/"/g,'&quot;')+')">'+String(v.n).replace(/</g,'&lt;')+'</button>'
+      '<button class="qb comp-vice-chip" onclick="companionPickVice('+JSON.stringify(String(v.n)).replace(/"/g,'&quot;')+')">'+String(v.n).replace(/</g,'&lt;')+'</button>'
     ).join('');
     // Copy must be honest to what's on screen: no "Tap one" when there's nothing to tap yet.
     const sub = document.querySelector('#comp-name .comp-sub');

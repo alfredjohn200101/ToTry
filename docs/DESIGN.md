@@ -165,12 +165,48 @@ re-paint them at a call site.
 - `.footnote-link` — a footnote a thumb can land on (44pt), for the one that is really a control.
 - `.disclosure` — a `<summary>` as an iOS row with a chevron, instead of caps with an icon.
 
+### Roles named while rebuilding the Coach, the Companion and the Feeling Door
+
+- **A conversation** — `.msgs` holding `.msg.coach` / `.msg.user` (and the Companion's `.comp-msg-them` /
+  `.comp-msg-me`, which are the same two bubbles): 17pt, 18pt radius, tail toward the speaker, the
+  received one on `--fill`, the sent one in the tint. The PT chat uses the same classes and gets the same.
+- **A composer** — `.irow` (or `.comp-reply-row`) is ONE capsule with a hairline; the field inside it is
+  transparent and `.sbtn` is the round up-arrow at its trailing end, grey until there is text.
+- **A sheet that carries content** — `.modal.moment-sheet` is opaque in the elevated pair (dark: `--bg2`
+  sheet, `--bg3` cells; light: `--bg` sheet, `--bg2` cells), exposed as `--sheet` / `--cell`. The Feeling
+  Door and the Companion use the same pair. Inside: `<h3>` title, `.moment-body` (17, the message),
+  `.moment-note` (15 secondary, with `<b>` for the one word that matters), `.card.moment-plan` with an
+  `.eyebrow` for a quoted plan or fact, ONE `.btn.primary`, the alternatives as `iosList` inside
+  `.moment-list`, and `.btn.quiet` last.
+- `.comp-link` — a quiet way onward inside a sheet: tint, 15pt, 44pt tall, left edge, optional icon.
+- **The crisis card** — `.msg.crisis-msg`, built only by `showCrisisResponse()`. `.card-title`, `.card-lede`,
+  `.eyebrow`, then `.crisis-row`s where the WHOLE ROW is the `tel:` link (56pt), and `.card-foot`. A
+  contact naming several numbers renders each as its own `a.crisis-num`.
+- `.feel-chip` — a feeling tile: the face and the word on one line, what it feels like under the word.
+  Shared by the Feeling Door and onboarding's first moment.
+
+### Roles named while rebuilding the Soul rooms (Threads, the day's anchor, Practice, Liturgy, Why)
+
+- `.ios-list.in-card` — rows that belong to a `.card` (people, promises, seasons, values). The list gives
+  up its own surface and runs to the card's edges, hairlines inset 16 on both sides, and carries the
+  14pt gap *under* itself so nothing that follows needs a margin. Not a card in a card.
+- `.passage` (+ `.lg`) and `.passage-ref` — scripture and the traditions' words in New York, upright,
+  left-aligned, with the reference as a 13pt footnote. Never italic, never the tint.
+- `.field-label` — a sentence stem over a field ("I am becoming a person who…"), 15 secondary.
+  `.field-tall` — a textarea's height. `.btn.field-btn` — the button on one row beside a field.
+- `.row-rank` — a number that ranks a row (values, the 99 Names), SF Rounded.
+- `.ios-row-title.wrap` — the one exception to "a row title truncates": words the person wrote.
+- `.ios-row.label-first` — what a value IS above the value (a reading's name over its reference).
+- `.ios-row.is-next` / `.is-dim` / `.is-done` / `.is-broken` — one row in a set called out, dimmed,
+  finished, or not kept.
+
 ### Roles named while rebuilding Soul, the Word, Read and Plans
 
-- **Scripture on a surface** — `.passage` (New York 17, upright, label ink; `.passage.lg` 20 for the one
-  hero verse on a screen) with `.passage-ref` under it (13, secondary). The same verse was drawn eleven
-  ways across four screens — italic 20, italic 16, SF 17 in `--tx2`, an 11px tint reference above it.
-  A written or generated prayer is the same role (`.prayer-words` keeps its line breaks).
+- **Scripture on a surface** is the Soul rooms' `.passage` / `.passage.lg` / `.passage-ref`, used as they
+  are. The same verse was drawn eleven ways across these four screens — italic 20, italic 16, SF 17 in
+  `--tx2`, an 11px tint reference above it. A written or generated prayer is the same role
+  (`.prayer-words` adds only its own line breaks). A chapter's verses (`.bvt`), a search result
+  (`.bsr-text`) and the saved shelf (`.sv-v`) are that role at the same size.
 - `.card-text` — a sentence that IS the content of a card (a prayer, the model's reading of what a person
   typed): 17, label ink. `.card-body.flush` is `.card-body` as a card's last line.
 - `.card-toggle` — a label with an `.ios-switch` on its trailing edge, inside a card or a sheet.

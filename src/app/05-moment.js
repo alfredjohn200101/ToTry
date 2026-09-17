@@ -92,13 +92,16 @@ function _feelThePull(){
     if(!vs.length){ openCompanionForUrge(); return; }
     if(vs.length===1){ const _only=vs[0]; if(_only.kind==='letgo'){ openLettingGo(); return; } openMomentStakes(vices.indexOf(_only)); return; }
     document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
-    const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-    m.innerHTML='<div class="modal">'+
+    // A sheet from the bottom, a title in the app's face, and the fights as rows. It was a centred card
+    // with an italic reading-serif title, a centred italic note, and each name in a grey slab whose
+    // text-align:left the flex button silently ignored. iosRow escapes the name.
+    const m=document.createElement('div'); m.className='modal-bg open';
+    m.innerHTML='<div class="modal moment-sheet">'+
       '<div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:4px">Which one’s pulling?</div>'+
-      '<div class="empty-note">No wrong answer. I just want to meet the right one.</div>'+
-      vs.map(v=>{ const idx=vices.indexOf(v); const _act=(v.kind==='letgo')?'openLettingGo()':('openMomentStakes('+idx+')'); return '<button class="btn" onclick="closeModal(this);'+_act+'" style="margin-bottom:8px;text-align:left;padding:13px;font-size:var(--t-base)">'+String(v.n).replace(/</g,'&lt;')+'</button>'; }).join('')+
-      '<button class="btn quiet" onclick="closeModal(this);openCompanionForUrge()" style="margin-top:4px">Something else — just talk</button>'+
+      '<h3>Which one’s pulling?</h3>'+
+      '<div class="modal-sub">No wrong answer. I just want to meet the right one.</div>'+
+      '<div class="moment-list">'+iosList(vs.map(v=>{ const idx=vices.indexOf(v); const _act=(v.kind==='letgo')?'openLettingGo()':('openMomentStakes('+idx+')'); return iosRow({ title:String(v.n), onclick:'closeModal(this);'+_act }); }))+'</div>'+
+      '<button class="btn quiet" onclick="closeModal(this);openCompanionForUrge()">Something else — just talk</button>'+
       '</div>';
     document.body.appendChild(m);
     if(typeof haptic==='function') haptic('tap');
@@ -188,12 +191,12 @@ function _saveIfThenFromModal(feeling){
 function _lockItIn(feeling){
   const existing=getIfThen(feeling); const preset=existing?existing.action:(_FEEL_PLAN[feeling]||''); const label=_FEEL_LABELS[feeling]||feeling;
   document.querySelector('.modal-bg.open')?.remove();
-  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A plan for next time</div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">When I feel '+_escFew(label)+', I will…</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px">Decide it now, while you’re clear. Next time the feeling comes, I’ll hand you back your own words — that’s what makes it hold.</div>'+
-    '<textarea id="ifthen-act" style="min-height:70px;font-size:var(--t-base);line-height:1.5;margin-bottom:14px">'+_escFew(preset)+'</textarea>'+
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
+    '<div class="eyebrow">A plan for next time</div>'+
+    '<h3>When I feel '+_escFew(label)+', I will…</h3>'+
+    '<div class="modal-sub">Decide it now, while you’re clear. Next time the feeling comes, I’ll hand you back your own words — that’s what makes it hold.</div>'+
+    '<textarea id="ifthen-act" class="moment-field">'+_escFew(preset)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_saveIfThenFromModal(\''+feeling+'\')">Lock in my plan</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
@@ -220,7 +223,7 @@ function _feelMove(feeling){
   const BREATH_FOR = { restless:'settle', flat:'energize', anxious:'settle', down:'settle', procrast:'box', angry:'cool', good:'' };
   const s = sets[feeling]; if(!s) return;
   const m = document.createElement('div');
-  m.className='modal-bg open'; m.style.alignItems='center';
+  m.className='modal-bg open';
   let onclick = 'closeModal(this)';
   if(s.go==='__nextstep') onclick = 'closeModal(this);brotherGuidance()';
   else if(s.go==='__companion') onclick = 'closeModal(this);openCompanionForUrge()';
@@ -234,7 +237,7 @@ function _feelMove(feeling){
   // where they are, not railroaded into a workout or a task. (Skip the talk chip when talking IS the
   // primary action, e.g. "anxious".)
   const _talkBtn = (s.go==='__companion') ? '' :
-    '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;margin:0">'+svgIcon("message")+' Just talk</button>';
+    iosRow({ icon:'message', tone:'green', title:'Just talk', onclick:'closeModal(this);openCompanionForUrge()' });
   const _saved = (typeof getIfThen==='function') ? getIfThen(feeling) : null;
   // THE DOOR REMEMBERS. Coming back to the same feeling over and over is the single most useful thing
   // this app knows about a person, and it was being written to disk and forgotten. Said as an
@@ -249,43 +252,51 @@ function _feelMove(feeling){
       const tail = _saved
         ? 'Your plan below is the right place to start.'
         : 'That is worth a plan, not just a moment \u2014 there is one at the bottom of this.';
-      return '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px;text-align:left;background:var(--bg3);border-radius:var(--rm);padding:10px 12px">'+
-        'This is the <b style="color:var(--tx2)">'+n+((n%100>=11&&n%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th'))+'</b> time '+_escFew(lbl)+' has brought you here this week. '+tail+'</div>';
+      return '<div class="moment-note">'+
+        'This is the <b>'+n+((n%100>=11&&n%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th'))+'</b> time '+_escFew(lbl)+' has brought you here this week. '+tail+'</div>';
     }catch(_){ return ''; }
   })();
-  const _savedBanner = _saved ? '<div style="background:var(--go-bg);border-radius:var(--rm);padding:10px 12px;margin-bottom:16px;text-align:left"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:4px">The plan you set for this</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+_escFew(_saved.action)+'</div></div>' : '';
+  // Their own words, on a card of their own — it was a tint panel inside the sheet with its label in 11px
+  // tint capitals and the plan itself in secondary grey, smaller than the sentence explaining it.
+  const _savedBanner = _saved ? '<div class="card moment-plan"><div class="eyebrow">The plan you set for this</div><div class="moment-plan-text">'+_escFew(_saved.action)+'</div></div>' : '';
   // Their own #1 value, as a QUESTION, never a verdict. Skipped when they're heavy: a person who is
   // low does not need their own standard held up in front of them. That would be shame, not counsel.
   const _valBanner = (function(){
     try{
       if(feeling==='down') return '';
       const tv=(typeof topValue==='function')?topValue():null; if(!tv) return '';
-      return '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:16px;font-style:italic">You said <span style="color:var(--go);font-style:normal">'+_escFew(tv)+'</span> matters most to you. Does the next hour move toward it?</div>';
+      return '<div class="moment-note">You said <b>'+_escFew(tv)+'</b> matters most to you. Does the next hour move toward it?</div>';
     }catch(_){ return ''; }
   })();
-  m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
+  // ONE move, then the other ways through as a grouped list. They were five differently-painted
+  // buttons — a grey slab with a tertiary-grey clause inside it, two half-width slabs, a 15px grey slab
+  // and a tint text link with a padlock — so the eye could not tell which were choices and which was
+  // the way out. The move is the filled button; the alternatives are rows; "Not now" is last.
+  const _breathRow = (function(){
+    const bp = BREATH_FOR[feeling];
+    // Skip when the primary move IS this breath already, or the feeling doesn't want one.
+    if(!bp || (s.go && s.go.indexOf('__breath:')===0)) return '';
+    const p = (typeof _protoFor==='function') ? _protoFor(bp) : null;
+    const why = p ? p.why : 'One minute of breathing';
+    return iosRow({ icon:'breath', tone:'teal', title:'Take a breath first', sub:why, onclick:'closeModal(this);openBreath(\''+bp+'\',{reason:\''+feeling+'\'})' });
+  })();
+  const _rows = [ _breathRow, _talkBtn,
+    iosRow({ icon:'edit', tone:'orange', title:'Write it down', onclick:'closeModal(this);openQuickJournal()' }),
+    // The outward exit — offered where rumination and self-focus are loudest.
+    ((feeling==='flat'||feeling==='restless'||feeling==='down'||feeling==='angry')
+      ? iosRow({ icon:'sunrise', tone:'yellow', title:'Go outside and look up', onclick:'closeModal(this);openLookUp()' }) : ''),
+    iosRow({ icon:'lock', tone:'indigo', title:(_saved?'Update':'Make')+' my plan for next time', onclick:'_lockItIn(\''+feeling+'\')' })
+  ].filter(Boolean);
+  m.innerHTML = '<div class="modal moment-sheet">'+
+    '<div class="modal-handle"></div>'+
+    '<h3>'+s.title+'</h3>'+
+    '<div class="moment-body">'+s.body+'</div>'+
     _recur+
     _savedBanner+
     _valBanner+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="'+onclick+'">'+s.cta+'</button>'+
-    (function(){
-      const bp = BREATH_FOR[feeling];
-      // Skip when the primary move IS this breath already, or the feeling doesn't want one.
-      if(!bp || (s.go && s.go.indexOf('__breath:')===0)) return '';
-      const p = (typeof _protoFor==='function') ? _protoFor(bp) : null;
-      const why = p ? p.why : 'One minute of breathing';
-      return '<button class="btn subtle" onclick="closeModal(this);openBreath(\''+bp+'\',{reason:\''+feeling+'\'})" style="margin-bottom:8px">'+svgIcon("breath")+' Take a breath first — <span style="color:var(--tx3)">'+why.toLowerCase()+'</span></button>';
-    })()+
-    '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
-      '<button class="btn subtle" onclick="closeModal(this);openQuickJournal()" style="flex:1;margin:0">'+svgIcon("edit")+' Write it down</button>'+
-    '</div>'+
-    // The outward exit — offered where rumination and self-focus are loudest.
-    ((feeling==='flat'||feeling==='restless'||feeling==='down'||feeling==='angry')
-      ? '<button class="btn" onclick="closeModal(this);openLookUp()" style="margin-bottom:8px;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">'+svgIcon("sunrise")+' Go outside and look up</button>' : '')+
-    '<button class="btn quiet" onclick="_lockItIn(\''+feeling+'\')" style="margin:0 0 4px">'+svgIcon("lock")+' '+(_saved?'Update':'Make')+' my plan for next time</button>'+
-    '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
+    '<button class="btn primary" onclick="'+onclick+'">'+s.cta+'</button>'+
+    '<div class="moment-list">'+iosList(_rows)+'</div>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   // A DIALOG, AND THE READER GOES INTO IT. closeFeelingDoor() runs first and hands focus back to the
   // orb, so without this the sheet that is the whole point of the door — the move they were sent to —
@@ -310,7 +321,7 @@ function _startSmallestThing(){
         setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis); }catch(_){ } }, 250);
         return true;   // closes the form; the crisis card takes the screen instead of the 2-minute nudge
       }
-      setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center'; m.innerHTML='<div class="modal" style="text-align:center"><div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:10px">Just 2 minutes</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:20px">Don\u2019t do <b style="color:var(--tx)">'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
+      setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div><h3>Just 2 minutes</h3><div class="moment-body">Don\u2019t do <b>'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
       return true;
     });
   }
@@ -326,24 +337,26 @@ function _startSmallestThing(){
 // the whole point of a dopamine detox is an app that hands you back to your life instead of holding you.
 function openLettingGo(){
   document.querySelector('.modal-bg.open')?.remove();
-  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
+  // The heartache path, rebuilt like the other feelings' sheets: a title in the app's face, the message
+  // as body text, the one hard fact on a card of its own (it was an 11px tint caps label in a grey
+  // panel), one move, and the other ways through as rows instead of four differently-painted slabs.
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal moment-sheet">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-size:var(--t-2xl);margin-bottom:6px">'+svgIcon("heartbreak",28)+'</div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:10px">You\u2019re letting go of someone.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">Missing them isn\u2019t weakness \u2014 it\u2019s love that hasn\u2019t found its new shape yet. You don\u2019t have to stop feeling it. You just don\u2019t have to feed it. Let\u2019s tend it here, and then let you go and live.</div>'+
-    '<div style="background:var(--bg3);border-radius:var(--rm);padding:13px 15px;margin-bottom:16px;text-align:left">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:6px">One honest thing</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Looking them up feels like staying close. It isn\u2019t. The research is blunt: on the days people check an ex, their mood is measurably worse \u2014 <i>that same day</i> \u2014 and it keeps the wound open. Watching them isn\u2019t reaching them. It\u2019s reaching the wound.</div>'+
+    '<h3>You\u2019re letting go of someone.</h3>'+
+    '<div class="moment-body">Missing them isn\u2019t weakness \u2014 it\u2019s love that hasn\u2019t found its new shape yet. You don\u2019t have to stop feeling it. You just don\u2019t have to feed it. Let\u2019s tend it here, and then let you go and live.</div>'+
+    '<div class="card moment-plan">'+
+      '<div class="eyebrow">One honest thing</div>'+
+      '<div class="moment-plan-text">Looking them up feels like staying close. It isn\u2019t. The research is blunt: on the days people check an ex, their mood is measurably worse \u2014 <i>that same day</i> \u2014 and it keeps the wound open. Watching them isn\u2019t reaching them. It\u2019s reaching the wound.</div>'+
     '</div>'+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_letGoSurf()">The urge to look \u2014 ride it out</button>'+
-    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);color:var(--tx)" onclick="closeModal(this);_letGoJournal()">'+svgIcon("edit")+'&nbsp;&nbsp;Put it here, not in their feed</button>'+
-    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);color:var(--tx)" onclick="closeModal(this);_letGoAct()">'+svgIcon("leaf")+'&nbsp;&nbsp;One real thing instead</button>'+
-    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:transparent;color:var(--tx3);margin:0;font-size:var(--t-sm);background:var(--fill2)">'+svgIcon("message")+' Just talk</button>'+
-      '<button class="btn" onclick="closeModal(this);_letGoName()" style="flex:1;background:transparent;color:var(--tx3);margin:0;font-size:var(--t-sm);background:var(--fill2)">I keep going back</button>'+
-    '</div>'+
-    '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
+    '<button class="btn primary" onclick="closeModal(this);_letGoSurf()">The urge to look \u2014 ride it out</button>'+
+    '<div class="moment-list">'+iosList([
+      iosRow({ icon:'edit', tone:'orange', title:'Put it here, not in their feed', onclick:'closeModal(this);_letGoJournal()' }),
+      iosRow({ icon:'leaf', tone:'green', title:'One real thing instead', onclick:'closeModal(this);_letGoAct()' }),
+      iosRow({ icon:'message', tone:'teal', title:'Just talk', onclick:'closeModal(this);openCompanionForUrge()' }),
+      iosRow({ icon:'repeat', tone:'gray', title:'I keep going back', onclick:'closeModal(this);_letGoName()' })
+    ])+'</div>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -355,12 +368,14 @@ function _letGoSurf(){ openBreath('settle', {reason:'letgo', onClose:()=>setTime
 function _letGoJournal(){
   document.querySelector('.modal-bg.open')?.remove();
   const m=document.createElement('div'); m.className='modal-bg open';
-  m.innerHTML='<div class="modal" style="max-height:86vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Let it out \u00b7 not in their feed</div>'+
-    '<h3 style="margin-bottom:6px">What are you actually missing?</h3>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Not them, necessarily \u2014 the feeling underneath. What do you miss? What were you getting from them that you need right now? Write it here, where it gets processed instead of poured back into the wound.</p>'+
-    '<textarea id="lg-jtext" placeholder="I miss\u2026" style="min-height:130px;font-size:var(--t-base);line-height:1.6;margin-bottom:14px" autofocus></textarea>'+
-    '<button class="btn primary" onclick="_letGoSaveJournal()" style="margin-bottom:8px">Set it down</button>'+
+  // "LET IT OUT \u00b7 NOT IN THEIR FEED" was a sentence in 11px tint capitals joined by a middot. The label
+  // is two words; the rest is already what the paragraph under the title says.
+  m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
+    '<div class="eyebrow">Let it out</div>'+
+    '<h3>What are you actually missing?</h3>'+
+    '<div class="modal-sub">Not them, necessarily \u2014 the feeling underneath. What do you miss? What were you getting from them that you need right now? Write it here, where it gets processed instead of poured back into the wound.</div>'+
+    '<textarea id="lg-jtext" class="moment-field tall" placeholder="I miss\u2026" autofocus></textarea>'+
+    '<button class="btn primary" onclick="_letGoSaveJournal()">Set it down</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -394,12 +409,15 @@ function _letGoAct(){
     ['tool','One thing with your hands \u2014 tidy, cook, fix something'],
     ['dumbbell','Move your body \u2014 even 20 push-ups']
   ];
-  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);margin-bottom:6px">One real thing</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:16px">Rumination breaks when you do something real. Pick one \u2014 then put the phone down and go do it.</div>'+
-    acts.map(a=>'<button class="btn" style="text-align:left;margin-bottom:8px;background:var(--bg3);color:var(--tx);font-size:var(--t-base)" onclick="closeModal(this);theRelease({did:\''+a[1].replace(/'/g,"\\'")+'\'})">'+svgIcon(a[0])+'&nbsp;&nbsp;'+a[1]+'</button>').join('')+
-    '<button class="btn quiet" onclick="closeModal(this);openLettingGo()" style="margin:0">Back</button>'+
+  // Five grey slabs whose left-aligned text the flex button ignored, each label starting wherever its
+  // icon and two &nbsp;s happened to push it. A pick-one list is rows. The labels are phrases, so they
+  // wrap on the row rather than truncating the thing a person is choosing to go and do.
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
+    '<h3>One real thing</h3>'+
+    '<div class="modal-sub">Rumination breaks when you do something real. Pick one \u2014 then put the phone down and go do it.</div>'+
+    '<div class="moment-list moment-picks">'+iosList(acts.map(a=>iosRow({ icon:a[0], tone:'green', title:a[1], onclick:'closeModal(this);theRelease({did:\''+a[1].replace(/'/g,"\\'")+'\'})' })))+'</div>'+
+    '<button class="btn quiet" onclick="closeModal(this);openLettingGo()">Back</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -915,14 +933,16 @@ function _shrinkIt(thing, level){
   const lv=Math.min(level, _SHRINK.length-1);
   const safe=_jsAttr(thing);         // for the onclick attribute
   const shown=_escFew(thing);        // for display
-  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Two minutes. That’s the whole ask.</div>'+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](shown)+'</div>'+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe+'\')">Start two minutes</button>'+
+  // "TWO MINUTES. THAT’S THE WHOLE ASK." was a whole sentence in 11px tint capitals over a centred
+  // paragraph. A sentence is not a label: it is the sheet's title, in the app's own voice.
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
+    '<h3>Two minutes. That’s the whole ask.</h3>'+
+    '<div class="moment-body">'+_SHRINK[lv](shown)+'</div>'+
+    '<button class="btn primary" onclick="closeModal(this);_startTwoMin(\''+safe+'\')">Start two minutes</button>'+
     (lv < _SHRINK.length-1
-      ? '<button class="btn subtle" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')" style="margin-bottom:8px">Still too big — make it smaller</button>'
-      : '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
+      ? '<button class="btn subtle moment-then" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')">Still too big — make it smaller</button>'
+      : '<div class="moment-note moment-then">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -1040,14 +1060,15 @@ function openLookUp(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const day = (typeof getDayCount==='function') ? getDayCount() : 0;
   const what = _LOOK_UP_PROMPTS[day % _LOOK_UP_PROMPTS.length];
-  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-size:var(--t-2xl);margin-bottom:10px">'+svgIcon("sunrise",28)+'</div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">Go outside and look up.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:8px">Phone in your pocket. Step outside, even just the doorway. Find <b style="color:var(--tx)">'+what+'</b> — and actually look at it for a minute.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:18px">Don’t photograph it. Don’t post it. Nothing to log — I won’t even ask how it went. Something bigger than you, for one minute, is the oldest way there is to get out of your own head.</div>'+
+  // A centred 28px bold title under a lone icon, a centred paragraph, and its second paragraph in the
+  // tertiary grey. The instruction is body text; the reassurance under it is its secondary line.
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
+    '<h3>Go outside and look up.</h3>'+
+    '<div class="moment-body">Phone in your pocket. Step outside, even just the doorway. Find <b>'+what+'</b> — and actually look at it for a minute.</div>'+
+    '<div class="moment-note">Don’t photograph it. Don’t post it. Nothing to log — I won’t even ask how it went. Something bigger than you, for one minute, is the oldest way there is to get out of your own head.</div>'+
     '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You went outside and looked up — out of your head, into the world.\'})">I’m going out</button>'+
-    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1328,18 +1349,21 @@ function renderValuesCard(){
   const el=document.getElementById('values-body'); if(!el) return;
   const o=getValues();
   if(!o){
-    el.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Five words for what your life is actually for. Once you\u2019ve named them, the counsel argues from <em>your</em> standard instead of mine \u2014 and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
-      '<button class="btn primary" style="font-size:var(--t-base)" onclick="openValuesSort()">Sort my values</button>';
+    el.innerHTML='<p class="card-lede">Five words for what your life is actually for. Once you’ve named them, the counsel argues from <em>your</em> standard instead of mine — and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
+      '<button class="btn" onclick="openValuesSort()">Sort my values</button>';
     return;
   }
-  el.innerHTML='<div style="margin-bottom:10px">'+o.v.map(function(id,i){
-      return '<div style="display:flex;align-items:baseline;gap:9px;padding:5px 0">'+
-        '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">'+(i+1)+'</span>'+
-        '<span style="font-size:'+(i===0?'16px':'14px')+';color:'+(i===0?'var(--go)':'var(--tx)')+'">'+valLabel(id)+'</span></div>';
+  // The five, ranked, as rows in the card. The first was 16px in the TINT and the other four 14px in
+  // the label colour — two neighbouring sizes two pixels apart, and a colour that says "tap me" on a
+  // word that does nothing. The "why that one" line is the app handing their own sentence back, so it
+  // speaks in our own face; it was 17px italic New York behind a tinted rule. The footnote is 13, left.
+  el.innerHTML='<div class="ios-list in-card values-list">'+o.v.map(function(id,i){
+      return '<div class="ios-row'+(i===0?' first':'')+'"><span class="row-rank">'+(i+1)+'</span>'+
+        '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(valLabel(id))+'</span></span></div>';
     }).join('')+'</div>'+
-    (o.why?'<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx2);line-height:1.55;border-left:2px solid var(--go-bd);padding-left:11px;margin-bottom:12px">'+_escFew(o.why)+'</div>':'')+
-    '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">A mirror, not a scoreboard. Nothing here is ever scored against you \u2014 and values move as life moves. Re-sort whenever it stops being true.</p>'+
-    '<button class="btn subtle" onclick="openValuesSort()">Re-sort</button>';
+    (o.why?'<div class="card-say values-why">'+_escFew(o.why)+'</div>':'')+
+    '<p class="card-note">A mirror, not a scoreboard. Nothing here is ever scored against you — and values move as life moves. Re-sort whenever it stops being true.</p>'+
+    '<button class="btn" onclick="openValuesSort()">Re-sort</button>';
 }
 
 // ════ BREATH & STILLNESS — the minimum viable work ════

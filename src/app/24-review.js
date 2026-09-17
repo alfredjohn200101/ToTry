@@ -696,7 +696,8 @@ function renderRelationships(){
   if(!list)return;
   const people=ls('totry_relationships')||[];
   if(!people.length){
-    list.innerHTML='<p class="empty-note">No one added yet.</p>';
+    list.className='';
+    list.innerHTML='<p class="card-note">No one added yet.</p>';
     return;
   }
   // Sort: those without recent contact first
@@ -706,6 +707,7 @@ function renderRelationships(){
     return new Date(a.lastContact)-new Date(b.lastContact);
   });
   list.innerHTML='';
+  list.className='ios-list in-card';
   sorted.forEach(p=>{
     let timeAgo='Never';
     let nudge='';
@@ -723,14 +725,18 @@ function renderRelationships(){
     }else{
       nudge='var(--re)';
     }
+    // A row: the name, then who they are and when you last connected, the WHEN in red once it has been
+    // too long and green when it is recent. That line was 11px CAPITALS ("FRIEND · NEVER") with the
+    // whole thing coloured, in a bordered grey box per person; "Connected" was a 13px button and the
+    // remove control a 13px grey ×. The two controls are the row's trailing capsule and its delete.
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px';
-    row.innerHTML='<div style="flex:1">'+
-      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(p.name)+'</div>'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+nudge+';margin-top:2px">'+_escFew(String(p.role||'someone').toUpperCase())+' · '+timeAgo+'</div>'+
-    '</div>'+
-    '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap)" onclick="logContact('+p.id+')">Connected</button>'+
-    '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap);background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';
+    row.className='ios-row has-del';
+    const _role=String(p.role||'someone');
+    const _when=nudge==='var(--re)'?'due-late':nudge==='var(--gr)'?'due-ok':'';
+    row.innerHTML='<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(p.name)+'</span>'+
+      '<span class="ios-row-sub" style="display:block">'+_escFew(_role.charAt(0).toUpperCase()+_role.slice(1))+' · <span class="'+_when+'">'+timeAgo+'</span></span></span>'+
+    '<button class="btn row-btn" onclick="logContact('+p.id+')">Connected</button>'+
+    '<button class="ios-row-x" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';
     list.appendChild(row);
   });
 }
@@ -828,19 +834,22 @@ async function renderLiturgy(){
   const dateEl = document.getElementById('liturgy-date');
   if(!box) return;
   if(typeof faithTradition==='function' && faithTradition()!=='christianity'){
-    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('calendar',44)+'<div class="ios-empty-body">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
     if(dateEl) dateEl.textContent = '';
     return;
   }
-  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  const _dateLine = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  if(dateEl) dateEl.textContent = _dateLine;
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ d = {readings:null,celebration:null}; }
   if(!d || (!d.readings && !d.celebration)){
-    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Today\u2019s readings couldn\u2019t load right now. Your verse and prayer above are ready whenever you are.</div><button class="btn" onclick="renderLiturgy()" style="margin-top:12px;width:auto;padding:8px 16px;font-size:var(--t-sm);background:var(--bg3)">Try again</button></div>';
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('cloud',44)+'<div class="ios-empty-body">Today\u2019s readings couldn\u2019t load right now. Your verse and prayer above are ready whenever you are.</div></div><button class="btn" onclick="renderLiturgy()">Try again</button>';
     return;
   }
   let html = '';
-  if(d.season){ html += '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">'+d.season+'</div>'; }
+  // The season joins the date under the title. It was a 12px caps line in the tint, between that
+  // sentence and the first card, labelling nothing.
+  if(d.season && dateEl){ dateEl.textContent = _dateLine + ' \u00b7 ' + String(d.season); }
   if(d.celebration){
     const c = d.celebration;
     // The free calendar API sometimes pairs a correct feast NAME with a quote/bio for a DIFFERENT
