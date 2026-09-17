@@ -25,10 +25,27 @@ function hapticsPossible(){
 }
 function renderHapticsRow(){
   try{
+    // A switch now, not an 'On \u2713' text button: its state is the stored truth, set here after every change.
     const b=document.getElementById('haptics-btn');
-    if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off';
+    if(b) b.checked = hapticsOn();
     const card=document.getElementById('haptics-card');
     if(card) card.style.display = hapticsPossible() ? '' : 'none';
+  }catch(_){}
+}
+// What a group row says on its trailing edge — the choice already made inside it, the way Settings.app
+// writes "On" beside Bluetooth. Called on open and by the two setters, so the value never lags the
+// checkmark underneath it.
+function renderSettingsSummaries(){
+  try{
+    const sx = (typeof userSex==='function') ? userSex() : ls('totry_sex');
+    const sv = document.getElementById('settings-sex-value');
+    if(sv) sv.textContent = sx==='female' ? 'Female' : (sx==='male' ? 'Male' : '');
+    document.querySelectorAll('.sex-opt').forEach(function(b){ const on=b.dataset.sex===sx; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+  }catch(_){}
+  try{
+    const tr = (typeof faithTradition==='function') ? faithTradition() : null;
+    const fv = document.getElementById('settings-faith-value');
+    if(fv) fv.textContent = (tr && typeof FAITHS!=='undefined' && FAITHS[tr] && FAITHS[tr].label) || '';
   }catch(_){}
 }
 
@@ -57,13 +74,16 @@ function initSettingsTab(){
       // told their new account does not exist. proceedAfterAuth does not reload the page, so the stale
       // copy is re-asserted on every Settings open for the rest of the session.
       bn.innerHTML = _guest
-        ? '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.'
-        : '<div class="card-hd" style="margin-bottom:6px">You\u2019re on the ToTry beta</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This is the web version \u2014 everything here is real and saved to your account.</div>';
+        ? '<div class="card-title">You are here as a guest.</div><p class="card-body">Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.</p>'
+        : '<div class="card-title">You\u2019re on the ToTry beta</div><p class="card-body">This is the web version \u2014 everything here is real and saved to your account.</p>';
     } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
-  try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
-  try{ const tr=(typeof faithTradition==='function')?faithTradition():'secular'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
+  // The two faith pickers are pick-one lists: the choice in force carries .active, which shows its
+  // checkmark. They used to be painted with an inline border colour and fill, which only this code knew.
+  try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }catch(_){}
+  try{ const tr=(typeof faithTradition==='function')?faithTradition():'secular'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }catch(_){}
+  try{ renderSettingsSummaries(); }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
@@ -81,7 +101,8 @@ function initSettingsTab(){
     const override=ls('totry_journey_start');
     const st=override||ls('totry_start');
     if(st){
-      s.textContent=new Date(st).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(override?' (custom)':'');
+      // A trailing row value, so the short date: 'Friday 10 April 2026' truncated to 'Friday 10 A…'.
+      s.textContent=new Date(st).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+(override?' (custom)':'');
     }
   }
   const dc=document.getElementById('settings-day-count');if(dc)dc.textContent='Day '+getDayCount();
@@ -801,27 +822,29 @@ function showPrivacyPolicy(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Privacy policy</h3>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026 · Plain English</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
+    '<h3>Privacy policy</h3>' +
+    // Sentence case under the title. It was 11px caps in the third grey, and at phone width the one
+    // line wrapped to two — the caps-that-wrap shape, on the page a reviewer reads.
+    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026 · Plain English</p>' +
+    '<div class="legal">' +
     
-      '<p style="margin-bottom:12px">This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
+      '<p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">1. What is collected</strong></p>' +
-      '<p style="margin-bottom:12px">Your email (to sign in), and everything you log inside the app: vices, habits, journal entries, training, nutrition, finances, prayers, goals, reflections, scripture, examens, measurements. Plus an anonymous identifier that links your data to your sign-in.</p>' +
+      '<h4>1. What is collected</h4>' +
+      '<p>Your email (to sign in), and everything you log inside the app: vices, habits, journal entries, training, nutrition, finances, prayers, goals, reflections, scripture, examens, measurements. Plus an anonymous identifier that links your data to your sign-in.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">2. Where it lives</strong></p>' +
-      '<p style="margin-bottom:12px">Two places. (a) On your device, in your browser\'s local storage. (b) In a Supabase database hosted on AWS in Sydney, Australia. Supabase encrypts data at rest. I (Alfred), as the project owner, can technically read this database — I have not, and I don\'t intend to, but it is not zero-knowledge encryption. If that matters to you, you should know it.</p>' +
+      '<h4>2. Where it lives</h4>' +
+      '<p>Two places. (a) On your device, in your browser\'s local storage. (b) In a Supabase database hosted on AWS in Sydney, Australia. Supabase encrypts data at rest. I (Alfred), as the project owner, can technically read this database — I have not, and I don\'t intend to, but it is not zero-knowledge encryption. If that matters to you, you should know it.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. What gets sent to third parties</strong></p>' +
-      '<p style="margin-bottom:6px">Some app features call external services to work. Each one sees something specific:</p>' +
-      '<ul style="margin:0 0 12px 18px;padding:0;line-height:1.7">' +
-        '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
-        '<li><strong style="color:var(--tx)">Photos you send to the coach</strong> \u2014 five things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter as a fallback): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, and a <strong>smart-scale screenshot</strong> (your weight and body composition are in it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
-        '<li><strong style="color:var(--tx)">Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
-        '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
-        '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
-        '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
+      '<h4>3. What gets sent to third parties</h4>' +
+      '<p>Some app features call external services to work. Each one sees something specific:</p>' +
+      '<ul>' +
+        '<li><strong>Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
+        '<li><strong>Photos you send to the coach</strong> \u2014 five things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter as a fallback): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, and a <strong>smart-scale screenshot</strong> (your weight and body composition are in it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
+        '<li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
+        '<li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
+        '<li><strong>Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
+        '<li><strong>Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         // Exercise GIFs were listed here and no longer happen: a census of every https:// in src/
         // finds ZERO requests to exercisedb or wger (calibrated against api.aladhan.com, which
         // returns five). Disclosing a host the app does not contact is the same kind of untruth as
@@ -829,42 +852,42 @@ function showPrivacyPolicy(){
         // cpbjr.github.io was named in NEITHER policy and is fetched automatically whenever a Christian
         // opens the Morning tab — no tap, no choice. An undisclosed automatic request is the worst
         // shape of this defect, so it gets its own bullet rather than a clause on someone else's.
-        '<li><strong style="color:var(--tx)">The day\u2019s readings</strong> \u2014 if your tradition is Christian, the Mass readings for today are fetched from cpbjr.github.io when you open Morning. It sees the date, nothing about you.</li>' +
-        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net; the Stoic readings come from en.wikisource.org. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
+        '<li><strong>The day\u2019s readings</strong> \u2014 if your tradition is Christian, the Mass readings for today are fetched from cpbjr.github.io when you open Morning. It sees the date, nothing about you.</li>' +
+        '<li><strong>Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net; the Stoic readings come from en.wikisource.org. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
         // Currency rates were listed here and no longer happen: fetchCurrencyRates() was removed at
         // v600.4 because nothing had ever read the rates it cached. A privacy page that claims a
         // request the app does not make is wrong in the direction that matters least, and still
         // wrong — this list is the one place a person is told exactly who hears from them.
-        '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
-        '<li><strong style="color:var(--tx)">Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
-        '<li><strong style="color:var(--tx)">Bible verse lookups</strong> — verse references go to api.esv.org.</li>' +
+        '<li><strong>Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
+        '<li><strong>Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
+        '<li><strong>Bible verse lookups</strong> — verse references go to api.esv.org.</li>' +
       '</ul>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">4. What never leaves your device</strong></p>' +
-      '<p style="margin-bottom:12px">Progress photos. They are stored only in your browser\'s local storage. They are not uploaded to my database, not synced across devices, not sent to any AI provider. If you clear your browser data, they\'re gone.</p>' +
-      '<p style="margin-bottom:12px">Your cycle data, if you track it. Period dates, flow and symptoms are stored in local storage on your device only. They are not written to my database and not synced. They are never sent to any AI provider \u2014 with one exception you control: if you switch on Settings &rarr; Your cycle &rarr; "Let the coach see my phase" (off by default), the coach is told the phase word only (e.g. "luteal"), never your dates, flow or symptoms. Leave it off and nothing about your cycle ever leaves the device. Backing them up to your account is off by default and only happens if you switch it on yourself in Settings &rarr; Your cycle &mdash; which also has a one-tap delete that erases them here and on the server. I will not sell, share or hand this data to anyone, and while backup is off there is nothing on my server for anyone to ask me for.</p>' +
+      '<h4>4. What never leaves your device</h4>' +
+      '<p>Progress photos. They are stored only in your browser\'s local storage. They are not uploaded to my database, not synced across devices, not sent to any AI provider. If you clear your browser data, they\'re gone.</p>' +
+      '<p>Your cycle data, if you track it. Period dates, flow and symptoms are stored in local storage on your device only. They are not written to my database and not synced. They are never sent to any AI provider \u2014 with one exception you control: if you switch on Settings &rarr; Your cycle &rarr; "Let the coach see my phase" (off by default), the coach is told the phase word only (e.g. "luteal"), never your dates, flow or symptoms. Leave it off and nothing about your cycle ever leaves the device. Backing them up to your account is off by default and only happens if you switch it on yourself in Settings &rarr; Your cycle &mdash; which also has a one-tap delete that erases them here and on the server. I will not sell, share or hand this data to anyone, and while backup is off there is nothing on my server for anyone to ask me for.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. What I do not do</strong></p>' +
-      '<p style="margin-bottom:12px">I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
-      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. <strong>One exception, and it is the only one:</strong> if the app hits an error, it sends the error message and the line it came from, so I can fix it. That text comes from the code, not from you \u2014 but I would rather tell you it exists than let you find it. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
+      '<h4>5. What I do not do</h4>' +
+      '<p>I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
+      '<p>Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. <strong>One exception, and it is the only one:</strong> if the app hits an error, it sends the error message and the line it came from, so I can fix it. That text comes from the code, not from you \u2014 but I would rather tell you it exists than let you find it. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
-      '<p style="margin-bottom:12px">Once your Coach message reaches Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
+      '<h4>6. What I cannot control</h4>' +
+      '<p>Once your Coach message reaches Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">7. Your control</strong></p>' +
-      '<p style="margin-bottom:12px">Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
+      '<h4>7. Your control</h4>' +
+      '<p>Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Children</strong></p>' +
-      '<p style="margin-bottom:12px">ToTry is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
+      '<h4>8. Children</h4>' +
+      '<p>ToTry is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
-      '<p style="margin-bottom:12px">Email <strong style="color:var(--tx)">totrybyaj@gmail.com</strong> or DM <strong style="color:var(--tx)">@totry_aj</strong> on Instagram if you have a privacy concern. I respond personally — there is no support team.</p>' +
+      '<h4>9. Contact</h4>' +
+      '<p>Email <strong>totrybyaj@gmail.com</strong> or DM <strong>@totry_aj</strong> on Instagram if you have a privacy concern. I respond personally — there is no support team.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">10. Changes</strong></p>' +
+      '<h4>10. Changes</h4>' +
       '<p>If this policy changes, the date at the top updates and the change goes in-app. I will not silently expand what I do with your data.</p>' +
     
     '</div>' +
-    '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
+    '<button class="btn legal-close" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -873,17 +896,17 @@ function showTermsOfUse(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Terms of use</h3>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026</div>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
+    '<h3>Terms of use</h3>' +
+    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026</p>' +
+    '<div class="legal">' +
     
-      '<p style="margin-bottom:12px">By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
+      '<p>By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">1. What this app is</strong></p>' +
-      '<p style="margin-bottom:12px">A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
+      '<h4>1. What this app is</h4>' +
+      '<p>A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">2. Not professional advice</strong></p>' +
-      '<p style="margin-bottom:12px">Nothing in this app is medical, psychiatric, legal, financial, or pastoral advice. The Coach is an AI — it can be wrong, it can be insensitive, it can hallucinate facts. If you have a real problem (mental health crisis, physical injury, financial emergency, suicidal thoughts), you need a real human professional. The app has a crisis-detection layer that will point you to one when it can — but it is not a substitute for one.</p>' +
+      '<h4>2. Not professional advice</h4>' +
+      '<p>Nothing in this app is medical, psychiatric, legal, financial, or pastoral advice. The Coach is an AI — it can be wrong, it can be insensitive, it can hallucinate facts. If you have a real problem (mental health crisis, physical injury, financial emergency, suicidal thoughts), you need a real human professional. The app has a crisis-detection layer that will point you to one when it can — but it is not a substitute for one.</p>' +
     
       // This said the app "reflects a Christian worldview" and that people of other faiths get "the
       // practical features". That was true when it was written and is no longer: the faith registry
@@ -891,17 +914,17 @@ function showTermsOfUse(){
       // scripture, prayer language and practice — and the default is SECULAR. Telling a Muslim only the
       // training and money features work for him is now simply false, and it is the kind of sentence
       // that makes someone close the app before they find what is actually there.
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. Where this comes from</strong></p>' +
-      '<p style="margin-bottom:12px">I built this honestly from what I believe — I am Catholic, and that is the heart it was made with. It is not built to convert you. The app follows <em>your</em> path: set it in Settings &#8594; Faith and the whole app moves with you — Christianity, Islam, Hinduism, Buddhism, or none at all, which is the default. Your scripture or none, your prayer or a plain reflection, your practice, your fasting season. If you want the faith side turned down or off entirely, that dial is yours too, and everything else works exactly the same.</p>' +
+      '<h4>3. Where this comes from</h4>' +
+      '<p>I built this honestly from what I believe — I am Catholic, and that is the heart it was made with. It is not built to convert you. The app follows <em>your</em> path: set it in Settings &#8594; Faith and the whole app moves with you — Christianity, Islam, Hinduism, Buddhism, or none at all, which is the default. Your scripture or none, your prayer or a plain reflection, your practice, your fasting season. If you want the faith side turned down or off entirely, that dial is yours too, and everything else works exactly the same.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">4. Acceptable use</strong></p>' +
-      '<p style="margin-bottom:12px">Don\'t use this app to plan harm to yourself or others. Don\'t attempt to reverse-engineer, scrape, or abuse the service. Don\'t share your account with others. Don\'t use the AI Coach to generate content for purposes outside personal growth.</p>' +
+      '<h4>4. Acceptable use</h4>' +
+      '<p>Don\'t use this app to plan harm to yourself or others. Don\'t attempt to reverse-engineer, scrape, or abuse the service. Don\'t share your account with others. Don\'t use the AI Coach to generate content for purposes outside personal growth.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. No guarantees</strong></p>' +
-      '<p style="margin-bottom:12px">The app is provided "as is." It might break, it might lose data despite my best efforts, the AI might say something you disagree with, a third-party service might go down. I will work to fix things, but I cannot promise uninterrupted service or be liable for damages from app failure. Export your important data regularly.</p>' +
+      '<h4>5. No guarantees</h4>' +
+      '<p>The app is provided "as is." It might break, it might lose data despite my best efforts, the AI might say something you disagree with, a third-party service might go down. I will work to fix things, but I cannot promise uninterrupted service or be liable for damages from app failure. Export your important data regularly.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. Free, sustained by goodwill</strong></p>' +
-      '<p style="margin-bottom:12px">This app is free and ad-free. Running it costs me money in AI API calls and hosting. ' +
+      '<h4>6. Free, sustained by goodwill</h4>' +
+      '<p>This app is free and ad-free. Running it costs me money in AI API calls and hosting. ' +
       // The support link is hidden in the App Store build (Guideline 3.1.1), so the terms must not
       // point at it there — otherwise this promises a button that isn't on the screen.
       ((typeof isNativeApp==='function' && isNativeApp())
@@ -909,17 +932,17 @@ function showTermsOfUse(){
         : 'If you find it valuable and want to help keep it free for others, you can support the project (link in Settings). Donations are entirely optional and never unlock features.') +
       '</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">7. Your data, your account</strong></p>' +
-      '<p style="margin-bottom:12px">One account per person. You can export your data or delete your account at any time. See the Privacy policy for how data is handled.</p>' +
+      '<h4>7. Your data, your account</h4>' +
+      '<p>One account per person. You can export your data or delete your account at any time. See the Privacy policy for how data is handled.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Changes</strong></p>' +
-      '<p style="margin-bottom:12px">Features may change. ToTry is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
+      '<h4>8. Changes</h4>' +
+      '<p>Features may change. ToTry is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
-      '<p><strong style="color:var(--tx)">totrybyaj@gmail.com</strong> · <strong style="color:var(--tx)">@totry_aj</strong> on Instagram · <strong style="color:var(--tx)">@alfred_john</strong> (personal).</p>' +
+      '<h4>9. Contact</h4>' +
+      '<p><strong>totrybyaj@gmail.com</strong> · <strong>@totry_aj</strong> on Instagram · <strong>@alfred_john</strong> (personal).</p>' +
     
     '</div>' +
-    '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
+    '<button class="btn legal-close" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -957,11 +980,11 @@ function openUniversalSearch(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Search your history</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Across journal, wins, saved verses, examens, prayers. Type 2+ characters.</p>' +
-    '<input type="text" id="search-input" placeholder="Try a word, a name, a feeling..." style="margin-bottom:14px;font-size:var(--t-base)" oninput="runUniversalSearch(this.value)" autofocus>' +
-    '<div id="search-results" style="max-height:55vh;overflow-y:auto;padding-right:4px"></div>' +
-    '<button class="btn" onclick="closeModal(this)" style="margin-top:12px">Close</button>' +
+    '<h3>Search your history</h3>' +
+    '<p class="modal-sub">Across journal, wins, saved verses, examens, prayers. Type 2+ characters.</p>' +
+    '<input type="text" id="search-input" class="search-field" placeholder="Try a word, a name, a feeling..." oninput="runUniversalSearch(this.value)" autofocus>' +
+    '<div id="search-results" class="search-results"></div>' +
+    '<button class="btn legal-close" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
   setTimeout(() => {
@@ -976,7 +999,8 @@ function runUniversalSearch(query){
   
   const q = (query || '').trim().toLowerCase();
   if(q.length < 2){
-    box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:30px 12px;font-style:italic">Start typing to search across your journal entries, wins, saved verses, examens, and prayers.</p>';
+    // An empty state, so centred — but upright, in the secondary grey. It was italic in the third grey.
+    box.innerHTML = '<div class="ios-empty"><div class="ios-empty-body">Start typing to search across your journal entries, wins, saved verses, examens, and prayers.</div></div>';
     return;
   }
   
@@ -988,7 +1012,8 @@ function runUniversalSearch(query){
       results.push({
         source: 'Journal',
         sourceColor: 'var(--go)',
-        date: e.date,
+        // Entries written by the journal carry a date string; older ones carry only ts, and printed "undefined".
+        date: e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''),
         body: e.text,
         mood: e.mood,
         onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'journal\'),100)'
@@ -1001,7 +1026,7 @@ function runUniversalSearch(query){
     if(w.text && w.text.toLowerCase().includes(q)){
       results.push({
         source: 'Win',
-        sourceColor: '#A8D8B9',
+        sourceColor: 'var(--gr)',
         date: w.date + (w.day ? ' · Day ' + w.day : ''),
         body: w.text,
         onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'wins\'),100)'
@@ -1054,7 +1079,7 @@ function runUniversalSearch(query){
   });
   
   if(!results.length){
-    box.innerHTML = '<p class="empty-note">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</p>';
+    box.innerHTML = '<div class="ios-empty"><div class="ios-empty-body">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</div></div>';
     return;
   }
   
@@ -1067,7 +1092,7 @@ function runUniversalSearch(query){
     if(!text) return '';
     const safe = text.replace(/</g, '&lt;');
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-    return safe.replace(re, '<mark style="background:var(--go-bd);color:var(--tx);padding:0 2px;border-radius:2px">$1</mark>');
+    return safe.replace(re, '<mark>$1</mark>');
   };
   
   // Take 1-line preview around the match
@@ -1080,17 +1105,19 @@ function runUniversalSearch(query){
     return (start > 0 ? '…' : '') + body.slice(start, end) + (end < body.length ? '…' : '');
   };
   
-  box.innerHTML = '<div class="eyebrow" style="margin-bottom:8px">' + results.length + ' result' + (results.length===1?'':'s') + '</div>' +
-    results.slice(0, 60).map(r => {
+  // One list, the way Mail draws a result: where it came from as the row's title, when on the trailing
+  // edge, the words around the match underneath. It was a stack of cards, each with an 11px caps source
+  // label in one of five colours (one a pale green that vanished on white) and an 11px date beside it.
+  box.innerHTML = '<div class="ios-header">' + results.length + ' result' + (results.length===1?'':'s') + '</div>' +
+    '<div class="ios-list">' + results.slice(0, 60).map(r => {
       const preview = previewText(r.body, q);
-      return '<div onclick="' + r.onclick + '" style="background:var(--bg2);border-radius:var(--rm);padding:10px 12px;margin-bottom:6px;cursor:pointer">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + r.sourceColor + ';text-transform:uppercase;letter-spacing:0.01em">' + r.source + '</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">' + r.date + '</div>' +
-        '</div>' +
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55' + (r.verse ? ';font-family:var(--font-serif);font-style:italic;font-size:var(--t-sm)' : '') + '">' + highlight(preview, q) + '</div>' +
-      '</div>';
-    }).join('');
+      return '<button type="button" class="ios-row search-hit" onclick="' + r.onclick + '">' +
+        '<span class="ios-row-body">' +
+          '<span class="search-hit-top"><span class="search-hit-source">' + r.source + '</span><span class="search-hit-date">' + r.date + '</span></span>' +
+          '<span class="search-hit-text' + (r.verse ? ' verse' : '') + '">' + highlight(preview, q) + '</span>' +
+        '</span>' +
+      '</button>';
+    }).join('') + '</div>';
 }
 
 // ── FULL BACKUP / RESTORE ─────────────────────────────────────
@@ -1154,11 +1181,11 @@ function restoreFullBackup(event){
       m.className = 'modal-bg open';
       m.style.alignItems = 'center';
       m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-        '<h3 style="margin-bottom:6px">Restore this backup?</h3>' +
-        '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:8px">From <strong>' + (backup.exportedAt ? new Date(backup.exportedAt).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'unknown date') + '</strong> · ' + keys.length + ' data sets.</p>' +
-        '<p style="font-size:var(--t-sm);color:var(--re);line-height:1.5;margin-bottom:14px">This replaces your current data on this device with the backup. Your cloud will then sync to match.</p>' +
-        '<button class="btn primary" onclick="confirmRestore()" style="margin-bottom:8px">Yes, restore it</button>' +
-        '<button class="btn" onclick="closeModal(this);window.__pendingRestore=null" style="background:transparent;background:var(--fill2)">Cancel</button>' +
+        '<h3>Restore this backup?</h3>' +
+        '<p class="modal-sub">From <strong>' + (backup.exportedAt ? new Date(backup.exportedAt).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'unknown date') + '</strong> · ' + keys.length + ' data sets.</p>' +
+        '<p class="modal-sub warn">This replaces your current data on this device with the backup. Your cloud will then sync to match.</p>' +
+        '<button class="btn primary" onclick="confirmRestore()">Yes, restore it</button>' +
+        '<button class="btn sheet-alt" onclick="closeModal(this);window.__pendingRestore=null">Cancel</button>' +
       '</div>';
       document.body.appendChild(m);
       window.__pendingRestore = backup.data;

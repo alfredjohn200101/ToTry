@@ -165,6 +165,29 @@ re-paint them at a call site.
 - `.footnote-link` — a footnote a thumb can land on (44pt), for the one that is really a control.
 - `.disclosure` — a `<summary>` as an iOS row with a chevron, instead of caps with an icon.
 
+### Roles named while rebuilding Settings
+
+- `.settings-stack` holding `<details>` whose `<summary class="ios-row has-icon">` is an ordinary row —
+  consecutive closed groups draw as ONE inset list (Settings.app), an open group ends the run and its
+  sections follow it, the chevron turns 90°. Same row markup as Train's `.tr-disclose`; the stack only
+  adds the chaining. The group row's trailing `.ios-row-value` says the choice made inside it.
+- `select.row-field` + `<span class="ios-row-chevron menu">` — a `<select>` as a row's value: no fill,
+  right-aligned (`text-align-last`, never `direction:rtl`, which flips brackets), a turned-down chevron.
+- `input.row-field[type="time"]` — iOS's compact time picker: the value in a grey capsule. `.row-unit` —
+  the unit after a numeric row field, same size, secondary ink.
+- `<label class="ios-row">` + `.ios-switch` — every on/off. The renderer sets `.checked` from storage,
+  never a label. A switch whose handler **asks first** (a confirm, Face ID, a permission, sign-in) is
+  written `onclick="this.checked=!this.checked;fn()"`: the tap puts it back and the renderer moves it once
+  the answer is saved, so a cancel cannot leave it lying.
+- A pick-one list is `button.ios-row` + `.ios-row-check`, selected by `.active` (+ `aria-pressed`), never
+  by an inline border colour. `.ios-row-mark` puts a text mark (a tradition's sign) in the icon slot.
+- `.crisis-card` rows: `.crisis-line` > `.crisis-name` (+ `.crisis-how` under it) and the number as the
+  link on the trailing edge, 44pt tall; `.crisis-note` is its footnote.
+- Sheets: `p.modal-sub` (note `.modal p` out-ranks a bare `.modal-sub`, which is why it is spelt with
+  the element), `.sheet-note` (a field's explanation, 15), `.sheet-block` (a hairline-topped second part),
+  `.btn.sheet-alt` (the second button's gap), `.legal` (a long document with its own scroll),
+  `.sheet-section` / `.sheet-list` (grouped rows inside a sheet), `.sheet-confirm` (the one centred sheet).
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

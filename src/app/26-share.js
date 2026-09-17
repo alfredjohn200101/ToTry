@@ -542,20 +542,21 @@ function openFeedback(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Help improve ToTry</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.55">Honest and specific helps most. What happened, what you expected, what you\'d want instead.</p>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Type</div>' +
-    '<div style="display:flex;gap:6px;margin-bottom:14px">' +
-      '<button class="meal-chip selected" id="fb-type-bug" onclick="setFeedbackType(\'bug\')" style="flex:1">'+svgIcon("tool")+' Bug</button>' +
-      '<button class="meal-chip" id="fb-type-idea" onclick="setFeedbackType(\'idea\')" style="flex:1">'+svgIcon("bulb")+' Idea</button>' +
-      '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">'+svgIcon("message")+' Other</button>' +
+    '<h3>Help improve ToTry</h3>' +
+    '<p class="modal-sub">Honest and specific helps most. What happened, what you expected, what you\'d want instead.</p>' +
+    // The type is a pick-one, so it is the segmented control. The label above it was 11px caps with no
+    // tracking; the checkbox under the field was a 15px line in the third grey with a browser tick box.
+    '<div class="lbl">Type</div>' +
+    '<div class="fb-types">' +
+      '<button class="meal-chip selected" id="fb-type-bug" onclick="setFeedbackType(\'bug\')">'+svgIcon("tool")+' Bug</button>' +
+      '<button class="meal-chip" id="fb-type-idea" onclick="setFeedbackType(\'idea\')">'+svgIcon("bulb")+' Idea</button>' +
+      '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')">'+svgIcon("message")+' Other</button>' +
     '</div>' +
-    '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:var(--t-base);line-height:1.6"></textarea>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:var(--t-sm);color:var(--tx3);cursor:pointer">' +
-      '<input type="checkbox" id="fb-include-state" checked style="width:auto;margin:0"> Include basic app info (helps me debug)' +
-    '</label>' +
-    '<button class="btn primary" onclick="submitFeedback()" style="margin-bottom:8px">Send</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Cancel</button>' +
+    '<textarea id="fb-text" class="fb-text" placeholder="Tell me what\'s on your mind..."></textarea>' +
+    '<div class="ios-list sheet-list"><label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Include basic app info</span><span class="ios-row-sub" style="display:block">Helps me debug</span></span>' +
+      '<input type="checkbox" class="ios-switch" id="fb-include-state" aria-label="Include basic app info" checked></label></div>' +
+    '<button class="btn primary" onclick="submitFeedback()">Send</button>' +
+    '<button class="btn sheet-alt" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
   setTimeout(() => document.getElementById('fb-text')?.focus(), 80);

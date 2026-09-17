@@ -89,11 +89,13 @@ function renderSyncStatus(){
   if(!el) return;
   const s = window.__syncState || {};
   const ago = (t) => { if(!t) return ''; const m = Math.round((Date.now()-t)/60000); return m<1?'just now':(m<60?(m+' min ago'):(Math.round(m/60)+'h ago')); };
-  if(typeof currentUser==='undefined' || !currentUser){ el.innerHTML = '<span style="color:var(--tx3)">Sign in to sync</span>'; return; }
-  if(s.status==='syncing'){ el.innerHTML = '<span style="color:var(--go)">Syncing\u2026</span>'; return; }
-  if(s.status==='error'){ el.innerHTML = '<span style="color:var(--re)">Not fully synced</span> <span style="color:var(--tx3);font-size:var(--t-cap)">\u00b7 '+(s.pending||0)+' change'+((s.pending===1)?'':'s')+' waiting, will retry</span>'; return; }
-  if(s.status==='synced' || s.lastSyncAt){ el.innerHTML = '<span style="color:var(--gr)">\u2713 Saved to cloud</span> <span style="color:var(--tx3);font-size:var(--t-cap)">'+(s.lastSyncAt?('\u00b7 '+ago(s.lastSyncAt)):'')+'</span>'; return; }
-  el.innerHTML = '<span style="color:var(--tx3)">Up to date</span>';
+  // The subtitle of the Cloud sync row: ONE size, and colour only on the word that carries the state.
+  // It was a coloured 17px span beside a 13px span in the third grey — two sizes read as one sentence.
+  if(typeof currentUser==='undefined' || !currentUser){ el.textContent = 'Sign in to sync'; return; }
+  if(s.status==='syncing'){ el.innerHTML = '<span class="sync-busy">Syncing\u2026</span>'; return; }
+  if(s.status==='error'){ el.innerHTML = '<span class="sync-bad">Not fully synced</span> \u00b7 '+(s.pending||0)+' change'+((s.pending===1)?'':'s')+' waiting, will retry'; return; }
+  if(s.status==='synced' || s.lastSyncAt){ el.innerHTML = '<span class="sync-ok">Saved to cloud</span>'+(s.lastSyncAt?(' \u00b7 '+ago(s.lastSyncAt)):''); return; }
+  el.textContent = 'Up to date';
 }
 function _setSyncState(patch){
   Object.assign(window.__syncState, patch);

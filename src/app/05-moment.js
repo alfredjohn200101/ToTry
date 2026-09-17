@@ -2011,19 +2011,23 @@ function openProgressCheckin(){
   const AREAS=['Clearer head','More disciplined','Better sleep','Stronger / fitter','Less of my vice','More at peace','More energy','Closer to God','More present with people'];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const picked=new Set();
-  m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
+  // A sheet like every other: the title in the sheet-title role (it named the display face itself at
+  // weight 700, a fake bold on a family with one roman weight), the sentence under it as the subtitle,
+  // left-aligned rather than a centred column, and the areas as the app's own capsules — which show
+  // their selection with the tint fill, where these were hand-painted 1px-bordered boxes.
+  m.innerHTML='<div class="modal pc-sheet">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
-    '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
-    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:var(--t-base);font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
-    '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
+    '<h3>How far have you come?</h3>'+
+    '<p class="modal-sub">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</p>'+
+    '<div class="pc-areas"></div>'+
+    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?"></textarea>'+
+    '<p class="sheet-note">'+_raffleCopy('send')+'</p>'+
+    '<button class="btn primary pc-send">Send it to Alfy</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   const areasWrap=m.querySelector('.pc-areas');
-  AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.style.cssText='padding:8px 12px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:var(--t-sm);cursor:pointer'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.style.borderColor='var(--bd)'; b.style.color='var(--tx2)'; b.style.background='var(--bg3)'; } else { picked.add(a); b.style.borderColor='var(--go)'; b.style.color='var(--tx)'; b.style.background='var(--go-bg)'; } }; areasWrap.appendChild(b); });
+  AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.className='meal-chip'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.classList.remove('selected'); } else { picked.add(a); b.classList.add('selected'); } b.setAttribute('aria-pressed', picked.has(a)?'true':'false'); }; areasWrap.appendChild(b); });
   m.querySelector('.pc-send').onclick=()=>{
     const note=(m.querySelector('.pc-note').value||'').trim();
     if(!picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
@@ -2056,7 +2060,9 @@ function openProgressCheckin(){
     try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
-    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:var(--t-2xl);margin-bottom:8px">🙏</div><div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
+    // A one-line confirmation, so it is the one sheet here that centres. The title is the sheet-title role
+    // rather than the display face named at weight 700.
+    t.innerHTML='<div class="modal sheet-confirm"><div class="sheet-confirm-mark">🙏</div><h3>Thank you — really.</h3><p class="modal-sub">'+_raffleCopy('thanks')+'</p><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
     document.body.appendChild(t);
     if(typeof haptic==='function') haptic('tap');
   };

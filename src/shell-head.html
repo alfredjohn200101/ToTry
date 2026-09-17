@@ -1043,16 +1043,8 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .win-icon{font-size:var(--t-lg);flex-shrink:0;margin-top:2px}
 .win-text{font-size:var(--t-base);color:var(--tx);flex:1;line-height:1.5}
 .win-date{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px}
-/* ── SETTINGS ── */
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--bd)}
-.setting-row:last-child{border-bottom:none}
-.sr-label{font-size:var(--t-base);font-weight:500;color:var(--tx)}
-.sr-desc{font-size:var(--t-cap);color:var(--tx3);margin-top:2px;line-height:1.4}
-.sr-action{flex-shrink:0;margin-left:12px}
-.crisis-card{background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--r);padding:16px;margin-bottom:12px}
-.settings-group{margin-bottom:12px}
-.settings-group summary{cursor:pointer;padding:14px 16px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-size:var(--t-md);font-weight:500;color:var(--tx);list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background 0.15s}
-.settings-group summary::-webkit-details-marker{display:none}
+/* ── SETTINGS ── the rows, the groups and the crisis card are drawn in the SETTINGS section at the
+   end of this stylesheet; the .setting-row / .sr-* / .settings-group recipes they replaced are gone. */
 /* EVERY <details> IN THE APP GETS THE SAME AFFORDANCE, and it is the one the app already had.
    Before this, of 15 folds only the 8 .settings-group ones had a designed disclosure (the rotating
    ▾ two rules above). Two user-facing folds — "How to export from MyFitnessPal" on Nourish and
@@ -1068,18 +1060,6 @@ details>summary{list-style:none;display:flex;justify-content:space-between;align
 details>summary::-webkit-details-marker{display:none}
 details>summary::after{content:'▾';color:var(--tx3);font-size:var(--t-cap);flex:none;transition:transform 0.2s}
 details[open]>summary::after{transform:rotate(180deg)}
-.settings-group summary::after{content:'▾';color:var(--tx3);font-size:var(--t-cap);transition:transform 0.2s}
-.settings-group[open] summary{background:var(--bg3);border-bottom-left-radius:0;border-bottom-right-radius:0}
-.settings-group[open] summary::after{transform:rotate(180deg)}
-.settings-group-hint{font-size:var(--t-cap);color:var(--tx3);font-weight:400;margin-left:auto;margin-right:8px}
-.settings-group[open] .card:first-of-type{margin-top:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none}
-.crisis-title{font-size:var(--t-md);font-weight:600;color:var(--re);margin-bottom:8px}
-.crisis-line{font-size:var(--t-base);color:var(--tx);margin-bottom:4px;line-height:1.5}
-.crisis-line a{color:var(--go);text-decoration:none}  /* GOLD, like the other 16. The app's most
-   important element was two colours depending on where you met it: every tel: link in the app
-   names var(--go) inline (16 of them, including the pre-sign-in gate and the ED support sheet),
-   and only the safety-net card inherited this rule's blue. Same numbers, same purpose, two inks.
-   Gold is the app's "reach for this" accent and it is the majority; the minority moved. */
 /* The payoff strategy was two bordered cards nested inside a card; it is a pick-one list now, so the
    .strategy-card / .sc-title rules that painted them are gone. .sc-desc stays — the identity-seasons
    picker uses it. */
@@ -1136,14 +1116,6 @@ details[open]>summary::after{transform:rotate(180deg)}
    — one pixel off the app's own label size, in the grey reserved for placeholders and disabled. */
 .tdee-label{font-size:var(--t-cap);color:var(--tx2);margin-bottom:5px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:.045em}
 /* ── CONNECTED APPS ── */
-.connected-app{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:8px}
-.ca-icon{width:38px;height:38px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:var(--t-xl);flex-shrink:0}
-.ca-name{font-size:var(--t-base);font-weight:500;color:var(--tx)}
-.ca-status{font-size:var(--t-cap);margin-top:2px}
-.ca-status.connected{color:var(--gr)}
-.ca-status.pending{color:var(--go)}
-.ca-status.unavailable{color:var(--tx3)}
-.ca-action{margin-left:auto;flex-shrink:0}
 
 
 /* ── IDENTITY LAYER (Stage 3) ── */
@@ -1671,7 +1643,7 @@ body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::bef
 .nb.active svg{transform:none !important;fill:var(--go-bg)}
 
 /* ── Surfaces: inset grouped cells. No borders, no shadows — separation is the grouped background. ─ */
-.card,.hub-card,.vice-card,.home-hero,.qa-btn,.sec-open,.food-result,.settings-group summary,.identity-strip,.sabbath-prayer-card{
+.card,.hub-card,.vice-card,.home-hero,.qa-btn,.sec-open,.food-result,.identity-strip,.sabbath-prayer-card{
   background:var(--bg2) !important;border:0 !important;box-shadow:none !important;border-radius:var(--r) !important}
 .card{padding:16px !important}
 .home-hero{text-align:left !important}
@@ -2613,6 +2585,180 @@ a.ios-row{text-decoration:none}
 .cal-cell-n.is-today{background:var(--go);color:var(--on-tint);font-weight:600}
 .cal-cell-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%;min-height:5px}
 .cal-cell-dots>span{width:5px;height:5px;border-radius:50%}
+
+/* ═══ SETTINGS ═══════════════════════════════════════════════════════════════════════════════════
+   The screen iOS people know best, so it is drawn the way they know it: groups are rows with an icon
+   tile, a setting is a row with its value on the trailing edge, an on/off is a switch, and anything
+   that explains is the section's footnote. Before this it was eight <details> cards whose 16px titles
+   wrapped in half beside a comma-separated hint strip and a ▾ glyph, "On ✓" text buttons standing in
+   for switches, and 11px caps labels with no tracking. Every rule below replaces a recipe the call
+   sites were painting; the rows themselves are the shared .ios-row, untouched. */
+#tab-settings>.card{margin-bottom:28px}
+#tab-settings .card-body:last-child,#tab-settings .card-foot:last-child{margin-bottom:0}
+#tab-settings .card>.btn+.card-foot{margin-top:10px}
+#tab-settings .card>.btn+.btn{margin-top:8px}
+#tab-settings a.btn{text-decoration:none}
+#tab-settings .card-body+#usage-stats-body:empty,#tab-settings .card-body+#moderation-body{margin-bottom:10px}
+
+/* A group is ONE row, and consecutive closed groups chain into one inset list — the hairline between
+   them inset past the tile, the corners only on the ends. An open group ends the run: it closes its
+   own corners, its rows follow, and the next group starts a fresh list. Only `+` and :first/:last-child,
+   which every WebKit the app runs on has; the one hidden group (Your cycle, for anyone who is not a
+   woman) is stepped over by name, because a display:none sibling still counts to `+`. */
+.settings-stack{margin:0 0 28px}
+.settings-stack>details{margin:0}
+.settings-stack>details>summary{list-style:none;cursor:pointer;background:var(--bg2)}
+.settings-stack>details>summary::-webkit-details-marker{display:none}
+.settings-stack>details>summary::marker{content:''}
+.settings-stack>details>summary::after{content:none !important}
+.settings-stack>details>summary:active{background:var(--bg4)}
+.settings-stack>details+details>summary::before{content:'';position:absolute;top:0;left:57px;right:0;height:.5px;background:var(--bd)}
+.settings-stack>details:first-child>summary{border-top-left-radius:10px;border-top-right-radius:10px}
+.settings-stack>details:last-child>summary,.settings-stack>details[open]>summary{border-bottom-left-radius:10px;border-bottom-right-radius:10px}
+.settings-stack>details[open]:not(:last-child){margin-bottom:28px}
+.settings-stack>details[open]+details>summary,
+.settings-stack>details[open]+details[style*="none"]+details>summary{border-top-left-radius:10px;border-top-right-radius:10px}
+.settings-stack>details[open]+details>summary::before,
+.settings-stack>details[open]+details[style*="none"]+details>summary::before{display:none}
+.settings-stack>details>summary .ios-row-chevron{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.settings-stack>details[open]>summary .ios-row-chevron{transform:rotate(90deg)}
+.settings-group-body{padding-top:22px}
+.settings-group-body>:last-child{margin-bottom:0}
+
+/* A row whose value is a control. The title keeps its natural width and one line; the control takes
+   the trailing edge in the secondary label colour, the way a Settings value reads. */
+label.ios-row{cursor:pointer}
+label.ios-row>.ios-row-body{flex:1 1 auto}
+/* A <select> as a row's value: no fill, right-aligned, with a chevron turned down beside it to say it
+   opens a menu. Spelt to out-rank the base field rule, whose !important fill would otherwise draw a
+   grey pill down the row's right-hand side. text-align-last, not direction:rtl — rtl reorders the
+   brackets in "Melbourne (AEDT/AEST)". */
+select.row-field{flex:0 1 auto;min-width:0;max-width:62%;width:auto;height:auto;margin:0 !important;padding:0 !important;
+  min-height:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;
+  color:var(--tx2) !important;text-align:right;text-align-last:right;text-overflow:ellipsis;-webkit-appearance:none;appearance:none;cursor:pointer}
+select.row-field:focus{box-shadow:none !important}
+.ios-row-chevron.menu{margin-left:-6px}
+.ios-row-chevron.menu .ic{transform:rotate(90deg)}
+/* A number typed on a row, and its unit in the same size and the secondary colour. */
+#settings-height.row-field{width:64px !important;color:var(--tx2) !important}
+#settings-height:placeholder-shown{width:80px !important}
+#settings-height:placeholder-shown+.row-unit{display:none}
+/* "10 Apr 2026 (custom)" is a whole value; the default 45% cut it to "(cust…". */
+#settings-start-date{max-width:62%}
+.row-unit{flex:none;margin-left:-6px;font-size:17px;letter-spacing:-.022em;color:var(--tx2)}
+/* A time on a row is iOS's compact date picker: the value in a grey capsule, not bare text. */
+input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([type="range"]){width:auto;min-width:0;
+  padding:5px 10px !important;border-radius:8px !important;background:var(--fill) !important;color:var(--tx) !important;
+  text-align:center;font-variant-numeric:tabular-nums;color-scheme:light dark}
+/* The traditions' own marks sit where a row's icon tile sits, so the names line up under each other. */
+/* The Om is the Devanagari sign itself (U+0950), not the emoji: U+1F549 has no text glyph on iOS or
+   macOS, so beside a cross, a crescent and a wheel drawn in the label ink it arrived as a purple tile. */
+.ios-row-mark{flex:none;width:29px;text-align:center;font-size:21px;line-height:1;color:var(--tx2)}
+/* A footnote may hold two paragraphs, and the words it wants read are weighted, not recoloured. */
+.ios-footnote p{margin:0}
+.ios-footnote p+p{margin-top:6px}
+.ios-footnote strong,.card-body strong{font-weight:600}
+.ios-footnote.warn{color:var(--go)}
+#settings-email-display{word-break:break-all}
+/* One ink for each sync state, one size for the whole line. It was a coloured span at 17px beside a
+   13px grey one — two sizes a person reads as one sentence. */
+.sync-ok{color:var(--gr)}
+.sync-busy{color:var(--go)}
+.sync-bad{color:var(--re)}
+/* The group whose rows the app writes (connected apps) sits above a row it does not: the hairline
+   between them is the one `.ios-row+.ios-row` cannot see, because a container stands in between. */
+#connected-apps-list>.ios-row{padding-top:7px;padding-bottom:7px}
+#connected-apps-list:not(:empty)+.ios-row::before{content:'';position:absolute;top:0;left:57px;right:0;height:.5px;background:var(--bd)}
+#connected-apps-list .ios-row-sub.good{color:var(--gr)}
+#connected-apps-list .btn.row-btn{margin-right:2px}
+
+/* THE CRISIS CARD. Kept a tinted ground — it is the one surface on this screen that must be found
+   without looking for it — but set as rows: a name on the left, the number on the right at 17pt in the
+   tint, a hairline between, and the whole number a 44pt target a shaking hand can land on. */
+.crisis-card{background:var(--re-bg);border:0;border-radius:var(--r);padding:13px 16px;margin:0 0 28px}
+.crisis-card .crisis-title{display:flex;align-items:center;gap:8px;margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-.022em;line-height:1.3;color:var(--re)}
+.crisis-card .crisis-title .ic{flex:none;width:18px;height:18px;stroke-width:2.2}
+.crisis-card .crisis-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0;
+  font-size:17px;line-height:1.3;letter-spacing:-.022em;color:var(--tx)}
+.crisis-card .crisis-line+.crisis-line{border-top:.5px solid var(--re-bd)}
+.crisis-name{flex:1 1 auto;min-width:0}
+.crisis-how{display:block;margin-top:1px;font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
+.crisis-card .crisis-line a{flex:none;display:flex;align-items:center;min-height:44px;margin:0;padding:0 0 0 14px;line-height:1.3;
+  font-weight:500;color:var(--go);white-space:nowrap;font-variant-numeric:tabular-nums;text-decoration:none}
+.crisis-card .crisis-line a.crisis-wide{flex:1 1 auto;gap:8px;padding:0;font-weight:400}
+.crisis-card .crisis-line a.crisis-wide .ic{flex:none;width:18px;height:18px}
+.crisis-note{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:6px}
+
+/* The show-up heatmap. Its legend was 11px caps in the faintest grey, its axis labels in DM Mono, a
+   face this app no longer ships. The legend is a footnote now; the chart text is San Francisco. */
+.heatmap-card{margin:0 !important;padding:14px 12px 12px !important}
+.heatmap-scroll{overflow-x:auto}
+#activity-heatmap svg text{font-family:var(--font-text);font-size:13px;fill:var(--tx2)}
+.heatmap-legend{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:0 4px;
+  font-size:13px;letter-spacing:-.006em;color:var(--tx2);font-variant-numeric:tabular-nums}
+.heatmap-scale{display:flex;align-items:center;gap:4px;flex:none}
+.heatmap-scale>i{display:block;width:11px;height:11px;border-radius:3px}
+.credits-card{margin:0 !important}
+.credits-card .card-note:first-child{margin-top:0}
+
+/* ── The sheets Settings opens ─────────────────────────────────────────────────────────────────────
+   Privacy, terms, search, restore, add an app, Past Sundays, the year in review, feedback, "how far
+   have you come", your journey. Between them they held six 11px caps eyebrows (two of which wrapped),
+   four centred italics, a Georgia numeral, a display-face title at weight 700, and a margin written
+   inline on nearly every element. They use the sheet roles now: .modal h3, .modal-sub, grouped rows. */
+.modal .sheet-section{margin:0 0 20px}
+.modal .sheet-list{margin:0 0 16px}
+/* .modal p (17px, line-height 1.65, 14px under) out-ranks a bare class, so every <p class="modal-sub">
+   in the app rendered at the body size the role exists to step down from. Named with the element here. */
+.modal p.modal-sub{font-size:15px;line-height:1.4;margin:0 0 16px}
+.modal h3+p.modal-sub{margin-top:-8px}
+.modal p.sheet-note{font-size:15px;line-height:1.4;margin:0 0 12px}
+.modal p.card-body{font-size:15px;line-height:1.45;margin:0 0 12px}
+.modal .btn.sheet-alt,.modal .legal-close{margin-top:8px}
+.modal .legal-close{margin-top:14px}
+.modal-sub.warn{color:var(--re)}
+.modal-sub strong{font-weight:600;color:var(--tx)}
+/* A long document in a sheet: one reading size, headings in the headline role, no inline margins. */
+/* It keeps its own scroll, so Close stays on screen under a document this long — as it always did. */
+.legal{max-height:60vh;overflow-y:auto;font-size:15px;line-height:1.47;letter-spacing:-.01em;color:var(--tx2)}
+.modal .legal p{font-size:15px;line-height:1.47;margin:0 0 12px}
+.legal h4{font-family:var(--font-text);font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-.022em;color:var(--tx);margin:22px 0 4px}
+.legal h4:first-child{margin-top:0}
+.legal strong{font-weight:600;color:var(--tx)}
+.legal ul{margin:0 0 12px;padding-left:18px}
+.legal li{margin-bottom:8px}
+.legal>p:last-child{margin-bottom:0}
+/* The sentence that explains a field inside a sheet — the subheadline role, not 15px in the third grey. */
+.sheet-note{font-size:15px;line-height:1.4;letter-spacing:-.01em;color:var(--tx2);margin:0 0 12px}
+.sheet-note b{font-weight:600;color:var(--tx)}
+.modal .sheet-field{margin-bottom:14px}
+.sheet-block{margin-top:24px;padding-top:18px;border-top:.5px solid var(--bd)}
+.sheet-block .btn{margin-top:2px}
+.sheet-confirm{text-align:center}
+.sheet-confirm-mark{font-size:34px;line-height:1;margin-bottom:10px}
+.journey-stats,.year-stats{margin-bottom:22px}
+.year-motto{margin-bottom:16px !important}
+.year-motto .card-body{margin-bottom:0}
+/* Feedback and "how far have you come": capsules for the choices, the field, the switch, the send. */
+.fb-types{display:flex;gap:6px;margin-bottom:14px}
+.fb-types>.meal-chip{flex:1 1 0;justify-content:center;gap:6px}
+.modal .fb-text{height:120px;resize:none;margin-bottom:14px;line-height:1.45}
+.pc-areas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.modal .pc-note{min-height:84px;resize:vertical;margin-bottom:12px}
+.modal.pc-sheet p.sheet-note{font-size:13px;line-height:1.38;letter-spacing:-.006em}
+.sheet-section .ios-row-value{max-width:66%}
+/* Search results, as Mail draws a result: where from and when on one line, the words beneath. */
+.modal .search-field{margin-bottom:16px}
+.search-results{max-height:55vh;overflow-y:auto}
+.search-hit{align-items:flex-start}
+.search-hit-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.search-hit-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--tx)}
+.search-hit-date{flex:none;font-size:15px;letter-spacing:-.016em;color:var(--tx2);font-variant-numeric:tabular-nums}
+.search-hit-text{display:block;margin-top:2px;font-size:15px;line-height:1.38;letter-spacing:-.016em;color:var(--tx2)}
+.search-hit-text.verse{font-family:var(--font-serif);letter-spacing:0}
+.search-results mark{background:var(--go-bg);color:var(--tx);border-radius:3px;padding:0 1px}
+.synth-stats{display:block;margin-top:4px}
+.modal .synth-text{font-size:17px;line-height:1.5;letter-spacing:-.022em;color:var(--tx);margin-bottom:16px}
 
 </style>
 </head>
@@ -5597,56 +5743,65 @@ Amen.</div></div>
 <!-- TAB 11: SETTINGS -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-settings" class="tab">
-  <div style="margin-bottom:12px">
-    <div class="page-title">Settings</div>
-    <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.5" data-intro-for="settings">The quiet controls. And the most important one of all is here too: the person you’re becoming.</div>
-  </div>
-  <div class="card" id="push-settings-card"></div>
-  <!-- Crisis resources always first, always visible -->
+  <!-- REBUILT AS AN iOS SETTINGS SCREEN (17 Sep 2026). It was a column of hand-painted cards: eight
+       <details> groups whose 16px titles wrapped in half ("About / you", "Faith & / meaning") beside a
+       comma-separated hint strip and a ▾ glyph; "On ✓" / "Off" text buttons standing in for switches;
+       11px caps labels with no tracking ("SIGNED IN AS", "CLOUD SYNC", "MORNING"); an italic grey caption
+       under the coffee link; four &lt;select&gt; boxes in a two-column grid, each with its own 13px note
+       wedged between the label and the field. Every group is now a row with an icon tile that opens in
+       place, every setting is an inset row with its value trailing, every on/off is a switch, and every
+       explanation is the section's footnote. No id, handler, storage key or sentence of meaning changed. -->
+  <h2 class="page-title">Settings</h2>
+  <p class="page-intro" data-intro-for="settings">The quiet controls. And the most important one of all is here too: the person you’re becoming.</p>
+
+  <!-- Crisis resources always first, always visible. Each line was a paragraph led by a flag emoji with
+       the name and the number running together mid-sentence, so the thing a person in trouble reaches
+       for was the tail of a line. Name left, number right, one row each, the whole number a 44pt target.
+       The flags said "these are Australian"; the footnote says it in words now. -->
   <div class="crisis-card">
     <div class="crisis-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> If you need real help right now</div>
-    <div class="crisis-line">&#127462;&#127482; Lifeline: <a href="tel:131114">13 11 14</a></div>
-    <div class="crisis-line">&#127462;&#127482; Beyond Blue: <a href="tel:1300224636">1300 22 4636</a></div>
-    <div class="crisis-line">&#127462;&#127482; Crisis Text: Text HOME to <a href="sms:0477013755">0477 01 3755</a></div>
+    <div class="crisis-line"><span class="crisis-name">Lifeline</span><a href="tel:131114">13 11 14</a></div>
+    <div class="crisis-line"><span class="crisis-name">Beyond Blue</span><a href="tel:1300224636">1300 22 4636</a></div>
+    <div class="crisis-line"><span class="crisis-name">Crisis Text<span class="crisis-how">Text HOME to</span></span><a href="sms:0477013755">0477 01 3755</a></div>
     <!-- findahelpline.com, not IASP. iasp.info/resources/Crisis_Centres/ now 301s to the IASP homepage
          (checked: final URL is https://www.iasp.info/), so the one international link in the crisis card
          landed a person in crisis on an advocacy org's front page with no helpline in sight. This is the
          same directory the sign-in screen and the AI crisis response already use — one resource,
          reachable, 130+ countries. -->
-    <div class="crisis-line"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">Find support in your country</a></div>
-    <div style="font-size:var(--t-cap);color:var(--tx2);margin-top:8px;line-height:1.5">ToTry is a self-improvement tool, not a substitute for professional support.</div>
+    <div class="crisis-line"><a class="crisis-wide" href="https://findahelpline.com" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Find support in your country</a></div>
+    <div class="crisis-note">The numbers above are Australian. ToTry is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
+  <!-- Daily reminders and "reach out to me first" — rendered by renderPushSettings() as grouped rows. -->
+  <div id="push-settings-card"></div>
+
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
-  <div class="card" style="background:var(--fill2)">
-    <div class="card-hd" style="margin-bottom:6px">Share your journey with Alfy</div>
-    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">This is built by one person, for you. <span id="feedback-raffle-line">Tell me what’s improving and what’s missing — I read every note.</span></div>
+  <div class="card">
+    <div class="card-title">Share your journey with Alfy</div>
+    <p class="card-body">This is built by one person, for you. <span id="feedback-raffle-line">Tell me what’s improving and what’s missing — I read every note.</span></p>
     <button class="btn primary" onclick="openProgressCheckin()">How far have you come?</button>
   </div>
 
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
-  <div id="beta-web-note" class="card" style="display:none;background:var(--go-bg)">
-    <div class="card-hd" style="margin-bottom:6px">You’re on the ToTry beta</div>
-    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you’ll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
+  <div id="beta-web-note" class="card" style="display:none">
+    <div class="card-title">You’re on the ToTry beta</div>
+    <p class="card-body">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong>Apple Health sync</strong> and <strong>reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you’ll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</p>
   </div>
 
-  <!-- ═══ GROUP 2: PREFERENCES (collapsed — set once, rarely changed) ═══ -->
-  <details class="settings-group">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Preferences <span class="settings-group-hint">Currency, units, theme, timezone, reminders</span></summary>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">Display & locale</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Changes apply immediately.</p>
-      
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:end">
-        <div class="pref-wide" style="display:flex;flex-direction:column">
-          <div class="eyebrow">Currency</div>
-            <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
-                 above declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
-                 changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
-                 because a person's debt is not a number we get to reinterpret. -->
-            <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
+  <!-- THE GROUPS. Consecutive closed groups draw as ONE inset list, which is what Settings.app is, rather
+       than a stack of separate rounded rectangles; an open group ends the run and its rows follow it. -->
+  <div class="settings-stack">
+  <details>
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Preferences</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-header">Display &amp; locale</div>
+        <div class="ios-list">
+          <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
+               declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
+               changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
+               because a person's debt is not a number we get to reinterpret. -->
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Currency</span></span><select id="settings-currency" class="row-field" aria-label="Currency" onchange="savePref('totry_currency',this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -5656,10 +5811,12 @@ Amen.</div></div>
             <option value="NZD">NZD — NZ Dollar</option>
             <option value="JPY">JPY — Japanese Yen</option>
             <option value="SGD">SGD — Singapore Dollar</option>
-          </select>
+          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
         </div>
-        <div>
-          <div class="eyebrow">Weight unit</div>
+        <div class="ios-footnote">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-list">
           <!-- totry_weight_unit has exactly ONE consumer in the whole file — the "Logged today: 82 kg"
                line under the weight log, converting nothing: a person on lb saw their 82.4kg as
                "82.4 lb" — a real number in the wrong unit, off by 2.2x, with "82.4kg" three lines
@@ -5672,174 +5829,149 @@ Amen.</div></div>
                someone is typing pounds into is exactly how 180lb became 180kg. Storage stays
                canonical kilograms; only the two edges convert. Lifted load is a different quantity
                and is deliberately still kg. -->
-          <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:2px">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();showToast('Saved','Weight now shows in '+this.value+'.')">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Weight unit</span></span><select id="settings-weight-unit" class="row-field" aria-label="Weight unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();showToast('Saved','Weight now shows in '+this.value+'.')">
             <option value="kg">kg</option>
             <option value="lb">lb</option>
-          </select>
-        </div>
-        <div>
-          <div class="eyebrow">Distance unit</div>
-          <select id="settings-distance-unit" onchange="savePref('totry_distance_unit',this.value);showToast('Saved','Distance in '+this.value)">
+          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Distance unit</span></span><select id="settings-distance-unit" class="row-field" aria-label="Distance unit" onchange="savePref('totry_distance_unit',this.value);showToast('Saved','Distance in '+this.value)">
             <option value="km">km</option>
             <option value="mi">mi</option>
-          </select>
+          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
         </div>
-        <div>
-          <div class="eyebrow">Theme</div>
-          <select id="settings-theme" onchange="applyTheme(this.value);savePref('totry_theme',this.value)">
-            <option value="system">System (default)</option>
+        <div class="ios-footnote">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Theme</span></span><select id="settings-theme" class="row-field" aria-label="Theme" onchange="applyTheme(this.value);savePref('totry_theme',this.value)">
+            <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
-          </select>
+          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
+          <!-- totry_timezone has three occurrences in the whole file: this write, the cloud-sync key list,
+               and this select's own restore. NOTHING reads it. Every date in the app comes from the
+               device's own clock via toLocaleDateString('en-AU'), which is what a person actually wants —
+               so the honest thing is to say the device decides, rather than imply a setting that does
+               nothing. Same call as the currency and weight-unit settings above. -->
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Timezone</span></span><select id="settings-timezone" class="row-field" aria-label="Timezone" onchange="savePref('totry_timezone',this.value);showToast('Noted','Your days still follow this device\u2019s clock.')">
+            <option value="auto">Auto-detect from device</option>
+            <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
+            <option value="Australia/Sydney">Sydney</option>
+            <option value="Australia/Brisbane">Brisbane</option>
+            <option value="Australia/Perth">Perth</option>
+            <option value="America/New_York">New York</option>
+            <option value="America/Los_Angeles">Los Angeles</option>
+            <option value="America/Chicago">Chicago</option>
+            <option value="Europe/London">London</option>
+            <option value="Europe/Paris">Paris</option>
+            <option value="Asia/Tokyo">Tokyo</option>
+            <option value="Asia/Singapore">Singapore</option>
+            <option value="Asia/Kolkata">India (IST)</option>
+            <option value="Asia/Dubai">Dubai</option>
+            <option value="Pacific/Auckland">Auckland</option>
+          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
         </div>
+        <div class="ios-footnote">Your days follow this device’s clock. Kept for a future export option.</div>
       </div>
-      
-      <div style="margin-bottom:10px">
-        <div class="eyebrow">Timezone</div>
-        <!-- totry_timezone has three occurrences in the whole file: this write, the cloud-sync key list,
-             and this select's own restore. NOTHING reads it. Every date in the app comes from the
-             device's own clock via toLocaleDateString('en-AU'), which is what a person actually wants —
-             so the honest thing is to say the device decides, rather than imply a setting that does
-             nothing. Same call as the currency and weight-unit settings above. -->
-        <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:2px">Your days follow this device’s clock. Kept for a future export option.</div>
-        <select id="settings-timezone" onchange="savePref('totry_timezone',this.value);showToast('Noted','Your days still follow this device\u2019s clock.')">
-          <option value="auto">Auto-detect from device</option>
-          <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
-          <option value="Australia/Sydney">Sydney</option>
-          <option value="Australia/Brisbane">Brisbane</option>
-          <option value="Australia/Perth">Perth</option>
-          <option value="America/New_York">New York</option>
-          <option value="America/Los_Angeles">Los Angeles</option>
-          <option value="America/Chicago">Chicago</option>
-          <option value="Europe/London">London</option>
-          <option value="Europe/Paris">Paris</option>
-          <option value="Asia/Tokyo">Tokyo</option>
-          <option value="Asia/Singapore">Singapore</option>
-          <option value="Asia/Kolkata">India (IST)</option>
-          <option value="Asia/Dubai">Dubai</option>
-          <option value="Pacific/Auckland">Auckland</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="card" id="haptics-card">
-      <div class="card-hd" style="margin-bottom:10px">Feel</div>
       <!-- The breath paces a phase with a tick a second now, and a repeating cue must be refusable:
            the soul note says quiet by default and never overbearing, and for some people a phone
            buzzing against them is the opposite of settling. Absent means ON, so nobody has to come
            here to get back what they already had. -->
-      <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label">Haptics</div><div class="sr-desc">The taps you feel &mdash; a tick a second through a breath so you can count it with your eyes shut, and a nudge when something lands.</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="haptics-btn" onclick="toggleHaptics()">On</button>
+      <div class="ios-section" id="haptics-card">
+        <div class="ios-header">Feel</div>
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Haptics</span></span><input type="checkbox" class="ios-switch" id="haptics-btn" aria-label="Haptics" onclick="toggleHaptics()"></label>
+        </div>
+        <div class="ios-footnote">The taps you feel — a tick a second through a breath so you can count it with your eyes shut, and a nudge when something lands.</div>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">Profile</div>
-      <div class="setting-row">
-        <div><div class="sr-label">Your name</div><div class="sr-desc" id="settings-name-display">Loading...</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="changeName()" aria-label="Edit your name">Edit</button>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Journey started</div><div class="sr-desc" id="settings-start-date">Loading...</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="editJourneyStart()" aria-label="Edit your journey start date">Edit</button>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Days on the journey</div><div class="sr-desc" id="settings-day-count">Loading...</div></div>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Height (for BMI)</div><div class="sr-desc">Used in body tracking</div></div>
-        <input type="number" id="settings-height" placeholder="cm" aria-label="Your height in centimetres" min="80" max="250" style="width:70px;flex:none;padding:6px 8px;font-size:var(--t-lg)" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)"><span style="font-size:var(--t-sm);color:var(--tx3);margin-left:6px;align-self:center">cm</span>
-      </div>
-      <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label">Someone you love</div><div class="sr-desc">Evening nudge to reach out to a person you love</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="partner-toggle-btn" onclick="togglePartner()">Loading...</button>
+      <div class="ios-section">
+        <div class="ios-header">Profile</div>
+        <div class="ios-list">
+          <button type="button" class="ios-row" onclick="changeName()" aria-label="Edit your name"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Your name</span></span><span class="ios-row-value" id="settings-name-display">Loading...</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+          <button type="button" class="ios-row" onclick="editJourneyStart()" aria-label="Edit your journey start date"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Journey started</span></span><span class="ios-row-value" id="settings-start-date">Loading...</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Days on the journey</span></span><span class="ios-row-value" id="settings-day-count">Loading...</span></div>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Height (for BMI)</span></span><input type="number" id="settings-height" class="row-field" placeholder="Not set" aria-label="Your height in centimetres" min="80" max="250" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)"><span class="row-unit">cm</span></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Someone you love</span><span class="ios-row-sub" style="display:block">Evening nudge to reach out to a person you love</span></span><input type="checkbox" class="ios-switch" id="partner-toggle-btn" aria-label="Someone you love" onclick="togglePartner()"></label>
+        </div>
       </div>
     </div>
   </details>
 
   <!-- About you — biological sex genuinely changes the body-loop math (calories, protein) and lets
        the sibling understand who it's speaking to. Optional, respectful, set once. -->
-  <details class="settings-group">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> About you <span class="settings-group-hint">Helps tailor your nutrition & training</span></summary>
-    <div class="card">
-      <p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:14px;line-height:1.6">This shapes the real numbers &mdash; calorie and protein targets, training context &mdash; and helps the app understand you. Used for the math, never to box you in.</p>
-      <div style="display:flex;gap:8px">
-        <button class="sex-opt" data-sex="male" onclick="setUserSex('male')" style="flex:1;padding:13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:var(--t-md);font-weight:600">Male</button>
-        <button class="sex-opt" data-sex="female" onclick="setUserSex('female')" style="flex:1;padding:13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:var(--t-md);font-weight:600">Female</button>
+  <details>
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">About you</span></span><span class="ios-row-value" id="settings-sex-value"></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-list">
+          <button type="button" class="ios-row sex-opt" data-sex="male" onclick="setUserSex('male')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Male</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row sex-opt" data-sex="female" onclick="setUserSex('female')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Female</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+        </div>
+        <div class="ios-footnote">This shapes the real numbers — calorie and protein targets, training context — and helps the app understand you. Used for the math, never to box you in.</div>
       </div>
     </div>
   </details>
 
   <!-- Your cycle — shown only to a woman, and only ever an offer. It is the most sensitive data in
        the app, so its privacy stance and its delete button live right next to its switch. -->
-  <details class="settings-group" id="cycle-settings-group" style="display:none">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Your cycle <span class="settings-group-hint">Phase-aware counsel &middot; stays on this device</span></summary>
-    <div class="card">
-      <p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:12px;line-height:1.6">Log the day your period starts and the rest of the app stops reading your month as one flat line &mdash; your food, your training, your fight and your sleep all get the context. It&rsquo;s an estimate from your own logs, never a certainty, and <strong style="color:var(--tx)">never fertility or contraception guidance</strong>.</p>
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:14px;line-height:1.6">Where it lives: <strong style="color:var(--tx2)">on this device only</strong>, by default. It is not sent to my server, never sent to any AI provider as dates, and never sold or shared &mdash; there is no advertiser or data broker anywhere in this app. If anyone ever asks me for your cycle data, there is nothing on my server to hand over unless you switched backup on yourself. You can erase all of it below in one tap.</p>
-      <div class="setting-row">
-        <div><div class="sr-label">Cycle counsel</div><div class="sr-desc">Show the phase card and the phase-aware lines</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="cycle-on-btn" onclick="cycleToggleOn()">Off</button>
+  <details id="cycle-settings-group" style="display:none">
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-pink"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Your cycle</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cycle counsel</span><span class="ios-row-sub" style="display:block">Show the phase card and the phase-aware lines</span></span><input type="checkbox" class="ios-switch" id="cycle-on-btn" aria-label="Cycle counsel" onclick="cycleToggleOn()"></label>
+        </div>
+        <div class="ios-footnote">Log the day your period starts and the rest of the app stops reading your month as one flat line — your food, your training, your fight and your sleep all get the context. It’s an estimate from your own logs, never a certainty, and <strong>never fertility or contraception guidance</strong>.</div>
       </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Where it&rsquo;s stored</div><div class="sr-desc">Off = this device only. On = survives a reinstall, but it leaves your phone.</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="cycle-backup-btn" onclick="cycleToggleBackup()">This device only</button>
+      <div class="ios-section">
+        <div class="ios-list">
+          <!-- Backup asks first, so the switch does not move until the answer is in: renderCycleSurfaces()
+               sets it from what was actually saved, and a cancelled confirm leaves it where it was. -->
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Where it’s stored</span><span class="ios-row-sub" style="display:block">Off = this device only. On = survives a reinstall, but it leaves your phone.</span></span><input type="checkbox" class="ios-switch" id="cycle-backup-btn" aria-label="Back up cycle data to your account" onclick="this.checked=!this.checked;cycleToggleBackup()"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Let the coach see my phase</span><span class="ios-row-sub" style="display:block">Off by default. On = the phase word only (never your dates) goes to the AI with the rest of your context.</span></span><input type="checkbox" class="ios-switch" id="cycle-ai-btn" aria-label="Let the coach see my phase" onclick="cycleToggleAI()"></label>
+        </div>
+        <div class="ios-footnote">Where it lives: <strong>on this device only</strong>, by default. It is not sent to my server, never sent to any AI provider as dates, and never sold or shared — there is no advertiser or data broker anywhere in this app. If anyone ever asks me for your cycle data, there is nothing on my server to hand over unless you switched backup on yourself. You can erase all of it below in one tap.</div>
       </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Let the coach see my phase</div><div class="sr-desc">Off by default. On = the phase word only (never your dates) goes to the AI with the rest of your context.</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="cycle-ai-btn" onclick="cycleToggleAI()">Off</button>
-      </div>
-      <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label">Delete my cycle data</div><div class="sr-desc">Erases every entry here and on the server. Cannot be undone.</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm);border-color:var(--re);color:var(--re)" onclick="cycleDeleteAll()">Delete</button>
+      <div class="ios-section">
+        <div class="ios-list">
+          <button type="button" class="ios-row destructive" onclick="cycleDeleteAll()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Delete my cycle data</span></span></button>
+        </div>
+        <div class="ios-footnote">Erases every entry here and on the server. Cannot be undone.</div>
       </div>
     </div>
   </details>
+
   <!-- Faith presence — the app is built honestly from a Christian heart, and that stays. But a man
        of another faith or none is fully welcome and fully served. This lets him meet the faith at the
-       depth that's true for him — never hidden, never forced. Meeting a man where he is IS the faith. -->
-  <details class="settings-group">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Faith &amp; meaning <span class="settings-group-hint">Your path, and how much surfaces</span></summary>
-    <div class="card">
-      <p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:12px;line-height:1.6">ToTry was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
-      <div class="lbl" style="margin-bottom:8px">Your path</div>
-      <div id="faith-tradition-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
-        <button class="faithtr-opt" data-tr="christianity" onclick="setFaithTradition('christianity')" style="text-align:left;padding:12px 13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-base)">✝ Christianity</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">Bible · the Church · the Rosary</div>
-        </button>
-        <button class="faithtr-opt" data-tr="islam" onclick="setFaithTradition('islam')" style="text-align:left;padding:12px 13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-base)">☪ Islam</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">Qur&rsquo;an · prayer · dhikr</div>
-        </button>
-        <button class="faithtr-opt" data-tr="hinduism" onclick="setFaithTradition('hinduism')" style="text-align:left;padding:12px 13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-base)">🕉︎ Hinduism</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">Bhagavad Gita · japa</div>
-        </button>
-        <button class="faithtr-opt" data-tr="buddhism" onclick="setFaithTradition('buddhism')" style="text-align:left;padding:12px 13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-base)">☸ Buddhism</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">Dhammapada · meditation</div>
-        </button>
-        <button class="faithtr-opt" data-tr="secular" onclick="setFaithTradition('secular')" style="grid-column:1 / -1;text-align:left;padding:12px 13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-base)">○ Secular / None</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">Stoic &amp; grounded wisdom &mdash; no belief required</div>
-        </button>
+       depth that's true for him — never hidden, never forced. Meeting a man where he is IS the faith.
+       Two pick-one lists with a checkmark on the one in force, as iOS asks any "choose one of these";
+       they were bordered tiles whose selection was a 1px border colour. The traditions' own marks stay
+       (they are content, not chrome) and sit where a row's icon sits, so the names align. -->
+  <details>
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Faith &amp; meaning</span></span><span class="ios-row-value" id="settings-faith-value"></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-header">Your path</div>
+        <div class="ios-list" id="faith-tradition-options">
+          <button type="button" class="ios-row has-icon faithtr-opt" data-tr="christianity" onclick="setFaithTradition('christianity')"><span class="ios-row-mark" aria-hidden="true">✝</span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Christianity</span><span class="ios-row-sub" style="display:block">Bible · the Church · the Rosary</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row has-icon faithtr-opt" data-tr="islam" onclick="setFaithTradition('islam')"><span class="ios-row-mark" aria-hidden="true">☪</span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Islam</span><span class="ios-row-sub" style="display:block">Qur&rsquo;an · prayer · dhikr</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row has-icon faithtr-opt" data-tr="hinduism" onclick="setFaithTradition('hinduism')"><span class="ios-row-mark" aria-hidden="true">ॐ</span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Hinduism</span><span class="ios-row-sub" style="display:block">Bhagavad Gita · japa</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row has-icon faithtr-opt" data-tr="buddhism" onclick="setFaithTradition('buddhism')"><span class="ios-row-mark" aria-hidden="true">☸</span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Buddhism</span><span class="ios-row-sub" style="display:block">Dhammapada · meditation</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row has-icon faithtr-opt" data-tr="secular" onclick="setFaithTradition('secular')"><span class="ios-row-mark" aria-hidden="true">○</span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Secular / None</span><span class="ios-row-sub" style="display:block">Stoic &amp; grounded wisdom — no belief required</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+        </div>
+        <div class="ios-footnote">ToTry was built honestly from a Christian heart — and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion’s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</div>
       </div>
-      <div class="lbl" style="margin-bottom:8px">How much surfaces</div>
-      <div id="faith-level-options" style="display:flex;flex-direction:column;gap:8px">
-        <button class="faith-opt" data-faith="full" onclick="setFaithLevel('full')" style="text-align:left;padding:13px 15px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-md)">Full &mdash; woven through</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">The reading, the practice, the daily verse &mdash; present through the day.</div>
-        </button>
-        <button class="faith-opt" data-faith="light" onclick="setFaithLevel('light')" style="text-align:left;padding:13px 15px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:var(--t-md)">Lighter &mdash; mostly the systems</div>
-          <div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">The companion and the whole-life systems lead; the reading stays available when you seek it, but surfaces less.</div>
-        </button>
+      <div class="ios-section">
+        <div class="ios-header">How much surfaces</div>
+        <div class="ios-list" id="faith-level-options">
+          <button type="button" class="ios-row faith-opt" data-faith="full" onclick="setFaithLevel('full')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Full — woven through</span><span class="ios-row-sub" style="display:block">The reading, the practice, the daily verse — present through the day.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+          <button type="button" class="ios-row faith-opt" data-faith="light" onclick="setFaithLevel('light')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Lighter — mostly the systems</span><span class="ios-row-sub" style="display:block">The companion and the whole-life systems lead; the reading stays available when you seek it, but surfaces less.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+        </div>
       </div>
     </div>
   </details>
+  </div>
 
   <div style="display:none"><div id="affirm-list"></div><input type="text" id="new-affirm"></div>
 
@@ -5847,77 +5979,197 @@ Amen.</div></div>
        only so any legacy references resolve safely; no visible redirect card needed. -->
   <div style="display:none"><textarea id="letter-text"></textarea><select id="letter-when"><option value="30">30</option></select><span id="letters-due"></span><span id="letters-list"></span></div>
 
-  <!-- ═══ GROUP 4: HISTORY & INSIGHTS (collapsed — explore when curious) ═══ -->
-  <details class="settings-group">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> History & insights <span class="settings-group-hint">Heatmap, past Sundays, search, year review</span></summary>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> Show-up heatmap</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.5">The days you actually showed up — past 12 weeks. Tap a day to see what you did.</p>
-      <div id="activity-heatmap" style="overflow-x:auto"></div>
-      <div id="activity-heatmap-legend" style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em"></div>
-    </div>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Past Sundays</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Every weekly synthesis the Coach has written for you. Read what you were navigating, week by week.</p>
-      <button class="btn primary" onclick="showSynthesisHistory()">Browse past weeks (<span id="synthesis-count">0</span>)</button>
-    </div>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search your history</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you’ve written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</p>
-      <button class="btn primary" onclick="openUniversalSearch()">Open search</button>
-    </div>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Year in review</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">See your full year of trying — anytime. Auto-prompts in late December.</p>
-      <div style="display:flex;gap:8px">
-        <select id="year-review-select" style="flex:1"></select>
-        <button class="btn primary" style="width:auto;padding:9px 14px;white-space:nowrap" onclick="showYearInReview(parseInt(document.getElementById('year-review-select').value))">View</button>
+  <div class="settings-stack">
+  <!-- The heatmap sizes its cells to the card it sits in, and a closed <details> has no width to measure,
+       so it draws again the moment the group opens. -->
+  <details ontoggle="if(this.open &amp;&amp; typeof renderActivityHeatmap==='function') renderActivityHeatmap()">
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-teal"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">History &amp; insights</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-header">Show-up heatmap</div>
+        <div class="card heatmap-card">
+          <div id="activity-heatmap" class="heatmap-scroll"></div>
+          <div id="activity-heatmap-legend" class="heatmap-legend"></div>
+        </div>
+        <div class="ios-footnote">The days you actually showed up — past 12 weeks. Tap a day to see what you did.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-list">
+          <button type="button" class="ios-row has-icon" onclick="showSynthesisHistory()"><span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Past Sundays</span></span><span class="ios-row-value" id="synthesis-count">0</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+        </div>
+        <div class="ios-footnote">Every weekly synthesis the Coach has written for you. Read what you were navigating, week by week.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-list">
+          <button type="button" class="ios-row has-icon" onclick="openUniversalSearch()"><span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Search your history</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+        </div>
+        <div class="ios-footnote">Find anything you’ve written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-header">Year in review</div>
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Year</span></span><select id="year-review-select" class="row-field" aria-label="Year to review"></select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
+          <button type="button" class="ios-row tint" onclick="showYearInReview(parseInt(document.getElementById('year-review-select').value))"><span class="ios-row-body"><span class="ios-row-title" style="display:block">View year in review</span></span></button>
+        </div>
+        <div class="ios-footnote">See your full year of trying — anytime. Auto-prompts in late December.</div>
       </div>
     </div>
   </details>
 
-  <!-- ═══ GROUP 5: APPS LINKED (collapsed — set once) ═══ -->
-  <details class="settings-group" id="connected-apps-section">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Connected apps <span class="settings-group-hint" id="connected-apps-hint">Nothing linked yet</span></summary>
-    
-    <div class="card">
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside ToTry. We open them with one tap and import data where possible.</p>
-      <div id="connected-apps-list"></div>
-      <button class="btn" onclick="showAddAppPicker()" style="margin-top:10px;font-size:var(--t-sm)">+ Add another app</button>
+  <details id="connected-apps-section">
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Connected apps</span></span><span class="ios-row-value" id="connected-apps-hint">Nothing linked yet</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-list">
+          <div id="connected-apps-list"></div>
+          <button type="button" class="ios-row tint" onclick="showAddAppPicker()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Add another app</span></span></button>
+        </div>
+        <div class="ios-footnote">Apps you use alongside ToTry. We open them with one tap and import data where possible.</div>
+      </div>
     </div>
   </details>
+  </div>
 
   <!-- Usage stats — dev-only -->
   <div class="card" id="usage-stats-card" style="display:none" data-dev-only="true">
-    <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Usage stats (dev)</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">AI calls + token totals so you can see how heavy the app is getting. Local only — never sent anywhere.</p>
+    <div class="card-hd">Usage stats (dev)</div>
+    <p class="card-body">AI calls + token totals so you can see how heavy the app is getting. Local only — never sent anywhere.</p>
     <div id="usage-stats-body"></div>
   </div>
 
   <!-- Demo data seed — dev-only. Loads a content-grade dataset ONCE (for the dedicated test
        account used to record tutorials/reels). No swap/restore — the account holds this data. -->
   <div class="card" id="demo-mode-card" style="display:none" data-dev-only="true">
-    <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="3" width="20" height="18" rx="2.5"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/></svg> Demo data (for tutorials)</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Loads a realistic, camera-ready dataset so every screen looks alive for recording. <b>Safe on your real account:</b> your data is snapshotted and downloaded first, syncing is switched off while demo data is loaded, and one tap puts everything back.</p>
-    <button class="btn primary" onclick="loadDemoData()" style="font-size:var(--t-base);margin-bottom:8px">Load demo data</button>
-    <button class="btn subtle" onclick="exitDemoMode()" style="margin-bottom:8px">↩ Restore my real data</button>
-    <button class="btn subtle" onclick="startFeatureTour()">▶ Play guided tour</button>
+    <div class="card-hd">Demo data (for tutorials)</div>
+    <p class="card-body">Loads a realistic, camera-ready dataset so every screen looks alive for recording. <b>Safe on your real account:</b> your data is snapshotted and downloaded first, syncing is switched off while demo data is loaded, and one tap puts everything back.</p>
+    <button class="btn primary" onclick="loadDemoData()">Load demo data</button>
+    <button class="btn" onclick="exitDemoMode()">Restore my real data</button>
+    <button class="btn" onclick="startFeatureTour()">Play guided tour</button>
   </div>
 
   <!-- Community moderation — dev-only. Review user-submitted exercises/foods before they go live
        in the shared library. Approve adds them for everyone; reject removes the submission. -->
   <div class="card" id="moderation-card" style="display:none" data-dev-only="true">
-    <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Community submissions</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Items users chose to share. Nothing goes into the public library until <b>you</b> approve it. Approve adds it for everyone; reject deletes the submission.</p>
-    <div id="moderation-body"><div style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:14px">Loading…</div></div>
-    <button class="btn subtle" onclick="loadPendingSubmissions()" style="margin-top:8px">↻ Refresh</button>
+    <div class="card-hd">Community submissions</div>
+    <p class="card-body">Items users chose to share. Nothing goes into the public library until <b>you</b> approve it. Approve adds it for everyone; reject deletes the submission.</p>
+    <div id="moderation-body"><div class="card-foot">Loading…</div></div>
+    <button class="btn" onclick="loadPendingSubmissions()">Refresh</button>
   </div>
 
-  <!-- ═══ GROUP 6: SUPPORT — WEB ONLY ═══
+  <div class="settings-stack">
+  <details>
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Your data &amp; account</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <!-- Revealed by renderLockRow() only on native, because the web has no way to unlock. -->
+      <div class="ios-section" id="lock-row" style="display:none">
+        <div class="ios-list">
+          <!-- Turning the lock on or off has to be PROVED with Face ID first, so the switch waits for the
+               proof: renderLockRow() moves it once it has been given, and a failed or cancelled check
+               leaves it exactly where it was. -->
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Lock ToTry with <span id="lock-kind">Face ID</span></span></span><input type="checkbox" class="ios-switch" id="lock-btn" aria-label="Lock ToTry" onclick="this.checked=!this.checked;toggleAppLock()"></label>
+        </div>
+        <div class="ios-footnote" id="lock-sub">Your journal, your fight and your money, behind Face ID. Off by default.</div>
+      </div>
+
+      <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
+           policy names it plainly — a promise you can check is worth more than a promise that sounds good. -->
+      <div class="ios-section">
+        <div class="ios-header">Anonymous usage counts</div>
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Count my usage</span><span class="ios-row-sub" style="display:block">Helps me see what actually helps people</span></span><input type="checkbox" class="ios-switch" id="metrics-toggle-btn" aria-label="Count my usage" onclick="toggleMetrics()"></label>
+        </div>
+        <div class="ios-footnote">Counts like “app opened” and “reminder set”, against a random ID — never your vices, prayers, journal, food, money or body data. Switch it off and the app works exactly the same.</div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-header">Export your data</div>
+        <div class="ios-list">
+          <button type="button" class="ios-row tint" onclick="exportFullBackup()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Full backup</span><span class="ios-row-sub" style="display:block">Download everything as one file</span></span></button>
+          <button type="button" class="ios-row tint" onclick="document.getElementById('backup-restore-input').click()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Restore from backup</span><span class="ios-row-sub" style="display:block">Load a backup file (replaces current data)</span></span></button>
+          <button type="button" class="ios-row tint" onclick="exportJournal()" aria-label="Export your journal"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Export journal</span><span class="ios-row-sub" style="display:block">Copy all entries as plain text</span></span></button>
+          <button type="button" class="ios-row tint" onclick="exportWins()" aria-label="Export your wins"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Export wins</span><span class="ios-row-sub" style="display:block">Copy all wins as plain text</span></span></button>
+          <button type="button" class="ios-row tint" onclick="exportWorkouts()" aria-label="Export your training history"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Export workouts</span><span class="ios-row-sub" style="display:block">Copy session history as plain text</span></span></button>
+        </div>
+        <input type="file" id="backup-restore-input" accept=".json,application/json" style="display:none" onchange="restoreFullBackup(event)">
+      </div>
+
+      <!-- A SECOND "Full backup" card used to sit here, one card below the "Export your data" one,
+           with its own export and restore. Both wrote totry-backup-<date>.json and so overwrote
+           each other in Downloads — see the note above exportFullBackup(), which was widened to
+           the same source of truth as exportAllData. Two doors to one file, and the person had no
+           way to know which of the two files they were keeping. The surviving card carries both
+           directions: exportFullBackup() and restoreFullBackup(). -->
+
+      <div class="ios-section">
+        <div class="ios-header">Account</div>
+        <div class="ios-list">
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Signed in as</span><span class="ios-row-sub" style="display:block" id="settings-email-display">Loading...</span></span></div>
+          <!-- Sync status (cloud-first). So a sync problem is always VISIBLE, never silent. -->
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cloud sync</span><span class="ios-row-sub" style="display:block" id="sync-status-line">Checking…</span></span><button type="button" class="btn row-btn" onclick="syncNow()">Sync now</button></div>
+        </div>
+        <div class="ios-footnote">Your data is saved to your account in the cloud — that’s the real copy. This device keeps a fast local copy. Sign out anytime; everything restores when you sign back in.</div>
+      </div>
+      <div class="ios-section">
+        <div class="ios-list">
+          <button type="button" class="ios-row tint" onclick="signOut()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Sign out</span></span></button>
+        </div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-header">Danger zone</div>
+        <div class="ios-list">
+          <button type="button" class="ios-row destructive" onclick="resetAll()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Reset all local data</span><span class="ios-row-sub" style="display:block">Wipe device storage. Cloud data stays.</span></span></button>
+          <button type="button" class="ios-row destructive" onclick="deleteAccount()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Delete account permanently</span><span class="ios-row-sub" style="display:block">All data, cloud + local. No recovery.</span></span></button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary class="ios-row has-icon"><span class="ios-row-icon tone-indigo"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">About ToTry</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
+    <div class="settings-group-body">
+      <div class="ios-section">
+        <div class="ios-header">About</div>
+        <div class="ios-list">
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Built by</span></span><span class="ios-row-value">Alfred John</span></div>
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Instagram</span></span><span class="ios-row-value">&#64;totry_aj</span></div>
+          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Version</span></span><span class="ios-row-value" id="app-version-stamp"></span></div>
+        </div>
+        <div class="ios-footnote"><p>For anyone trying to be better at anything.</p><p>Anonymous, aggregate usage stats (opens, installs, feature milestones) help improve the app. Never collected: your vices, prayers, journals, food, or weight — that data is yours alone. No cross-site tracking and no ads. Your personal data isn’t sold, and that won’t change.</p></div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-header">Scripture &amp; text credits</div>
+        <div class="card credits-card">
+          <p class="card-note">Scripture quotations marked <strong>ESV</strong> are from the ESV&reg; Bible (The Holy Bible, English Standard Version&reg;), copyright &copy; 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.</p>
+          <p class="card-note">Other Bible translations shown are the Berean Standard Bible, the American Standard Version, the King James Version and the World English Bible &mdash; all public domain. Study notes are the Tyndale Open Study Notes, used under their open licence.</p>
+          <p class="card-note">The Qur&rsquo;an is served by alquran.cloud, the Bhagavad Gita by vedicscriptures.github.io, and the Dhammapada and suttas by SuttaCentral, whose translations are dedicated to the public domain.</p>
+          <p class="card-note">Prayer times are calculated by the Aladhan API.</p>
+        </div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-header">Privacy &amp; legal</div>
+        <div class="ios-list">
+          <button type="button" class="ios-row" onclick="showPrivacyPolicy()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Privacy policy</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+          <button type="button" class="ios-row" onclick="showTermsOfUse()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Terms of use</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+        </div>
+        <div class="ios-footnote">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</div>
+      </div>
+    </div>
+  </details>
+  </div>
+
+  <!-- HELP IMPROVE — always visible, this is the QA channel. The name is the row, not a caps header:
+       uppercased, the brand read as "TOTRY". -->
+  <div class="ios-section">
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="openFeedback()"><span class="ios-row-icon tone-yellow"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.75V17h8v-2.25A7 7 0 0 0 12 2z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Help improve ToTry</span><span class="ios-row-sub" style="display:block">Send feedback or report a bug</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+    </div>
+    <div class="ios-footnote">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what’s wrong. Every message is read.</div>
+  </div>
+
+  <!-- SUPPORT — WEB ONLY.
        App Store Guideline 3.1.1: an app "may not include buttons, external links, or other calls to
        action that direct customers to purchasing mechanisms other than in-app purchase". The donation
        exemption in 3.2.1(vii) covers approved nonprofits collecting charitable donations — not a solo
@@ -5925,138 +6177,12 @@ Amen.</div></div>
        and "Optional. Never unlocks features" does not exempt it: the link itself is the violation.
        So this card is hidden inside the App Store build and stays exactly as it is on the web, where
        it is perfectly fine. Gated in initSettingsTab via #support-card. -->
-  <div class="card" id="support-card" style="display:none;background:var(--go-bg);border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> Support the project</div>
-    <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.7">
-      <p style="margin-bottom:10px">ToTry costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
-      <p style="margin-bottom:14px;font-size:var(--t-sm);color:var(--tx3);font-style:italic">Optional. Never unlocks features. Just keeps the app free for everyone.</p>
-      <a href="https://buymeacoffee.com/totrybyaj" target="_blank" rel="noopener" class="btn primary" style="display:block;text-align:center;text-decoration:none;padding:11px;font-size:var(--t-base)">Buy me a coffee →</a>
-    </div>
+  <div class="card" id="support-card" style="display:none">
+    <div class="card-title">Support the project</div>
+    <p class="card-body">ToTry costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
+    <a href="https://buymeacoffee.com/totrybyaj" target="_blank" rel="noopener" class="btn">Buy me a coffee →</a>
+    <p class="card-foot">Optional. Never unlocks features. Just keeps the app free for everyone.</p>
   </div>
-
-  <!-- ═══ GROUP 7: DATA & ACCOUNT (collapsed — destructive, careful actions) ═══ -->
-  <details class="settings-group">
-    <summary><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Your data & account <span class="settings-group-hint">Lock, export, sign out, delete</span></summary>
-
-    <!-- Revealed by renderLockRow() only on native, because the web has no way to unlock. -->
-    <div class="card" id="lock-row" style="display:none">
-      <div class="card-hd" style="margin-bottom:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Lock ToTry with <span id="lock-kind">Face ID</span></div>
-      <div id="lock-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">Your journal, your fight and your money, behind Face ID. Off by default.</div>
-      <button class="btn" id="lock-btn" style="background:var(--bg3);font-size:var(--t-sm)" onclick="toggleAppLock()">Turn on</button>
-    </div>
-    
-    <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
-         policy names it plainly — a promise you can check is worth more than a promise that sounds good. -->
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">Anonymous usage counts</div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">Counts like &ldquo;app opened&rdquo; and &ldquo;reminder set&rdquo;, against a random ID — never your vices, prayers, journal, food, money or body data. Switch it off and the app works exactly the same.</div>
-      <div class="setting-row">
-        <div><div class="sr-label">Count my usage</div><div class="sr-desc">Helps me see what actually helps people</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" id="metrics-toggle-btn" onclick="toggleMetrics()">On ✓</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">Export your data</div>
-      <div class="setting-row">
-        <div><div class="sr-label">Full backup</div><div class="sr-desc">Download everything as one file</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="exportFullBackup()">Backup</button>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Restore from backup</div><div class="sr-desc">Load a backup file (replaces current data)</div></div>
-        <input type="file" id="backup-restore-input" accept=".json,application/json" style="display:none" onchange="restoreFullBackup(event)">
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="document.getElementById('backup-restore-input').click()">Restore</button>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Export journal</div><div class="sr-desc">Copy all entries as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="exportJournal()" aria-label="Export your journal">Export</button>
-      </div>
-      <div class="setting-row">
-        <div><div class="sr-label">Export wins</div><div class="sr-desc">Copy all wins as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="exportWins()" aria-label="Export your wins">Export</button>
-      </div>
-      <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label">Export workouts</div><div class="sr-desc">Copy session history as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="exportWorkouts()" aria-label="Export your training history">Export</button>
-      </div>
-    </div>
-    
-    <!-- A SECOND "Full backup" card used to sit here, one card below the "Export your data" one,
-         with its own export and restore. Both wrote totry-backup-<date>.json and so overwrote
-         each other in Downloads — see the note above exportFullBackup(), which was widened to
-         the same source of truth as exportAllData. Two doors to one file, and the person had no
-         way to know which of the two files they were keeping. The surviving card carries both
-         directions: exportFullBackup() and restoreFullBackup(). -->
-
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Account</div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">Signed in as</div>
-      <div id="settings-email-display" style="font-size:var(--t-md);color:var(--tx);margin-bottom:12px;word-break:break-all">Loading...</div>
-      <!-- Sync status (cloud-first). So a sync problem is always VISIBLE, never silent. -->
-      <div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <div style="flex:1;min-width:0">
-            <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Cloud sync</div>
-            <div id="sync-status-line" style="font-size:var(--t-base);color:var(--tx);line-height:1.4">Checking…</div>
-          </div>
-          <button class="btn" onclick="syncNow()" style="width:auto;padding:8px 14px;font-size:var(--t-sm);margin:0;background:var(--bg);color:var(--go);flex-shrink:0">Sync now</button>
-        </div>
-      </div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Your data is saved to your account in the cloud &mdash; that&apos;s the real copy. This device keeps a fast local copy. Sign out anytime; everything restores when you sign back in.</p>
-      <button class="btn subtle" onclick="signOut()" style="margin-bottom:10px">Sign out</button>
-    </div>
-    
-    <div class="card" style="border-color:rgba(216,93,75,0.3)">
-      <div class="card-hd" style="margin-bottom:8px;color:var(--re)">Danger zone</div>
-      <div class="setting-row" style="border-bottom:1px solid var(--bd)">
-        <div><div class="sr-label" style="color:var(--re)">Reset all local data</div><div class="sr-desc">Wipe device storage. Cloud data stays.</div></div>
-        <button class="btn danger sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="resetAll()">Reset</button>
-      </div>
-      <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label" style="color:var(--re)">Delete account permanently</div><div class="sr-desc">All data, cloud + local. No recovery.</div></div>
-        <button class="btn danger sr-action" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="deleteAccount()">Delete</button>
-      </div>
-    </div>
-  </details>
-
-  <!-- HELP IMPROVE — always visible, this is the QA channel -->
-  <div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.75V17h8v-2.25A7 7 0 0 0 12 2z"/></svg> Help improve ToTry</div>
-    <p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what’s wrong. Every message is read.</p>
-    <button class="btn primary" onclick="openFeedback()">Send feedback or report a bug</button>
-  </div>
-
-  <!-- ═══ GROUP 8: ABOUT (collapsed — read once, rarely revisited) ═══ -->
-  <details class="settings-group">
-    <summary>ℹ About ToTry <span class="settings-group-hint">Privacy, terms, contact</span></summary>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:6px">About</div>
-      <p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:8px">Anonymous, aggregate usage stats (opens, installs, feature milestones) help improve the app. Never collected: your vices, prayers, journals, food, or weight — that data is yours alone. No cross-site tracking and no ads. Your personal data isn’t sold, and that won’t change.</p>
-      <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.7">
-        <p style="margin-bottom:6px">Built by <strong style="color:var(--tx)">Alfred John</strong>. For anyone trying to be better at anything.</p>
-        <p>&#64;totry_aj on Instagram</p>
-      </div>
-      <div id="app-version-stamp" style="font-size:var(--t-mini);color:var(--tx3);font-family:var(--font-text);letter-spacing:0.01em;margin-top:10px;opacity:0.7"></div>
-    </div>
-    
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Scripture &amp; text credits</div>
-      <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.7">
-        <p style="margin-bottom:8px">Scripture quotations marked <strong style="color:var(--tx2)">ESV</strong> are from the ESV&reg; Bible (The Holy Bible, English Standard Version&reg;), copyright &copy; 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.</p>
-        <p style="margin-bottom:8px">Other Bible translations shown are the Berean Standard Bible, the American Standard Version, the King James Version and the World English Bible &mdash; all public domain. Study notes are the Tyndale Open Study Notes, used under their open licence.</p>
-        <p style="margin-bottom:8px">The Qur&rsquo;an is served by alquran.cloud, the Bhagavad Gita by vedicscriptures.github.io, and the Dhammapada and suttas by SuttaCentral, whose translations are dedicated to the public domain.</p>
-        <p>Prayer times are calculated by the Aladhan API.</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
-      <button class="btn subtle" onclick="showPrivacyPolicy()" style="margin-bottom:8px">Privacy policy</button>
-      <button class="btn subtle" onclick="showTermsOfUse()">Terms of use</button>
-    </div>
-  </details>
 </div>
 
 

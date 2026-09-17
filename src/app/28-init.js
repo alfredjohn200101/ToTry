@@ -220,75 +220,78 @@ async function _verifyNativeNotifPermission(){
     if(r && r.display === 'granted') return;             // the card is telling the truth
     const box = document.getElementById('push-settings-card');
     if(!box || box.querySelector('.notif-perm-warn')) return;
+    // A second footnote under the reminders list, in the tint — not a bordered tinted box of its own.
     const warn = document.createElement('div');
-    warn.className = 'notif-perm-warn';
-    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:var(--rs);font-size:var(--t-sm);color:var(--go);line-height:1.55';
+    warn.className = 'notif-perm-warn ios-footnote warn';
     warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 ToTry.';
-    box.appendChild(warn);
+    (box.querySelector('.ios-section') || box).appendChild(warn);
   }catch(_){}
 }
 
+// THE REMINDERS, AS SETTINGS ROWS. They were an 11px gold caps eyebrow, a 15px paragraph, two time
+// fields under 11px caps labels in a two-column grid, a tinted 'Save times' block and a grey 'Turn
+// reminders off' block. Now: one switch row, the two times as rows with the value on the trailing edge,
+// the explanation as the section's footnote. Every id, handler and sentence is the one it was.
+//
+// The master switch does NOT move on the tap. Turning reminders on asks iOS (and on the web, the
+// server) first and can end in a refusal that re-renders nothing, so the switch waits: the tap puts it
+// back, and this function draws it from what was actually saved once the answer is in.
+function _remindersListHTML(on, prefs, footerHTML){
+  const sw = '<input type="checkbox" class="ios-switch" aria-label="Daily reminders"' + (on ? ' checked' : '') +
+    ' onclick="this.checked=!this.checked;' + (on ? 'disablePushReminders()' : 'enablePushReminders()') + '">';
+  const rows = [iosRow({ tag:'label', icon:'bell', tone:'red', title:'Daily reminders', trailing: sw })];
+  if(on){
+    rows.push(iosRow({ tag:'label', title:'Morning', trailing:'<input type="time" id="push-time-morning" class="row-field" aria-label="Morning reminder time" value="'+prefs.morning+'">' }));
+    rows.push(iosRow({ tag:'label', title:'Evening', trailing:'<input type="time" id="push-time-evening" class="row-field" aria-label="Evening reminder time" value="'+prefs.evening+'">' }));
+    rows.push(iosRow({ title:'Save times', tint:true, onclick:'savePushTimes()', chevron:false }));
+  }
+  return '<div class="ios-section"><div class="ios-list">' + rows.join('') + '</div>' +
+    '<div class="ios-footnote">' + footerHTML + '</div></div>';
+}
 function renderPushSettings(){
   const box=document.getElementById('push-settings-card'); if(!box) return;
   const prefs=_pushPrefs();
-  const reachOn = !ls('totry_reachout_off');
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  const head='<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Daily reminders</div>';
   // NATIVE: the wrapped app has no PushManager and isn't "standalone" by the web test, so the web
   // branches below would wrongly say "can't receive notifications" / "add to Home Screen" and never
-  // show the button. Render the real reminders UI here, keyed on the saved preference (native
-  // permission is handled when they tap Enable), and return before the web-only checks.
+  // show the switch. Render the real reminders UI here, keyed on the saved preference (native
+  // permission is handled when they turn it on), and return before the web-only checks.
   if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
     if(prefs.enabled){
-      box.innerHTML = head +
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.</div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-        '</div>' +
-        '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);color:var(--go);font-size:var(--t-sm);margin-bottom:8px">Save times</button>' +
+      box.innerHTML = _remindersListHTML(true, prefs,
+          'A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.') +
         // The receptivity gate's real row — toggle AND quiet hours AND why nothing is scheduled.
         // A stripped hand-rolled copy used to live here, which meant quiet hours could never be set
         // (quietHours() was permanently the 22:00–07:00 default) and a stand-down was invisible.
-        _reachOutRowHTML() +
-        '<button class="btn" onclick="disablePushReminders()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Turn reminders off</button>';
+        _reachOutRowHTML();
     } else {
-      box.innerHTML = head +
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.</div>' +
-        '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
+      box.innerHTML = _remindersListHTML(false, prefs,
+        'Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.');
     }
     // Then ask the SYSTEM whether any of that is actually true (see below).
     try{ _verifyNativeNotifPermission(); }catch(_){}
     return;
   }
   if(!('Notification' in window) || !('PushManager' in window)){
-    box.innerHTML = head + '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div>';
+    box.innerHTML = '<div class="ios-section"><div class="ios-list">' + iosRow({ icon:'bell', tone:'gray', title:'Daily reminders', value:'Off' }) + '</div>' +
+      '<div class="ios-footnote">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div></div>';
     return;
   }
   if(ios && !_isStandalone()){
-    box.innerHTML = head +
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</div>' +
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</div>';
+    box.innerHTML = '<div class="ios-section"><div class="ios-list">' + iosRow({ icon:'bell', tone:'gray', title:'Daily reminders', value:'Off' }) + '</div>' +
+      '<div class="ios-footnote"><p>To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</p>' +
+      '<p>1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</p></div></div>';
     return;
   }
   if(prefs.enabled && Notification.permission==='granted'){
-    box.innerHTML = head +
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept.</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-      '</div>' +
-      '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);color:var(--go);font-size:var(--t-sm);margin-bottom:8px">Save times</button>' +
+    box.innerHTML = _remindersListHTML(true, prefs, 'A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept.') +
       // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively. The
       // row is shown here because quiet hours are worth setting either way (they gate the in-app
       // presence too), but it says plainly that the buzz itself waits for the installed app rather
       // than implying a background nudge the browser cannot deliver.
-      _reachOutRowHTML() +
-      '<button class="btn" onclick="disablePushReminders()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Turn reminders off</button>';
+      _reachOutRowHTML();
   } else {
-    box.innerHTML = head +
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day. Nothing else, ever. You choose the times.</div>' +
-      '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
+    box.innerHTML = _remindersListHTML(false, prefs, 'Two gentle nudges a day — one to begin your morning, one to close the day. Nothing else, ever. You choose the times.');
   }
 }
 
@@ -343,7 +346,7 @@ function toggleMetrics(){
   const off = !metricsOff();
   try{ localStorage.setItem('totry_no_metrics', off?'1':'0'); }catch(_){}
   try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
-  try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.textContent = off?'Off':'On ✓'; }catch(_){}
+  try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
 function logEvent(name, detail){
   try{

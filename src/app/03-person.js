@@ -212,7 +212,7 @@ function cycleToggleOn(){
 }
 function cycleToggleAI(){
   const c=cycleGet(); c.aiOK=!c.aiOK; cycleSet(c);
-  try{ const b=document.getElementById('cycle-ai-btn'); if(b) b.textContent=c.aiOK?'On \u2713':'Off'; }catch(_){}
+  try{ const b=document.getElementById('cycle-ai-btn'); if(b) b.checked=!!c.aiOK; }catch(_){}
   try{ showToast(c.aiOK?'Coach can see your phase':'Coach can\u2019t see your phase',
     c.aiOK?'Only the phase word \u2014 never your dates. It helps it read a hard week as physiology.'
           :'Your phase stays on this device. Every card in the app still works.'); }catch(_){}
@@ -286,9 +286,10 @@ function renderCycleSurfaces(){
     const g=document.getElementById('cycle-settings-group');
     if(g) g.style.display = (userSex()==='female') ? '' : 'none';
     const c=cycleGet();
-    const b1=document.getElementById('cycle-on-btn'); if(b1) b1.textContent = c.on ? 'On' : 'Off';
-    const b2=document.getElementById('cycle-backup-btn'); if(b2) b2.textContent = c.backup ? 'Backed up' : 'This device only';
-    const b3=document.getElementById('cycle-ai-btn'); if(b3) b3.textContent = c.aiOK ? 'On \u2713' : 'Off';
+    // Three switches in Settings — their position is the saved state, set here after every change.
+    const b1=document.getElementById('cycle-on-btn'); if(b1) b1.checked = !!c.on;
+    const b2=document.getElementById('cycle-backup-btn'); if(b2) b2.checked = !!c.backup;
+    const b3=document.getElementById('cycle-ai-btn'); if(b3) b3.checked = !!c.aiOK;
   }catch(_){}
 }
 // One quiet line where she is standing — not a second card competing with the pillar she came for.
@@ -2325,25 +2326,26 @@ function editJourneyStart(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:10px">Your journey</h3>' +
-    ((total>1) ? '<div class="card" style="text-align:center;padding:18px;margin-bottom:16px;background:var(--go-bg);border-color:var(--go-bd)">' +
-        '<div style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:36px;color:var(--go);line-height:1">'+total+'</div>' +
-        '<div style="font-size:var(--t-sm);color:var(--tx2);letter-spacing:0.05em;margin-top:2px">days trying, in all</div>' +
-        (rc>0 ? '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:8px">'+rc+' fresh start'+(rc===1?'':'s')+' · still here</div>' : '') +
-      '</div>' : '') +
+    '<h3>Your journey</h3>' +
+    // The total as the app's hero-number tile: a figure in SF Rounded over its words, left-aligned, on an
+    // opaque surface. It was a centred tinted panel with a border, and its caption tracked at .05em.
+    ((total>1) ? '<div class="ios-stats journey-stats"><div class="ios-stat">' +
+        '<div class="ios-stat-value tint">'+total+'</div>' +
+        '<div class="ios-stat-note">days trying, in all'+(rc>0 ? ' · '+rc+' fresh start'+(rc===1?'':'s')+' · still here' : '')+'</div>' +
+      '</div></div>' : '') +
     '<div class="lbl">When did it begin?</div>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin:6px 0 12px;line-height:1.6">If you started before you found this app — the day you actually decided to change — set that here. Your "days in" counter reflects the real start.</p>' +
-    '<input type="date" id="journey-start-in" value="'+currentDate+'" max="'+today+'" style="width:100%;padding:12px;font-size:var(--t-base);margin-bottom:14px">' +
-    '<div style="display:flex;gap:8px">' +
-      '<button class="btn primary" style="flex:1" onclick="saveJourneyStart()">Save date</button>' +
-      '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
+    '<p class="sheet-note">If you started before you found this app — the day you actually decided to change — set that here. Your "days in" counter reflects the real start.</p>' +
+    '<input type="date" id="journey-start-in" class="sheet-field" value="'+currentDate+'" max="'+today+'">' +
+    '<div class="btn-row">' +
+      '<button class="btn primary" onclick="saveJourneyStart()">Save date</button>' +
+      '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
     '</div>' +
-    '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">' +
+    '<div class="sheet-block">' +
       '<div class="lbl">Start a new chapter</div>' +
-      '<p style="font-size:var(--t-sm);color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
-      '<button class="btn" style="width:100%;background:var(--bg3);color:var(--go)" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
+      '<p class="sheet-note">Fell hard, or want a clean slate to begin again? Reset your day-count to <b>Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
+      '<button class="btn" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
     '</div>' +
-    (ls('totry_journey_start') ? '<button class="btn quiet" style="width:100%;margin-top:10px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
+    (ls('totry_journey_start') ? '<button class="btn quiet sheet-alt" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
   '</div>';
   document.body.appendChild(m);
 }
@@ -4959,8 +4961,8 @@ function go(name){
     // Settings page (which is what was happening). Failures are logged, the rest still render.
     const safe = (fn, label) => { try{ if(typeof fn==='function') fn(); }catch(e){ console.warn('[settings] '+label+' failed:', e); } };
     safe(initSettingsTab, 'initSettingsTab');
-    safe(()=>{ const lv=faithLevel(); document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===lv; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }, 'faithLevelReflect');
-    safe(()=>{ const sx=userSex(); if(sx) document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sx; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }, 'sexReflect');
+    safe(()=>{ const lv=faithLevel(); document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===lv; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }, 'faithLevelReflect');
+    safe(()=>{ if(typeof renderSettingsSummaries==='function') renderSettingsSummaries(); }, 'sexReflect');
     safe(renderSyncStatus, 'renderSyncStatus');
     try{ const vs=document.getElementById('app-version-stamp'); if(vs) vs.textContent = (typeof APP_VERSION!=='undefined'?APP_VERSION:'?') + ' · refined'; }catch(_){ }
     safe(updatePartnerBtn, 'updatePartnerBtn');

@@ -1487,7 +1487,10 @@ H.section('app lock — must never lock a person out of their own journal');
   H.ok((pbx.match(/BiometricPlugin\.swift/g) || []).length >= 4, 'all four pbxproj entries present');
 
   // Fails closed in the UI, and proves the lock works before committing to it.
-  const row = (H.html.match(/<div class="card" id="lock-row"[^>]*>/) || [''])[0];
+  // The row is an inset-list section now (Settings rebuilt as iOS rows, 17 Sep 2026), not a card; what
+  // this asserts is unchanged — the element with that id starts hidden — so match any class on it.
+  const row = (H.html.match(/<div class="[^"]*" id="lock-row"[^>]*>/) || [''])[0];
+  H.ok(/id="lock-row"/.test(row), 'the lock row exists to be checked (calibration: an empty match cannot pass)');
   H.ok(/display:none/.test(row), 'the settings row is hidden until the device is known to support it');
   const toggle = H.html.slice(H.html.indexOf('async function toggleAppLock('));
   H.ok(toggle.indexOf('Lock.prove(') < toggle.indexOf("ls('totry_lock_on'"),
@@ -7840,6 +7843,79 @@ H.section('Today and the week: the title is not in a box, and the small text has
   const seg = H.code(H.extractFn('_calPaintSeg'));
   H.ok(/classList\.toggle\('active'/.test(seg) && !/style\.background/.test(seg),
     'the view switcher is the app’s segmented control, selected by class rather than repainted inline');
+}
+
+H.section('Settings: every on/off is a switch that shows what was saved, and the crisis card leads');
+{
+  const html = H.html;
+  const tabStart = html.indexOf('<div id="tab-settings" class="tab">');
+  // HTML comments out: the tab's own header comment names '<details>' and would pass for the first group.
+  const tab = html.slice(tabStart, html.indexOf('</div><!-- /tabs -->', tabStart)).replace(/<!--[\s\S]*?-->/g, '');
+  H.ok(tabStart > -1 && tab.length > 20000, 'the Settings tab markup was found (' + tab.length + ' chars)');
+
+  // ── 1. THE CRISIS CARD IS FIRST, AND EVERY LINE ON IT DIALS ───────────────────────────────────
+  // Rebuilt as rows. The rebuild must not have dropped a number, and "always first, always visible"
+  // means before the reminders and before any group a person has to open.
+  const crisisAt = tab.indexOf('class="crisis-card"');
+  ['href="tel:131114"', 'href="tel:1300224636"', 'href="sms:0477013755"', 'href="https://findahelpline.com"'].forEach(h =>
+    H.ok(tab.indexOf(h) > crisisAt && tab.indexOf(h) < tab.indexOf('id="push-settings-card"'), 'the crisis card still carries ' + h));
+  H.ok(crisisAt > -1 && crisisAt < tab.indexOf('id="push-settings-card"') && crisisAt < tab.indexOf('<details'),
+    'and it comes before the reminders and before every group');
+
+  // ── 2. A SWITCH IS DRAWN FROM STORAGE, NEVER LABELLED ─────────────────────────────────────────
+  // These were "On ✓" / "Off" text buttons. As checkboxes, a renderer still writing textContent would
+  // leave every switch in the position the tap left it, whatever was actually saved. EXECUTED:
+  const sw = { checked: true, textContent: '' }, card = { style: {} };
+  const R = H.load(['renderHapticsRow', 'hapticsOn', 'hapticsPossible'], {
+    ls: () => 'off', isNativeApp: () => true, navigator: {},
+    document: { getElementById: id => id === 'haptics-btn' ? sw : (id === 'haptics-card' ? card : null) } });
+  R.renderHapticsRow();
+  H.ok(sw.checked === false, 'haptics saved "off" draws the switch off');
+  H.ok(sw.textContent === '', 'and writes no label onto a checkbox');
+  ['haptics-btn', 'partner-toggle-btn', 'metrics-toggle-btn', 'cycle-on-btn', 'cycle-backup-btn', 'cycle-ai-btn', 'lock-btn'].forEach(id =>
+    H.ok(new RegExp('<input type="checkbox" class="ios-switch" id="' + id + '" aria-label="[^"]+"').test(tab), '#' + id + ' is a named switch'));
+  const writers = ['updatePartnerBtn', 'toggleMetrics', 'renderCycleSurfaces', 'cycleToggleAI', 'renderLockRow'].map(n => H.code(H.extractFn(n))).join('\n');
+  H.ok(!/(metrics-toggle-btn|partner-toggle-btn|cycle-on-btn|cycle-backup-btn|cycle-ai-btn)'\)[^;]*;?\s*if\(\w+\)\s*\w+\.textContent/.test(writers) &&
+       !/btn\.textContent = on \? 'Turn off'/.test(writers), 'no renderer writes a text label onto any of them');
+
+  // ── 3. A SWITCH THAT ASKS FIRST DOES NOT MOVE UNTIL IT IS ANSWERED ────────────────────────────
+  // Backup asks for a confirm, the lock asks for Face ID, reminders ask iOS (and sign-in on the web);
+  // each can end without re-rendering. A checkbox flips on the tap, so the tap puts it back and the
+  // renderer moves it once the answer is saved — measured in a browser: cancel leaves it off.
+  H.ok(/id="cycle-backup-btn"[^>]*onclick="this\.checked=!this\.checked;cycleToggleBackup\(\)"/.test(tab), 'the cycle backup switch waits for its confirm');
+  H.ok(/id="lock-btn"[^>]*onclick="this\.checked=!this\.checked;toggleAppLock\(\)"/.test(tab), 'the app lock switch waits for Face ID');
+  const P = H.load(['svgIcon', 'iosRow', '_remindersListHTML']);
+  const off = P._remindersListHTML(false, { morning: '07:30', evening: '21:00' }, 'footnote');
+  const on = P._remindersListHTML(true, { morning: '07:30', evening: '21:00' }, 'footnote');
+  H.ok(/onclick="this\.checked=!this\.checked;enablePushReminders\(\)"/.test(off) && !/ checked[ >]/.test(off), 'reminders off: the switch is off and turning it on waits for the answer');
+  H.ok(/ checked onclick="this\.checked=!this\.checked;disablePushReminders\(\)"/.test(on), 'reminders on: the switch is on, and off is one tap');
+  H.ok(/id="push-time-morning"/.test(on) && /id="push-time-evening"/.test(on) && /savePushTimes\(\)/.test(on), 'and the two times and Save are rows under it');
+
+  // ── 4. THE GROUP ROWS ─────────────────────────────────────────────────────────────────────────
+  const summaries = [...tab.matchAll(/<summary([^>]*)>/g)].map(m => m[1]);
+  H.ok(summaries.length === 8 && summaries.every(a => a === ' class="ios-row has-icon"'), 'all eight groups open from an iOS row with an icon tile (' + summaries.length + ')');
+  H.ok(!/settings-group-hint|setting-row|sr-label|sr-desc/.test(tab), 'no comma-separated hint strip, no hand-built setting row');
+  const theme = (tab.match(/<select id="settings-theme"[\s\S]*?<\/select>/) || [''])[0];
+  H.eq([...theme.matchAll(/<option value="(\w+)">([^<]+)</g)].map(m => m[1] + '=' + m[2]), ['system=System', 'light=Light', 'dark=Dark'], 'Theme offers System / Light / Dark');
+  // A trailing value that is a ReferenceError: the hint read APPS[id], and there is no APPS, so anyone
+  // with an app linked was told "Nothing linked yet". Driven: Hevy + Strong linked, row said nothing.
+  const rca = H.code(H.extractFn('renderConnectedApps'));
+  H.ok(!/\bAPPS\[/.test(rca) && /APP_REGISTRY\[id\] && APP_REGISTRY\[id\]\.name/.test(rca), 'the connected-apps row names linked apps from the registry that exists');
+
+  // ── 5. THE SMALL TEXT ─────────────────────────────────────────────────────────────────────────
+  const small = /--t-micro|--t-mini|letter-spacing:0\.01em|font-style:italic|DM Mono|font-weight:700/;
+  H.ok(!small.test(H.code(tab)), 'nothing in the Settings tab is set at 11 or 12px, in untracked caps, in italic, or at a fake bold');
+  ['renderPushSettings', '_remindersListHTML', '_reachOutRowHTML', 'renderSyncStatus', 'renderConnectedApps', 'renderActivityHeatmap',
+   'showPrivacyPolicy', 'showTermsOfUse', 'openUniversalSearch', 'runUniversalSearch', 'restoreFullBackup', 'showAddAppPicker',
+   'showSynthesisHistory', 'viewSingleSynthesis', 'showYearInReview', 'openFeedback', 'openProgressCheckin', 'editJourneyStart'].forEach(n =>
+    H.ok(!small.test(H.code(H.extractFn(n))), n + '() paints no 11px caps, italic caption, retired face or fake bold'));
+  H.ok(small.test('font-size:var(--t-micro)') && small.test('font-style:italic'), 'and that detector fires on the two commonest shapes (calibration)');
+  const hm = H.code(H.extractFn('renderActivityHeatmap'));
+  H.ok(!/rgba\(255,255,255/.test(hm) && /color = 'var\(--fill\)'/.test(hm), 'an empty heatmap day is the fill token, not white at 4% — which was invisible on a white card');
+
+  // ── 6. A MODEL'S WORDS ARE TEXT ───────────────────────────────────────────────────────────────
+  const vs = H.code(H.extractFn('viewSingleSynthesis'));
+  H.ok(/String\(s\.text \|\| ''\)\.replace\(\/&\/g, '&amp;'\)\.replace\(\/<\/g, '&lt;'\)/.test(vs), 'a past Sunday’s reflection is escaped before it is printed as markup');
 }
 
 H.report();
