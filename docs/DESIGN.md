@@ -185,6 +185,21 @@ re-paint them at a call site.
 - `.feel-chip` — a feeling tile: the face and the word on one line, what it feels like under the word.
   Shared by the Feeling Door and onboarding's first moment.
 
+### Roles named while rebuilding the Soul rooms (Threads, the day's anchor, Practice, Liturgy, Why)
+
+- `.ios-list.in-card` — rows that belong to a `.card` (people, promises, seasons, values). The list gives
+  up its own surface and runs to the card's edges, hairlines inset 16 on both sides, and carries the
+  14pt gap *under* itself so nothing that follows needs a margin. Not a card in a card.
+- `.passage` (+ `.lg`) and `.passage-ref` — scripture and the traditions' words in New York, upright,
+  left-aligned, with the reference as a 13pt footnote. Never italic, never the tint.
+- `.field-label` — a sentence stem over a field ("I am becoming a person who…"), 15 secondary.
+  `.field-tall` — a textarea's height. `.btn.field-btn` — the button on one row beside a field.
+- `.row-rank` — a number that ranks a row (values, the 99 Names), SF Rounded.
+- `.ios-row-title.wrap` — the one exception to "a row title truncates": words the person wrote.
+- `.ios-row.label-first` — what a value IS above the value (a reading's name over its reference).
+- `.ios-row.is-next` / `.is-dim` / `.is-done` / `.is-broken` — one row in a set called out, dimmed,
+  finished, or not kept.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

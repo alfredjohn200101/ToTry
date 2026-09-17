@@ -1349,18 +1349,21 @@ function renderValuesCard(){
   const el=document.getElementById('values-body'); if(!el) return;
   const o=getValues();
   if(!o){
-    el.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Five words for what your life is actually for. Once you\u2019ve named them, the counsel argues from <em>your</em> standard instead of mine \u2014 and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
-      '<button class="btn primary" style="font-size:var(--t-base)" onclick="openValuesSort()">Sort my values</button>';
+    el.innerHTML='<p class="card-lede">Five words for what your life is actually for. Once you’ve named them, the counsel argues from <em>your</em> standard instead of mine — and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
+      '<button class="btn" onclick="openValuesSort()">Sort my values</button>';
     return;
   }
-  el.innerHTML='<div style="margin-bottom:10px">'+o.v.map(function(id,i){
-      return '<div style="display:flex;align-items:baseline;gap:9px;padding:5px 0">'+
-        '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">'+(i+1)+'</span>'+
-        '<span style="font-size:'+(i===0?'16px':'14px')+';color:'+(i===0?'var(--go)':'var(--tx)')+'">'+valLabel(id)+'</span></div>';
+  // The five, ranked, as rows in the card. The first was 16px in the TINT and the other four 14px in
+  // the label colour — two neighbouring sizes two pixels apart, and a colour that says "tap me" on a
+  // word that does nothing. The "why that one" line is the app handing their own sentence back, so it
+  // speaks in our own face; it was 17px italic New York behind a tinted rule. The footnote is 13, left.
+  el.innerHTML='<div class="ios-list in-card values-list">'+o.v.map(function(id,i){
+      return '<div class="ios-row'+(i===0?' first':'')+'"><span class="row-rank">'+(i+1)+'</span>'+
+        '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(valLabel(id))+'</span></span></div>';
     }).join('')+'</div>'+
-    (o.why?'<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx2);line-height:1.55;border-left:2px solid var(--go-bd);padding-left:11px;margin-bottom:12px">'+_escFew(o.why)+'</div>':'')+
-    '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">A mirror, not a scoreboard. Nothing here is ever scored against you \u2014 and values move as life moves. Re-sort whenever it stops being true.</p>'+
-    '<button class="btn subtle" onclick="openValuesSort()">Re-sort</button>';
+    (o.why?'<div class="card-say values-why">'+_escFew(o.why)+'</div>':'')+
+    '<p class="card-note">A mirror, not a scoreboard. Nothing here is ever scored against you — and values move as life moves. Re-sort whenever it stops being true.</p>'+
+    '<button class="btn" onclick="openValuesSort()">Re-sort</button>';
 }
 
 // ════ BREATH & STILLNESS — the minimum viable work ════

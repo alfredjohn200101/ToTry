@@ -3896,20 +3896,38 @@ function _renderTodayAnchor(){
   const t=faithTradition(), f=curFaith();
   const ttl=document.getElementById('today-title'); if(ttl) ttl.textContent=f.todayTitle;
   const sub=document.getElementById('today-sub'); if(sub) sub.textContent=f.todayDesc;
+  // The large title changes after go() has already copied the old one into the navigation bar, so a
+  // Muslim scrolling "Prayer times" saw "Today" fade in above it. Re-read it once the words are set.
+  try{ if(typeof iosNavSync==='function') iosNavSync('today'); }catch(_){ }
   const el=document.getElementById('today-content'); if(!el) return;
   if(t==='islam') _renderIslamToday(el); else _renderDailyPassage(el,t);
 }
+// The day's passage as a section: its label as the header, the words in the reading face at reading
+// size, left-aligned and upright. It was a centred card with a 12px caps label in the tertiary grey,
+// 22px ITALIC scripture, and the reference in the tint as though it led somewhere. The two things to do
+// with it are destinations, so they are rows — the first of the pair was a button that wrapped "Sit
+// with it — a / minute" across two lines inside itself.
 function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Write what it stirs</button></div>';
+  el.innerHTML='<div class="ios-section"><div class="ios-header">'+kind+'</div><div class="card">'+
+      '<div id="daily-passage-text" class="passage lg">“'+_escFew(v.t)+'”</div>'+
+      '<div id="daily-passage-ref" class="passage-ref">— '+_escFew(v.r)+'</div>'+
+      ((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+
+    '</div></div>'+
+    iosList([
+      iosRow({ icon:'breath', tone:'teal', title:'Sit with it — a minute', onclick:'openBreathMenu()' }),
+      iosRow({ icon:'edit', tone:'orange', title:'Write what it stirs', onclick:'openJournal()' })
+    ]);
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  el.innerHTML='<div class="ios-section"><div class="ios-header">Ayah for today</div><div class="card">'+
+      '<div class="passage lg">“'+_escFew(a.t)+'”</div><div class="passage-ref">— '+_escFew(a.r)+'</div>'+
+    '</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
@@ -3956,7 +3974,7 @@ async function _loadSalah(){
   if(!coords){
     try{ const _c = ls('totry_city'); if(_c){ return _loadSalahByCity(_c); } }catch(_){}
   }
-  if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:var(--t-sm);color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn subtle" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px">Or enter your city</button></div>'; return; }
+  if(!coords){ box.innerHTML='<div class="ios-empty">'+svgIcon('map',44)+'<div class="ios-empty-body">Allow location to see today’s prayer times.</div></div><button class="btn" onclick="_promptCity()">Or enter your city</button>'; return; }
   try{
     const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
@@ -3975,7 +3993,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri,iosRow({ title:'Change city', tint:true, onclick:'_promptCity()', chevron:false })); }
   // A STALL IS NOT A TYPO. v567's 9s abort throws into this same catch, so a real city on a slow line
   // was answered with "Couldn't find that city" — the app blaming the person's typing for the network.
   // And _readErr renders a card with no controls at all ("Change city" exists only on the success path),
@@ -3985,19 +4003,25 @@ async function _loadSalahByCity(city){
     if(box) box.innerHTML = _readErr(_stalled
       ? 'The connection stalled before the times came back \u2014 the city is fine.'
       : 'Couldn\u2019t find that city \u2014 try a larger nearby one.') +
-      '<div style="text-align:center;margin-top:8px">' +
+      iosList([
         // JSON.stringify wraps the city in DOUBLE quotes, and this is a double-quoted HTML attribute —
         // so the attribute terminated at the first quote and the browser parsed the rest as a junk
         // attribute literally named `sydney")`. onclick came out as the string `_loadSalahByCity(`,
         // btn.onclick was null, and a real tap fired nothing. It was inert for EVERY city, not just
         // awkward ones. Escaped for a single-quoted JS string inside a double-quoted attribute, so an
         // apostrophe city ("St John's") survives too.
-        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Try again</button> ' +
-        '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button>' +
-      '</div>';
+        // iosRow writes onclick verbatim apart from a double quote, and _salahCityArg has already turned
+        // every double quote into &quot; — so this attribute is byte-for-byte the one it always was.
+        iosRow({ title:'Try again', tint:true, chevron:false, onclick:"_loadSalahByCity('" + _salahCityArg(city) + "')" }),
+        iosRow({ title:'Change city', tint:true, chevron:false, onclick:'_promptCity()' })
+      ]);
   }
 }
-function _salahCard(t,h){
+// The day's prayers as a grouped list with the next one called out above it. It was one card holding an
+// 12px caps date, a centred "NEXT PRAYER" in 13px caps at .05em, the prayer name in the display face at
+// weight 700 in the TINT, six hand-drawn rows in 15px secondary and tertiary greys with "· next"
+// appended, and a centred 13px tertiary footnote. `extra` is a row the caller adds under the times.
+function _salahCard(t,h,extra){
   const order=[['Fajr',t.Fajr],['Sunrise',t.Sunrise],['Dhuhr',t.Dhuhr],['Asr',t.Asr],['Maghrib',t.Maghrib],['Isha',t.Isha]];
   const now=new Date(); const nowM=now.getHours()*60+now.getMinutes();
   const toM=s=>{const m=/(\d+):(\d+)/.exec(s||''); return m?(+m[1]*60+ +m[2]):9999;};
@@ -4006,9 +4030,14 @@ function _salahCard(t,h){
   if(nextIdx<0){ nextIdx=0; mins=(24*60-nowM)+toM(prayers[0][1]); } else { mins=toM(prayers[nextIdx][1])-nowM; }
   const nextName=prayers[nextIdx][0];
   const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
-  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:var(--font-text);font-size:var(--t-sm);color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
-  const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-cap);letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
-  return '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
+  // Times are third-party API text: iosRow escapes title and value.
+  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise');
+    return iosRow({ title:o[0], value:String(o[1]||''), cls:(isNext?'is-next':dim?'is-dim':'') }); }).join('');
+  const hijri=_escFew(h.day+' '+h.month.en+' '+h.year);
+  return '<div class="ios-section"><div class="ios-header">Today · '+hijri+' AH</div>'+
+    '<div class="card"><div class="ios-stat-label">Next prayer</div><div class="salah-next-name">'+_escFew(nextName)+'</div><div class="salah-next-in">in '+cd+'</div></div>'+
+    '<div class="ios-list">'+rows+(extra||'')+'</div>'+
+    '<div class="ios-footnote">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
 }
 
 // ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
@@ -4058,11 +4087,28 @@ function _paintPractice(){
   const st=window.__practice||{kind:'dhikr',phase:0,count:0}; const cfg=_PRACTICE[st.kind]; const phases=_practicePhases(st.kind); const ph=phases[st.phase];
   const ttl=document.getElementById('practice-title'); if(ttl) ttl.textContent=cfg.title;
   const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
+  // go('practice') copied "Practice" into the navigation bar before this renamed the screen "Dhikr".
+  try{ if(typeof iosNavSync==='function') iosNavSync('practice'); }catch(_){ }
+  // The mantras are a pick-one set of capsules, left-aligned like every other set of choices in the app.
+  // They were hand-drawn centred pills with a 1px border, the chosen one outlined in the tint.
   let chooser='';
-  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:var(--t-sm);padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'var(--go-bg)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
-  const roundInfo=phases.length>1?('<div class="eyebrow" style="margin:6px 0 0">Part '+(st.phase+1)+' of '+phases.length+'</div>'  /* the app's own label device, not a body line one pixel smaller than the body line above it */):'';
-  const namesBtn=st.kind==='dhikr'?'<button class="btn subtle" onclick="_openAsma()" style="width:100%;margin-top:12px">✦ The 99 Names of Allah ›</button>':'';
-  el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:var(--font-display);font-weight:700;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,var(--go-bg),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:var(--t-cap);color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);padding:7px 14px;background:var(--fill2)">Reset</button></div>'+namesBtn;
+  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div class="capsule-row">'+JAPA_MANTRAS.map((m,i)=>'<button class="qb'+(i===mi?' on':'')+'" aria-pressed="'+(i===mi)+'" onclick="_selectMantra('+i+')">'+m.name+'</button>').join('')+'</div>'; }
+  const roundInfo=phases.length>1?('<div class="eyebrow">Part '+(st.phase+1)+' of '+phases.length+'</div>'):'';
+  // The 99 Names is somewhere to go, so it is a row. It was a full-width grey button reading
+  // "✦ The 99 Names of Allah ›", with a glyph for an icon and a character for a chevron.
+  const namesBtn=st.kind==='dhikr'?iosList([iosRow({ icon:'sparkle', tone:'green', title:'The 99 Names of Allah', onclick:'_openAsma()' })]):'';
+  // The counter is ONE hero, so it is centred: the words to say, which part of the round this is, the
+  // bead, and the count. The words were the display face at weight 700 (a fake bold on a family with one
+  // roman weight) over an italic caption in the tertiary grey; the bead was a radial gradient that ended
+  // in a hardcoded purple, and "of 33" was tracked at .1em. Reset is a plain tint button — it is the
+  // one control here nobody should hit by accident, and it was a 50pt grey block.
+  const name = st.kind==='japa'
+    ? '<div class="practice-mantra">'+ph.name+'</div>'
+    : '<div class="card-display">'+ph.name+'</div>';
+  el.innerHTML=chooser+'<div class="card practice-card">'+name+'<div class="card-sub">'+ph.sub+'</div>'+roundInfo+
+    '<div class="practice-bead" onclick="_practiceTap()"><div id="practice-count">'+st.count+'</div><div class="practice-of">of '+ph.n+'</div></div>'+
+    '<div class="card-sub">Tap the circle for each repetition</div>'+
+    '<button class="btn quiet" onclick="_practiceReset()">Reset</button></div>'+namesBtn;
   // The intention composer lives under the practice, so this tab is a HOME and not one exercise.
   try{ if(typeof faithHomeHTML === 'function') el.innerHTML += faithHomeHTML(); }catch(_){ }
 }
@@ -4121,13 +4167,15 @@ function faithHomeHTML(){
   const ph = secular
     ? 'e.g. the conversation I keep avoiding / staying steady this weekend'
     : 'e.g. my mother’s health / staying clean this weekend / gratitude for today';
-  return '<div class="card" style="margin-top:14px">' +
-      '<div class="card-hd" style="margin-bottom:6px">' + _escFew(heading) + '</div>' +
-      '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">' + _escFew(hint) + '</p>' +
-      '<textarea id="fh-prayer-intention" placeholder="' + _escFew(ph) + '" style="min-height:70px;font-size:var(--t-base);line-height:1.5;margin-bottom:10px"></textarea>' +
+  // The Fight's card roles: the heading speaks in our own face, the hint is the lede. They were 17px
+  // semibold SF over a 15px paragraph in the tertiary grey.
+  return '<div class="card">' +
+      '<div class="card-title">' + _escFew(heading) + '</div>' +
+      '<p class="card-lede">' + _escFew(hint) + '</p>' +
+      '<textarea id="fh-prayer-intention" class="field-tall" placeholder="' + _escFew(ph) + '"></textarea>' +
       '<button class="btn primary" id="fh-prayer-btn" onclick="generateIntentionPrayer(\'fh-prayer\')">' +
         _escFew(secular ? 'Write my reflection' : ('Write my ' + noun)) + '</button>' +
-      '<div id="fh-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>' +
+      '<div id="fh-prayer-out" class="fh-out" style="display:none"></div>' +
     '</div>';
 }
 
@@ -4157,9 +4205,12 @@ function _practiceTap(){
         if(typeof logEvent==='function') logEvent('practice_complete');
         if(typeof syncToCloud==='function') syncToCloud();
       }catch(_){ }
-      const _kept = _n ? '<div style="font-size:var(--t-sm);color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
+      // The finish, as a confirmation: a real check mark rather than a 34px text glyph, the tradition's
+      // word for it in our own face (it was New York ITALIC), and the count as a plain sentence — it
+      // was in the tint, which reads as a link, over a 200px-wide button floating in the middle.
+      const _kept = _n ? ' That’s '+_n+' kept.' : '';
       const el=document.getElementById('practice-content');
-      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:var(--t-2xl);margin-bottom:10px">✓</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+      if(el) el.innerHTML='<div class="card practice-done">'+svgIcon('check',44)+'<div class="card-display">'+cfg.done+'</div><div class="card-sub">'+cfg.doneSub+_kept+'</div><button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')">Again</button></div>';
     }
   } else {
     const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();
@@ -4171,10 +4222,18 @@ async function _openAsma(){
   const el=document.getElementById('practice-content'); if(!el) return; el.innerHTML=_readLoading();
   let names=window.__asma;
   if(!names){ try{ const r=await _fetchT('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
-  const back='<div style="margin-bottom:10px"><button class="btn subtle" onclick="_renderPractice(\'dhikr\')" style="padding:7px 12px">‹ Tasbih counter</button></div>';
+  const back='<button class="btn quiet asma-back" onclick="_renderPractice(\'dhikr\')">'+svgIcon('chevronleft',20)+'Tasbih counter</button>';
   if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
-  const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx)">'+n.transliteration+'</div><div style="font-size:var(--t-sm);color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:var(--t-xl);color:var(--go)">'+n.name+'</div></div>').join('');
-  el.innerHTML=back+'<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Asma ul-Husna · the 99 Names</div><div class="card">'+rows+'</div>';
+  // The Names are rows: the number, the transliteration over its meaning, the Arabic on the trailing
+  // edge in the label colour (it was the tint, as if each name were a link). They are also third-party
+  // API text, and every field went into innerHTML raw; iosRow escapes title and sub, and the Arabic is
+  // escaped here.
+  const rows=names.map((n,i)=>iosRow({
+      title: String(n && n.transliteration || ''),
+      sub: String(n && n.en && n.en.meaning || ''),
+      trailing: '<span class="asma-ar" dir="rtl" lang="ar">'+_escFew(n && n.name)+'</span>'
+    }).replace('<span class="ios-row-body">', '<span class="row-rank">'+(i+1)+'</span><span class="ios-row-body">')).join('');
+  el.innerHTML=back+'<div class="ios-section"><div class="ios-header">Asma ul-Husna · the 99 Names</div><div class="ios-list">'+rows+'</div></div>';
 }
 
 // ── SHARED THREADS ─────────────────────────────────────────────────────────────
@@ -4558,17 +4617,27 @@ function renderThread(){
   const idx=(((window.__threadIdx||0))%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length;
   const th=SHARED_THREADS[idx]; const mine=faithTradition();
   const order=[mine].concat(['christianity','islam','hinduism','buddhism','secular'].filter(x=>x!==mine));
-  let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
-  html+='<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
+  // The theme IS the screen, so it is the large title, left-aligned in our own face, and the sentence
+  // that explains what a thread is sits under it where a person reads it first. Before: a centred 12px
+  // caps "SHARED THREAD 1 / 7", the theme in the display face at weight 700, five separate cards each
+  // opening with a 12px caps label (the person's own in the tint on a tinted card), and the explanation
+  // last of all, centred and in italics, after every quote had already been read.
+  let html='<h2 class="page-title">'+_escFew(th.theme)+'</h2>'+
+    '<p class="page-intro">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
+  // One grouped list, one cell per tradition. The words are scripture and wisdom, so they are in the
+  // reading face; the tradition is the cell's first line and the person's own path says so in words.
+  html+='<div class="ios-section"><div class="ios-header">Thread '+(idx+1)+' of '+SHARED_THREADS.length+'</div><div class="ios-list">';
   order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
-    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:var(--go-bg)':'')+'">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
-      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
+    html+='<div class="ios-row thread-row"><div class="ios-row-body">'+
+      '<div class="thread-path'+(isMine?' mine':'')+'">'+(isMine?'<b>'+_escFew(_THREAD_LABELS[k])+'</b><span>Your path</span>':'<span>'+_escFew(_THREAD_LABELS[k])+'</span>')+'</div>'+
+      '<div class="passage">“'+_escFew(L.t)+'”</div>'+
+      '<div class="passage-ref">— '+_escFew(L.r)+'</div></div></div>';
   });
-  html+='<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;text-align:center;line-height:1.6;margin:14px 6px 10px">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
-  html+='<div style="display:flex;gap:8px"><button class="btn subtle" onclick="_threadNav(-1)" style="flex:1">‹ Previous</button><button class="btn subtle" onclick="_threadNav(1)" style="flex:1">Next ›</button></div>';
+  html+='</div></div>';
+  html+='<div class="btn-row"><button class="btn" onclick="_threadNav(-1)">'+svgIcon('chevronleft',18)+'Previous</button><button class="btn" onclick="_threadNav(1)">Next'+svgIcon('chevronright',18)+'</button></div>';
   el.innerHTML=html;
+  // go('threads') ran before this title existed, so the navigation bar had nothing to fade in on scroll.
+  try{ if(typeof iosNavSync==='function') iosNavSync('threads'); }catch(_){ }
 }
 
 let vi=Math.floor(Math.random()*activeVerses().length); // overridden by pickContextualVerse() on load

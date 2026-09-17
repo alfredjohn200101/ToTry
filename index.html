@@ -2810,6 +2810,133 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 .moment-note.moment-then{margin-top:12px}
 .moment-picks .ios-row-title{white-space:normal}
 
+/* ═══ SOUL, THE QUIET ROOMS: Threads · the day's anchor · Practice · Today in the Church · Your Why ══
+   Five screens a person opens to be still, and they were the loudest small text left in the app: 11px
+   and 12px caps tracked at .01em on every card ("CHRISTIANITY · YOUR PATH", "AYAH FOR TODAY", "TODAY
+   THE CHURCH REMEMBERS"), captions in italics under every headline, a fourth grey (--tx3 doing
+   --tx2's job) on every explanatory sentence, the ToTry face set at weight 700 on a family with one
+   roman weight, a saint's quote in the TINT as if it were a link, and "5d" in a 12px tertiary grey.
+   Nothing below is invented. The card roles are the Fight's (.card-title/.card-lede), the rows are
+   iosRow, the empty states are .ios-empty, the intro is .page-intro. What is named here is only what
+   those screens needed that did not exist yet. */
+
+/* A LIST THAT BELONGS TO A CARD. The Why board is cards with a title in our own face and a lede, and
+   several of them hold rows (people, promises, affirmations, the six seasons). An .ios-list inside a
+   .card draws a second white slab on the first and indents every row twice. In-card, the list gives
+   up its own surface and radius and runs to the card's edges, so the rows keep iOS's 16pt inset and
+   their hairlines line up with the card's text. That is "group with a hairline", not a card in a card. */
+.ios-list.in-card{background:transparent;border-radius:0;overflow:visible;margin:0 -16px 14px}
+.ios-list.in-card:last-child{margin-bottom:-4px}
+.ios-list.in-card:empty{display:none}
+.ios-list.in-card>.ios-row:first-child::before{content:'';position:absolute;top:0;left:16px;right:16px;height:.5px;background:var(--bd)}
+.ios-list.in-card>.ios-row.has-icon:first-child::before{left:57px}
+/* Inside a card the hairline stops at the card's text edge on BOTH sides, as the Fight card's rows do,
+   so a list and a hairline-separated block in the same card (a promise that is due) draw one line. */
+.ios-list.in-card>.ios-row::before,.ios-list.in-card>.ios-row+.ios-row::before{right:16px}
+/* The list carries the space UNDER itself, so whatever follows it — a field, a button, a note — starts
+   14pt below the last row, and a list that is empty or absent leaves no hole behind. */
+.row+.ios-list.in-card{margin-top:6px}
+.values-list{margin-top:14px}
+#affirmations-list>.card-note{margin:14px 0 0}
+#relationships-list>.card-note{margin:0 0 14px}
+/* A row whose title is a sentence the person wrote. A row title truncates — that is the rule — but an
+   affirmation cut to "I finish what I start, even wh…" is not a label, it is their words, lost. */
+.ios-row-title.wrap{white-space:normal;overflow:visible}
+.ios-row.is-done .ios-row-title{color:var(--tx2)}
+.ios-row.is-broken .ios-row-title{text-decoration:line-through}
+.ios-row-mark{flex:none;display:flex;color:var(--gr)}
+.ios-row-mark .ic{width:18px;height:18px;stroke-width:2.4}
+/* The label ABOVE the value, the way Contacts draws "mobile" over a number. A reading is identified
+   by its reference; "First Reading" is what the reference is. Both parts are iosRow's own title and
+   sub — only the order they are shown in changes. */
+.ios-row.label-first .ios-row-body{display:flex;flex-direction:column-reverse}
+.ios-row.label-first .ios-row-sub{margin:0 0 1px}
+/* The one row in a set that is the one that matters now — the next prayer. */
+.ios-row.is-next .ios-row-title,.ios-row.is-next .ios-row-value{color:var(--go);font-weight:600}
+.ios-row.is-dim .ios-row-title{color:var(--tx2)}
+.ios-row.top{align-items:flex-start}
+/* A number that ranks a row — the five values, the 99 Names. SF Rounded, like every other figure. */
+.row-rank{flex:none;min-width:20px;font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
+
+/* A label for the field under it, when the label is a sentence stem rather than a section name —
+   "I am becoming a person who…" was a 12px line in the tint, which read as a link. */
+.field-label{display:block;font-size:15px;line-height:1.35;letter-spacing:-.016em;color:var(--tx2);margin:0 0 6px}
+.field-tall{height:96px;resize:none;margin:0 0 10px}
+/* A button that sits on one row beside a field — Add, Add promise, Save letter. .btn is a full-width
+   50pt button; each of these was `width:auto;white-space:nowrap;padding:10px 14px` written at the call. */
+.btn.field-btn{flex:none;width:auto;padding:0 20px !important;white-space:nowrap;margin:0}
+.row>select.fit{flex:none;width:auto;max-width:140px}
+
+/* Scripture and the traditions' words: New York, upright, at reading size. They were set four ways —
+   17px SF, 22px italic New York centred, 17px italic in a tinted box, 16px italic with a coloured
+   rule down the left. The reference under a passage is a footnote, not a tint link to nowhere. */
+.passage{font-family:var(--font-serif);font-size:17px;line-height:1.47;letter-spacing:0;color:var(--tx)}
+.passage.lg{font-size:22px;line-height:1.36}
+.passage-ref{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:8px}
+.card>.passage+.card-sub{margin-top:10px}
+
+/* SHARED THREADS: one grouped list, one cell per tradition, the person's own path first. */
+.thread-row{align-items:flex-start;padding-top:12px;padding-bottom:14px}
+.thread-path{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;letter-spacing:-.016em;color:var(--tx2);margin-bottom:5px}
+.thread-path.mine b{font-weight:600;color:var(--tx)}
+.thread-row .passage-ref{margin-top:6px}
+
+/* THE DAY'S ANCHOR (Islam, Hinduism, Buddhism, secular). The verse tools have no rule of their own
+   anywhere, so on this screen they stacked into two 50pt full-width buttons under a single line of
+   scripture. Side by side at control height. */
+#tab-today .verse-tools{display:flex;gap:8px;margin-top:14px}
+#tab-today .verse-tools .btn{flex:1;min-width:0;min-height:44px;font-size:15px !important}
+.salah-next-name{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-top:2px}
+.salah-next-in{font-family:var(--font-rounded);font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* PRACTICE: the counter is one hero — a name, the bead, the count — so it is centred, the one shape
+   docs/DESIGN.md allows to be. The bead was a radial gradient ending in a hardcoded purple, with a
+   1px border and the count's "of 33" tracked at .1em in the tertiary grey. */
+.capsule-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.practice-card{text-align:center}
+.practice-card .card-display{margin:0}
+.practice-mantra{font-size:40px;line-height:1.2;color:var(--tx)}
+.practice-card .card-sub{margin:4px 0 0}
+.practice-card .eyebrow{margin:10px 0 0 !important}
+.practice-bead{width:184px;height:184px;margin:22px auto 16px;border-radius:50%;background:var(--go-bg);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.practice-bead:active{transform:scale(.96)}
+.practice-bead #practice-count{font-family:var(--font-rounded);font-size:56px;font-weight:600;line-height:1;color:var(--go);font-variant-numeric:tabular-nums}
+.practice-of{font-family:var(--font-rounded);font-size:15px;color:var(--tx2);margin-top:6px;font-variant-numeric:tabular-nums}
+.practice-card>.btn.quiet{margin-top:6px}
+.practice-card{margin-bottom:28px}
+.practice-done{text-align:center;padding:28px 20px 20px !important}
+.practice-done .ic{width:44px;height:44px;color:var(--gr);stroke-width:2;margin-bottom:8px}
+.practice-done .card-sub{margin:6px 0 18px}
+.fh-out{margin-top:14px;padding-top:14px;border-top:.5px solid var(--bd)}
+.asma-back{justify-content:flex-start !important;width:auto;padding-left:0 !important;margin:-6px 0 6px}
+.asma-back .ic{width:20px;height:20px;stroke-width:2.4}
+.asma-ar{flex:none;font-size:22px;color:var(--tx)}
+
+/* TODAY IN THE CHURCH */
+.lit-quote{margin:10px 0 0}
+#liturgy-gospel-text:not(:empty){margin-top:22px}
+.verse-n{font-family:var(--font-text);font-size:13px;font-weight:600;color:var(--tx2);vertical-align:super;line-height:0;margin-right:3px;font-variant-numeric:tabular-nums}
+.gospel-v{margin:0 0 10px}
+.gospel-v:last-child{margin-bottom:0}
+.gospel-gap{text-align:center;color:var(--tx3);margin:0 0 10px}
+
+/* YOUR WHY: a board in the first person. The reason is the hero, set in our own face; every other
+   section is a card with its title in that face and the sentence under it in the lede role. */
+.why-text{white-space:pre-wrap;margin:2px 0 14px}
+.why-text.is-empty{font-family:var(--font-text);font-size:15px;line-height:1.45;letter-spacing:-.016em;color:var(--tx2)}
+.values-list .ios-row.first .ios-row-title{font-weight:600}
+.values-why{margin:0}
+#values-body .card-note+.btn{margin-top:14px}
+.due-late{color:var(--re)}
+.due-ok{color:var(--gr)}
+.promise-due{border-top:.5px solid var(--bd);padding:12px 0 14px}
+.promise-due+.promise-due{padding-top:12px}
+.promise-text{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx);margin-bottom:10px}
+.letter-arrived{border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd);padding:14px 0 16px;margin-bottom:14px}
+.letter-arrived .card-say{white-space:pre-wrap;margin:6px 0 12px}
+
 </style>
 </head>
 <body>
@@ -3400,7 +3527,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-today" class="tab">
   <h2 id="today-title" class="page-title">Today</h2>
-  <p id="today-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <p id="today-sub" class="page-intro"></p>
   <div id="today-content"></div>
 </div>
 
@@ -3409,7 +3536,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-practice" class="tab">
   <h2 id="practice-title" class="page-title">Practice</h2>
-  <p id="practice-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <p id="practice-sub" class="page-intro"></p>
   <div id="practice-content"></div>
 </div>
 
@@ -3417,69 +3544,74 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- TAB: LITURGY (today's Mass readings + saint of the day, from the free Catholic readings API) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-liturgy" class="tab">
-  <div style="margin-bottom:14px">
-    <h2 class="page-title">Today in the Church</h2>
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5" id="liturgy-date">The readings and the saint for today.</p>
-  </div>
+  <h2 class="page-title">Today in the Church</h2>
+  <!-- The date, and once the readings arrive, the liturgical season after it. The season used to be a
+       12px caps line in the tint floating between this sentence and the first card. -->
+  <p class="page-intro" id="liturgy-date">The readings and the saint for today.</p>
   <div id="liturgy-content">
-    <div style="text-align:center;padding:30px 16px;color:var(--tx3);font-size:var(--t-base)">Loading today’s readings…</div>
+    <div class="ios-empty"><div class="ios-empty-body">Loading today’s readings…</div></div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <!-- TAB: WHY (the reason, letters, promises — moved here from Settings/Reflect) -->
 <!-- ═══════════════════════════════════════════════════ -->
+<!-- A board written in the first person. Every section title stays the person's own sentence, in the
+     ToTry face (.card-title, the Fight's role), with the sentence under it as the lede. They were 17px
+     semibold SF over 15px paragraphs in the TERTIARY grey, beside six filled-blue buttons on one screen.
+     The reason sits first, as the hero: the label above, their own words large under it. -->
 <div id="tab-why" class="tab">
-  <div style="margin-bottom:14px">
-    <h2 class="page-title">Your Why</h2>
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">When the motivation fades — and it will — this is what you come back to.</p>
-  </div>
+  <h2 class="page-title">Your Why</h2>
+  <p class="page-intro">When the motivation fades — and it will — this is what you come back to.</p>
 
   <!-- The core reason -->
-  <div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:8px">The reason I started</div>
-    <div id="why-display" style="font-family:var(--font-serif);font-size:var(--t-lg);color:var(--tx);font-style:italic;line-height:1.55;white-space:pre-wrap;margin-bottom:10px"></div>
-    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:var(--t-lg);line-height:1.6;display:none"></textarea>
-    <button class="btn subtle" id="why-edit-btn" onclick="toggleWhyEdit()">Edit my why</button>
-    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="font-size:var(--t-base);display:none">Save your why</button>
+  <div class="card">
+    <div class="eyebrow">The reason I started</div>
+    <div id="why-display" class="card-display why-text"></div>
+    <textarea id="why-edit" class="field-tall" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;display:none"></textarea>
+    <button class="btn" id="why-edit-btn" onclick="toggleWhyEdit()">Edit my why</button>
+    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="display:none">Save your why</button>
   </div>
 
   <!-- What matters — the values card sort (ACT/MI). A mirror the counsel argues from, never a score. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">What actually matters to me</div>
+    <div class="card-title">What actually matters to me</div>
     <div id="values-body"></div>
   </div>
   <!-- Identity + season (moved from Settings — they define the journey, like the why) -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Who I’m becoming</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Complete the sentence. The app holds you to this.</p>
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-bottom:6px">I am becoming a person who...</div>
-    <textarea id="settings-identity" placeholder="...keeps their promises" style="height:80px;resize:none;margin-bottom:10px;font-size:var(--t-lg)"></textarea>
-    <button class="btn primary" onclick="saveIdentity()" style="font-size:var(--t-base)">Save identity</button>
+    <div class="card-title">Who I’m becoming</div>
+    <p class="card-lede">Complete the sentence. The app holds you to this.</p>
+    <label class="field-label" for="settings-identity">I am becoming a person who...</label>
+    <textarea id="settings-identity" class="field-tall" placeholder="...keeps their promises"></textarea>
+    <button class="btn" onclick="saveIdentity()">Save identity</button>
   </div>
 
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">The season I’m in</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
-    <div id="settings-seasons"></div>
+    <div class="card-title">The season I’m in</div>
+    <p class="card-lede">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
+    <div id="settings-seasons" class="ios-list in-card"></div>
   </div>
 
   <!-- Affirmations -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Affirmations</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Short affirmations in the present tense. Read them when you need to remember.</p>
-    <div class="row" style="margin-bottom:8px">
-      <input type="text" id="new-affirmation" placeholder="e.g. I am someone who keeps my word" style="flex:1">
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addWhyAffirmation()">Add</button>
+    <div class="card-title">Affirmations</div>
+    <p class="card-lede">Short affirmations in the present tense. Read them when you need to remember.</p>
+    <div class="row">
+      <input type="text" id="new-affirmation" placeholder="e.g. I am someone who keeps my word">
+      <button class="btn field-btn" onclick="addWhyAffirmation()">Add</button>
     </div>
     <div id="affirmations-list"></div>
   </div>
 
-  <!-- Promises (moved from Reflect) -->
+  <!-- Promises (moved from Reflect). What is due comes first — it is the one thing here that asks
+       something of the person today — then the ones still running, then the way to make a new one. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Promises I’m keeping</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
-    <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin-bottom:8px">
+    <div class="card-title">Promises I’m keeping</div>
+    <p class="card-lede">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
+    <div id="why-promises-due"></div>
+    <div id="why-promises-list"></div>
+    <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin:0 0 8px">
     <div class="row">
       <select id="why-promise-when" style="flex:1">
         <option value="7">Check in 1 week</option>
@@ -3488,20 +3620,18 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
         <option value="60">Check in 60 days</option>
         <option value="90">Check in 90 days</option>
       </select>
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addPromiseFromWhy()">Add promise</button>
+      <button class="btn field-btn" onclick="addPromiseFromWhy()">Add promise</button>
     </div>
-    <div id="why-promises-due" style="margin-top:12px"></div>
-    <div id="why-promises-list" style="margin-top:6px"></div>
   </div>
 
   <!-- People who matter (moved from Settings — they're part of your why) -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">The people I’m doing this for</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
-    <div id="relationships-list" style="margin-bottom:10px"></div>
+    <div class="card-title">The people I’m doing this for</div>
+    <p class="card-lede">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
+    <div id="relationships-list"></div>
     <div class="row">
       <input type="text" id="rel-name" placeholder="Name (e.g. Mum, Sarah, James)">
-      <select id="rel-role" style="max-width:120px;flex:none">
+      <select id="rel-role" class="fit">
         <option value="partner">Partner</option>
         <option value="parent">Parent</option>
         <option value="sibling">Sibling</option>
@@ -3511,14 +3641,16 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
         <option value="other">Other</option>
       </select>
     </div>
-    <button class="btn primary" onclick="addRelationship()" style="font-size:var(--t-base)">Add person</button>
+    <button class="btn" onclick="addRelationship()">Add person</button>
   </div>
 
-  <!-- Letters to future self (moved from Reflect) -->
+  <!-- Letters to future self (moved from Reflect). A letter that has ARRIVED leads the card: that is
+       the whole emotional payload of the feature, and it sat under the form in a tinted box. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Letters to my future self</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Write something now. Deliver it later. A message you needed to hear from someone who actually knew what you were going through &#8212; you.</p>
-    <textarea id="why-letter-text" placeholder="Dear future me..." style="height:100px;resize:none;margin-bottom:8px;font-size:var(--t-lg);line-height:1.6"></textarea>
+    <div class="card-title">Letters to my future self</div>
+    <p class="card-lede">Write something now. Deliver it later. A message you needed to hear from someone who actually knew what you were going through &#8212; you.</p>
+    <div id="why-letters-due"></div>
+    <textarea id="why-letter-text" class="field-tall" placeholder="Dear future me..."></textarea>
     <div class="row">
       <select id="why-letter-when" style="flex:1">
         <option value="30">Deliver in 30 days</option>
@@ -3527,10 +3659,9 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
         <option value="365">Deliver in 1 year</option>
         <option value="730">Deliver in 2 years</option>
       </select>
-      <button class="btn primary" style="width:auto;padding:10px 14px;white-space:nowrap" onclick="saveLetterFromWhy()">Save letter</button>
+      <button class="btn field-btn" onclick="saveLetterFromWhy()">Save letter</button>
     </div>
-    <div id="why-letters-due" style="margin-top:10px"></div>
-    <div id="why-letters-list" style="margin-top:6px"></div>
+    <div id="why-letters-list"></div>
   </div>
 </div>
 
@@ -13821,20 +13952,38 @@ function _renderTodayAnchor(){
   const t=faithTradition(), f=curFaith();
   const ttl=document.getElementById('today-title'); if(ttl) ttl.textContent=f.todayTitle;
   const sub=document.getElementById('today-sub'); if(sub) sub.textContent=f.todayDesc;
+  // The large title changes after go() has already copied the old one into the navigation bar, so a
+  // Muslim scrolling "Prayer times" saw "Today" fade in above it. Re-read it once the words are set.
+  try{ if(typeof iosNavSync==='function') iosNavSync('today'); }catch(_){ }
   const el=document.getElementById('today-content'); if(!el) return;
   if(t==='islam') _renderIslamToday(el); else _renderDailyPassage(el,t);
 }
+// The day's passage as a section: its label as the header, the words in the reading face at reading
+// size, left-aligned and upright. It was a centred card with a 12px caps label in the tertiary grey,
+// 22px ITALIC scripture, and the reference in the tint as though it led somewhere. The two things to do
+// with it are destinations, so they are rows — the first of the pair was a button that wrapped "Sit
+// with it — a / minute" across two lines inside itself.
 function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Write what it stirs</button></div>';
+  el.innerHTML='<div class="ios-section"><div class="ios-header">'+kind+'</div><div class="card">'+
+      '<div id="daily-passage-text" class="passage lg">“'+_escFew(v.t)+'”</div>'+
+      '<div id="daily-passage-ref" class="passage-ref">— '+_escFew(v.r)+'</div>'+
+      ((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+
+    '</div></div>'+
+    iosList([
+      iosRow({ icon:'breath', tone:'teal', title:'Sit with it — a minute', onclick:'openBreathMenu()' }),
+      iosRow({ icon:'edit', tone:'orange', title:'Write what it stirs', onclick:'openJournal()' })
+    ]);
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  el.innerHTML='<div class="ios-section"><div class="ios-header">Ayah for today</div><div class="card">'+
+      '<div class="passage lg">“'+_escFew(a.t)+'”</div><div class="passage-ref">— '+_escFew(a.r)+'</div>'+
+    '</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
@@ -13881,7 +14030,7 @@ async function _loadSalah(){
   if(!coords){
     try{ const _c = ls('totry_city'); if(_c){ return _loadSalahByCity(_c); } }catch(_){}
   }
-  if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:var(--t-sm);color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn subtle" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px">Or enter your city</button></div>'; return; }
+  if(!coords){ box.innerHTML='<div class="ios-empty">'+svgIcon('map',44)+'<div class="ios-empty-body">Allow location to see today’s prayer times.</div></div><button class="btn" onclick="_promptCity()">Or enter your city</button>'; return; }
   try{
     const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
@@ -13900,7 +14049,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri,iosRow({ title:'Change city', tint:true, onclick:'_promptCity()', chevron:false })); }
   // A STALL IS NOT A TYPO. v567's 9s abort throws into this same catch, so a real city on a slow line
   // was answered with "Couldn't find that city" — the app blaming the person's typing for the network.
   // And _readErr renders a card with no controls at all ("Change city" exists only on the success path),
@@ -13910,19 +14059,25 @@ async function _loadSalahByCity(city){
     if(box) box.innerHTML = _readErr(_stalled
       ? 'The connection stalled before the times came back \u2014 the city is fine.'
       : 'Couldn\u2019t find that city \u2014 try a larger nearby one.') +
-      '<div style="text-align:center;margin-top:8px">' +
+      iosList([
         // JSON.stringify wraps the city in DOUBLE quotes, and this is a double-quoted HTML attribute —
         // so the attribute terminated at the first quote and the browser parsed the rest as a junk
         // attribute literally named `sydney")`. onclick came out as the string `_loadSalahByCity(`,
         // btn.onclick was null, and a real tap fired nothing. It was inert for EVERY city, not just
         // awkward ones. Escaped for a single-quoted JS string inside a double-quoted attribute, so an
         // apostrophe city ("St John's") survives too.
-        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Try again</button> ' +
-        '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button>' +
-      '</div>';
+        // iosRow writes onclick verbatim apart from a double quote, and _salahCityArg has already turned
+        // every double quote into &quot; — so this attribute is byte-for-byte the one it always was.
+        iosRow({ title:'Try again', tint:true, chevron:false, onclick:"_loadSalahByCity('" + _salahCityArg(city) + "')" }),
+        iosRow({ title:'Change city', tint:true, chevron:false, onclick:'_promptCity()' })
+      ]);
   }
 }
-function _salahCard(t,h){
+// The day's prayers as a grouped list with the next one called out above it. It was one card holding an
+// 12px caps date, a centred "NEXT PRAYER" in 13px caps at .05em, the prayer name in the display face at
+// weight 700 in the TINT, six hand-drawn rows in 15px secondary and tertiary greys with "· next"
+// appended, and a centred 13px tertiary footnote. `extra` is a row the caller adds under the times.
+function _salahCard(t,h,extra){
   const order=[['Fajr',t.Fajr],['Sunrise',t.Sunrise],['Dhuhr',t.Dhuhr],['Asr',t.Asr],['Maghrib',t.Maghrib],['Isha',t.Isha]];
   const now=new Date(); const nowM=now.getHours()*60+now.getMinutes();
   const toM=s=>{const m=/(\d+):(\d+)/.exec(s||''); return m?(+m[1]*60+ +m[2]):9999;};
@@ -13931,9 +14086,14 @@ function _salahCard(t,h){
   if(nextIdx<0){ nextIdx=0; mins=(24*60-nowM)+toM(prayers[0][1]); } else { mins=toM(prayers[nextIdx][1])-nowM; }
   const nextName=prayers[nextIdx][0];
   const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
-  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:var(--font-text);font-size:var(--t-sm);color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
-  const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-cap);letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
-  return '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
+  // Times are third-party API text: iosRow escapes title and value.
+  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise');
+    return iosRow({ title:o[0], value:String(o[1]||''), cls:(isNext?'is-next':dim?'is-dim':'') }); }).join('');
+  const hijri=_escFew(h.day+' '+h.month.en+' '+h.year);
+  return '<div class="ios-section"><div class="ios-header">Today · '+hijri+' AH</div>'+
+    '<div class="card"><div class="ios-stat-label">Next prayer</div><div class="salah-next-name">'+_escFew(nextName)+'</div><div class="salah-next-in">in '+cd+'</div></div>'+
+    '<div class="ios-list">'+rows+(extra||'')+'</div>'+
+    '<div class="ios-footnote">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
 }
 
 // ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
@@ -13983,11 +14143,28 @@ function _paintPractice(){
   const st=window.__practice||{kind:'dhikr',phase:0,count:0}; const cfg=_PRACTICE[st.kind]; const phases=_practicePhases(st.kind); const ph=phases[st.phase];
   const ttl=document.getElementById('practice-title'); if(ttl) ttl.textContent=cfg.title;
   const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
+  // go('practice') copied "Practice" into the navigation bar before this renamed the screen "Dhikr".
+  try{ if(typeof iosNavSync==='function') iosNavSync('practice'); }catch(_){ }
+  // The mantras are a pick-one set of capsules, left-aligned like every other set of choices in the app.
+  // They were hand-drawn centred pills with a 1px border, the chosen one outlined in the tint.
   let chooser='';
-  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:var(--t-sm);padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'var(--go-bg)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
-  const roundInfo=phases.length>1?('<div class="eyebrow" style="margin:6px 0 0">Part '+(st.phase+1)+' of '+phases.length+'</div>'  /* the app's own label device, not a body line one pixel smaller than the body line above it */):'';
-  const namesBtn=st.kind==='dhikr'?'<button class="btn subtle" onclick="_openAsma()" style="width:100%;margin-top:12px">✦ The 99 Names of Allah ›</button>':'';
-  el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:var(--font-display);font-weight:700;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,var(--go-bg),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:var(--t-cap);color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);padding:7px 14px;background:var(--fill2)">Reset</button></div>'+namesBtn;
+  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div class="capsule-row">'+JAPA_MANTRAS.map((m,i)=>'<button class="qb'+(i===mi?' on':'')+'" aria-pressed="'+(i===mi)+'" onclick="_selectMantra('+i+')">'+m.name+'</button>').join('')+'</div>'; }
+  const roundInfo=phases.length>1?('<div class="eyebrow">Part '+(st.phase+1)+' of '+phases.length+'</div>'):'';
+  // The 99 Names is somewhere to go, so it is a row. It was a full-width grey button reading
+  // "✦ The 99 Names of Allah ›", with a glyph for an icon and a character for a chevron.
+  const namesBtn=st.kind==='dhikr'?iosList([iosRow({ icon:'sparkle', tone:'green', title:'The 99 Names of Allah', onclick:'_openAsma()' })]):'';
+  // The counter is ONE hero, so it is centred: the words to say, which part of the round this is, the
+  // bead, and the count. The words were the display face at weight 700 (a fake bold on a family with one
+  // roman weight) over an italic caption in the tertiary grey; the bead was a radial gradient that ended
+  // in a hardcoded purple, and "of 33" was tracked at .1em. Reset is a plain tint button — it is the
+  // one control here nobody should hit by accident, and it was a 50pt grey block.
+  const name = st.kind==='japa'
+    ? '<div class="practice-mantra">'+ph.name+'</div>'
+    : '<div class="card-display">'+ph.name+'</div>';
+  el.innerHTML=chooser+'<div class="card practice-card">'+name+'<div class="card-sub">'+ph.sub+'</div>'+roundInfo+
+    '<div class="practice-bead" onclick="_practiceTap()"><div id="practice-count">'+st.count+'</div><div class="practice-of">of '+ph.n+'</div></div>'+
+    '<div class="card-sub">Tap the circle for each repetition</div>'+
+    '<button class="btn quiet" onclick="_practiceReset()">Reset</button></div>'+namesBtn;
   // The intention composer lives under the practice, so this tab is a HOME and not one exercise.
   try{ if(typeof faithHomeHTML === 'function') el.innerHTML += faithHomeHTML(); }catch(_){ }
 }
@@ -14046,13 +14223,15 @@ function faithHomeHTML(){
   const ph = secular
     ? 'e.g. the conversation I keep avoiding / staying steady this weekend'
     : 'e.g. my mother’s health / staying clean this weekend / gratitude for today';
-  return '<div class="card" style="margin-top:14px">' +
-      '<div class="card-hd" style="margin-bottom:6px">' + _escFew(heading) + '</div>' +
-      '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">' + _escFew(hint) + '</p>' +
-      '<textarea id="fh-prayer-intention" placeholder="' + _escFew(ph) + '" style="min-height:70px;font-size:var(--t-base);line-height:1.5;margin-bottom:10px"></textarea>' +
+  // The Fight's card roles: the heading speaks in our own face, the hint is the lede. They were 17px
+  // semibold SF over a 15px paragraph in the tertiary grey.
+  return '<div class="card">' +
+      '<div class="card-title">' + _escFew(heading) + '</div>' +
+      '<p class="card-lede">' + _escFew(hint) + '</p>' +
+      '<textarea id="fh-prayer-intention" class="field-tall" placeholder="' + _escFew(ph) + '"></textarea>' +
       '<button class="btn primary" id="fh-prayer-btn" onclick="generateIntentionPrayer(\'fh-prayer\')">' +
         _escFew(secular ? 'Write my reflection' : ('Write my ' + noun)) + '</button>' +
-      '<div id="fh-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>' +
+      '<div id="fh-prayer-out" class="fh-out" style="display:none"></div>' +
     '</div>';
 }
 
@@ -14082,9 +14261,12 @@ function _practiceTap(){
         if(typeof logEvent==='function') logEvent('practice_complete');
         if(typeof syncToCloud==='function') syncToCloud();
       }catch(_){ }
-      const _kept = _n ? '<div style="font-size:var(--t-sm);color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
+      // The finish, as a confirmation: a real check mark rather than a 34px text glyph, the tradition's
+      // word for it in our own face (it was New York ITALIC), and the count as a plain sentence — it
+      // was in the tint, which reads as a link, over a 200px-wide button floating in the middle.
+      const _kept = _n ? ' That’s '+_n+' kept.' : '';
       const el=document.getElementById('practice-content');
-      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:var(--t-2xl);margin-bottom:10px">✓</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+      if(el) el.innerHTML='<div class="card practice-done">'+svgIcon('check',44)+'<div class="card-display">'+cfg.done+'</div><div class="card-sub">'+cfg.doneSub+_kept+'</div><button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')">Again</button></div>';
     }
   } else {
     const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();
@@ -14096,10 +14278,18 @@ async function _openAsma(){
   const el=document.getElementById('practice-content'); if(!el) return; el.innerHTML=_readLoading();
   let names=window.__asma;
   if(!names){ try{ const r=await _fetchT('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
-  const back='<div style="margin-bottom:10px"><button class="btn subtle" onclick="_renderPractice(\'dhikr\')" style="padding:7px 12px">‹ Tasbih counter</button></div>';
+  const back='<button class="btn quiet asma-back" onclick="_renderPractice(\'dhikr\')">'+svgIcon('chevronleft',20)+'Tasbih counter</button>';
   if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
-  const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx)">'+n.transliteration+'</div><div style="font-size:var(--t-sm);color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:var(--t-xl);color:var(--go)">'+n.name+'</div></div>').join('');
-  el.innerHTML=back+'<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Asma ul-Husna · the 99 Names</div><div class="card">'+rows+'</div>';
+  // The Names are rows: the number, the transliteration over its meaning, the Arabic on the trailing
+  // edge in the label colour (it was the tint, as if each name were a link). They are also third-party
+  // API text, and every field went into innerHTML raw; iosRow escapes title and sub, and the Arabic is
+  // escaped here.
+  const rows=names.map((n,i)=>iosRow({
+      title: String(n && n.transliteration || ''),
+      sub: String(n && n.en && n.en.meaning || ''),
+      trailing: '<span class="asma-ar" dir="rtl" lang="ar">'+_escFew(n && n.name)+'</span>'
+    }).replace('<span class="ios-row-body">', '<span class="row-rank">'+(i+1)+'</span><span class="ios-row-body">')).join('');
+  el.innerHTML=back+'<div class="ios-section"><div class="ios-header">Asma ul-Husna · the 99 Names</div><div class="ios-list">'+rows+'</div></div>';
 }
 
 // ── SHARED THREADS ─────────────────────────────────────────────────────────────
@@ -14483,17 +14673,27 @@ function renderThread(){
   const idx=(((window.__threadIdx||0))%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length;
   const th=SHARED_THREADS[idx]; const mine=faithTradition();
   const order=[mine].concat(['christianity','islam','hinduism','buddhism','secular'].filter(x=>x!==mine));
-  let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
-  html+='<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
+  // The theme IS the screen, so it is the large title, left-aligned in our own face, and the sentence
+  // that explains what a thread is sits under it where a person reads it first. Before: a centred 12px
+  // caps "SHARED THREAD 1 / 7", the theme in the display face at weight 700, five separate cards each
+  // opening with a 12px caps label (the person's own in the tint on a tinted card), and the explanation
+  // last of all, centred and in italics, after every quote had already been read.
+  let html='<h2 class="page-title">'+_escFew(th.theme)+'</h2>'+
+    '<p class="page-intro">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
+  // One grouped list, one cell per tradition. The words are scripture and wisdom, so they are in the
+  // reading face; the tradition is the cell's first line and the person's own path says so in words.
+  html+='<div class="ios-section"><div class="ios-header">Thread '+(idx+1)+' of '+SHARED_THREADS.length+'</div><div class="ios-list">';
   order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
-    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:var(--go-bg)':'')+'">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
-      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
+    html+='<div class="ios-row thread-row"><div class="ios-row-body">'+
+      '<div class="thread-path'+(isMine?' mine':'')+'">'+(isMine?'<b>'+_escFew(_THREAD_LABELS[k])+'</b><span>Your path</span>':'<span>'+_escFew(_THREAD_LABELS[k])+'</span>')+'</div>'+
+      '<div class="passage">“'+_escFew(L.t)+'”</div>'+
+      '<div class="passage-ref">— '+_escFew(L.r)+'</div></div></div>';
   });
-  html+='<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;text-align:center;line-height:1.6;margin:14px 6px 10px">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
-  html+='<div style="display:flex;gap:8px"><button class="btn subtle" onclick="_threadNav(-1)" style="flex:1">‹ Previous</button><button class="btn subtle" onclick="_threadNav(1)" style="flex:1">Next ›</button></div>';
+  html+='</div></div>';
+  html+='<div class="btn-row"><button class="btn" onclick="_threadNav(-1)">'+svgIcon('chevronleft',18)+'Previous</button><button class="btn" onclick="_threadNav(1)">Next'+svgIcon('chevronright',18)+'</button></div>';
   el.innerHTML=html;
+  // go('threads') ran before this title existed, so the navigation bar had nothing to fade in on scroll.
+  try{ if(typeof iosNavSync==='function') iosNavSync('threads'); }catch(_){ }
 }
 
 let vi=Math.floor(Math.random()*activeVerses().length); // overridden by pickContextualVerse() on load
@@ -19238,18 +19438,21 @@ function renderValuesCard(){
   const el=document.getElementById('values-body'); if(!el) return;
   const o=getValues();
   if(!o){
-    el.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Five words for what your life is actually for. Once you\u2019ve named them, the counsel argues from <em>your</em> standard instead of mine \u2014 and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
-      '<button class="btn primary" style="font-size:var(--t-base)" onclick="openValuesSort()">Sort my values</button>';
+    el.innerHTML='<p class="card-lede">Five words for what your life is actually for. Once you’ve named them, the counsel argues from <em>your</em> standard instead of mine — and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
+      '<button class="btn" onclick="openValuesSort()">Sort my values</button>';
     return;
   }
-  el.innerHTML='<div style="margin-bottom:10px">'+o.v.map(function(id,i){
-      return '<div style="display:flex;align-items:baseline;gap:9px;padding:5px 0">'+
-        '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">'+(i+1)+'</span>'+
-        '<span style="font-size:'+(i===0?'16px':'14px')+';color:'+(i===0?'var(--go)':'var(--tx)')+'">'+valLabel(id)+'</span></div>';
+  // The five, ranked, as rows in the card. The first was 16px in the TINT and the other four 14px in
+  // the label colour — two neighbouring sizes two pixels apart, and a colour that says "tap me" on a
+  // word that does nothing. The "why that one" line is the app handing their own sentence back, so it
+  // speaks in our own face; it was 17px italic New York behind a tinted rule. The footnote is 13, left.
+  el.innerHTML='<div class="ios-list in-card values-list">'+o.v.map(function(id,i){
+      return '<div class="ios-row'+(i===0?' first':'')+'"><span class="row-rank">'+(i+1)+'</span>'+
+        '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(valLabel(id))+'</span></span></div>';
     }).join('')+'</div>'+
-    (o.why?'<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx2);line-height:1.55;border-left:2px solid var(--go-bd);padding-left:11px;margin-bottom:12px">'+_escFew(o.why)+'</div>':'')+
-    '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">A mirror, not a scoreboard. Nothing here is ever scored against you \u2014 and values move as life moves. Re-sort whenever it stops being true.</p>'+
-    '<button class="btn subtle" onclick="openValuesSort()">Re-sort</button>';
+    (o.why?'<div class="card-say values-why">'+_escFew(o.why)+'</div>':'')+
+    '<p class="card-note">A mirror, not a scoreboard. Nothing here is ever scored against you — and values move as life moves. Re-sort whenever it stops being true.</p>'+
+    '<button class="btn" onclick="openValuesSort()">Re-sort</button>';
 }
 
 // ════ BREATH & STILLNESS — the minimum viable work ════
@@ -45456,7 +45659,8 @@ function renderRelationships(){
   if(!list)return;
   const people=ls('totry_relationships')||[];
   if(!people.length){
-    list.innerHTML='<p class="empty-note">No one added yet.</p>';
+    list.className='';
+    list.innerHTML='<p class="card-note">No one added yet.</p>';
     return;
   }
   // Sort: those without recent contact first
@@ -45466,6 +45670,7 @@ function renderRelationships(){
     return new Date(a.lastContact)-new Date(b.lastContact);
   });
   list.innerHTML='';
+  list.className='ios-list in-card';
   sorted.forEach(p=>{
     let timeAgo='Never';
     let nudge='';
@@ -45483,14 +45688,18 @@ function renderRelationships(){
     }else{
       nudge='var(--re)';
     }
+    // A row: the name, then who they are and when you last connected, the WHEN in red once it has been
+    // too long and green when it is recent. That line was 11px CAPITALS ("FRIEND · NEVER") with the
+    // whole thing coloured, in a bordered grey box per person; "Connected" was a 13px button and the
+    // remove control a 13px grey ×. The two controls are the row's trailing capsule and its delete.
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px';
-    row.innerHTML='<div style="flex:1">'+
-      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(p.name)+'</div>'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+nudge+';margin-top:2px">'+_escFew(String(p.role||'someone').toUpperCase())+' · '+timeAgo+'</div>'+
-    '</div>'+
-    '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap)" onclick="logContact('+p.id+')">Connected</button>'+
-    '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap);background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';
+    row.className='ios-row has-del';
+    const _role=String(p.role||'someone');
+    const _when=nudge==='var(--re)'?'due-late':nudge==='var(--gr)'?'due-ok':'';
+    row.innerHTML='<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(p.name)+'</span>'+
+      '<span class="ios-row-sub" style="display:block">'+_escFew(_role.charAt(0).toUpperCase()+_role.slice(1))+' · <span class="'+_when+'">'+timeAgo+'</span></span></span>'+
+    '<button class="btn row-btn" onclick="logContact('+p.id+')">Connected</button>'+
+    '<button class="ios-row-x" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';
     list.appendChild(row);
   });
 }
@@ -45588,19 +45797,22 @@ async function renderLiturgy(){
   const dateEl = document.getElementById('liturgy-date');
   if(!box) return;
   if(typeof faithTradition==='function' && faithTradition()!=='christianity'){
-    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('calendar',44)+'<div class="ios-empty-body">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
     if(dateEl) dateEl.textContent = '';
     return;
   }
-  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  const _dateLine = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  if(dateEl) dateEl.textContent = _dateLine;
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ d = {readings:null,celebration:null}; }
   if(!d || (!d.readings && !d.celebration)){
-    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Today\u2019s readings couldn\u2019t load right now. Your verse and prayer above are ready whenever you are.</div><button class="btn" onclick="renderLiturgy()" style="margin-top:12px;width:auto;padding:8px 16px;font-size:var(--t-sm);background:var(--bg3)">Try again</button></div>';
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('cloud',44)+'<div class="ios-empty-body">Today\u2019s readings couldn\u2019t load right now. Your verse and prayer above are ready whenever you are.</div></div><button class="btn" onclick="renderLiturgy()">Try again</button>';
     return;
   }
   let html = '';
-  if(d.season){ html += '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">'+d.season+'</div>'; }
+  // The season joins the date under the title. It was a 12px caps line in the tint, between that
+  // sentence and the first card, labelling nothing.
+  if(d.season && dateEl){ dateEl.textContent = _dateLine + ' \u00b7 ' + String(d.season); }
   if(d.celebration){
     const c = d.celebration;
     // The free calendar API sometimes pairs a correct feast NAME with a quote/bio for a DIFFERENT
@@ -45611,25 +45823,29 @@ async function renderLiturgy(){
     const showBio = !_liturgyCelebrationMismatch(c);
     const q = showBio ? c.quote : null;
     const desc = showBio ? c.description : null;
-    html += '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Today the Church remembers</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
-      (q?'<div style="font-size:var(--t-base);color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
-      (desc?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+desc.replace(/</g,'&lt;')+'</div>':'')+
-      '</div>';
+    // The saint as a section: the header says what it is, the name speaks in our own face, the quote
+    // is in the reading face, the life under it is the lede. It was a tinted card with an 11px caps
+    // label in the tint, the name in New York ITALIC, and the quote in the TINT — the colour of a link.
+    html += '<div class="ios-section"><div class="ios-header">Today the Church remembers</div><div class="card">'+
+      '<div class="card-title">'+_escFew(c.name||'')+'</div>'+
+      (q?'<div class="passage lit-quote">“'+_escFew(q)+'”</div>':'')+
+      (desc?'<div class="card-sub lit-desc">'+_escFew(desc)+'</div>':'')+
+      '</div></div>';
   }
   if(d.readings){
     const r = d.readings;
-    const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:var(--t-base);color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
-    html += '<div class="card"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
-      row('First Reading', r.firstReading)+
-      row('Psalm', r.psalm)+
-      row('Second Reading', r.secondReading)+
-      '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">Gospel</span><span style="font-size:var(--t-base);color:var(--go);text-align:right">'+(r.gospel||'').replace(/</g,'&lt;')+'</span></div>';
-    html += '<button class="btn" onclick="readTodaysGospel()" style="margin-top:12px;background:var(--bg2);color:var(--go);font-size:var(--t-base);width:100%">Read today\u2019s Gospel</button>';
-    html += '<div id="liturgy-gospel-text" style="margin-top:12px"></div>';
-    if(d.usccb){ html += '<a href="'+d.usccb+'" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:var(--t-sm);color:var(--bl);text-align:center">Full readings at USCCB \u2192</a>'; }
-    html += '</div>';
+    // Each reading is a row with what it is above the reference — the way Contacts sets "mobile" over
+    // a number — and the two things to do are tint rows at the foot of the same list. They were a
+    // hand-drawn table of 15px tertiary labels against right-aligned references that wrapped, a grey
+    // 50pt button, and a centred underlined "Full readings at USCCB →".
+    const row = (label, val) => val ? iosRow({ title:String(val), sub:label, cls:'label-first' }) : '';
+    let list = row('First Reading', r.firstReading) + row('Psalm', r.psalm) + row('Second Reading', r.secondReading) + row('Gospel', r.gospel) +
+      iosRow({ title:'Read today’s Gospel', tint:true, chevron:false, onclick:'readTodaysGospel()' });
+    if(d.usccb){
+      list += '<a class="ios-row tint" href="'+String(d.usccb).replace(/"/g,'&quot;')+'" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Full readings at USCCB</span></span><span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span></a>';
+    }
+    html += '<div class="ios-section"><div class="ios-header">Today’s Mass readings</div><div class="ios-list">'+list+'</div>'+
+      '<div id="liturgy-gospel-text"></div></div>';
     window.__todayGospelRef = d.readings.gospel || null;
   }
   box.innerHTML = html;
@@ -45690,7 +45906,7 @@ async function readTodaysGospel(){
   const box = document.getElementById('liturgy-gospel-text');
   const ref = window.__todayGospelRef;
   if(!box || !ref) return;
-  box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
+  box.innerHTML = '<div class="ios-footnote">Loading the Gospel…</div>';
   // A LECTIONARY READING IS OFTEN MORE THAN ONE RANGE. The old pattern captured the FIRST range and
   // stopped, so "Matthew 1:1-16, 18-23" rendered verses 1-16 and silently dropped 18-23 — the half
   // that carries the annunciation — with no note that anything was missing. Two such readings fell in
@@ -45706,7 +45922,7 @@ async function readTodaysGospel(){
   // narrows a verse this reader shows whole, so dropping the letter loses nothing a person would see.
   const _refMain = String(ref).split(/\s+or\s+/i)[0].replace(/(\d)[a-z]\b/g, '$1').trim();
   const m = _refMain.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
-  if(!m){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!m){ box.innerHTML = '<div class="ios-footnote">See the full Gospel at the USCCB link above.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];
   const ranges = m[3].split(',').map(function(part){
@@ -45716,7 +45932,7 @@ async function readTodaysGospel(){
     const one = t.match(/^(\d+)$/);
     return one ? { a:+one[1], b:+one[1] } : null;
   }).filter(Boolean);
-  if(!ranges.length){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!ranges.length){ box.innerHTML = '<div class="ios-footnote">See the full Gospel at the USCCB link above.</div>'; return; }
   const inRanges = n => ranges.some(function(r){ return n >= r.a && n <= r.b; });
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
@@ -45727,20 +45943,22 @@ async function readTodaysGospel(){
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
   }catch(_){ }
   if(!verses || !verses.length){
-    box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:6px">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link below for the full reading.</div>';
+    box.innerHTML = '<div class="ios-footnote">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link above for the full reading.</div>';
     return;
   }
-  let html = '<div style="background:var(--bg2);border-radius:var(--rm);padding:14px;margin-top:4px">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
+  // The passage as its own card under the list it was opened from: the reference as the section
+  // header (it was 11px caps in the tint), verses in the reading face with their numbers in the
+  // secondary grey (12px in the tint), and the translation's name as the footnote (11px tertiary).
+  let html = '<div class="ios-header">'+_escFew(ref)+'</div><div class="card">';
   // The lectionary SKIPS the verses between two ranges; running them together would present the
   // reading as continuous when it is not. Mark the join so the omission is visible.
   let _prevNum = null;
   verses.forEach(v => {
     if(_prevNum != null && v.num > _prevNum + 1)
-      html += '<p style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
+      html += '<p class="gospel-gap" aria-label="verses omitted">⋯</p>';
     _prevNum = v.num;
-    if(v.text) html += '<p style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:var(--t-mini);color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
-  html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
+    if(v.text) html += '<p class="passage gospel-v"><span class="verse-n">'+_escFew(v.num)+'</span>'+_escFew(v.text)+'</p>'; });
+  html += '</div><div class="ios-footnote">Berean Standard Bible (public domain)</div>';
   box.innerHTML = html;
   haptic('tap');
 }
@@ -45928,7 +46146,12 @@ async function renderMorningLiturgy(){
 function initWhyTab(){
   const why = (ls('totry_why') || '').trim();
   const disp = document.getElementById('why-display');
-  if(disp) disp.textContent = why || 'You haven\u2019t written your why yet. Tap below to put it into words \u2014 it\u2019s the anchor everything else holds onto.';
+  if(disp){
+    disp.textContent = why || 'You haven\u2019t written your why yet. Tap below to put it into words \u2014 it\u2019s the anchor everything else holds onto.';
+    // Their own words are the hero, in our own face. The invitation to write them is not: it is a
+    // sentence in the lede role, or it would read as though the app had written their why for them.
+    disp.classList.toggle('is-empty', !why);
+  }
   // Identity + season now live here (moved from Settings).
   const idEl = document.getElementById('settings-identity');
   if(idEl) idEl.value = ls('totry_identity') || '';
@@ -45962,11 +46185,14 @@ function saveWhyEdit(){
 function renderWhyAffirmations(){
   const box = document.getElementById('affirmations-list'); if(!box) return;
   const list = ls('totry_affirmations') || [];
-  if(!list.length){ box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:4px 0">No affirmations yet.</p>'; return; }
+  // Rows in the card, their own words at body size and upright — they were ITALIC 17px in a grey box
+  // each, with a bare 17px × beside them and no name a screen reader could read. The empty line was a
+  // 15px italic in the tertiary grey.
+  if(!list.length){ box.className = ''; box.innerHTML = '<p class="card-note">No affirmations yet.</p>'; return; }
+  box.className = 'ios-list in-card';
   box.innerHTML = list.map((a,i) =>
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px">'+
-    '<span style="flex:1;font-size:var(--t-base);color:var(--tx);font-style:italic">\u201c'+a.replace(/</g,'&lt;')+'\u201d</span>'+
-    '<button onclick="removeWhyAffirmation('+i+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);flex-shrink:0">\u00d7</button></div>'
+    '<div class="ios-row has-del"><span class="ios-row-body"><span class="ios-row-title wrap" style="display:block">“'+_escFew(a)+'”</span></span>'+
+    '<button class="ios-row-x" aria-label="Remove this affirmation" onclick="removeWhyAffirmation('+i+')">×</button></div>'
   ).join('');
 }
 function addWhyAffirmation(){
@@ -46035,20 +46261,31 @@ function renderWhyPromises(){
   const promises = ls('totry_promises') || [];
   const now = Date.now();
   if(due){
+    // A promise that has come due asks something of the person today, so it leads the card: the
+    // promise at body size, and the two honest answers side by side at full height. They were 15px
+    // labels in two 30px buttons inside a grey box inside the card.
     const dueNow = promises.filter(p => p.status==='open' && new Date(p.due).getTime() <= now);
     due.innerHTML = dueNow.map(p =>
-      '<div style="padding:12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+
-      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">'+p.text.replace(/</g,'&lt;')+'</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn success" style="flex:1;padding:7px;font-size:var(--t-sm)" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
-      '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-sm);background:var(--bg2)" onclick="resolveWhyPromise('+p.id+',false)">Didn\u2019t</button></div></div>'
+      '<div class="promise-due">'+
+      '<div class="promise-text">'+_escFew(p.text)+'</div>'+
+      '<div class="btn-row"><button class="btn success" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
+      '<button class="btn" onclick="resolveWhyPromise('+p.id+',false)">Didn’t</button></div></div>'
     ).join('');
   }
   if(list){
     const open = promises.filter(p => p.status==='open' && new Date(p.due).getTime() > now);
     const done = promises.filter(p => p.status!=='open');
-    list.innerHTML =
-      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm)"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini)">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
-      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm);opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:var(--t-base)">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
+    // Running promises carry the time left as the row's value, in words — it was "5d" at 12px in the
+    // tertiary grey. Finished ones are secondary rows: kept is a green check, not kept is struck through
+    // with a dash, where both used to be a row at 60% opacity (a fourth grey by another name).
+    const rows =
+      open.map(p => iosRow({ title:String(p.text||''), value:plural(Math.ceil((new Date(p.due).getTime()-now)/86400000), 'day'), cls:'top' })
+        .replace('class="ios-row-title"', 'class="ios-row-title wrap"')).join('')+
+      done.slice(0,10).map(p => iosRow({ title:String(p.text||''), cls:'top is-done'+(p.status==='kept'?'':' is-broken'),
+          trailing: p.status==='kept' ? '<span class="ios-row-mark" role="img" aria-label="Kept">'+svgIcon('check',18)+'</span>' : '<span class="ios-row-value" role="img" aria-label="Not kept">—</span>' })
+        .replace('class="ios-row-title"', 'class="ios-row-title wrap"')).join('');
+    list.className = rows ? 'ios-list in-card' : '';
+    list.innerHTML = rows;
   }
 }
 function resolveWhyPromise(id, kept){
@@ -46063,17 +46300,20 @@ function renderWhyLetters(){
   const letters = ls('totry_letters') || [];
   const now = Date.now();
   if(dueBox){
+    // The moment the feature exists for. It sat under the form in a tinted box, announced by an 11px
+    // caps sentence in the tint that wrapped, with the letter in 17px italic. It leads the card now:
+    // the announcement as a headline, the letter in our own face — past you, speaking.
     const ready = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() <= now);
     dueBox.innerHTML = ready.map(l =>
-      '<div style="padding:14px;background:var(--go-bg);border-radius:var(--rm);margin-bottom:8px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A letter from your past self has arrived</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.6;white-space:pre-wrap">'+l.text.replace(/</g,'&lt;')+'</div>'+
-      '<button class="btn" style="margin-top:10px;padding:6px 12px;font-size:var(--t-cap);background:var(--bg3)" onclick="markWhyLetterRead('+l.id+')">I\u2019ve read it</button></div>'
+      '<div class="letter-arrived">'+
+      '<div class="card-hd">A letter from your past self has arrived</div>'+
+      '<div class="card-say">'+_escFew(l.text)+'</div>'+
+      '<button class="btn" onclick="markWhyLetterRead('+l.id+')">I’ve read it</button></div>'
     ).join('');
   }
   if(listBox){
     const pending = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() > now);
-    listBox.innerHTML = pending.length ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</div>' : '';
+    listBox.innerHTML = pending.length ? '<p class="card-note">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</p>' : '';
   }
 }
 function markWhyLetterRead(id){
@@ -54331,15 +54571,27 @@ const SEASONS={
 };
 
 
+// The six seasons as a pick-one list, the way Settings draws one: a tile, the name, what it means, and a
+// check on the one in force. They were six bordered boxes with an emoji leading each name and the
+// chosen one filled with the tint. The same tap, the same write, the same toast.
+const SEASON_ICONS={
+  Fighting:['shield','red'], Rebuilding:['tool','orange'], Building:['sprout','green'],
+  Celebrating:['sparkle','yellow'], Grieving:['heartbreak','indigo'], Resting:['moon','teal']
+};
 function renderSeasonSettings(){
   const container=document.getElementById('settings-seasons');
   if(!container)return;
   const current=ls('totry_season')||'Building';
   container.innerHTML='';
   Object.entries(SEASONS).forEach(([name,data])=>{
-    const chip=document.createElement('div');
-    chip.className='season-chip'+(name===current?' on':'');
-    chip.innerHTML='<div class="sc-name">'+data.emoji+' '+name+'</div><div class="sc-desc">'+data.desc+'</div>';
+    const ic=SEASON_ICONS[name]||['leaf','gray'];
+    const on=(name===current);
+    const tpl=document.createElement('div');
+    tpl.innerHTML=iosRow({ tag:'button', icon:ic[0], tone:ic[1], title:name, sub:data.desc, cls:(on?'active':''),
+      trailing:'<span class="ios-row-check">'+svgIcon('check',16)+'</span>' });
+    const chip=tpl.firstElementChild;
+    chip.type='button';
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
     chip.onclick=()=>{
       ls('totry_season',name);
       renderSeasonSettings();
