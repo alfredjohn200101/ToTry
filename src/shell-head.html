@@ -2614,6 +2614,133 @@ a.ios-row{text-decoration:none}
 .cal-cell-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%;min-height:5px}
 .cal-cell-dots>span{width:5px;height:5px;border-radius:50%}
 
+/* ═══ SOUL, THE QUIET ROOMS: Threads · the day's anchor · Practice · Today in the Church · Your Why ══
+   Five screens a person opens to be still, and they were the loudest small text left in the app: 11px
+   and 12px caps tracked at .01em on every card ("CHRISTIANITY · YOUR PATH", "AYAH FOR TODAY", "TODAY
+   THE CHURCH REMEMBERS"), captions in italics under every headline, a fourth grey (--tx3 doing
+   --tx2's job) on every explanatory sentence, the ToTry face set at weight 700 on a family with one
+   roman weight, a saint's quote in the TINT as if it were a link, and "5d" in a 12px tertiary grey.
+   Nothing below is invented. The card roles are the Fight's (.card-title/.card-lede), the rows are
+   iosRow, the empty states are .ios-empty, the intro is .page-intro. What is named here is only what
+   those screens needed that did not exist yet. */
+
+/* A LIST THAT BELONGS TO A CARD. The Why board is cards with a title in our own face and a lede, and
+   several of them hold rows (people, promises, affirmations, the six seasons). An .ios-list inside a
+   .card draws a second white slab on the first and indents every row twice. In-card, the list gives
+   up its own surface and radius and runs to the card's edges, so the rows keep iOS's 16pt inset and
+   their hairlines line up with the card's text. That is "group with a hairline", not a card in a card. */
+.ios-list.in-card{background:transparent;border-radius:0;overflow:visible;margin:0 -16px 14px}
+.ios-list.in-card:last-child{margin-bottom:-4px}
+.ios-list.in-card:empty{display:none}
+.ios-list.in-card>.ios-row:first-child::before{content:'';position:absolute;top:0;left:16px;right:16px;height:.5px;background:var(--bd)}
+.ios-list.in-card>.ios-row.has-icon:first-child::before{left:57px}
+/* Inside a card the hairline stops at the card's text edge on BOTH sides, as the Fight card's rows do,
+   so a list and a hairline-separated block in the same card (a promise that is due) draw one line. */
+.ios-list.in-card>.ios-row::before,.ios-list.in-card>.ios-row+.ios-row::before{right:16px}
+/* The list carries the space UNDER itself, so whatever follows it — a field, a button, a note — starts
+   14pt below the last row, and a list that is empty or absent leaves no hole behind. */
+.row+.ios-list.in-card{margin-top:6px}
+.values-list{margin-top:14px}
+#affirmations-list>.card-note{margin:14px 0 0}
+#relationships-list>.card-note{margin:0 0 14px}
+/* A row whose title is a sentence the person wrote. A row title truncates — that is the rule — but an
+   affirmation cut to "I finish what I start, even wh…" is not a label, it is their words, lost. */
+.ios-row-title.wrap{white-space:normal;overflow:visible}
+.ios-row.is-done .ios-row-title{color:var(--tx2)}
+.ios-row.is-broken .ios-row-title{text-decoration:line-through}
+.ios-row-mark{flex:none;display:flex;color:var(--gr)}
+.ios-row-mark .ic{width:18px;height:18px;stroke-width:2.4}
+/* The label ABOVE the value, the way Contacts draws "mobile" over a number. A reading is identified
+   by its reference; "First Reading" is what the reference is. Both parts are iosRow's own title and
+   sub — only the order they are shown in changes. */
+.ios-row.label-first .ios-row-body{display:flex;flex-direction:column-reverse}
+.ios-row.label-first .ios-row-sub{margin:0 0 1px}
+/* The one row in a set that is the one that matters now — the next prayer. */
+.ios-row.is-next .ios-row-title,.ios-row.is-next .ios-row-value{color:var(--go);font-weight:600}
+.ios-row.is-dim .ios-row-title{color:var(--tx2)}
+.ios-row.top{align-items:flex-start}
+/* A number that ranks a row — the five values, the 99 Names. SF Rounded, like every other figure. */
+.row-rank{flex:none;min-width:20px;font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
+
+/* A label for the field under it, when the label is a sentence stem rather than a section name —
+   "I am becoming a person who…" was a 12px line in the tint, which read as a link. */
+.field-label{display:block;font-size:15px;line-height:1.35;letter-spacing:-.016em;color:var(--tx2);margin:0 0 6px}
+.field-tall{height:96px;resize:none;margin:0 0 10px}
+/* A button that sits on one row beside a field — Add, Add promise, Save letter. .btn is a full-width
+   50pt button; each of these was `width:auto;white-space:nowrap;padding:10px 14px` written at the call. */
+.btn.field-btn{flex:none;width:auto;padding:0 20px !important;white-space:nowrap;margin:0}
+.row>select.fit{flex:none;width:auto;max-width:140px}
+
+/* Scripture and the traditions' words: New York, upright, at reading size. They were set four ways —
+   17px SF, 22px italic New York centred, 17px italic in a tinted box, 16px italic with a coloured
+   rule down the left. The reference under a passage is a footnote, not a tint link to nowhere. */
+.passage{font-family:var(--font-serif);font-size:17px;line-height:1.47;letter-spacing:0;color:var(--tx)}
+.passage.lg{font-size:22px;line-height:1.36}
+.passage-ref{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:8px}
+.card>.passage+.card-sub{margin-top:10px}
+
+/* SHARED THREADS: one grouped list, one cell per tradition, the person's own path first. */
+.thread-row{align-items:flex-start;padding-top:12px;padding-bottom:14px}
+.thread-path{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;letter-spacing:-.016em;color:var(--tx2);margin-bottom:5px}
+.thread-path.mine b{font-weight:600;color:var(--tx)}
+.thread-row .passage-ref{margin-top:6px}
+
+/* THE DAY'S ANCHOR (Islam, Hinduism, Buddhism, secular). The verse tools have no rule of their own
+   anywhere, so on this screen they stacked into two 50pt full-width buttons under a single line of
+   scripture. Side by side at control height. */
+#tab-today .verse-tools{display:flex;gap:8px;margin-top:14px}
+#tab-today .verse-tools .btn{flex:1;min-width:0;min-height:44px;font-size:15px !important}
+.salah-next-name{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-top:2px}
+.salah-next-in{font-family:var(--font-rounded);font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* PRACTICE: the counter is one hero — a name, the bead, the count — so it is centred, the one shape
+   docs/DESIGN.md allows to be. The bead was a radial gradient ending in a hardcoded purple, with a
+   1px border and the count's "of 33" tracked at .1em in the tertiary grey. */
+.capsule-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.practice-card{text-align:center}
+.practice-card .card-display{margin:0}
+.practice-mantra{font-size:40px;line-height:1.2;color:var(--tx)}
+.practice-card .card-sub{margin:4px 0 0}
+.practice-card .eyebrow{margin:10px 0 0 !important}
+.practice-bead{width:184px;height:184px;margin:22px auto 16px;border-radius:50%;background:var(--go-bg);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.practice-bead:active{transform:scale(.96)}
+.practice-bead #practice-count{font-family:var(--font-rounded);font-size:56px;font-weight:600;line-height:1;color:var(--go);font-variant-numeric:tabular-nums}
+.practice-of{font-family:var(--font-rounded);font-size:15px;color:var(--tx2);margin-top:6px;font-variant-numeric:tabular-nums}
+.practice-card>.btn.quiet{margin-top:6px}
+.practice-card{margin-bottom:28px}
+.practice-done{text-align:center;padding:28px 20px 20px !important}
+.practice-done .ic{width:44px;height:44px;color:var(--gr);stroke-width:2;margin-bottom:8px}
+.practice-done .card-sub{margin:6px 0 18px}
+.fh-out{margin-top:14px;padding-top:14px;border-top:.5px solid var(--bd)}
+.asma-back{justify-content:flex-start !important;width:auto;padding-left:0 !important;margin:-6px 0 6px}
+.asma-back .ic{width:20px;height:20px;stroke-width:2.4}
+.asma-ar{flex:none;font-size:22px;color:var(--tx)}
+
+/* TODAY IN THE CHURCH */
+.lit-quote{margin:10px 0 0}
+#liturgy-gospel-text:not(:empty){margin-top:22px}
+.verse-n{font-family:var(--font-text);font-size:13px;font-weight:600;color:var(--tx2);vertical-align:super;line-height:0;margin-right:3px;font-variant-numeric:tabular-nums}
+.gospel-v{margin:0 0 10px}
+.gospel-v:last-child{margin-bottom:0}
+.gospel-gap{text-align:center;color:var(--tx3);margin:0 0 10px}
+
+/* YOUR WHY: a board in the first person. The reason is the hero, set in our own face; every other
+   section is a card with its title in that face and the sentence under it in the lede role. */
+.why-text{white-space:pre-wrap;margin:2px 0 14px}
+.why-text.is-empty{font-family:var(--font-text);font-size:15px;line-height:1.45;letter-spacing:-.016em;color:var(--tx2)}
+.values-list .ios-row.first .ios-row-title{font-weight:600}
+.values-why{margin:0}
+#values-body .card-note+.btn{margin-top:14px}
+.due-late{color:var(--re)}
+.due-ok{color:var(--gr)}
+.promise-due{border-top:.5px solid var(--bd);padding:12px 0 14px}
+.promise-due+.promise-due{padding-top:12px}
+.promise-text{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx);margin-bottom:10px}
+.letter-arrived{border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd);padding:14px 0 16px;margin-bottom:14px}
+.letter-arrived .card-say{white-space:pre-wrap;margin:6px 0 12px}
+
 </style>
 </head>
 <body>
@@ -3204,7 +3331,7 @@ a.ios-row{text-decoration:none}
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-today" class="tab">
   <h2 id="today-title" class="page-title">Today</h2>
-  <p id="today-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <p id="today-sub" class="page-intro"></p>
   <div id="today-content"></div>
 </div>
 
@@ -3213,7 +3340,7 @@ a.ios-row{text-decoration:none}
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-practice" class="tab">
   <h2 id="practice-title" class="page-title">Practice</h2>
-  <p id="practice-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <p id="practice-sub" class="page-intro"></p>
   <div id="practice-content"></div>
 </div>
 
@@ -3221,69 +3348,74 @@ a.ios-row{text-decoration:none}
 <!-- TAB: LITURGY (today's Mass readings + saint of the day, from the free Catholic readings API) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-liturgy" class="tab">
-  <div style="margin-bottom:14px">
-    <h2 class="page-title">Today in the Church</h2>
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5" id="liturgy-date">The readings and the saint for today.</p>
-  </div>
+  <h2 class="page-title">Today in the Church</h2>
+  <!-- The date, and once the readings arrive, the liturgical season after it. The season used to be a
+       12px caps line in the tint floating between this sentence and the first card. -->
+  <p class="page-intro" id="liturgy-date">The readings and the saint for today.</p>
   <div id="liturgy-content">
-    <div style="text-align:center;padding:30px 16px;color:var(--tx3);font-size:var(--t-base)">Loading today’s readings…</div>
+    <div class="ios-empty"><div class="ios-empty-body">Loading today’s readings…</div></div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <!-- TAB: WHY (the reason, letters, promises — moved here from Settings/Reflect) -->
 <!-- ═══════════════════════════════════════════════════ -->
+<!-- A board written in the first person. Every section title stays the person's own sentence, in the
+     ToTry face (.card-title, the Fight's role), with the sentence under it as the lede. They were 17px
+     semibold SF over 15px paragraphs in the TERTIARY grey, beside six filled-blue buttons on one screen.
+     The reason sits first, as the hero: the label above, their own words large under it. -->
 <div id="tab-why" class="tab">
-  <div style="margin-bottom:14px">
-    <h2 class="page-title">Your Why</h2>
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">When the motivation fades — and it will — this is what you come back to.</p>
-  </div>
+  <h2 class="page-title">Your Why</h2>
+  <p class="page-intro">When the motivation fades — and it will — this is what you come back to.</p>
 
   <!-- The core reason -->
-  <div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:8px">The reason I started</div>
-    <div id="why-display" style="font-family:var(--font-serif);font-size:var(--t-lg);color:var(--tx);font-style:italic;line-height:1.55;white-space:pre-wrap;margin-bottom:10px"></div>
-    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:var(--t-lg);line-height:1.6;display:none"></textarea>
-    <button class="btn subtle" id="why-edit-btn" onclick="toggleWhyEdit()">Edit my why</button>
-    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="font-size:var(--t-base);display:none">Save your why</button>
+  <div class="card">
+    <div class="eyebrow">The reason I started</div>
+    <div id="why-display" class="card-display why-text"></div>
+    <textarea id="why-edit" class="field-tall" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;display:none"></textarea>
+    <button class="btn" id="why-edit-btn" onclick="toggleWhyEdit()">Edit my why</button>
+    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="display:none">Save your why</button>
   </div>
 
   <!-- What matters — the values card sort (ACT/MI). A mirror the counsel argues from, never a score. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">What actually matters to me</div>
+    <div class="card-title">What actually matters to me</div>
     <div id="values-body"></div>
   </div>
   <!-- Identity + season (moved from Settings — they define the journey, like the why) -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Who I’m becoming</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Complete the sentence. The app holds you to this.</p>
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-bottom:6px">I am becoming a person who...</div>
-    <textarea id="settings-identity" placeholder="...keeps their promises" style="height:80px;resize:none;margin-bottom:10px;font-size:var(--t-lg)"></textarea>
-    <button class="btn primary" onclick="saveIdentity()" style="font-size:var(--t-base)">Save identity</button>
+    <div class="card-title">Who I’m becoming</div>
+    <p class="card-lede">Complete the sentence. The app holds you to this.</p>
+    <label class="field-label" for="settings-identity">I am becoming a person who...</label>
+    <textarea id="settings-identity" class="field-tall" placeholder="...keeps their promises"></textarea>
+    <button class="btn" onclick="saveIdentity()">Save identity</button>
   </div>
 
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">The season I’m in</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
-    <div id="settings-seasons"></div>
+    <div class="card-title">The season I’m in</div>
+    <p class="card-lede">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
+    <div id="settings-seasons" class="ios-list in-card"></div>
   </div>
 
   <!-- Affirmations -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Affirmations</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Short affirmations in the present tense. Read them when you need to remember.</p>
-    <div class="row" style="margin-bottom:8px">
-      <input type="text" id="new-affirmation" placeholder="e.g. I am someone who keeps my word" style="flex:1">
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addWhyAffirmation()">Add</button>
+    <div class="card-title">Affirmations</div>
+    <p class="card-lede">Short affirmations in the present tense. Read them when you need to remember.</p>
+    <div class="row">
+      <input type="text" id="new-affirmation" placeholder="e.g. I am someone who keeps my word">
+      <button class="btn field-btn" onclick="addWhyAffirmation()">Add</button>
     </div>
     <div id="affirmations-list"></div>
   </div>
 
-  <!-- Promises (moved from Reflect) -->
+  <!-- Promises (moved from Reflect). What is due comes first — it is the one thing here that asks
+       something of the person today — then the ones still running, then the way to make a new one. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Promises I’m keeping</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
-    <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin-bottom:8px">
+    <div class="card-title">Promises I’m keeping</div>
+    <p class="card-lede">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
+    <div id="why-promises-due"></div>
+    <div id="why-promises-list"></div>
+    <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin:0 0 8px">
     <div class="row">
       <select id="why-promise-when" style="flex:1">
         <option value="7">Check in 1 week</option>
@@ -3292,20 +3424,18 @@ a.ios-row{text-decoration:none}
         <option value="60">Check in 60 days</option>
         <option value="90">Check in 90 days</option>
       </select>
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addPromiseFromWhy()">Add promise</button>
+      <button class="btn field-btn" onclick="addPromiseFromWhy()">Add promise</button>
     </div>
-    <div id="why-promises-due" style="margin-top:12px"></div>
-    <div id="why-promises-list" style="margin-top:6px"></div>
   </div>
 
   <!-- People who matter (moved from Settings — they're part of your why) -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">The people I’m doing this for</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
-    <div id="relationships-list" style="margin-bottom:10px"></div>
+    <div class="card-title">The people I’m doing this for</div>
+    <p class="card-lede">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
+    <div id="relationships-list"></div>
     <div class="row">
       <input type="text" id="rel-name" placeholder="Name (e.g. Mum, Sarah, James)">
-      <select id="rel-role" style="max-width:120px;flex:none">
+      <select id="rel-role" class="fit">
         <option value="partner">Partner</option>
         <option value="parent">Parent</option>
         <option value="sibling">Sibling</option>
@@ -3315,14 +3445,16 @@ a.ios-row{text-decoration:none}
         <option value="other">Other</option>
       </select>
     </div>
-    <button class="btn primary" onclick="addRelationship()" style="font-size:var(--t-base)">Add person</button>
+    <button class="btn" onclick="addRelationship()">Add person</button>
   </div>
 
-  <!-- Letters to future self (moved from Reflect) -->
+  <!-- Letters to future self (moved from Reflect). A letter that has ARRIVED leads the card: that is
+       the whole emotional payload of the feature, and it sat under the form in a tinted box. -->
   <div class="card">
-    <div class="card-hd" style="margin-bottom:8px">Letters to my future self</div>
-    <p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Write something now. Deliver it later. A message you needed to hear from someone who actually knew what you were going through &#8212; you.</p>
-    <textarea id="why-letter-text" placeholder="Dear future me..." style="height:100px;resize:none;margin-bottom:8px;font-size:var(--t-lg);line-height:1.6"></textarea>
+    <div class="card-title">Letters to my future self</div>
+    <p class="card-lede">Write something now. Deliver it later. A message you needed to hear from someone who actually knew what you were going through &#8212; you.</p>
+    <div id="why-letters-due"></div>
+    <textarea id="why-letter-text" class="field-tall" placeholder="Dear future me..."></textarea>
     <div class="row">
       <select id="why-letter-when" style="flex:1">
         <option value="30">Deliver in 30 days</option>
@@ -3331,10 +3463,9 @@ a.ios-row{text-decoration:none}
         <option value="365">Deliver in 1 year</option>
         <option value="730">Deliver in 2 years</option>
       </select>
-      <button class="btn primary" style="width:auto;padding:10px 14px;white-space:nowrap" onclick="saveLetterFromWhy()">Save letter</button>
+      <button class="btn field-btn" onclick="saveLetterFromWhy()">Save letter</button>
     </div>
-    <div id="why-letters-due" style="margin-top:10px"></div>
-    <div id="why-letters-list" style="margin-top:6px"></div>
+    <div id="why-letters-list"></div>
   </div>
 </div>
 

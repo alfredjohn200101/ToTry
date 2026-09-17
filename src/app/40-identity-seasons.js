@@ -134,15 +134,27 @@ const SEASONS={
 };
 
 
+// The six seasons as a pick-one list, the way Settings draws one: a tile, the name, what it means, and a
+// check on the one in force. They were six bordered boxes with an emoji leading each name and the
+// chosen one filled with the tint. The same tap, the same write, the same toast.
+const SEASON_ICONS={
+  Fighting:['shield','red'], Rebuilding:['tool','orange'], Building:['sprout','green'],
+  Celebrating:['sparkle','yellow'], Grieving:['heartbreak','indigo'], Resting:['moon','teal']
+};
 function renderSeasonSettings(){
   const container=document.getElementById('settings-seasons');
   if(!container)return;
   const current=ls('totry_season')||'Building';
   container.innerHTML='';
   Object.entries(SEASONS).forEach(([name,data])=>{
-    const chip=document.createElement('div');
-    chip.className='season-chip'+(name===current?' on':'');
-    chip.innerHTML='<div class="sc-name">'+data.emoji+' '+name+'</div><div class="sc-desc">'+data.desc+'</div>';
+    const ic=SEASON_ICONS[name]||['leaf','gray'];
+    const on=(name===current);
+    const tpl=document.createElement('div');
+    tpl.innerHTML=iosRow({ tag:'button', icon:ic[0], tone:ic[1], title:name, sub:data.desc, cls:(on?'active':''),
+      trailing:'<span class="ios-row-check">'+svgIcon('check',16)+'</span>' });
+    const chip=tpl.firstElementChild;
+    chip.type='button';
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
     chip.onclick=()=>{
       ls('totry_season',name);
       renderSeasonSettings();

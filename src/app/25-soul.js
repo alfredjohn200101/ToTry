@@ -5,25 +5,29 @@
     const showBio = !_liturgyCelebrationMismatch(c);
     const q = showBio ? c.quote : null;
     const desc = showBio ? c.description : null;
-    html += '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Today the Church remembers</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
-      (q?'<div style="font-size:var(--t-base);color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
-      (desc?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+desc.replace(/</g,'&lt;')+'</div>':'')+
-      '</div>';
+    // The saint as a section: the header says what it is, the name speaks in our own face, the quote
+    // is in the reading face, the life under it is the lede. It was a tinted card with an 11px caps
+    // label in the tint, the name in New York ITALIC, and the quote in the TINT — the colour of a link.
+    html += '<div class="ios-section"><div class="ios-header">Today the Church remembers</div><div class="card">'+
+      '<div class="card-title">'+_escFew(c.name||'')+'</div>'+
+      (q?'<div class="passage lit-quote">“'+_escFew(q)+'”</div>':'')+
+      (desc?'<div class="card-sub lit-desc">'+_escFew(desc)+'</div>':'')+
+      '</div></div>';
   }
   if(d.readings){
     const r = d.readings;
-    const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:var(--t-base);color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
-    html += '<div class="card"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
-      row('First Reading', r.firstReading)+
-      row('Psalm', r.psalm)+
-      row('Second Reading', r.secondReading)+
-      '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">Gospel</span><span style="font-size:var(--t-base);color:var(--go);text-align:right">'+(r.gospel||'').replace(/</g,'&lt;')+'</span></div>';
-    html += '<button class="btn" onclick="readTodaysGospel()" style="margin-top:12px;background:var(--bg2);color:var(--go);font-size:var(--t-base);width:100%">Read today\u2019s Gospel</button>';
-    html += '<div id="liturgy-gospel-text" style="margin-top:12px"></div>';
-    if(d.usccb){ html += '<a href="'+d.usccb+'" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:var(--t-sm);color:var(--bl);text-align:center">Full readings at USCCB \u2192</a>'; }
-    html += '</div>';
+    // Each reading is a row with what it is above the reference — the way Contacts sets "mobile" over
+    // a number — and the two things to do are tint rows at the foot of the same list. They were a
+    // hand-drawn table of 15px tertiary labels against right-aligned references that wrapped, a grey
+    // 50pt button, and a centred underlined "Full readings at USCCB →".
+    const row = (label, val) => val ? iosRow({ title:String(val), sub:label, cls:'label-first' }) : '';
+    let list = row('First Reading', r.firstReading) + row('Psalm', r.psalm) + row('Second Reading', r.secondReading) + row('Gospel', r.gospel) +
+      iosRow({ title:'Read today’s Gospel', tint:true, chevron:false, onclick:'readTodaysGospel()' });
+    if(d.usccb){
+      list += '<a class="ios-row tint" href="'+String(d.usccb).replace(/"/g,'&quot;')+'" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Full readings at USCCB</span></span><span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span></a>';
+    }
+    html += '<div class="ios-section"><div class="ios-header">Today’s Mass readings</div><div class="ios-list">'+list+'</div>'+
+      '<div id="liturgy-gospel-text"></div></div>';
     window.__todayGospelRef = d.readings.gospel || null;
   }
   box.innerHTML = html;
@@ -84,7 +88,7 @@ async function readTodaysGospel(){
   const box = document.getElementById('liturgy-gospel-text');
   const ref = window.__todayGospelRef;
   if(!box || !ref) return;
-  box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
+  box.innerHTML = '<div class="ios-footnote">Loading the Gospel…</div>';
   // A LECTIONARY READING IS OFTEN MORE THAN ONE RANGE. The old pattern captured the FIRST range and
   // stopped, so "Matthew 1:1-16, 18-23" rendered verses 1-16 and silently dropped 18-23 — the half
   // that carries the annunciation — with no note that anything was missing. Two such readings fell in
@@ -100,7 +104,7 @@ async function readTodaysGospel(){
   // narrows a verse this reader shows whole, so dropping the letter loses nothing a person would see.
   const _refMain = String(ref).split(/\s+or\s+/i)[0].replace(/(\d)[a-z]\b/g, '$1').trim();
   const m = _refMain.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
-  if(!m){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!m){ box.innerHTML = '<div class="ios-footnote">See the full Gospel at the USCCB link above.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];
   const ranges = m[3].split(',').map(function(part){
@@ -110,7 +114,7 @@ async function readTodaysGospel(){
     const one = t.match(/^(\d+)$/);
     return one ? { a:+one[1], b:+one[1] } : null;
   }).filter(Boolean);
-  if(!ranges.length){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!ranges.length){ box.innerHTML = '<div class="ios-footnote">See the full Gospel at the USCCB link above.</div>'; return; }
   const inRanges = n => ranges.some(function(r){ return n >= r.a && n <= r.b; });
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
@@ -121,20 +125,22 @@ async function readTodaysGospel(){
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
   }catch(_){ }
   if(!verses || !verses.length){
-    box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:6px">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link below for the full reading.</div>';
+    box.innerHTML = '<div class="ios-footnote">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link above for the full reading.</div>';
     return;
   }
-  let html = '<div style="background:var(--bg2);border-radius:var(--rm);padding:14px;margin-top:4px">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
+  // The passage as its own card under the list it was opened from: the reference as the section
+  // header (it was 11px caps in the tint), verses in the reading face with their numbers in the
+  // secondary grey (12px in the tint), and the translation's name as the footnote (11px tertiary).
+  let html = '<div class="ios-header">'+_escFew(ref)+'</div><div class="card">';
   // The lectionary SKIPS the verses between two ranges; running them together would present the
   // reading as continuous when it is not. Mark the join so the omission is visible.
   let _prevNum = null;
   verses.forEach(v => {
     if(_prevNum != null && v.num > _prevNum + 1)
-      html += '<p style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
+      html += '<p class="gospel-gap" aria-label="verses omitted">⋯</p>';
     _prevNum = v.num;
-    if(v.text) html += '<p style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:var(--t-mini);color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
-  html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
+    if(v.text) html += '<p class="passage gospel-v"><span class="verse-n">'+_escFew(v.num)+'</span>'+_escFew(v.text)+'</p>'; });
+  html += '</div><div class="ios-footnote">Berean Standard Bible (public domain)</div>';
   box.innerHTML = html;
   haptic('tap');
 }
@@ -322,7 +328,12 @@ async function renderMorningLiturgy(){
 function initWhyTab(){
   const why = (ls('totry_why') || '').trim();
   const disp = document.getElementById('why-display');
-  if(disp) disp.textContent = why || 'You haven\u2019t written your why yet. Tap below to put it into words \u2014 it\u2019s the anchor everything else holds onto.';
+  if(disp){
+    disp.textContent = why || 'You haven\u2019t written your why yet. Tap below to put it into words \u2014 it\u2019s the anchor everything else holds onto.';
+    // Their own words are the hero, in our own face. The invitation to write them is not: it is a
+    // sentence in the lede role, or it would read as though the app had written their why for them.
+    disp.classList.toggle('is-empty', !why);
+  }
   // Identity + season now live here (moved from Settings).
   const idEl = document.getElementById('settings-identity');
   if(idEl) idEl.value = ls('totry_identity') || '';
@@ -356,11 +367,14 @@ function saveWhyEdit(){
 function renderWhyAffirmations(){
   const box = document.getElementById('affirmations-list'); if(!box) return;
   const list = ls('totry_affirmations') || [];
-  if(!list.length){ box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:4px 0">No affirmations yet.</p>'; return; }
+  // Rows in the card, their own words at body size and upright — they were ITALIC 17px in a grey box
+  // each, with a bare 17px × beside them and no name a screen reader could read. The empty line was a
+  // 15px italic in the tertiary grey.
+  if(!list.length){ box.className = ''; box.innerHTML = '<p class="card-note">No affirmations yet.</p>'; return; }
+  box.className = 'ios-list in-card';
   box.innerHTML = list.map((a,i) =>
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px">'+
-    '<span style="flex:1;font-size:var(--t-base);color:var(--tx);font-style:italic">\u201c'+a.replace(/</g,'&lt;')+'\u201d</span>'+
-    '<button onclick="removeWhyAffirmation('+i+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);flex-shrink:0">\u00d7</button></div>'
+    '<div class="ios-row has-del"><span class="ios-row-body"><span class="ios-row-title wrap" style="display:block">“'+_escFew(a)+'”</span></span>'+
+    '<button class="ios-row-x" aria-label="Remove this affirmation" onclick="removeWhyAffirmation('+i+')">×</button></div>'
   ).join('');
 }
 function addWhyAffirmation(){
@@ -429,20 +443,31 @@ function renderWhyPromises(){
   const promises = ls('totry_promises') || [];
   const now = Date.now();
   if(due){
+    // A promise that has come due asks something of the person today, so it leads the card: the
+    // promise at body size, and the two honest answers side by side at full height. They were 15px
+    // labels in two 30px buttons inside a grey box inside the card.
     const dueNow = promises.filter(p => p.status==='open' && new Date(p.due).getTime() <= now);
     due.innerHTML = dueNow.map(p =>
-      '<div style="padding:12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+
-      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">'+p.text.replace(/</g,'&lt;')+'</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn success" style="flex:1;padding:7px;font-size:var(--t-sm)" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
-      '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-sm);background:var(--bg2)" onclick="resolveWhyPromise('+p.id+',false)">Didn\u2019t</button></div></div>'
+      '<div class="promise-due">'+
+      '<div class="promise-text">'+_escFew(p.text)+'</div>'+
+      '<div class="btn-row"><button class="btn success" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
+      '<button class="btn" onclick="resolveWhyPromise('+p.id+',false)">Didn’t</button></div></div>'
     ).join('');
   }
   if(list){
     const open = promises.filter(p => p.status==='open' && new Date(p.due).getTime() > now);
     const done = promises.filter(p => p.status!=='open');
-    list.innerHTML =
-      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm)"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini)">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
-      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm);opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:var(--t-base)">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
+    // Running promises carry the time left as the row's value, in words — it was "5d" at 12px in the
+    // tertiary grey. Finished ones are secondary rows: kept is a green check, not kept is struck through
+    // with a dash, where both used to be a row at 60% opacity (a fourth grey by another name).
+    const rows =
+      open.map(p => iosRow({ title:String(p.text||''), value:plural(Math.ceil((new Date(p.due).getTime()-now)/86400000), 'day'), cls:'top' })
+        .replace('class="ios-row-title"', 'class="ios-row-title wrap"')).join('')+
+      done.slice(0,10).map(p => iosRow({ title:String(p.text||''), cls:'top is-done'+(p.status==='kept'?'':' is-broken'),
+          trailing: p.status==='kept' ? '<span class="ios-row-mark" role="img" aria-label="Kept">'+svgIcon('check',18)+'</span>' : '<span class="ios-row-value" role="img" aria-label="Not kept">—</span>' })
+        .replace('class="ios-row-title"', 'class="ios-row-title wrap"')).join('');
+    list.className = rows ? 'ios-list in-card' : '';
+    list.innerHTML = rows;
   }
 }
 function resolveWhyPromise(id, kept){
@@ -457,17 +482,20 @@ function renderWhyLetters(){
   const letters = ls('totry_letters') || [];
   const now = Date.now();
   if(dueBox){
+    // The moment the feature exists for. It sat under the form in a tinted box, announced by an 11px
+    // caps sentence in the tint that wrapped, with the letter in 17px italic. It leads the card now:
+    // the announcement as a headline, the letter in our own face — past you, speaking.
     const ready = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() <= now);
     dueBox.innerHTML = ready.map(l =>
-      '<div style="padding:14px;background:var(--go-bg);border-radius:var(--rm);margin-bottom:8px">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A letter from your past self has arrived</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.6;white-space:pre-wrap">'+l.text.replace(/</g,'&lt;')+'</div>'+
-      '<button class="btn" style="margin-top:10px;padding:6px 12px;font-size:var(--t-cap);background:var(--bg3)" onclick="markWhyLetterRead('+l.id+')">I\u2019ve read it</button></div>'
+      '<div class="letter-arrived">'+
+      '<div class="card-hd">A letter from your past self has arrived</div>'+
+      '<div class="card-say">'+_escFew(l.text)+'</div>'+
+      '<button class="btn" onclick="markWhyLetterRead('+l.id+')">I’ve read it</button></div>'
     ).join('');
   }
   if(listBox){
     const pending = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() > now);
-    listBox.innerHTML = pending.length ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</div>' : '';
+    listBox.innerHTML = pending.length ? '<p class="card-note">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</p>' : '';
   }
 }
 function markWhyLetterRead(id){
