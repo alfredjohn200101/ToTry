@@ -1418,12 +1418,13 @@ function setFaithTradition(tr){
   if(!FAITHS[tr]) tr='secular';
   ls('totry_faith_tradition', tr);
   try{
+    // Settings draws this as a pick-one list; .active is what shows the checkmark on the one in force.
     document.querySelectorAll('.faithtr-opt').forEach(b=>{
       const on = b.dataset.tr===tr;
-      b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
-      b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   }catch(_){}
+  try{ if(typeof renderSettingsSummaries==='function') renderSettingsSummaries(); }catch(_){}
   try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
   try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
   // Refresh the daily verse immediately so the pill shows the new tradition's scripture.
@@ -1436,8 +1437,7 @@ function setFaithLevel(level){
   try{
     document.querySelectorAll('.faith-opt').forEach(b=>{
       const on = b.dataset.faith===level;
-      b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
-      b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   }catch(_){}
   if(typeof showToast==='function') showToast('Saved', level==='light' ? 'Scripture will surface more gently.' : 'Faith woven through, as built.');
@@ -1450,7 +1450,8 @@ function setFaithLevel(level){
 function faithLevel(){ return ls('totry_faith_level') || 'full'; }
 function setUserSex(sex){
   ls('totry_sex', sex);
-  try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
+  try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }catch(_){}
+  try{ if(typeof renderSettingsSummaries==='function') renderSettingsSummaries(); }catch(_){}
   // Draw what this just unlocked. Without it the toast promises a change nothing performs — the cycle
   // card and its surfaces are gated on sex and only appear when renderCycleSurfaces() runs.
   try{ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }catch(_){}   // the Coach tab's own copy is gendered too

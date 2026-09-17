@@ -220,19 +220,21 @@ function showAddAppPicker(){
     byCategory[app.category].push([id, app]);
   });
   
-  let modalHtml = '<div class="modal-handle"></div>';
-  modalHtml += '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Add an app to link</div>';
-  
+  // A sheet of grouped rows: the category as a section header, each app its own row with its own tile.
+  // It was a 17px title at weight 500 instead of the sheet-title role, 12px caps category labels with no
+  // tracking, and one grey full-width button per app whose text-align:left a flex button cannot honour.
+  let modalHtml = '<div class="modal-handle"></div><h3>Add an app to link</h3>';
   Object.entries(byCategory).forEach(([cat, apps]) => {
-    modalHtml += '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px;margin-top:10px">'+cat+'</div>';
-    apps.forEach(([id, app]) => {
-      modalHtml += '<button class="btn" style="text-align:left;margin-bottom:6px;padding:10px 12px;display:flex;align-items:center;gap:10px" onclick="addLinkedApp(\''+id+'\')">'+
-        '<div style="width:32px;height:32px;border-radius:var(--rs);background:'+app.color+';display:flex;align-items:center;justify-content:center;font-size:var(--t-base)">'+app.icon+'</div>'+
-        '<div style="font-size:var(--t-base)">'+app.name+'</div>'+
-        '</button>';
-    });
+    modalHtml += '<div class="ios-section sheet-section"><div class="ios-header">'+cat+'</div><div class="ios-list">' +
+      apps.map(([id, app]) =>
+        '<button type="button" class="ios-row has-icon" onclick="addLinkedApp(\''+id+'\')">'+
+          '<span class="app-link-icon" style="background:'+app.color+'">'+app.icon+'</span>'+
+          '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+app.name+'</span></span>'+
+          '<span class="ios-row-chevron">'+svgIcon('chevronright', 14)+'</span>'+
+        '</button>').join('') +
+    '</div></div>';
   });
-  modalHtml += '<button class="btn" onclick="closeModal(this)" style="margin-top:10px">Cancel</button>';
+  modalHtml += '<button class="btn" onclick="closeModal(this)">Cancel</button>';
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';

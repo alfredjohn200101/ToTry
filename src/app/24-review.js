@@ -482,12 +482,15 @@ function showYearInReview(year){
   if(stats.workouts > 0) heroStats.push({big: stats.workouts, label: 'session' + (stats.workouts===1?'':'s') + ' trained'});
   if(stats.longestStreak > 0) heroStats.push({big: stats.longestStreak, label: 'longest clean streak (days)'});
   
+  // Stat tiles, the app's own: the figure in SF Rounded, the words that follow it underneath as a
+  // footnote. They were centred Georgia numerals in the tint over 11px caps labels, one of which
+  // ("LONGEST CLEAN STREAK (DAYS)") wrapped onto a second line of capitals.
   const heroHtml = heroStats.length ?
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+    '<div class="ios-stats year-stats">' +
       heroStats.map(h =>
-        '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;text-align:center">' +
-          '<div style="font-family:Georgia,serif;font-size:var(--t-2xl);color:var(--go);line-height:1.1">' + h.big + '</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:6px">' + h.label + '</div>' +
+        '<div class="ios-stat">' +
+          '<div class="ios-stat-value tint">' + h.big + '</div>' +
+          '<div class="ios-stat-note">' + h.label + '</div>' +
         '</div>'
       ).join('') +
     '</div>' : '';
@@ -508,17 +511,18 @@ function showYearInReview(year){
   if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', curSym() + stats.yearIncome.toLocaleString() + ' in / '+curSym() + stats.yearExpenses.toLocaleString() + ' out']);
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);
   
+  // The rest as an inset list with the value on the trailing edge. Values are the app's own numbers and
+  // labels, so they go through iosRow's escaping like every other row.
   const detailHtml = details.length ?
-    '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">' + year + ' · the full year</div>' +
-      details.map(([k,v]) => '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)"><span style="color:var(--tx3)">' + k + '</span><span style="font-family:var(--font-text);color:var(--tx)">' + v + '</span></div>').join('') +
-    '</div>' : '';
+    '<div class="ios-section sheet-section"><div class="ios-header">' + year + ' · the full year</div><div class="ios-list">' +
+      details.map(([k,v]) => iosRow({ title: k, value: String(v) })).join('') +
+    '</div></div>' : '';
   
   // Empty fallback
   if(!heroStats.length && !details.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">' + year + ' in review</h3>' +
-      '<p class="empty-note">No data logged in ' + year + ' yet. Come back at year-end.</p>' +
+      '<h3>' + year + ' in review</h3>' +
+      '<div class="ios-empty"><div class="ios-empty-body">No data logged in ' + year + ' yet. Come back at year-end.</div></div>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -526,13 +530,15 @@ function showYearInReview(year){
   }
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">A year of trying</div>' +
-    '<h3 style="margin-bottom:14px">' + year + ' in review</h3>' +
+    '<h3>' + year + ' in review</h3>' +
+    '<p class="modal-sub">A year of trying</p>' +
     heroHtml +
     detailHtml +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx2);text-align:center;line-height:1.6;margin-bottom:14px">"The least we can do everyday, is to try."<br>You did. ' + stats.daysTried + ' time' + (stats.daysTried===1?'':'s') + ' this year.</div>' +
-    '<button class="btn primary" onclick="generateShareCard();closeModal(this)" style="margin-bottom:8px">Share this year</button>' +
-    '<button class="btn" onclick="closeModal(this)">Close</button>' +
+    // The motto is the app speaking, so it is said in the app's own face — upright, not a centred
+    // italic in the scripture face, which is reserved for scripture.
+    '<div class="card year-motto"><div class="card-say">“The least we can do everyday, is to try.”</div><p class="card-body">You did. ' + stats.daysTried + ' time' + (stats.daysTried===1?'':'s') + ' this year.</p></div>' +
+    '<button class="btn primary" onclick="generateShareCard();closeModal(this)">Share this year</button>' +
+    '<button class="btn sheet-alt" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
   haptic('celebrate');
@@ -565,8 +571,8 @@ function showSynthesisHistory(){
   
   if(!syntheses.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">Past Sundays</h3>' +
-      '<p class="empty-note">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</p>' +
+      '<h3>Past Sundays</h3>' +
+      '<div class="ios-empty"><div class="ios-empty-body">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</div></div>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -580,23 +586,23 @@ function showSynthesisHistory(){
     if(stats.examens > 0) summary.push(stats.examens + ' examen' + (stats.examens===1?'':'s'));
     if(stats.wins > 0) summary.push(stats.wins + ' fight' + (stats.wins===1?'':'s') + ' won');
     if(stats.prayers > 0) summary.push(stats.prayers + ' prayer' + (stats.prayers===1?'':'s'));
-    const summaryLine = summary.length ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:6px">' + summary.join(' · ') + '</div>' : '';
+    const summaryLine = summary.length ? '<span class="synth-stats">' + summary.join(' · ') + '</span>' : '';
     const previewText = (s.text || '').slice(0, 130) + ((s.text || '').length > 130 ? '…' : '');
     
-    return '<div onclick="viewSingleSynthesis(' + i + ')" style="background:var(--bg2);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em">Week of ' + s.date + '</div>' +
-        '<div style="font-size:var(--t-sm);color:var(--tx3)">›</div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx2);line-height:1.6">' + previewText.replace(/</g, '&lt;') + '</div>' +
-      summaryLine +
-    '</div>';
+    // A row per week: the week as its title, the opening of what was written under it, the counts
+    // last, and the app's own chevron. It was a card each, with a 12px caps tint label, a '›' typed as
+    // text, the coach's words in italic scripture serif and an 11px counts line in the third grey.
+    return '<button type="button" class="ios-row synth-row" onclick="viewSingleSynthesis(' + i + ')">' +
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">Week of ' + s.date + '</span>' +
+      '<span class="ios-row-sub" style="display:block">' + previewText.replace(/</g, '&lt;') + summaryLine + '</span></span>' +
+      '<span class="ios-row-chevron">' + svgIcon('chevronright', 14) + '</span>' +
+    '</button>';
   }).join('');
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + syntheses.length + ' week' + (syntheses.length === 1 ? '' : 's') + ' reflected</div>' +
-    '<h3 style="margin-bottom:12px">Past Sundays</h3>' +
-    '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
+    '<h3>Past Sundays</h3>' +
+    '<p class="modal-sub">' + syntheses.length + ' week' + (syntheses.length === 1 ? '' : 's') + ' reflected</p>' +
+    '<div class="ios-list sheet-list">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -617,11 +623,15 @@ function viewSingleSynthesis(idx){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Week of '+s.date+'</div>'+
-    '<h3 style="margin-bottom:14px">Reflection</h3>'+
-    '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);line-height:1.75;font-style:italic;background:var(--go-bg);border-left:3px solid var(--go);padding:14px;border-radius:0 10px 10px 0;margin-bottom:14px">'+(s.text || '').replace(/\n/g, '<br>')+'</div>'+
-    '<button class="btn" onclick="showSynthesisHistory()" style="margin-bottom:8px">Back to list</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Close</button>'+
+    '<h3>Reflection</h3>'+
+    '<p class="modal-sub">Week of '+s.date+'</p>'+
+    // The coach's words on an opaque card at reading size, upright. They were italic scripture serif on
+    // a tinted panel with a tint bar down its left edge.
+    // Escaped: this is a model's words, and a model's reply printed as markup is an injection door (the
+    // list above already escaped its preview of the same text; this line did not).
+    '<div class="card synth-text">'+String(s.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>')+'</div>'+
+    '<button class="btn" onclick="showSynthesisHistory()">Back to list</button>'+
+    '<button class="btn sheet-alt" onclick="closeModal(this)">Close</button>'+
   '</div>';
   document.body.appendChild(m);
 }

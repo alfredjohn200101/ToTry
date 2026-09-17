@@ -653,7 +653,9 @@ function renderActivityHeatmap(){
   start.setDate(start.getDate() - (weeks - 1) * 7); // back N weeks
   
   // Build SVG
-  const gap = 3;
+  // gap 2, not 3: at the 24px cell floor, 16 + 12x(24+3) = 340px against a 329px card, so the last week
+  // sat behind a horizontal scroll. 16 + 12x26 = 328 fits the card on a 393pt phone.
+  const gap = 2;
   const labelWidth = 16;
   const avail = container.clientWidth || 340;
   const cellSize = Math.max(24, Math.min(34, Math.floor((avail - labelWidth) / weeks) - gap));
@@ -667,18 +669,23 @@ function renderActivityHeatmap(){
   ['M', 'W', 'F'].forEach((lbl, i) => {
     const dayIdx = [0, 2, 4][i]; // Mon=0, Wed=2, Fri=4
     const y = monthLabelHeight + dayIdx * (cellSize + gap) + cellSize - 3;
-    svg += '<text x="0" y="' + y + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + lbl + '</text>';
+    // Face, size and ink come from the stylesheet (#activity-heatmap svg text). The attributes named
+    // DM Mono, a face this app no longer ships, so the chart's letters fell back to a browser default.
+    svg += '<text x="0" y="' + y + '">' + lbl + '</text>';
   });
   
   // Month labels (along top, show start of each month)
-  let lastMonth = -1;
+  let lastMonth = -1, lastLabelX = -99;
   for(let w = 0; w < weeks; w++){
     const cellDate = new Date(start);
     cellDate.setDate(cellDate.getDate() + w * 7);
     const month = cellDate.getMonth();
     if(month !== lastMonth){
       const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
-      svg += '<text x="' + (labelWidth + w * (cellSize + gap)) + '" y="' + (monthLabelHeight - 3) + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + monthName + '</text>';
+      const lx = labelWidth + w * (cellSize + gap);
+      // A month that starts one column after the window does would print on top of the one before it
+      // ("JunJul"); give each label the room of its own word.
+      if(lx - lastLabelX >= 34){ svg += '<text x="' + lx + '" y="' + (monthLabelHeight - 3) + '">' + monthName + '</text>'; lastLabelX = lx; }
       lastMonth = month;
     }
   }
@@ -692,25 +699,24 @@ function renderActivityHeatmap(){
       const x = labelWidth + w * (cellSize + gap);
       const y = monthLabelHeight + d * (cellSize + gap);
       
-      // Don't render cells in the future
-      if(cellDate > today){
-        svg += '<rect x="' + x + '" y="' + y + '" width="' + cellSize + '" height="' + cellSize + '" rx="2" fill="var(--bg3)" opacity="0.3"/>';
-        continue;
-      }
+      // Don't render cells in the future — the week simply stops at today.
+      if(cellDate > today) continue;
       
       const key = cellDate.toLocaleDateString('en-AU');
       const score = activity[key] || 0;
       
       // Color buckets — green-gold scale
       let color;
-      if(score === 0) color = 'rgba(255,255,255,0.04)';
+      // An empty day is the grey fill, not white at 4% — which was invisible on a white card in light
+      // appearance, so a person saw three months as a blank box with one blue square in it.
+      if(score === 0) color = 'var(--fill)';
       else if(score === 1) color = 'var(--go-bd)';
       else if(score === 2) color = 'var(--go-bd)';
       else if(score === 3) color = 'var(--go)';
       else color = 'var(--go)';
       
       const tooltip = cellDate.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) + ' · ' + (score === 0 ? 'no activity' : score + ' log' + (score===1?'':'s'));
-      svg += '<rect x="' + x + '" y="' + y + '" width="' + cellSize + '" height="' + cellSize + '" rx="2" fill="' + color + '" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" style="cursor:pointer" onclick="showDayActivityDetail(\'' + key + '\')"><title>' + tooltip + '</title></rect>';
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + cellSize + '" height="' + cellSize + '" rx="5" fill="' + color + '" style="cursor:pointer" onclick="showDayActivityDetail(\'' + key + '\')"><title>' + tooltip + '</title></rect>';
     }
   }
   
@@ -728,11 +734,12 @@ function renderActivityHeatmap(){
   
   const legend = document.getElementById('activity-heatmap-legend');
   if(legend){
-    legend.innerHTML = '<span>' + totalDays + '/' + totalCells + ' days · ' + showupRate + '% show-up</span>' +
-      '<span style="display:flex;align-items:center;gap:4px">less' +
-        ['rgba(255,255,255,0.04)','var(--go-bd)','var(--go-bd)','var(--go)','var(--go)']
-          .map(c => '<span style="width:10px;height:10px;border-radius:2px;background:' + c + '"></span>').join('') +
-        'more</span>';
+    // A footnote under the chart (.heatmap-legend), in sentence case: it was 11px caps in the faintest grey.
+    legend.innerHTML = '<span>' + totalDays + ' of ' + totalCells + ' days \u00b7 ' + showupRate + '% show-up</span>' +
+      '<span class="heatmap-scale">Less ' +
+        ['var(--fill)','var(--go-bd)','var(--go)']
+          .map(c => '<i style="background:' + c + '"></i>').join('') +
+        ' More</span>';
   }
 }
 

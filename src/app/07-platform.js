@@ -207,7 +207,8 @@ async function renderLockRow(){
       const sub = document.getElementById('lock-sub');
       if(sub) sub.textContent = cap.reason || 'Set up Face ID or a passcode on this iPhone first.';
       const btn = document.getElementById('lock-btn');
-      if(btn){ btn.textContent = 'Unavailable'; btn.disabled = true; btn.style.opacity = '.45'; }
+      // A switch that cannot move: off, dimmed, and the footnote above says why.
+      if(btn){ btn.checked = false; btn.disabled = true; btn.style.opacity = '.45'; }
       return;
     }
     row.style.display = '';
@@ -218,7 +219,7 @@ async function renderLockRow(){
       ? 'On. Asked when you open the app, and when you come back to it.'
       : 'Your journal, your fight and your money, behind ' + Lock.label(cap.kind) + '. Off by default.';
     const btn = document.getElementById('lock-btn');
-    if(btn){ btn.disabled = false; btn.style.opacity = ''; btn.textContent = on ? 'Turn off' : 'Turn on'; }
+    if(btn){ btn.disabled = false; btn.style.opacity = ''; btn.checked = !!on; }
   }catch(e){ console.warn('[Lock] row failed', e); }
 }
 

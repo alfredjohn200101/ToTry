@@ -8,9 +8,9 @@ function togglePartner(){
 
 function updatePartnerBtn(){
   const btn=document.getElementById('partner-toggle-btn');
-  if(btn)btn.textContent=ls('totry_partner')?'On ✓':'Off';
+  if(btn)btn.checked=!!ls('totry_partner');
   // Reflect the saved usage-counting choice too, so the switch never lies about its own state.
-  try{ const mb=document.getElementById('metrics-toggle-btn'); if(mb) mb.textContent = (typeof metricsOff==='function' && metricsOff()) ? 'Off' : 'On ✓'; }catch(_){}
+  try{ const mb=document.getElementById('metrics-toggle-btn'); if(mb) mb.checked = !((typeof metricsOff==='function') && metricsOff()); }catch(_){}
 }
 
 
@@ -45,14 +45,18 @@ function renderConnectedApps(){
   try{
     const hint = document.getElementById('connected-apps-hint');
     if(hint){
-      const names = used.map(function(id){ return (APPS[id] && APPS[id].name) || id; }).filter(Boolean);
+      // APP_REGISTRY, not APPS: there is no APPS in this app, so this line threw for anyone with an app
+      // linked, the catch below swallowed it, and the row kept saying "Nothing linked yet" beside Strava.
+      const names = used.map(function(id){ return (APP_REGISTRY[id] && APP_REGISTRY[id].name) || id; }).filter(Boolean);
       hint.textContent = names.length ? names.slice(0,3).join(', ') + (names.length>3 ? ' +'+(names.length-3) : '')
                                       : 'Nothing linked yet';
     }
   }catch(_){ }
   
+  // Nothing linked: no rows at all, and the group's own row already says "Nothing linked yet" on its
+  // trailing edge. It was a centred italic note inside the list, above the Add row.
   if(used.length === 0){
-    list.innerHTML = '<p class="empty-note">No apps linked yet.</p>';
+    list.innerHTML = '';
     return;
   }
   
@@ -67,20 +71,23 @@ function renderConnectedApps(){
     // the one route nobody tests: a web account arriving on a phone.
     if((appId==='googlehealth' || appId==='googlefit' || appId==='fitbit') &&
        typeof isNativeApp==='function' && isNativeApp()) return;
+    // An inset row like every other in Settings: the app's own tile where the icon goes, its name, what
+    // it does as the subtitle, and Open and remove on the trailing edge. A div, because it holds buttons.
     const row = document.createElement('div');
-    row.className = 'connected-app';
+    row.className = 'ios-row has-icon';
     // Honest status: does this app actually integrate, or do we just open it?
-    let statusLabel = app.category;
+    let statusLabel = app.category, statusCls = '';
     if(app.sync || app.apikey){
       const connected = (appId==='strava' && ls('totry_strava_token')) || (appId==='hevy' && ls('totry_hevy_api_key'));
-      statusLabel = connected ? '\u25cf Connected \u00b7 syncs data' : 'Tap to connect';
+      statusLabel = connected ? 'Connected \u00b7 syncs data' : 'Tap to connect';
+      if(connected) statusCls = ' good';
     } else {
       statusLabel = 'Opens the app';   // Strong, MyFitnessPal, Cronometer — no data sync possible
     }
-    row.innerHTML = '<div class="ca-icon" style="background:'+app.color+'">'+app.icon+'</div>'+
-      '<div style="flex:1"><div class="ca-name">'+app.name+'</div><div class="ca-status">'+statusLabel+'</div></div>'+
-      '<button class="btn sr-action" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="openLinkedApp(&apos;'+appId+'&apos;)">Open</button>'+
-      '<button class="btn sr-action" style="width:auto;padding:6px 8px;font-size:var(--t-cap);background:var(--re-bg);color:var(--re);border-color:var(--re-bd)" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Unlink this app">&#215;</button>';
+    row.innerHTML = '<span class="app-link-icon" style="background:'+app.color+'">'+app.icon+'</span>'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+app.name+'</span><span class="ios-row-sub'+statusCls+'" style="display:block">'+statusLabel+'</span></span>'+
+      '<button type="button" class="btn row-btn" onclick="openLinkedApp(&apos;'+appId+'&apos;)">Open</button>'+
+      '<button type="button" class="ios-row-x" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Unlink this app">&#215;</button>';
     list.appendChild(row);
   });
 }
