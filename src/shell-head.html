@@ -462,11 +462,11 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .msgs{overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;scrollbar-width:none;min-height:100px;max-height:260px}
 .msg{padding:10px 14px;border-radius:var(--r);font-size:var(--t-base);line-height:1.65;max-width:93%;white-space:pre-wrap}
 .msg.coach{background:var(--bg3);border:1px solid var(--bd);color:var(--tx);align-self:flex-start}
-.msg.user{background:var(--go);color:#000;align-self:flex-end;font-weight:500}
+.msg.user{background:var(--go);color:var(--on-tint);align-self:flex-end;font-weight:500}
 .irow{display:flex;gap:8px;align-items:flex-end}
 .irow textarea{resize:none;height:40px;max-height:100px;flex:1}
 .sbtn{height:40px;width:40px;border-radius:var(--rs);background:var(--go);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sbtn svg{width:16px;height:16px;stroke:#000;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.sbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .home-hero{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;text-align:center;position:relative;overflow:hidden}
 .home-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,var(--go-bg) 0%,transparent 70%);pointer-events:none}
 .hero-day{font-family:var(--font-rounded);font-size:60px;font-weight:600;color:var(--go);line-height:1;font-variant-numeric:tabular-nums}
@@ -714,13 +714,13 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .comp-conversation{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:6px 0 12px;min-height:120px}
 .comp-msg{max-width:88%;padding:13px 16px;border-radius:var(--r);font-size:var(--t-md);line-height:1.6}
 .comp-msg-them{align-self:flex-start;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-bottom-left-radius:5px;white-space:pre-wrap}
-.comp-msg-me{align-self:flex-end;background:linear-gradient(135deg,var(--go),var(--go2,var(--go)));color:#1a1205;border-bottom-right-radius:5px}
+.comp-msg-me{align-self:flex-end;background:linear-gradient(135deg,var(--go),var(--go2,var(--go)));color:var(--on-tint);border-bottom-right-radius:5px}
 .comp-typing{display:flex;gap:5px;padding:8px 4px}
 .comp-typing span{width:7px;height:7px;border-radius:50%;background:var(--tx3);animation:compTyping 1.2s infinite ease-in-out}
 .comp-typing span:nth-child(2){animation-delay:.2s}.comp-typing span:nth-child(3){animation-delay:.4s}
 @keyframes compTyping{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
 .comp-reply-row{display:flex;gap:8px;align-items:center;margin-top:6px}
-.comp-send{flex-shrink:0;width:46px;height:46px;border-radius:50%;background:var(--go);border:none;color:#1a1205;font-size:var(--t-hd);cursor:pointer}
+.comp-send{flex-shrink:0;width:46px;height:46px;border-radius:50%;background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);cursor:pointer}
 .comp-meet-actions{display:flex;gap:8px;margin-top:14px}
 .sos-overlay.open{display:block}
 .sos-phase{display:none}
@@ -2613,6 +2613,202 @@ a.ios-row{text-decoration:none}
 .cal-cell-n.is-today{background:var(--go);color:var(--on-tint);font-weight:600}
 .cal-cell-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%;min-height:5px}
 .cal-cell-dots>span{width:5px;height:5px;border-radius:50%}
+
+/* ═══ COACH, THE COMPANION AND THE FEELING DOOR ══════════════════════════════════════════════════
+   The three places a person comes when they feel something. A survey of what they RENDERED found
+   the whole small-text inventory the owner is pointing at: 11px uppercase labels with no tracking
+   ("COMING BACK TO NOW", "THE PLAN YOU SET FOR THIS", "AUSTRALIA" over every helpline), 13px
+   lowercase grey micro-links centred on a hairline ("what should I do? · talk to coach"), the bridge
+   to a real person set at 13px in the tertiary grey, italic captions, centred paragraphs, a "➤"
+   character for a send button, tiles with a white 4% fill that vanished on a light sheet, and a
+   sheet grabber drawn in white on white. Nothing below invents a look: each rule gives one of those
+   the role docs/DESIGN.md already names, or reuses a role another screen already named. */
+
+/* ── The sheets. Opaque, as content surfaces must be, in the ELEVATED pair iOS uses for a sheet: in
+      dark the sheet lifts to the secondary surface and its cells to the tertiary, so a sheet over a
+      black app is not black on black; in light it is the grouped ground with white cells. The blur
+      on the two scrims goes — .modal-bg dropped its own in the rebuild, and a dim is what iOS does. */
+.feel-door,.companion-overlay,.moment-sheet{--sheet:var(--bg2);--cell:var(--bg3)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) .feel-door,:root:not([data-theme="dark"]) .companion-overlay,:root:not([data-theme="dark"]) .moment-sheet{--sheet:var(--bg);--cell:var(--bg2)}
+}
+:root[data-theme="light"] .feel-door,:root[data-theme="light"] .companion-overlay,:root[data-theme="light"] .moment-sheet{--sheet:var(--bg);--cell:var(--bg2)}
+/* The sheets a feeling lands on carry a paragraph of counsel and a list, which is content, and content
+   is never on glass: over a busy Today the translucent sheet let the greeting and the day's verse read
+   straight through the message. Same elevated pair as the door that opened them. */
+.modal.moment-sheet{background:var(--sheet) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+.moment-sheet .ios-list,.modal.moment-sheet .card{background:var(--cell) !important}
+/* A field on a grouped sheet is a cell, not a grey well — the same white the lists beside it are. */
+.moment-sheet textarea{background:var(--cell) !important}
+.feel-backdrop,.companion-backdrop{background:rgba(0,0,0,.4) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+.feel-door,.companion-overlay{background:var(--sheet) !important;border:0 !important;border-radius:28px 28px 0 0 !important;
+  box-shadow:0 -10px 40px rgba(0,0,0,.22) !important}
+/* Focus goes to these containers only so a screen reader starts inside them. A ring drawn round a
+   whole sheet is not an affordance; it was showing as a blue outline on the companion's top edge. */
+.feel-door:focus,.companion-overlay:focus{outline:none}
+.feel-grab,.companion-overlay::before{width:36px;height:5px;border-radius:3px;background:var(--bg4)}
+.companion-overlay::before{top:6px}
+
+/* ── THE FEELING DOOR ───────────────────────────────────────────────────────────────────────────── */
+.feel-door{padding:6px 16px calc(var(--sb) + 10px) !important;
+  max-height:calc(100vh - max(64px, calc(var(--st) + 24px)));max-height:calc(100dvh - max(64px, calc(var(--st) + 24px)))}
+.feel-grab{margin:0 auto 16px}
+/* The question is the app speaking, so it keeps the ToTry face — left-aligned like every other title.
+   Centred, it broke "What are you feeling, / Alfred?" around a lone name, over a centred sub that
+   left "there." on a line of its own. */
+.feel-greeting{text-align:left;font-size:34px;line-height:1.1;margin:0}
+.feel-sub{text-align:left;font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin:6px 0 18px}
+/* Two-line titles and captions break into even halves instead of leaving one word on a line of its own
+   ("…take it from / there.", "frozen, staring at / it"). A widow is the smallest of the small-text tells. */
+.feel-greeting,.comp-greeting{text-wrap:balance}
+.feel-sub,.feel-chip-sub,.comp-sub,.moment-body,.moment-note{text-wrap:pretty}
+/* Ten feelings as tiles: the face and the word on one line, what it feels like under the word. The
+   tiles were rgba(255,255,255,.04) with a white 9% border — on the light sheet that is nothing at all,
+   so ten choices floated on the ground with no edges. Opaque cells now, and short enough that all
+   ten and the way out fit one screen without scrolling. */
+.feel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.feel-chip{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:7px;row-gap:1px;align-items:center;align-content:start;
+  padding:10px 12px 11px;border:0;border-radius:12px;background:var(--cell,var(--bg2));text-align:left;font-family:var(--font-text);min-height:44px}
+.feel-chip:active{transform:scale(.97);background:var(--bg4)}
+.feel-chip-emoji{font-size:19px;line-height:22px;text-align:center}
+.feel-chip-label{font-size:17px;font-weight:600;line-height:22px;letter-spacing:-.022em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feel-chip-sub{grid-column:2;font-size:15px;line-height:1.3;letter-spacing:-.016em;color:var(--tx2)}
+.btn.feel-skip{margin-top:8px;align-self:stretch;padding:0}
+
+/* ── THE COMPANION ──────────────────────────────────────────────────────────────────────────────── */
+.companion-overlay{padding:22px 16px calc(var(--sb) + 14px) !important}
+/* The close control sat at the notch's height (top: safe-area + 18px) inside a sheet that no longer
+   starts at the top of the screen, so it floated 60px below the sheet's edge beside the greeting. It
+   is the round grey close button iOS puts in a sheet's corner, with a 44pt target around the 30pt disc. */
+.comp-dismiss{top:10px !important;right:8px !important;width:44px;height:44px;padding:0 !important;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-text);font-size:22px !important;font-weight:500;line-height:1;color:var(--tx2) !important;isolation:isolate}
+.comp-dismiss::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--fill);z-index:-1}
+.comp-dismiss:active{opacity:.5}
+.comp-greeting{font-size:34px !important;line-height:1.1 !important;margin:6px 44px 0 0 !important;white-space:pre-line}
+.comp-sub{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin:6px 0 20px;max-width:none}
+/* The two answers, as a grouped list: the face is content and stays, in the row-icon slot so the
+   separator insets past it exactly as it does past an icon tile. */
+.comp-choices{display:block;gap:0;margin:0 0 6px;background:var(--cell) !important}
+.comp-choices .comp-choice{gap:12px;min-height:52px;padding:12px 16px;border:0;border-radius:0;background:transparent;font-size:17px;color:var(--tx)}
+.comp-choices .comp-choice:active{transform:none;background:var(--bg4)}
+.comp-choice-emoji{flex:none;width:29px;font-size:22px;line-height:1;text-align:center}
+.btn.comp-skip{margin-top:10px}
+.ios-list.comp-doors{margin-top:14px;background:var(--cell)}
+/* The chips of what they are fighting are the app's capsules, not a second capsule of their own. */
+.comp-vice-chips{margin:0 0 14px}
+.comp-vice-chips:empty{display:none}
+#comp-freetext{min-height:44px;padding:11px 14px !important;background:var(--cell) !important}
+.btn.comp-ready{margin-top:12px}
+.comp-meet-head{margin:4px 0 12px}
+.comp-meet-title{font-size:34px !important;line-height:1.1}
+/* The mechanism was 11px blue capitals under the title. It is the line under a title: a subheadline. */
+.comp-meet-mech{font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-.016em;text-transform:none;color:var(--tx2);margin-top:4px}
+.comp-meet-mech:empty{display:none}
+.comp-conversation{gap:8px;padding:2px 0 10px}
+/* A quiet way onward, as a control a thumb can land on: tint, 15pt, 44pt tall, left edge. */
+.comp-link{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:2px 0;padding:6px 0;background:none;border:0;cursor:pointer;
+  font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--go);text-align:left}
+.comp-link:active{opacity:.5}
+.comp-link .ic{flex:none}
+.comp-link>.ic:last-child{width:12px;height:12px;stroke-width:2.6;color:var(--tx3)}
+.comp-meet-actions{margin:4px 0 2px}
+.comp-meet-actions .btn .ic{width:18px;height:18px}
+.comp-bridge .ic{width:18px;height:18px}
+
+/* ── THE CONVERSATION — one bubble for the coach, the PT and the Companion ─────────────────────────
+   Three chats drew three bubbles: the coach's was a bordered rounded rectangle at 17px on a 1.65
+   line-height with a hardcoded black on the tint, the PT's the same, and the Companion's a softer one
+   at 16px. They are one component — the two iMessage bubbles, 17pt, tails toward the speaker. */
+.msg,.comp-msg{font-family:var(--font-text);font-size:17px;line-height:1.35;letter-spacing:-.022em;font-weight:400;
+  max-width:80%;padding:8px 13px 9px !important;border:0 !important}
+.msg.coach,.comp-msg-them{background:var(--fill) !important;color:var(--tx) !important;border-radius:18px 18px 18px 4px !important}
+.msg.user,.comp-msg-me{background:var(--go) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important;font-weight:400}
+/* The field and the send button: one capsule with a hairline, the round up-arrow INSIDE its trailing
+   end — Messages' composer, rather than a grey box beside a blue square. The arrow stays grey until
+   there is something to send. */
+.irow,.comp-reply-row{display:flex;align-items:flex-end;gap:4px;min-height:40px;padding:0 4px 0 0;border-radius:20px;
+  background:var(--bg2);box-shadow:inset 0 0 0 .5px var(--bd)}
+.comp-reply-row{background:var(--cell)}
+.irow textarea,#comp-reply{flex:1;min-width:0;min-height:40px;height:40px;max-height:100px;resize:none;border-radius:20px !important;
+  padding:9px 4px 9px 16px !important;line-height:22px;background:transparent !important;box-shadow:none !important}
+.sbtn{flex:none;width:32px;height:32px;margin:4px 0;padding:0;border:0;border-radius:50%;background:var(--go);color:var(--on-tint);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .15s ease}
+.sbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sbtn:active{transform:scale(.9)}
+.irow textarea:placeholder-shown+.sbtn,#comp-reply:placeholder-shown+.sbtn{background:var(--fill);color:var(--tx3)}
+
+/* ── THE COACH TAB ──────────────────────────────────────────────────────────────────────────────────
+   The thread takes the screen; the suggestions are one sideways row directly over the field they
+   fill; the field sits level with the orb and stops short of it. The orb stays exactly where it is on
+   every other screen — it is the crisis path, and a thumb learns where it lives — so the composer
+   gives way to it rather than the orb moving: its centre is the orb's centre (safe area + 121pt) and
+   its right edge stops 10pt clear. Before, the orb sat on top of the send button. */
+#tab-coach{padding-left:16px !important;padding-right:16px !important;padding-bottom:calc(var(--sb) + 101px) !important}
+.coach-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.coach-head .page-title{flex:1;min-width:0}
+#tab-coach .page-intro{margin:0 0 14px}
+#tab-coach .coach-thread{flex:1 1 auto;min-height:140px;max-height:none;margin:0 -16px 10px;padding:10px 16px 6px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px);mask-image:linear-gradient(to bottom,transparent 0,#000 14px)}
+#tab-coach .coach-suggest{flex:none;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;margin:0 -16px 10px;padding:0 16px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#tab-coach .coach-suggest::-webkit-scrollbar{display:none}
+#tab-coach .coach-suggest::after{content:'';flex:0 0 8px}
+#tab-coach .coach-suggest:empty{display:none}
+.coach-suggest .qb{flex:none;display:inline-flex;align-items:center;gap:6px}
+.coach-suggest .qb .ic{width:15px;height:15px;stroke-width:2;color:var(--go)}
+#tab-coach .coach-compose{flex:none;margin-right:64px}
+/* When the coach cannot answer, the one thing offered is a small capsule under its message, not a
+   full-width grey slab with a border hand-painted at the call site. */
+.msgs>.btn.row-btn{align-self:flex-start;margin:2px 0 4px}
+
+/* ── THE CRISIS CARD ────────────────────────────────────────────────────────────────────────────────
+   Drawn inside the coach, the Companion, the PT and every other door that can meet a disclosure. It
+   was a bubble with a red gradient and a red left border, an italic serif heading, "AUSTRALIA" in 11px
+   tint capitals over each number, the detail in the tertiary grey and an italic footnote — and the
+   number itself a 30px inline link in the middle of all that. It is a card now: the app's own voice
+   for the heading, then a list where EACH WHOLE ROW is the call, 56pt tall, because a shaking thumb
+   should not have to find the digits. */
+.msg.crisis-msg{align-self:stretch;max-width:none;background:var(--bg2) !important;color:var(--tx) !important;border-radius:14px !important;
+  padding:16px 16px 12px !important;white-space:normal}
+.companion-overlay .msg.crisis-msg{background:var(--cell) !important}
+/* Focus is moved INTO the card so a screen reader lands on the numbers; the card is not a control,
+   so it draws no ring (it was a blue outline round the whole card). */
+.msg.crisis-msg:focus{outline:none}
+.crisis-msg .card-title{font-size:22px}
+.crisis-msg .card-lede{margin-bottom:14px}
+.crisis-msg .eyebrow{margin:0 0 2px}
+.crisis-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0;color:var(--tx);text-decoration:none}
+a.crisis-row{display:flex;margin:0;line-height:normal}
+a.crisis-row:active{opacity:.5}
+.crisis-row+.crisis-row{border-top:.5px solid var(--bd)}
+.crisis-who{flex:1;min-width:0}
+.crisis-name{display:block;font-size:17px;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
+.crisis-where{display:block;font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.crisis-num{flex:none;font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--go);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* A row that names several numbers (000 · 911 · 999) cannot be one call, so each number is its own. */
+.crisis-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:2px}
+a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;margin:0;line-height:normal;text-decoration:none}
+.crisis-msg .card-foot{margin-top:6px}
+
+/* ── THE MOMENT SHEETS — where each feeling lands ───────────────────────────────────────────────────
+   Every one was a centred card in the middle of the screen with a 28px bold serif title (a fake bold:
+   this family has one roman weight), a centred paragraph, a tinted panel with an 11px tint caps label
+   inside it, an italic line, and its alternatives as a stack of grey slabs with left-aligned text the
+   flex button could not honour. They rise from the bottom like every sheet; the title is the sheet
+   title; the message is body text; the alternatives are a grouped list; the way out is last. */
+.moment-body{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx);margin:0 0 16px}
+.moment-body b{font-weight:600}
+.moment-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);margin:0 0 14px}
+.moment-note b{font-weight:600;color:var(--tx)}
+.modal .card.moment-plan{padding:12px 14px 13px;margin:0 0 16px;border:0}
+.moment-plan-text{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx)}
+.moment-list .ios-section{margin:12px 0 6px}
+.moment-field{min-height:88px;line-height:1.4;margin-bottom:14px}
+.moment-field.tall{min-height:130px}
+.moment-list+.btn.quiet{margin-top:2px}
+.moment-then{margin-top:8px}
+.moment-note.moment-then{margin-top:12px}
+.moment-picks .ios-row-title{white-space:normal}
 
 </style>
 </head>
@@ -4830,18 +5026,23 @@ a.ios-row{text-decoration:none}
 <!-- TAB 7: COACH (unified) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-coach" class="tab">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+  <!-- A CONVERSATION, SHAPED LIKE ONE. The suggestions sat ABOVE the thread and wrapped to five lines of
+       capsules, so a 260px box was all the conversation ever got and the coach's reply scrolled inside a
+       window a third of the screen. Messages puts the thread first and the suggestions directly over the
+       field they fill, in one row that scrolls sideways. "Clear history" was 13px in the tertiary grey
+       beside a 40px title; it is the header's own action verb now, in the tint, like Settings' "Edit". -->
+  <div class="coach-head">
     <div class="page-title">Your coach</div>
-    <button onclick="clearCoachHistory()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:4px 8px;font-family:var(--font-text);letter-spacing:0.01em">Clear history</button>
+    <button type="button" class="hd-action" onclick="clearCoachHistory()">Clear history</button>
   </div>
-  <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px" id="coach-intro-desc" data-intro-for="coach">He’s read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you’re becoming. Ask him anything.</p>
-  <div class="qbtns" id="coach-quick-replies">
+  <p class="page-intro" id="coach-intro-desc" data-intro-for="coach">He’s read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you’re becoming. Ask him anything.</p>
+  <div class="msgs coach-thread" id="coach-msgs"><div class="msg coach" id="coach-welcome">Your coach is here. What do you need?</div></div>
+  <div class="qbtns coach-suggest" id="coach-quick-replies">
     <!-- Adaptive quick-replies render here based on user state -->
   </div>
-  <div class="msgs" id="coach-msgs"><div class="msg coach" id="coach-welcome">Your coach is here. What do you need?</div></div>
-  <div class="irow">
+  <div class="irow coach-compose">
     <textarea id="coach-in" placeholder="Ask your coach anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoach()}" oninput="ar(this)"></textarea>
-    <button class="sbtn" onclick="sendCoach()" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    <button class="sbtn" onclick="sendCoach()" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
   </div>
 </div>
 
@@ -6083,40 +6284,55 @@ Amen.</div></div>
   <div class="feel-grid" id="feel-grid">
     <!-- Built by renderFeelingDoor() so it can adapt to time of day and what's going on. -->
   </div>
-  <button class="feel-skip" onclick="closeFeelingDoor()">Not now</button>
+  <!-- "Not now" was 17px in the tertiary grey, centred under the grid — the one way out drawn as the
+       faintest thing on the sheet. It is the plain tint button every other sheet ends with. -->
+  <button class="btn quiet feel-skip" onclick="closeFeelingDoor()">Not now</button>
 </div>
 
 <div class="companion-backdrop" id="companion-backdrop" onclick="dismissCompanion()"></div>
 <div class="companion-overlay" id="companion-overlay" role="dialog" aria-modal="true" aria-label="The companion — help right now" tabindex="-1">
   <!-- Phase 0: the gentle check-in -->
+  <!-- The check-in was two bordered boxes (one outlined in the tint, one in teal) with a centred grey
+       "Just let me in" under them, and under THAT the two other doors as 13px lowercase grey links —
+       "what should I do?" · "talk to coach" — centred on a hairline. The two answers are a grouped list;
+       the other doors are rows of their own; the way in is the plain tint button. -->
   <div class="comp-phase active" id="comp-checkin">
     <button class="comp-dismiss" id="comp-dismiss-x" onclick="dismissCompanion()" aria-label="Close">&#215;</button>
     <div class="comp-greeting" id="comp-greeting">How are you, really?</div>
     <div class="comp-sub" id="comp-sub">No wrong answer. I’m just here.</div>
-    <div class="comp-choices" id="comp-choices">
-      <button class="comp-choice comp-choice-good" onclick="companionOkay()">
-        <span class="comp-choice-emoji">&#128591;</span><span>I’m okay today</span>
+    <div class="ios-list comp-choices" id="comp-choices">
+      <button type="button" class="ios-row has-icon comp-choice comp-choice-good" onclick="companionOkay()">
+        <span class="comp-choice-emoji">&#128591;</span><span class="ios-row-body"><span class="ios-row-title">I’m okay today</span></span>
       </button>
-      <button class="comp-choice comp-choice-pull" onclick="companionStruggling()">
-        <span class="comp-choice-emoji">&#127754;</span><span>Something’s pulling at me</span>
+      <button type="button" class="ios-row has-icon comp-choice comp-choice-pull" onclick="companionStruggling()">
+        <span class="comp-choice-emoji">&#127754;</span><span class="ios-row-body"><span class="ios-row-title">Something’s pulling at me</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
       </button>
     </div>
-    <button class="comp-skip" onclick="dismissCompanion()">Just let me in &rarr;</button>
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:14px;justify-content:center">
-      <button onclick="closeCompanion();brotherGuidance()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> what should I do?</button>
-      <button onclick="closeCompanion();openNeedTalk()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> talk to coach</button>
+    <div class="ios-list comp-doors">
+      <button type="button" class="ios-row has-icon" onclick="closeCompanion();brotherGuidance()">
+        <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title">What should I do?</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" onclick="closeCompanion();openNeedTalk()">
+        <span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title">Talk to coach</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
+    <button class="btn quiet comp-skip" onclick="dismissCompanion()">Just let me in &rarr;</button>
   </div>
 
   <!-- Phase 1: name what it is (their words, or a known vice) -->
   <div class="comp-phase" id="comp-name">
     <button class="comp-dismiss" onclick="closeCompanion()" aria-label="Close">&#215;</button>
-    <div class="comp-greeting" style="font-size:var(--t-title1)">What’s pulling at you?</div>
+    <div class="comp-greeting">What’s pulling at you?</div>
     <div class="comp-sub">Tap one, or tell me in your own words. Whatever it is, I’m not here to judge it.</div>
     <div id="comp-known-vices" class="comp-vice-chips"></div>
     <input type="text" id="comp-freetext" class="comp-input" placeholder="or say it in your own words..." onkeydown="if(event.key==='Enter')companionFreeText()">
-    <button class="btn primary" onclick="companionFreeText()" style="margin-top:10px">I’m ready &rarr;</button>
-    <button class="comp-skip" onclick="closeCompanion()">Actually, I’m alright</button>
+    <button class="btn primary comp-ready" onclick="companionFreeText()">I’m ready &rarr;</button>
+    <button class="btn quiet comp-skip" onclick="closeCompanion()">Actually, I’m alright</button>
   </div>
 
   <!-- Phase 2: the companion meets them (AI, grounded in the mechanism) -->
@@ -6127,21 +6343,26 @@ Amen.</div></div>
     </div>
     <div class="comp-conversation" id="comp-conversation"></div>
     <div class="comp-typing" id="comp-typing" style="display:none"><span></span><span></span><span></span></div>
+    <!-- The field and its send button, as Messages draws them: a round tint button with an up arrow,
+         not a "➤" character in a 46px disc. -->
     <div class="comp-reply-row">
       <input type="text" id="comp-reply" class="comp-input" placeholder="talk to me..." onkeydown="if(event.key==='Enter')companionReply()">
-      <button class="comp-send" onclick="companionReply()" aria-label="Send">&#10148;</button>
+      <button class="sbtn comp-send" onclick="companionReply()" aria-label="Send"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
     </div>
     <!-- The urge menu (openDEADS) already existed but was reachable from ONE modal only, never from the
          companion — which is the exact surface where someone is choosing a way through. The companion
          hands them one mechanism it picked, which is right for the first three seconds and wrong after:
          being handed a response is compliance, choosing one is autonomy, and autonomy is what predicts
          doing it again unprompted. This is a second door onto the menu that was already built. -->
-    <button onclick="openDEADS()" style="width:100%;margin-top:4px;padding:10px 0;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.01em">or pick your own way through &rarr;</button>
-    <div class="comp-meet-actions">
-      <button class="btn success" onclick="companionWon()" style="flex:1">I’m through it &#127793;</button>
-      <button class="btn subtle" onclick="closeCompanion()" style="flex:1">Step away</button>
+    <button type="button" class="comp-link" onclick="openDEADS()">Or pick your own way through<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></button>
+    <div class="btn-row comp-meet-actions">
+      <button class="btn success" onclick="companionWon()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 2.5-5.5 6-5.5 0 3.5-2.5 5.5-6 5.5z"/></svg> I’m through it</button>
+      <button class="btn subtle" onclick="closeCompanion()">Step away</button>
     </div>
-    <button onclick="bridgeToRealHelp('heavy')" style="width:100%;margin-top:4px;padding:10px 0;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> this feels bigger — help me reach a real person</button>
+    <!-- THE BRIDGE TO A PERSON WAS THE SMALLEST THING ON THE SHEET: 13px, lowercase, tertiary grey, under
+         two buttons. It is the door this app most needs a person to find when a moment is bigger than a
+         moment, so it is a full-size control in the tint, with the icon that says "a person". -->
+    <button type="button" class="comp-link comp-bridge" onclick="bridgeToRealHelp('heavy')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>This feels bigger — help me reach a real person</span></button>
   </div>
 </div>
 

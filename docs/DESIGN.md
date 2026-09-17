@@ -165,6 +165,26 @@ re-paint them at a call site.
 - `.footnote-link` — a footnote a thumb can land on (44pt), for the one that is really a control.
 - `.disclosure` — a `<summary>` as an iOS row with a chevron, instead of caps with an icon.
 
+### Roles named while rebuilding the Coach, the Companion and the Feeling Door
+
+- **A conversation** — `.msgs` holding `.msg.coach` / `.msg.user` (and the Companion's `.comp-msg-them` /
+  `.comp-msg-me`, which are the same two bubbles): 17pt, 18pt radius, tail toward the speaker, the
+  received one on `--fill`, the sent one in the tint. The PT chat uses the same classes and gets the same.
+- **A composer** — `.irow` (or `.comp-reply-row`) is ONE capsule with a hairline; the field inside it is
+  transparent and `.sbtn` is the round up-arrow at its trailing end, grey until there is text.
+- **A sheet that carries content** — `.modal.moment-sheet` is opaque in the elevated pair (dark: `--bg2`
+  sheet, `--bg3` cells; light: `--bg` sheet, `--bg2` cells), exposed as `--sheet` / `--cell`. The Feeling
+  Door and the Companion use the same pair. Inside: `<h3>` title, `.moment-body` (17, the message),
+  `.moment-note` (15 secondary, with `<b>` for the one word that matters), `.card.moment-plan` with an
+  `.eyebrow` for a quoted plan or fact, ONE `.btn.primary`, the alternatives as `iosList` inside
+  `.moment-list`, and `.btn.quiet` last.
+- `.comp-link` — a quiet way onward inside a sheet: tint, 15pt, 44pt tall, left edge, optional icon.
+- **The crisis card** — `.msg.crisis-msg`, built only by `showCrisisResponse()`. `.card-title`, `.card-lede`,
+  `.eyebrow`, then `.crisis-row`s where the WHOLE ROW is the `tel:` link (56pt), and `.card-foot`. A
+  contact naming several numbers renders each as its own `a.crisis-num`.
+- `.feel-chip` — a feeling tile: the face and the word on one line, what it feels like under the word.
+  Shared by the Feeling Door and onboarding's first moment.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

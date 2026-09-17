@@ -1740,8 +1740,7 @@ async function sendCoach(){
     const msgs = document.getElementById('coach-msgs');
     if(msgs){
       const btn = document.createElement('button');
-      btn.className = 'btn'; btn.textContent = 'Write it in my journal';
-      btn.style.cssText = 'margin:8px 0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-sm)';
+      btn.className = 'btn row-btn'; btn.textContent = 'Write it in my journal';
       btn.onclick = () => { if(typeof go==='function') go('reflect');
         setTimeout(()=>{ try{ if(typeof setReflectTab==='function') setReflectTab('journal');
                               if(typeof openJournal==='function') openJournal();
@@ -1940,37 +1939,45 @@ function showCrisisResponse(containerId, type){
   // number and dial it by hand. The same numbers ARE tappable on the sign-in screen (tel: links, because
   // "crisis help must never sit behind a login") — the AI path was the one that lost it. A phone number
   // becomes a tel: link; the international directory becomes a real link.
+  //
+  // AND THE WHOLE ROW IS THE CALL. The number used to be a 30px inline link in the middle of a box
+  // that also held an 11px tint "AUSTRALIA" label, the name, and the detail in the faintest grey. Each
+  // resource is a 56pt row now — name, where and when, the number on the trailing edge — and the row
+  // itself is the tel: link, so a thumb that lands anywhere on it dials. A contact that names several
+  // numbers ("000 (AU) · 911 (US) · 999 (UK)") cannot be one call, so each of its numbers is its own
+  // link; before, that line was plain text and none of the three could be tapped at all.
+  // _crisisContact() decides what a contact IS — one number, a website, or several numbers — and returns
+  // the row's opening tag, anything that goes under the name, and its trailing edge.
   const _crisisContact = (c) => {
     const raw = String(c || '');
-    const a = 'style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)"';
     if(/^[\d\s]+$/.test(raw) && /\d/.test(raw)){
-      return '<a href="tel:' + raw.replace(/\s+/g,'') + '" ' + a + '>' + raw + '</a>';
+      return { open:'<a class="crisis-row" href="tel:' + raw.replace(/\s+/g,'') + '">', under:'',
+               end:'<span class="crisis-num">' + raw + '</span></a>' };
     }
     if(/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(raw)){
-      return '<a href="https://' + raw + '" target="_blank" rel="noopener" ' + a + '>' + raw + '</a>';
+      return { open:'<a class="crisis-row" href="https://' + raw + '" target="_blank" rel="noopener">', under:'',
+               end:'<span class="ios-row-chevron">' + svgIcon('chevronright', 14) + '</span></a>' };
     }
-    return raw;
+    const parts = [...raw.matchAll(/(\d[\d ]*\d|\d)\s*(\([^)]*\))?/g)];
+    return { open:'<div class="crisis-row">', end:'</div>',
+             under: parts.length
+               ? '<span class="crisis-nums">' + parts.map(p => '<a class="crisis-num" href="tel:' + p[1].replace(/\s+/g,'') + '">' + p[1] + (p[2] ? ' ' + p[2] : '') + '</a>').join('') + '</span>'
+               : '<span class="crisis-where">' + raw + '</span>' };
   };
-  const resHtml = resources.map(r =>
-    '<div style="background:var(--bg2);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">' + r.region + '</div>' +
-      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
-      '<div style="font-size:var(--t-sm);color:var(--tx2);font-family:var(--font-text)">' + _crisisContact(r.contact) + '</div>' +
-      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
-    '</div>'
-  ).join('');
-  
+  const resHtml = resources.map(r => {
+    const k = _crisisContact(r.contact);
+    return k.open + '<span class="crisis-who"><span class="crisis-name">' + r.name + '</span><span class="crisis-where">' +
+      r.region + ' · ' + r.detail + '</span>' + k.under + '</span>' + k.end;
+  }).join('');
+
   const msg = document.createElement('div');
-  msg.className = 'msg coach';
-  msg.style.background = 'linear-gradient(135deg, rgba(216,93,75,0.08), var(--go-bg))';
-  msg.style.border = '1px solid var(--re-bd, rgba(216,93,75,0.3))';
-  msg.style.borderLeft = '3px solid var(--re)';
+  msg.className = 'msg coach crisis-msg';
   msg.innerHTML =
-    '<h2 style="font-family:var(--font-serif);font-size:var(--t-base);font-weight:400;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:10px">' + title + '</h2>' +
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">' + body + '</div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Real people, right now</div>' +
+    '<h2 class="card-title">' + title + '</h2>' +
+    '<div class="card-lede">' + body + '</div>' +
+    '<div class="eyebrow">Real people, right now</div>' +
     resHtml +
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">I will not give AI advice on this. You deserve a real person.</div>';
+    '<div class="card-foot">I will not give AI advice on this. You deserve a real person.</div>';
   // ANNOUNCED, NOT JUST DRAWN. This is the one surface in the app that must reach a person who cannot
   // see the screen: it was appended silently — no live region, no role, no heading, no focus move — so
   // for a VoiceOver user mid-crisis the helpline numbers simply were not there. They would have had to
