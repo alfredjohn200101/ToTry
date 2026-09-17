@@ -431,10 +431,15 @@ function showMorningFocus(){
       // Strip "I am becoming a person who" prefix to focus on the becoming part
       const becomingPart=identity.replace(/^I am becoming a person who /i,'');
       identityEl.style.cursor='pointer'; identityEl.setAttribute('onclick','editIdentity()'); identityEl.title='Tap to edit';
-      identityEl.innerHTML='I am becoming a person who <em style="color:var(--gr);font-style:normal;font-weight:600">'+becomingPart+'</em>';
+      // Their own words in the label colour at weight 600 (.affirm-identity em) — they were painted
+      // green, the colour this app keeps for "kept" and "clean", on a sentence that is neither.
+      // AND ESCAPED. This is the person's own sentence (onboarding's identity field, or editIdentity)
+      // and it went into innerHTML raw — "<img src=x onerror=…>" typed as who you are becoming ran here
+      // every morning. Found while restyling this line; _escFew is the evening's escaper, hoisted.
+      identityEl.innerHTML='I am becoming a person who <em>'+_escFew(becomingPart)+'</em>';
     }else{
       identityEl.style.cursor='pointer'; identityEl.setAttribute('onclick','editIdentity()');
-      identityEl.innerHTML='<span style="color:var(--go);font-style:italic">Name who you’re becoming — the person today is for. Tap to set it.</span>';
+      identityEl.innerHTML='<span class="affirm-set">Name who you’re becoming — the person today is for. Tap to set it.</span>';
     }
   }
   // Daily action prompts that connect identity to today
@@ -590,14 +595,17 @@ function _pledgeSaid(v, from){
   const word=(soft?_PLEDGE_WORD.secular:(_PLEDGE_WORD[t]||_PLEDGE_WORD.secular));
   const n=v.pledgeDays||1;
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  // A sheet's one-line confirmation, centred: the promise in the app's own face at the sheet-title size
+  // \u2014 it was 28px at weight 700, a fake bold on a face with one roman weight \u2014 the word under it as the
+  // subheadline, and the count as a footnote in the tint rather than 12px capitals-spaced text.
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
-      (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
+    '<div class="pledge-said-ic">'+svgIcon("users",24)+'</div>'+
+    '<h3>'+
+      (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</h3>'+
+    '<p class="modal-sub">'+word+'</p>'+
     (n>1
-      ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;margin-bottom:16px">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</div>'
-      : '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
+      ? '<p class="card-foot tint pledge-said-n">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</p>'
+      : '<p class="card-foot pledge-said-n">Just today. Tomorrow gets its own.</p>')+
     (from==='morning'
       ? '<button class="btn primary" onclick="closeModal(this)">Back to my morning</button>'
       : '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You made your pledge for today \u2014 out loud, on purpose.\'})">Now go live it</button>')+
@@ -746,22 +754,26 @@ function renderMorningPledge(){
                   .filter(function(x){ return x.v && x.v.n && x.v.kind!=='letgo'; });
   if(!live.length){ if(card) card.style.display='none'; body.innerHTML=''; return; }
   if(card) card.style.display='';
-  body.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Today\u2019s pledge</div>'+
+  // The morning's pledge in the Fight card's own parts, so the promise reads the same in both places:
+  // each vice a .vice-inrow (44pt, hairline, its line as the subtitle) with an empty circle to tap \u2014
+  // it was a 18px DASHED square \u2014 and a kept pledge as .vice-pledge, the green check the Fight card
+  // shows. The label was 11px tint capitals; the footnote 12px in the faintest grey.
+  body.innerHTML='<div class="eyebrow">Today\u2019s pledge</div>'+
     live.map(function(x){
       const v=x.v, n=v.pledgeDays||0;
       const line=(viceMode(v)==='moderate')?'today, I hold my line':viceMode(v)==='watch'?'today, I just look at it honestly':'today, not this';
       if(vicePledgedToday(v)){
-        return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)">'+
-          '<span style="flex:none;font-size:var(--t-base)">'+svgIcon("users")+'</span>'+
-          '<div style="flex:1;text-align:left"><div style="font-size:var(--t-sm);color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
-          (n>1?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
-          '</div></div>';
+        return '<div class="vice-inrow pledge-kept">'+
+          '<span class="tick is-on">'+svgIcon('check', 14)+'</span>'+
+          '<span class="body"><span class="t">'+_escFew(v.n)+' \u2014 pledged.</span>'+
+          (n>1?'<span class="s">'+n+' days you\u2019ve chosen this</span>':'')+
+          '</span></div>';
       }
-      return '<button onclick="makePledge('+x.i+',\'morning\')" style="width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 0;border:none;border-top:1px solid var(--bd);background:none;cursor:pointer">'+
-        '<span style="flex:none;width:18px;height:18px;border-radius:5px;border:1.5px dashed var(--go)"></span>'+
-        '<span style="flex:1;font-size:var(--t-base);color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
+      return '<button class="vice-inrow" onclick="makePledge('+x.i+',\'morning\')">'+
+        '<span class="tick"></span>'+
+        '<span class="body"><span class="t">'+_escFew(v.n)+'</span><span class="s">'+line+'</span></span></button>';
     }).join('')+
-    '<div style="font-size:var(--t-mini);color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
+    '<div class="card-foot">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
 }
 
 // THE SOBRIETY CLOCK IS GONE, and it was not merely dead — it was dead and RUNNING.

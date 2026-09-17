@@ -794,18 +794,19 @@ function renderOnThisDay(){
   const months=Math.round(hit.age/30);
   const when = hit.age>=330 ? 'about a year ago' : (months+' months ago');
   el.style.display='block';
-  el.innerHTML='<div style="background:var(--bg3);border-radius:var(--rm);padding:13px 15px;margin-bottom:12px">'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:6px">You wrote this '+when+'</div>'+
-    '<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx2);line-height:1.7;margin-bottom:10px">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">Not to make you feel anything in particular \u2014 just so you can hear how you were speaking then, and notice whether it has moved.</div>'+
+  // It sits in the evening, so it wears the evening's card roles: the label (it was 11px tint
+  // capitals), their own words upright at body size (they were a 15px italic serif), the sentence under
+  // it in the secondary grey, and its three actions as full buttons rather than three hand-sized ones.
+  el.innerHTML='<div class="card ritual-card">'+
+    '<div class="eyebrow">You wrote this '+when+'</div>'+
+    '<div class="card-text otd-quote">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
+    '<div class="card-body">Not to make you feel anything in particular \u2014 just so you can hear how you were speaking then, and notice whether it has moved.</div>'+
     // "Read it" used to hide the card and jump to Reflect \u2014 it never opened anything, and it burned
     // the entry: totry_otd_seen was stamped so it could never resurface. The card is already the
     // entry, so the only honest actions are: show the rest of it, respond to it, or put it down.
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      (String(hit.e.text).length>340 ? '<button class="btn" style="width:auto;padding:6px 12px;font-size:var(--t-sm);margin:0" onclick="_otdExpand()">Read the rest</button>' : '')+
-      '<button class="btn" style="width:auto;padding:6px 12px;font-size:var(--t-sm);margin:0;background:var(--go-bg);color:var(--go)" onclick="_otdRespond()">Write to that version of me</button>'+
-      '<button class="btn" style="width:auto;padding:6px 12px;font-size:var(--t-sm);margin:0;background:transparent;color:var(--tx3);background:var(--fill2)" onclick="_otdSeen()">Put it down</button>'+
-    '</div>'+
+    (String(hit.e.text).length>340 ? '<button class="btn quiet" onclick="_otdExpand()">Read the rest</button>' : '')+
+    '<button class="btn" onclick="_otdRespond()">Write to that version of me</button>'+
+    '<button class="btn quiet" onclick="_otdSeen()">Put it down</button>'+
   '</div>';
 }
 // Show the whole entry in place. No navigation, no dismissal \u2014 they asked to read, so let them read.
@@ -813,7 +814,9 @@ function _otdExpand(){
   try{
     const hit=onThisDay(); if(!hit) return;
     const el=document.getElementById('on-this-day'); if(!el) return;
-    const q=el.querySelector('div[style*="Cormorant"]');
+    // .otd-quote, by role. This looked for an inline "Cormorant" the quote had not carried for a long
+    // time (it named var(--font-serif)), so "Read the rest" removed itself and revealed nothing.
+    const q=el.querySelector('.otd-quote');
     if(q) q.innerHTML='\u201c'+_escFew(String(hit.e.text))+'\u201d';
     const b=el.querySelector('button'); if(b && /Read the rest/.test(b.textContent||'')) b.remove();
     if(typeof haptic==='function') haptic('tap');

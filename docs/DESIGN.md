@@ -165,6 +165,30 @@ re-paint them at a call site.
 - `.footnote-link` — a footnote a thumb can land on (44pt), for the one that is really a control.
 - `.disclosure` — a `<summary>` as an iOS row with a chevron, instead of caps with an icon.
 
+### Roles named while rebuilding the Morning and Evening rituals
+
+- **A stepped flow** (`.mstep-nav` / `.mstep-foot`, built by `renderMorningFlow` / `renderEveningFlow`):
+  a page control; the step's name as the step's title in the ToTry face (34, hidden on step 0, where
+  the ritual's own 40pt title stands); ONE filled `Continue`; under it `‹ Back` and "Show the whole …"
+  as `.btn.quiet` on one line. Not a bordered box around a "‹", not an underlined 13px link.
+- **The ritual title** — `.ritual-hero` is no longer a panel: eyebrow, `.ritual-title` (40), `.ritual-line`
+  (17 secondary), on the grouped background like Today's greeting.
+- `.card-text` — Body (17, label ink) inside a card, for a card whose sentence IS the content ("your day
+  ahead", a person's own words). `.card-body` stays the 15 secondary line that supports something.
+- `.face-scale` — a row of opaque tiles, a face over its word (`.face-l`, 13), the choice filled with the
+  tint via `.on`. The morning's sleep answer and the evening's day rating are one control.
+- `input.list-field` — a whole row of free text (the evening's priorities, three good things, a win).
+  The other half of `input.row-field`, which is a value on a row's trailing edge.
+- `.tick` — the circle Reminders uses for done, on a row with `role="checkbox"` / `aria-checked`, or
+  `.tick.is-on` for a statement (a pledge already made).
+- `.ritual-field` — the ritual's textareas: one height, one gap.
+- `.prayer-box` / `.prayer-text` — an opaque surface, New York upright at 17 in the label ink.
+- `.ritual-done` — the end of a ritual: centred like an empty state, the title in the ToTry face.
+- `.sheet-steps` — a sheet's own progress (the examen's five segments).
+- `.selectable` — on anything that prints a person's own words back to them. `body` is not selectable;
+  this class (and inline `white-space:pre-wrap`) is the exemption, so a class-styled read-back of their
+  journal needs it or they cannot copy what they wrote.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and

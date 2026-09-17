@@ -284,9 +284,12 @@ function renderMorningLightCard(){
     const card = document.getElementById('morning-light-card');
     if(!card) return;
     const done = morningLightDoneToday();
-    const title = card.querySelector('div[style*="font-size:14px"]');
-    const sub = card.querySelector('div[style*="font-size:11px"]');
-    const chev = card.lastElementChild;
+    // By ROLE. These selectors matched an inline "font-size:14px" and "font-size:11px" that the type
+    // scale replaced with tokens long ago, so neither ever found anything: the row dimmed once they had
+    // been out, and went on asking "Get light in your eyes" in words. It is an iOS row now.
+    const title = card.querySelector('.ios-row-title');
+    const sub = card.querySelector('.ios-row-sub');
+    const chev = card.querySelector('.ios-row-chevron');
     if(done){
       if(title) title.textContent = 'Light in your eyes \u2713';
       if(sub) sub.textContent = 'Done today. Tonight\u2019s sleep is already better for it.';
@@ -302,13 +305,17 @@ function renderMorningLightCard(){
 }
 function openMorningLight(){
   const m=document.createElement('div'); m.className='modal-bg open';
-  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:10px">Morning light</div>'+
-    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">Outside, before the screen.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:8px">A few minutes of real daylight in your eyes — no sunglasses, and a window does not count for much. Even grey and overcast is many times brighter than any room you own.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;margin-bottom:18px">It sets tonight’s sleep far more than anything you do at bedtime. Do it while the kettle boils.</div>'+
-    '<button class="btn primary" onclick="_morningLightGo()" style="padding:14px">I’m going out</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:8px">Not now</button>'+
+  // Opened from the morning ritual, so it speaks the way the ritual does: a label, the title in the
+  // app's own face (it was an italic New York — the reading face, slanted), two sentences in the
+  // secondary grey rather than one secondary and one tertiary, left like every sheet, one filled
+  // button and a plain "Not now".
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div class="eyebrow">Morning light</div>'+
+    '<h3>Outside, before the screen.</h3>'+
+    '<p class="modal-sub">A few minutes of real daylight in your eyes — no sunglasses, and a window does not count for much. Even grey and overcast is many times brighter than any room you own.</p>'+
+    '<p class="modal-sub">It sets tonight’s sleep far more than anything you do at bedtime. Do it while the kettle boils.</p>'+
+    '<button class="btn primary" onclick="_morningLightGo()">I’m going out</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });

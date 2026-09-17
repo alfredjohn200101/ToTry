@@ -57,11 +57,14 @@ function eveningStep(n){
   const dots = panel.querySelector('.mstep-dots');
   if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _eStep));
   const lbl = panel.querySelector('.mstep-label');
-  if(lbl) lbl.textContent = _EVENING_STEPS[_eStep].label;
+  // The step's title — hidden on the first step, where the evening's own large title stands.
+  if(lbl){ lbl.textContent = _EVENING_STEPS[_eStep].label; lbl.hidden = (_eStep === 0); }
   const next = panel.querySelector('.mstep-next');
   if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
   const back = panel.querySelector('.mstep-back');
   if(back) back.style.display = (_eStep === 0) ? 'none' : '';
+  const footEl = panel.querySelector('.mstep-foot');
+  if(footEl) footEl.classList.toggle('at-first', _eStep === 0);
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -114,7 +117,7 @@ function renderEveningFlow(){
     panel.classList.remove('stepped');
     if(!panel.querySelector('.mstep-restep')){
       const rb = document.createElement('button');
-      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.className = 'btn quiet mstep-restep'; rb.type = 'button';
       rb.textContent = 'Step through it instead';
       rb.onclick = function(){ ls('totry_evening_flow',''); renderEveningFlow(); if(typeof haptic==='function') haptic('tap'); };
       panel.insertBefore(rb, panel.firstChild);
@@ -137,9 +140,10 @@ function renderEveningFlow(){
     panel.insertBefore(nav, panel.firstChild);
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
-                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
-                     '<button class="mstep-all" type="button">Show the whole evening</button>';
+    // The same foot as the morning's \u2014 see the note there.
+    foot.innerHTML = '<button class="btn primary mstep-next" type="button">Continue</button>' +
+                     '<button class="btn quiet mstep-back" type="button" aria-label="Back a step">' + svgIcon('chevronleft', 20) + 'Back</button>' +
+                     '<button class="btn quiet mstep-all" type="button">Show the whole evening</button>';
     panel.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => eveningStep(_eStep + 1);
     foot.querySelector('.mstep-back').onclick = () => eveningStep(_eStep - 1);
@@ -212,11 +216,17 @@ function renderEveningHabitTickList(){
     // "Add some in Settings" was a dead end — there is no habit UI in Settings, and this is the
     // same lie that was fixed on Home's habit card while this copy sat here untouched. Give the
     // person the actual door instead of the name of a room that does not hold it.
-    list.innerHTML = '<p class="empty-note" style="margin-bottom:10px">No habits yet \u2014 pick one small thing you want to be true of you most days.</p>' +
-      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:var(--t-base)" onclick="openAddHabit()">Add your first habit</button>';
+    // A card, not a stray paragraph and a second filled button on a step whose filled button is Continue.
+    list.innerHTML = '<div class="card"><div class="card-body">No habits yet \u2014 pick one small thing you want to be true of you most days.</div>' +
+      '<button class="btn" onclick="openAddHabit()">Add your first habit</button></div>';
     return;
   }
   list.innerHTML = '';
+  // ONE LIST. Each habit was its own bordered box with a 6px gap under it, its "done" a green-filled
+  // box around a 22px square holding a text check mark, and its anchor an 11px line.
+  const group = document.createElement('div');
+  group.className = 'ios-list';
+  list.appendChild(group);
   habits.forEach((h, hi) => {
     // Don't show the "evening check-in" habit in the evening check-in itself — you're doing it
     // right now, so it's auto-ticked on save; listing it here is redundant/confusing.
@@ -231,12 +241,12 @@ function renderEveningHabitTickList(){
     row.setAttribute('role', 'checkbox');
     row.setAttribute('aria-checked', done ? 'true' : 'false');
     row.setAttribute('aria-label', h.n);
-    row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:var(--rs);margin-bottom:6px;cursor:pointer';
+    row.className = 'ios-row';
     row.onclick = () => toggleEveningHabit(hi);
-    row.innerHTML = '<div style="width:22px;height:22px;border-radius:var(--rs);border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
-      '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx)">'+_escFew(h.n)+'</div>'+
-      (habitAnchor(h)?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after '+_escFew(habitAnchor(h))+'</div>':'')+'</div>';
-    list.appendChild(row);
+    row.innerHTML = '<span class="tick">'+svgIcon('check', 14)+'</span>'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(h.n)+'</span>'+
+      (habitAnchor(h)?'<span class="ios-row-sub" style="display:block">after '+_escFew(habitAnchor(h))+'</span>':'')+'</span>';
+    group.appendChild(row);
   });
 }
 
@@ -263,16 +273,19 @@ function toggleEveningHabit(hi){
 // Same nightly practice, five steps, named and worded in the person's own tradition. Nothing is
 // flattened: each is called what it actually is, and the theistic step becomes an honest self-
 // accounting where there is no deity to petition.
+// The card was labelled twice — "THE LAST STEP — YOUR EXAMEN" in capitals above it (a sentence, with a
+// dash in it) and this eyebrow in 12px tint capitals inside it. The eyebrow is the section's one label
+// now, and "this closes your day, do it last" was already the card's own blurb, so `label` went.
 const _EXAMEN_FACE = {
-  christianity:{ noun:'Examen', eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
+  christianity:{ noun:'Examen', eyebrow:'Ignatian Examen · 5 steps',
     title:'Walk through your day with God.', blurb:'A 600-year-old practice. Five questions. This closes your day — do it last.', cta:'Begin the Examen' },
-  islam:{ noun:'Muhāsaba', eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
+  islam:{ noun:'Muhāsaba', eyebrow:'Muhāsaba · 5 steps',
     title:'Take account of your day before Allah.', blurb:'Muhāsaba — the nightly self-accounting the scholars urged. Five questions. This closes your day.', cta:'Begin the muhāsaba' },
-  hinduism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  hinduism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps',
     title:'Look back over your day with honesty.', blurb:'Svādhyāya — the practice of self-study. Five questions. This closes your day.', cta:'Begin the reflection' },
-  buddhism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  buddhism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps',
     title:'Look back over your day with clear eyes.', blurb:'The nightly reflection the Buddha taught Rāhula — look at what you did, kindly and without flinching. Five questions.', cta:'Begin the reflection' },
-  secular:{ noun:'Review', eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
+  secular:{ noun:'Review', eyebrow:'Evening review · 5 steps',
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
 // The noun the door used, for everything inside — see the note on _EXAMEN_FACE.
@@ -312,14 +325,17 @@ function applyFaithExamen(){
   const card = document.getElementById('examen-card');
   const lbl  = document.getElementById('examen-label');
   // Always visible now — every tradition gets the closing ritual.
-  if(lbl){ lbl.style.display=''; lbl.textContent = f.label; }
+  // The section label carries what the card's own eyebrow used to ("Muhāsaba · 5 steps"), and the card
+  // is found by ROLE rather than by child position, so a change to its markup cannot write a blurb
+  // into the title.
+  if(lbl){ lbl.style.display=''; lbl.textContent = f.eyebrow; }
   if(card){
     card.style.display='';
-    const kids = card.children;
-    if(kids[0]) kids[0].textContent = f.eyebrow;
-    if(kids[1]) kids[1].textContent = f.title;
-    if(kids[2]) kids[2].textContent = f.blurb;
-    const btn = card.querySelector('button.primary'); if(btn) btn.textContent = f.cta;
+    const ttl = card.querySelector('.card-title'); if(ttl) ttl.textContent = f.title;
+    const blb = card.querySelector('.card-body'); if(blb) blb.textContent = f.blurb;
+    // .examen-begin, not button.primary: the evening's one filled button is "Complete evening
+    // check-in" beneath this card, so Begin is the card's own grey button.
+    const btn = card.querySelector('button.examen-begin'); if(btn) btn.textContent = f.cta;
   }
 }
 // Swap the divine language in a step for the person's tradition. For non-theistic paths the
@@ -421,18 +437,22 @@ function showExamenStep(idx){
   m.className = 'modal-bg open';
   
   const isLast = idx === EXAMEN_STEPS.length - 1;
+  // The same grammar as the evening it opens from: a progress bar of five, the step as a small label
+  // (it was 11px tint capitals), the step's name as the sheet title, its question as the subheadline
+  // (it was an italic serif), the guidance as a supporting sentence in the secondary grey (it was the
+  // tertiary grey), and Back / Continue as one row. The step copy is the app's own, never a person's.
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="display:flex;gap:4px;margin-bottom:12px">' +
-      EXAMEN_STEPS.map((_, i) => '<div style="flex:1;height:3px;border-radius:2px;background:' + (i <= idx ? 'var(--go)' : 'var(--bd)') + '"></div>').join('') +
+    '<div class="sheet-steps">' +
+      EXAMEN_STEPS.map((_, i) => '<span' + (i <= idx ? ' class="on"' : '') + '></span>').join('') +
     '</div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Step ' + step.n + ' of 5</div>' +
-    '<h3 style="margin-bottom:4px">' + step.title + '</h3>' +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx2);font-style:italic;margin-bottom:10px">' + step.sub + '</div>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;margin-bottom:14px">' + step.body + '</p>' +
-    '<textarea id="examen-input" placeholder="' + step.placeholder + '" style="min-height:' + step.minHeight + 'px;margin-bottom:14px">' + (_examenAnswers[step.field] || '') + '</textarea>' +
-    '<div style="display:flex;gap:8px">' +
-      (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;background:var(--fill2)">Back</button>' : '') +
-      '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? ('Complete ' + _examenNoun()) : 'Next →') + '</button>' +
+    '<div class="eyebrow">Step ' + step.n + ' of 5</div>' +
+    '<h3>' + step.title + '</h3>' +
+    '<p class="modal-sub examen-q">' + step.sub + '</p>' +
+    '<p class="card-body">' + step.body + '</p>' +
+    '<textarea id="examen-input" class="examen-field" placeholder="' + step.placeholder + '" style="min-height:' + step.minHeight + 'px">' + (_examenAnswers[step.field] || '') + '</textarea>' +
+    '<div class="btn-row">' +
+      (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')">Back</button>' : '') +
+      '<button class="btn primary" onclick="examenNext(' + idx + ')">' + (isLast ? ('Complete ' + _examenNoun()) : 'Continue') + '</button>' +
     '</div>' +
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:8px">Exit (progress lost)</button>' +
   '</div>';
@@ -477,11 +497,13 @@ function saveExamen(){
   // Show closing prayer
   const m = document.createElement('div');
   m.className = 'modal-bg open';
+  // A sheet's one-line confirmation, centred: the noun as a label, the closing words in the app's own
+  // face (they were an italic serif at 22 over a 12px attribution in the faintest grey), then the prayer.
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+_examenNoun()+' Complete</div>' +
-      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
+    '<div style="text-align:center;padding:8px 0 0">' +
+      '<div class="eyebrow">'+_examenNoun()+' complete</div>' +
+      '<div class="examen-quote">“'+_examenClose().q+'”</div>' +
+      '<div class="examen-attr">'+_escFew(_examenClose().r)+'</div>' +
     '</div>' +
     '<div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">'+_escFew(((typeof _EVE_PRAYERS!=='undefined' && _EVE_PRAYERS[(typeof faithTradition==='function'?faithTradition():'secular')]) || _EVE_PRAYERS.secular).text)+'</div></div>' +
     '<button class="btn primary" onclick="closeModal(this)">Rest in peace tonight</button>' +
@@ -513,23 +535,21 @@ function showExamenHistory(){
     return;
   }
   
+  // One list, as Journal draws past entries: the date as the row's title, the first thing written as
+  // its subtitle. Each was a separate box with its date in 12px tint capitals and a "›" character.
+  // iosRow escapes the preview, which is the person's own text.
   const itemsHtml = log.slice(0, 60).map((e, i) => {
     // Build a 1-line preview from any filled answer
     const previewSrc = e.gratitude || e.review || e.repent || e.renewal || e.petition || '';
     const preview = previewSrc.slice(0, 80) + (previewSrc.length > 80 ? '…' : '');
-    return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
-        '<div style="font-size:var(--t-sm);color:var(--tx3)">›</div>' +
-      '</div>' +
-      (preview ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + preview.replace(/</g,'&lt;') + '</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);font-style:italic">No notes — just walked the steps</div>') +
-    '</div>';
+    return iosRow({ title: (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?'),
+                    sub: preview || 'No notes — just walked the steps', onclick: 'showExamenDetail(' + i + ')', cls: 'examen-past' });
   }).join('');
-  
+
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + log.length + ' ' + _examenNoun().toLowerCase() + (log.length === 1 ? '' : 's') + ' walked</div>' +
-    '<h3 style="margin-bottom:12px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
-    '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
+    '<h3>Past ' + _examenNoun().toLowerCase() + 's</h3>' +
+    '<p class="modal-sub">' + log.length + ' ' + _examenNoun().toLowerCase() + (log.length === 1 ? '' : 's') + ' walked</p>' +
+    '<div class="ios-list" style="max-height:60vh;overflow-y:auto;margin-bottom:14px">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -553,9 +573,11 @@ function showExamenDetail(idx){
   Object.keys(labels).forEach(k => {
     const val = (e[k] || '').trim();
     if(val){
-      body += '<div style="margin-bottom:14px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + labels[k] + '</div>' +
-        '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;white-space:pre-wrap">' + val.replace(/</g, '&lt;') + '</div>' +
+      body += '<div class="examen-entry">' +
+        '<div class="eyebrow">' + labels[k] + '</div>' +
+        // .selectable: their own words, which they may want to copy — the inline pre-wrap this had was
+        // also what made it selectable (see the user-select exemption in the shell).
+        '<div class="selectable">' + val.replace(/</g, '&lt;') + '</div>' +
       '</div>';
     }
   });
@@ -566,11 +588,11 @@ function showExamenDetail(idx){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
-    '<h3 style="margin-bottom:14px">' + _examenNoun() + '</h3>' +
-    '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + body + '</div>' +
-    '<button class="btn" onclick="showExamenHistory()" style="margin-bottom:8px">Back to list</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Close</button>' +
+    '<h3>' + _examenNoun() + '</h3>' +
+    '<p class="modal-sub">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</p>' +
+    '<div class="card" style="max-height:60vh;overflow-y:auto">' + body + '</div>' +
+    '<button class="btn" onclick="showExamenHistory()">Back to list</button>' +
+    '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -833,30 +855,37 @@ function renderTGT(){
   const t=getTGT()||{};
   const few=(typeof getYourFew==='function')?getYourFew().filter(function(p){return p&&!yourFewMuted(p);}):[];
   const person=(t.person||'').trim();
+  // Each field is a row of a grouped list — the three were separate grey-bordered boxes with a 15px
+  // paragraph in the faintest grey above them and an 11px tint capital label between the second and
+  // third. The paragraph is the list's footnote; the label is the header of the one row it names.
   const field=function(id,ph,val){
-    return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
+    return '<label class="ios-row"><input type="text" id="'+id+'" class="list-field" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
       /* onblur alone — onchange also fires on blur for a text input, so both meant a double save. */
-      'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
-      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:var(--t-base);background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx)">';
+      'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)"></label>';
   };
   const told = !!t.told;
   el.innerHTML =
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:10px">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
-    field('tgt-a','Something that went right…', t.a)+
-    field('tgt-b','Something else…', t.b)+
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin:10px 0 5px">And one that was a person</div>'+
-    field('tgt-c','Someone who made today better…', t.c)+
+    '<div class="ios-list">'+
+      field('tgt-a','Something that went right…', t.a)+
+      field('tgt-b','Something else…', t.b)+
+    '</div>'+
+    '<div class="ios-footnote">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
+    '<div class="ios-header tgt-header">And one that was a person</div>'+
+    '<div class="ios-list">'+
+      field('tgt-c','Someone who made today better…', t.c)+
+    '</div>'+
+    // The people you carry, as the capsules every other pick-one in the app uses.
     (few.length
-      ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px">'+
+      ? '<div class="tgt-people">'+
           few.slice(0,5).map(function(p){ const on=(person===p.name);
-            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:var(--t-cap);background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
+            return '<button class="qb'+(on?' on':'')+'" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')">'+_escFew(p.name)+'</button>'; }).join('')+
         '</div>'
       : '')+
     ((t.c && t.c.trim())
       ? (told
-          ? '<div style="font-size:var(--t-sm);color:var(--gr);line-height:1.5;margin-top:4px">✓ You told them. That’s the part that actually lands.</div>'
-          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);color:var(--go);font-size:var(--t-sm)">Tell them →</button>'+
-            '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:6px">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
+          ? '<div class="vice-pledge">'+svgIcon('check', 17)+'<span>You told them. That’s the part that actually lands.</span></div>'
+          : '<button class="btn" onclick="_tgtTellThem()">Tell them</button>'+
+            '<div class="ios-footnote">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
       : '');
 }
 function _tgtPickPerson(name){ saveTGT({person:String(name||'').slice(0,40)}); try{ renderTGT(); }catch(_){} }
@@ -871,10 +900,12 @@ function _tgtTellThem(){
     : ('Just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.');
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
-    '<textarea id="tgt-msg" style="min-height:92px;font-size:var(--t-base);line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
+  // The sheet title role, left like every sheet — it was a centred 22px display headline at weight
+  // 700, a fake bold, over a paragraph in the tertiary grey.
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<h3>Send it as it is.</h3>'+
+    '<p class="modal-sub">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</p>'+
+    '<textarea id="tgt-msg" style="min-height:92px;line-height:1.45;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_tgtCopyAndDone()">Copy &amp; mark as told</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not yet</button>'+
   '</div>';
@@ -992,7 +1023,9 @@ function completeEvening(){
       if(typeof showToast==='function') showToast('Reflection saved','One last thing \u2014 your examen closes the day. Scroll up to begin it.');
       if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
     }
-    if(card){ card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
+    // A class, not an inline box-shadow: .card sets box-shadow:none !important, so the inline ring that
+    // was meant to say "here" never drew at all.
+    if(card){ card.classList.add('is-called'); setTimeout(()=>{card.classList.remove('is-called');},2000); }
     return;
   }
   if(done){
@@ -1035,7 +1068,7 @@ function initEveningTab(){
     const ev=[];
     // One icon language: the evidence chips draw svgIcon(), gold so they read as icons on the
     // neutral chip, not as dim text.
-    const _evIc=(n)=>'<span style="color:var(--go)">'+svgIcon(n,14)+'</span> ';
+    const _evIc=(n)=>svgIcon(n,15);
     if(ritualLog('totry_mornings').some(m=>_isToday(m.ts))) ev.push(_evIc('sunrise')+'Set your intention');
     if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push(_evIc('dumbbell')+'Trained');
     const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push(_evIc('utensils')+'Logged '+_meals+' meal'+(_meals>1?'s':''));
@@ -1045,7 +1078,7 @@ function initEveningTab(){
     const _box=document.getElementById('evening-day-evidence');
     const _list=document.getElementById('evening-day-evidence-list');
     if(_box&&_list){
-      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:var(--t-base);color:var(--tx);background:var(--bg3);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
+      if(ev.length){ _list.innerHTML=ev.map(e=>'<span class="evidence-chip">'+e+'</span>').join(''); _box.style.display='block'; }
       else { _box.style.display='none'; }
     }
   }catch(_){}
@@ -1105,7 +1138,9 @@ function initEveningTab(){
   const today=new Date().toLocaleDateString('en-AU');
   const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
   const edt=document.getElementById('examen-done-today');
-  if(edt) edt.style.display = examenToday ? 'block' : 'none';
+  // '' rather than 'block': the confirmation is a flex row (a check beside its line), and an inline
+  // display:block would stack the icon above the words.
+  if(edt) edt.style.display = examenToday ? '' : 'none';
 }
 
 // ── YOUR FEW — the people you carry, and the noticing reach-out ───────────────
@@ -1197,9 +1232,12 @@ function reachOutSuggestion(){
 function renderReachOutCard(){
   const cp=document.getElementById('call-prompt'); if(!cp) return;
   const few=getYourFew();
+  // The card's own roles: its sentence at body size, the reframe as the supporting line (it was italic
+  // in the faintest grey), the days as a footnote (it was 12px), and two rows of two buttons instead of
+  // four hand-sized ones wrapping wherever they happened to.
   if(!few.length){
-    cp.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">Who are you doing this for? Add the people you carry — and the app will help you stay close to them.</div>'+
-      '<button class="btn" style="width:auto;padding:7px 14px;font-size:var(--t-sm)" onclick="openYourFew()">Add someone</button>';
+    cp.innerHTML='<div class="card-body">Who are you doing this for? Add the people you carry — and the app will help you stay close to them.</div>'+
+      '<div class="btn-row"><button class="btn" onclick="openYourFew()">Add someone</button></div>';
     return;
   }
   const s=reachOutSuggestion(); if(!s){ cp.textContent=''; return; }
@@ -1210,46 +1248,59 @@ function renderReachOutCard(){
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
   // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
   const noteLine = (s.person.note && s.person.note.trim())
-    ? '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
+    ? '<div class="reach-note">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
     : '';
   cp.innerHTML =
     noteLine+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:6px">'+line+'</div>'+
-    (s.reframe?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">'+s.reframe+'</div>':'')+
-    (dtxt?'<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em;margin-bottom:10px">'+dtxt+'</div>':'')+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn" style="width:auto;padding:7px 14px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="logReachOutCurrent()">I reached out ✓</button>'+
-      '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="openYourFew()">Your few</button>'+
-      '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="openBlessing()">'+(((typeof faithTradition==='function')&&(faithTradition()==='buddhism'||faithTradition()==='secular'))?'Wish them well':'Pray for them')+'</button>'+
+    '<div class="card-text">'+line+'</div>'+
+    (s.reframe?'<div class="card-body">'+s.reframe+'</div>':'')+
+    (dtxt?'<div class="card-foot">'+dtxt+'</div>':'')+
+    '<div class="btn-row">'+
+      '<button class="btn" onclick="logReachOutCurrent()">'+svgIcon('check', 16)+' I reached out</button>'+
+      '<button class="btn" onclick="openBlessing()">'+(((typeof faithTradition==='function')&&(faithTradition()==='buddhism'||faithTradition()==='secular'))?'Wish them well':'Pray for them')+'</button>'+
+    '</div>'+
+    '<div class="btn-row">'+
+      '<button class="btn quiet" onclick="openYourFew()">Your few</button>'+
       // For someone who has died, or who it isn't safe or possible to contact — carried, never nudged.
-      '<button class="btn quiet" style="width:auto;padding:7px 10px" onclick="muteCurrentReachOut()">Not this one</button>'+
+      '<button class="btn quiet" onclick="muteCurrentReachOut()">Not this one</button>'+
     '</div>';
 }
 function openYourFew(){
   const few=getYourFew();
-  const rows = few.length ? few.map(function(p,i){ return
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">'+
-      '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx)">'+_escFew(p.name)+'</div>'+
-      // The note is the whole point: "she mentioned the surgery — ask how it went". Remembering the
-      // specific thing is what turns a generic nudge into actually knowing someone.
-      '<input type="text" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
-        'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)" '+
-        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:var(--t-base);background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2)">'+
-      (function(){ if(yourFewMuted(p)) return '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
-      '</div>'+
-      '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap);color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
-      '<button class="btn" style="width:auto;padding:5px 10px;font-size:var(--t-cap);color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
-    '</div>'; }).join('') : '<div style="font-size:var(--t-sm);color:var(--tx3);padding:8px 0">No one yet. Add the people you carry.</div>';
+  // THE LIST WAS ALWAYS EMPTY. This read `few.map(function(p,i){ return` with the row's markup starting
+  // on the NEXT line — and a newline after `return` is a complete statement, so every row returned
+  // undefined and join('') turned the lot into an empty string. The sheet that exists to hold the
+  // people you carry showed their names nowhere: no note could be written, nobody could be held
+  // quietly or removed, and the "No one yet" line could not show either, because the array was not
+  // empty. Found by looking at the sheet with two people in it. The expression now opens on the
+  // return's own line.
+  // Each person is a row: their name, the one thing to remember as a field on the row, how long it
+  // has been as its subtitle, and the two actions on its trailing edge. The quiet toggle was an emoji
+  // bell; it is the app's own bell now, struck through when they are held without reminders.
+  const rows = few.length ? few.map(function(p,i){
+    const muted = yourFewMuted(p);
+    const d = muted ? null : daysSinceReachOut(p.name);
+    const status = muted ? 'held quietly · no reminders' : (d==null ? '' : (d===0 ? 'reached out today' : d+'d since you logged one'));
+    return '<div class="ios-row few-row">'+
+      '<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+_escFew(p.name)+'</span>'+
+        // The note is the whole point: "she mentioned the surgery — ask how it went". Remembering the
+        // specific thing is what turns a generic nudge into actually knowing someone.
+        '<input type="text" class="list-field few-note" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
+          'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)">'+
+        (status ? '<span class="ios-row-sub" style="display:block">'+status+'</span>' : '')+
+      '</span>'+
+      '<button class="few-mute'+(muted?' on':'')+'" title="Carry them without reminders" aria-label="'+(muted?'Turn reminders back on for ':'Carry without reminders: ')+_escFew(p.name)+'" aria-pressed="'+(muted?'true':'false')+'" onclick="toggleFewMute('+i+')">'+svgIcon(muted?'belloff':'bell',20)+'</button>'+
+      '<button class="btn row-btn" onclick="_yfRemove('+i+')">Remove</button>'+
+    '</div>'; }).join('') : '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-sub" style="display:block">No one yet. Add the people you carry.</span></span></div>';
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='yourfew-modal';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<h3 style="margin-bottom:4px">Your few</h3>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores. Tap 🔕 for someone you want to carry <em>without</em> reminders — someone you’ve lost, or who it isn’t right to contact. They stay part of your why.</div>'+
-    '<div id="yf-list">'+rows+'</div>'+
-    '<div style="display:flex;gap:8px;margin-top:14px">'+
-      '<input type="text" id="yf-name" placeholder="Name" maxlength="40" style="flex:1">'+
-      '<button class="btn primary" style="width:auto;padding:8px 16px" onclick="_yfAdd()">Add</button>'+
+    '<h3>Your few</h3>'+
+    '<p class="modal-sub">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores. Tap '+svgIcon('bell',15)+' for someone you want to carry <em>without</em> reminders — someone you’ve lost, or who it isn’t right to contact. They stay part of your why.</p>'+
+    '<div id="yf-list" class="ios-list">'+rows+'</div>'+
+    '<div class="ios-list few-add">'+
+      '<div class="ios-row"><input type="text" id="yf-name" class="list-field" placeholder="Name" maxlength="40"><button class="btn row-btn" onclick="_yfAdd()">Add</button></div>'+
     '</div>'+
-    '<button class="btn quiet" style="margin-top:12px" onclick="closeYourFew()">Done</button>'+
+    '<button class="btn quiet" style="margin-top:8px" onclick="closeYourFew()">Done</button>'+
   '</div>';
   m.addEventListener('click', function(e){ if(e.target===m) closeYourFew(); });
   // Every close path must go through closeYourFew, or the card behind it goes stale (still saying
@@ -1296,7 +1347,9 @@ function initReviewTab(){
     try{ return w && w.ts && new Date(w.ts).getTime() >= _weekAgo; }catch(_){ return false; }
   }).length;
   const ws=document.getElementById('week-stats');
-  if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habits this week'}].forEach(s=>{const m=document.createElement('div');m.className='week-stat';m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';ws.appendChild(m);});}
+  // Stat tiles, label over figure. The third label was "Habits this week" under a header that already
+  // says this week, and in a third of a phone's width it wrapped onto two lines of capitals.
+  if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habits'}].forEach(s=>{const m=document.createElement('div');m.className='ios-stat';m.innerHTML='<div class="ios-stat-label">'+s.lbl+'</div><div class="ios-stat-value">'+s.num+'</div>';ws.appendChild(m);});}
   renderReviewHistory();
 }
 function saveWeeklyReview(){
@@ -1317,8 +1370,11 @@ function saveWeeklyReview(){
 function renderReviewHistory(){
   const reviews=ls('totry_reviews')||[];const hist=document.getElementById('review-history');if(!hist)return;
   hist.innerHTML='';if(!reviews.length)return;
-  hist.innerHTML='<div class="lbl" style="margin-top:8px">Past reviews</div>';
-  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='review-item';item.innerHTML='<div class="ri-week">'+_escFew(r.week)+' \u2014 Day '+_escFew(r.day)+'</div><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">'+_escFew(r.proud)+'</div><div style="font-size:var(--t-sm);color:var(--tx3)">Focus: '+_escFew(r.focus)+'</div>';hist.appendChild(item);});
+  // A list: the week as the row's footnote-sized label was 11px tint; each review is a row whose title
+  // is what they were proud of, and whose subtitle holds the week and the focus.
+  hist.innerHTML='<div class="lbl">Past reviews</div><div class="ios-list review-list"></div>';
+  const group=hist.querySelector('.review-list');
+  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='ios-row review-item';item.innerHTML='<span class="ios-row-body"><span class="ios-row-title" style="display:block">'+(_escFew(r.proud)||'\u2014')+'</span><span class="ios-row-sub" style="display:block">'+_escFew(r.week)+' \u2014 Day '+_escFew(r.day)+'</span>'+(r.focus?'<span class="ios-row-sub" style="display:block">Focus: '+_escFew(r.focus)+'</span>':'')+'</span>';group.appendChild(item);});
 }
 
 // ── MILESTONES + TOAST ────────────────────────────────────────

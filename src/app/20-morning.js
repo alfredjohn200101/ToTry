@@ -74,12 +74,17 @@ function morningStep(n){
   const dots = pane.querySelector('.mstep-dots');
   if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _mStep));
   const lbl = pane.querySelector('.mstep-label');
-  if(lbl) lbl.textContent = _MORNING_STEPS[_mStep].label;
+  // The step's name is the step's title \u2014 except on the first, where the ritual's own large title
+  // ("Set your intention") already stands. Two titles stacked there would be one too many.
+  if(lbl){ lbl.textContent = _MORNING_STEPS[_mStep].label; lbl.hidden = (_mStep === 0); }
   const nextBtn = pane.querySelector('.mstep-next');
-  if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Next \u2192';
+  if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Continue';
   if(nextBtn) nextBtn.style.display = (_mStep === _MORNING_STEPS.length - 1) ? 'none' : '';
   const backBtn = pane.querySelector('.mstep-back');
   if(backBtn) backBtn.style.display = (_mStep === 0) ? 'none' : '';
+  // With no Back beside it, the one quiet button left under Continue centres rather than hanging right.
+  const footEl = pane.querySelector('.mstep-foot');
+  if(footEl) footEl.classList.toggle('at-first', _mStep === 0);
   try{ pane.scrollTop = 0; window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -111,7 +116,7 @@ function renderMorningFlow(){
     pane.classList.remove('stepped');
     if(!pane.querySelector('.mstep-restep')){
       const rb = document.createElement('button');
-      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.className = 'btn quiet mstep-restep'; rb.type = 'button';
       rb.textContent = 'Step through it instead';
       rb.onclick = function(){ ls('totry_morning_flow',''); renderMorningFlow(); if(typeof haptic==='function') haptic('tap'); };
       const after = pane.querySelector('.a11y-only') || pane.querySelector('.hub-back-bar');
@@ -143,9 +148,12 @@ function renderMorningFlow(){
 
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
-                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
-                     '<button class="mstep-all" type="button">Show the whole morning</button>';
+    // One filled Continue, and under it Back and the whole morning as plain tint buttons on one line.
+    // Back was a 46px bordered box around a "\u2039" character; the escape hatch an underlined 13px link in
+    // the faintest grey on the screen.
+    foot.innerHTML = '<button class="btn primary mstep-next" type="button">Continue</button>' +
+                     '<button class="btn quiet mstep-back" type="button" aria-label="Back a step">' + svgIcon('chevronleft', 20) + 'Back</button>' +
+                     '<button class="btn quiet mstep-all" type="button">Show the whole morning</button>';
     pane.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => morningStep(_mStep + 1);
     foot.querySelector('.mstep-back').onclick = () => morningStep(_mStep - 1);
@@ -253,12 +261,14 @@ function logMorningSleep(v){
   try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('light');
-  // Reflect selection in the UI.
+  // Reflect selection in the UI. THIS NEVER PAINTED: it set inline background and colour, and the
+  // capsule rule every .sleep-opt wears sets both with !important, which beats an inline style that
+  // has none. So the one control on the step answered a tap with a toast and left all four faces
+  // looking untouched. .on is the selected state that rule already draws.
   document.querySelectorAll('#morning-sleep-opts .sleep-opt').forEach(b => {
     const on = parseInt(b.getAttribute('data-v'),10) === v;
-    b.style.background = on ? 'var(--go)' : 'var(--bg3)';
-    b.style.color = on ? '#1a1205' : 'var(--tx2)';
-    b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
   const msgs = { 3:'Logged. Be gentle with yourself today \u2014 I\u2019ll factor it in.', 5:'Logged. We\u2019ll work with it.', 7:'Logged \u2014 good. Let\u2019s use it.', 9:'Logged \u2014 well rested. Good day to push.' };
   if(typeof showToast==='function') showToast('Sleep noted', msgs[v]||'Logged.');
@@ -294,7 +304,8 @@ function _restoreMorningSleep(){
     if(c && c.scores && c.scores.sleep!=null){
       document.querySelectorAll('#morning-sleep-opts .sleep-opt').forEach(b => {
         const on = parseInt(b.getAttribute('data-v'),10) === c.scores.sleep;
-        if(on){ b.style.background='var(--go)'; b.style.color='#1a1205'; b.style.borderColor='var(--go)'; }
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       _showMorningReadiness(c.scores.sleep);
     }
