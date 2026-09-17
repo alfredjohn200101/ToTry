@@ -19,7 +19,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const ROOT = path.join(__dirname, '..', 'www');
-const PORT = 8799;
+const PORT = +process.env.PORT || 8799; // PORT=… so parallel worktrees do not collide on one fixed port
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
                '.png': 'image/png', '.svg': 'image/svg+xml' };
 

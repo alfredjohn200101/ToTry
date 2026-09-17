@@ -12,7 +12,7 @@
 // Run with `npm run panels`. Exits non-zero on any finding, so it can gate a commit.
 const http=require('http'), fs=require('fs'), path=require('path');
 const { chromium } = require('playwright');
-const ROOT=path.join(__dirname,'..','www'); const PORT=8802;
+const ROOT=path.join(__dirname,'..','www'); const PORT=+process.env.PORT||8802; // PORT=… lets parallel worktrees each run the gate (they collided with EADDRINUSE)
 const MIME={'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
 const serve=()=>new Promise(res=>{
   const s=http.createServer((rq,rs)=>{
