@@ -2404,8 +2404,9 @@ function toggleChip(el,name){
 }
 function setHasPartner(val){
   hasPartner=val; partnerAnswered=true;
-  document.getElementById('pyes').className='btn'+(val?' primary':'');
-  document.getElementById('pno').className='btn'+(!val?' primary':'');
+  // A segmented control's chosen half, not a second and third .btn.primary beside Continue.
+  document.getElementById('pyes').className='fst'+(val?' active':'');
+  document.getElementById('pno').className='fst'+(!val?' active':'');
 }
 
 function fillIdentity(text){
@@ -2461,10 +2462,10 @@ function selectHevyTier(tier){
   const proBtn = document.getElementById('ob-hevy-pro');
   const freeMsg = document.getElementById('ob-hevy-free-msg');
   const proMsg = document.getElementById('ob-hevy-pro-msg');
-  if(freeBtn) freeBtn.style.background = tier === 'free' ? 'var(--go)' : 'var(--bg2)';
-  if(freeBtn) freeBtn.style.color = tier === 'free' ? '#000' : 'var(--tx2)';
-  if(proBtn) proBtn.style.background = tier === 'pro' ? 'var(--go)' : 'var(--bg2)';
-  if(proBtn) proBtn.style.color = tier === 'pro' ? '#000' : 'var(--tx2)';
+  // The chosen half of a segmented control. This painted BLACK ink onto the tint by hand — and the
+  // .btn rule's !important fill won anyway, so neither Free nor Pro ever looked chosen.
+  if(freeBtn) freeBtn.classList.toggle('active', tier === 'free');
+  if(proBtn) proBtn.classList.toggle('active', tier === 'pro');
   if(freeMsg) freeMsg.style.display = tier === 'free' ? 'block' : 'none';
   if(proMsg) proMsg.style.display = tier === 'pro' ? 'block' : 'none';
   haptic('tap');
@@ -2554,7 +2555,7 @@ function obNextToMoment(){
         msg = document.createElement('div');
         msg.id = 'ob-name-err';
         msg.setAttribute('role','alert');
-        msg.style.cssText = 'font-size:var(--t-sm);color:var(--re);margin-top:6px;line-height:1.5';
+        msg.className = 'ob-field-err';
         el.insertAdjacentElement('afterend', msg);
       }
       msg.textContent = 'What should I call you? First name is plenty.';
@@ -2578,8 +2579,9 @@ function renderObMoment(){
   const first = (ls('totry_name')||'').trim().split(' ')[0];
   const t = document.getElementById('ob-moment-title');
   // First name only, and it goes in via textContent — never innerHTML.
-  if(t) t.textContent = first ? ('Before anything else, '+first+' — how are you right now?')
-                              : 'Before anything else — how are you right now?';
+  // A no-break space holds the dash to the word before it, so a wrapped title never opens a line with "—".
+  if(t) t.textContent = first ? ('Before anything else, '+first+'\u00a0— how are you right now?')
+                              : 'Before anything else\u00a0— how are you right now?';
   const grid = document.getElementById('ob-moment-grid');
   if(!grid || typeof FEELINGS === 'undefined') return;
   grid.innerHTML = '';
@@ -2763,7 +2765,8 @@ function obNext(step){
   // Step 5 -> 6: save vices + partner
   if(step===6){
     obPersistVices();
-    document.getElementById('ob-ready-title').textContent='You\'re ready, '+userName+'.';
+    // The typographic apostrophe the static title already uses — this swapped a straight one in.
+    document.getElementById('ob-ready-title').textContent='You\u2019re ready, '+userName+'.';
     document.getElementById('ob-ready-desc').textContent='Your space is set. Every day you open this is a day you chose to try.';
   }
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
