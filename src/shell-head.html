@@ -579,31 +579,35 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
    nothing at all here. !important on the hide, and no rule on the show, means stepping works AND a
    block the app has deliberately hidden stays hidden when its step comes up. */
 .stepped > [data-mstep]:not(.mstep-on){display:none !important}
-.mstep-nav{display:flex;align-items:center;gap:8px;margin:0 0 16px}
-.mstep-dots{display:flex;gap:5px;flex:1}
-.mstep-dot{width:6px;height:6px;border-radius:50%;background:var(--bd);transition:background .25s,width .25s}
-.mstep-dot.on{background:var(--go);width:18px;border-radius:3px}
-.mstep-label{font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;
-  text-transform:uppercase;color:var(--tx3)}
-.mstep-foot{display:flex;gap:10px;align-items:center;margin:18px 0 6px}
-.mstep-restep{display:block;width:100%;min-height:40px;margin:0 0 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);color:var(--tx2);font-size:var(--t-sm);font-family:var(--font-text);letter-spacing:0.01em;cursor:pointer}
-.mstep-back{flex:none;width:46px;min-height:46px;border-radius:var(--rm);background:none;border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-xl);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-.mstep-all{background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;
-  padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
-.ritual-hero{position:relative;border-radius:22px;overflow:hidden;margin-bottom:18px;min-height:148px;display:flex;box-shadow:var(--e2)}
-.ritual-hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;justify-content:center}
-.ritual-hero-glow{position:absolute;inset:0;z-index:0}
-.ritual-eyebrow{font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px}
-.ritual-title{font-family:var(--font-display);font-size:29px;font-weight:700;color:var(--tx);line-height:1.12;letter-spacing:-0.01em}
-.ritual-line{font-size:var(--t-base);color:var(--tx2);margin-top:8px;line-height:1.55;max-width:290px}
-.ritual-hero-dawn .ritual-hero-glow{background:
-  radial-gradient(120% 100% at 90% 0%, rgba(255,190,120,0.30), transparent 55%),
-  radial-gradient(130% 100% at 0% 100%, rgba(220,150,160,0.22), transparent 50%),
-  linear-gradient(155deg, #241a18 0%, #15100f 100%)}
-.ritual-hero-dusk .ritual-hero-glow{background:
-  radial-gradient(120% 100% at 85% 0%, rgba(225,120,80,0.26), transparent 55%),
-  radial-gradient(130% 100% at 5% 100%, rgba(120,90,170,0.30), transparent 52%),
-  linear-gradient(155deg, #1c1422 0%, #110c15 100%)}
+/* THE STEPPER, as a guided flow on iOS draws one (17 Sep 2026). It was a row of dots beside the step's
+   name in 11px untracked capitals at the tertiary grey; a 46px bordered box holding a "‹" character;
+   and "Show the whole morning" as an underlined 13px link in the tertiary grey — the three smallest,
+   faintest things on the screen doing the navigation. Now: a page control; the step's name as the
+   step's title, in the ritual's own face; ONE filled Continue; and under it the two quiet moves as
+   plain tint buttons on one line — Back on the leading edge, the whole ritual on the trailing one.
+   Step 0 has the ritual's large title, so its step name stays unspoken there (morningStep hides it). */
+.mstep-nav{display:flex;flex-wrap:wrap;align-items:center;margin:0 0 8px}
+.mstep-dots{display:flex;gap:6px;align-items:center;height:16px}
+.mstep-dot{width:7px;height:7px;border-radius:4px;background:var(--bg4);transition:background .25s,width .25s}
+.mstep-dot.on{background:var(--go);width:20px}
+.mstep-label{flex-basis:100%;margin-top:12px;font-family:var(--font-display);font-size:34px;font-weight:500;
+  line-height:1.1;letter-spacing:0;color:var(--tx)}
+.mstep-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:20px 0 0}
+.mstep-foot .mstep-next{flex:0 0 100%;margin:0 0 4px}
+.mstep-foot .mstep-back,.mstep-foot .mstep-all{flex:none;width:auto;padding:0 2px !important}
+.mstep-foot .mstep-back{gap:2px;margin-left:-4px}
+.mstep-foot .mstep-back .ic{width:20px;height:20px;stroke-width:2.2}
+.mstep-foot .mstep-all{margin-left:auto}
+.mstep-foot.at-first .mstep-all{margin-right:auto}
+.mstep-restep{margin:0 0 8px}
+/* The ritual's large title, on the grouped background like Today's greeting. The glow panel behind it
+   is gone from the markup; .ritual-hero-glow stays declared only so nothing that still names it breaks. */
+.ritual-hero{margin:0 0 22px}
+.ritual-hero-inner{display:block}
+.ritual-hero-glow{display:none}
+.ritual-eyebrow{margin:0 0 6px}
+.ritual-title{font-family:var(--font-display);font-size:40px;font-weight:500;color:var(--tx);line-height:1.06;letter-spacing:0}
+.ritual-line{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin-top:8px}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
 .sdot.on{background:var(--gr)}
 .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -1552,6 +1556,8 @@ body{ -webkit-user-select:none; user-select:none; }
    prose and on essentially nothing else, so it identifies the text far more reliably than a class
    somebody has to remember; the attribute-selector idiom is the one used for scroll areas below. */
 input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output,
+/* A journal entry resurfaced "on this day" is their own words too; its pre-wrap moved into a class. */
+.otd-quote,
 /* .msg and .comp-msg-them declare white-space:pre-wrap in a CLASS, not inline, so the attribute
    selector below could not see them — which left the two surfaces a person most wants to copy from
    still unselectable: everything the coach says, and everything the Companion says. Matching by
@@ -3082,6 +3088,211 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 .letter-arrived{border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd);padding:14px 0 16px;margin-bottom:14px}
 .letter-arrived .card-say{white-space:pre-wrap;margin:6px 0 12px}
 
+/* ═══ THE RITUALS — Morning and Evening ══════════════════════════════════════════════════════════
+   Two stepped flows, one grammar. A survey of what they RENDERED before this found fourteen elements
+   at 11px (caps tags in tint, green, purple and grey, a 11px word under each day-rating face), four
+   centred italics, three different bordered tint panels, a sleep control whose words were clipped to
+   "R…" and whose selection never painted, a disclosure whose caps summary split into two columns,
+   and two filled buttons on four of the twelve steps. Everything below is a role the Today, Fight,
+   Grow, Train and Nourish rebuilds already named, applied here — the few that are new are said so. */
+
+/* The large title. The Liquid Glass block sets .ritual-title to 34, the size it had inside a panel;
+   out of the panel it is the screen's large title, and a large title here is 40 (.page-title). */
+.ritual-hero .ritual-title{font-size:40px;line-height:1.06}
+.ritual-intro{margin:-10px 0 22px}
+/* Destinations inside a step keep the gap a section has, less the header they do not carry. */
+.ritual-rows{margin-bottom:22px}
+.ritual-card{margin-bottom:22px}
+.ritual-card .card-say:last-child,.ritual-card .card-body:last-child,.ritual-card .card-text:last-child{margin-bottom:0}
+.ritual-card>.eyebrow{margin-bottom:6px !important}
+
+/* NEW: body text inside a card. docs/DESIGN.md's Body role is 17 regular in the label colour; .card-body
+   is the 15 secondary sentence that SUPPORTS something, and "your day ahead" is not supporting anything
+   — it is the whole card. */
+.card-text{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx)}
+
+/* Affirmation and identity: one card, left, upright, a hairline between the two thoughts. */
+.affirm-card{text-align:left}
+.affirm-becoming{border-top:.5px solid var(--bd);margin-top:14px;padding-top:12px}
+.affirm-identity{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2)}
+.affirm-identity em{font-style:normal;font-weight:600;color:var(--tx)}
+.affirm-identity .affirm-set{color:var(--go)}
+.affirm-becoming .card-foot{margin-top:6px}
+
+/* NEW: A FACE SCALE — the sleep answer and the day rating are one control. A face over its word, on
+   an opaque tile, the choice filled with the tint. The capsules they were at 15px were too narrow to
+   hold "Rough" beside its face on a phone. */
+.face-scale{display:flex;gap:8px}
+.face-scale .sleep-opt,.face-scale .dr-btn{flex:1 1 0;min-width:0;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:9px 2px 8px !important;border-radius:12px !important;background:var(--bg2) !important;color:var(--tx) !important;
+  font-size:26px !important;line-height:1.05 !important}
+.face-scale .sleep-opt.on,.face-scale .dr-btn.on{background:var(--go) !important;color:var(--on-tint) !important}
+.face-l{font-family:var(--font-text);font-size:13px;font-weight:500;line-height:1.2;letter-spacing:-.006em;color:var(--tx2)}
+.face-scale .on .face-l{color:var(--on-tint)}
+.day-rate-row{margin-bottom:0}
+#morning-readiness{padding-top:10px}
+
+/* The fields a person writes in. Their height and gap were written inline at all five. */
+.ritual-field{display:block;height:84px;resize:none;margin:0 0 22px}
+
+/* The honest question: the app asking it, in its own voice, above the place to answer. */
+.see-prompt .see-q{margin-bottom:14px}
+.see-prompt .ritual-field{height:76px;margin:0}
+
+/* What they actually did today, as capsules that carry an icon rather than an emoji. */
+.evidence-list{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.evidence-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:var(--fill2);
+  font-size:15px;line-height:1.3;letter-spacing:-.016em;color:var(--tx);white-space:nowrap}
+.evidence-chip .ic{color:var(--go);flex:none}
+
+/* Habits ticked in the evening: a list, with the circle Reminders uses for "done". */
+.ritual-ticks .ios-row{min-height:48px}
+.ritual-ticks .ios-row+.ios-row::before{left:52px}
+.tick{flex:none;width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--tx3);display:flex;align-items:center;justify-content:center;color:var(--on-tint)}
+.tick .ic{width:14px;height:14px;stroke-width:3;opacity:0}
+.ios-row[aria-checked="true"] .tick,.tick.is-on{background:var(--gr);box-shadow:none}
+.ios-row[aria-checked="true"] .tick .ic,.tick.is-on .ic{opacity:1}
+/* The morning pledge borrows the Fight card's row; kept, it is a statement rather than a control. */
+.vice-inrow .tick{margin-left:1px}
+.vice-inrow.pledge-kept{cursor:default}
+.vice-inrow.pledge-kept:active{opacity:1}
+#morning-pledge-body .card-foot{margin-top:10px}
+#morning-pledge-body .eyebrow+.vice-inrow{border-top:0}
+.ritual-ticks .ios-row-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ritual-ticks .card{margin:0}
+
+/* NEW: a text field that IS a row. .row-field is the value on a row's trailing edge; this is the other
+   shape, a whole row of free text, as Contacts draws "add phone". Same specificity as the base field
+   rule, and after it, for the reason .row-field gives. */
+input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
+  flex:1;min-width:0;width:auto;margin:0;padding:0 !important;background:transparent !important;border-radius:0 !important}
+.list-field:focus{box-shadow:none !important}
+.prio-n{flex:none;width:12px;font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums}
+
+/* Prayer: an opaque surface, a reading face upright at reading size, its title a real section label. */
+.prayer-box{background:var(--bg2);border:0;border-radius:var(--r);padding:16px;margin:0 0 22px}
+#morning-prayer-display .prayer-box{margin-bottom:0}
+.prayer-box .prayer-title{letter-spacing:.045em !important;margin-bottom:8px}
+.prayer-box .prayer-title:empty{display:none}
+.prayer-text{font-size:17px;line-height:1.55;color:var(--tx);font-style:normal}
+.prayer-opts .prayer-opt{color:var(--go);gap:8px}
+.prayer-opts .prayer-opt .ic{flex:none;width:18px;height:18px}
+#morning-prayer-display{margin-top:22px}
+#morning-prayer-display .btn{margin-top:12px}
+#morning-complete-direct{margin-top:22px}
+
+/* The day's verse, as Today draws it. */
+.ritual-verse{text-align:left}
+.ritual-verse .rv-text{font-size:17px;line-height:1.45;font-style:normal;color:var(--tx);margin:0 0 6px}
+.ritual-verse .rv-ref{font-size:13px;letter-spacing:-.006em;color:var(--tx2)}
+.ritual-verse .verse-tools{display:flex;gap:8px;margin-top:14px}
+
+/* How are you arriving: a card title with its Skip where Settings puts "Edit", and thirty choices as
+   fill tiles rather than bordered boxes. 38pt tall — ten cannot be 44 wide on a phone, and taller only
+   made the rows read as a form. */
+.checkin-strip .ci-header{align-items:baseline;margin-bottom:12px}
+.checkin-strip .card-hd{margin:0}
+.checkin-strip .ci-skip{flex:none;margin:-12px -8px -12px 0;padding:12px 8px;color:var(--go);font-size:15px;letter-spacing:-.016em}
+.checkin-strip .ci-row-v2{margin-bottom:12px}
+.ci-label-row .ci-icon{width:22px;display:flex;align-items:center;color:var(--tx2)}
+.ci-label-row .ci-label{font-size:15px;letter-spacing:-.016em;color:var(--tx)}
+.ci-label-row .ci-val{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
+.ci-dot{height:38px;margin:0;border:0;border-radius:8px;background:var(--fill2);color:var(--tx2);font-size:15px;font-variant-numeric:tabular-nums}
+.ci-dot:hover{color:var(--tx2)}
+.ci-dot.selected{background:var(--go);color:var(--on-tint);font-weight:600}
+.ci-dot.below-selected{background:var(--go-bg);color:var(--go);opacity:1}
+.checkin-strip .ci-save{margin-top:4px;padding:11px 16px}
+
+/* The end of a ritual: a one-line confirmation, centred like an empty state, in the ritual's face. */
+.ritual-done{text-align:center;padding:32px 8px 4px}
+.ritual-done-title{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-bottom:10px}
+.ritual-done-line{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx2);max-width:320px;margin:0 auto}
+.ritual-done .btn{margin-top:22px}
+/* The name, signed in its own face and gold — the one place the ritual says it. */
+.ritual-brand{font-family:var(--font-brand);font-style:italic;font-size:1.12em;color:var(--brand)}
+
+/* The examen card and the evening's reach-out, from the card roles. */
+#examen-card{margin-bottom:16px}
+#examen-card .card-body{margin-bottom:12px}
+/* Asked to look here by completeEvening(). A class because .card's box-shadow is !important. */
+#examen-card.is-called{box-shadow:0 0 0 2px var(--go) !important}
+.examen-past .ios-row-sub{display:-webkit-box !important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#examen-card .btn.quiet{margin:2px 0 -8px}
+.examen-done{margin:8px 0 0}
+.reach-prayer-hd{margin-top:16px !important;padding-top:14px;border-top:.5px solid var(--bd)}
+.reach-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--go);margin-bottom:6px}
+#call-prompt .card-body{margin:8px 0 0}
+#call-prompt .btn-row{margin-top:14px}
+#call-prompt .btn-row+.btn-row{margin-top:0}
+#shared-prayer{color:var(--tx2)}
+.tgt-block .tgt-header{margin-top:18px}
+.tgt-people{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tgt-block .btn,.tgt-block .vice-pledge{margin-top:12px}
+/* Your few: a person is a row with their note as a field on it and two trailing controls. */
+.few-row{align-items:flex-start;gap:8px}
+.few-row .ios-row-body{padding-top:1px}
+.few-row .few-note{display:block;width:100%;margin:2px 0 0}
+.few-mute{flex:none;width:44px;height:44px;margin:-4px 0 -4px;padding:0;border:0;background:none;color:var(--go);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.few-mute.on{color:var(--tx2)}
+.few-mute:active{opacity:.45}
+.few-row .row-btn{margin-top:2px}
+.few-add{margin-top:12px}
+.modal-sub .ic{vertical-align:-2px;color:var(--go)}
+/* The pledge's confirmation sheet, opened from the morning's "Set the day". */
+.pledge-said-ic{color:var(--go);margin:4px 0 8px}
+.pledge-said-n{margin:-6px 0 18px}
+#on-this-day .btn{margin-top:8px}
+#on-this-day .btn.quiet{margin-top:0}
+
+/* A sheet's step progress for the examen: five segments, the tint up to where you are. */
+.sheet-steps{display:flex;gap:4px;margin:0 0 14px}
+.sheet-steps>span{flex:1;height:4px;border-radius:2px;background:var(--bg4)}
+.sheet-steps>span.on{background:var(--go)}
+.examen-q{margin-top:-8px}
+.examen-field{margin:4px 0 14px}
+.examen-quote{font-family:var(--font-display);font-size:26px;font-weight:500;line-height:1.2;color:var(--tx);margin:6px 0 8px}
+.examen-attr{font-size:13px;color:var(--tx2);margin-bottom:18px}
+.examen-entry+.examen-entry{margin-top:16px}
+/* A person's own words read back to them: body size, their line breaks kept, and selectable (.selectable
+   is in the user-select exemption) so they can copy what they wrote. */
+.examen-entry .selectable,.je-sheet-body .selectable{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx);white-space:pre-wrap}
+.je-sheet-body .selectable{margin-bottom:14px}
+
+/* ── Reflect's other three panels: Journal, Goals, Weekly ─────────────────────────────────────── */
+/* A journal entry: an opaque card, the mood or the ritual's icon beside a footnote date, the words at
+   body size, and one footnote line of facts. */
+.j-entry{background:var(--bg2);border:0;border-radius:12px;padding:12px 16px 13px;margin-bottom:10px;cursor:pointer}
+.j-entry:active{background:var(--bg4)}
+.je-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.j-entry .je-mood{font-size:20px;line-height:1;margin:0;display:flex;align-items:center;color:var(--go)}
+.j-entry .je-mood .ic{width:18px;height:18px}
+.j-entry .je-date{font-family:var(--font-text);font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin:0}
+.j-entry .je-prev{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx);-webkit-line-clamp:3}
+.je-meta{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:6px}
+.je-meta .good{color:var(--gr)}
+.je-sheet-mood{font-size:34px;line-height:1;margin:6px 0 12px;color:var(--go)}
+.je-sheet-mood:empty,.modal>.eyebrow:empty{display:none}
+.je-q{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin:0 0 2px}
+#journal-list .ios-empty+.ios-footnote{padding-top:0}
+
+/* Goals: rows you tap, their text the row's subtitle, which may run to a few lines. */
+.goal-list .ios-row-sub{white-space:normal}
+.goals-pace .ios-stat-value{font-size:22px}
+/* The win field is a row carrying its own verb. */
+.win-entry{padding-top:7px;padding-bottom:7px}
+.wins-log .ios-list{margin-top:12px}
+.wins-log .win-item{border-bottom:0;align-items:flex-start}
+.wins-log .win-icon{flex:none;display:flex;color:var(--go);margin-top:2px}
+.wins-log .ios-row-title{white-space:normal;line-height:1.35}
+.goals-moved{margin-top:22px}
+
+/* Weekly: the conscience questions as a card of hairline-separated lines, at body size in the label ink. */
+.conscience-card .conscience-q{padding:11px 0;border-bottom:.5px solid var(--bd);font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx)}
+.conscience-card .conscience-q:first-child{padding-top:0}
+.conscience-card .conscience-q:last-child{border-bottom:0;padding-bottom:0}
+.review-list .ios-row-title{white-space:normal}
+#reflect-panel-review>.btn.primary{margin-top:0}
+
 </style>
 </head>
 <body>
@@ -4091,66 +4302,74 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-morning" class="tab">
   <!-- ════ MORNING — set the day ════ A dawn-lit opening. Before the day pulls at him, the man
-       chooses who he'll be in it. Intention as armor. Quiet, unhurried, sacred — not a checklist. -->
+       chooses who he'll be in it. Intention as armor. Quiet, unhurried, sacred — not a checklist.
+       The title came OUT OF ITS BOX (17 Sep 2026). It was a 22px-radius panel with a drop shadow and
+       the ritual's name at 29px weight 700 — a fake bold on a face with one roman weight — sitting in
+       a raised rectangle that in dark read as a black box on black. It is the ritual's large title
+       now, on the grouped background, the way Today's greeting is: eyebrow, title, one line. -->
   <div class="ritual-hero ritual-hero-dawn">
-    <div class="ritual-hero-glow"></div>
     <div class="ritual-hero-inner">
       <div class="ritual-eyebrow" id="morning-eyebrow">A new day</div>
       <div class="ritual-title" id="morning-greeting">Set your intention</div>
       <div class="ritual-line">Before the world starts pulling, choose who you’ll be in it.</div>
     </div>
   </div>
-  <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there’s no wrong way.</p>
-  <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
-  <div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
-    <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--go),var(--go-bd));flex-shrink:0"></div>
-    <div style="flex:1">
-      <div style="font-size:var(--t-md);color:var(--tx)">Begin with a breath</div>
-      <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">One minute of stillness to ground the day before it begins.</div>
+  <p class="page-intro ritual-intro" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there’s no wrong way.</p>
+  <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware.
+       And the morning light anchor: the cheapest circadian lever there is — daylight in the eyes early
+       shifts the whole clock, costs nothing and needs no device. Two destinations, so one inset list:
+       they were two hand-painted cards, each with a gradient orb for an icon and a text "›" chevron. -->
+  <div class="ios-section ritual-rows">
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
+        <span class="ios-row-icon tone-teal"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Begin with a breath</span>
+          <span class="ios-row-sub" style="display:block">One minute of stillness to ground the day before it begins.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="morning-light-card" onclick="openMorningLight()">
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Get light in your eyes</span>
+          <span class="ios-row-sub" style="display:block">Outside, no sunglasses, a few minutes. It sets tonight&rsquo;s sleep more than anything you do at bedtime.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
-    <div style="color:var(--tx3);font-size:var(--t-hd)">&rsaquo;</div>
   </div>
-  <!-- TIER 1.1b — the morning light anchor. The cheapest circadian lever there is: daylight in the eyes
-       early shifts the whole clock, and it costs nothing and needs no device. Sits in the morning ritual
-       because that is the surface a person already opens; it is not a notification and does not nag. -->
-  <div class="card" id="morning-light-card" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openMorningLight()">
-    <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,214,140,0.95),rgba(255,180,90,0.20));flex-shrink:0"></div>
-    <div style="flex:1">
-      <div style="font-size:var(--t-md);color:var(--tx)">Get light in your eyes</div>
-      <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">Outside, no sunglasses, a few minutes. It sets tonight&rsquo;s sleep more than anything you do at bedtime.</div>
-    </div>
-    <div style="color:var(--tx3);font-size:var(--t-hd)">&rsaquo;</div>
+  <!-- Adaptive yesterday-response card (shown when there's something to say). A tint-filled panel with
+       an 11px caps tag and an italic New York headline; the app speaking is .card-say, upright. -->
+  <div class="card ritual-card" id="morning-adaptive-card" style="display:none">
+    <div class="eyebrow" id="morning-adaptive-tag">From yesterday</div>
+    <div class="card-say" id="morning-adaptive-headline"></div>
+    <div class="card-body" id="morning-adaptive-body"></div>
   </div>
-  <!-- Adaptive yesterday-response card (shown when there's something to say) -->
-  <div class="card" id="morning-adaptive-card" style="display:none;background:var(--go-bg);border-color:var(--go-bd)">
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:5px" id="morning-adaptive-tag">From yesterday</div>
-    <div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px" id="morning-adaptive-headline"></div>
-    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6" id="morning-adaptive-body"></div>
-  </div>
-  <!-- Affirmation -->
-  <!-- Affirmation + today's identity, merged into one card (was two stacked boxes saying the same idea) -->
-  <div class="affirm-card" id="morning-affirm-card">
-    <div class="affirm-text" id="morning-affirm-text">Loading your affirmation...</div>
-    <div style="border-top:1px solid var(--gr-bd);margin-top:12px;padding-top:12px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--gr);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:5px">Today, I am becoming</div>
-      <div style="font-size:var(--t-md);font-weight:500;color:var(--tx);line-height:1.5" id="morning-focus-identity">Loading your identity...</div>
-      <div style="font-size:var(--t-sm);color:var(--tx2);margin-top:6px;line-height:1.5" id="morning-focus-action">One step closer.</div>
+  <!-- Affirmation + today's identity, merged into one card (was two stacked boxes saying the same idea).
+       It was centred, italic, on a tint fill with a green 11px caps label — a card that also had
+       left-aligned content under it. Left, upright, one eyebrow, the identity at body size. -->
+  <div class="card ritual-card affirm-card" id="morning-affirm-card">
+    <div class="card-say affirm-text" id="morning-affirm-text">Loading your affirmation...</div>
+    <div class="affirm-becoming">
+      <div class="eyebrow">Today, I am becoming</div>
+      <div class="affirm-identity" id="morning-focus-identity">Loading your identity...</div>
+      <div class="card-foot" id="morning-focus-action">One step closer.</div>
     </div>
   </div>
   <!-- Sleep check (one tap) — feeds readiness, the coach, and the urge companion. Works for
-       EVERYONE without a wearable; if a wearable is connected later it can prefill this. -->
-  <div class="card" id="morning-sleep-card" style="padding:12px 14px">
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">How did you sleep?</div>
-    <div style="display:flex;gap:6px" id="morning-sleep-opts">
-      <button class="sleep-opt" data-v="3" onclick="logMorningSleep(3)" style="flex:1;padding:10px 4px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😴 Rough</button>
-      <button class="sleep-opt" data-v="5" onclick="logMorningSleep(5)" style="flex:1;padding:10px 4px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😐 Okay</button>
-      <button class="sleep-opt" data-v="7" onclick="logMorningSleep(7)" style="flex:1;padding:10px 4px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🙂 Good</button>
-      <button class="sleep-opt" data-v="9" onclick="logMorningSleep(9)" style="flex:1;padding:10px 4px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😌 Great</button>
+       EVERYONE without a wearable; if a wearable is connected later it can prefill this.
+       The four choices were capsules too narrow for their own words — "😴 R…", "😐 O…" — and the one
+       picked was painted by inline styles that the capsule rule's !important quietly overrode, so
+       choosing one changed nothing on screen. Face over word, and the choice is a class now. -->
+  <div class="ios-section ritual-block" id="morning-sleep-card">
+    <div class="ios-header">How did you sleep?</div>
+    <div class="face-scale" id="morning-sleep-opts">
+      <button class="sleep-opt" data-v="3" onclick="logMorningSleep(3)" aria-pressed="false">😴<span class="face-l">Rough</span></button>
+      <button class="sleep-opt" data-v="5" onclick="logMorningSleep(5)" aria-pressed="false">😐<span class="face-l">Okay</span></button>
+      <button class="sleep-opt" data-v="7" onclick="logMorningSleep(7)" aria-pressed="false">🙂<span class="face-l">Good</span></button>
+      <button class="sleep-opt" data-v="9" onclick="logMorningSleep(9)" aria-pressed="false">😌<span class="face-l">Great</span></button>
     </div>
     <!-- The sleep rating shouldn't vanish into a hidden score: tell him what it means for TODAY —
          how the day will pull, what to aim for. Arms the 11pm man preemptively (readiness thread). -->
-    <div id="morning-readiness" style="display:none;margin-top:11px;padding-top:11px;border-top:1px solid var(--bd)">
-      <div id="morning-readiness-text" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6"></div>
+    <div id="morning-readiness" class="ios-footnote" style="display:none">
+      <div id="morning-readiness-text"></div>
     </div>
   </div>
   <!-- YOUR DAY, BEFORE IT STARTS PULLING — the morning as Alfy designed it: "here's what you have
@@ -4158,39 +4377,43 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
        / don't train too hard." Every ingredient already existed (the calendar, the training history,
        readiness) and the morning never fused them — it only COLLECTED (sleep, gratitude, intention).
        This is the one thing that gives back and changes the day. It stays SILENT rather than invent
-       a pattern it can't actually see. -->
-  <div class="card" id="morning-day-ahead" style="display:none;background:var(--go-bg);border-color:var(--go-bd)">
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Your day, before it starts pulling</div>
-    <div id="morning-day-ahead-text" style="font-size:var(--t-base);color:var(--tx2);line-height:1.65"></div>
+       a pattern it can't actually see. Its caps label was that whole sentence; the label is two words. -->
+  <div class="card ritual-card" id="morning-day-ahead" style="display:none">
+    <div class="eyebrow">Your day ahead</div>
+    <div id="morning-day-ahead-text" class="card-text"></div>
   </div>
   <!-- Active vice fight (secondary, smaller) -->
-  <div class="card" id="morning-vice-card" style="background:var(--bg3);border-color:var(--bd);padding:10px 12px">
+  <div class="card ritual-card" id="morning-vice-card">
       <div id="morning-pledge-body"></div>
       <div style="display:none" id="morning-focus-vice"></div>
   </div>
-  <!-- Daily verse -->
-  <div class="ritual-verse">
+  <!-- Daily verse — the same surface Today gives the day's word: opaque, left, a reading face at
+       reading size, the reference as a footnote. It was a centred italic on a bordered tint panel with
+       two full-width grey slabs under it. -->
+  <div class="card ritual-verse">
     <div class="rv-text" id="morning-verse-text">Loading today’s word...</div>
     <div class="rv-ref" id="morning-verse-ref"></div>
     <div class="verse-tools">
-      <button class="btn" data-speak="morning-verse-text|morning-verse-ref" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen</button>
-      <button class="btn" onclick="shareVerseFrom('morning-verse-text','morning-verse-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Make a card</button>
+      <button class="btn row-btn" data-speak="morning-verse-text|morning-verse-ref" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen</button>
+      <button class="btn row-btn" onclick="shareVerseFrom('morning-verse-text','morning-verse-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Make a card</button>
     </div>
   </div>
   <!-- Today in the Church (compact — taps through to full readings) -->
   <div id="morning-liturgy" style="display:none;margin-bottom:14px"></div>
   <div class="lbl">One thing I am grateful for</div>
-  <textarea id="morning-gratitude" placeholder="What are you genuinely grateful for this morning?" style="height:70px;resize:none;margin-bottom:12px"></textarea>
+  <textarea id="morning-gratitude" class="ritual-field" placeholder="What are you genuinely grateful for this morning?"></textarea>
   <div class="lbl">My intention for today</div>
-  <textarea id="morning-intention" placeholder="What would make today a good day?" style="height:70px;resize:none;margin-bottom:14px"></textarea>
-  <!-- Daily check-in (only shows if not done today) -->
-  <div class="checkin-strip" id="daily-checkin" style="display:none">
+  <textarea id="morning-intention" class="ritual-field" placeholder="What would make today a good day?"></textarea>
+  <!-- Daily check-in (only shows if not done today). Its title was 11px tint capitals, its thirty
+       choices bordered boxes, and its save a second filled button on a step whose one filled button is
+       Continue. A card title, fill capsules, and a grey button. -->
+  <div class="card checkin-strip" id="daily-checkin" style="display:none">
     <div class="ci-header">
-      <div class="ci-title">How are you arriving?</div>
+      <div class="card-hd">How are you arriving?</div>
       <button class="ci-skip" onclick="skipCheckin()">Skip</button>
     </div>
     <div class="ci-row-v2">
-      <div class="ci-label-row"><span class="ci-icon">&#x1f4aa;</span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
+      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
       <div class="ci-dot-row" role="radiogroup" aria-label="Body — 1 (low) to 10 (high)" data-target="physical">
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 1 out of 10" data-val="1" onclick="setCheckin('physical',1)">1</button>
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 2 out of 10" data-val="2" onclick="setCheckin('physical',2)">2</button>
@@ -4205,7 +4428,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
       </div>
     </div>
     <div class="ci-row-v2">
-      <div class="ci-label-row"><span class="ci-icon">&#x1f9e0;</span><span class="ci-label">Heart</span><span class="ci-val" id="cv-emotional">-</span></div>
+      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span class="ci-label">Heart</span><span class="ci-val" id="cv-emotional">-</span></div>
       <div class="ci-dot-row" role="radiogroup" aria-label="Mind — 1 (low) to 10 (high)" data-target="emotional">
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 1 out of 10" data-val="1" onclick="setCheckin('emotional',1)">1</button>
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 2 out of 10" data-val="2" onclick="setCheckin('emotional',2)">2</button>
@@ -4220,7 +4443,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
       </div>
     </div>
     <div class="ci-row-v2">
-      <div class="ci-label-row"><span class="ci-icon">&#x1f54a;&#xfe0f;</span><span class="ci-label">Spirit</span><span class="ci-val" id="cv-spiritual">-</span></div>
+      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span><span class="ci-label">Spirit</span><span class="ci-val" id="cv-spiritual">-</span></div>
       <div class="ci-dot-row" role="radiogroup" aria-label="Spirit — 1 (low) to 10 (high)" data-target="spiritual">
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 1 out of 10" data-val="1" onclick="setCheckin('spiritual',1)">1</button>
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 2 out of 10" data-val="2" onclick="setCheckin('spiritual',2)">2</button>
@@ -4234,29 +4457,31 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 10 out of 10" data-val="10" onclick="setCheckin('spiritual',10)">10</button>
       </div>
     </div>
-    <button class="btn primary ci-save" onclick="saveCheckin()">Save my check-in</button>
+    <button class="btn ci-save" onclick="saveCheckin()">Save my check-in</button>
   </div>
 
 
   <div class="lbl" id="morning-pray-lbl">Finish with prayer</div>
-  <p id="morning-pray-sub" style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Close your morning in prayer. The scripture prayer is written for exactly where you are today.</p>
-  <div class="prayer-opts">
-    <button class="btn" id="morning-pray-quick" onclick="showPrayer('quick')">Quick prayer (2 min)</button>
-    <button class="btn" id="morning-pray-full" onclick="showPrayer('full')">Full morning prayer (5 min)</button>
-    <button class="btn primary" id="morning-pray-adaptive" onclick="showPrayer('scripture')" style="background:var(--go-bg);color:var(--go)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Scripture prayer for today</button>
+  <!-- A choice of three, so a list — the recommended one first. They were three stacked 50pt slabs,
+       one of them a filled button painted back to a tint by an inline style. -->
+  <div class="ios-list prayer-opts">
+    <button type="button" class="ios-row prayer-opt" id="morning-pray-adaptive" onclick="showPrayer('scripture')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Scripture prayer for today</button>
+    <button type="button" class="ios-row prayer-opt" id="morning-pray-quick" onclick="showPrayer('quick')">Quick prayer (2 min)</button>
+    <button type="button" class="ios-row prayer-opt" id="morning-pray-full" onclick="showPrayer('full')">Full morning prayer (5 min)</button>
   </div>
+  <p class="ios-footnote" id="morning-pray-sub">Close your morning in prayer. The scripture prayer is written for exactly where you are today.</p>
   <div id="morning-prayer-display" style="display:none">
     <div class="prayer-box"><div class="prayer-title" id="morning-prayer-title"></div><div class="prayer-text" id="morning-prayer-text"></div></div>
     <button class="btn primary" id="morning-prayed-btn" onclick="completeMorning()">I prayed &#8212; begin my day</button>
   </div>
-  <button class="btn subtle" id="morning-complete-direct" onclick="completeMorning()" style="margin-top:4px">Set my morning without praying now</button>
-  <div id="morning-done" style="display:none;text-align:center;padding:24px 16px">
-    <div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);color:var(--go);margin-bottom:8px">Morning done. &#10024;</div>
+  <button class="btn subtle" id="morning-complete-direct" onclick="completeMorning()">Set my morning without praying now</button>
+  <div id="morning-done" class="ritual-done" style="display:none">
+    <div class="ritual-done-title">Morning done.</div>
     <!-- "Your prayer is heard" was the closing line of the flagship ritual for every tradition,
          including someone who chose none — the app telling a secular person their prayer was heard.
          The intention half is true for everybody; the second sentence is written per tradition. -->
-    <div id="morning-done-line" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6">Your intention is set. Now go live the day.</div>
-    <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
+    <div id="morning-done-line" class="ritual-done-line">Your intention is set. Now go live the day.</div>
+    <button class="btn primary" onclick="go('home')">Back to Today</button>
   </div>
 </div>
 
@@ -5840,9 +6065,9 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
   <!-- EVENING PANEL -->
   <div id="reflect-panel-evening">
     <!-- ════ EVENING — close the day with grace ════ Dusk. Look back honestly, without shame.
-         End the day reconciled. "You showed up. Tomorrow is new." -->
+         End the day reconciled. "You showed up. Tomorrow is new." Out of its box, like the morning:
+         the evening's large title on the grouped background, not a shadowed panel. -->
     <div class="ritual-hero ritual-hero-dusk">
-      <div class="ritual-hero-glow"></div>
       <div class="ritual-hero-inner">
         <div class="ritual-eyebrow" id="evening-eyebrow">The day winds down</div>
         <div class="ritual-title" id="evening-greeting">Close the day with grace</div>
@@ -5851,69 +6076,77 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
     </div>
     <!-- The thread closes: reflect this morning's intention back, so the day is one arc — set it at
          dawn, live it through, lay it down at dusk. Pure integration; only a whole-life home can. -->
-    <div id="evening-intention-recall" style="display:none;background:var(--go-bg);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">This morning you set</div>
-      <div id="evening-intention-text" style="font-family:var(--font-serif);font-size:var(--t-lg);font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px"></div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Did you live it? No score — just honesty. Carry what’s true into tomorrow.</div>
+    <div id="evening-intention-recall" class="card ritual-card" style="display:none">
+      <div class="eyebrow">This morning you set</div>
+      <div id="evening-intention-text" class="card-say"></div>
+      <div class="card-foot">Did you live it? No score — just honesty. Carry what’s true into tomorrow.</div>
     </div>
     <!-- The winning man sees his evidence: the day he ACTUALLY lived, drawn from the whole-life data,
          so looking back is grounded in what he really did — not a blank recall. Grace over shame:
          especially for the man who FEELS the day failed but actually showed up. Only a whole-life home
-         can do this. -->
-    <div id="evening-day-evidence" style="display:none;background:rgba(140,107,182,0.06);border:1px solid rgba(140,107,182,0.28);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">The day you actually lived</div>
-      <div id="evening-day-evidence-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-top:9px">However it felt, this is real. You showed up.</div>
+         can do this. It was a purple-bordered panel with a purple 11px caps label: a colour this card
+         does not mean anything by. -->
+    <div id="evening-day-evidence" class="card ritual-card" style="display:none">
+      <div class="eyebrow">The day you actually lived</div>
+      <div id="evening-day-evidence-list" class="evidence-list"></div>
+      <div class="card-foot">However it felt, this is real. You showed up.</div>
     </div>
     <div class="lbl">How did today go?</div>
-    <div class="day-rate-row">
-      <button class="dr-btn" onclick="setDayRate(this,1)">&#128545;<br><span style="font-size:var(--t-micro)">Rough</span></button>
-      <button class="dr-btn" onclick="setDayRate(this,2)">&#128532;<br><span style="font-size:var(--t-micro)">Hard</span></button>
-      <button class="dr-btn" onclick="setDayRate(this,3)">&#128528;<br><span style="font-size:var(--t-micro)">Okay</span></button>
-      <button class="dr-btn" onclick="setDayRate(this,4)">&#128578;<br><span style="font-size:var(--t-micro)">Good</span></button>
-      <button class="dr-btn" onclick="setDayRate(this,5)">&#128170;<br><span style="font-size:var(--t-micro)">Strong</span></button>
+    <!-- Face over word, the same control as the morning's sleep scale. The words were 11px spans
+         under a <br>, which is the size the owner is pointing at. -->
+    <div class="day-rate-row face-scale">
+      <button class="dr-btn" onclick="setDayRate(this,1)">&#128545;<span class="face-l">Rough</span></button>
+      <button class="dr-btn" onclick="setDayRate(this,2)">&#128532;<span class="face-l">Hard</span></button>
+      <button class="dr-btn" onclick="setDayRate(this,3)">&#128528;<span class="face-l">Okay</span></button>
+      <button class="dr-btn" onclick="setDayRate(this,4)">&#128578;<span class="face-l">Good</span></button>
+      <button class="dr-btn" onclick="setDayRate(this,5)">&#128170;<span class="face-l">Strong</span></button>
     </div>
     <div class="lbl">One win from today</div>
-    <textarea id="evening-win" placeholder="What did you do well today, even if it was small?" style="height:70px;resize:none;margin-bottom:10px"></textarea>
+    <textarea id="evening-win" class="ritual-field" placeholder="What did you do well today, even if it was small?"></textarea>
     <div class="lbl">One thing to release</div>
-    <textarea id="evening-release" placeholder="What do you need to let go of before you sleep?" style="height:70px;resize:none;margin-bottom:12px"></textarea>
-    <div class="see-prompt">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">The honest question</div>
-      <div class="see-q">If the people you love watched today on replay &#8212; your partner, your mum, your future kids &#8212; what would they see?</div>
-      <textarea id="evening-see" placeholder="Be honest with yourself..." style="height:70px;resize:none;margin-bottom:0"></textarea>
+    <textarea id="evening-release" class="ritual-field" placeholder="What do you need to let go of before you sleep?"></textarea>
+    <!-- The heaviest question the app asks. It was a purple-bordered box with an italic purple question
+         and an 11px caps label — decoration on the one place that most needs to read plainly. -->
+    <div class="card ritual-card see-prompt">
+      <div class="eyebrow">The honest question</div>
+      <div class="card-say see-q">If the people you love watched today on replay &#8212; your partner, your mum, your future kids &#8212; what would they see?</div>
+      <textarea id="evening-see" class="ritual-field" placeholder="Be honest with yourself..."></textarea>
     </div>
-    <details id="evening-numbers" style="margin-bottom:14px">
-      <summary style="cursor:pointer;list-style:none;padding:11px 13px;background:var(--bg3);border-radius:var(--rm);font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em">+ Add today’s numbers <span style="color:var(--tx3);text-transform:none;letter-spacing:0">(steps, watch rings — optional)</span></summary>
-    <div style="padding-top:14px">
-    <div class="lbl">Today’s steps</div>
-    <div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px;line-height:1.5">Check your watch or phone and enter the day’s total.</div>
-    <input type="number" id="evening-steps" inputmode="numeric" placeholder="e.g. 8500" style="margin-bottom:14px">
-
-    <div class="lbl">Your Watch today <span style="font-weight:400;color:var(--tx3);font-size:var(--t-cap)">(optional)</span></div>
-    <div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px;line-height:1.5">A glance at your rings. Move counts toward today’s burned calories. Leave blank what you don’t have.</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Move (cal)</div><input type="number" id="evening-move" inputmode="numeric" placeholder="e.g. 540" style="text-align:center;padding:10px"></div>
-      <div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Exercise (min)</div><input type="number" id="evening-exercise" inputmode="numeric" placeholder="e.g. 45" style="text-align:center;padding:10px"></div>
-      <div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Stand (hrs)</div><input type="number" id="evening-stand" inputmode="numeric" placeholder="e.g. 12" style="text-align:center;padding:10px"></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:4px">
-      <div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Total burned (cal) · optional</div><input type="number" id="evening-total-burn" inputmode="numeric" placeholder="active + resting, e.g. 2650" style="text-align:center;padding:10px"></div>
-    </div>
-    </div>
+    <!-- Optional numbers, folded. The summary was "+ ADD TODAY'S NUMBERS" in caps beside a parenthesis
+         that the flex row split into two ragged columns; the fields under it were three boxes with 11px
+         tint caps labels. A disclosure row, and the fields are rows whose label is the row's. -->
+    <details id="evening-numbers" class="tr-disclose">
+      <summary class="ios-row has-icon">
+        <span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="13" cy="4" r="1.7"/><path d="M11 21l1.5-6-2.5-2.5 1-5 3 2 2.5 1.5"/><path d="M10 12.5 7 16l-1 5"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Add today’s numbers</span>
+          <span class="ios-row-sub" style="display:block">Steps and watch rings — optional</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </summary>
+      <div class="tr-disclose-body">
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Steps</span></span><input type="number" id="evening-steps" class="row-field" inputmode="numeric" placeholder="8500"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Move</span></span><input type="number" id="evening-move" class="row-field" inputmode="numeric" placeholder="540 cal"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Exercise</span></span><input type="number" id="evening-exercise" class="row-field" inputmode="numeric" placeholder="45 min"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Stand</span></span><input type="number" id="evening-stand" class="row-field" inputmode="numeric" placeholder="12 hrs"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Total burned</span></span><input type="number" id="evening-total-burn" class="row-field" inputmode="numeric" placeholder="2650 cal"></label>
+        </div>
+        <div class="ios-footnote">Check your watch or phone and enter the day’s totals. Move counts toward today’s burned calories; total burned is active plus resting. Leave blank what you don’t have.</div>
+      </div>
     </details>
 
     <div class="lbl">Tick today’s habits</div>
-    <div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px;line-height:1.5">What you actually did today. Auto-ticked when activity is logged.</div>
-    <div id="evening-habit-tick-list" style="margin-bottom:14px"></div>
-    
+    <div id="evening-habit-tick-list" class="ritual-ticks"></div>
+    <div class="ios-footnote ritual-foot">What you actually did today. Auto-ticked when activity is logged.</div>
+
     <div class="lbl" id="evening-tomorrow-lbl">Tomorrow’s 3 priorities</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);min-width:16px">1.</span><input type="text" id="eve-task1" placeholder="Most important thing tomorrow..."></div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);min-width:16px">2.</span><input type="text" id="eve-task2" placeholder="Second priority..."></div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);min-width:16px">3.</span><input type="text" id="eve-task3" placeholder="Third priority..."></div>
+    <!-- Three fields, one group: rows with a figure, not three grey pills beside tint "1." "2." "3." -->
+    <div class="ios-list ritual-priorities">
+      <label class="ios-row"><span class="prio-n">1</span><input type="text" id="eve-task1" class="list-field" placeholder="Most important thing tomorrow..."></label>
+      <label class="ios-row"><span class="prio-n">2</span><input type="text" id="eve-task2" class="list-field" placeholder="Second priority..."></label>
+      <label class="ios-row"><span class="prio-n">3</span><input type="text" id="eve-task3" class="list-field" placeholder="Third priority..."></label>
     </div>
     <div class="lbl" id="eve-prayer-label">Evening prayer</div>
-    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text" id="eve-prayer-text">Lord, thank You for this day.
+    <div class="prayer-box"><div class="prayer-text" id="eve-prayer-text">Lord, thank You for this day.
 For the moments I got it right, and for Your grace when I didn’t.
 I give You what I carried today &#8212; the wins, the failures, the urges I fought.
 Forgive me where I fell short. Strengthen me for tomorrow.
@@ -5921,20 +6154,23 @@ Not perfect. Just better.
 Amen.</div></div>
     <div id="partner-section" style="display:none">
       <div class="lbl">Tonight’s call</div>
-      <div class="card">
-        <div class="card-hd" style="margin-bottom:6px">Before you call</div>
-        <div id="call-prompt" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
-        <div class="card-hd" id="shared-prayer-label" style="margin-bottom:6px">A prayer to share</div>
-        <div id="shared-prayer" style="font-family:var(--font-serif);font-size:var(--t-md);font-style:italic;color:var(--tx2);line-height:1.7"></div>
+      <div class="card ritual-card">
+        <div class="card-hd">Before you call</div>
+        <div id="call-prompt" class="card-text"></div>
+        <div class="card-hd reach-prayer-hd" id="shared-prayer-label">A prayer to share</div>
+        <div id="shared-prayer" class="prayer-text"></div>
       </div>
     </div>
     <!-- The wind-down. Sits in the evening because that is when it is needed, and it ends by
-         telling you to leave the room \u2014 the only feature here whose success is the app closing. -->
-    <div class="card" style="background:var(--bg3);cursor:pointer" onclick="openWindDown()">
-      <div style="display:flex;align-items:center;gap:11px">
-        <div style="font-size:var(--t-xl)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
-        <div style="flex:1"><div style="font-size:var(--t-md);color:var(--tx)">Land the day</div><div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">Four small things, then the phone goes down.</div></div>
-        <div style="color:var(--tx3);font-size:var(--t-hd)">›</div>
+         telling you to leave the room — the only feature here whose success is the app closing. -->
+    <div class="ios-section ritual-rows">
+      <div class="ios-list">
+        <button type="button" class="ios-row has-icon" onclick="openWindDown()">
+          <span class="ios-row-icon tone-indigo"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Land the day</span>
+            <span class="ios-row-sub" style="display:block">Four small things, then the phone goes down.</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
       </div>
     </div>
     <div id="on-this-day" style="display:none"></div>
@@ -5942,111 +6178,114 @@ Amen.</div></div>
          gratitude with the strongest evidence behind it is RELATIONAL: thanking a real person beats
          listing things to yourself. So the third slot quietly points at a person, and offers to
          carry it to them. A solo list is where gratitude goes to die; a message is where it lands. -->
-    <div class="lbl" id="evening-good-lbl" style="margin-top:4px">Three good things</div>
-    <div class="card" id="tgt-card">
+    <div class="lbl" id="evening-good-lbl">Three good things</div>
+    <div id="tgt-card" class="tgt-block">
       <div id="tgt-body"></div>
     </div>
-    <!-- Ignatian Examen — THE FINAL, defining step of the evening. Once done, the day is closed. -->
-    <div class="lbl" id="examen-label" style="margin-top:4px">The last step — your examen</div>
-    <div class="card" id="examen-card" style="background:var(--go-bg);border-color:var(--go-bd)">
-      <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Ignatian Examen · 5 steps</div>
-      <div style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;margin-bottom:6px">Walk through your day with God.</div>
-      <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:12px">A 600-year-old practice. Five questions. This closes your day — do it last.</p>
-      <button class="btn primary" onclick="startExamen()" style="margin-bottom:8px">Begin the Examen</button>
-      <button class="btn outline" onclick="showExamenHistory()">View past <span id="examen-noun-plural">examens</span> (<span id="examen-count">0</span>)</button>
-      <div id="examen-done-today" style="display:none;text-align:center;padding:8px 0;color:var(--gr);font-size:var(--t-base);font-family:var(--font-serif);font-style:italic">✓ <span id="examen-done-noun">Examen</span> complete for today.</div>
+    <!-- Ignatian Examen — THE FINAL, defining step of the evening. Once done, the day is closed.
+         It was labelled twice: "THE LAST STEP — YOUR EXAMEN" in capitals above the card, and
+         "IGNATIAN EXAMEN · 5 STEPS" in 12px tint capitals inside it. One label, outside, where every
+         other section on this screen carries its own; applyFaithExamen() names it per tradition. -->
+    <div class="lbl" id="examen-label">Ignatian Examen · 5 steps</div>
+    <div class="card ritual-card" id="examen-card">
+      <div class="card-title">Walk through your day with God.</div>
+      <p class="card-body">A 600-year-old practice. Five questions. This closes your day — do it last.</p>
+      <button class="btn examen-begin" onclick="startExamen()">Begin the Examen</button>
+      <button class="btn quiet" onclick="showExamenHistory()"><span>View past <span id="examen-noun-plural">examens</span> (<span id="examen-count">0</span>)</span></button>
+      <div id="examen-done-today" class="vice-pledge examen-done" style="display:none"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg><span><span id="examen-done-noun">Examen</span> complete for today.</span></div>
     </div>
-    
+
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
-    <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
-      <div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
-      <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">ToTry</em>. Tomorrow’s a fresh one.</div>
-    <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
+    <div id="evening-done" class="ritual-done" style="display:none">
+      <div class="ritual-done-title">Day complete. Rest well.</div>
+      <div class="ritual-done-line">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em class="ritual-brand">ToTry</em>. Tomorrow’s a fresh one.</div>
+    <button class="btn primary" onclick="go('home')">Back to Today</button>
     </div>
   </div>
 
-  <!-- JOURNAL PANEL -->
+  <!-- JOURNAL PANEL. The header carries its action where Settings puts "Edit" — it was a caps label
+       beside a hand-sized filled "+ New entry", a second filled button on a panel with nothing to
+       complete. -->
   <div id="reflect-panel-journal" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="lbl" style="margin:0">Daily journal</div>
-      <button class="btn primary" style="width:auto;padding:7px 14px;font-size:var(--t-sm)" onclick="openJournal()">+ New entry</button>
-    </div>
+    <div class="ios-header home-section-hd"><span>Daily journal</span><button class="hd-action" onclick="openJournal()">New entry</button></div>
     <div id="journal-list"></div>
   </div>
 
-  <!-- GOALS PANEL — yearly → quarterly → monthly → weekly hierarchy -->
+  <!-- GOALS PANEL — yearly → quarterly → monthly → weekly hierarchy. Four goals are four rows you tap
+       to edit: they were four cards, each with a grey 12px "Edit" slab, the year's in a tint panel and
+       an italic serif, the other three at 17px secondary with 1.7 line-height. -->
   <div id="reflect-panel-goals" style="display:none">
     <div class="lbl">Goal hierarchy</div>
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:14px">One yearly vision. Four quarterly outcomes. Twelve monthly milestones. Fifty-two weekly targets. Everything cascades down.</p>
-    
-    <div id="goals-yearly-card" class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> This year (<span id="goals-year">2026</span>)</div>
-        <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;background:var(--fill2)" onclick="editGoal('yearly')">Edit</button>
-      </div>
-      <div id="goals-yearly-content" style="font-family:var(--font-serif);font-size:var(--t-hd);color:var(--tx);font-style:italic;line-height:1.5;min-height:28px"></div>
+    <div class="ios-list goal-list">
+      <button type="button" class="ios-row has-icon" id="goals-yearly-card" onclick="editGoal('yearly')">
+        <span class="ios-row-icon tone-red"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">This year (<span id="goals-year">2026</span>)</span>
+          <span class="ios-row-sub" style="display:block" id="goals-yearly-content"></span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="goals-quarterly-card" onclick="editGoal('quarterly')">
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">This quarter (<span id="goals-quarter">Q2</span>)</span>
+          <span class="ios-row-sub" style="display:block" id="goals-quarterly-content"></span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="goals-monthly-card" onclick="editGoal('monthly')">
+        <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">This month (<span id="goals-month">May</span>)</span>
+          <span class="ios-row-sub" style="display:block" id="goals-monthly-content"></span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="goals-weekly-card" onclick="editGoal('weekly')">
+        <span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">This week</span>
+          <span class="ios-row-sub" style="display:block" id="goals-weekly-content"></span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
-    
-    <div id="goals-quarterly-card" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg> This quarter (<span id="goals-quarter">Q2</span>)</div>
-        <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;background:var(--fill2)" onclick="editGoal('quarterly')">Edit</button>
-      </div>
-      <div id="goals-quarterly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
-    </div>
-    
-    <div id="goals-monthly-card" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> This month (<span id="goals-month">May</span>)</div>
-        <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;background:var(--fill2)" onclick="editGoal('monthly')">Edit</button>
-      </div>
-      <div id="goals-monthly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
-    </div>
-    
-    <div id="goals-weekly-card" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="card-hd" style="margin-bottom:0"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> This week</div>
-        <button class="btn" style="width:auto;padding:4px 10px;font-size:var(--t-mini);background:transparent;background:var(--fill2)" onclick="editGoal('weekly')">Edit</button>
-      </div>
-      <div id="goals-weekly-content" style="font-size:var(--t-base);color:var(--tx2);line-height:1.7;min-height:24px"></div>
-    </div>
-    
-    <div class="card" style="background:var(--bg3)">
-      <div class="card-hd" style="margin-bottom:6px">On pace check</div>
-      <div id="goals-pace" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Fill in your goals to see if you’re on pace.</div>
-    </div>
+    <div class="ios-footnote">One yearly vision. Four quarterly outcomes. Twelve monthly milestones. Fifty-two weekly targets. Everything cascades down.</div>
 
-    <!-- Wins (merged in from former Wins tab) -->
-    <div class="lbl" style="margin-top:20px">Win log</div>
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:12px">Every win, big or small. A record of who you’re becoming.</p>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="quick-win-input" placeholder="Record a win right now..." onkeydown="if(event.key==='Enter')logQuickWin()">
-      <button class="btn success" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="logQuickWin()">Log the win</button>
-    </div>
-    <div id="wins-log-list" style="margin-bottom:8px"></div>
+    <!-- How far through each period you are: four figures, as stat tiles. -->
+    <div class="lbl">On pace check</div>
+    <div id="goals-pace" class="goals-pace">Fill in your goals to see if you’re on pace.</div>
 
-    <!-- Promises (merged in from former Promises tab) -->
-    <div class="card" style="margin-top:20px;cursor:pointer" onclick="go('why')">
-      <div class="card-hd" style="margin-bottom:6px">Promises &amp; letters moved</div>
-      <p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:0">Your promises, letters to your future self, and your why now live together in <b style="color:var(--go)">Soul &rarr; Your Why</b>. Tap to go there. →</p>
+    <!-- Wins (merged in from former Wins tab). The field is a row with its own verb, and what you have
+         logged is the list under it. -->
+    <div class="lbl">Win log</div>
+    <div class="ios-list">
+      <div class="ios-row win-entry">
+        <input type="text" id="quick-win-input" class="list-field" placeholder="Record a win right now..." onkeydown="if(event.key==='Enter')logQuickWin()">
+        <button class="btn row-btn" onclick="logQuickWin()">Log the win</button>
+      </div>
+    </div>
+    <div class="ios-footnote">Every win, big or small. A record of who you’re becoming.</div>
+    <div id="wins-log-list" class="wins-log"></div>
+
+    <!-- Promises (merged in from former Promises tab) — a destination, so a row. -->
+    <div class="ios-section goals-moved">
+      <div class="ios-list">
+        <button type="button" class="ios-row has-icon" onclick="go('why')">
+          <span class="ios-row-icon tone-pink"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+          <span class="ios-row-body"><span class="ios-row-title" style="display:block">Promises &amp; letters moved</span>
+            <span class="ios-row-sub" style="display:block">Your promises, letters to your future self, and your why now live together in Soul → Your Why.</span></span>
+          <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+        </button>
+      </div>
       <div style="display:none"><input type="text" id="new-promise"><select id="promise-when"><option value="7">7</option></select><span id="promises-due"></span><span id="promises-list"></span></div>
     </div>
   </div>
 
-  <!-- WEEKLY REVIEW PANEL -->
+  <!-- WEEKLY REVIEW PANEL. Three figures as stat tiles (they were bordered boxes whose "HABITS THIS
+       WEEK" label wrapped onto two lines of capitals inside a card titled "This week"), and field
+       labels that are labels rather than the first half of a sentence. -->
   <div id="reflect-panel-review" style="display:none">
-    <div class="lbl">Weekly review</div>
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:10px">This week</div>
-      <div id="week-stats" class="mg3" style="margin-bottom:0"></div>
-    </div>
-    <div class="lbl">I am proud of</div>
-    <textarea id="review-proud" placeholder="What are you genuinely proud of this week?" style="height:70px;resize:none;margin-bottom:10px"></textarea>
-    <div class="lbl">Next week I will focus on</div>
-    <textarea id="review-focus" placeholder="One thing that needs your most attention..." style="height:70px;resize:none;margin-bottom:12px"></textarea>
+    <div class="lbl">This week</div>
+    <div id="week-stats" class="ios-stats trio"></div>
+    <div class="lbl">Proud of</div>
+    <textarea id="review-proud" class="ritual-field" placeholder="What are you genuinely proud of this week?"></textarea>
+    <div class="lbl">Next week’s focus</div>
+    <textarea id="review-focus" class="ritual-field" placeholder="One thing that needs your most attention..."></textarea>
     <div class="lbl" id="wk-conscience-label">Examination of conscience</div>
-    
-  <div class="card">
+    <div class="card conscience-card">
       <div class="conscience-q">Did I give in to any vice I wish I hadn’t?</div>
       <div class="conscience-q">Was I honest with myself and others?</div>
       <div class="conscience-q">Did I treat the people around me with patience and respect?</div>
@@ -6055,12 +6294,12 @@ Amen.</div></div>
       <div class="conscience-q">What did I avoid that I knew I needed to face?</div>
     </div>
     <div class="lbl" id="wk-prayer-label">Closing prayer</div>
-    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text" id="wk-prayer-text">Lord, a week has passed.
+    <div class="prayer-box"><div class="prayer-text" id="wk-prayer-text">Lord, a week has passed.
 You saw all of it &#8212; what I did well and what I failed at.
 Thank You for not giving up on me when I gave up on myself.
 As I begin a new week, give me the strength to be better than the last.
 Amen.</div></div>
-    <button class="btn primary" onclick="saveWeeklyReview()" style="margin-bottom:14px">Complete this week’s review</button>
+    <button class="btn primary" onclick="saveWeeklyReview()">Complete this week’s review</button>
     <div id="review-history"></div>
   </div>
 </div>

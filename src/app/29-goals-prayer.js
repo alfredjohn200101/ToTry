@@ -75,10 +75,13 @@ function editGoal(level){
   const current = getGoal(level);
   const m = document.createElement('div');
   m.className = 'modal-bg open';
+  // The sheet's subheadline role for the prompt (it was the tertiary grey), and the person's own goal
+  // ESCAPED into the field: it went in raw, so a goal containing "</textarea>" closed the field early
+  // and whatever followed it became live markup in the sheet.
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">Edit goals for ' + labels[level] + '</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.6">' + prompts[level] + '</p>' +
-    '<textarea id="goal-input" style="min-height:140px;font-size:var(--t-base);line-height:1.6">' + current + '</textarea>' +
+    '<h3>Edit goals for ' + labels[level] + '</h3>' +
+    '<p class="modal-sub">' + prompts[level] + '</p>' +
+    '<textarea id="goal-input" style="min-height:140px;line-height:1.45">' + _escFew(current) + '</textarea>' +
     '<button class="btn primary" onclick="saveGoalEdit(\'' + level + '\')" style="margin-top:14px;margin-bottom:8px">Save goal</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
@@ -102,16 +105,19 @@ function renderGoals(){
   if(qEl) qEl.textContent = 'Q' + (Math.floor(now.getMonth() / 3) + 1);
   if(mEl) mEl.textContent = now.toLocaleDateString('en-US', {month: 'long'});
   
-  const empty = '<span style="color:var(--tx3);font-style:italic;font-size:var(--t-sm);font-family:var(--font-text)">Tap Edit to set this</span>';
+  // Each goal is a row's subtitle now, and the row is what you tap — there is no Edit button to name.
+  // The empty line was an italic in the tertiary grey; an unset value on iOS is the secondary grey.
+  const empty = 'Tap to set this';
   ['yearly','quarterly','monthly','weekly'].forEach(level => {
     const el = document.getElementById('goals-' + level + '-content');
     if(!el) return;
     const text = getGoal(level);
     if(!text){
-      el.innerHTML = empty;
+      el.textContent = empty;
     } else {
-      // Render line breaks as separate lines
-      el.innerHTML = text.split('\n').map(l => '<div>' + l.replace(/</g, '&lt;') + '</div>').join('');
+      // Render line breaks as separate lines — <br>, because this sits inside a <button>'s span and a
+      // block <div> is not something a button may hold.
+      el.innerHTML = text.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;')).join('<br>');
     }
   });
   
@@ -133,14 +139,12 @@ function renderGoals(){
   
   const paceEl = document.getElementById('goals-pace');
   if(paceEl){
+    // Four figures are four stat tiles — they were a 13px two-column text grid in a grey card over an
+    // italic serif line in the tertiary grey. The line is the section's footnote.
+    const tile = (lbl, pct) => '<div class="ios-stat"><div class="ios-stat-label">' + lbl + '</div><div class="ios-stat-value">' + pct + '<span class="ios-stat-unit">%</span></div></div>';
     paceEl.innerHTML =
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font-text);font-size:var(--t-cap)">' +
-        '<div>Year: ' + yearPct + '% through</div>' +
-        '<div>Quarter: ' + qPct + '%</div>' +
-        '<div>Month: ' + mPct + '%</div>' +
-        '<div>Week: ' + wPct + '%</div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx3);margin-top:8px;line-height:1.5">Look at your goals. Look at where you are. Are you on pace? Adjust this week.</div>';
+      '<div class="ios-stats">' + tile('Year', yearPct) + tile('Quarter', qPct) + tile('Month', mPct) + tile('Week', wPct) + '</div>' +
+      '<div class="ios-footnote">Look at your goals. Look at where you are. Are you on pace? Adjust this week.</div>';
   }
 }
 

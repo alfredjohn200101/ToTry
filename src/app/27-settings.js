@@ -934,14 +934,17 @@ function logQuickWin(){
 }
 function renderWinsLog(){
   const wins=ls('totry_wins')||[];const list=document.getElementById('wins-log-list');if(!list)return;
-  if(!wins.length){list.innerHTML='<p class="empty-note">No wins logged yet.<br><span style="font-size:var(--t-sm)">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
+  // The log is a list under the field it is written from. Empty, it says so as a footnote — it was a
+  // centred italic in the tertiary grey with a line break in the middle of it.
+  if(!wins.length){list.innerHTML='<div class="ios-footnote">No wins logged yet. Type one above — even getting out of bed counts on a hard day.</div>';return;}
   list.innerHTML='';
+  const group=document.createElement('div');group.className='ios-list';list.appendChild(group);
   wins.slice(0,20).forEach(w=>{
-    const el=document.createElement('div');el.className='win-item';
+    const el=document.createElement('div');el.className='ios-row win-item';
     const icon = w.source==='vice' ? svgIcon("shield") : svgIcon("sparkle");
-    const dateLine = w.date + (w.day ? ' \u00b7 Day '+w.day : '');
-    el.innerHTML='<span class="win-icon" style="color:var(--go)">'+icon+'</span><div><div class="win-text">'+(w.text||'').replace(/</g,'&lt;')+'</div><div class="win-date">'+dateLine+'</div></div>';
-    list.appendChild(el);
+    const dateLine = _escFew(String(w.date||'')) + (w.day ? ' · Day '+_escFew(String(w.day)) : '');
+    el.innerHTML='<span class="win-icon">'+icon+'</span><span class="ios-row-body"><span class="ios-row-title win-text" style="display:block">'+(w.text||'').replace(/</g,'&lt;')+'</span><span class="ios-row-sub" style="display:block">'+dateLine+'</span></span>';
+    group.appendChild(el);
   });
 }
 
