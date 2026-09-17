@@ -25,7 +25,10 @@ const TABS = process.argv.slice(2).length ? process.argv.slice(2)
 // The floor is the iOS footnote. 10px is allowed for ONE thing, the tab bar label, because that is
 // what iOS itself uses; it is named here so the exception is a decision rather than a blind spot.
 const FLOOR = 13;
-const SIZE_EXEMPT = ['.nb span'];
+// Two exceptions, each a decision rather than a blind spot: the tab bar label (iOS draws it at 10) and
+// a chart's point annotations (caption size, 12 — what Health draws on its own charts; a 13pt number
+// sitting on every data point crowds the line it is labelling).
+const SIZE_EXEMPT = ['.nb span', '#weight-chart text'];
 
 const srv = http.createServer((q, r) => {
   let p = path.join(ROOT, decodeURIComponent(q.url.split('?')[0]));
@@ -55,9 +58,17 @@ const PROBE = ([exempt, floor]) => {
     out.colors[s.color] = (out.colors[s.color] || 0) + 1;
     out.families[s.fontFamily.split(',')[0].replace(/["']/g, '')] = (out.families[s.fontFamily.split(',')[0].replace(/["']/g, '')] || 0) + 1;
     // A caps label that wraps: more than one line box for an uppercased run.
+    // Count LINE BOXES of the words themselves, not the element's height: the first version measured
+    // the box, and Settings' crisis rows — a phone number in a 56pt tappable row — read as "caps that
+    // wrap" because of their padding. A Range over the text nodes reports one rect per line.
     if (s.textTransform === 'uppercase' || /^[^a-z]{6,}$/.test(own(el))) {
-      const lh = parseFloat(s.lineHeight) || size * 1.2;
-      if (el.getBoundingClientRect().height > lh * 1.6) out.wrapCaps.push({ text, cls: el.className.toString().slice(0, 40) });
+      const tops = new Set();
+      for (const n of el.childNodes) {
+        if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+        const rg = document.createRange(); rg.selectNodeContents(n);
+        for (const rc of rg.getClientRects()) if (rc.width > 0) tops.add(Math.round(rc.top));
+      }
+      if (tops.size > 1) out.wrapCaps.push({ text, cls: el.className.toString().slice(0, 40) });
     }
   }
   // Two siblings, same tag and weight, sizes a hair apart — a difference nobody can name and everybody feels.
@@ -88,11 +99,15 @@ await pg.evaluate(() => {
   d.id = 'craft-calibration';
   d.innerHTML = '<div style="font-size:11px;color:#8a8a8f">a label nobody sized</div>' +
     '<div style="text-transform:uppercase;font-size:13px;width:80px;line-height:1.2">A CAPS HEADER THAT IS REALLY A WHOLE SENTENCE AND WRAPS</div>' +
-    '<div><span style="font-size:15px;color:#777">fourth grey a</span><span style="font-size:14px;color:#777">fourth grey b</span></div>';
+    '<div><span style="font-size:15px;color:#777">fourth grey a</span><span style="font-size:14px;color:#777">fourth grey b</span></div>' +
+    // The false positive the first version raised, planted so it can never come back: one line of
+    // digits in a tall padded row is NOT a wrapping caps label.
+    '<a id="cal-tall-row" style="display:block;padding:18px 16px;font-size:17px">13 11 14</a>';
   document.body.appendChild(d);
 });
 const cal = await pg.evaluate(PROBE, [SIZE_EXEMPT, FLOOR]);
-const calOk = cal.small.some(s => s.size === 11) && cal.wrapCaps.length > 0 && cal.nearPairs.some(p => Math.abs(p.a - p.b) === 1);
+const calOk = cal.small.some(s => s.size === 11) && cal.wrapCaps.some(w => /WHOLE SENTENCE/.test(w.text))
+  && !cal.wrapCaps.some(w => w.text === '13 11 14') && cal.nearPairs.some(p => Math.abs(p.a - p.b) === 1);
 if (!calOk) {
   console.log('THE MEASUREMENT IS WRONG, NOT THE APP — the planted 11px label, wrapping caps header and 1px pair were not all found:');
   console.log('  small:', cal.small.filter(s => s.size === 11).length, ' wrapCaps:', cal.wrapCaps.length, ' nearPairs:', cal.nearPairs.length);

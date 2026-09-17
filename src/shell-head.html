@@ -76,6 +76,9 @@
      GLASS at the end of this file for why. */
   --glass:rgba(30,30,32,0.58);--glass-2:rgba(28,28,30,0.84);--glass-line:rgba(255,255,255,0.10);
   --glass-hi:rgba(255,255,255,0.14);--glass-shadow:0 12px 34px rgba(0,0,0,0.5);
+  /* A sheet that carries content, and the cells inside it: iOS's elevated pair. Promoted from the three
+     Coach surfaces that declared it, so every sheet is the same surface. */
+  --sheet:#1C1C1E;--cell:#2C2C2E;
   --brand:#C8A96E;--font-brand:'Cormorant Garamond',ui-serif,Georgia,serif;
   /* Radii: inset grouped cells are 10pt, cards and large buttons 12pt, capsules fully round. */
   --r:12px;--rm:10px;--rs:8px;--rp:100px;
@@ -111,6 +114,7 @@
     --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
     --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
     --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
+    --sheet:#F2F2F7;--cell:#FFFFFF;
   }
 }
 :root[data-theme="light"]{
@@ -127,6 +131,7 @@
   --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
   --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
   --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
+  --sheet:#F2F2F7;--cell:#FFFFFF;
 }
 /* ── DESIGN SYSTEM UTILITIES ──
    Reusable classes so repeated patterns are pixel-identical everywhere.
@@ -1939,7 +1944,9 @@ input.row-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 .ios-stat-value.good{color:var(--gr)}
 /* The weight chart's own text: the empty line was set in the display face at 13px ITALIC, and the
    point labels in "DM Mono" — a face this app stopped shipping — at 8px. Numbers are SF Rounded. */
-#weight-chart text{font-family:var(--font-rounded);font-size:10px;fill:var(--tx3);font-variant-numeric:tabular-nums}
+/* 12, not 10 — and the SVG no longer uses preserveAspectRatio="none", which stretched these numbers about
+   20% taller than they are wide: a chart that drew its own labels distorted. */
+#weight-chart text{font-family:var(--font-rounded);font-size:12px;fill:var(--tx3);font-variant-numeric:tabular-nums}
 #weight-chart .chart-empty{font-family:var(--font-text);font-size:13px}
 /* Inside a card: the headline speaks in the app's own face, the line under it is a subheadline, and
    a footnote is a footnote — 13pt, secondary, left. Two of these were centred italics. */
@@ -3586,6 +3593,59 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .fr-heat .l0{background:var(--fill)}.fr-heat .l1{opacity:.3}.fr-heat .l2{opacity:.5}.fr-heat .l3{opacity:.75}
 .fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);padding:0 16px 4px}
 .fr-sheet-list{margin-bottom:20px}
+
+/* ═══ SHARED ROLES, DECIDED ONCE ═════════════════════════════════════════════════════════════════
+   Twelve screens were rebuilt in parallel, each told to change only what it owned and to NAME what it
+   needed from the shell instead. What follows is every need that two or more of them named
+   independently — the strongest evidence available that a fix belongs here and not at a call site.
+   One named need was checked and NOT acted on: ".card still carries a border and a shadow" is true of
+   the base rule's source, and false on screen — a probe of every card on six tabs found 0 of 22 with a
+   border or shadow, because the design layer overrides it. Fixing what does not render is not a fix. */
+
+/* A SHEET THAT CARRIES CONTENT IS OPAQUE. Coach and Money each found page text ghosting through a
+   sheet's title — glass under paragraphs, which the brief itself forbids. The sheet is the elevated pair
+   iOS uses (dark: bg2 sheet, bg3 cells; light: grouped bg sheet, white cells); the depth moves to the
+   page BEHIND it, which blurs as the sheet rises. The material stays where it belongs: behind content,
+   never under it. */
+.modal{background:var(--sheet) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+  box-shadow:inset 0 .5px 0 var(--glass-hi),0 -12px 48px rgba(0,0,0,.28) !important}
+.modal .card,.modal .ios-list,.modal .ios-stat{background:var(--cell) !important}
+/* A sheet is focused when it opens so a screen reader starts inside it — and the container then drew a
+   tint focus ring along its whole top edge. The CONTAINER never shows one; every control inside it keeps
+   its own :focus-visible ring, which is where a keyboard user needs it. */
+.modal:focus,.modal:focus-visible,.feel-door:focus,.feel-door:focus-visible,.companion-overlay:focus,.companion-overlay:focus-visible{outline:none !important}
+.modal-bg{background:rgba(0,0,0,.32) !important;-webkit-backdrop-filter:blur(8px) saturate(120%) !important;backdrop-filter:blur(8px) saturate(120%) !important}
+
+/* THE EMPTY NOTE. Italic, centred and in the tertiary grey — three of the tells in one rule, with
+   consumers in eighteen modules (Grow/Track and Money both named it). A sentence the app says when there
+   is nothing yet: upright, left-aligned with the content around it, in the secondary grey. */
+.empty-note{font-style:normal !important;text-align:left !important;color:var(--tx2) !important;font-size:15px !important;
+  line-height:1.4 !important;letter-spacing:-.01em;padding:8px 0 !important}
+
+/* A DISCLOSURE IS A CHEVRON. `details>summary::after{content:'▾'}` put a web-accordion triangle on every
+   summary in the app; Train and Settings each suppressed it for their own and Nourish named it. The same
+   chevron svgIcon draws, as a mask in the tertiary ink, turning to point down when open. */
+details>summary::after{content:'' !important;flex:none;width:8px;height:13px;margin-left:auto;background:var(--tx3);font-size:0;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='7 2 12 20'%3E%3Cpolyline points='9,4 17,12 9,20' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='7 2 12 20'%3E%3Cpolyline points='9,4 17,12 9,20' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+details[open]>summary::after{transform:rotate(90deg)}
+
+/* A SLIDER IS A TRACK, NOT A TEXT FIELD. Range inputs inherited a field's fill, border and padding in
+   places, so a slider sat inside an empty text box; Grow/Track fixed it inside one card only. */
+input[type="range"]{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;border-radius:0 !important}
+
+/* THREE STAT TILES FIT ONE ROW. Money named .ios-stats.three at 12px labels; the floor is the footnote. */
+.ios-stats.three .ios-stat-label{font-size:13px !important;letter-spacing:.03em !important}
+
+/* VERSE TOOLS HAVE A BASE. They had rules only under three tab ids, so anywhere else they stacked as two
+   full-width 50pt buttons (Soul named it). */
+.verse-tools{display:flex;gap:8px;margin-top:14px}
+.verse-tools .btn{flex:1;min-width:0;min-height:44px;font-size:15px !important}
+
+/* THE DAY COUNT IS A TAP TARGET. It opens reflection; panels measured it at 68x20. 44pt tall, same look. */
+.hdr .day-chip{min-height:44px;align-items:center !important;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hdr .day-chip:active{opacity:.5}
 
 </style>
 </head>
@@ -5944,7 +6004,7 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
          the point labels were plotted in kilograms. syncWeightUnitLabels() already keeps every
          [data-weight-unit] in step with the setting. -->
     <div class="lbl">Weight trend (<span data-weight-unit>kg</span>)</div>
-    <svg aria-hidden="true" id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:120px" preserveAspectRatio="none">
+    <svg aria-hidden="true" id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:auto;aspect-ratio:340/100;display:block">
       <text x="170" y="58" text-anchor="middle" class="chart-empty">Log your first check-in below</text>
     </svg>
   </div>
