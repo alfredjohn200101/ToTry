@@ -776,21 +776,28 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .dot.done{background:var(--gr);border-color:var(--gr);color:#000}
 .dot.today{border-color:var(--go)}
 .dot.done.today{border-color:var(--gr)}
-.feeling-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.feeling-cloud{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
 .ftag{font-size:var(--t-cap);padding:6px 12px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:var(--font-text);transition:all 0.15s}
 .ftag:active{border-color:var(--go-bd);color:var(--go);background:var(--go-bg)}
-.bible-card{background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:20px;margin-bottom:10px;display:none;position:relative;overflow:hidden}
-.bible-card::before{content:'\201C';font-family:var(--font-serif);font-size:100px;color:var(--go);opacity:0.06;position:absolute;top:-15px;left:8px;line-height:1;pointer-events:none}
-.bible-verse{font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.75;margin-bottom:8px;position:relative}
-.bible-ref{font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;margin-bottom:12px}
-.bible-reflect{font-size:var(--t-base);color:var(--tx2);line-height:1.65;border-top:1px solid var(--bd);padding-top:12px;margin-bottom:12px}
+/* The verses a feeling finds. This was a gold-bordered box with a 100px quotation mark painted into its
+   corner at 6% opacity — decoration standing in for hierarchy. A card, and the passage role inside it. */
+.bible-card{background:var(--bg2);border:0;border-radius:var(--r);padding:16px;margin-bottom:28px;display:none}
+.bible-verse{font-family:var(--font-serif);font-size:17px;line-height:1.5;color:var(--tx);margin-bottom:0}
+.bible-ref{font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin:6px 0 12px}
+.bible-reflect{font-size:15px;color:var(--tx2);line-height:1.45;margin-bottom:12px}
 .bible-actions{display:flex;gap:8px}
-.bible-loading{text-align:center;padding:28px;display:none}
-.bible-loading p{font-family:var(--font-serif);font-size:var(--t-lg);font-style:italic;color:var(--tx3)}
-.sv-item{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px}
-.sv-v{font-family:var(--font-serif);font-size:var(--t-md);font-style:italic;color:var(--tx);line-height:1.6;margin-bottom:4px}
-.sv-r{font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em}
-.sv-d{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:4px}
+.bible-loading{text-align:center;padding:24px 16px;display:none}
+.bible-loading p{font-family:var(--font-text);font-size:15px;color:var(--tx2)}
+/* The saved shelf, as one inset list: the passage in the reading face, its source and the day it was
+   kept on one footnote line, and a real 44pt remove control. Each verse was its own bordered box with
+   the reference in 11px tint and the date in 11px tertiary under it — two micro lines, two greys. */
+.sv-list{background:var(--bg2);border-radius:10px;overflow:hidden}
+.sv-item{position:relative;display:flex;align-items:flex-start;gap:8px;padding:12px 16px}
+.sv-item+.sv-item::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
+.sv-body{flex:1;min-width:0}
+.sv-v{font-family:var(--font-serif);font-size:17px;color:var(--tx);line-height:1.5}
+.sv-r{font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin-top:4px}
+.sv-item .ios-row-x{margin:-10px -12px -10px 0}
 .j-entry{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer}
 .je-date{font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:5px}
 .je-mood{font-size:var(--t-xl);margin-bottom:4px}
@@ -895,19 +902,28 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 /* ── BIBLE READER ── */
 .bible-nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .bible-select{flex:1;min-width:80px}
-.bible-chapter-display{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:10px}
-.bible-chapter-title{font-family:var(--font-text);font-size:var(--t-hd);color:var(--go);margin-bottom:14px;font-weight:400}
-.bible-verse-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);cursor:pointer;transition:background 0.1s;border-radius:4px}
-.bible-verse-row:hover{background:var(--bg3)}
-.bible-verse-row.highlighted{background:var(--go-bg);border-radius:var(--rs);padding:5px 8px}
+/* A chapter is scripture, so it reads in New York at body size in the label ink. It was San Francisco
+   16px in the SECONDARY grey — the one text on the screen a person came to read, set as fine print —
+   under a 20px tint title, with 12px tint verse numbers and a separator drawn in rgba(255,255,255,.03),
+   which is a white line that cannot be seen in the dark and does not exist in the light. */
+.bible-chapter-display{background:var(--bg2);border:0;border-radius:var(--r);padding:16px;margin-bottom:10px}
+.bible-chapter-title{font-family:var(--font-display);font-size:22px;font-weight:500;letter-spacing:0;color:var(--tx);margin-bottom:12px}
+.bible-verse-row{display:flex;gap:10px;padding:4px 0;cursor:pointer;transition:background 0.1s;border-radius:var(--rs)}
+.bible-verse-row:active{background:var(--bg4)}
+/* A kept verse is tinted behind, not pushed in: the padding is paid back with a negative margin, so its
+   number and its text stay on the same column as every verse around it. */
+.bible-verse-row.highlighted{background:var(--go-bg);padding:4px 8px;margin:0 -8px}
 .rd-v-tap{cursor:pointer;border-radius:var(--rs);transition:background 0.1s}
-.rd-v-tap:hover{background:var(--bg3)}
-.rd-v-saved{background:var(--go-bg);padding-left:10px;padding-right:10px;border-left:2px solid var(--go)}
-.bvn{font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);min-width:22px;padding-top:2px;flex-shrink:0}
-.bvt{font-size:var(--t-md);color:var(--tx2);line-height:1.7;flex:1}
-.bible-search-result{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;cursor:pointer}
-.bsr-ref{font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:4px;letter-spacing:0.01em}
-.bsr-text{font-size:var(--t-base);color:var(--tx2);line-height:1.5}
+.rd-v-tap:active{background:var(--bg4)}
+.rd-v-saved{background:var(--go-bg);padding-left:10px;padding-right:10px;margin-left:-10px;margin-right:-10px}
+.bvn{font-family:var(--font-rounded);font-size:13px;font-weight:600;color:var(--tx2);min-width:22px;padding-top:4px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.bvt{font-family:var(--font-serif);font-size:17px;color:var(--tx);line-height:1.5;flex:1}
+/* A search result is a passage on a surface of its own, with its source above it at footnote size. */
+.bible-search-result{background:var(--bg2);border:0;border-radius:var(--rm);padding:12px 16px;margin-bottom:8px;cursor:pointer}
+.bible-search-result:active{background:var(--bg4)}
+.bsr-ref{font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin-bottom:4px}
+.bsr-text{font-family:var(--font-serif);font-size:17px;color:var(--tx);line-height:1.5}
+.bsr-why{font-size:15px;letter-spacing:-.016em;color:var(--tx2);line-height:1.4;margin-top:6px}
 .bible-tab-row{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:12px}
 /* Inline text links inside prose ("set your weekly training split", "add today's Watch ring"). They
    measured 12-20px tall because a span's line-height IS its hit box. inline-block plus vertical padding
@@ -1104,7 +1120,9 @@ details[open]>summary::after{transform:rotate(180deg)}
 .metric-tap:active{opacity:0.7}
 /* ── BIBLE UNIFIED ── */
 .bible-sub-tabs{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:14px}
-.bst{flex:1;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-size:var(--t-base);font-weight:500;cursor:pointer;font-family:var(--font-text);text-align:center;transition:all 0.15s}
+/* Segments are sized by their labels (UIKit's apportionsSegmentWidthsByContent) and a label never
+   wraps: at five equal fifths "Find a Verse" broke onto two lines of a 32pt control. */
+.bst{flex:1 1 auto;white-space:nowrap;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-size:var(--t-base);font-weight:500;cursor:pointer;font-family:var(--font-text);text-align:center;transition:all 0.15s}
 .bst.active{color:var(--go);border-bottom-color:var(--go)}
 /* ── REFLECT UNIFIED ── */
 .reflect-sub-tabs{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:14px}
@@ -2505,6 +2523,133 @@ a.ios-row{text-decoration:none}
 .tr-plate-sum b{color:var(--tx);font-weight:600}
 .tr-plate-note{font-size:15px;line-height:1.33;color:var(--tx2);margin-top:8px}
 .tr-plate-note b{color:var(--go);font-weight:400}
+/* ═══ SOUL, THE WORD, READ AND PLANS ═══════════════════════════════════════════════════════════════
+   The inner-life screens. Soul read well from a distance and fell apart in the small text: section
+   headers that were whole sentences in capitals and wrapped onto a second line, a stack of poster
+   cards where every other hub has an inset list, and — across the Word, the readers and the plans —
+   the same verse drawn eleven different ways. Nothing below is invented; each rule names a role those
+   call sites were painting inline. */
+
+/* SCRIPTURE ON A SURFACE is the Soul rooms' .passage / .passage-ref (below, under THE QUIET ROOMS), used
+   as they are: one verse, one role. It was italic 20, italic 16, San Francisco 17 in the secondary grey,
+   San Francisco 15 with an 11px tint reference and a 12px tertiary one across these four screens — so a
+   verse changed shape with the door it came through. */
+.card-body.flush{margin-bottom:0}
+/* A sentence that is the thing a person reads, inside a card: body size, label ink. */
+.card-text{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx)}
+
+/* The still centre: the day's word and one thing to do with it, before any menu. */
+#soul-still>.card,#faith-door>.card{margin-bottom:28px}
+#soul-still .btn{margin-top:16px}
+.ios-row-value.soul-now-badge{color:var(--go)}
+
+/* THE WORD. */
+.feeling-cloud.flush{margin-bottom:0}
+.br-pickers{display:flex;gap:8px;margin-bottom:10px}
+.br-pickers select{min-width:0}
+#br-translation{flex:0 0 84px}
+#br-book{flex:1 1 auto}
+#br-chapter{flex:0 0 72px}
+.br-nav{margin-bottom:14px}
+#br-search-results:not(:empty){margin-bottom:14px}
+#br-api-credit:empty{display:none}
+#br-study-notes{margin-top:16px}
+#br-notes-body:not(:empty){margin-top:14px}
+.br-note{padding:10px 0;border-top:.5px solid var(--bd)}
+.br-note-v{font-family:var(--font-rounded);font-size:13px;font-weight:600;color:var(--tx2);margin-right:6px;font-variant-numeric:tabular-nums}
+.br-offline{border-top:.5px solid var(--bd);margin-top:12px;padding-top:12px}
+#br-verses>.btn.quiet{margin-top:8px}
+.bsr-actions{margin-top:4px}
+.card.bsr-prayer{margin-top:12px}
+/* The tools under a passage (Listen, Make a card) sit side by side at control height — the day's anchor
+   rule below, extended to the Word and the plans rather than written a second way. */
+#tab-bible .bible-chapter-display .verse-tools{margin:0 0 12px}
+/* A verse the feeling found, one after another in the same card, parted by a hairline. */
+.verse-result-block+.verse-result-block{border-top:.5px solid var(--bd);margin-top:16px;padding-top:16px}
+.verse-result-block .btn-row{margin-top:12px}
+.verse-why{margin-top:8px}
+#bible-card>.btn.quiet{margin-top:8px}
+
+/* PRAYER. The composer's two modes are a segmented control, not two painted buttons in a painted tray. */
+#bible-prayer-panel .card>.seg{margin:4px 0 14px !important}
+#bible-prayer-panel textarea,#bible-prayer-panel input[type="text"]{margin-bottom:10px}
+#bible-prayer-panel .card-body{margin-bottom:10px}
+.prayer-seg{margin:6px 0 14px !important}
+/* A written prayer keeps its own line breaks. */
+.prayer-words{white-space:pre-wrap}
+.prayer-acts,.prayer-save{margin-top:14px}
+.prayer-acts>.btn.quiet{margin-top:2px}
+.card-title+.saint-by{margin:0 0 10px}
+.prayer-card .home-card-top{margin-bottom:0}
+.prayer-card .card-foot{margin:4px 0 12px}
+.prayer-answer{border-top:.5px solid var(--bd);margin:0 0 12px;padding-top:12px}
+.prayer-answer .eyebrow{color:var(--gr) !important}
+.prayer-answer .card-foot{margin:0}
+#prayer-stats{margin-top:14px}
+#prayer-stats .card-body{margin-bottom:0}
+
+/* SACRAMENTS. The last time is the headline in the app's own face; the count is a number, in SF Rounded. */
+.sac-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sac-top>div:first-child{flex:1;min-width:0}
+.sac-top .card-title{margin:2px 0 2px}
+.sac-top .card-foot{margin:0}
+.sac-count{flex:none;text-align:right}
+.sac-count .ios-stat-value{margin-top:0;line-height:1.1}
+.sac-card>.btn{margin-top:14px}
+.sac-card>.btn.quiet{margin-top:4px}
+/* A switch on the leading label's row, the way Settings draws one. */
+.card-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:10px;
+  font-size:17px;letter-spacing:-.022em;color:var(--tx);cursor:pointer}
+.modal .card-toggle{margin:0 0 12px}
+
+/* READ. The book picker is a field at field size; a 13px <select> is what iOS zooms the page for. */
+#read-selector:empty{display:none}
+#read-selector select{width:100%}
+.read-gita{display:flex;align-items:center;gap:10px}
+.read-gita select{flex:1;min-width:0}
+.read-gita .ios-stepper .tr-btn .ic{width:16px;height:16px;stroke-width:2.4;vertical-align:middle}
+/* The hairline is its own line, not a border: a tappable passage has rounded corners for its pressed
+   state, and a border-top on a rounded box bends down at both ends. */
+.rd-v{position:relative;padding-top:14px;padding-bottom:14px}
+.rd-v+.rd-v::before{content:'';position:absolute;top:0;left:0;right:0;height:.5px;background:var(--bd)}
+.rd-v-saved+.rd-v::before,.rd-v-saved::before{left:10px;right:10px}
+.rd-v:first-child{padding-top:4px}
+.rd-n{font-family:var(--font-rounded);font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:4px;font-variant-numeric:tabular-nums}
+.rd-src{font-size:15px;line-height:1.5;letter-spacing:-.016em;color:var(--tx2);margin-bottom:6px}
+.rd-src.ar{font-size:22px;line-height:1.9;color:var(--tx);text-align:right}
+.rd-src.pli{font-family:var(--font-serif);font-size:15px}
+.rd-src.dev{font-size:17px;line-height:1.7;color:var(--tx)}
+.card>.eyebrow+.rd-v,.card>.rd-chapter+.rd-v{padding-top:4px}
+.card>.rd-v:last-child{padding-bottom:0}
+.rd-chapter{margin:0 0 10px}
+.rd-about{border-top:.5px solid var(--bd);margin-top:14px;padding-top:14px}
+.rd-v+.rd-about{margin-top:0}
+.rd-v+.card-note{border-top:.5px solid var(--bd);margin-top:0;padding-top:12px}
+.read-kept{padding:0 0 10px !important}
+#read-saved-panel{margin-top:28px}
+
+/* PLANS. Each plan is a destination with a voice: its status in the tint when it is under way, its name
+   in the ToTry face, one line of what it is for — and the chevron that says the card goes somewhere.
+   "Begin ›" was a 15px tint micro-link under every card; the card was already the control. */
+.plan-card{cursor:pointer}
+.plan-card .home-card-top{align-items:center;margin-bottom:4px}
+.plan-card .card-title{margin:0}
+.verse-for{margin:0 0 10px}
+.plan-chev{flex:none;display:flex;color:var(--tx3)}
+.plan-chev .ic{width:14px;height:14px;stroke-width:2.6}
+/* The way back to the list inside the tab (the nav bar's back already means "Soul") is the 99 Names'
+   back control below, not a second one: .plan-back rides on the .asma-back rule. */
+.plan-day-of{margin-top:-6px !important}
+.plan-q{margin-bottom:14px}
+#plans-content>.btn.primary{margin-top:6px}
+#plans-content>.btn+.btn{margin-top:2px}
+#plans-content>.btn-row{margin-top:6px}
+#plans-content>.ios-footnote{padding-left:0;padding-right:0;margin-top:12px}
+.plan-done{padding:8px 0 4px}
+.plan-done .ios-empty{padding:12px 8px 24px}
+.plan-done .ios-empty-title{font-family:var(--font-display);font-size:34px;font-weight:500;letter-spacing:0;line-height:1.1}
+.plan-done .ios-empty-body{max-width:320px;margin-top:10px}
+.plan-dove{font-size:34px;line-height:1;margin-bottom:12px}
 /* ═══ TODAY, and the shapes every screen borrows from it ═════════════════════════════════════════
    Today was ONE card holding the greeting, the identity, the action, the next step and the day's
    scripture: the largest type in the app inside a box, and a card inside a card inside a card. On
@@ -2884,8 +3029,8 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 /* THE DAY'S ANCHOR (Islam, Hinduism, Buddhism, secular). The verse tools have no rule of their own
    anywhere, so on this screen they stacked into two 50pt full-width buttons under a single line of
    scripture. Side by side at control height. */
-#tab-today .verse-tools{display:flex;gap:8px;margin-top:14px}
-#tab-today .verse-tools .btn{flex:1;min-width:0;min-height:44px;font-size:15px !important}
+#tab-today .verse-tools,#tab-bible .verse-tools,#tab-plans .verse-tools{display:flex;gap:8px;margin-top:14px}
+#tab-today .verse-tools .btn,#tab-bible .verse-tools .btn,#tab-plans .verse-tools .btn{flex:1;min-width:0;min-height:44px;font-size:15px !important}
 .salah-next-name{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-top:2px}
 .salah-next-in{font-family:var(--font-rounded);font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;margin-top:2px}
 
@@ -2910,8 +3055,8 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 .practice-done .ic{width:44px;height:44px;color:var(--gr);stroke-width:2;margin-bottom:8px}
 .practice-done .card-sub{margin:6px 0 18px}
 .fh-out{margin-top:14px;padding-top:14px;border-top:.5px solid var(--bd)}
-.asma-back{justify-content:flex-start !important;width:auto;padding-left:0 !important;margin:-6px 0 6px}
-.asma-back .ic{width:20px;height:20px;stroke-width:2.4}
+.asma-back,.plan-back{justify-content:flex-start !important;width:auto;padding-left:0 !important;margin:-6px 0 6px}
+.asma-back .ic,.plan-back .ic{width:20px;height:20px;stroke-width:2.4}
 .asma-ar{flex:none;font-size:22px;color:var(--tx)}
 
 /* TODAY IN THE CHURCH */
@@ -3390,10 +3535,8 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- ═══════════════════════════════════════════════════ -->
 <!-- HUB: SOUL (inner life) -->
 <div id="tab-soul" class="tab">
-  <div style="margin-bottom:8px">
-    <h2 class="page-title">Soul</h2>
-    <p id="soul-intro" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6" data-intro-for="soul">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
-  </div>
+  <h2 class="page-title">Soul</h2>
+  <p id="soul-intro" class="page-intro" data-intro-for="soul">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
   <!-- SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious
        features." It opened as four labelled grids — a menu. The still centre goes first: one line for
        today, and one thing to do with it, before anything asks to be navigated. Written by
@@ -3406,85 +3549,111 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
        through it. Repeating this, or slipping religious content in unasked, would break the app's own
        "full but never forced" promise and would be the kind of nudging it exists to refuse. -->
   <div id="faith-door" style="display:none"></div>
-  <div class="hub-section-label">The daily rhythm — begin it, then close it</div>
-  <div class="hub-grid">
-    <div class="hub-card" onclick="go('morning')">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-      <div class="hc-title">Morning</div>
-      <div class="hc-desc" id="soul-morning-desc">Start the day: gratitude, intention, a word, and prayer.</div>
-    </div>
-    <div class="hub-card" onclick="go('reflect')">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <div class="hc-title">Reflect</div>
-      <div class="hc-desc" id="soul-reflect-desc">Close the day: how it went, journal, examen, wins.</div>
-    </div>
-  </div>
-  <div class="hub-section-label" id="soul-drawnear-label">Draw near — prayer &amp; scripture, all in one place</div>
-  <div class="hub-grid">
-    <div class="hub-card wide" id="soul-book-card" onclick="openScripture()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      <div class="hc-title" id="soul-book-title">Bible</div>
-      <div class="hc-desc" id="soul-book-desc">A verse for whatever you’re facing, a full reader, and verses saved for the road.</div>
-    </div>
-    <div class="hub-card wide" id="soul-plans-card" onclick="openPlans()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      <div class="hc-title">Reading plans</div>
-      <div class="hc-desc" id="soul-plans-desc">Don’t know where to read? Take a short plan — fear, the pull, starting again. Five to seven days, finishable.</div>
-    </div>
-    <div class="hub-card wide" id="soul-today-card" onclick="openTodayAnchor()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <div class="hc-title" id="soul-today-title">Today in the Church</div>
-      <div class="hc-desc" id="soul-today-desc">The Mass readings for today and the saint the Church remembers. The living calendar of the faith.</div>
-    </div>
-    <div class="hub-card wide" id="soul-practice-card" onclick="openPractice()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><circle cx="12" cy="20" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="20" cy="12" r="1.6"/><circle cx="6.3" cy="6.3" r="1.3"/><circle cx="17.7" cy="6.3" r="1.3"/><circle cx="6.3" cy="17.7" r="1.3"/><circle cx="17.7" cy="17.7" r="1.3"/><path d="M12 12l0 3.5"/></svg>
-      <div class="hc-title" id="soul-practice-title">The Rosary</div>
-      <div class="hc-desc" id="soul-practice-desc">Pray it guided, bead by bead — today’s mysteries chosen for you, every prayer at hand.</div>
-    </div>
-    <div class="hub-card wide" onclick="openBreathMenu()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
-      <div class="hc-title">Stillness &amp; breath</div>
-      <div class="hc-desc" id="soul-still-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
-    </div>
-    <div class="hub-card wide" id="soul-bless-card" onclick="openBlessing()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 6.6a5 5 0 0 0-7.1 0L12 8.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 22l8.8-8.3a5 5 0 0 0 0-7.1z"/></svg>
-      <div class="hc-title" id="soul-bless-title">Bless the people you carry</div>
-      <div class="hc-desc" id="soul-bless-desc">Hold them one at a time — yourself, someone you love, a stranger, someone difficult, everyone. Ends by naming one person to actually go to.</div>
+  <!-- A hub is a set of DESTINATIONS, which on iOS is an inset grouped list — the shape Grow already
+       is. Soul was a stack of poster cards under four caps headers that were each a whole sentence:
+       "THE DAILY RHYTHM — BEGIN IT, THEN CLOSE IT" and "DRAW NEAR — SCRIPTURE & STILLNESS, ALL IN ONE
+       PLACE" wrapped onto a second line of capitals on every phone. A header is a label of one to three
+       words; the rows under it already say what the rest of the sentence said. -->
+  <div class="ios-section">
+    <div class="ios-header">Daily rhythm</div>
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="go('morning')">
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><polyline points="8,6 12,2 16,6"/><line x1="2" y1="22" x2="22" y2="22"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Morning</span>
+          <span class="ios-row-sub" id="soul-morning-desc" style="display:block">Start the day: gratitude, intention, a word, and prayer.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" onclick="go('reflect')">
+        <span class="ios-row-icon tone-purple"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><polyline points="16,5 12,9 8,5"/><line x1="2" y1="22" x2="22" y2="22"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Reflect</span>
+          <span class="ios-row-sub" id="soul-reflect-desc" style="display:block">Close the day: how it went, journal, examen, wins.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
   </div>
-  <div class="hub-section-label" id="hub-common-label">Common ground — the same struggle, across every path</div>
-  <div class="hub-grid" id="hub-common-grid">
-    <div class="hub-card wide" onclick="openThreads()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>
-      <div class="hc-title">Shared threads</div>
-      <div class="hc-desc">Patience, stillness, self-mastery — how other traditions hold the same human struggle. Not the same, but kin.</div>
+  <!-- applyFaithLabels() names this per tradition: "Draw near", or "Steady yourself" for a secular
+       person. It used to append "— scripture & stillness, all in one place", which is the six rows
+       below read aloud. -->
+  <div class="ios-section">
+    <div class="ios-header" id="soul-drawnear-label">Draw near</div>
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" id="soul-book-card" onclick="openScripture()">
+        <span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" id="soul-book-title" style="display:block">Bible</span>
+          <span class="ios-row-sub" id="soul-book-desc" style="display:block">A verse for whatever you’re facing, a full reader, and verses saved for the road.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="soul-plans-card" onclick="openPlans()">
+        <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Reading plans</span>
+          <span class="ios-row-sub" id="soul-plans-desc" style="display:block">Don’t know where to read? Take a short plan — fear, the pull, starting again. Five to seven days, finishable.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="soul-today-card" onclick="openTodayAnchor()">
+        <span class="ios-row-icon tone-red"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" id="soul-today-title" style="display:block">Today in the Church</span>
+          <span class="ios-row-sub" id="soul-today-desc" style="display:block">The Mass readings for today and the saint the Church remembers. The living calendar of the faith.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="soul-practice-card" onclick="openPractice()">
+        <span class="ios-row-icon tone-indigo"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="3" r="1.3"/><circle cx="16.6" cy="4.9" r="1.3"/><circle cx="18.5" cy="9.5" r="1.3"/><circle cx="16.6" cy="14.1" r="1.3"/><circle cx="12" cy="16" r="1.3"/><circle cx="7.4" cy="14.1" r="1.3"/><circle cx="5.5" cy="9.5" r="1.3"/><circle cx="7.4" cy="4.9" r="1.3"/><path d="M12 17.3v3.4"/><circle cx="12" cy="22" r="1.2"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" id="soul-practice-title" style="display:block">The Rosary</span>
+          <span class="ios-row-sub" id="soul-practice-desc" style="display:block">Pray it guided, bead by bead — today’s mysteries chosen for you, every prayer at hand.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" onclick="openBreathMenu()">
+        <span class="ios-row-icon tone-mint"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Stillness &amp; breath</span>
+          <span class="ios-row-sub" id="soul-still-desc" style="display:block">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="soul-bless-card" onclick="openBlessing()">
+        <span class="ios-row-icon tone-pink"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" id="soul-bless-title" style="display:block">Bless the people you carry</span>
+          <span class="ios-row-sub" id="soul-bless-desc" style="display:block">Hold them one at a time — yourself, someone you love, a stranger, someone difficult, everyone. Ends by naming one person to actually go to.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
   </div>
-  <!-- This card lived INSIDE #hub-common-grid, and applyFaithUIGate hides that whole grid whenever
-       ECHO_OK[tradition] is false — islam, hinduism and buddhism. The gate is right about "Shared
-       threads": cross-tradition echoes are not something to push at anyone. But a season of fasting
-       is not an echo of someone else’s path, it is the person’s OWN. So the same function that hid
-       this card went on to write "Ramadan" into #hub-fast-desc for a Muslim who could never see it,
-       while a Catholic on the same build was offered Lent. Faith full but never forced cannot mean
-       Lent for one person and nothing for another. Out of the grid, so it survives that gate. -->
-  <div class="hub-grid">
-    <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){if(typeof toggleNutSecondary==='function'){var b=document.getElementById('nut-secondary');if(b&&b.style.display==='none')toggleNutSecondary();}var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});},420)">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <div class="hc-title">A season of fasting</div>
-      <div class="hc-desc" id="hub-fast-desc">Ramadan, Lent, Navratri, Uposatha, or a window you set yourself — and the whole app moves with it.</div>
+  <!-- applyFaithUIGate hides #hub-common-label and #hub-common-grid whenever ECHO_OK[tradition] is
+       false — islam, hinduism and buddhism. The gate is right about "Shared threads": cross-tradition
+       echoes are not something to push at anyone. But a season of fasting is not an echo of someone
+       else’s path, it is the person’s OWN — so it once went on writing "Ramadan" into #hub-fast-desc
+       for a Muslim who could never see it, while a Catholic on the same build was offered Lent. The
+       fasting row is FIRST in this list and the threads row second, so when the gate takes threads
+       away the season stays, and no orphan separator is left at the top of the group. -->
+  <div class="ios-section">
+    <div class="ios-header" id="hub-common-label">Common ground</div>
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="go('nourish');setTimeout(function(){if(typeof toggleNutSecondary==='function'){var b=document.getElementById('nut-secondary');if(b&&b.style.display==='none')toggleNutSecondary();}var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});},420)">
+        <span class="ios-row-icon tone-yellow"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">A season of fasting</span>
+          <span class="ios-row-sub" id="hub-fast-desc" style="display:block">Ramadan, Lent, Navratri, Uposatha, or a window you set yourself — and the whole app moves with it.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" id="hub-common-grid" onclick="openThreads()">
+        <span class="ios-row-icon tone-teal"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Shared threads</span>
+          <span class="ios-row-sub" style="display:block">Patience, stillness, self-mastery — how other traditions hold the same human struggle. Not the same, but kin.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
   </div>
-  <div class="hub-section-label">Your anchor — what keeps you here</div>
-  <div class="hub-grid">
-    <div class="hub-card wide" onclick="openSoulToday()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      <div class="hc-title">Your day, woven</div>
-      <div class="hc-desc">Your schedule, your streaks, and where your soul is at — the whole day in one place.</div>
-    </div>
-    <div class="hub-card wide" onclick="go('why')">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      <div class="hc-title">Your Why</div>
-      <div class="hc-desc">The reason you started, letters to your future self, and the promises you’re keeping. All in one place.</div>
+  <div class="ios-section">
+    <div class="ios-header">Your anchor</div>
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="openSoulToday()">
+        <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Your day, woven</span>
+          <span class="ios-row-sub" style="display:block">Your schedule, your streaks, and where your soul is at — the whole day in one place.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+      <button type="button" class="ios-row has-icon" onclick="go('why')">
+        <span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        <span class="ios-row-body"><span class="ios-row-title" style="display:block">Your Why</span>
+          <span class="ios-row-sub" style="display:block">The reason you started, letters to your future self, and the promises you’re keeping. All in one place.</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
     </div>
   </div>
 </div>
@@ -3495,20 +3664,22 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-read" class="tab">
   <h2 id="read-title" class="page-title">Read</h2>
-  <p id="read-sub" style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
-  <div id="read-selector" style="margin-bottom:12px"></div>
+  <p id="read-sub" class="page-intro"></p>
+  <div id="read-selector" class="ios-section"></div>
   <div id="read-content"></div>
   <!-- The same shelf tab-bible has. Without it, "Carry this passage" here saved into nothing a
        non-Christian reader could ever open again. -->
-  <div id="read-saved-panel" style="margin-top:22px;display:none">
-    <div class="eyebrow" style="margin-bottom:8px">What you have carried</div>
+  <div id="read-saved-panel" style="display:none">
+    <div class="ios-header">What you have carried</div>
     <div id="read-saved-list"></div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════ -->
-<!-- TAB: PLANS — short guided reading plans, written once per tradition. No streaks, no percentage. -->
+<!-- TAB: PLANS — short guided reading plans, written once per tradition. No streaks, no percentage.
+     renderPlans / renderPlanDay / _planClose write the large title INSIDE #plans-content, because the
+     title changes with the state: the list, then the plan a person is in. -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-plans" class="tab">
   <div id="plans-content"></div>
@@ -4951,11 +5122,11 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 <!-- TAB 6: BIBLE (find + reader unified) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-bible" class="tab">
-  <div style="margin-bottom:12px">
-    <div class="page-title">The Word</div>
-    <div style="font-size:var(--t-sm);color:var(--tx3);margin-top:3px;line-height:1.55" data-intro-for="scripture">Living water for whatever you’re facing. Bring what’s heavy — there’s a verse for it. This is the ground the whole thing stands on.</div>
-  </div>
-  <div class="bible-sub-tabs">
+  <div class="page-title">The Word</div>
+  <p class="page-intro" data-intro-for="scripture">Living water for whatever you’re facing. Bring what’s heavy — there’s a verse for it. This is the ground the whole thing stands on.</p>
+  <!-- One segmented control. It was the underline strip the rest of the app retired, and it is the
+       .seg every other screen's sub-navigation already is. -->
+  <div class="bible-sub-tabs seg">
     <button class="bst active" id="bst-find" onclick="setBibleTab('find')">Find a Verse</button>
     <button class="bst" id="bst-read" onclick="setBibleTab('read')">Read</button>
     <button class="bst" id="bst-saved" onclick="setBibleTab('saved')">Saved</button>
@@ -4965,36 +5136,41 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 
   <!-- FIND PANEL -->
   <div id="bible-find-panel">
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:12px">Type what you’re feeling right now. The AI will find the verse that meets you exactly where you are.</p>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <p class="page-intro">Type what you’re feeling right now. The AI will find the verse that meets you exactly where you are.</p>
+    <!-- Train's search row, not a second recipe for one: the field is the control, and its submit is a
+         grey button, the same as Read's "Search" one panel over. A filled Find welded to the field was a
+         second blue slab above twenty-four capsules. -->
+    <div class="tr-searchbar">
       <input type="text" id="bible-in" placeholder="What are you feeling right now..." onkeydown="if(event.key==='Enter')findVerse(this.value)">
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="findVerse(document.getElementById('bible-in').value)">Find</button>
+      <button class="btn tr-find" onclick="findVerse(document.getElementById('bible-in').value)">Find</button>
     </div>
+    <!-- Capsules, the app's one choice control (.qb). These were .ftag: 13px text in the secondary grey
+         inside a 1px border on a third fill — a fourth way of drawing a chip. -->
     <div class="feeling-cloud">
-      <button class="ftag" onclick="findVerse('hopeless nothing will ever change')">Hopeless</button>
-      <button class="ftag" onclick="findVerse('fighting lust and sexual temptation')">Lust</button>
-      <button class="ftag" onclick="findVerse('crushing guilt and shame')">Guilt &amp; shame</button>
-      <button class="ftag" onclick="findVerse('angry and full of frustration')">Anger</button>
-      <button class="ftag" onclick="findVerse('completely alone and unloved')">Lonely</button>
-      <button class="ftag" onclick="findVerse('need strength and discipline to keep going')">Need strength</button>
-      <button class="ftag" onclick="findVerse('anxious and overwhelmed by everything')">Anxious</button>
-      <button class="ftag" onclick="findVerse('far from God and spiritually empty')">Far from God</button>
-      <button class="ftag" onclick="findVerse('daily battle with addiction and temptation')">Addiction</button>
-      <button class="ftag" onclick="findVerse('drowning in financial stress and debt')">Financial stress</button>
-      <button class="ftag" onclick="findVerse('need forgiveness for sins I keep repeating')">Need forgiveness</button>
-      <button class="ftag" onclick="findVerse('want to give up on everything')">Want to give up</button>
-      <button class="ftag" onclick="findVerse('grieving a relationship I hurt through my choices')">A relationship I broke</button>
-      <button class="ftag" onclick="findVerse('afraid of what people think of me')">Fear of judgement</button>
-      <button class="ftag" onclick="findVerse('need courage to take the next step')">Need courage</button>
-      <button class="ftag" onclick="findVerse('jealous and bitter of others')">Jealousy</button>
-      <button class="ftag" onclick="findVerse('grieving the loss of someone I love')">Grief &amp; loss</button>
-      <button class="ftag" onclick="findVerse('right on the edge of temptation')">Temptation</button>
-      <button class="ftag" onclick="findVerse('tired of waiting, needing patience')">Patience</button>
-      <button class="ftag" onclick="findVerse('want a grateful heart today')">Gratitude</button>
-      <button class="ftag" onclick="findVerse('worn out but need to persevere')">Perseverance</button>
-      <button class="ftag" onclick="findVerse('sick and praying for healing')">Healing</button>
-      <button class="ftag" onclick="findVerse('doubting and struggling to believe')">Doubt</button>
-      <button class="ftag" onclick="findVerse('scared about money and provision')">Provision</button>
+      <button class="qb" onclick="findVerse('hopeless nothing will ever change')">Hopeless</button>
+      <button class="qb" onclick="findVerse('fighting lust and sexual temptation')">Lust</button>
+      <button class="qb" onclick="findVerse('crushing guilt and shame')">Guilt &amp; shame</button>
+      <button class="qb" onclick="findVerse('angry and full of frustration')">Anger</button>
+      <button class="qb" onclick="findVerse('completely alone and unloved')">Lonely</button>
+      <button class="qb" onclick="findVerse('need strength and discipline to keep going')">Need strength</button>
+      <button class="qb" onclick="findVerse('anxious and overwhelmed by everything')">Anxious</button>
+      <button class="qb" onclick="findVerse('far from God and spiritually empty')">Far from God</button>
+      <button class="qb" onclick="findVerse('daily battle with addiction and temptation')">Addiction</button>
+      <button class="qb" onclick="findVerse('drowning in financial stress and debt')">Financial stress</button>
+      <button class="qb" onclick="findVerse('need forgiveness for sins I keep repeating')">Need forgiveness</button>
+      <button class="qb" onclick="findVerse('want to give up on everything')">Want to give up</button>
+      <button class="qb" onclick="findVerse('grieving a relationship I hurt through my choices')">A relationship I broke</button>
+      <button class="qb" onclick="findVerse('afraid of what people think of me')">Fear of judgement</button>
+      <button class="qb" onclick="findVerse('need courage to take the next step')">Need courage</button>
+      <button class="qb" onclick="findVerse('jealous and bitter of others')">Jealousy</button>
+      <button class="qb" onclick="findVerse('grieving the loss of someone I love')">Grief &amp; loss</button>
+      <button class="qb" onclick="findVerse('right on the edge of temptation')">Temptation</button>
+      <button class="qb" onclick="findVerse('tired of waiting, needing patience')">Patience</button>
+      <button class="qb" onclick="findVerse('want a grateful heart today')">Gratitude</button>
+      <button class="qb" onclick="findVerse('worn out but need to persevere')">Perseverance</button>
+      <button class="qb" onclick="findVerse('sick and praying for healing')">Healing</button>
+      <button class="qb" onclick="findVerse('doubting and struggling to believe')">Doubt</button>
+      <button class="qb" onclick="findVerse('scared about money and provision')">Provision</button>
     </div>
     <div class="bible-loading" id="bible-loading"><p class="pulsing">Seeking the word for you...</p></div>
     <div class="bible-card" id="bible-card">
@@ -5010,142 +5186,147 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 
   <!-- READ PANEL -->
   <div id="bible-read-panel" style="display:none">
-    <p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">Read scripture freely. Tap any verse to save it.</p>
+    <p class="page-intro">Read scripture freely. Tap any verse to save it.</p>
 
     <!-- SEARCH. searchBible() could always do this — exact reference lookup ("John 3:16"), keyword
          search, its own crisis gate, and even a "show me more" button — and .bible-search-result has
          been styled in the CSS since the start. It had no input and no results container, so its one
          reference was a button inside results that could never render, and the function threw on the
          null node before reaching any of it. Browsing by book was the only way to find a verse. -->
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <input type="text" id="br-search-in" placeholder="Search — a word, or John 3:16" style="flex:1;font-size:var(--t-lg)"
+    <div class="tr-searchbar">
+      <input type="text" id="br-search-in" placeholder="Search — a word, or John 3:16"
              onkeydown="if(event.key==='Enter'){event.preventDefault();searchBible(this.value);}">
-      <button class="btn" style="width:auto;padding:11px 15px;white-space:nowrap" onclick="searchBible(document.getElementById('br-search-in').value)">Search</button>
+      <button class="btn tr-find" onclick="searchBible(document.getElementById('br-search-in').value)">Search</button>
     </div>
-    <div id="br-search-results" style="margin-bottom:12px"></div>
+    <div id="br-search-results"></div>
 
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <select id="br-translation" onchange="loadBibleChapter()" style="flex:1;min-width:90px">
+    <div class="br-pickers">
+      <select id="br-translation" onchange="loadBibleChapter()" aria-label="Translation">
         <option value="esv" selected>ESV</option>
         <option value="kjv">KJV</option>
         <option value="asv">ASV</option>
         <option value="web">WEB</option>
       </select>
-      <select id="br-book" onchange="onBibleBookChange()" style="flex:2;min-width:120px"></select>
-      <select id="br-chapter" onchange="loadBibleChapter()" style="flex:1;min-width:60px"></select>
+      <select id="br-book" onchange="onBibleBookChange()" aria-label="Book"></select>
+      <select id="br-chapter" onchange="loadBibleChapter()" aria-label="Chapter"></select>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="btn" style="flex:1;padding:8px" onclick="prevChapter()">&#8592; Prev</button>
-      <button class="btn" style="flex:1;padding:8px" onclick="nextChapter()">Next &#8594;</button>
+    <div class="btn-row br-nav">
+      <button class="btn" onclick="prevChapter()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="15,4 7,12 15,20"/></svg> Previous</button>
+      <button class="btn" onclick="nextChapter()">Next <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="9,4 17,12 9,20"/></svg></button>
     </div>
-    <div id="br-loading" style="text-align:center;padding:24px;display:none"><p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-lg);font-style:italic;color:var(--tx3)">Loading scripture...</p></div>
+    <div id="br-loading" style="display:none"><p class="pulsing tr-loading">Loading scripture...</p></div>
     <div id="br-chapter-display" class="bible-chapter-display" style="display:none">
       <div class="bible-chapter-title" id="br-chapter-title"></div>
-      <div class="verse-tools" style="margin:0 0 12px"><button class="btn" data-speak="br-chapter-title|br-verses" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen to this chapter</button></div>
+      <div class="verse-tools"><button class="btn" data-speak="br-chapter-title|br-verses" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen to this chapter</button></div>
       <div id="br-verses"></div>
     </div>
-    <div id="br-api-credit" style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:8px;letter-spacing:0.01em"></div>
+    <div id="br-api-credit" class="ios-footnote"></div>
   </div>
 
   <!-- SAVED PANEL -->
   <div id="bible-saved-panel" style="display:none">
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:12px">Verses saved from across the app. Tap any verse while reading to save it.</p>
+    <p class="page-intro">Verses saved from across the app. Tap any verse while reading to save it.</p>
     <div id="saved-verses-list"></div>
   </div>
-  
+
   <!-- PRAYER JOURNAL PANEL -->
   <div id="bible-prayer-panel" style="display:none">
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:14px">Write down what you’re praying for. Mark answered prayers as they come — it builds your faith to look back.</p>
+    <p class="page-intro">Write down what you’re praying for. Mark answered prayers as they come — it builds your faith to look back.</p>
 
-    <!-- Unified prayer composer (WS-H): one box, choose to write your own or have the AI help. -->
-    <div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">
-      <div class="card-hd" style="margin-bottom:8px">Pray</div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;background:var(--bg3);border-radius:var(--rm);padding:3px">
-        <button id="prayer-mode-write" class="btn" onclick="setPrayerMode('write')" style="flex:1;padding:8px;font-size:var(--t-sm);background:var(--bg);color:var(--tx)">Write my own</button>
-        <button id="prayer-mode-ai" class="btn" onclick="setPrayerMode('ai')" style="flex:1;padding:8px;font-size:var(--t-sm);background:transparent;border:1px solid transparent;color:var(--tx3)"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Help me pray</button>
+    <!-- Unified prayer composer (WS-H): one box, choose to write your own or have the AI help.
+         It was a tinted card holding two hand-painted buttons in a hand-painted tray, whose colours
+         setPrayerMode() rewrote inline on every tap. The two modes are a segmented control. -->
+    <div class="card">
+      <div class="card-hd">Pray</div>
+      <div class="seg">
+        <button id="prayer-mode-write" class="fst active" onclick="setPrayerMode('write')">Write my own</button>
+        <button id="prayer-mode-ai" class="fst" onclick="setPrayerMode('ai')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg> Help me pray</button>
       </div>
       <div id="prayer-mode-write-body">
-        <textarea id="prayer-text" placeholder="What are you bringing to God right now..." style="min-height:90px;margin-bottom:8px"></textarea>
-        <input type="text" id="prayer-category" placeholder="Category (optional) — e.g. health, relationships, work" style="margin-bottom:10px">
+        <textarea id="prayer-text" placeholder="What are you bringing to God right now..." style="min-height:90px"></textarea>
+        <input type="text" id="prayer-category" placeholder="Category (optional) — e.g. health, relationships, work">
         <button class="btn primary" onclick="addPrayer()">Add to prayer list</button>
       </div>
       <div id="prayer-mode-ai-body" style="display:none">
-        <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Tell me what’s on your heart — a worry, a person, a temptation, a thanksgiving — and I’ll write a prayer you can pray now or save.</div>
-        <textarea id="ai-prayer-intention" placeholder="e.g. my mum’s surgery tomorrow / staying clean this weekend / gratitude for a good day..." style="min-height:64px;margin-bottom:8px"></textarea>
+        <p class="card-body">Tell me what’s on your heart — a worry, a person, a temptation, a thanksgiving — and I’ll write a prayer you can pray now or save.</p>
+        <textarea id="ai-prayer-intention" placeholder="e.g. my mum’s surgery tomorrow / staying clean this weekend / gratitude for a good day..." style="min-height:64px"></textarea>
         <button class="btn primary" id="ai-prayer-btn" onclick="generateIntentionPrayer()">Write my prayer</button>
-        <div id="ai-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>
+        <div id="ai-prayer-out" class="tr-card-out" style="display:none"></div>
       </div>
     </div>
 
     <!-- Saints' prayers library (WS-H) -->
     <div class="card">
-      <div class="card-hd" style="margin-bottom:6px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Prayers of the saints</div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Pray with the words of the saints. Tap one to read it — and save it to recite again.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        <button class="ftag" onclick="showSaintPrayer('St Francis of Assisi','Peace Prayer')">St Francis · Peace</button>
-        <button class="ftag" onclick="showSaintPrayer('St Ignatius of Loyola','Suscipe (Take Lord, Receive)')">St Ignatius · Surrender</button>
-        <button class="ftag" onclick="showSaintPrayer('St Teresa of Ávila','Let Nothing Disturb You (Nada te turbe)')">St Teresa · Let nothing disturb you</button>
-        <button class="ftag" onclick="showSaintPrayer('St Thomas Aquinas','Prayer Before Study')">Aquinas · Before study</button>
-        <button class="ftag" onclick="showSaintPrayer('St Augustine','Late Have I Loved You')">Augustine · Late have I loved</button>
-        <button class="ftag" onclick="showSaintPrayer('St Patrick','The Breastplate')">St Patrick · Breastplate</button>
-        <button class="ftag" onclick="showSaintPrayer('St Padre Pio','Stay With Me')">Padre Pio · Stay with me</button>
-        <button class="ftag" onclick="showSaintPrayer('Cardinal Newman','Prayer for Trust')">Newman · Trust</button>
+      <div class="card-hd">Prayers of the saints</div>
+      <p class="card-body">Pray with the words of the saints. Tap one to read it — and save it to recite again.</p>
+      <div class="feeling-cloud flush">
+        <button class="qb" onclick="showSaintPrayer('St Francis of Assisi','Peace Prayer')">St Francis · Peace</button>
+        <button class="qb" onclick="showSaintPrayer('St Ignatius of Loyola','Suscipe (Take Lord, Receive)')">St Ignatius · Surrender</button>
+        <button class="qb" onclick="showSaintPrayer('St Teresa of Ávila','Let Nothing Disturb You (Nada te turbe)')">St Teresa · Let nothing disturb you</button>
+        <button class="qb" onclick="showSaintPrayer('St Thomas Aquinas','Prayer Before Study')">Aquinas · Before study</button>
+        <button class="qb" onclick="showSaintPrayer('St Augustine','Late Have I Loved You')">Augustine · Late have I loved</button>
+        <button class="qb" onclick="showSaintPrayer('St Patrick','The Breastplate')">St Patrick · Breastplate</button>
+        <button class="qb" onclick="showSaintPrayer('St Padre Pio','Stay With Me')">Padre Pio · Stay with me</button>
+        <button class="qb" onclick="showSaintPrayer('Cardinal Newman','Prayer for Trust')">Newman · Trust</button>
       </div>
-      <div id="saint-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>
+      <div id="saint-prayer-out" class="tr-card-out" style="display:none"></div>
     </div>
-    
-    <!-- Sub-tabs for filtering -->
-    <div style="display:flex;gap:6px;margin-bottom:12px">
-      <button class="btab active" id="prayer-filter-open" onclick="setPrayerFilter('open')" style="flex:1">Praying (<span id="prayer-open-count">0</span>)</button>
-      <button class="btab" id="prayer-filter-answered" onclick="setPrayerFilter('answered')" style="flex:1">Answered (<span id="prayer-answered-count">0</span>)</button>
-      <button class="btab" id="prayer-filter-all" onclick="setPrayerFilter('all')" style="flex:1">All</button>
+
+    <!-- The filter is a segmented control. It was .btab, the underline strip Train retired for .fst. -->
+    <div class="seg prayer-seg">
+      <button class="fst active" id="prayer-filter-open" onclick="setPrayerFilter('open')">Praying (<span id="prayer-open-count">0</span>)</button>
+      <button class="fst" id="prayer-filter-answered" onclick="setPrayerFilter('answered')">Answered (<span id="prayer-answered-count">0</span>)</button>
+      <button class="fst" id="prayer-filter-all" onclick="setPrayerFilter('all')">All</button>
     </div>
-    
+
     <div id="prayer-list"></div>
-    
-    <!-- Stats footer -->
-    <div id="prayer-stats" style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:var(--rm);text-align:center;display:none">
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Your prayer story</div>
-      <div id="prayer-stats-text" style="font-size:var(--t-base);color:var(--tx2);line-height:1.6"></div>
+
+    <!-- Stats footer: a section of its own, with its label in the header role. It was a centred grey box
+         with the label in 11px capitals. -->
+    <div id="prayer-stats" class="ios-section" style="display:none">
+      <div class="ios-header">Your prayer story</div>
+      <div class="card"><p id="prayer-stats-text" class="card-body"></p></div>
     </div>
   </div>
 
   <!-- SACRAMENTS PANEL -->
   <div id="bible-sacraments-panel" style="display:none">
-    <p style="font-size:var(--t-base);color:var(--tx2);line-height:1.65;margin-bottom:16px">The sacraments are grace you can return to. Keeping track isn’t about scorekeeping — it’s about staying close, and noticing when it’s been a while.</p>
+    <p class="page-intro">The sacraments are grace you can return to. Keeping track isn’t about scorekeeping — it’s about staying close, and noticing when it’s been a while.</p>
 
-    <!-- Confession / Reconciliation -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1">
-          <div class="eyebrow" style="color:var(--pu)">Confession &middot; Reconciliation</div>
-          <div id="confession-last" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.4;margin-top:2px">No confession logged yet</div>
-          <div id="confession-since" style="font-size:var(--t-cap);color:var(--tx3);margin-top:3px"></div>
+    <!-- Confession / Reconciliation. The last time was 20px ITALIC New York — the reading face, slanted,
+         on a line that is not scripture — and each card carried its own filled blue button, so the
+         panel showed two .btn.primary in one screenful. -->
+    <div class="card sac-card">
+      <div class="sac-top">
+        <div>
+          <div class="eyebrow">Confession &middot; Reconciliation</div>
+          <div id="confession-last" class="card-title">No confession logged yet</div>
+          <div id="confession-since" class="card-foot"></div>
         </div>
       </div>
-      <button class="btn primary" onclick="logConfession()" style="margin-bottom:8px">I went to Confession</button>
-      <button class="btn" onclick="promptConfessionDate()" style="background:var(--bg3);font-size:var(--t-sm)">Log a past confession</button>
+      <button class="btn" onclick="logConfession()">I went to Confession</button>
+      <button class="btn quiet" onclick="promptConfessionDate()">Log a past confession</button>
     </div>
 
     <!-- Mass / Eucharist -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1">
-          <div class="eyebrow" style="color:var(--go)">Mass &middot; Eucharist</div>
-          <div id="mass-last" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.4;margin-top:2px">No Mass logged yet</div>
-          <div id="mass-since" style="font-size:var(--t-cap);color:var(--tx3);margin-top:3px"></div>
+    <div class="card sac-card">
+      <div class="sac-top">
+        <div>
+          <div class="eyebrow">Mass &middot; Eucharist</div>
+          <div id="mass-last" class="card-title">No Mass logged yet</div>
+          <div id="mass-since" class="card-foot"></div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--go)" id="mass-count">0</div>
-          <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">attended</div>
+        <div class="sac-count">
+          <div class="ios-stat-value tint" id="mass-count">0</div>
+          <div class="ios-stat-label">attended</div>
         </div>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:var(--t-base);color:var(--tx2);cursor:pointer">
-        <input type="checkbox" id="mass-received-eucharist" checked style="width:18px;height:18px;accent-color:var(--go)">
-        I received the Eucharist
+      <label class="card-toggle">
+        <span>I received the Eucharist</span>
+        <input type="checkbox" class="ios-switch" id="mass-received-eucharist" checked>
       </label>
-      <button class="btn primary" onclick="logMass()" style="margin-bottom:8px">I attended Mass</button>
-      <button class="btn" onclick="promptMassDate()" style="background:var(--bg3);font-size:var(--t-sm)">Log a past Mass</button>
+      <button class="btn" onclick="logMass()">I attended Mass</button>
+      <button class="btn quiet" onclick="promptMassDate()">Log a past Mass</button>
     </div>
 
     <!-- History -->
@@ -7853,6 +8034,10 @@ function svgIcon(name, size){
     sprout:'<path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 2.5-5.5 6-5.5 0 3.5-2.5 5.5-6 5.5z"/>',
     map:'<polygon points="1,6 8,3 16,6 23,3 23,18 16,21 8,18 1,21"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/>',
     breath:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8"/>',
+    // A loop of prayer beads with its pendant bead: the rosary, the misbaha and the mala are all this
+    // shape, so one mark serves the practice row for every tradition that has one. It was a one-off
+    // literal on the Soul hub, outside the set.
+    beads:'<circle cx="12" cy="3" r="1.3"/><circle cx="16.6" cy="4.9" r="1.3"/><circle cx="18.5" cy="9.5" r="1.3"/><circle cx="16.6" cy="14.1" r="1.3"/><circle cx="12" cy="16" r="1.3"/><circle cx="7.4" cy="14.1" r="1.3"/><circle cx="5.5" cy="9.5" r="1.3"/><circle cx="7.4" cy="4.9" r="1.3"/><path d="M12 17.3v3.4"/><circle cx="12" cy="22" r="1.2"/>',
     heartbreak:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/><path d="M12 5.67 9.5 10l4 2.5-2.5 4.2"/>',
     snow:'<line x1="12" y1="2" x2="12" y2="22"/><line x1="3.3" y1="7" x2="20.7" y2="17"/><line x1="3.3" y1="17" x2="20.7" y2="7"/><path d="M9 4.5 12 7l3-2.5M9 19.5 12 17l3 2.5"/>',
     phoneoff:'<path d="M10.7 13.3a16 16 0 0 1-2.6-3.4l1.3-1.3a2 2 0 0 0 .5-2.1c-.3-.9-.6-1.8-.7-2.8A2 2 0 0 0 7.1 2h-3a2 2 0 0 0-2 2.2 19.8 19.8 0 0 0 5.4 11.6"/><path d="M14 16.4a16 16 0 0 0 2 1.1l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-9.7-4.1"/><line x1="2" y1="2" x2="22" y2="22"/>',
@@ -13158,14 +13343,15 @@ function renderFaithDoor(){
     const day = (typeof getDayCount==='function') ? getDayCount() : 1;
     if(faithChosen() || dismissed || day < 7){ el.style.display='none'; el.innerHTML=''; return; }
     el.style.display='block';
+    // An ordinary card: the label in the header role, the sentence as the card's body, the offer as the
+    // card's one button and the refusal as a quiet one under it. It was a --bg3 panel with an 11px
+    // tertiary caps label and two auto-width buttons painted two different ways.
     el.innerHTML =
-      '<div style="border-radius:var(--rm);padding:14px;margin-bottom:14px;background:var(--bg3)">'+
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:7px">One thing worth saying</div>'+
-        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:12px">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</div>'+
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="_faithDoorOpen()">Show me the options</button>'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:transparent;color:var(--tx3);background:var(--fill2)" onclick="_faithDoorNo()">No thanks</button>'+
-        '</div>'+
+      '<div class="card">'+
+        '<div class="eyebrow">One thing worth saying</div>'+
+        '<p class="card-body">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</p>'+
+        '<button class="btn" onclick="_faithDoorOpen()">Show me the options</button>'+
+        '<button class="btn quiet" onclick="_faithDoorNo()">No thanks</button>'+
       '</div>';
   }catch(_){}
 }
@@ -13473,6 +13659,13 @@ function applyFaithLabels(){
     }catch(_){ }
     set('soul-practice-title', f.practiceTitle || '');
     set('soul-practice-desc', f.practiceDesc || '');
+    // The row's mark follows the practice. Prayer beads are the rosary, the misbaha and the mala; a
+    // secular person's practice here is Stillness, and handing them a string of prayer beads for it would
+    // be the quiet kind of religious nudge "full but never forced" exists to refuse.
+    try{
+      const _pi = document.querySelector('#soul-practice-card .ios-row-icon');
+      if(_pi && typeof svgIcon === 'function') _pi.innerHTML = svgIcon(t === 'secular' ? 'leaf' : 'beads', 18);
+    }catch(_){ }
     const still={
       christianity:'A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.',
       islam:'A minute of guided breathing — or dhikr carried on your breath. The one work you can always do.',
@@ -13502,10 +13695,10 @@ function applyFaithLabels(){
     set('soul-bless-title', blessT[t]||blessT.christianity);
     const _bl=(typeof blessLastLine==='function')?blessLastLine():'';
     set('soul-bless-desc', (blessD[t]||blessD.christianity)+(_bl?' \u00B7 '+_bl:''));
-    set('soul-drawnear-label',
-      t==='secular' ? 'Steady yourself — reflection & stillness, all in one place'
-      : t==='buddhism' ? 'Draw near — teachings & stillness, all in one place'
-      : 'Draw near — ' + f.scriptureWord + ' & stillness, all in one place');
+    // A section header is a label, and it has to fit one line. This was a whole sentence set in
+    // capitals — "DRAW NEAR — SCRIPTURE & STILLNESS, ALL IN ONE PLACE" — which wrapped on every phone,
+    // and its second half only named the rows directly beneath it. The secular name stays its own.
+    set('soul-drawnear-label', t==='secular' ? 'Steady yourself' : 'Draw near');
     const introTail={
       christianity:'to Christ, to the sacraments, to the people who love you',
       islam:'to Allah, to prayer, to the people who love you',
@@ -13613,15 +13806,18 @@ function _fetchT(u, ms, init){
     return r;
   }, function(e){ clearTimeout(t); throw e; });
 }
-function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:var(--t-sm)">Loading…</div>'; }
-function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:var(--t-sm);padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
-function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:var(--rs);padding:9px 11px;font-size:13px;max-width:100%'; }
-function _readBtnStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:14px;padding:8px 13px'; }
+// The loading line and the error are Train's loading role and the empty-state body — the tertiary
+// grey at 15px was the one colour a sentence a person is waiting on should never be in.
+function _readLoading(){ return '<div class="tr-loading">Loading…</div>'; }
+function _readErr(msg){ return '<div class="card ios-empty"><div class="ios-empty-body">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div></div>'; }
 function openReader(t){
   const f=FAITHS[t]||curFaith();
   if(typeof go==='function') go('read');
   const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'The Dhammapada \u2014 all 26 chapters, translated by Bhikkhu Sujato.',secular:'Meditations \u2014 Marcus Aurelius, all 12 books, trans. George Long.'};
   const ttl=document.getElementById('read-title'); if(ttl) ttl.textContent=f.bookName.replace(/^the /,'').replace(/^./,c=>c.toUpperCase());
+  // go() named the bar from the static "Read" before the line above renamed the page, so the title
+  // that fades into the bar on scroll said "Read" over a page called "Qur’an". Name it again.
+  try{ if(typeof iosNavSync==='function') iosNavSync('read'); }catch(_){ }
   const sub=document.getElementById('read-sub'); if(sub) sub.textContent=subs[t]||'';
   const sel=document.getElementById('read-selector'), content=document.getElementById('read-content');
   if(content) content.innerHTML=_readLoading();
@@ -13685,7 +13881,9 @@ function _readBundled(sel,content,bank){
   // a designed fallback.
   const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  content.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-base);line-height:1.75;color:var(--tx)">“'+_escFew(v.t)+'”</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:6px">— '+_escFew(v.r)+'</div></div>').join('')+'</div>';
+  // The note is the page's footnote, left and at 13 — it was 11px, centred, in the tertiary grey. Each
+  // passage is the passage role, parted by the reader's own hairline.
+  content.innerHTML='<p class="ios-footnote read-kept">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</p>'+'<div class="card">'+bank.map(v=>'<div class="rd-v"><div class="passage">“'+_escFew(v.t)+'”</div><div class="passage-ref">'+_escFew(v.r)+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -13694,7 +13892,8 @@ async function _readQuranInit(sel,content){
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
   try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+_escFew(s.englishName)+'</option>').join('')+'</select>' : ''; }
+  // A plain field: the app's own select styling at 17, not a 13px one iOS zooms the page to read.
+  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" aria-label="Surah">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+_escFew(s.englishName)+'</option>').join('')+'</select>' : ''; }
   _readQuranLoad(String(start));
 }
 async function _readQuranLoad(n){
@@ -13705,7 +13904,11 @@ async function _readQuranLoad(n){
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:var(--t-xl);line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+_escFew(a.text)+' <span style="color:var(--tx3);font-size:var(--t-cap)">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    // The ayah number leads, as the other three readers' do; the Arabic keeps its own size and line
+    // height; the English is the passage role. It was 15px in the secondary grey with the number
+    // trailing in a 13px tertiary bracket. The ARABIC went in unescaped while the English beside it was
+    // escaped — the same third-party response, one field apart — so it is escaped too.
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'"><div class="rd-n">'+_escFew(n)+':'+_escFew(a.numberInSurah)+'</div>'+(ar&&ar[i]?'<div dir="rtl" class="rd-src ar">'+_escFew(ar[i].text)+'</div>':'')+'<div class="passage">'+_escFew(a.text)+'</div></div>').join('')+'</div>';
     _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -13736,7 +13939,7 @@ async function _readStoicInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%STOIC_BOOKS.length; }catch(_){ }
   // A plan day asked for a specific book; honour it and clear the request, as the Qur'an reader does.
   try{ if(window.__stoicJump){ const j=STOIC_BOOKS.indexOf(window.__stoicJump); if(j>-1) i=j; window.__stoicJump=0; } }catch(_){ }
-  if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" style="'+_selStyle()+'">'+
+  if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" aria-label="Book">'+
     STOIC_BOOKS.map((b,n)=>'<option value="'+b+'"'+(n===i?' selected':'')+'>Book '+b+'</option>').join('')+'</select>';
   _readStoicLoad(STOIC_BOOKS[i]);
 }
@@ -13764,7 +13967,7 @@ async function _readStoicLoad(book){
     if(!paras.length) throw new Error('empty');
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
+      '<div class="eyebrow">Meditations &middot; Book '+_escFew(book)+'</div>'+
       paras.map(function(t,n){
         // The text carries its own section numbers from section 2 on ("2. Whatever this is that I am"),
         // so adding an index as well would print "1" above "2.". Use the number the translation gives
@@ -13778,12 +13981,14 @@ async function _readStoicLoad(book){
         const label=m?m[1]:'';
         const bodyText=m?m[2]:t;
         _svItems.push({ text:bodyText, ref:'Meditations '+book+(label?'.'+label:'') });
-        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          (label?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
-          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'">'+
+          (label?'<div class="rd-n">'+_escFew(label)+'</div>':'')+
+          '<div class="passage">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
+      // The credit is a sentence at footnote size. It was a centred strip of 11px capitals joined by
+      // middots — the exact shape of the "Manage · edit · remove" strips this app has been removing.
+      '<p class="card-note">Marcus Aurelius, translated by George Long (1862), via Wikisource. Public domain.</p>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -13821,7 +14026,7 @@ const DHP_CHAPTERS = [
 async function _readDhammapadaInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%DHP_CHAPTERS.length; }catch(_){ }
   try{ if(window.__dhpJump){ const j=DHP_CHAPTERS.findIndex(c=>c[0]===window.__dhpJump); if(j>-1) i=j; window.__dhpJump=0; } }catch(_){ }
-  if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" style="'+_selStyle()+'">'+
+  if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" aria-label="Chapter">'+
     DHP_CHAPTERS.map((c,n)=>'<option value="'+c[0]+'"'+(n===i?' selected':'')+'>'+_escFew(c[1])+'</option>').join('')+'</select>';
   _readDhammapadaLoad(DHP_CHAPTERS[i][0]);
 }
@@ -13853,17 +14058,19 @@ async function _readDhammapadaLoad(uid){
     const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
+      '<div class="eyebrow">Dhammapada &middot; '+_escFew(title)+'</div>'+
       seen.map(function(n){
         const v=verses[n];
         _svItems.push({ text:v.en.join(' ').trim(), ref:'Dhammapada '+n });
-        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
-          (v.pli.length?'<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
-          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
+        // The Pāli keeps the reading face at 15 in the secondary grey — the source language on the page,
+        // quieter than the translation; it was italic in the TERTIARY grey, the ink of a placeholder.
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'">'+
+          '<div class="rd-n">'+_escFew(n)+'</div>'+
+          (v.pli.length?'<div class="rd-src pli">'+_escFew(v.pli.join(' '))+'</div>':'')+
+          '<div class="passage">'+_escFew(v.en.join(' '))+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
+      '<p class="card-note">Translated by Bhikkhu Sujato, via SuttaCentral. Public domain.</p>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -13881,7 +14088,10 @@ const GITA_COUNTS=[47,72,43,42,29,47,30,28,34,42,55,20,35,27,20,24,28,78]; // ve
 function _gitaCount(ch){ return GITA_COUNTS[ch-1] || 40; }
 async function _readGitaInit(sel,content){
   if(!window.__gita){ let ch=1; try{ if(typeof getDayCount==='function') ch=(getDayCount()%18)+1; }catch(_){ } window.__gita={ch:ch,v:1}; }
-  if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:var(--t-sm);color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
+  // The field says what it picks ("Chapter 2"), and previous/next verse is ONE stepper capsule — the
+  // component Track's sleep row uses — instead of a tertiary 15px label and two 14px bordered boxes.
+  if(sel){ sel.innerHTML='<div class="read-gita"><select id="gita-ch" aria-label="Chapter" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">Chapter '+(i+1)+'</option>').join('')+'</select>'+
+    '<span class="ios-stepper"><button type="button" class="tr-btn" onclick="_gitaNav(-1)" aria-label="Previous verse">'+svgIcon('chevronleft',16)+'</button><button type="button" class="tr-btn" onclick="_gitaNav(1)" aria-label="Next verse">'+svgIcon('chevronright',16)+'</button></span></div>'; }
   const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
   _readGitaLoad();
 }
@@ -13920,14 +14130,20 @@ async function _readGitaLoad(){
     // when context is stacked on top of the thing someone came to see.
     const _esc = t => String(t==null?'':t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const chName = meta && (meta.translation || meta.name)
-      ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
-        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</div>'
+      // A sentence-case footnote, not a caps label: a chapter name and its meaning run to two lines,
+      // and two lines of tracked capitals is the shape this rebuild exists to remove.
+      ? '<p class="card-foot rd-chapter">Chapter '+_esc(g.ch)+' · '+_esc(meta.translation||meta.name)+
+        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</p>'
       : '';
     const chSummary = meta && meta.summary && meta.summary.en
-      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
+      ? '<div class="rd-about"><div class="eyebrow">About this chapter</div><p class="card-body flush">'+_esc(meta.summary.en)+'</p></div>'
       : '';
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:var(--t-sm);color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:var(--t-base);line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
+    // The reference is the verse's label; the Sanskrit is the source text at body size; the
+    // transliteration is the reading face, quieter; the English is the passage role — it was 15px in
+    // the secondary grey under an italic TERTIARY transliteration, the translation a person reads set
+    // as the least of the three.
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div class="eyebrow">Bhagavad Gita '+_escFew(g.ch)+'.'+_escFew(g.v)+'</div>'+(j.slok?'<div class="rd-src dev">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div class="rd-src pli">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div class="passage">'+_escFew(en)+'</div><div class="passage-ref">Verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -14487,21 +14703,29 @@ function openPlans(){ if(typeof go==='function') go('plans'); renderPlans(); }
 function renderPlans(){
   const el=document.getElementById('plans-content'); if(!el) return;
   const f=curFaith(), t=faithTradition(), st=_plans();
-  let h='<div style="text-align:center;margin-bottom:16px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Guided reading</div>'+
-    '<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);margin:6px 0 8px">Short plans</h2>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;max-width:330px;margin:0 auto">Five to seven days on one thing you’re actually carrying. Finishable \u2014 not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p></div>';
+  // A large title on the left, like every other screen — the nav bar fades it in on scroll — and the
+  // sentence under it as the page's intro. It was a centred "GUIDED READING" in 12px tertiary caps over
+  // a 28px title at a fake 700 and a centred tertiary paragraph: a landing page inside a tab.
+  let h='<h2 class="page-title">Short plans</h2>'+
+    '<p class="page-intro">Five to seven days on one thing you’re actually carrying. Finishable — not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p>';
   READING_PLANS.forEach(function(p){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
-    const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
-    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
-      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--go);margin-top:10px">'+((s&&!s.done&&d>0)?'Continue':'Begin')+' \u203A</div></div>';
+    const going=!!(s&&!s.done&&d>0);
+    const line=(s&&s.done)?'Finished · read it again any time':(d>0?'Day '+(d+1)+' of '+n+' · whenever you’re ready':n+' days');
+    // The name speaks in the ToTry face with the chevron that says the whole card is the way in, the
+    // line under it says what the plan is for, and where a person has got to is the footnote — in the
+    // tint while it is under way. The status was 12px caps OVER the title, which for a plan not yet
+    // begun printed "7 DAYS" directly above "7 days · …"; and the "Begin ›" micro-link under each card
+    // is gone, because the card was already the control.
+    h+='<div class="card plan-card" role="button" tabindex="0" aria-label="'+(going?'Continue ':'Begin ')+_escFew(p.title)+'" onclick="openPlan(\''+p.id+'\')">'+
+      '<div class="home-card-top"><div class="card-title">'+p.title+'</div><span class="plan-chev">'+svgIcon('chevronright',14)+'</span></div>'+
+      '<p class="card-body flush">'+p.sub+'</p>'+
+      ((going||(s&&s.done))?'<p class="card-foot'+(going?' tint':'')+'">'+line+'</p>':'')+'</div>';
   });
-  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 8px 4px">Written for your path \u2014 '+f.label+' \u2014 not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
+  h+='<p class="ios-footnote">Written for your path — '+f.label+' — not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
   el.innerHTML=h;
+  try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
 }
 function openPlan(id){
   const p=_planById(id); if(!p) return;
@@ -14520,33 +14744,39 @@ function renderPlanDay(id,i){
   // Buddhism and Secular — so someone reading a plan day had no way through to the Dhammapada or the
   // Stoics, even though openReader() serves both. Every tradition has a bookName; use it.
   const readLbl = (function(){ try{ const bn=(FAITHS[t]||curFaith()).bookName; return bn?('Open it in '+bn):''; }catch(_){ return ''; } })();
-  let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">'+
-    '<button class="btn subtle" onclick="renderPlans()" style="width:auto;padding:7px 11px">\u2039 Plans</button>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
-    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
-    '<div class="card" style="border-color:var(--go-bd);background:var(--go-bg);padding:22px 18px">'+
-      '<div id="plan-day-text" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
-      '<div id="plan-day-ref" style="font-size:var(--t-sm);color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
+  // The plan's name is the screen's large title and "Day 3 of 7" is its subtitle; the way back to the
+  // list is a tint control with the chevron iOS uses. It was a grey "‹ Plans" box facing a 12px
+  // tertiary "DAY 3 OF 7", over a 22px title at a fake 700.
+  let h='<button class="btn quiet plan-back" onclick="renderPlans()">'+svgIcon('chevronleft',20)+'Plans</button>'+
+    '<h2 class="page-title">'+p.title+'</h2>'+
+    '<p class="page-intro plan-day-of">Day '+(i+1)+' of '+days.length+'</p>'+
+    // The passage on an ordinary card, upright in the reading face, its source at footnote size. It was
+    // a tint-filled card with a tint border and the reference in the tint as well: three blues for one
+    // verse, which made the whole card read as a button.
+    '<div class="card">'+
+      '<div id="plan-day-text" class="passage lg">“'+day.t+'”</div>'+
+      '<div id="plan-day-ref" class="passage-ref">'+day.r+'</div>'+
       // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
       // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
       // that puts both on the morning verse works here unchanged.
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
-    '<div class="card"><div style="font-size:var(--t-sm);line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
-    '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
-      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
-      '<button class="btn subtle" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
-    '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
-    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-      (readLbl?'<button class="btn subtle" onclick="_planOpenFull(\''+id+'\','+i+')" style="flex:1">'+readLbl+'</button>':'')+
-      '<button class="btn subtle" onclick="_planCarry(\''+id+'\','+i+')" style="flex:1">Carry this passage</button></div>';
+    '<div class="card"><p class="card-body flush">'+day.w+'</p></div>'+
+    '<div class="card"><div class="eyebrow">One question</div>'+
+      '<div class="card-text plan-q">'+day.q+'</div>'+
+      '<button class="btn" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
+    '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')">That’s today</button>'+
+    // Two phrases do not share a row — the longer one wraps inside its half. They stack, quiet.
+    (readLbl?'<button class="btn quiet" onclick="_planOpenFull(\''+id+'\','+i+')">'+readLbl+'</button>':'')+
+    '<button class="btn quiet" onclick="_planCarry(\''+id+'\','+i+')">Carry this passage</button>';
   const seen=Math.max(typeof s.d==='number'?s.d:0, i);
   let nav='';
-  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">\u2039 Day '+i+'</button>';
-  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Day '+(i+2)+' \u203A</button>';
-  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Read it again</button>';
-  if(nav) h+='<div style="display:flex;gap:8px;margin-top:4px">'+nav+'</div>';
-  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 10px 4px">One day at a time is the whole design. Come back tomorrow, or in a fortnight \u2014 day '+(i+1)+' will still be here.</p>';
+  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')">'+svgIcon('chevronleft',16)+'Day '+i+'</button>';
+  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')">Day '+(i+2)+svgIcon('chevronright',16)+'</button>';
+  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')">Read it again</button>';
+  if(nav) h+='<div class="btn-row">'+nav+'</div>';
+  h+='<p class="ios-footnote">One day at a time is the whole design. Come back tomorrow, or in a fortnight — day '+(i+1)+' will still be here.</p>';
   el.innerHTML=h;
+  try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
   try{ const tab=document.getElementById('tab-plans'); if(tab) tab.scrollTop=0; }catch(_){}
 }
 function _planDone(id,i){
@@ -14564,20 +14794,23 @@ function _planClose(id,i,finished){
   const el=document.getElementById('plans-content'); if(!el) return;
   const p=_planById(id); if(!p) return;
   const days=_planDays(p), f=curFaith(), t=faithTradition();
-  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha \u2014 someone further down the path',secular:'one person who’ll actually hear it \u2014 a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
-  let h='<div style="text-align:center;padding:14px 4px 0">';
+  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha — someone further down the path',secular:'one person who’ll actually hear it — a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
+  // A completion is the one place a screen may centre: the empty-state component, with its title in the
+  // ToTry face at the greeting's size. The "take it past the app" card beneath it reads left to right,
+  // like every card. Every line here was 15px in a hand-set colour, the title a fake 700.
+  let h='<div class="plan-done"><div class="ios-empty">';
   if(finished){
-    h+='<div style="font-size:var(--t-title1);margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
-      '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
-      '<div class="card" style="text-align:left"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
+    h+='<div class="plan-dove">\u{1F54A}️</div>'+
+      '<div class="ios-empty-title">You finished it.</div>'+
+      '<div class="ios-empty-body">'+days.length+' days on '+p.short+'. No badge for this, and no streak — you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div></div>'+
+      '<div class="card"><div class="eyebrow">Now take it past the app</div>'+
+      '<p class="card-body flush">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</p></div>';
   } else {
-    h+='<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 18px">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready \u2014 tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div>';
+    h+='<div class="ios-empty-title">That’s today.</div>'+
+      '<div class="ios-empty-body">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready — tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div></div>';
   }
-  h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})" style="margin-bottom:8px">Put it down and carry it</button>'+
-    '<button class="btn subtle" onclick="renderPlans()">Back to the plans</button></div>';
+  h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})">Put it down and carry it</button>'+
+    '<button class="btn quiet" onclick="renderPlans()">Back to the plans</button></div>';
   el.innerHTML=h;
 }
 function _planRestart(id){
@@ -14590,13 +14823,16 @@ function _planAnswer(id,i){
   const days=_planDays(p); if(!days.length) return;
   i=_planClamp(i,days.length); const day=days[i];
   const m=document.createElement('div'); m.className='modal-bg open';
+  // The question is what this sheet is about, so it is the sheet's title; the plan and the passage it
+  // came from are the label above it and the line beneath it. They were 12px tertiary caps, a 17px
+  // paragraph and a 13px tertiary line, with "Not now" drawn as a second full grey button.
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">'+p.title+' \u00B7 day '+(i+1)+'</div>'+
-    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;margin-bottom:5px">'+day.q+'</div>'+
-    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:13px">'+day.r+'</div>'+
-    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;font-size:var(--t-base);line-height:1.6;margin-bottom:12px"></textarea>'+
-    '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)" style="margin-bottom:8px">Keep it in my journal</button>'+
-    '<button class="btn" onclick="closeModal(this)">Not now</button></div>';
+    '<div class="eyebrow">'+p.title+' · day '+(i+1)+'</div>'+
+    '<h3>'+day.q+'</h3>'+
+    '<p class="modal-sub">'+day.r+'</p>'+
+    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;margin-bottom:12px"></textarea>'+
+    '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)">Keep it in my journal</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button></div>';
   document.body.appendChild(m);
   setTimeout(function(){ const ta=document.getElementById('plan-answer'); if(ta) ta.focus(); },120);
 }
@@ -14910,6 +15146,10 @@ function iosNavSync(name){
     slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
     const sync=()=>{
       if(!tab.classList.contains('active')) return;
+      // Looked up on every scroll, not captured once: the listener below is attached only the first
+      // time, so a title a screen writes AFTER go() — Plans renders its own, per state — would leave
+      // it measuring a detached node forever (offsetTop 0), and the bar would show its title at rest.
+      const large=tab.querySelector('.page-title, .ios-large-title');
       const edge = large ? (large.offsetTop + large.offsetHeight - 6) : 12;
       hdr.classList.toggle('ios-scrolled', tab.scrollTop > edge);
     };
@@ -14955,14 +15195,16 @@ function highlightSoulByTime(){
   if(hr < 12) targetFn = "go('morning')";
   else if(hr >= 17) targetFn = "go('reflect')";
   if(!targetFn) return;
-  const card = soul.querySelector('.hub-card[onclick="' + targetFn + '"]');
+  // The hub is rows now, so this looks for the ROW — a selector still naming .hub-card would find
+  // nothing and the nudge would vanish without an error. "Now" is the row's trailing value in the tint,
+  // the way Settings marks the one that applies; it was an 11px caps pill pinned over the card's corner.
+  const card = soul.querySelector('.ios-row[onclick="' + targetFn + '"]');
   if(card){
-    const badge = document.createElement('div');
-    badge.className = 'soul-now-badge';
-    badge.textContent = hr < 12 ? 'now' : 'now';
-    badge.style.cssText = 'position:absolute;top:10px;right:10px;font-family:var(--font-text);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:0.01em;color:var(--on-tint);background:var(--go);padding:2px 7px;border-radius:100px';
-    card.style.position = 'relative';
-    card.appendChild(badge);
+    const badge = document.createElement('span');
+    badge.className = 'ios-row-value soul-now-badge';
+    badge.textContent = 'Now';
+    const chev = card.querySelector('.ios-row-chevron');
+    card.insertBefore(badge, chev || null);
   }
 }
 
@@ -15228,9 +15470,14 @@ const PRAYERS=new Proxy({},{get:(t,k)=>pickPrayer(k)});
 function setPrayerMode(mode){
   const w=document.getElementById('prayer-mode-write-body'), a=document.getElementById('prayer-mode-ai-body');
   const wb=document.getElementById('prayer-mode-write'), ab=document.getElementById('prayer-mode-ai');
-  const on='background:var(--bg);border:1px solid var(--bd);color:var(--tx)', off='background:transparent;border:1px solid transparent;color:var(--tx3)';
-  if(mode==='ai'){ if(w)w.style.display='none'; if(a)a.style.display='block'; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
-  else{ if(w)w.style.display='block'; if(a)a.style.display='none'; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
+  // The two modes are segments of one .seg control, so choosing one is the .active class — the same
+  // state every segmented control in the app carries. This used to rewrite each button's cssText with
+  // a hand-mixed "on" and "off" paint, including --tx3 on the unchosen label.
+  const ai = (mode==='ai');
+  if(w) w.style.display = ai ? 'none' : 'block';
+  if(a) a.style.display = ai ? 'block' : 'none';
+  if(wb) wb.classList.toggle('active', !ai);
+  if(ab) ab.classList.toggle('active', ai);
 }
 // Lowkey, honest "this was AI-generated" label that names the model that actually answered (the
 // proxy reports it; the model can vary per call due to provider fallback). Used wherever the app
@@ -24920,7 +25167,7 @@ Return ONLY a raw JSON array. No markdown.
     if(card)card.style.display='block';
   } else if(card){
     card.style.display='block';
-    card.innerHTML='<div style="text-align:center;padding:20px;font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3)">Could not find verses right now. Check your connection and try again.</div>';
+    card.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
   }
 }
 function saveCurrentVerse(){
@@ -24940,24 +25187,30 @@ function renderSavedVerses(containerId){
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
   if(!saved.length){
-    list.innerHTML = '<p class="empty-note">No saved verses yet.<br>Tap any verse to save it.</p>';
+    // The empty-state component — the shelf's own icon, a title and one line — instead of a centred
+    // italic in the tertiary grey.
+    list.innerHTML = '<div class="ios-empty">' + svgIcon('book', 44) + '<div class="ios-empty-title">No saved verses yet</div><div class="ios-empty-body">Tap any verse to save it.</div></div>';
     return;
   }
+  // One inset list, a row per passage (.sv-list / .sv-item): the passage in the reading face, its source
+  // and the day it was kept on one footnote line, and the app's 44pt remove control.
+  const shelf = document.createElement('div');
+  shelf.className = 'sv-list';
   saved.forEach((v, i) => {
     const el = document.createElement('div');
     el.className = 'sv-item';
-    el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">' +
-      '<div style="flex:1">' +
+    const meta = [v.reference, v.date].filter(Boolean).map(x => _escFew(x)).join(' \u00B7 ');
+    el.innerHTML =
+      '<div class="sv-body">' +
         // v581 escaped the verse CARD and not the shelf it saves to. The shelf re-renders the
         // model's own output every time Saved is opened, so this was the durable half of that door.
         '<div class="sv-v">\u201C' + _escFew(v.verse || '') + '\u201D</div>' +
-        '<div class="sv-r">' + _escFew(v.reference || '') + '</div>' +
-        '<div class="sv-d">' + _escFew(v.date || '') + '</div>' +
+        (meta ? '<div class="sv-r">' + meta + '</div>' : '') +
       '</div>' +
-      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:var(--t-hd);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
-    '</div>';
-    list.appendChild(el);
+      '<button type="button" class="ios-row-x" onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse">\u00D7</button>';
+    shelf.appendChild(el);
   });
+  list.appendChild(shelf);
 }
 
 // THE SHELF IS PAINTED IN TWO PLACES AND ONLY ONE OF THEM WAS EVER REPAINTED.
@@ -25014,8 +25267,11 @@ function renderVerseResults(verses,feeling){
   const card=document.getElementById('bible-card');
   if(!card)return;
   card.innerHTML='';
+  // The header is the card's footnote, in sentence case. It was 11px tint capitals with no tracking —
+  // and because it ends in the person's own words, a long feeling became two lines of shouted caps,
+  // which is also why it is not simply the caps label role: their words are not a label.
   const hdr=document.createElement('div');
-  hdr.style.cssText='font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px';
+  hdr.className='card-foot verse-for';
   hdr.textContent=plural(verses.length,'verse')+' for: '+feeling.slice(0,50)+(feeling.length>50?'...':'');
   card.appendChild(hdr);
   verses.forEach((v,i)=>{
@@ -25023,20 +25279,24 @@ function renderVerseResults(verses,feeling){
     block.className='verse-result-block';
     // Same as the search block above: these fields are the MODEL'S, and the model was handed
     // this person's own free text. Not app-authored content, so not app-trusted markup.
+    // The passage first and its source under it, the way every verse in the app now reads; the two
+    // actions are full-size buttons in a row. They were 13px labels in 7px of padding, under an 11px
+    // tint reference that sat ABOVE the verse it named.
     block.innerHTML=
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:8px">'+_escFew(v.reference)+'</div>'+
-      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">'+_escFew(v.reflection)+'</div>'+
-      '<div style="display:flex;gap:6px">'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
+      '<div class="passage">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
+      '<div class="passage-ref">'+_escFew(v.reference)+'</div>'+
+      (v.reflection ? '<p class="card-body flush verse-why">'+_escFew(v.reflection)+'</p>' : '')+
+      '<div class="btn-row">'+
+        '<button class="btn" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
+        '<button class="btn" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
       '</div>';
     card.appendChild(block);
   });
   window._currentVerses=verses;
-  const footer=document.createElement('div');
-  footer.style.cssText='display:flex;gap:8px;margin-top:4px';
-  footer.innerHTML='<button class="btn" style="flex:1" onclick="findVerse(document.getElementById(\'bible-in\').value)">Find more verses</button>';
+  const footer=document.createElement('button');
+  footer.className='btn quiet';
+  footer.setAttribute('onclick',"findVerse(document.getElementById('bible-in').value)");
+  footer.textContent='Find more verses';
   card.appendChild(footer);
 }
 
@@ -25930,7 +26190,7 @@ async function loadBibleChapter(){
       notesWrap.style.cssText = 'margin-top:18px';
       container.parentNode.appendChild(notesWrap);
     }
-    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()" style="background:var(--bg3);color:var(--go);font-size:var(--t-base);width:100%">Show study notes for this chapter</button><div id="br-notes-body" style="margin-top:12px"></div>';
+    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()">Show study notes for this chapter</button><div id="br-notes-body"></div>';
     window.__currentChapterRef = { bookId: bookId, bookName: book.name, chapter: chapter };
   }else{
     document.getElementById('br-chapter-display').style.display='block';
@@ -25946,21 +26206,24 @@ async function loadBibleChapter(){
     const _off = (typeof navigator !== 'undefined' && navigator.onLine === false);
     const _why = _off ? 'You are offline \u2014 the chapter text lives online.'
                       : (lastError ? _escFew(lastError) : '');
-    let _html = '<p style="font-size:var(--t-sm);color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
+    // The reason is the card's supporting sentence, the kept verse is the passage role under the label
+    // role, and "Try again" is the quiet action — each was a hand-set size in a hand-set grey, and the
+    // label was 11px tint capitals typed in upper case.
+    let _html = '<p class="card-body flush">Could not load ' +
       _escFew(book.name + ' ' + chapter) + '. ' + _why + '</p>';
     try{
       const _pool = [].concat.apply([], Object.keys(CONTEXTUAL_VERSES || {}).map(function(k){ return CONTEXTUAL_VERSES[k] || []; }));
       if(_pool.length){
         // Deterministic pick, so re-opening offline does not shuffle scripture at a person.
         const _pick = _pool[(String(bookId).length + Number(chapter||1)) % _pool.length];
-        _html += '<div style="padding:10px 8px;border-top:1px solid var(--bd);margin-top:6px">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
-          '<div style="font-family:var(--font-serif);font-size:var(--t-base);line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
+        _html += '<div class="br-offline">' +
+          '<div class="eyebrow">On this phone, while you wait</div>' +
+          '<div class="passage">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
+          '<div class="passage-ref">' + _escFew(_pick.ref) + '</div>' +
           '</div>';
       }
     }catch(_){ }
-    _html += '<button class="btn subtle" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;min-height:34px">Try again</button>';
+    _html += '<button class="btn quiet" onclick="loadBibleChapter()">Try again</button>';
     document.getElementById('br-verses').innerHTML = _html;
   }
 }
@@ -25969,7 +26232,7 @@ async function loadStudyNotes(){
   const body = document.getElementById('br-notes-body');
   const ref = window.__currentChapterRef;
   if(!body || !ref) return;
-  body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);padding:8px;font-style:italic">Loading study notes…</div>';
+  body.innerHTML = '<div class="tr-loading">Loading study notes…</div>';
   // helloao commentary endpoint uses USFM-style book IDs (e.g. GEN, JHN). Map common names.
   const bookCode = bibleBookToUSFM(ref.bookName);
   let notes = null;
@@ -25978,18 +26241,23 @@ async function loadStudyNotes(){
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
-    body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:var(--rs)">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
+    body.innerHTML = '<p class="card-foot">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</p>';
     return;
   }
   // Render notes — each item may be {type, verseNumber, content[]}
-  let html = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Tyndale Open Study Notes</div>';
+  // The notes sit inside the chapter card, so they are its label role and hairline-parted rows at the
+  // supporting size, each led by its verse number in the same figures as the chapter's own numbers. The
+  // label was 11px tint caps, the numbers 12px tint, and the verse LABEL went into the markup raw while
+  // the note text beside it was escaped — one third-party object, two fields, one escaped.
+  const _e = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let html = '<div class="eyebrow br-notes-hd">Tyndale Open Study Notes</div>';
   notes.forEach(n => {
     const txt = Array.isArray(n.content) ? n.content.map(c => typeof c==='string'?c:(c.text||'')).join(' ') : (n.content || n.text || '');
     if(!txt) return;
     const label = n.verseNumber ? ('v'+n.verseNumber) : (n.reference || '');
-    html += '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--bd)">'+
-      (label?'<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-right:6px">'+label+'</span>':'')+
-      '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+txt.replace(/</g,'&lt;')+'</span></div>';
+    html += '<div class="br-note card-body flush">'+
+      (label?'<span class="br-note-v">'+_e(label)+'</span>':'')+
+      txt.replace(/</g,'&lt;')+'</div>';
   });
   body.innerHTML = html;
 }
@@ -26045,7 +26313,7 @@ async function searchBible(query){
   if(!query)return;
   const res=document.getElementById('br-search-results');
   if(!res) return;   // never throw on a missing container — the crisis gate above has already run
-  res.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:16px">Listening to what you wrote...</p>';
+  res.innerHTML='<p class="pulsing tr-loading">Listening to what you wrote...</p>';
   
   // Direct reference lookup (e.g. "John 3:16", "Romans 8:28-30")
   const refMatch=query.match(/^(\d?\s?[A-Za-z]+)\s+(\d+):(\d+)(-\d+)?$/);
@@ -26105,9 +26373,15 @@ async function searchBible(query){
       if(verses.length){
         res.innerHTML='';
         if(data.reading){
+          // The app answering the person, so it is the app's sentence on an ordinary card at body size.
+          // It was New York ITALIC — the scripture face, slanted — on a tint panel with a tint border,
+          // which set the model's words in the same voice as the verses it was introducing.
           const reading=document.createElement('div');
-          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.6;color:var(--tx)';
-          reading.textContent=data.reading;
+          reading.className='card';
+          const readingText=document.createElement('div');
+          readingText.className='card-text';
+          readingText.textContent=data.reading;
+          reading.appendChild(readingText);
           res.appendChild(reading);
         }
         verses.forEach(v=>{
@@ -26116,22 +26390,23 @@ async function searchBible(query){
           // These three fields are the MODEL'S output, and the model was handed the person's own
           // free text. A crafted query can make it emit markup, so it is not app-authored content.
           // data.reading above already goes through textContent; these went out as live HTML.
-          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div style="font-size:var(--t-sm);color:var(--bl);margin-top:6px;line-height:1.5">'+_escFew(v.relevance)+'</div>':'');
+          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div class="bsr-why">'+_escFew(v.relevance)+'</div>':'');
           el.onclick=()=>saveVerseFromReader(v.text,v.reference);
           res.appendChild(el);
           if(!shown.includes(v.reference))shown.push(v.reference);
         });
         ls(histKey,shown.slice(-25));
+        // Two short labels side by side, in the one button treatment; "Pray with this" was repainted
+        // in a tint fill with a tint border, a third look for the same control.
         const actions=document.createElement('div');
-        actions.style.cssText='display:flex;gap:8px;margin-top:12px';
+        actions.className='btn-row bsr-actions';
         const more=document.createElement('button');
-        more.className='btn';more.style.cssText='flex:1;font-size:var(--t-sm)';
+        more.className='btn';
         more.textContent='Show me more';
         more.onclick=()=>searchBible(query);
         actions.appendChild(more);
         const pray=document.createElement('button');
         pray.className='btn';
-        pray.style.cssText='flex:1;font-size:var(--t-sm);background:var(--go-bg);border-color:var(--go-bd);color:var(--go)';
         pray.textContent='Pray with this';
         pray.onclick=()=>generatePrayerFor(query, verses[0]);
         actions.appendChild(pray);
@@ -26142,9 +26417,9 @@ async function searchBible(query){
   }catch(e){console.error('Bible search failed:',e);}
   
   if(!navigator.onLine){
-    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">You\'re offline. Scripture search needs a connection.</p>';
+    res.innerHTML='<div class="ios-empty"><div class="ios-empty-body">You\'re offline. Scripture search needs a connection.</div></div>';
   } else {
-    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">Couldn\'t reach scripture right now. Try again in a moment.</p>';
+    res.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Couldn\'t reach scripture right now. Try again in a moment.</div></div>';
   }
 }
 
@@ -26218,11 +26493,20 @@ async function generateIntentionPrayer(pfx){
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
       out.style.display='block';
-      out.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
-    } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
-  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
+      // THE PERSON'S OWN WORDS NEVER GO INTO A HANDLER. The category was spliced into this onclick as
+      // a quoted string with ' and " stripped — but the attribute is decoded before the script runs, so
+      // typing the six characters &apos; put a real quote back and ended the string: an intention could
+      // run code, and the same text was then saved as the category renderPrayers() printed raw. It rides
+      // on window beside the prayer it belongs to, exactly as the prayer already did.
+      window.__lastAIPrayerCat = intention.trim().slice(0,30);
+      // The label role, the prayer as prayer text (upright, in the reading face), and the two actions
+      // stacked — "Save to my prayers" is a phrase, and side by side it wrapped inside half a button.
+      // They were an 11px tint caps label, italic serif, and two 15px buttons painted two ways.
+      out.innerHTML = '<div class="eyebrow">A '+_prayerNoun()+' for this</div>'+
+        '<div class="passage prayer-words">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
+        '<div class="prayer-acts"><button class="btn" onclick="savePrayerToList(window.__lastAIPrayer, window.__lastAIPrayerCat)">Save to my '+_prayerNoun()+'s</button><button class="btn quiet" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+    } else if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t write that just now. Try again in a moment.</p>'; }
+  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t reach the coach right now.</p>'; } }
   // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write
   // my reflection" for a secular person, "Write my du'a" for a Muslim — and this finally block put
   // 'Write my prayer' back regardless, on success AND on failure. So the composer was correct until you
@@ -26234,26 +26518,28 @@ async function showSaintPrayer(saint, title){
   const out = document.getElementById('saint-prayer-out');
   if(!out) return;
   out.style.display='block';
-  out.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center;padding:8px">Bringing '+saint+'\u2019s words...</p>';
+  out.innerHTML='<p class="pulsing tr-loading">Bringing '+saint+'\u2019s words...</p>';
   try{
     const sys='You provide the authentic, traditional text of well-known Catholic prayers exactly as commonly prayed. Return only the prayer text, no commentary or title.';
     const prompt='Give the traditional English text of the prayer "'+title+'" attributed to '+saint+'. Just the prayer itself, line breaks preserved.';
     const text=await api(sys,[],prompt,600);
     if(text && text.trim()){
       window.__lastSaintPrayer = text.trim();
-      out.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
-        '<button class="btn" style="background:var(--bg3);font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
-    } else { out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
-  }catch(e){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
+      // The prayer's name is its title in the ToTry face, the saint the line under it, and the words
+      // are prayer text: it was all one 11px tint caps strip joined by a middot, over italic serif.
+      out.innerHTML='<div class="card-title">'+title+'</div><p class="card-foot saint-by">'+saint+'</p>'+
+        '<div class="passage prayer-words">'+text.trim().replace(/</g,'&lt;')+'</div>'+
+        '<button class="btn prayer-save" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
+    } else { out.innerHTML='<p class="card-foot">Couldn\u2019t load that prayer right now.</p>'; }
+  }catch(e){ out.innerHTML='<p class="card-foot">Couldn\u2019t reach the library right now.</p>'; }
 }
 
 async function generatePrayerFor(situation, verse){
   const res=document.getElementById('br-search-results');
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');
-  prayerBox.style.cssText='padding:16px;margin-top:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)';
-  prayerBox.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center">Writing a prayer...</p>';
+  prayerBox.className='card bsr-prayer';
+  prayerBox.innerHTML='<p class="pulsing tr-loading">Writing a prayer...</p>';
   res.appendChild(prayerBox);
   
   const name=ls('totry_name')||'';
@@ -26261,8 +26547,11 @@ async function generatePrayerFor(situation, verse){
   try{
     const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
-      prayerBox.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
+      // A MODEL'S REPLY IS NOT APP CONTENT. The prompt above carries the person's own search text, and
+      // this wrote the reply into innerHTML untouched — the one AI output on this screen left unescaped
+      // while the verses beside it were. A prayer is prayer text, so it is the passage role.
+      prayerBox.innerHTML='<div class="eyebrow">A '+_prayerNoun()+' for this moment</div>'+
+        '<div class="passage prayer-words">'+_escFew(prayer.trim())+'</div>';
     } else {
       prayerBox.remove();
     }
@@ -45879,17 +46168,19 @@ function renderSoulStill(){
     ? _escFew(line)
     : 'One minute of stillness. Nothing to believe, nothing to say \u2014 just your breath, and the room.';
 
+  // A word from a tradition is SCRIPTURE, so it is set in the reading face (.passage) with its source
+  // under it at footnote size — it was the display face at weight 700, a fake bold on a family with
+  // one roman weight, over an 11px tertiary citation. The secular line is the app itself speaking, so
+  // it takes .card-say, the ToTry face upright. Card, eyebrow and button are the components; the
+  // inline tint on the eyebrow and the border on the button were never visible under their classes.
   el.style.display = 'block';
   el.innerHTML =
-    '<div style="border-radius:var(--r);padding:20px 18px;margin-bottom:18px;' +
-      'background:var(--bg2)">' +
-      '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
-      '<div style="font-family:var(--font-display);font-weight:700;font-size:' + (line ? '21px' : '19px') + ';' +
-        'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
-      (ref ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;' +
-             'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
-      '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
-        'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
+    '<div class="card">' +
+      '<div class="eyebrow">' + _escFew(eyebrow) + '</div>' +
+      (line
+        ? '<div class="passage lg">' + body + '</div>' + (ref ? '<div class="passage-ref">' + _escFew(ref) + '</div>' : '')
+        : '<div class="card-say">' + body + '</div>') +
+      '<button class="btn" onclick="soulBeStill()">Be still for a minute</button>' +
     '</div>';
 }
 function soulBeStill(){
@@ -50157,9 +50448,11 @@ function _promptSacramentDate(kind){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">When was this '+label+'?</div>'+
-    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;font-size:var(--t-base);padding:11px;color-scheme:dark;width:100%">'+
-    (kind==='mass' ? '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:var(--t-sm);color:var(--tx2);cursor:pointer"><input type="checkbox" id="sacrament-euch-input" checked style="width:18px;height:18px;accent-color:var(--go)">I received the Eucharist</label>' : '')+
+    // The sheet title role, not a centred italic New York line; the date field without the
+    // color-scheme:dark that painted a DARK picker into the light sheet; the Eucharist as a switch row.
+    '<h3>When was this '+label+'?</h3>'+
+    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;width:100%">'+
+    (kind==='mass' ? '<label class="card-toggle"><span>I received the Eucharist</span><input type="checkbox" class="ios-switch" id="sacrament-euch-input" checked></label>' : '')+
     '<button class="btn primary" onclick="(function(){var d=document.getElementById(\'sacrament-date-input\').value;var iso=d?new Date(d+\'T12:00:00\').toISOString():null;'+
       (kind==='confession'
         ? 'closeModal(this);logConfession(iso);'
@@ -50195,7 +50488,9 @@ function renderSacraments(){
       const d = _daysAgo(cLast.date);
       if(cSinceEl){
         cSinceEl.textContent = confessions.length + ' logged' + (d >= 40 ? ' · it may be time to return' : '');
-        cSinceEl.style.color = d >= 40 ? 'var(--pu)' : 'var(--tx3)';
+        // The gentle "it may be time" keeps its purple; the ordinary count is the footnote's own grey
+        // (the class), not the tertiary one this used to write inline.
+        cSinceEl.style.color = d >= 40 ? 'var(--pu)' : '';
       }
     } else {
       cLastEl.textContent = 'No confession logged yet';
@@ -50221,6 +50516,9 @@ function renderSacraments(){
   }
 
   // Combined history (most recent 12)
+  // An inset list under a section header: the kind as the row's title, the day as its subtitle, and a
+  // remove control a thumb can land on, named for a screen reader. Each entry was a hand-built flex row
+  // with a 17px dove or cross glyph, the date at 12px tertiary, and a bare × with 4px of padding.
   const histEl = document.getElementById('sacrament-history');
   if(histEl){
     const combined = [
@@ -50228,22 +50526,13 @@ function renderSacraments(){
       ...masses.map(m => ({...m, kind:'mass'}))
     ].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
     if(!combined.length){ histEl.innerHTML = ''; return; }
-    histEl.innerHTML = '<div class="eyebrow" style="margin:6px 0 8px">Recent</div>' +
-      combined.map(item => {
-        const isC = item.kind === 'confession';
-        const icon = isC ? '\u{1F54A}' : '\u271D';
-        const label = isC ? 'Confession' : (item.eucharist ? 'Mass &amp; Eucharist' : 'Mass');
-        const color = isC ? 'var(--pu)' : 'var(--go)';
-        const dateStr = new Date(item.date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
-        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">' +
-          '<div style="display:flex;align-items:center;gap:10px">' +
-            '<span style="font-size:var(--t-base)">' + icon + '</span>' +
-            '<div><div style="font-size:var(--t-base);color:var(--tx)">' + label + '</div>' +
-            '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + dateStr + '</div></div>' +
-          '</div>' +
-          '<button onclick="deleteSacrament(\'' + item.kind + '\',' + item.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:4px">&times;</button>' +
-        '</div>';
-      }).join('');
+    histEl.innerHTML = iosList(combined.map(item => {
+      const isC = item.kind === 'confession';
+      const label = isC ? 'Confession' : (item.eucharist ? 'Mass & Eucharist' : 'Mass');
+      const dateStr = new Date(item.date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
+      return iosRow({ title: label, sub: dateStr, chevron: false,
+        trailing: '<button type="button" class="ios-row-x" aria-label="Delete this record" onclick="deleteSacrament(\'' + item.kind + '\',' + Number(item.id) + ')">&times;</button>' });
+    }), { header: 'Recent' });
   }
 }
 
@@ -50318,61 +50607,68 @@ function renderPrayers(){
   const prayers = ls('totry_prayers') || [];
   const open = prayers.filter(p => p.status === 'open');
   const answered = prayers.filter(p => p.status === 'answered');
-  
+
   const openCountEl = document.getElementById('prayer-open-count');
   const answeredCountEl = document.getElementById('prayer-answered-count');
   if(openCountEl) openCountEl.textContent = open.length;
   if(answeredCountEl) answeredCountEl.textContent = answered.length;
-  
+
   const list = document.getElementById('prayer-list');
   if(!list) return;
-  
+
   let filtered;
   if(_prayerFilter === 'open') filtered = open;
   else if(_prayerFilter === 'answered') filtered = answered;
   else filtered = prayers;
-  
+
+  // Everything a person typed into this journal is escaped, every field. The TEXT was; the CATEGORY —
+  // typed into its own box one line below, and written by the AI composer from the person's intention —
+  // went into innerHTML raw, and it is the first line of every card.
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if(!filtered.length){
     const empty = _prayerFilter === 'answered' ?
       'No answered prayers yet. They come — keep praying and watching.' :
       _prayerFilter === 'open' ?
       'No active prayers. Add one above to start.' :
       'Your prayer journal is empty. Add your first one above.';
-    list.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:20px;font-style:italic">' + empty + '</p>';
+    // The empty-state body, upright; it was a centred italic in the tertiary grey.
+    list.innerHTML = '<div class="ios-empty"><div class="ios-empty-body">' + empty + '</div></div>';
   } else {
     list.innerHTML = '';
     filtered.forEach(p => {
       const created = new Date(p.createdAt);
       const ago = Math.floor((Date.now() - created.getTime()) / 86400000);
       const agoLabel = ago === 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago';
-      
+
+      // One card per prayer, drawn from the card roles: the prayer itself at body size beside the card's
+      // own remove control, and its category and start as one footnote. It was a bordered box
+      // (green-bordered once answered) holding 11px tint caps, an 11px tertiary date, a green-tinted
+      // panel inside the card, a bare × in a grey box, and "✓ God answered this" painted black on green.
       const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid ' + (p.status === 'answered' ? 'var(--gr-bd)' : 'var(--bd)') + ';border-radius:var(--rm);padding:12px;margin-bottom:8px';
-      
-      let html = '';
-      if(p.category){
-        html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + p.category + '</div>';
-      }
-      html += '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.55;margin-bottom:6px">' + p.text.replace(/</g, '&lt;') + '</div>';
-      html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:8px">Started ' + agoLabel + '</div>';
-      
+      card.className = 'card prayer-card';
+
+      let html = '<div class="home-card-top"><div class="card-text">' + esc(p.text) + '</div>' +
+        '<button type="button" class="card-x" aria-label="Delete this prayer" onclick="deletePrayer(' + Number(p.id) + ')">&times;</button></div>';
+      html += '<div class="card-foot">' + (p.category ? esc(p.category) + ' · started ' : 'Started ') + agoLabel + '</div>';
+
       if(p.status === 'answered'){
         const ansAgo = Math.floor((Date.now() - new Date(p.answeredAt).getTime()) / 86400000);
         const ansLabel = ansAgo === 0 ? 'today' : ansAgo === 1 ? 'yesterday' : ansAgo + ' days ago';
-        html += '<div style="background:var(--gr-bg);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--gr);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Answered ' + ansLabel + '</div>' +
-          (p.answerNote ? '<div style="font-size:var(--t-sm);color:var(--tx);line-height:1.5">' + p.answerNote.replace(/</g, '&lt;') + '</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);font-style:italic">No note added</div>') +
+        // The answer is grouped with a hairline inside the card — a card does not hold a card.
+        html += '<div class="prayer-answer">' +
+          '<div class="eyebrow">Answered ' + ansLabel + '</div>' +
+          (p.answerNote ? '<div class="card-text">' + esc(p.answerNote) + '</div>' : '<div class="card-foot">No note added</div>') +
         '</div>';
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:6px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="unanswerPrayer(' + p.id + ')">Reopen</button><button class="btn danger" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="deletePrayer(' + p.id + ')">Delete</button></div>';
+        html += '<button class="btn" onclick="unanswerPrayer(' + Number(p.id) + ')">Reopen</button>';
       } else {
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:8px;font-size:var(--t-sm);background:var(--gr);color:#000;border:none" onclick="markPrayerAnswered(' + p.id + ')">✓ God answered this</button><button class="btn" style="width:auto;padding:8px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="deletePrayer(' + p.id + ')">×</button></div>';
+        html += '<button class="btn success" onclick="markPrayerAnswered(' + Number(p.id) + ')">' + svgIcon('check', 18) + 'God answered this</button>';
       }
-      
+
       card.innerHTML = html;
       list.appendChild(card);
     });
   }
-  
+
   // Stats
   const statsBox = document.getElementById('prayer-stats');
   const statsText = document.getElementById('prayer-stats-text');
