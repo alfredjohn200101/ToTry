@@ -4459,7 +4459,8 @@ function fnBodyOf(code, name){
       '#1A1205': 'near-black on the morning ritual’s gold',
       '#231803': 'near-black on the fuel plan’s gold chip',
       '#7A2E2E': 'dark red on a red-tinted fill',
-      '#A8D8B9': 'pale green on a dark fill',
+      // '#A8D8B9' went on 17 Sep 2026: its one use was the protein figure in the Day-60 preview sheet,
+      // which is a stat tile in the label colour now.
     };
     const scanInk = (txt) => {
       const hits = new Map();
@@ -7662,9 +7663,18 @@ H.section('one type scale — no size sits between two steps, and every declared
   H.ok(/\.btn\[style\*="text-align:left"\][^{]*\{justify-content:flex-start\}/.test(code),
        'a .btn that asks for text-align:left gets it (flex centres it otherwise)');
   H.ok(/\.btn\.stack\{flex-direction:column/.test(code), 'a title-over-description button stacks');
-  const faith = [...H.html.matchAll(/<button class="([^"]*)"[^>]*onclick="obPickFaith\(/g)].map(m => m[1]);
-  H.ok(faith.length >= 4 && faith.every(c => /\bstack\b/.test(c)),
+  // The faith picker became an inset grouped list on 17 Sep 2026, and an .ios-row stacks its title over
+  // its sub by construction (both are display:block inside .ios-row-body). The intent this guards is
+  // unchanged — "Christianity" OVER its description, never beside it — so it accepts either shape and
+  // still fails on a row that has lost its description or a .btn that is not .stack.
+  const faith = [...H.html.matchAll(/<button [^>]*class="([^"]*)"[^>]*onclick="obPickFaith\([^)]*\)">([\s\S]*?)<\/button>/g)]
+    .map(m => ({ cls: m[1], body: m[2] }));
+  const stacks = f => /\bstack\b/.test(f.cls) ||
+    (/\bios-row\b/.test(f.cls) && /class="ios-row-title"[^>]*>[^<]+<\/span><span class="ios-row-sub"[^>]*>[^<]+</.test(f.body));
+  H.ok(faith.length >= 4 && faith.every(stacks),
        'onboarding’s faith buttons stack their description under the name (' + faith.length + ')');
+  H.ok(!stacks({ cls: 'ios-row', body: '<span class="ios-row-title">Islam</span>' }) && !stacks({ cls: 'btn', body: '' }),
+       'and that check fails on a row with no description, or a flat button (calibration)');
 }
 
 H.section('three more doors where a person’s own typing became live markup');

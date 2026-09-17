@@ -143,18 +143,18 @@ function checkChangelog(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
+  // A sheet title and a list, the way iOS says what changed. It was an 11px tint caps label over a
+  // New York ITALIC title, and each item a 15px secondary line behind a hand-typed "›" in the tint.
+  // CHANGELOG entries are app-authored constants, as before.
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + APP_VERSION + ' · just updated</div>' +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);color:var(--tx);font-style:italic;margin-bottom:14px">' + entry.title + '</div>' +
-    '<div style="margin-bottom:16px">' +
+    '<h3>' + entry.title + '</h3>' +
+    '<div class="modal-sub">Just updated to ' + APP_VERSION + '</div>' +
+    '<div class="ios-section fr-sheet-list"><div class="ios-list wrap">' +
       entry.items.map(it =>
-        '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
-          '<span style="color:var(--go);flex-shrink:0">›</span>' +
-          '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' + it + '</span>' +
-        '</div>'
+        '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title">' + it + '</span></span></div>'
       ).join('') +
-    '</div>' +
+    '</div></div>' +
     '<button class="btn primary" onclick="ackChangelog()">Got it</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -268,82 +268,67 @@ function showAppPreview(){
   document.querySelector('.modal-bg.open')?.remove();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
-  
-  // Build a "Day 60 in the life of a user" preview — all illustrative, never saved
+
+  // Build a "Day 60 in the life of a user" preview — all illustrative, never saved.
+  // REBUILT FROM THE COMPONENTS (17 Sep 2026). Seven hand-painted panels, each opening with an 11px
+  // capital label tracked at 0.01em, three in the third grey and two in purple; the identity and the
+  // coach's line in New York ITALIC; the day count in a tinted panel with a purple border written as an
+  // rgba literal; the nutrition figures in four colours, one of them a hex no theme could reach; and
+  // the heatmap in a gold that is the brand's signature, not a measure of anything. It is the same
+  // sample, said the way the real screens now say it: section headers, cards, stat tiles and rows.
+  // Every string here is an app-authored constant, so the markup is as trusted as it was.
+  const cur = curSym();
+  const row = (title, value, tone) =>
+    '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title">' + title + '</span></span>' +
+    '<span class="ios-row-value' + (tone ? ' ' + tone : '') + '">' + value + '</span></div>';
+  const irow = (icon, tone, title, sub) =>
+    '<div class="ios-row has-icon"><span class="ios-row-icon tone-' + tone + '">' + svgIcon(icon, 18) + '</span>' +
+    '<span class="ios-row-body"><span class="ios-row-title">' + title + '</span><span class="ios-row-sub">' + sub + '</span></span></div>';
+  const stat = (label, value, unit) =>
+    '<div class="ios-stat"><div class="ios-stat-label">' + label + '</div><div class="ios-stat-value">' + value +
+    (unit ? '<span class="ios-stat-unit">' + unit + '</span>' : '') + '</div></div>';
+  const heat = Array.from({length:13*7}, () => '<i class="l' + Math.floor(Math.random()*5) + '"></i>').join('');
+
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Preview · sample data · not yours</div>' +
-    '<h3 style="margin-bottom:6px">What Day 60 looks like</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px;line-height:1.6">This is a sample of what your app will look like once you\'ve been logging for 2 months. None of this is real — it\'s just so you can see what you\'re building toward.</p>' +
-    '<div style="max-height:62vh;overflow-y:auto;padding-right:4px">' +
-    
-      // Identity + day count
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Who you are becoming</div>' +
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;margin-bottom:8px">Disciplined · present · faithful · strong</div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">Day 60</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">38d clean from weed</div>' +
-        '</div>' +
-      '</div>' +
-    
-      // Coach line
-      '<div style="background:var(--go-bg);border:1px solid rgba(140,107,182,0.3);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Your coach says</div>' +
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
-      '</div>' +
-    
-      // Heatmap mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Show-up heatmap · 87% rate</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(13,1fr);gap:2px">' +
-          Array.from({length:13*7}, (_,i) => {
-            const intensity = [0.08, 0.25, 0.5, 0.75, 1][Math.floor(Math.random()*5)];
-            return '<div style="aspect-ratio:1;background:rgba(200,169,110,' + intensity + ');border-radius:2px"></div>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-    
-      // Training summary mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly muscle volume</div>' +
-        ['Chest 18.4k kg · 2d ago','Back 22.1k kg · today','Legs 31.8k kg · 1d ago','Shoulders 8.2k kg · 3d ago'].map(r =>
-          '<div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);padding:3px 0">' +
-            '<span>' + r.split(' · ')[0] + '</span><span style="color:var(--tx3)">' + r.split(' · ')[1] + '</span>' +
-          '</div>'
-        ).join('') +
-      '</div>' +
-    
-      // Nutrition card mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Today\'s nutrition</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">CAL</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">2104</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">PRO</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:#A8D8B9">178g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">FIBER</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--gr)">31g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">VIT C</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2)">93%</div></div>' +
-        '</div>' +
-      '</div>' +
-    
-      // Vice pattern mock
-      '<div style="background:var(--go-bg);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Patterns from your fights</div>' +
-        '<div style="font-size:var(--t-cap);color:var(--tx2);line-height:1.6">'+svgIcon("target")+' Top trigger: "boredom" — 6 times · 67% win rate<br>'+svgIcon("calendar")+' Hardest day: Fridays — 8 fights · 50% won<br>'+svgIcon("clock")+' Peak: late night — 9 fights · 78% won</div>' +
-      '</div>' +
-    
-      // Money mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Money</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:var(--font-text);color:var(--re)">'+curSym()+'6,840</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:var(--font-text);color:var(--gr)">+'+curSym()+'432</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:var(--font-text);color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
-      '</div>' +
-    
-      // Closing line
-      '<div style="text-align:center;padding:16px 8px;font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx2);font-style:italic;line-height:1.6">Your version of this fills in one log at a time. Start with one thing today.</div>' +
-    
+    '<h3>What Day 60 looks like</h3>' +
+    '<div class="modal-sub">This is a sample of what your app will look like once you’ve been logging for 2 months. None of this is real — it’s just so you can see what you’re building toward.</div>' +
+    '<div class="fr-preview">' +
+
+      '<div class="ios-section"><div class="ios-header">Who you are becoming</div>' +
+        '<div class="card"><div class="card-say">Disciplined, present, faithful, strong</div>' +
+        '<div class="card-foot">Day 60 · 38 days clean from weed</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Your coach says</div>' +
+        '<div class="card"><div class="card-body">Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13.</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Show-up heatmap</div>' +
+        '<div class="card"><div class="fr-heat" aria-hidden="true">' + heat + '</div>' +
+        '<div class="card-foot">Showed up 87% of days</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Weekly muscle volume</div><div class="ios-list">' +
+        row('Chest', '18.4k kg · 2d ago') + row('Back', '22.1k kg · today') +
+        row('Legs', '31.8k kg · 1d ago') + row('Shoulders', '8.2k kg · 3d ago') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Today’s nutrition</div><div class="ios-stats">' +
+        stat('Calories', '2,104') + stat('Protein', '178', 'g') + stat('Fibre', '31', 'g') + stat('Vitamin C', '93', '%') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Patterns from your fights</div><div class="ios-list">' +
+        irow('target', 'orange', 'Top trigger: “boredom”', '6 times · 67% won') +
+        irow('calendar', 'red', 'Hardest day: Fridays', '8 fights · 50% won') +
+        irow('clock', 'indigo', 'Peak: late night', '9 fights · 78% won') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Money</div><div class="ios-list">' +
+        row('Debt remaining', cur + '6,840', 'bad') + row('Saved from vices', '+' + cur + '432', 'good') +
+        row('USA trip fund', cur + '1,840 of ' + cur + '8,000') +
+      '</div></div>' +
+
+      '<div class="fr-preview-close">Your version of this fills in one log at a time. Start with one thing today.</div>' +
     '</div>' +
-    '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)" style="margin-top:14px">Start my Day 1</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;font-size:var(--t-sm);background:var(--fill2)">Close preview</button>' +
+    '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)">Start my Day 1</button>' +
+    '<button class="btn quiet" onclick="closeModal(this)">Close preview</button>' +
   '</div>';
   document.body.appendChild(m);
 }

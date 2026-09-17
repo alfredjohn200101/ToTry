@@ -174,7 +174,7 @@ body[data-daypart="night"]::before{background:radial-gradient(150% 60% at 70% -5
 :focus-visible{outline:2px solid var(--go,var(--go));outline-offset:2px;border-radius:4px}
 button:focus:not(:focus-visible){outline:none}
 .app{display:flex;flex-direction:column;height:100vh;height:calc(var(--vh,1vh)*100);height:100dvh;max-width:430px;margin:0 auto;overflow:hidden}
-.ob{position:fixed;inset:0;background:var(--bg);z-index:999;display:block;padding:max(50px, calc(var(--st) + 22px)) 28px calc(40px + var(--sb));overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ob{position:fixed;inset:0;background:var(--bg);z-index:999;display:block;padding:max(50px, calc(var(--st) + 22px)) 20px calc(40px + var(--sb));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ob>*{max-width:380px;margin-left:auto;margin-right:auto}
 .ob-step{width:100%;display:none}
 .ob-step.active{display:block}
@@ -188,18 +188,22 @@ button:focus:not(:focus-visible){outline:none}
    met at the lock screen. −0.095em closes it to 0 at every size the mark is used (28/34/36/52);
    −0.115em is where the glyphs start to collide, so this is not near the edge. */
 .ob-logo em{font-style:italic;color:var(--brand);margin-left:-0.095em}
-.ob-by{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;text-align:center;margin-bottom:32px}
-.ob-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--tx);margin-bottom:10px;line-height:1.25}
-.ob-desc{font-size:var(--t-md);color:var(--tx2);line-height:1.75;margin-bottom:28px}
-.ob-prog{display:flex;gap:6px;justify-content:center;margin-bottom:32px}
-.ob-dot{width:5px;height:5px;border-radius:50%;background:var(--bg4)}
+/* The byline the splash and the app icon already carry — the ToTry face, italic, secondary. It was
+   11px capitals tracked at 0.01em in the third grey: the smallest text on the first screen. */
+.ob-by{font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);letter-spacing:0;text-align:center;margin-bottom:32px}
+.ob-title{font-family:var(--font-display);font-size:34px;font-weight:500;color:var(--tx);margin-bottom:10px;line-height:1.1}
+.ob-desc{font-size:var(--t-base);color:var(--tx2);line-height:1.38;letter-spacing:-.022em;margin-bottom:24px}
+.ob-prog{display:flex;gap:8px;justify-content:center;align-items:center;height:44px;margin:-11px auto 18px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
 .ob-dot.on{background:var(--go)}
 .vchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .vchip{padding:8px 16px;border-radius:var(--rp);border:1px solid var(--bd2);background:var(--bg3);color:var(--tx2);font-size:var(--t-base);cursor:pointer;font-family:var(--font-text);transition:all 0.15s}
 .vchip.on{border-color:var(--re-bd);background:var(--re-bg);color:var(--re)}
 .vchip:focus-visible{outline:2px solid var(--go);outline-offset:2px}
-.ob-quote{font-family:var(--font-text);font-size:var(--t-hd);font-style:italic;color:var(--go);text-align:center;line-height:1.6;margin-bottom:6px}
-.ob-attr{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-align:center;margin-bottom:28px}
+/* The founder's own words are the app SPEAKING, so they are in its own face, upright — they were
+   centred italic San Francisco in the tint, which read as a link, over an 11px attribution. */
+.ob-quote{font-family:var(--font-display);font-size:26px;font-weight:500;font-style:normal;color:var(--tx);text-align:left;line-height:1.2;letter-spacing:0;margin:6px 0 8px}
+.ob-attr{font-family:var(--font-text);font-size:15px;color:var(--tx2);letter-spacing:-.016em;text-align:left;margin-bottom:36px}
 .hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,var(--go-bg) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
@@ -3439,6 +3443,150 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .synth-stats{display:block;margin-top:4px}
 .modal .synth-text{font-size:17px;line-height:1.5;letter-spacing:-.022em;color:var(--tx);margin-bottom:16px}
 
+/* ═══ FIRST RUN — the sign-in screen and the twelve onboarding steps ══════════════════════════════
+   The first screens anyone sees, so the brand is felt most here and the small text had the least
+   excuse. Every rule below replaces a recipe that was painted inline on those screens: the byline was
+   11px capitals in the third grey, the "Training" label was set in DM Mono (a face this app no longer
+   ships, so it fell to the browser's monospace), the sign-in titles were New York ITALIC, the identity
+   suggestions were six grey pills standing in for a list, the helplines were a middot strip of 15px
+   links, and a chosen app looked exactly like an unchosen one. The step titles already speak in the
+   ToTry face (.ob-title); nothing here names a family for a headline at a call site. */
+
+/* The nav bar's back chevron, in the tint, level with the page control. It was a 22px "‹" in --tx3. */
+#ob-back{position:absolute;top:max(39px, calc(var(--st) + 11px));left:4px;z-index:5;min-width:44px;min-height:44px;
+  align-items:center;justify-content:center;background:none;border:0;padding:0;color:var(--go);cursor:pointer}
+#ob-back .ic{width:26px;height:26px;stroke-width:2.3}
+#ob-back:active{opacity:.4}
+
+/* The welcome is a hero, and a hero is centred: the wordmark, the line under it, one action. It is the
+   only onboarding step that is — every step that asks a question reads left to right. */
+.ob-hero{text-align:center}
+/* The words sit in the middle of the screen and Begin sits where a thumb is, as a welcome screen does.
+   The height is the viewport less the page's own top padding, page control and bottom padding. */
+#ob1.active{display:flex;flex-direction:column;min-height:calc(100dvh - max(50px, calc(var(--st) + 22px)) - 51px - 40px - var(--sb))}
+.ob-hero .ob-logo{margin-top:10vh}
+.ob-hero .ob-by{margin-bottom:44px}
+.ob-hero .ob-desc{margin-bottom:32px}
+.ob-hero>.btn{margin-top:auto}
+
+/* A step's actions: the one filled button, then the quiet way past it. Written as `margin-top:4px`
+   on four separate "I'll do this later" buttons, and as a hand-rolled flex column on two more steps. */
+.ob-actions{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.ob-foot{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:12px}
+.ob-foot-last{margin:-8px 0 24px}
+.ob-skip{margin-top:16px}
+
+/* The feature list, as iOS draws a welcome screen: a tinted glyph, a headline, the line under it. The
+   rows were 16px titles over 15px lines in the THIRD grey, beside an 18px icon in a 28px box — and the
+   spirit row was the only one drawn as an emoji. */
+.ob-features{display:flex;flex-direction:column;gap:20px;margin:6px 0 32px}
+.ob-feature{display:flex;align-items:flex-start;gap:16px}
+.ob-feature>.ic{flex:none;width:30px;height:30px;color:var(--go);stroke-width:1.7;margin-top:1px}
+.ob-feature-t{font-size:17px;font-weight:600;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
+.ob-feature-s{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:2px}
+
+/* A section header over a group of capsules starts where the capsules start, not at a list's inset. */
+.ios-header.ob-hd{padding:0 0 8px;margin-top:8px}
+
+/* Fields. The long answers show all four lines of their placeholder — the fourth was cut in half by a
+   100px box — and the name field is an ordinary field, not a 20px centred one. */
+#onboard textarea{height:124px;resize:none;line-height:1.4;margin-bottom:24px}
+#onboard input[type="text"]{margin-bottom:16px}
+.ob-field-err{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--re);margin:-8px 0 16px}
+
+/* A list whose rows are SENTENCES. A row title is one line because a value sits at its end; these rows
+   have no value to wrap under, and truncating a suggestion would hide the words being suggested. */
+.ios-list.wrap .ios-row-title{white-space:normal}
+.ob-suggest{margin-bottom:20px}
+.ob-list{margin-bottom:24px}
+/* A tradition's own mark, where a row would carry an icon tile. Content, not chrome. */
+.ob-mark{flex:none;width:29px;text-align:center;font-size:22px;line-height:29px;color:var(--tx)}
+/* The crescent and the wheel are drawn small inside their em box; at the same font size they read as
+   half the weight of the cross beside them. Sized to match by eye, not by number. */
+.ob-mark.lift{font-size:30px}
+/* Seasons. .season-chip keeps its name because obNext() reads `.season-chip.on`; in this list it is a
+   row, so the bordered-box paint Settings still uses does not apply, and the chosen row carries the
+   check. Same specificity as .season-chip.on and later in the file, so it wins without !important. */
+.ob-seasons .season-chip{background:transparent;border:0;border-radius:0;margin:0;padding:11px 16px;transition:none}
+.ob-seasons .season-chip.on .ios-row-check{opacity:1}
+
+/* A chosen app. .vchip.app-on painted a tinted outline, and the capsule rule's !important fill sat on
+   top of it — so tapping Hevy changed nothing a person could see. Same as every other chosen capsule. */
+#onboard .vchip.app-on{background:var(--go) !important;color:var(--on-tint) !important}
+
+/* The follow-ups under a chosen app, and the partner question: cards, their text in the card roles, a
+   segmented control where there was a pair of hand-painted buttons. */
+.ob-followup{margin:2px 0 22px}
+.ob-followup .card-body{margin-bottom:12px}
+.ob-followup .seg,.ob-partner .seg{margin:0 !important}
+.ob-followup .card-foot{margin-top:12px}
+.ob-followup input[type="text"]{margin:12px 0 0 !important}
+.ob-partner{margin:8px 0 24px}
+.ob-partner .card-lede{margin-bottom:14px}
+.ob-followup .fst,.ob-partner .fst{cursor:pointer}
+
+/* ── Sign-in ─────────────────────────────────────────────────────────────────────────────────────
+   Centred, as a sign-in screen is. AUTO MARGINS rather than justify-content:center, because centring
+   clips the top of a column taller than the phone — and the wordmark was absolutely positioned, so on
+   the email step it sat on top of "Welcome." instead of above it. */
+.auth-container{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:max(24px, calc(var(--st) + 8px)) 20px max(24px, calc(var(--sb) + 16px))}
+.auth-brand{margin-top:auto;padding:8px 0 28px;text-align:center}
+.auth-brand .logo-main{font-size:44px}
+.auth-brand .ob-by{margin:6px 0 0}
+.auth-step{width:100%;max-width:380px;margin-bottom:auto;text-align:center}
+.auth-title{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-bottom:8px}
+.auth-sub{font-size:17px;line-height:1.38;letter-spacing:-.022em;color:var(--tx2);margin-bottom:24px}
+/* The address the code went to. It was in the tint, which says "tap me" about something that is not a link. */
+.auth-email{color:var(--tx);font-weight:600}
+.auth-step input{margin-bottom:12px}
+.auth-step .btn+.btn{margin-top:10px}
+.auth-foot{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:10px}
+.auth-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx);margin-top:12px}
+.auth-or{display:flex;align-items:center;gap:12px;margin:26px 0 16px;font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2)}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:.5px;background:var(--bd)}
+.auth-quiet{display:flex;flex-direction:column;margin-top:6px}
+.auth-step .auth-quiet .btn+.btn{margin-top:0}
+/* No headline or centred footnote ends on one orphaned word: "app?", "for?", "later." each sat alone
+   on a line of their own. Balance the short lines; let paragraphs avoid a lone last word. */
+.ob-title,.auth-title,.ob-partner .card-title,.auth-foot,.auth-help-lead{text-wrap:balance}
+.ob-desc,.auth-sub,.ob-feature-s,#onboard .card-foot{text-wrap:pretty}
+/* The one-time code: SF Rounded, spaced like the digits on the keypad that typed them. The ID matches
+   the base field rule's specificity (its :not() arguments count), or its 17px !important wins. */
+#auth-otp-input{font-family:var(--font-rounded) !important;font-size:28px !important;font-weight:600;text-align:center;
+  letter-spacing:.3em !important;font-variant-numeric:tabular-nums;padding:12px !important}
+#auth-otp-input:placeholder-shown{font-family:var(--font-text) !important;font-size:17px !important;font-weight:400;letter-spacing:-.022em !important;padding:19px 12px !important}
+/* The helplines, as rows: the service, the country it answers in, and the number in the tint
+   because it dials. Each is a 44pt target; the strip they replace was 15px text on a 30px line. */
+.auth-help{text-align:left;margin-top:36px}
+.auth-help-lead{font-size:15px;line-height:1.38;letter-spacing:-.016em;color:var(--tx2);padding:0 16px 8px}
+.auth-help .ios-row-value{color:var(--go)}
+/* A helpline row is a tel: link, and every tel: link gets the inline 30px treatment for numbers that
+   sit inside a sentence (:1252). A row is not in a sentence: it keeps the row's own box. */
+.auth-help a.ios-row{display:flex;margin:0;padding:11px 16px;min-height:44px;line-height:normal}
+/* Rows written as static markup. iosRow() sets these two spans to blocks inline; markup that cannot
+   call it names the same thing here, for the screens in this section only. */
+.auth-help .ios-row-title,.auth-help .ios-row-sub,#onboard .ios-row-title,#onboard .ios-row-sub,
+.fr-preview .ios-row-title,.fr-preview .ios-row-sub,.fr-sheet-list .ios-row-title{display:block}
+
+/* ── The Day-60 preview and the what's-new sheet (30-firstrun.js) ─────────────────────────────────
+   Both were hand-painted panels opening with 11px capitals. They are sections now: a header, a card or
+   a list, and the money figures carry the only two meanings a money figure has. */
+.fr-preview{max-height:62vh;overflow-y:auto;margin:4px -4px 14px;padding:0 4px}
+.fr-preview .ios-section{margin-bottom:22px}
+.fr-preview .card{margin-bottom:0}
+.fr-preview .card-say{margin-bottom:0}
+.fr-preview .card-body{margin-bottom:0;color:var(--tx)}
+.fr-preview .ios-row-value.good{color:var(--gr)}
+.fr-preview .ios-row-value.bad{color:var(--re)}
+/* A heatmap is a measure, so it is drawn in the colour that means "showed up", in five steps of one ink. */
+.fr-heat{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
+.fr-heat i{aspect-ratio:1;border-radius:3px;background:var(--gr)}
+.fr-heat .l0{background:var(--fill)}.fr-heat .l1{opacity:.3}.fr-heat .l2{opacity:.5}.fr-heat .l3{opacity:.75}
+.fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);padding:0 16px 4px}
+.fr-sheet-list{margin-bottom:20px}
+
 </style>
 </head>
 <body>
@@ -3457,110 +3605,89 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 <!-- ════════════════════════════════════════════════════════════ -->
 <!-- AUTH SCREENS - Email + OTP Login/Signup -->
 <!-- ════════════════════════════════════════════════════════════ -->
-<div class="auth-container" id="auth-container" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;padding:20px;flex-direction:column;justify-content:center;align-items:center">
-  
-  <!-- Logo at top — honour the notch/Dynamic Island in the native shell (var(--st) = safe-area-top;
-       max() keeps the original 32px in a browser where --st is 0). -->
-  <div style="position:absolute;top:max(32px, calc(var(--st) + 16px));left:0;right:0;text-align:center">
-    <!-- .logo-main again — this was a fourth wordmark: all gold, spaced, with the italic done by a
-         hand-styled span rather than the class's own em rule. -->
-    <div class="logo-main" style="font-size:36px">To<em>Try</em></div>
-    <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:4px">BY ALFRED JOHN</div>
+<!-- The sign-in screen is centred the way a sign-in screen is, and by AUTO MARGINS on the wordmark and the
+     step rather than justify-content:center — that clips the top of a column taller than the phone, and the
+     wordmark used to be absolutely positioned over the title it sat on. Everything it paints is in the
+     FIRST RUN section of the stylesheet. -->
+<div class="auth-container" id="auth-container" style="display:none">
+  <div class="auth-brand">
+    <div class="logo-main">To<em>Try</em></div>
+    <div class="ob-by">by Alfred John</div>
   </div>
-  
-  <!-- AUTH STEP 1: Email Entry -->
-  <div class="auth-step active" id="auth-email" style="width:100%;max-width:380px">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="font-family:var(--font-serif);font-size:var(--t-2xl);color:var(--tx);font-style:italic;margin-bottom:8px">Welcome.</div>
-      <div style="font-size:var(--t-md);color:var(--tx2);line-height:1.6">Enter your email to begin. We&apos;ll send you a 6-digit code to verify.</div>
-    </div>
-    
-    <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" style="font-size:var(--t-lg);padding:14px 16px;text-align:center;margin-bottom:14px" autofocus>
-    
-    <button class="btn primary" id="auth-send-otp-btn" onclick="authSendOtp()" style="font-size:var(--t-md);padding:14px">Send verification code</button>
 
+  <!-- AUTH STEP 1: Email Entry -->
+  <div class="auth-step active" id="auth-email">
+    <div class="auth-title">Welcome.</div>
+    <div class="auth-sub">Enter your email to begin. We&rsquo;ll send you a 6&#8209;digit code to verify.</div>
+    <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" autofocus>
+    <button class="btn primary" id="auth-send-otp-btn" onclick="authSendOtp()">Send verification code</button>
     <!-- Shown only by bootWithoutCloud() when the app opened with no connection. The button stays
          enabled on purpose: signal can return between reading this and tapping it, and a dead control
          is worse than a failed request that explains itself. -->
-    <div id="auth-offline-note" style="display:none;font-size:var(--t-sm);color:var(--go);text-align:center;margin-top:10px;line-height:1.55">No connection right now, so the code can&apos;t reach you. You can still come in below — everything saves on this phone, and you can make an account whenever you&apos;re back on.</div>
+    <div id="auth-offline-note" class="auth-note" style="display:none">No connection right now, so the code can&rsquo;t reach you. You can still come in below — everything saves on this phone, and you can make an account whenever you&rsquo;re back on.</div>
+    <div class="auth-foot">Your email is your account. No password needed. Sign in anytime with a code.</div>
 
     <!-- THE DOOR BEFORE THE WALL. A person in a hard moment should never have to make an account
          first — the help IS the product, and the evidence is blunt that a signup wall in front of the
          first real value both loses people and hides the thing that actually helps. So: one real move,
-         no account. Signing up is offered afterwards as "keep this", never as the toll to get in. -->
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px">
-      <div style="flex:1;height:1px;background:var(--bd)"></div>
-      <div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em">OR</div>
-      <div style="flex:1;height:1px;background:var(--bd)"></div>
-    </div>
-    <button class="btn" id="auth-guest-btn" onclick="enterAsGuest()" style="font-size:var(--t-base);padding:13px;background:transparent;color:var(--go);background:var(--fill2)">Something&apos;s pulling at me right now &#8594;</button>
-    <!-- The "kept on this device only" warning used to live here as a second line. It still has to be
-         said — a guest can log a week of real work and lose all of it by clearing their browser — but a
-         landing page that explains itself in four paragraphs is a landing page nobody reads, and a
-         warning nobody reads is not a warning. It now appears in enterAsGuest(), after the tap, where
-         it is the only thing on screen. -->
-    <div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.</div>
-
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.01em">
-      Your email is your account.<br>No password needed. Sign in anytime with a code.
-    </div>
+         no account. Signing up is offered afterwards as "keep this", never as the toll to get in.
+         The "kept on this device only" warning appears in enterAsGuest(), after the tap. -->
+    <div class="auth-or" aria-hidden="true">or</div>
+    <button class="btn" id="auth-guest-btn" onclick="enterAsGuest()">Something&rsquo;s pulling at me right now &#8594;</button>
+    <div class="auth-foot">No account, no setup. Just help, right now.</div>
 
     <!-- Crisis help must never sit behind a login. If someone opens this app at their worst moment
-         and can't get in, the numbers still have to be right here, one tap, on the first screen. -->
-    <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
-      <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:8px">If you need real help right now, you don&apos;t need an account:</div>
-      <div class="crisis-links" style="font-size:var(--t-sm);line-height:1.9;color:var(--tx3)">
-        &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;·&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
-        &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;·&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
-        <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world
+         and can't get in, the numbers still have to be right here, one tap, on the first screen. They
+         were a strip of 15px links joined by middots; each is a 44pt row now, which is the size a
+         shaking hand needs. -->
+    <div class="auth-help">
+      <div class="auth-help-lead">If you need real help right now, you don&rsquo;t need an account:</div>
+      <div class="ios-list">
+        <a class="ios-row" href="tel:131114"><span class="ios-row-body"><span class="ios-row-title">Lifeline</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">13 11 14</span></a>
+        <a class="ios-row" href="tel:1300224636"><span class="ios-row-body"><span class="ios-row-title">Beyond Blue</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">1300 22 4636</span></a>
+        <a class="ios-row" href="tel:988"><span class="ios-row-body"><span class="ios-row-title">988 Lifeline</span><span class="ios-row-sub">United States</span></span><span class="ios-row-value">988</span></a>
+        <a class="ios-row" href="tel:116123"><span class="ios-row-body"><span class="ios-row-title">Samaritans</span><span class="ios-row-sub">United Kingdom</span></span><span class="ios-row-value">116 123</span></a>
+        <a class="ios-row" href="https://findahelpline.com" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title">findahelpline.com</span><span class="ios-row-sub">Anywhere in the world</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></a>
       </div>
     </div>
   </div>
-  
+
   <!-- AUTH STEP 2: OTP Entry -->
-  <div class="auth-step" id="auth-otp" style="display:none;width:100%;max-width:380px">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="font-family:var(--font-serif);font-size:var(--t-2xl);color:var(--tx);font-style:italic;margin-bottom:8px">Check your inbox.</div>
-      <div style="font-size:var(--t-md);color:var(--tx2);line-height:1.6">We sent a 6-digit code to <span id="auth-email-display" style="color:var(--go);font-weight:500"></span></div>
-    </div>
-    
-    <input type="text" id="auth-otp-input" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" style="font-size:var(--t-title1);padding:14px;text-align:center;letter-spacing:0.01em;margin-bottom:14px;font-family:var(--font-text)">
-    
-    <button class="btn primary" id="auth-verify-btn" onclick="authVerifyOtp()" style="font-size:var(--t-md);padding:14px">Verify and continue</button>
-    
-    <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-      <button class="btn quiet" onclick="authResendOtp()">Didn&apos;t receive it? Send again</button>
+  <div class="auth-step" id="auth-otp" style="display:none">
+    <div class="auth-title">Check your inbox.</div>
+    <div class="auth-sub">We sent a 6&#8209;digit code to <span id="auth-email-display" class="auth-email"></span></div>
+    <input type="text" id="auth-otp-input" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code">
+    <button class="btn primary" id="auth-verify-btn" onclick="authVerifyOtp()">Verify and continue</button>
+    <div class="auth-quiet">
+      <button class="btn quiet" onclick="authResendOtp()">Didn&rsquo;t receive it? Send again</button>
       <button class="btn quiet" onclick="authBack()">Use different email</button>
     </div>
-    
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.01em">
-      Code expires in 1 hour.<br>Check spam if you don&apos;t see it.
-    </div>
+    <div class="auth-foot">Code expires in 1 hour. Check spam if you don&rsquo;t see it.</div>
   </div>
-  
+
   <!-- AUTH STEP 3: Loading -->
-  <div class="auth-step" id="auth-loading" style="display:none;width:100%;max-width:380px;text-align:center">
-    <div class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--go);margin-bottom:14px" id="auth-loading-msg">Signing you in...</div>
-    <div style="font-size:var(--t-base);color:var(--tx3)">This will only take a moment.</div>
+  <div class="auth-step" id="auth-loading" style="display:none">
+    <div class="auth-title pulsing" id="auth-loading-msg">Signing you in&hellip;</div>
+    <div class="auth-sub">This will only take a moment.</div>
   </div>
-  
-  <!-- AUTH STEP 4: Error message -->
-  <div class="auth-step" id="auth-error" style="display:none;width:100%;max-width:380px;text-align:center">
-    <div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-xl);color:var(--re);margin-bottom:14px">Something went wrong</div>
-    <div id="auth-error-msg" style="font-size:var(--t-base);color:var(--tx2);margin-bottom:18px;line-height:1.6"></div>
-    <button class="btn primary" onclick="authReset()" style="font-size:var(--t-md);margin-bottom:10px">Try again</button>
-    <!-- THE GUEST DOOR AND THE HELPLINES MUST SURVIVE AN ERROR. Both live inside the EMAIL step, and
-         authShowStep('error') hides that step — so the one screen a person reaches when sign-in fails
-         was the one screen with no way in and no numbers on it. Offline that is the whole app: the code
-         cannot send them a login email, and the crisis card is the reason this screen carries numbers in
-         the first place ("crisis help must never sit behind a login"). -->
-    <button class="btn" id="auth-error-guest-btn" onclick="enterAsGuest()" style="font-size:var(--t-base);padding:13px;background:transparent;color:var(--go);margin-bottom:6px;background:var(--fill2)">Come in without an account &#8594;</button>
-    <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-bottom:14px">Everything saves on this phone. You can make an account later.</div>
-    <div style="border-top:1px solid var(--bd);padding-top:12px;font-size:var(--t-sm);color:var(--tx2);line-height:1.8">
-      If you need real help right now, you don&apos;t need an account:<br>
-      &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&middot;&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
-      &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&middot;&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
-      <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">findahelpline.com</a>
+
+  <!-- AUTH STEP 4: Error message. THE GUEST DOOR AND THE HELPLINES MUST SURVIVE AN ERROR: authShowStep('error')
+       hides the email step, so this is the one screen a person reaches when sign-in fails — offline, the whole app. -->
+  <div class="auth-step" id="auth-error" style="display:none">
+    <div class="auth-title">Something went wrong</div>
+    <div id="auth-error-msg" class="auth-sub"></div>
+    <button class="btn primary" onclick="authReset()">Try again</button>
+    <button class="btn" id="auth-error-guest-btn" onclick="enterAsGuest()">Come in without an account &#8594;</button>
+    <div class="auth-foot">Everything saves on this phone. You can make an account later.</div>
+    <div class="auth-help">
+      <div class="auth-help-lead">If you need real help right now, you don&rsquo;t need an account:</div>
+      <div class="ios-list">
+        <a class="ios-row" href="tel:131114"><span class="ios-row-body"><span class="ios-row-title">Lifeline</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">13 11 14</span></a>
+        <a class="ios-row" href="tel:1300224636"><span class="ios-row-body"><span class="ios-row-title">Beyond Blue</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">1300 22 4636</span></a>
+        <a class="ios-row" href="tel:988"><span class="ios-row-body"><span class="ios-row-title">988 Lifeline</span><span class="ios-row-sub">United States</span></span><span class="ios-row-value">988</span></a>
+        <a class="ios-row" href="tel:116123"><span class="ios-row-body"><span class="ios-row-title">Samaritans</span><span class="ios-row-sub">United Kingdom</span></span><span class="ios-row-value">116 123</span></a>
+        <a class="ios-row" href="https://findahelpline.com" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title">findahelpline.com</span><span class="ios-row-sub">Anywhere in the world</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></a>
+      </div>
     </div>
   </div>
 </div>
@@ -3568,199 +3695,184 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 <div class="ob" id="onboard">
   <!-- TWELVE SCREENS AND NO WAY BACK. Every step advanced and none returned, so a mistyped name or a
        season chosen too fast could only be undone by killing the app and starting over — and the
-       phone's own back gesture does nothing here. obDots() hides this on the first screen. -->
-  <button id="ob-back" type="button" onclick="obBack()" aria-label="Back a step"
-          style="display:none;position:absolute;top:calc(var(--st,0px) + 10px);left:10px;min-width:44px;min-height:44px;background:none;border:none;color:var(--tx3);font-size:var(--t-xl);line-height:1;cursor:pointer;z-index:5">&#8249;</button>
+       phone's own back gesture does nothing here. obDots() hides this on the first screen. It is the
+       nav bar's back chevron, in the tint, level with the page control — it was a 22px "‹" in the third grey. -->
+  <button id="ob-back" type="button" onclick="obBack()" aria-label="Back a step" style="display:none"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="26" height="26"><polyline points="15,4 7,12 15,20"/></svg></button>
   <!-- Filled by obDots() from OB_STEPS, so a new screen cannot leave the row one short. -->
   <div class="ob-prog" id="ob-prog"></div>
-  <div class="ob-step active" id="ob1">
+  <div class="ob-step active ob-hero" id="ob1">
     <div class="ob-logo">To<em>Try</em></div>
     <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
-    <button class="btn primary" style="margin-top:8px" onclick="obNext(2)">Begin &#8594;</button>
+    <button class="btn primary" onclick="obNext(2)">Begin &#8594;</button>
   </div>
-  
-  <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
+
+  <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything. Drawn the way iOS
+       draws a welcome screen: a tinted glyph, a headline, the line under it. -->
   <div class="ob-step" id="ob-what">
-    <div class="ob-title" style="margin-bottom:6px">One life, to tend well.</div>
-    <div class="ob-desc" style="margin-bottom:20px">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="font-size:var(--t-xl);flex-shrink:0;width:28px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <div><div style="font-size:var(--t-md);color:var(--tx);font-weight:500">The fight</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Vices, urges, streaks — met with grace, not shame.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="font-size:var(--t-xl);flex-shrink:0;width:28px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg></div>
-        <div><div style="font-size:var(--t-md);color:var(--tx);font-weight:500">Your body</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Train, eat, and rest with intention — synced to the apps you already use.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="font-size:var(--t-xl);flex-shrink:0;width:28px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
-        <div><div style="font-size:var(--t-md);color:var(--tx);font-weight:500">Your money</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="font-size:var(--t-xl);flex-shrink:0;width:28px;text-align:center">🙏</div>
-        <div><div style="font-size:var(--t-md);color:var(--tx);font-weight:500">Your spirit</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="font-size:var(--t-xl);flex-shrink:0;width:28px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <div><div style="font-size:var(--t-md);color:var(--tx);font-weight:500">One coach who sees all of it</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Not five apps — one that remembers your whole story and speaks to it.</div></div>
-      </div>
+    <div class="ob-title">One life, to tend well.</div>
+    <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
+    <div class="ob-features">
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="ob-feature-t">The fight</div><div class="ob-feature-s">Vices, urges, streaks — met with grace, not shame.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><div><div class="ob-feature-t">Your money</div><div class="ob-feature-s">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><div class="ob-feature-t">Your spirit</div><div class="ob-feature-s">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="ob-feature-t">One coach who sees all of it</div><div class="ob-feature-s">Not five apps — one that remembers your whole story and speaks to it.</div></div></div>
     </div>
     <button class="btn primary" onclick="obNextToApps()">I’m in &#8594;</button>
   </div>
   <div class="ob-step" id="ob2">
     <div class="ob-title">What’s your name?</div>
     <div class="ob-desc">This app speaks to you personally, not generically.</div>
-    <input type="text" id="ob-name" placeholder="Your first name..." style="margin-bottom:20px;font-size:var(--t-hd);text-align:center;padding:14px" autocomplete="given-name">
+    <input type="text" id="ob-name" placeholder="Your first name" autocomplete="given-name">
     <button class="btn primary" onclick="obNextToMoment()">Continue &#8594;</button>
   </div>
-  
+
   <!-- THE FIRST FELT MOMENT. A guest reaches the Feeling Door in ~10 seconds (enterAsGuest). Someone
        who made an ACCOUNT used to get explainer screens then an empty Home — so the best thing in the
        app was hidden from the people most likely to stay. This IS the door, inline, rendered from the
        same FEELINGS array and running the same real move. Not a wall: there is a way past, below. -->
   <div class="ob-step" id="ob-moment">
-    <div class="ob-title" id="ob-moment-title" style="margin-bottom:6px">Before anything else &mdash; how are you right now?</div>
-    <div class="ob-desc" style="margin-bottom:20px">This is the app. Not the setup &mdash; this. Tap whatever&rsquo;s closest and I&rsquo;ll meet you there. No right answer, nothing to fill in.</div>
+    <div class="ob-title" id="ob-moment-title">Before anything else&nbsp;&mdash; how are you right now?</div>
+    <div class="ob-desc">This is the app. Not the setup &mdash; this. Tap whatever&rsquo;s closest and I&rsquo;ll meet you there. No right answer, nothing to fill in.</div>
     <div class="feel-grid" id="ob-moment-grid"></div>
-    <button class="btn quiet" onclick="obSkipMoment()" style="margin-top:16px">Nothing right now &mdash; show me around &#8594;</button>
+    <button class="btn quiet ob-skip" onclick="obSkipMoment()">Nothing right now &mdash; show me around &#8594;</button>
   </div>
-  <!-- NEW STEP: Apps you already use -->
+  <!-- Apps you already use. The group labels were 12px capitals — one of them in DM Mono, a face this
+       app stopped shipping — and a chosen app LOOKED unchosen, because the capsule fill outranked it. -->
   <div class="ob-step" id="ob-apps">
     <div class="ob-title">Already track in another app?</div>
-    <div class="ob-desc">If you use one of these, we&apos;ll link to it instead of asking you to switch. Optional — skip if you&apos;d rather start fresh.</div>
-    
-    <div style="font-family:&apos;DM Mono&apos;,monospace;font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px;margin-top:6px">Training</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:8px">
+    <div class="ob-desc">If you use one of these, we&rsquo;ll link to it instead of asking you to switch. Optional — skip if you&rsquo;d rather start fresh.</div>
+
+    <div class="ios-header ob-hd">Training</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
     </div>
-    
-    <!-- Hevy free/pro follow-up — appears when Hevy is selected -->
-    <div id="ob-hevy-followup" style="display:none;background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:14px">
-      <div style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:8px;line-height:1.5">Which Hevy do you have? This decides how we sync your workouts.</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button class="btn" id="ob-hevy-free" onclick="selectHevyTier(&apos;free&apos;)" style="flex:1;padding:9px;font-size:var(--t-sm);background:var(--bg2)">Free</button>
-        <button class="btn" id="ob-hevy-pro" onclick="selectHevyTier(&apos;pro&apos;)" style="flex:1;padding:9px;font-size:var(--t-sm);background:var(--bg2)">Pro</button>
+
+    <!-- Hevy free/pro follow-up — appears when Hevy is selected. Free/Pro is a segmented control;
+         selectHevyTier() paints BLACK ink on the tint before this. -->
+    <div id="ob-hevy-followup" class="card ob-followup" style="display:none">
+      <div class="card-body">Which Hevy do you have? This decides how we sync your workouts.</div>
+      <div class="seg">
+        <button class="fst" id="ob-hevy-free" onclick="selectHevyTier(&apos;free&apos;)">Free</button>
+        <button class="fst" id="ob-hevy-pro" onclick="selectHevyTier(&apos;pro&apos;)">Pro</button>
       </div>
-      <div id="ob-hevy-free-msg" style="display:none;font-size:var(--t-cap);color:var(--tx3);line-height:1.55;padding:8px;background:var(--bg2);border-radius:var(--rs)">
-        No problem — Hevy free doesn&apos;t allow live sync, but you can import your full history anytime. After setup: Track → connect Hevy → Import CSV (export from Hevy → Settings → Export Data). Your whole training history comes straight in.
-      </div>
+      <div id="ob-hevy-free-msg" class="card-foot" style="display:none">No problem — Hevy free doesn&rsquo;t allow live sync, but you can import your full history anytime. After setup: Track → connect Hevy → Import CSV (export from Hevy → Settings → Export Data). Your whole training history comes straight in.</div>
       <div id="ob-hevy-pro-msg" style="display:none">
-        <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-bottom:8px">Perfect — Pro gives you live sync. Paste your API key from <span style="color:var(--go)">hevy.com/settings?developer</span> and your workouts will flow in automatically.</div>
-        <input type="text" id="ob-hevy-key" placeholder="Paste Hevy API key (optional now)" style="font-family:var(--font-text);font-size:var(--t-lg);margin-bottom:0">
-        <div style="font-size:var(--t-mini);color:var(--tx3);margin-top:6px;font-style:italic">You can also do this later in Track. No rush.</div>
+        <div class="card-foot">Perfect — Pro gives you live sync. Paste your API key from hevy.com/settings?developer and your workouts will flow in automatically.</div>
+        <input type="text" id="ob-hevy-key" placeholder="Paste Hevy API key (optional now)">
+        <div class="card-foot">You can also do this later in Track. No rush.</div>
       </div>
     </div>
-    
-    <div class="eyebrow" style="font-size:var(--t-mini);margin-bottom:8px">Nutrition</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:8px">
+
+    <div class="ios-header ob-hd">Nutrition</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;myfitnesspal&apos;)">MyFitnessPal</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;cronometer&apos;)">Cronometer</div>
     </div>
     <!-- Nutrition CSV note — appears when a food app is selected -->
-    <div id="ob-food-followup" style="display:none;background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:14px">
-      <div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-bottom:8px">Bring your food history in right now — export a CSV from your app (MyFitnessPal: myfitnesspal.com &rarr; Settings &rarr; Export Data), then:</div>
-      <button class="btn" onclick="document.getElementById('food-csv-input').click()" style="background:var(--go-bg);color:var(--go);font-size:var(--t-sm);padding:9px">Import my CSV now</button>
-      <div style="font-size:var(--t-mini);color:var(--tx3);margin-top:6px;font-style:italic">Don&apos;t have the file yet? Skip — the import lives in Nourish whenever you&apos;re ready.</div>
+    <div id="ob-food-followup" class="card ob-followup" style="display:none">
+      <div class="card-body">Bring your food history in right now — export a CSV from your app (MyFitnessPal: myfitnesspal.com &rarr; Settings &rarr; Export Data), then:</div>
+      <button class="btn" onclick="document.getElementById('food-csv-input').click()">Import my CSV now</button>
+      <div class="card-foot">Don&rsquo;t have the file yet? Skip — the import lives in Nourish whenever you&rsquo;re ready.</div>
     </div>
-    
-    <div class="eyebrow" style="font-size:var(--t-mini);margin-bottom:8px">Health</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:14px">
+
+    <div class="ios-header ob-hd">Health</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
     </div>
-    
-    <div style="display:flex;flex-direction:column;gap:8px">
+
+    <div class="ob-actions">
       <button class="btn primary" onclick="finishAppsStep()">Continue &#8594;</button>
-      <button class="btn outline" onclick="skipAppsStep()">Skip — I don&apos;t use any</button>
+      <button class="btn quiet" onclick="skipAppsStep()">Skip — I don&rsquo;t use any</button>
     </div>
   </div>
   <!-- FORK: let people into the app fast, or set the deeper foundation now. Either way the
        firstrun-card on Home guides them through identity / vices / habits / coach over the first days. -->
   <div class="ob-step" id="ob-fork">
-    <div class="ob-title" style="margin-bottom:6px">You&apos;re in.</div>
-    <div class="ob-desc" style="margin-bottom:20px">You can start right now and shape the deeper stuff as you go — or take two minutes to set your foundation first. There&apos;s no wrong answer.</div>
-    <button class="btn primary" style="margin-bottom:10px" onclick="obQuickFinish()">Take me in &#8594;</button>
-    <button class="btn subtle" onclick="obStartFoundation()">Set my foundation first (2 min)</button>
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">Either way, the app walks you through the rest over your first few days.</div>
-  </div>
-  <div class="ob-step" id="ob3">
-    <div class="ob-title">I am becoming a person who...</div>
-    <div class="ob-desc">Complete this sentence. This is your identity. It guides every choice from now on. You can change it anytime.</div>
-    <textarea id="ob-identity" placeholder="...keeps their promises&#10;...isn’t ruled by what tempts them&#10;...loves without needing to be loved back&#10;...shows up even when it’s hard" style="height:100px;resize:none;margin-bottom:10px;font-size:var(--t-lg);line-height:1.6"></textarea>
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Don’t know yet? Tap to use:</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('keeps their promises, even to themselves')">Keeps their promises, even to themselves</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('is not ruled by what tempts them')">Is not ruled by what tempts them</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('shows up even when it\\'s hard')">Shows up even when it’s hard</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('lives with discipline and love')">Lives with discipline and love</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('walks with God and gets things done')">Walks with God and gets things done</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillIdentity('is becoming who they were meant to be')">Is becoming who they were meant to be</button>
+    <div class="ob-title">You&rsquo;re in.</div>
+    <div class="ob-desc">You can start right now and shape the deeper stuff as you go — or take two minutes to set your foundation first. There&rsquo;s no wrong answer.</div>
+    <div class="ob-actions">
+      <button class="btn primary" onclick="obQuickFinish()">Take me in &#8594;</button>
+      <button class="btn" onclick="obStartFoundation()">Set my foundation first (2 min)</button>
     </div>
-    <button class="btn primary" onclick="obNextToWhy()">Continue &#8594;</button>
-    <button class="btn quiet" style="margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
+    <div class="ob-foot">Either way, the app walks you through the rest over your first few days.</div>
+  </div>
+  <!-- The suggestions are a list of rows, not six grey pills — and the third one never worked: its
+       handler was written it\\'s, so the attribute compiled to a SyntaxError and the tap did nothing. -->
+  <div class="ob-step" id="ob3">
+    <div class="ob-title">I am becoming a person who&hellip;</div>
+    <div class="ob-desc">Complete this sentence. This is your identity. It guides every choice from now on. You can change it anytime.</div>
+    <textarea id="ob-identity" aria-label="I am becoming a person who" placeholder="...keeps their promises&#10;...isn’t ruled by what tempts them&#10;...loves without needing to be loved back&#10;...shows up even when it’s hard"></textarea>
+    <div class="ios-section ob-suggest">
+      <div class="ios-header">Suggestions</div>
+      <div class="ios-list wrap">
+        <button type="button" class="ios-row tint" onclick="fillIdentity('keeps their promises, even to themselves')"><span class="ios-row-body"><span class="ios-row-title">Keeps their promises, even to themselves</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillIdentity('is not ruled by what tempts them')"><span class="ios-row-body"><span class="ios-row-title">Is not ruled by what tempts them</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillIdentity('shows up even when it\'s hard')"><span class="ios-row-body"><span class="ios-row-title">Shows up even when it’s hard</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillIdentity('lives with discipline and love')"><span class="ios-row-body"><span class="ios-row-title">Lives with discipline and love</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillIdentity('walks with God and gets things done')"><span class="ios-row-body"><span class="ios-row-title">Walks with God and gets things done</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillIdentity('is becoming who they were meant to be')"><span class="ios-row-body"><span class="ios-row-title">Is becoming who they were meant to be</span></span></button>
+      </div>
+    </div>
+    <div class="ob-actions">
+      <button class="btn primary" onclick="obNextToWhy()">Continue &#8594;</button>
+      <button class="btn quiet" onclick="obQuickFinish()">I’ll do this later</button>
+    </div>
   </div>
   <!-- WHY STEP - emotional anchor -->
   <div class="ob-step" id="ob-why">
     <div class="ob-title">Why does this matter?</div>
     <div class="ob-desc">When it gets hard &mdash; and it will &mdash; this is what you’ll come back to. Who are you doing this for?</div>
-    <textarea id="ob-why-text" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:110px;resize:none;margin-bottom:10px;font-size:var(--t-lg);line-height:1.6"></textarea>
-    <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Or tap one to start:</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillWhy('For the people I love, who deserve the best version of me')">For the people I love</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillWhy('Because I am tired of letting myself down')">I’m tired of letting myself down</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillWhy('To live up to what I believe in')">To live up to what I believe in</button>
-      <button class="btn subtle" style="text-align:left;padding:10px 12px" onclick="fillWhy('For my future self, who is counting on me right now')">For my future self</button>
+    <textarea id="ob-why-text" aria-label="Why does this matter?" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..."></textarea>
+    <div class="ios-section ob-suggest">
+      <div class="ios-header">Suggestions</div>
+      <div class="ios-list wrap">
+        <button type="button" class="ios-row tint" onclick="fillWhy('For the people I love, who deserve the best version of me')"><span class="ios-row-body"><span class="ios-row-title">For the people I love</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillWhy('Because I am tired of letting myself down')"><span class="ios-row-body"><span class="ios-row-title">I’m tired of letting myself down</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillWhy('To live up to what I believe in')"><span class="ios-row-body"><span class="ios-row-title">To live up to what I believe in</span></span></button>
+        <button type="button" class="ios-row tint" onclick="fillWhy('For my future self, who is counting on me right now')"><span class="ios-row-body"><span class="ios-row-title">For my future self</span></span></button>
+      </div>
     </div>
-    <button class="btn primary" onclick="finishWhyStep()">Continue &#8594;</button>
-    <button class="btn quiet" style="margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
+    <div class="ob-actions">
+      <button class="btn primary" onclick="finishWhyStep()">Continue &#8594;</button>
+      <button class="btn quiet" onclick="obQuickFinish()">I’ll do this later</button>
+    </div>
   </div>
+  <!-- The faith picker: title over description, as rows. Each tradition keeps its own mark — those are
+       not ours to redraw — where a row would carry its icon tile. -->
   <div class="ob-step" id="ob-faith">
     <div class="ob-title">What&rsquo;s your path?</div>
     <div class="ob-desc">ToTry meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-      <button class="btn stack" style="text-align:left;padding:14px;background:var(--bg3);color:var(--tx)" onclick="obPickFaith('christianity')"><b style="font-size:var(--t-md)">✝ Christianity</b><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:2px">Bible &middot; the Church &middot; the Rosary</div></button>
-      <button class="btn stack" style="text-align:left;padding:14px;background:var(--bg3);color:var(--tx)" onclick="obPickFaith('islam')"><b style="font-size:var(--t-md)">☪ Islam</b><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:2px">Qur&rsquo;an &middot; prayer &middot; dhikr</div></button>
-      <button class="btn stack" style="text-align:left;padding:14px;background:var(--bg3);color:var(--tx)" onclick="obPickFaith('hinduism')"><b style="font-size:var(--t-md)">🕉︎ Hinduism</b><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:2px">Bhagavad Gita &middot; japa</div></button>
-      <button class="btn stack" style="text-align:left;padding:14px;background:var(--bg3);color:var(--tx)" onclick="obPickFaith('buddhism')"><b style="font-size:var(--t-md)">☸ Buddhism</b><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:2px">Dhammapada &middot; meditation</div></button>
-      <button class="btn stack" style="text-align:left;padding:14px;background:var(--bg3);color:var(--tx)" onclick="obPickFaith('secular')"><b style="font-size:var(--t-md)">○ Secular / None</b><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:2px">Stoic &amp; grounded wisdom &mdash; no belief required</div></button>
+    <div class="ios-list ob-list">
+      <button type="button" class="ios-row has-icon" onclick="obPickFaith('christianity')"><span class="ob-mark" aria-hidden="true">✝</span><span class="ios-row-body"><span class="ios-row-title">Christianity</span><span class="ios-row-sub">Bible &middot; the Church &middot; the Rosary</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+      <button type="button" class="ios-row has-icon" onclick="obPickFaith('islam')"><span class="ob-mark lift" aria-hidden="true">☪</span><span class="ios-row-body"><span class="ios-row-title">Islam</span><span class="ios-row-sub">Qur&rsquo;an &middot; prayer &middot; dhikr</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+      <button type="button" class="ios-row has-icon" onclick="obPickFaith('hinduism')"><span class="ob-mark" aria-hidden="true">&#2384;</span><span class="ios-row-body"><span class="ios-row-title">Hinduism</span><span class="ios-row-sub">Bhagavad Gita &middot; japa</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+      <button type="button" class="ios-row has-icon" onclick="obPickFaith('buddhism')"><span class="ob-mark lift" aria-hidden="true">☸</span><span class="ios-row-body"><span class="ios-row-title">Buddhism</span><span class="ios-row-sub">Dhammapada &middot; meditation</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+      <button type="button" class="ios-row has-icon" onclick="obPickFaith('secular')"><span class="ob-mark" aria-hidden="true">○</span><span class="ios-row-body"><span class="ios-row-title">Secular / None</span><span class="ios-row-sub">Stoic &amp; grounded wisdom &mdash; no belief required</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
     </div>
   </div>
+  <!-- A pick-one list with the check iOS uses. Six bordered boxes with emoji stickers before this. -->
   <div class="ob-step" id="ob4">
     <div class="ob-title">What season are you in?</div>
     <div class="ob-desc">Life isn’t linear. The app speaks to you differently depending on where you actually are.</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-      <div class="season-chip on" data-season="Fighting" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x2694;&#xfe0f; Fighting</div>
-        <div class="sc-desc">In the trenches. Daily battle with vices, urges, old patterns.</div>
-      </div>
-      <div class="season-chip" data-season="Rebuilding" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x1f527; Rebuilding</div>
-        <div class="sc-desc">Coming back after a hard period. Picking up pieces and getting steady.</div>
-      </div>
-      <div class="season-chip" data-season="Building" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x1f9f1; Building</div>
-        <div class="sc-desc">Stable now. Stacking habits, growing, going from okay to great.</div>
-      </div>
-      <div class="season-chip" data-season="Celebrating" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x1f389; Celebrating</div>
-        <div class="sc-desc">Things are clicking. Wins are real. Keeping momentum.</div>
-      </div>
-      <div class="season-chip" data-season="Grieving" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x1f494; Grieving</div>
-        <div class="sc-desc">Loss, heartbreak, or pain you’re carrying. Survival mode is okay.</div>
-      </div>
-      <div class="season-chip" data-season="Resting" onclick="selectObSeason(this)">
-        <div class="sc-name">&#x1f338; Resting</div>
-        <div class="sc-desc">Recovering. Not pushing. This is also part of becoming.</div>
-      </div>
+    <div class="ios-list ob-list ob-seasons">
+      <button type="button" class="ios-row has-icon season-chip on" data-season="Fighting" onclick="selectObSeason(this)"><span class="ios-row-icon tone-red"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Fighting</span><span class="ios-row-sub">In the trenches. Daily battle with vices, urges, old patterns.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+      <button type="button" class="ios-row has-icon season-chip" data-season="Rebuilding" onclick="selectObSeason(this)"><span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M14.7 6.3a4 4 0 0 0 5.1 5.1L21 10a5.5 5.5 0 0 1-7.7 6.4L6.4 22a2 2 0 0 1-2.8-2.8l5.6-6.9A5.5 5.5 0 0 1 15.6 4z"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Rebuilding</span><span class="ios-row-sub">Coming back after a hard period. Picking up pieces and getting steady.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+      <button type="button" class="ios-row has-icon season-chip" data-season="Building" onclick="selectObSeason(this)"><span class="ios-row-icon tone-green"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 2.5-5.5 6-5.5 0 3.5-2.5 5.5-6 5.5z"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Building</span><span class="ios-row-sub">Stable now. Stacking habits, growing, going from okay to great.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+      <button type="button" class="ios-row has-icon season-chip" data-season="Celebrating" onclick="selectObSeason(this)"><span class="ios-row-icon tone-yellow"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.6 4.9L18.5 9.5 13.6 11.1 12 16l-1.6-4.9L5.5 9.5l4.9-1.6z"/><path d="M19 15l.6 1.9 1.9.6-1.9.6L19 20l-.6-1.9-1.9-.6 1.9-.6z"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Celebrating</span><span class="ios-row-sub">Things are clicking. Wins are real. Keeping momentum.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+      <button type="button" class="ios-row has-icon season-chip" data-season="Grieving" onclick="selectObSeason(this)"><span class="ios-row-icon tone-purple"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/><path d="M12 5.67 9.5 10l4 2.5-2.5 4.2"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Grieving</span><span class="ios-row-sub">Loss, heartbreak, or pain you’re carrying. Survival mode is okay.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
+      <button type="button" class="ios-row has-icon season-chip" data-season="Resting" onclick="selectObSeason(this)"><span class="ios-row-icon tone-indigo"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="ios-row-body"><span class="ios-row-title">Resting</span><span class="ios-row-sub">Recovering. Not pushing. This is also part of becoming.</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
     </div>
-    <button class="btn primary" onclick="obNext(5)">Continue &#8594;</button>
-    <button class="btn quiet" style="margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
+    <div class="ob-actions">
+      <button class="btn primary" onclick="obNext(5)">Continue &#8594;</button>
+      <button class="btn quiet" onclick="obQuickFinish()">I’ll do this later</button>
+    </div>
   </div>
   <div class="ob-step" id="ob5">
     <div class="ob-title">What are you fighting?</div>
@@ -3779,42 +3891,35 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Overspending')">Overspending</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Loneliness')">Loneliness</div>
     </div>
-    <input type="text" id="ob-custom" placeholder="Add your own..." style="margin-bottom:14px">
-    <div style="border-top:1px solid var(--bd);padding-top:14px;margin-bottom:16px">
-      <div style="font-size:var(--t-md);font-weight:500;color:var(--tx);margin-bottom:4px">Is there someone you’re doing this for?</div>
-      <div style="font-size:var(--t-base);color:var(--tx2);margin-bottom:10px;line-height:1.5">A partner, a parent, a friend — anyone you want to stay close to. Your evening can nudge you to reach out to them.</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" id="pyes" onclick="setHasPartner(true)" style="flex:1">Yes</button>
-        <button class="btn" id="pno" onclick="setHasPartner(false)" style="flex:1">Not right now</button>
+    <input type="text" id="ob-custom" placeholder="Add your own">
+    <!-- A question the app asks, in its own voice, answered with a segmented control. Yes/No were two
+         .btn.primary beside a third — three filled buttons in one screenful. -->
+    <div class="card ob-partner">
+      <div class="card-title">Is there someone you’re doing this for?</div>
+      <div class="card-lede">A partner, a parent, a friend — anyone you want to stay close to. Your evening can nudge you to reach out to them.</div>
+      <div class="seg">
+        <button class="fst" id="pyes" onclick="setHasPartner(true)">Yes</button>
+        <button class="fst" id="pno" onclick="setHasPartner(false)">Not right now</button>
       </div>
     </div>
-    <button class="btn primary" onclick="obNext(6)">Continue &#8594;</button>
-    <button class="btn quiet" style="margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
+    <div class="ob-actions">
+      <button class="btn primary" onclick="obNext(6)">Continue &#8594;</button>
+      <button class="btn quiet" onclick="obQuickFinish()">I’ll do this later</button>
+    </div>
   </div>
   <div class="ob-step" id="ob6">
-    <div class="ob-quote">"I’m not here because I made it.<br>I’m here because I’m trying.<br>That’s all any of us can do."</div>
+    <div class="ob-quote">&ldquo;I’m not here because I made it.<br>I’m here because I’m trying.<br>That’s all any of us can do.&rdquo;</div>
     <div class="ob-attr">&#8212; Alfred John, Day 1</div>
     <div class="ob-title" id="ob-ready-title">You’re ready.</div>
     <div class="ob-desc" id="ob-ready-desc">Your space is set up. Every day you open this is a day you chose to try.</div>
-    <div style="text-align:left;border-top:1px solid var(--bd);padding-top:16px;margin:18px 0 4px">
-      <div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">How a day feels here</div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="font-size:var(--t-hd);flex-shrink:0;width:24px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><polyline points="8,6 12,2 16,6"/><line x1="2" y1="22" x2="22" y2="22"/></svg></div>
-          <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.5"><b style="color:var(--tx)">Morning</b> — set one intention. Small, so you can actually keep it.</div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="font-size:var(--t-hd);flex-shrink:0;width:24px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
-          <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.5"><b style="color:var(--tx)">The moment it pulls</b> — tap the circle, bottom-right. I’m there before you cross the line, not after.</div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="font-size:var(--t-hd);flex-shrink:0;width:24px;text-align:center"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
-          <div style="font-size:var(--t-base);color:var(--tx2);line-height:1.5"><b style="color:var(--tx)">Evening</b> — reflect honestly. Grace, not a scorecard.</div>
-        </div>
-      </div>
-      <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-top:12px;font-style:italic">And I learn as you go — the more you use it, the better it fits you.</div>
+    <div class="ios-header ob-hd">How a day feels here</div>
+    <div class="ob-features">
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><polyline points="8,6 12,2 16,6"/><line x1="2" y1="22" x2="22" y2="22"/></svg><div><div class="ob-feature-t">Morning</div><div class="ob-feature-s">Set one intention. Small, so you can actually keep it.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="ob-feature-t">The moment it pulls</div><div class="ob-feature-s">Tap the circle, bottom-right. I’m there before you cross the line, not after.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><div><div class="ob-feature-t">Evening</div><div class="ob-feature-s">Reflect honestly. Grace, not a scorecard.</div></div></div>
     </div>
-    <button class="btn primary" style="margin-top:16px" onclick="finishOnboard()">Start my journey &#8594;</button>
+    <div class="ob-foot ob-foot-last">And I learn as you go — the more you use it, the better it fits you.</div>
+    <button class="btn primary" onclick="finishOnboard()">Start my journey &#8594;</button>
   </div>
 </div>
 <div class="hdr">
@@ -13021,8 +13126,9 @@ function toggleChip(el,name){
 }
 function setHasPartner(val){
   hasPartner=val; partnerAnswered=true;
-  document.getElementById('pyes').className='btn'+(val?' primary':'');
-  document.getElementById('pno').className='btn'+(!val?' primary':'');
+  // A segmented control's chosen half, not a second and third .btn.primary beside Continue.
+  document.getElementById('pyes').className='fst'+(val?' active':'');
+  document.getElementById('pno').className='fst'+(!val?' active':'');
 }
 
 function fillIdentity(text){
@@ -13078,10 +13184,10 @@ function selectHevyTier(tier){
   const proBtn = document.getElementById('ob-hevy-pro');
   const freeMsg = document.getElementById('ob-hevy-free-msg');
   const proMsg = document.getElementById('ob-hevy-pro-msg');
-  if(freeBtn) freeBtn.style.background = tier === 'free' ? 'var(--go)' : 'var(--bg2)';
-  if(freeBtn) freeBtn.style.color = tier === 'free' ? '#000' : 'var(--tx2)';
-  if(proBtn) proBtn.style.background = tier === 'pro' ? 'var(--go)' : 'var(--bg2)';
-  if(proBtn) proBtn.style.color = tier === 'pro' ? '#000' : 'var(--tx2)';
+  // The chosen half of a segmented control. This painted BLACK ink onto the tint by hand — and the
+  // .btn rule's !important fill won anyway, so neither Free nor Pro ever looked chosen.
+  if(freeBtn) freeBtn.classList.toggle('active', tier === 'free');
+  if(proBtn) proBtn.classList.toggle('active', tier === 'pro');
   if(freeMsg) freeMsg.style.display = tier === 'free' ? 'block' : 'none';
   if(proMsg) proMsg.style.display = tier === 'pro' ? 'block' : 'none';
   haptic('tap');
@@ -13171,7 +13277,7 @@ function obNextToMoment(){
         msg = document.createElement('div');
         msg.id = 'ob-name-err';
         msg.setAttribute('role','alert');
-        msg.style.cssText = 'font-size:var(--t-sm);color:var(--re);margin-top:6px;line-height:1.5';
+        msg.className = 'ob-field-err';
         el.insertAdjacentElement('afterend', msg);
       }
       msg.textContent = 'What should I call you? First name is plenty.';
@@ -13195,8 +13301,9 @@ function renderObMoment(){
   const first = (ls('totry_name')||'').trim().split(' ')[0];
   const t = document.getElementById('ob-moment-title');
   // First name only, and it goes in via textContent — never innerHTML.
-  if(t) t.textContent = first ? ('Before anything else, '+first+' — how are you right now?')
-                              : 'Before anything else — how are you right now?';
+  // A no-break space holds the dash to the word before it, so a wrapped title never opens a line with "—".
+  if(t) t.textContent = first ? ('Before anything else, '+first+'\u00a0— how are you right now?')
+                              : 'Before anything else\u00a0— how are you right now?';
   const grid = document.getElementById('ob-moment-grid');
   if(!grid || typeof FEELINGS === 'undefined') return;
   grid.innerHTML = '';
@@ -13380,7 +13487,8 @@ function obNext(step){
   // Step 5 -> 6: save vices + partner
   if(step===6){
     obPersistVices();
-    document.getElementById('ob-ready-title').textContent='You\'re ready, '+userName+'.';
+    // The typographic apostrophe the static title already uses — this swapped a straight one in.
+    document.getElementById('ob-ready-title').textContent='You\u2019re ready, '+userName+'.';
     document.getElementById('ob-ready-desc').textContent='Your space is set. Every day you open this is a day you chose to try.';
   }
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
@@ -51360,18 +51468,18 @@ function checkChangelog(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
+  // A sheet title and a list, the way iOS says what changed. It was an 11px tint caps label over a
+  // New York ITALIC title, and each item a 15px secondary line behind a hand-typed "›" in the tint.
+  // CHANGELOG entries are app-authored constants, as before.
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + APP_VERSION + ' · just updated</div>' +
-    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);color:var(--tx);font-style:italic;margin-bottom:14px">' + entry.title + '</div>' +
-    '<div style="margin-bottom:16px">' +
+    '<h3>' + entry.title + '</h3>' +
+    '<div class="modal-sub">Just updated to ' + APP_VERSION + '</div>' +
+    '<div class="ios-section fr-sheet-list"><div class="ios-list wrap">' +
       entry.items.map(it =>
-        '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
-          '<span style="color:var(--go);flex-shrink:0">›</span>' +
-          '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' + it + '</span>' +
-        '</div>'
+        '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title">' + it + '</span></span></div>'
       ).join('') +
-    '</div>' +
+    '</div></div>' +
     '<button class="btn primary" onclick="ackChangelog()">Got it</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -51485,82 +51593,67 @@ function showAppPreview(){
   document.querySelector('.modal-bg.open')?.remove();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
-  
-  // Build a "Day 60 in the life of a user" preview — all illustrative, never saved
+
+  // Build a "Day 60 in the life of a user" preview — all illustrative, never saved.
+  // REBUILT FROM THE COMPONENTS (17 Sep 2026). Seven hand-painted panels, each opening with an 11px
+  // capital label tracked at 0.01em, three in the third grey and two in purple; the identity and the
+  // coach's line in New York ITALIC; the day count in a tinted panel with a purple border written as an
+  // rgba literal; the nutrition figures in four colours, one of them a hex no theme could reach; and
+  // the heatmap in a gold that is the brand's signature, not a measure of anything. It is the same
+  // sample, said the way the real screens now say it: section headers, cards, stat tiles and rows.
+  // Every string here is an app-authored constant, so the markup is as trusted as it was.
+  const cur = curSym();
+  const row = (title, value, tone) =>
+    '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title">' + title + '</span></span>' +
+    '<span class="ios-row-value' + (tone ? ' ' + tone : '') + '">' + value + '</span></div>';
+  const irow = (icon, tone, title, sub) =>
+    '<div class="ios-row has-icon"><span class="ios-row-icon tone-' + tone + '">' + svgIcon(icon, 18) + '</span>' +
+    '<span class="ios-row-body"><span class="ios-row-title">' + title + '</span><span class="ios-row-sub">' + sub + '</span></span></div>';
+  const stat = (label, value, unit) =>
+    '<div class="ios-stat"><div class="ios-stat-label">' + label + '</div><div class="ios-stat-value">' + value +
+    (unit ? '<span class="ios-stat-unit">' + unit + '</span>' : '') + '</div></div>';
+  const heat = Array.from({length:13*7}, () => '<i class="l' + Math.floor(Math.random()*5) + '"></i>').join('');
+
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Preview · sample data · not yours</div>' +
-    '<h3 style="margin-bottom:6px">What Day 60 looks like</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px;line-height:1.6">This is a sample of what your app will look like once you\'ve been logging for 2 months. None of this is real — it\'s just so you can see what you\'re building toward.</p>' +
-    '<div style="max-height:62vh;overflow-y:auto;padding-right:4px">' +
-    
-      // Identity + day count
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Who you are becoming</div>' +
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;margin-bottom:8px">Disciplined · present · faithful · strong</div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">Day 60</div>' +
-          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">38d clean from weed</div>' +
-        '</div>' +
-      '</div>' +
-    
-      // Coach line
-      '<div style="background:var(--go-bg);border:1px solid rgba(140,107,182,0.3);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Your coach says</div>' +
-        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
-      '</div>' +
-    
-      // Heatmap mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Show-up heatmap · 87% rate</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(13,1fr);gap:2px">' +
-          Array.from({length:13*7}, (_,i) => {
-            const intensity = [0.08, 0.25, 0.5, 0.75, 1][Math.floor(Math.random()*5)];
-            return '<div style="aspect-ratio:1;background:rgba(200,169,110,' + intensity + ');border-radius:2px"></div>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-    
-      // Training summary mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly muscle volume</div>' +
-        ['Chest 18.4k kg · 2d ago','Back 22.1k kg · today','Legs 31.8k kg · 1d ago','Shoulders 8.2k kg · 3d ago'].map(r =>
-          '<div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);padding:3px 0">' +
-            '<span>' + r.split(' · ')[0] + '</span><span style="color:var(--tx3)">' + r.split(' · ')[1] + '</span>' +
-          '</div>'
-        ).join('') +
-      '</div>' +
-    
-      // Nutrition card mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Today\'s nutrition</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">CAL</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">2104</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">PRO</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:#A8D8B9">178g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">FIBER</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--gr)">31g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">VIT C</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2)">93%</div></div>' +
-        '</div>' +
-      '</div>' +
-    
-      // Vice pattern mock
-      '<div style="background:var(--go-bg);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Patterns from your fights</div>' +
-        '<div style="font-size:var(--t-cap);color:var(--tx2);line-height:1.6">'+svgIcon("target")+' Top trigger: "boredom" — 6 times · 67% win rate<br>'+svgIcon("calendar")+' Hardest day: Fridays — 8 fights · 50% won<br>'+svgIcon("clock")+' Peak: late night — 9 fights · 78% won</div>' +
-      '</div>' +
-    
-      // Money mock
-      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Money</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:var(--font-text);color:var(--re)">'+curSym()+'6,840</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:var(--font-text);color:var(--gr)">+'+curSym()+'432</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:var(--font-text);color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
-      '</div>' +
-    
-      // Closing line
-      '<div style="text-align:center;padding:16px 8px;font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx2);font-style:italic;line-height:1.6">Your version of this fills in one log at a time. Start with one thing today.</div>' +
-    
+    '<h3>What Day 60 looks like</h3>' +
+    '<div class="modal-sub">This is a sample of what your app will look like once you’ve been logging for 2 months. None of this is real — it’s just so you can see what you’re building toward.</div>' +
+    '<div class="fr-preview">' +
+
+      '<div class="ios-section"><div class="ios-header">Who you are becoming</div>' +
+        '<div class="card"><div class="card-say">Disciplined, present, faithful, strong</div>' +
+        '<div class="card-foot">Day 60 · 38 days clean from weed</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Your coach says</div>' +
+        '<div class="card"><div class="card-body">Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13.</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Show-up heatmap</div>' +
+        '<div class="card"><div class="fr-heat" aria-hidden="true">' + heat + '</div>' +
+        '<div class="card-foot">Showed up 87% of days</div></div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Weekly muscle volume</div><div class="ios-list">' +
+        row('Chest', '18.4k kg · 2d ago') + row('Back', '22.1k kg · today') +
+        row('Legs', '31.8k kg · 1d ago') + row('Shoulders', '8.2k kg · 3d ago') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Today’s nutrition</div><div class="ios-stats">' +
+        stat('Calories', '2,104') + stat('Protein', '178', 'g') + stat('Fibre', '31', 'g') + stat('Vitamin C', '93', '%') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Patterns from your fights</div><div class="ios-list">' +
+        irow('target', 'orange', 'Top trigger: “boredom”', '6 times · 67% won') +
+        irow('calendar', 'red', 'Hardest day: Fridays', '8 fights · 50% won') +
+        irow('clock', 'indigo', 'Peak: late night', '9 fights · 78% won') +
+      '</div></div>' +
+
+      '<div class="ios-section"><div class="ios-header">Money</div><div class="ios-list">' +
+        row('Debt remaining', cur + '6,840', 'bad') + row('Saved from vices', '+' + cur + '432', 'good') +
+        row('USA trip fund', cur + '1,840 of ' + cur + '8,000') +
+      '</div></div>' +
+
+      '<div class="fr-preview-close">Your version of this fills in one log at a time. Start with one thing today.</div>' +
     '</div>' +
-    '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)" style="margin-top:14px">Start my Day 1</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;font-size:var(--t-sm);background:var(--fill2)">Close preview</button>' +
+    '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)">Start my Day 1</button>' +
+    '<button class="btn quiet" onclick="closeModal(this)">Close preview</button>' +
   '</div>';
   document.body.appendChild(m);
 }

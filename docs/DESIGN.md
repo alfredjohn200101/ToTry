@@ -267,6 +267,24 @@ re-paint them at a call site.
   `.btn.sheet-alt` (the second button's gap), `.legal` (a long document with its own scroll),
   `.sheet-section` / `.sheet-list` (grouped rows inside a sheet), `.sheet-confirm` (the one centred sheet).
 
+### Roles named while rebuilding first run and sign-in
+
+- `.ios-list.wrap` — a list whose rows are SENTENCES (identity suggestions, what's-new items). A row
+  title is one line because a value sits at its end; a row with no value may wrap rather than hide the
+  words it is offering.
+- `.ob-features` / `.ob-feature` (`-t`, `-s`) — the iOS welcome-screen list: a tinted 30px glyph, a 17
+  semibold headline, a 15 secondary line. For "here is what this is", not for destinations (those are
+  rows).
+- `.ob-actions` — a step's one `.btn.primary` and the `.btn.quiet` way past it, stacked. `.ob-foot` is
+  the footnote under them.
+- `.ob-mark` — a tradition's own mark where a row would carry an icon tile. Content, not chrome.
+- A pick-one list is rows with `.ios-row-check`, shown on the chosen row — the seasons, like Money's.
+- A yes/no or a tier choice inside a card is `.seg` + `.fst` with `.active` on the chosen half, not two
+  `.btn`s toggled to `.primary` (that put three filled buttons in one screenful).
+- `text-wrap:balance` on a headline or a centred footnote that would otherwise end on one word.
+- A `tel:` link that IS a row: `a.ios-row` under `.auth-help`, which restores the row box the global
+  inline-number rule (`a[href^="tel:"]`) would otherwise shrink to 30px.
+
 ## What does NOT change
 
 - Every behaviour, handler, id, data key and word of copy that carries meaning. This is a visual and
