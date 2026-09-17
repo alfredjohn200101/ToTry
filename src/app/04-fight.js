@@ -2293,7 +2293,9 @@ function openCompanion(){
   const subEl = document.getElementById('comp-sub');
   if(greetEl){
     const hi = name ? ('Hey '+name+'.') : 'Hey.';
-    greetEl.textContent = (h >= 21 || h < 5) ? (hi+' How are you tonight, really?') : (hi+' How are you, really?');
+    // The break falls after the name, not wherever the width happens to put it: "Hey Alfred. How are /
+    // you, really?" read as two broken halves of one question. (.comp-greeting is white-space:pre-line.)
+    greetEl.textContent = (h >= 21 || h < 5) ? (hi+'\nHow are you tonight, really?') : (hi+'\nHow are you, really?');
   }
   if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
