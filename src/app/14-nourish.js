@@ -5032,9 +5032,15 @@ function renderGrowHandoffs(){
       // counting IS the problem, and it promises "no numbers to fight with"; the wordless form of this
       // line says the same true thing and keeps the handoff.
       const _gentle = (typeof nutGentle==='function') && nutGentle();
+      // NO TYPED ARROW BESIDE THE SYSTEM CHEVRON. These three lines are row SUBTITLES in an inset
+      // grouped list, and every one of them ended in " \u2192 do the next thing" \u2014 so the arrow landed
+      // ~30pt left of the row's own chevron and the instruction wrapped alone onto a second line.
+      // Two arrows in one row, one of them hand-painted. A Settings row states its value and lets
+      // the chevron say "this goes somewhere"; the handoff is the order of the rows and what each
+      // line is ABOUT, not a glyph that imitates the one the component already draws.
       trainLine = (burned > 0 && !_gentle)
-        ? n + ' this week \u2014 about ' + burned.toLocaleString() + ' cal earned \u2192 fuel it'
-        : n + ' this week \u2192 fuel what you earned';
+        ? n + ' this week \u2014 about ' + burned.toLocaleString() + ' cal earned'
+        : n + ' this week';
     }
     set('hand-train', trainLine);
 
@@ -5068,12 +5074,11 @@ function renderGrowHandoffs(){
       // same card, in the same glance — which the app's own note calls worse than no promise at all.
       const _gentleN = (typeof nutGentle==='function') && nutGentle();
       nourishLine = logged.length + ' of 7 days fuelled'
-        + ((avgPro > 0 && !_gentleN) ? ', ' + avgPro + 'g protein a day' : '')
-        + ' \u2192 see what it did';
+        + ((avgPro > 0 && !_gentleN) ? ' \u00b7 ' + avgPro + 'g protein a day' : '');
     } else if(ws.length){
       // trained but never logged a meal: the loop is broken at this exact link, and saying so is the
       // most useful thing this line can do
-      nourishLine = 'You trained, but nothing logged to fuel it \u2192 start here';
+      nourishLine = 'You trained, but nothing logged to fuel it';
     }
     set('hand-nourish', nourishLine);
 
@@ -5127,11 +5132,18 @@ function renderGrowHandoffs(){
         // Nourish handoffs directly above were both EMPTY, and to the runner whose training the app
         // could not see at all. Naming a cause the app has no evidence for is the false mechanism this
         // card exists to avoid. Name the fronts with data; with neither, state the change and stop.
+        // PRESENCE IS NOT EVIDENCE. The previous fix covered the ZERO case and left the one-day case,
+        // so a single logged day credited a two-week weight change to "the fuel" \u2014 and the Nourish row
+        // directly above said "1 of 7 days fuelled" in the same glance. A person reads both lines at
+        // once and the app contradicts itself. Ask for enough of a week to mean something: four days
+        // of food is the app's own confidence bar (lowConf = daysLogged < 4, in the card below), and
+        // two sessions is a week of training rather than an outing. Under that, state the change and
+        // stop \u2014 which is what this block's own note has said all along.
         const _did = [];
-        if(ws.length) _did.push('the training');
-        if(logged.length) _did.push('the fuel');
+        if(ws.length >= 2) _did.push('the training');
+        if(logged.length >= 4) _did.push('the fuel');
         const _cause = _did.length ? ' \u2014 that is what ' + _did.join(' and ') + ' did' : '';
-        trackLine = diff === 0 ? 'Holding steady ' + span + (logged.length ? ' \u2014 that is what the fuel did' : '')
+        trackLine = diff === 0 ? 'Holding steady ' + span + _cause
                                : unit + ' ' + span + _cause;
       }
     } else if(body.length === 1){
@@ -5226,8 +5238,14 @@ function renderBodySystemReport(){
 
   const domains=(wCount>0?1:0)+(daysLogged>=2?1:0)+(body.length>=2?1:0);
   if(domains<2){
-    const preview='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
+    // A LABEL, AND THE ROLES THE CARD ALREADY HAS. "Your body, one system" was a four-word comma
+    // phrase where a one-to-three-word label goes, and both of its inline declarations were dead:
+    // .eyebrow paints itself --tx2 !important, so color:var(--go) rendered grey, and .card .eyebrow
+    // sets its own margin. Under it, a 15px paragraph hand-set to line-height:1.65 \u2014 25pt of leading
+    // against the 20pt of the row subtitles 40px above it, same size, same ink, visibly looser.
+    // .card-body is that role at the standard 15/1.45; .flush because it is the card's last line.
+    const preview='<div class="eyebrow">One system</div>'+
+      '<div class="card-body flush">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
       // The three buttons that were here — "Log a workout", "Log a meal", "Log a weigh-in" —
       // went to exactly the same places as the three hub cards sitting directly above this card.
       // Six ways into three destinations, stacked. The card's job is to explain that they are one
@@ -5300,7 +5318,7 @@ function renderBodySystemReport(){
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
   else if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
 
-  const html='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
+  const html='<div class="eyebrow">Your body, one system \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
     goalRow+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+

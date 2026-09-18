@@ -119,6 +119,16 @@ This is the part the owner is pointing at, and it is invisible in a wireframe. R
   `chevron:false` for a row that already ends in a control; `tag:'div'` for the one shape a
   `<button>` cannot hold — a tappable row that also carries its own button (the calendar's delete).
   A `<button>` inside a `<button>` is not parseable HTML: the parser closes the outer one.
+  **A tone is a MEANING, and one concept gets one tone.** In Settings.app the tile colour IS the
+  category; here it had stopped being anything. The same dumbbell drawing sat on orange (Grow →
+  Train), the tint blue (Train → Strength workout) and green (the calendar's gym rows), while that
+  same green also meant Nourish, Cardio and the whole Body front on Today — one glyph in four
+  colours and one colour with four meanings, across screens a person walks in a single session.
+  Settled for the body fronts, so the next screen does not invent its own: **training and the gym =
+  orange, cardio = mint, food = green, body data = teal.** Before you pick a tone, grep for the
+  icon name and take the tone the same concept already carries. The rest of the app has not been
+  audited this way yet — Today's `flame` for Spirit is also orange, and whether that collides with
+  training or reads as its own thing on its own list is an open question, not a decided one.
 - **Screen subtitle** `.page-sub` — the sentence under a `.page-title`. 17px, `--tx2`.
 - **Section header with an action** — `<div class="ios-header home-section-hd"><span>Today's
   habits</span><button class="hd-action" onclick="…">Add or edit</button></div>`. That is Settings'

@@ -654,7 +654,8 @@ function setCalView(v){
 const CAL_TYPE_TILE = {
   work:     { icon:'briefcase', tone:'indigo' },
   class:    { icon:'school',    tone:'purple' },
-  gym:      { icon:'dumbbell',  tone:'green'  },
+  // Orange, not green: the same dumbbell is orange on Grow and on Train, and green is food.
+  gym:      { icon:'dumbbell',  tone:'orange' },
   personal: { icon:'user',      tone:'blue'   },
   other:    { icon:'calendar',  tone:'gray'   }
 };

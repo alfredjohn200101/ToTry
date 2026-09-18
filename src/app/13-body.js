@@ -96,7 +96,11 @@ function wDelta(kgDiff, opts){
   const n = parseFloat(kgDiff);
   if(!isFinite(n)) return opts.blank != null ? opts.blank : '\u2014';
   if(n === 0) return opts.zero != null ? opts.zero : ('0' + wUnit());
-  return wFmt(n, { signed:true });
+  // A MINUS SIGN IS NOT A HYPHEN. This inherited JavaScript's ASCII '-' from Number#toString, so the
+  // Change tile read "-3.7kg" while the same component in Money writes '−' into its own stat
+  // value. One component, two ways of spelling one sign. Display only — the number is untouched.
+  const s = wFmt(n, { signed:true });
+  return s.charAt(0) === '-' ? '−' + s.slice(1) : s;
 }
 
 // THE RESPONSE TO A DISCLOSURE IS NOT A STEP IN A HAPPY PATH. It used to live inline at the bottom of
@@ -957,41 +961,55 @@ function renderRecompInsight(){
     '<div class="card-display" style="color:'+col+'">'+r.head+'</div>'+
     '<div class="card-sub">'+r.body+'</div>';
 }
+// ONE ROW, ONE WRITER, ONE ANATOMY. renderBody() and updateTrackerDisplay() both painted the Weight
+// row and said different things — "84.2kg logged today" here, "Logged today: 84.2kg" there — so what
+// a person read depended on which render had run last. Both also buried the VALUE inside the subtitle
+// and painted that subtitle status green (var(--gr)), a colour no other row subtitle in the app uses,
+// beside a Sleep row in the same two-row list that put its value on the trailing edge in grey. A row's
+// value goes in .ios-row-value; the subtitle says what the value is. Said once, here.
+function syncWeightTodayRow(entries){
+  const sub = document.getElementById('bod-current-summary');
+  const val = document.getElementById('bod-current-value');
+  if(!sub && !val) return;
+  const list = entries || ls('totry_body') || [];
+  const todayStr  = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  // A weekly reflection saved with the weight field left blank writes an entry for today carrying no
+  // weight. find() returned THAT one first and the row told a person who had weighed in an hour
+  // earlier "No log" — inviting a duplicate. A reflection is not a weigh-in; only an entry that
+  // actually carries a weight can answer "did I weigh in today".
+  const today = list.find(e => e && (e.weight > 0) &&
+    (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+  if(sub) sub.textContent = today ? 'Logged today' : 'No log today';
+  // wFmt converts: appending the unit LABEL to stored kilograms told a person on lb that their
+  // 82.4kg was "82.4 lb" — the wrong reading by 2.2x, contradicted by the tiles below it.
+  if(val) val.textContent = today ? wFmt(today.weight) : '';
+}
 function renderBody(){
   const entries=ls('totry_body')||[];
   if(typeof renderWeightHistory === 'function') renderWeightHistory();
   if(typeof renderRecompInsight === 'function') renderRecompInsight();
-  
-  // Update the daily-log card today summary
-  const todaySummary = document.getElementById('bod-current-summary');
-  if(todaySummary){
-    const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
-    // A weekly reflection saved with the weight field left blank writes an entry for today carrying
-    // no weight. This found THAT one first, saw weight === 0, and told a person who had weighed in an
-    // hour earlier "No log yet" — inviting a duplicate. A reflection is not a weigh-in; only an entry
-    // that actually carries a weight can answer "did I weigh in today".
-    const todayEntry = entries.find(e => (e.weight > 0) &&
-      (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
-    if(todayEntry && todayEntry.weight > 0){
-      todaySummary.textContent = wFmt(todayEntry.weight) + ' logged today';
-      todaySummary.style.color = 'var(--gr)';
-    } else if(entries.length && entries[0].weight > 0){
-      todaySummary.textContent = 'Last: ' + wFmt(entries[0].weight) + ' (' + (entries[0].date || (entries[0].ts ? new Date(entries[0].ts).toLocaleDateString('en-AU') : 'earlier')) + ')';
-      todaySummary.style.color = '';          // the row's own subtitle grey, not a third one
-    } else {
-      todaySummary.textContent = 'No log yet';
-      todaySummary.style.color = '';
-    }
-  }
-  
+
+  syncWeightTodayRow(entries);
+
   // Only entries that carry a real weight can drive these tiles — see the note above.
   const weighed = entries.filter(e => e && (parseFloat(e.weight) || 0) > 0);
   if(weighed.length){
     const cur=weighed[0].weight,start=weighed[weighed.length-1].weight,diff=Math.round((cur-start)*10)/10;
     document.getElementById('bod-cur').textContent=wFmt(cur);
     document.getElementById('bod-st').textContent=wFmt(start);
-    document.getElementById('bod-lo').textContent=wDelta(diff, {zero:'\u2014'});
+    const _lo=document.getElementById('bod-lo');
+    _lo.textContent=wDelta(diff, {zero:'\u2014'});
+    // "GOOD" IS NOT SOMETHING MARKUP CAN KNOW. The Change tile carried a static class="good" in the
+    // shell, so it was green for a GAIN as well as a loss, and green for a loss to someone who is
+    // deliberately building. Semantic colour has to follow meaning: ask the goal the person actually
+    // set, and when there is none \u2014 or it is maintain \u2014 say the number in label ink and judge nothing.
+    // totry_body_goal is {mode,rate} from setBodyGoal(); the demo seeder writes a target WEIGHT, so a
+    // bare number is read as "where I am headed" and the direction comes from which side of it we are.
+    const _goal=ls('totry_body_goal'); let _want=0;
+    if(_goal && typeof _goal==='object') _want = _goal.mode==='cut' ? -1 : _goal.mode==='build' ? 1 : 0;
+    else { const _t=parseFloat(_goal); if(isFinite(_t) && _t>0 && Math.abs(_t-cur)>0.05) _want = _t<cur ? -1 : 1; }
+    _lo.className='ios-stat-value' + ((_want && diff) ? ((diff<0) === (_want<0) ? ' good' : ' bad') : '');
     // NO HEIGHT, NO VERDICT. `||175` meant a person who never opened Settings got a BMI and a
     // categorical judgement about their body computed from a height the app invented. At 86kg it read
     // "28.1 (Overweight)"; the same 86kg at a real 168cm is 30.5 and at 190cm is 23.8 — so the label
@@ -1040,7 +1058,7 @@ function renderBody(){
     // "28.2 (Overweight)" — a categorical judgement about a body, computed from numbers the person
     // had just deliberately removed. The history list below already had its empty state; these did not.
     ['bod-cur','bod-st','bod-lo'].forEach(function(id){
-      const el = document.getElementById(id); if(el) el.textContent = '\u2014';
+      const el = document.getElementById(id); if(el){ el.textContent = '\u2014'; el.className = 'ios-stat-value'; }
     });
     const bmiEmpty = document.getElementById('bod-bmi'); if(bmiEmpty) bmiEmpty.textContent = '';
   }
@@ -1606,28 +1624,13 @@ function updateTrackerDisplay(){
   try{
     const _sg=parseFloat(ls('totry_sleep_goal'))||0;
     const _lbl=document.getElementById('sleep-target-lbl');
-    if(_lbl) _lbl.textContent = _sg>0 ? ('Target: '+_sg+' hours') : 'Target: 7-9 hours';
+    // An en dash for a range, matching the static label this replaces — a hyphen between two
+    // numerals is the keyboard's answer, not the typesetter's.
+    if(_lbl) _lbl.textContent = _sg>0 ? ('Target: '+_sg+' hours') : 'Target: 7–9 hours';
     if(s){ const _met = _sg>0 ? (t.sleep>=_sg) : (t.sleep>=7); s.style.color = (t.sleep>0 && _met) ? 'var(--gr)' : ''; }
   }catch(_){}
-  // Keep the weight "today" summary in sync too
-  const body=ls('totry_body')||[];
-  // Same defect as the other tile, in a second writer: a weekly reflection saved with the weight blank
-  // is an entry for today with weight 0, and find() returns it first — so the tile read "Logged today:
-  // 0kg" to a person who had weighed in that morning. A reflection is not a weigh-in.
-  const todayWeight=body.find(b=>(b.weight > 0) &&
-    (b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today)));
-  const sum=document.getElementById('bod-current-summary');
-  if(sum){
-    if(todayWeight){
-      // This used to append the unit LABEL to the stored kilograms, so a person on lb was told
-      // their 82.4kg was "82.4 lb" — the wrong reading by 2.2x, contradicted by the kg figure three
-      // lines below it. wFmt converts.
-      sum.textContent='Logged today: '+wFmt(todayWeight.weight);
-      sum.style.color='var(--gr)';
-    } else {
-      sum.textContent='No log today';
-      sum.style.color='';                     // the row's own subtitle grey, not a third one
-    }
-  }
+  // Keep the weight "today" row in sync too — through the one writer, so the two renders cannot
+  // disagree about what this row says.
+  syncWeightTodayRow();
 }
 

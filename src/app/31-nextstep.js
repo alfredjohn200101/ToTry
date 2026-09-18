@@ -298,7 +298,9 @@ function renderLifeWoven(){
   // knows that and no call site has to remember it.
   const rows=[
     iosRow({icon:'shield',tone:'blue',title:'The fight',value:fightTxt,onclick:"go('fight')"}),
-    iosRow({icon:'dumbbell',tone:'green',title:'Body',value:bodyTxt,onclick:"go('grow')"}),
+    // Teal, not green: this row's value is body data (a weigh-in and what is left to eat), which is
+    // the tone Grow's own Track row carries. Green is food, and it was carrying four meanings at once.
+    iosRow({icon:'dumbbell',tone:'teal',title:'Body',value:bodyTxt,onclick:"go('grow')"}),
     iosRow({icon:'flame',tone:'orange',title:'Spirit',value:spiritTxt,onclick:"go('soul')"}),
     iosRow({icon:'wallet',tone:'indigo',title:'Money',value:moneyTxt,onclick:"go('money')"})
   ];

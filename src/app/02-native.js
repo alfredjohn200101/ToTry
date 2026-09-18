@@ -522,15 +522,25 @@ function renderHealthCard(){
     const card=document.getElementById('health-connect-card'); if(!card) return;
     const title=document.getElementById('health-connect-title'), sub=document.getElementById('health-connect-sub'), btn=document.getElementById('health-connect-btn');
     const off=document.getElementById('health-off-row');
+    const val=document.getElementById('health-connect-value'), foot=document.getElementById('health-connect-foot');
     card.style.display='block';
     // Web/PWA is the beta — HealthKit is native-only. Be honest (a heads-up), never a dead button.
+    // A ROW IS NOT A PARAGRAPH. This branch hid the button and the way-out row and then put four
+    // lines of prose in the subtitle, so the first thing under the Track title was a chevron-less,
+    // control-less row — the largest thing on the screen, and it read as something you should be
+    // able to tap. Same shape as any other integration row now: a one-line description, the state on
+    // the trailing edge, and the sentence explaining it in the section's footnote, where iOS puts it.
     if(typeof Health==='undefined' || !Health.isNative()){
       if(title) title.textContent='Apple Health';
-      if(sub) sub.textContent='Automatic steps & activity sync arrives with the ToTry app on the App Store — you’ll sign in with this same email and pick up right here.';
+      if(sub) sub.textContent='Steps & activity, automatic.';
+      if(val){ val.textContent='iPhone app'; val.style.display=''; }
+      if(foot){ foot.textContent='Arrives with the ToTry app on the App Store — you’ll sign in with this same email and pick up right here.'; foot.style.display=''; }
       if(btn) btn.style.display='none';
       if(off) off.style.display='none';
       return;
     }
+    if(val) val.style.display='none';
+    if(foot) foot.style.display='none';
     if(btn) btn.style.display='';
     if(Health.connected()){
       if(off) off.style.display='';          // an .ios-row: let the class decide how it lays out
