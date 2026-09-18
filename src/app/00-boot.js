@@ -1092,6 +1092,11 @@ function svgIcon(name, size){
     bulb:'<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.75V17h8v-2.25A7 7 0 0 0 12 2z"/>',
     ruler:'<path d="M4.5 12.5 12.5 4.5a2 2 0 0 1 2.83 0l4.17 4.17a2 2 0 0 1 0 2.83l-8 8a2 2 0 0 1-2.83 0L4.5 15.33a2 2 0 0 1 0-2.83z"/><path d="M9 8.5 11 10.5M11.5 6 14 8.5M6.5 11 8.5 13"/>',
     stop:'<polygon points="7.86,2 16.14,2 22,7.86 22,16.14 16.14,22 7.86,22 2,16.14 2,7.86"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+    // Read-aloud's two states. `stop` above is the octagon — a prohibition sign, not a transport
+    // control. These replace a typed U+25B6 and U+25A0 sitting at the label's own weight beside real
+    // stroked icons; a Geometric Shapes character is a glyph, not an icon, and no emoji check sees it.
+    play:'<polygon points="7,4 19,12 7,20"/>',
+    stopsquare:'<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
     coffee:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
     shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     dumbbell:'<path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/>',
