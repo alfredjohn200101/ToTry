@@ -378,30 +378,21 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
    end of a grey bordered box — two radii, two fills and a bare text "+" nobody could read as a
    control, which is the shape that reads as generated. A filled button is the ONE main action on a
    screen (see docs/DESIGN.md); a search field's submit is a tint word, the way Mail draws it. */
-.logbar{display:flex;align-items:center;gap:0;margin-bottom:10px;background:var(--fill2);
+.logbar{display:flex;align-items:center;gap:0;margin-bottom:8px;background:var(--fill2);
   border:0;border-radius:var(--rm);overflow:hidden;min-height:44px}
-/* The trailing 14px was dead space: a glyph button starts where the field ends, so that padding only
-   narrowed the field — and the placeholder the comment below says was already shortened once still
-   rendered clipped as "Search or describe a mea". The leading inset stays 14 (that is the field's own
-   text inset); the trailing one is 4, which is the gap before the camera. */
+/* The leading magnifier. A UISearchBar carries one, and it is what tells a person at a glance that
+   the field takes a query rather than a note. The shell cannot call svgIcon(), so it is the same
+   path inlined — npm test asserts it byte for byte. */
+.logbar-mag{flex:0 0 auto;display:flex;align-items:center;padding:0 0 0 12px;color:var(--tx3)}
+.logbar-mag .ic{width:17px;height:17px;stroke-width:2.2}
 .logbar-in{flex:1;min-width:0;background:transparent;border:0;color:var(--tx);font-size:var(--t-base);
-  letter-spacing:-.022em;padding:11px 4px 11px 14px;outline:none;font-family:var(--font-text)}
+  letter-spacing:-.022em;padding:11px 8px 11px 8px;outline:none;font-family:var(--font-text)}
 .logbar-in::placeholder{color:var(--tx3)}
 .logbar-in:focus{background:transparent}
 .logbar-ic{flex:0 0 auto;width:38px;align-self:stretch;background:transparent;border:0;
   color:var(--go);font-size:var(--t-base);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .logbar-ic .ic{width:20px;height:20px}
 .logbar-ic:active{opacity:.45}
-.logbar-go{flex:0 0 auto;padding:0 14px;align-self:stretch;border:0;font-size:var(--t-base);font-weight:400;
-  letter-spacing:-.022em;cursor:pointer;font-family:var(--font-text);background:transparent;color:var(--go)}
-.logbar-go:active{opacity:.45}
-/* "More ways to log ›" was a 15px grey micro-link floating under the bar with no surface of its own.
-   It is a destination, so it is a row: the inset grouped cell every other destination in the app uses. */
-.logbar-more{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
-  min-height:44px;padding:11px 16px;margin-bottom:14px;background:var(--bg2);border:0;border-radius:var(--rm);
-  color:var(--tx);font-size:var(--t-base);letter-spacing:-.022em;cursor:pointer;text-align:left;font-family:var(--font-text)}
-.logbar-more::after{content:'\203A';color:var(--tx3);font-size:var(--t-hd);line-height:1;margin-right:-2px}
-.logbar-more:active{background:var(--bg4)}
 
 /* One row per way in — icon, what it is, what it's for. A list a person can read, not six equal chips. */
 /* The one row that stands for four cards until they are wanted. */
@@ -414,19 +405,22 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 /* It STACKS, and that is not only taste. The help orb is fixed at right:16px and 54px wide, so it
    owns the right-hand 70px of the screen at whatever scrolls past it — and "Set a real one" sat in
    exactly that column, half under the orb, at the one width every iPhone in this range renders. Both
-   controls are on the left now, clear of it at any scroll position. */
-.setup-strip{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:0 16px;
-  margin:-4px 0 18px;background:transparent;border:0}
+   controls are on the left now, clear of it at any scroll position.
+   IT LIVES INSIDE THE HERO CARD NOW, under the macros and behind the card's own hairline, because its
+   subject is the target the card is showing. Outside, under "More ways to log", it read as that row's
+   footer. And its two controls were rolled by hand — 13px text runs 34px tall, one tint and one in the
+   secondary grey, the only "decline" in the app that is just dimmer text. The app already names this
+   role: .footnote-link, a footnote a thumb can land on at 44pt. On iOS a decline is a control in the
+   tint too, so both are tint; the sentence above them is what says which is which. */
+.setup-strip{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:0;
+  margin:14px 0 0;background:transparent;border:0}
 .setup-strip-t{font-size:var(--t-cap);color:var(--tx2);line-height:1.38;letter-spacing:-.006em}
-.setup-strip-go{background:transparent;border:0;color:var(--go);font-size:var(--t-cap);
-  font-weight:400;cursor:pointer;font-family:var(--font-text);padding:9px 12px 9px 0;white-space:nowrap;
-  text-decoration:none;min-height:34px;letter-spacing:-.006em}
-.setup-strip-go:active{opacity:.45}
-.setup-strip-x{background:none;border:0;color:var(--tx2);font-size:var(--t-cap);
-  cursor:pointer;line-height:1;padding:9px 12px;margin-left:-4px;min-height:34px;
-  font-family:var(--font-text);letter-spacing:-.006em}
-.setup-strip-x:active{opacity:.45}
-.setup-strip-acts{display:flex;align-items:center;gap:6px}
+.setup-strip-acts{display:flex;align-items:center;gap:18px}
+/* THE PADDED HIT BOX, which .cal-gentle already uses eight rows above in this same card: the target is
+   44pt, the negative margin gives the slack back to the layout so two 13px words do not open a 44px
+   hole in the middle of the card. The box is what a thumb lands on; the band is what an eye reads. */
+.setup-strip-acts .footnote-link{font-size:var(--t-cap);letter-spacing:-.006em;white-space:nowrap;
+  margin:-11px 0}
 
 /* The ring owns the fold. One definition of the number in the middle of it — this block used to
    declare 38px and the .cal-hero block 700 lines below declared 52px, and neither was what shipped,
@@ -978,6 +972,12 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .btab{flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-size:var(--t-sm);font-weight:500;cursor:pointer;font-family:var(--font-text)}
 .btab.active{color:var(--go);border-bottom-color:var(--go)}
 /* ── NUTRITION ── */
+/* The stack under this card was four siblings with three different gaps — 18 to the field, 10 to the
+   "More ways to log" row, 10 to a line of naked text — and not one of them the 28px section gap. The
+   naked text is inside this card now (it was about this card's target all along) and the field and the
+   row are ONE group: 8px between them, the section gap after them. The 18 here is deliberate and
+   measured: the help orb is fixed at var(--sb)+94 and 54px wide, so every pixel this card grows pushes
+   the log bar's camera and quick-add further into the orb's column. At 18 their centres clear it. */
 .nutrition-hero{background:var(--bg2);border:0;border-radius:var(--r);padding:14px 16px 16px;margin-bottom:18px}
 /* Calories is the HERO — one big glanceable number (MFP's lesson). The other three macros
    are smaller and neutral-coloured so the gold calorie figure stays the single focal point
@@ -1390,6 +1390,16 @@ html,body{overscroll-behavior:none}
    sizes correctly inside the flex app. Coach/Train just need their message area to grow. */
 #tab-coach.active, #tab-train.active{ display:flex; flex-direction:column; }
 #tab-coach .msgs, #tab-train .msgs{ flex:1 1 auto; }
+/* AND THAT FLEX IS WHY TRAIN'S TITLE SAT 6px HIGHER THAN EVERY OTHER SCREEN'S. Three screens put a
+   segmented control directly under the large title — Fight, The Word and Train. The title carries
+   margin-bottom:10 and the shared segmented rule margin-top:6; in a BLOCK container those collapse to
+   10, which is what Fight and The Word render. A flex container's children never collapse their
+   margins, so on Train alone they added to 16. Measured, not read: title bottom 163.4 on all three;
+   the control's top 173.4, 173.4 and 179.4. The flex is load-bearing (the Coach panel's #pt-msgs grows
+   into it), so the 10 is restored where it is spent rather than by unpicking the container.
+   (!important because the large-title rule that sets the 10 carries one; specificity decides between
+   two !important declarations, and #tab-train.active > .page-title outranks .page-title.) */
+#tab-train.active > .page-title{ margin-bottom:4px !important }
 /* iOS keyboard fix: the outer page must NEVER scroll (the black-void bug). Tabs scroll inside;
    focused inputs are centered within their tab instead of iOS shoving the whole layout. */
 /* Cormorant Garamond ships OLD-STYLE figures by default: the 1 is drawn with full serifs (a capital
@@ -1730,9 +1740,10 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
   min-height:50px;border-radius:12px !important;border:0 !important;box-shadow:none !important;
   background:var(--fill) !important;color:var(--go) !important;transition:opacity .15s,transform .1s}
 .btn:active{opacity:.6;transform:none !important}
-/* .logbar-go was in this list, so Nourish's "Search" rendered as a filled-blue block welded onto the
-   right end of the search field — a second .btn.primary in the first screenful, which docs/DESIGN.md
-   allows exactly one of. A search field's submit is a tint WORD; the Nourish block below sets it. */
+/* Nourish's "Search" was in this list, so it rendered as a filled-blue block welded onto the right
+   end of the search field — a second .btn.primary in the first screenful, which docs/DESIGN.md allows
+   exactly one of. It is gone entirely now: a UISearchBar has no submit button, Return submits, and the
+   83px it was taking is what the placeholder needed to finish its own sentence. */
 .btn.primary,.hero-action{background:var(--go-fill) !important;color:var(--on-tint) !important;box-shadow:none !important}
 .btn.primary svg,.hero-action svg{color:var(--on-tint)}
 .btn.quiet{background:transparent !important;color:var(--go) !important;font-weight:400 !important;min-height:44px}
@@ -2037,6 +2048,12 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
    click handler and six inline styles trying to give it a box. */
 .footnote-link{color:var(--go);min-height:44px;display:flex;align-items:center;cursor:pointer}
 .footnote-link:active{opacity:.5}
+/* The same role on a real <button>, for the call sites that build markup instead of setting
+   properties on an element — a bare <button> still arrives wearing the UA's own box, so it is undone
+   once, here, rather than with four inline styles at each site. No font-size: whichever class names
+   the size (.card-foot, or the container) keeps it. */
+button.footnote-link{background:transparent;border:0;padding:0;font-family:var(--font-text);
+  text-align:left;cursor:pointer}
 /* Progress photos: each upload date is its own group, and its label sits over its own grid rather
    than 16pt inside it. */
 .photo-group{margin-bottom:18px}
@@ -2310,7 +2327,6 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
    !important, so specificity decides and .logbar .logbar-in quietly lost. */
 #nut-search-in.logbar-in{background:transparent !important;border-radius:0 !important;box-shadow:none !important}
 #nut-search-in.logbar-in:focus{box-shadow:none !important}
-.logbar .logbar-go{background:transparent !important;color:var(--go) !important}
 /* A row's subhead is ONE line. .ios-row-sub wraps by default, and the value is flex:none, so the
    second line of "80g oats + 1 scoop · P 38 · C 62 · F 11" ran underneath "520 cal" — the exact
    shape docs/DESIGN.md names: a row that wraps under its own value. */
@@ -2326,7 +2342,10 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
    table and a table needs its header and its cells to agree on a width. They share the .tr-c-*
    classes for exactly that reason: the old header was a separate list of hand-typed widths, which is
    why "TYPE" and "PREV" ran into each other with no gap on a 393px phone. */
-.tr-intro{font-size:15px;line-height:1.4;letter-spacing:-.01em;color:var(--tx2);margin:0 0 22px;max-width:36em}
+/* .tr-intro is gone: it was .page-intro's base rule copied out verbatim with a different margin, so a
+   Train intro sat 2px off every other screen's the moment a new person saw one. Its three call sites
+   say .page-intro now. (The max-width:36em it also carried never bit — 36em of 15px is 540px and the
+   column is 361.) */
 .tr-card-body{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);margin-top:2px}
 .tr-strong{color:var(--tx)}
 .tr-card-btn{margin-top:12px}
@@ -5094,7 +5113,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
          turns the calorie numbers off, and it must not be a 12px-tall target. -->
     <div class="cal-head">
       <span class="cal-date" id="nut-date"></span>
-      <button type="button" id="nut-gentle-toggle" class="cal-gentle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories">Numbers on</button>
+      <button type="button" id="nut-gentle-toggle" class="cal-gentle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories">Hide numbers</button>
     </div>
     <!-- The ring was 96px sitting beside a 122px table that ended in the SAME number it displayed:
          "970 cal left" and "Remaining 970", eight pixels apart, each shrinking the other. The number a
@@ -5107,7 +5126,10 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
           <circle cx="64" cy="64" r="54" fill="none" stroke="var(--bg3)" stroke-width="10"/>
           <circle id="ring-pro" cx="64" cy="64" r="54" fill="none" stroke="var(--gr)" stroke-width="10" stroke-dasharray="0 340" stroke-linecap="round"/>
           <circle id="ring-carb" cx="64" cy="64" r="54" fill="none" stroke="var(--bl)" stroke-width="10" stroke-dasharray="0 340"/>
-          <circle id="ring-fat" cx="64" cy="64" r="54" fill="none" stroke="var(--go)" stroke-width="10" stroke-dasharray="0 340"/>
+          <!-- Fat was drawn in --go, which docs/DESIGN.md reserves for the tint — so the hero's own
+               "625", the tappable "Numbers on" and one of the three macros sampled at the identical
+               colour. A data series cannot wear the colour that means "you can tap this". -->
+          <circle id="ring-fat" cx="64" cy="64" r="54" fill="none" stroke="var(--pu)" stroke-width="10" stroke-dasharray="0 340"/>
         </svg>
         <div class="cal-ring-mid">
           <div class="ch-num" id="nut-cal">0</div>
@@ -5133,9 +5155,14 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="macro-row"><span class="mr-n">Carbs</span><span class="mr-v" id="nut-carb-goal-lbl">0 / 230g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-carb-bar" style="width:0%;background:var(--bl)"></div></div>
       <div class="macro-row"><span class="mr-n">Fat</span><span class="mr-v" id="nut-fat-goal-lbl">0 / 60g</span></div>
-      <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--go)"></div></div>
+      <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--pu)"></div></div>
     </div>
 
+    <!-- THE NUDGE IS ABOUT THE TARGET, SO IT LIVES WITH THE TARGET. It used to float as naked 13px
+         text under the "More ways to log" row — two components below its own subject — where it read
+         as that row's footer. Inside the card, under the macros, it is a footnote about the number
+         the card is showing. -->
+    <div id="nut-setup-nudge"></div>
   </div>
 
   <!-- The starter-target warning and the goals/TDEE link used to sit ABOVE the ring, so 170px of
@@ -5160,25 +5187,33 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
          local match that puts staples on screen with zero network — has been live, reachable by
          nothing, and every search since has waited for four databases before showing anything. -->
     <!-- The placeholder was "Search a food, or describe your meal…" and truncated at "desc" on every
-         iPhone, so the AI-estimate half of the field was invisible. Shorter, and it fits. -->
+         iPhone; it was shortened to this and STILL rendered as "Search or describe a me" with the
+         final glyph sliced by the camera, because the field was giving its width to three trailing
+         controls. The "Search" button is gone — a UISearchBar has no submit button, Return submits
+         (the onkeydown below has always done it), and enterkeyhint names that key. That is ~50pt back
+         to the field, against the ~14pt the sentence needed. -->
+    <span class="logbar-mag"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
     <input type="text" id="nut-search-in" class="logbar-in" autocomplete="off"
-           placeholder="Search or describe a meal"
+           placeholder="Search or describe a meal" enterkeyhint="search"
            oninput="nutSearchTypeahead(this.value)"
            onkeydown="if(event.key==='Enter')searchFood(this.value)">
     <button class="logbar-ic" aria-label="Snap a photo of your meal"
             onclick="snapMeal()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
     <!-- A bare text "+" at 17px is not a control anybody can read. Same handler, the app's own icon. -->
-    <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-    <button class="logbar-go" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
+    <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
   </div>
-  <button class="logbar-more" onclick="openMoreWaysToLog()">More ways to log</button>
-  <!-- BELOW THE LOG BAR, ABOVE THE DAY. Moving this down with the CALCULATOR in v570 left the one-line
-       "your 2100 cal target is a generic starting point · Set a real one" prompt 1,275px down a 2,226px
-       tab, directly above the very accordion it exists to compensate for — the app's own comment says
-       that number can be 500+ cal off what the person actually burns. It does NOT go back above the log
-       bar: logging food first is a decided thing and npm run panels asserts it. Here it is one line, in
-       the first screenful, and the 170px of settings stay where they were moved to. -->
-  <div id="nut-setup-nudge"></div>
+  <!-- "More ways to log ›" was a hand-painted button with a ::after text glyph for its chevron — squat,
+       mitred and 3pt shorter than the SVG chevron on every other row in the app, one component away
+       from Train's. It is the component now: an inset list holding one row, which is also where its
+       28px section gap comes from. -->
+  <div class="ios-section">
+    <div class="ios-list">
+      <button type="button" class="ios-row" onclick="openMoreWaysToLog()">
+        <span class="ios-row-body"><span class="ios-row-title">More ways to log</span></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+      </button>
+    </div>
+  </div>
   <!-- TWO INPUTS, ON PURPOSE. capture="environment" opens the rear camera straight away and removes
        Photo Library entirely; leaving it off gives the OS chooser (Take Photo / Photo Library / Files)
        and can never open a viewfinder. Neither one alone is right, and for a long time only the second
@@ -5455,7 +5490,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-train" class="tab">
   <div class="page-title">Train</div>
-  <div class="tr-intro" data-intro-for="train">The forge. Every rep is a vote for the person you’re becoming. Show up even when it’s heavy — especially then.</div>
+  <div class="page-intro" data-intro-for="train">The forge. Every rep is a vote for the person you’re becoming. Show up even when it’s heavy — especially then.</div>
   <!-- These five were .btab, the underline strip Soul's prayer filter uses. They are one control
        with five mutually exclusive states, which on iOS is a segmented control — and the app already
        had one (.pt-tabs + .fst). Naming it is the whole fix; no new CSS. -->
@@ -5489,6 +5524,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
                green in the calendar. One drawing, three colours, on three screens a person walks in
                one session. Training is orange everywhere now. -->
           <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
           <span class="ios-row-body"><span class="ios-row-title" style="display:block">Strength workout</span><span class="ios-row-sub" style="display:block">Log sets, reps &amp; weight</span></span>
           <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
         </button>
@@ -5512,9 +5549,12 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div id="cycle-train-note"></div>          <!-- E: Train, before pt-session-empty -->
     <!-- Was a dashed box with centred 15px tertiary text — the "placeholder" look. The routines it
          holds are the real content; the sentence is a footnote under them. -->
+    <!-- An iOS footer explains the rows directly above it. This one explained the ADD EXERCISE search
+         two components further down, past a card and a disclosure row, and it pointed at "the buttons
+         above" — which the rebuild turned into an inset list of rows, the half-applied-rename tell. It
+         has moved under the section it is actually about, and it names what is there now. -->
     <div id="pt-session-empty" class="ios-section">
       <div id="pt-empty-routines"></div>
-      <div class="ios-footnote">Pick an exercise below to start a strength session — or use the buttons above.</div>
     </div>
 
     <div class="card" id="pt-today-split-card">
@@ -5558,6 +5598,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <button class="qb" onclick="searchExercises('forearms')">Forearms</button>
     </div>
     <div id="pt-ex-results" class="tr-results"></div>
+    <div class="ios-footnote">Pick an exercise to start a strength session — or start one from the list at the top.</div>
 
     <!-- Current session — only shows when exercises added -->
     <div id="pt-session-wrap" style="display:none">
@@ -5624,7 +5665,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        card for the fifth. Four things are happening here and they are four sections now: what you
        have saved, saving the open session, making a new one, and asking for a recommendation. -->
   <div id="pt-panel-routines" style="display:none">
-    <div class="tr-intro">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</div>
+    <div class="page-intro">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</div>
 
     <div class="ios-section">
       <div class="ios-header">Saved routines</div>
@@ -5642,7 +5683,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="ios-header">Make a new one</div>
       <div class="ios-list">
         <button type="button" class="ios-row has-icon" onclick="openRoutineBuilder()">
-          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg></span>
           <span class="ios-row-body"><span class="ios-row-title" style="display:block">Build new routine from scratch</span></span>
           <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
         </button>
@@ -5737,7 +5778,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <!-- The .lbl above this said "MOBILITY & WARM-UPS", which is the name of the segment the person
          just tapped. A section header that repeats the screen's own title is noise; the sentence
          that was under it is the intro. -->
-    <div class="tr-intro">Mobility is part of training, not an afterthought. Warm up the muscles you’re about to work, and keep your joints moving well over time.</div>
+    <div class="page-intro">Mobility is part of training, not an afterthought. Warm up the muscles you’re about to work, and keep your joints moving well over time.</div>
     <div id="pt-mobility-body"></div>
     <!-- Form-check via photo (WS-I) — NOT medical/coaching certainty; "things to look at" only. -->
     <div class="ios-section">
@@ -8700,7 +8741,7 @@ function svgIcon(name, size){
     flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
     message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>',
-    plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    plus:'<line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/>',
     walk:'<circle cx="13" cy="4" r="1.7"/><path d="M11 21l1.5-6-2.5-2.5 1-5 3 2 2.5 1.5"/><path d="M10 12.5 7 16l-1 5"/>',
     phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
     tool:'<path d="M14.7 6.3a4 4 0 0 0 5.1 5.1L21 10a5.5 5.5 0 0 1-7.7 6.4L6.4 22a2 2 0 0 1-2.8-2.8l5.6-6.9A5.5 5.5 0 0 1 15.6 4z"/>',
@@ -33208,7 +33249,15 @@ function applyNutGentle(eaten, goalCal){
   // The WORD already says which state it is in, so the colour does not have to: it is a control, and
   // a control is the tint. Off-state used to be the tertiary grey — placeholder colour, at 11px, in
   // caps, for the switch that turns the calorie numbers off for someone in recovery.
-  if(tb){ tb.textContent = on ? 'Numbers off' : 'Numbers on'; tb.style.color = 'var(--go)'; }
+  // A TINT WORD IN A CARD'S CORNER IS A BUTTON, AND A BUTTON'S TITLE NAMES ITS ACTION. This said
+  // "Numbers on" — the state it was already in — while every macro figure under it was visible, so
+  // nothing told a person what the tap would do. It says the verb now, and the title says the rest.
+  // (.cal-gentle already paints it the tint; the inline colour was the call site re-painting a class.)
+  if(tb){
+    tb.textContent = on ? 'Show numbers' : 'Hide numbers';
+    tb.title = on ? 'Show the calorie and macro figures again'
+                  : 'Turn the numbers off — log food without seeing calories';
+  }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
@@ -33362,9 +33411,16 @@ function renderNutritionLog(){
   const dateEl=document.getElementById('nut-date');
   if(dateEl){
     const st = computeNutStreak();
-    dateEl.textContent = today;
+    // nutDayKey() is a STORAGE key \u2014 an en-AU "18/09/2026" \u2014 and it was printed straight onto the
+    // screen, one line under a navigator already saying "Today". No iOS screen shows a date in that
+    // form. Same day, written the way a phone writes it; the key stays the key.
+    const dayShown = (function(){
+      try{ return nutViewDate().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'}); }
+      catch(_){ return today; }
+    })();
+    dateEl.textContent = dayShown;
     if(st.n >= 2){
-      dateEl.innerHTML = today + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -33531,7 +33587,7 @@ function renderNutritionLog(){
   // Relabel the hero calorie figure to make "remaining" explicit (macros now in legend, no .macro-met)
   const calLblEl=document.getElementById('nut-cal-hero-lbl');
   if(calLblEl) calLblEl.textContent = remCal>=0 ? 'cal left' : 'cal over';
-  // Macro donut ring: each arc sized by that macro's share of calories (P×4, C×4, F×9)
+  // Macro donut ring: the eaten share of the day's target, split between the macros (P×4, C×4, F×9)
   const pCal = (totals.pro||0)*4, cCal = (totals.carb||0)*4, fCal = (totals.fat||0)*9;
   const macroTotal = pCal + cCal + fCal;
   // Read the radius off the element instead of hardcoding it. This was 251.2 for r=40, and the ring
@@ -33547,7 +33603,16 @@ function renderNutritionLog(){
     el.setAttribute('stroke-dashoffset', (-offset * C).toFixed(1));
   };
   if(macroTotal > 0){
-    const pf = pCal/macroTotal, cf = cCal/macroTotal, ff = fCal/macroTotal;
+    // A RING IS PROGRESS TOWARD A GOAL. Each arc was that macro's SHARE of what had been eaten, so the
+    // three always summed to 360° — swept off the render they measured 108° + 170° + 81° = 359°, with
+    // no grey track anywhere, while the middle of the same ring read "625 CAL LEFT". On an iPhone a
+    // closed ring is the Activity-ring vocabulary for a goal met, so the hero graphic told a person
+    // with 625 left that they were finished, and it closed at 100 calories exactly as it did at 2,100.
+    // The three arcs now fill only the eaten share of the target, split by macro; the gap that is left
+    // IS the calories left, which is the track the SVG has always drawn and nobody ever saw. Over the
+    // target the ring closes, and the red "cal over" state carries what happens after that.
+    const eaten = goalCal > 0 ? Math.min(1, Math.max(0, (totals.cal||0)/goalCal)) : 1;
+    const pf = pCal/macroTotal*eaten, cf = cCal/macroTotal*eaten, ff = fCal/macroTotal*eaten;
     setArc('ring-pro', pf, 0);
     setArc('ring-carb', cf, pf);
     setArc('ring-fat', ff, pf+cf);
@@ -35080,9 +35145,12 @@ function renderNutSetupNudge(){
       // The dismiss was a bare \u00d7 glyph. It is the only "no" on this prompt, and iOS gives a "no" a
       // word \u2014 the aria-label already said "Dismiss" to anybody using a screen reader, so the
       // sighted person was the one being asked to read a multiplication sign.
+      // Both are .footnote-link now — the role the app already names for "a footnote that is really a
+      // control", 44pt tall. They were two 13px text runs 34px high, one tint and one in the secondary
+      // grey; a decline painted as dimmer text is not a control anywhere in iOS.
       '<span class="setup-strip-acts">' +
-        '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
-        '<button class="setup-strip-x" onclick="dismissNutSetup()">Not now</button>' +
+        '<button type="button" class="footnote-link" onclick="openNutSetup()">Set a real one</button>' +
+        '<button type="button" class="footnote-link" onclick="dismissNutSetup()">Not now</button>' +
       '</span>' +
     '</div>';
 }
@@ -41093,6 +41161,13 @@ function loadTodaySplitCard(){
   const nameEl=document.getElementById('pt-today-split-name');const detailEl=document.getElementById('pt-today-split-detail');
   const hf=document.getElementById('today-focus');const hd=document.getElementById('today-detail');
   const wrap=document.getElementById('home-today-mission-wrap');
+  // `wrap` is HOME's mission card. TRAIN's card is this one, and nothing had ever hidden it — so a
+  // person with no routine assigned met the same offer three times in one screenful: the "Routines"
+  // segment, the "Build a routine" row, and then this card saying "Build a routine in Routines and
+  // assign it to today". One decision, drawn twice, in two visual languages.
+  const ptCard=document.getElementById('pt-today-split-card');
+  const ptShow=function(on){ if(ptCard) ptCard.style.display = on ? '' : 'none'; };
+  ptShow(true);
   // If the user trains from Hevy, surface THEIR real routines (WS2). If they've picked today's
   // routine, show it with last weights; otherwise prompt them to pick from their actual Hevy routines.
   if(typeof isHevyUser === 'function' && isHevyUser()){
@@ -41157,17 +41232,21 @@ function loadTodaySplitCard(){
   // and the card kept telling them to do the thing they had just done. Name it, and let them start it.
   if(today && today.routine && !today.focus){
     if(nameEl)nameEl.textContent=String(today.routine);
-    if(detailEl)detailEl.innerHTML='Assigned to today. <span class="tlink" onclick="_startAssignedRoutine()">Start this routine</span>';
+    // An action inside a card is a .card-foot.tint line, not a tint run buried mid-sentence. A blue
+    // word inside a paragraph is a WEB hyperlink, and iOS does not draw one anywhere.
+    if(detailEl)detailEl.innerHTML='Assigned to today.'+
+      '<button type="button" class="card-foot tint footnote-link" onclick="_startAssignedRoutine()">Start this routine</button>';
     if(wrap) wrap.style.display='';
     return;
   }
 
   if(!today || !today.focus){
-    // No routine assigned for today
+    // NO ROUTINE ASSIGNED: say nothing. The ROUTINES list two components above already carries
+    // "Build a routine", and the segmented control above that carries "Routines" — a card whose whole
+    // content is "go and do the thing those two already offer" is the same decision a third time.
     if(nameEl)nameEl.textContent='No routine set for today';
-    // The segment this sends you to is called "Routines". It has not been called "Routines & Split"
-    // since the split planner moved into Log — the app was naming a screen that no longer exists.
-    if(detailEl)detailEl.innerHTML='Build a routine in <span class="tlink" onclick="setPTTab(\'routines\')">Routines</span> and assign it to today.';
+    if(detailEl)detailEl.innerHTML='';
+    ptShow(false);
     if(wrap) wrap.style.display='none';
     return;
   }
