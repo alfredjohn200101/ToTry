@@ -7892,7 +7892,7 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // Rebuilt as rows. The rebuild must not have dropped a number, and "always first, always visible"
   // means before the reminders and before any group a person has to open.
   const crisisAt = tab.indexOf('class="crisis-card"');
-  ['href="tel:131114"', 'href="tel:1300224636"', 'href="sms:0477013755"', 'href="https://findahelpline.com"'].forEach(h =>
+  ['href="tel:131114"', 'href="tel:1300224636"', 'href="sms:0477131114"', 'href="https://findahelpline.com"'].forEach(h =>
     H.ok(tab.indexOf(h) > crisisAt && tab.indexOf(h) < tab.indexOf('id="push-settings-card"'), 'the crisis card still carries ' + h));
   H.ok(crisisAt > -1 && crisisAt < tab.indexOf('id="push-settings-card"') && crisisAt < tab.indexOf('<details'),
     'and it comes before the reminders and before every group');

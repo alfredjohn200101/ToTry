@@ -304,7 +304,7 @@ button[onclick^="deleteTransaction("]:not(.ios-row-x),button[onclick^="deleteSub
 .nb span{font-size:var(--t-micro);letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
 .tabs{flex:1;overflow:hidden;order:2}
-.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px)}
+.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 156px)}
 .tab.active{display:block}
 .lbl{font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;margin-top:4px;display:block}
 .card + .lbl, .card+.lbl{margin-top:18px}
@@ -1886,6 +1886,10 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
 .hdr.ios-scrolled{background:var(--glass) !important;-webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
   border-bottom:.5px solid var(--glass-line) !important}
+/* The scroller clears the floating orb as well as the tab capsule. The orb is fixed at var(--sb)+94
+   and is 54 tall, so content ended UNDER it: Threads' "Next ›" pager, Plans' closing footnote and the
+   evening ritual's Continue button were each partly covered — three screens reporting the same defect
+   independently. 156 = the orb's top plus an 8pt gap. */
 .tab{padding-top:calc(var(--st) + 58px) !important}
 
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
@@ -2186,7 +2190,13 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 .ios-stat-value.good{color:var(--gr)}
 .ios-stat-value.bad{color:var(--re)}
 .ios-section>.ios-stats+*{margin-top:12px}
-.ios-section>.card+.ios-list,.ios-section>div[id]:not(:empty)+.ios-list{margin-top:12px}
+/* :not(.ios-header) — the second half of this selector clears a JS-filled block sitting before a list
+   (Money's month summary, net worth, poker, subscription detect). It also matched the SECTION'S OWN
+   header whenever that header carries an id, and three do — #soul-drawnear-label, #hub-common-label
+   and #giving-title — only because applyFaithLabels rewrites their text per tradition. So an invisible
+   attribute decided visible spacing: two of Soul's four headers floated 12px clear of their lists and
+   two sat flush, both on screen at once. */
+.ios-section>.card+.ios-list,.ios-section>div[id]:not(:empty):not(.ios-header)+.ios-list{margin-top:12px}
 
 /* A labelled field inside a .row — the target-date box built itself an 11px caps span on the spot.
    .row is align-items:stretch, so a column with a label over it made the plain field beside it grow
@@ -6692,7 +6702,12 @@ Amen.</div></div>
     <div class="crisis-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> If you need real help right now</div>
     <div class="crisis-line"><span class="crisis-name">Lifeline</span><a href="tel:131114">13 11 14</a></div>
     <div class="crisis-line"><span class="crisis-name">Beyond Blue</span><a href="tel:1300224636">1300 22 4636</a></div>
-    <div class="crisis-line"><span class="crisis-name">Crisis Text<span class="crisis-how">Text HOME to</span></span><a href="sms:0477013755">0477 01 3755</a></div>
+    <!-- LIFELINE TEXT, 0477 13 11 14, CHECKED AGAINST LIFELINE'S OWN SITE (18 Sep 2026: "Text us —
+         0477 13 11 14"). This row read "Crisis Text / Text HOME to / 0477 01 3755": a number that is
+         published nowhere, carrying the keyword of Crisis Text Line, which is a US service on 741741.
+         A person in distress following it would have texted a keyword no one answers, at a number that
+         is not the service. Every other row in this card was right; this one was never checked. -->
+    <div class="crisis-line"><span class="crisis-name">Lifeline Text</span><a href="sms:0477131114">0477 13 11 14</a></div>
     <!-- findahelpline.com, not IASP. iasp.info/resources/Crisis_Centres/ now 301s to the IASP homepage
          (checked: final URL is https://www.iasp.info/), so the one international link in the crisis card
          landed a person in crisis on an advocacy org's front page with no helpline in sight. This is the
