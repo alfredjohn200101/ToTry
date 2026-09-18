@@ -37,9 +37,12 @@ border, shadow or gradient is the exact thing that made the old design look gene
 | `--bd` | hairline separator |
 | `--go` | **the tint** (iOS blue). `--go-bg` tinted fill, `--go-bd` tinted line. `--on-tint` ink on tint |
 | `--re` `--gr` `--bl` `--pu` (+ `-bg`, `-bd`) | system red / green / teal / purple |
-| `--font-text` `--font-display` | San Francisco |
+| `--font-text` | San Francisco — everything a person operates |
+| `--font-display` | **the ToTry face (Cormorant Garamond)** — headlines only; resolves through `--font-brand` |
 | `--font-serif` | New York — **scripture and prayer text only** |
 | `--font-rounded` | SF Rounded — big numbers only |
+| `--glass` `--glass-2` `--glass-line` `--glass-hi` `--glass-shadow` | the navigation material (bars, capsule, banner, FAB) |
+| `--sheet` `--cell` | a sheet that carries content and the cells inside it — iOS's elevated pair, opaque |
 | `--t-micro 11` `--t-mini 12` `--t-cap 13` `--t-sm 15` `--t-md 16` `--t-base 17` `--t-hd 20` `--t-xl 22` `--t-title1 28` `--t-2xl 34` | the iOS Dynamic Type scale |
 
 ## Type roles

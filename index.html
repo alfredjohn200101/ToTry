@@ -65,6 +65,12 @@
   --bd:rgba(84,84,88,0.65);--bd2:#38383A;
   --tx:#FFFFFF;--tx2:rgba(235,235,245,0.72);--tx3:rgba(235,235,245,0.58);
   --go:#409CFF;--go-bg:rgba(64,156,255,0.16);--go-bd:rgba(64,156,255,0.42);
+  /* A FILL IS NOT A LABEL. --go and --re are tuned to be READ on a dark ground, which makes them pale
+     ones to put white ink ON: measured off the captures, white on --go was 2.83:1 and white on --re
+     2.82:1 — under even the 3:1 floor for large text, on the primary action of Today and on "I'm
+     feeling it", the button someone taps mid-urge. Filled controls use these instead; the bright
+     tokens keep doing what they are good at, which is being text and icons. */
+  --go-fill:#0A6FE0;--re-fill:#D9302A;
   --re:#FF6961;--re-bg:rgba(255,105,97,0.16);--re-bd:rgba(255,105,97,0.42);
   --gr:#30D158;--gr-bg:rgba(48,209,88,0.16);--gr-bd:rgba(48,209,88,0.42);
   --bl:#64D2FF;--bl-bg:rgba(100,210,255,0.16);--bl-bd:rgba(100,210,255,0.42);
@@ -107,6 +113,7 @@
     --tx:#000000;--tx2:rgba(60,60,67,0.82);--tx3:rgba(60,60,67,0.74);
     --go:#0062CC;--go-bg:rgba(0,98,204,0.12);--go-bd:rgba(0,98,204,0.32);
     --re:#D70015;--re-bg:rgba(215,0,21,0.10);--re-bd:rgba(215,0,21,0.30);
+    --go-fill:#0062CC;--re-fill:#D70015;
     --gr:#1E7B35;--gr-bg:rgba(30,123,53,0.12);--gr-bd:rgba(30,123,53,0.32);
     --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
     --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
@@ -124,6 +131,7 @@
   --tx:#000000;--tx2:rgba(60,60,67,0.82);--tx3:rgba(60,60,67,0.74);
   --go:#0062CC;--go-bg:rgba(0,98,204,0.12);--go-bd:rgba(0,98,204,0.32);
   --re:#D70015;--re-bg:rgba(215,0,21,0.10);--re-bd:rgba(215,0,21,0.30);
+  --go-fill:#0062CC;--re-fill:#D70015;
   --gr:#1E7B35;--gr-bg:rgba(30,123,53,0.12);--gr-bd:rgba(30,123,53,0.32);
   --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
   --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
@@ -240,7 +248,12 @@ button:focus:not(:focus-visible){outline:none}
    working. Do not extend this list to deleteSavedMeal / deleteSacrament / deleteAffirm /
    deleteSavedVerse — they carry inline padding, so they would get the negative margin without the
    padding and shrink. */
-button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],button[onclick^="deleteBill("],button[onclick^="deleteAsset("],button[onclick^="deleteGiving("],button[onclick^="deleteFamilyContribution("],button[onclick^="deletePokerSession("]{padding:14px 6px;margin:-14px 0;min-width:40px;box-sizing:content-box}
+/* …and NOT to a button that is already an .ios-row-x. Money's rows became the component, which is its
+   own 44x44 target with its own negative margins; this rule then added 14px of content-box padding on
+   top, so each × rendered 72px tall and hung 3px into the row below it. npm run panels caught it as six
+   pairs of controls sharing a hit area ("× / Add a subscription"). When a component takes over a job,
+   the rule that used to do it by hand has to let go. */
+button[onclick^="deleteTransaction("]:not(.ios-row-x),button[onclick^="deleteSubscription("]:not(.ios-row-x),button[onclick^="deleteBill("]:not(.ios-row-x),button[onclick^="deleteAsset("]:not(.ios-row-x),button[onclick^="deleteGiving("]:not(.ios-row-x),button[onclick^="deleteFamilyContribution("]:not(.ios-row-x),button[onclick^="deletePokerSession("]:not(.ios-row-x){padding:14px 6px;margin:-14px 0;min-width:40px;box-sizing:content-box}
 /* The -18px horizontal pull reached across the 6px flex gap and 12px INTO the green "Mark paid" ✓ on
    a bill row — and delete comes later in the DOM, so it won. Tapping the right third of "mark this
    bill paid" opened "Delete this bill?" instead: a destructive offer on a financial record, from a
@@ -1698,7 +1711,7 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
 /* .logbar-go was in this list, so Nourish's "Search" rendered as a filled-blue block welded onto the
    right end of the search field — a second .btn.primary in the first screenful, which docs/DESIGN.md
    allows exactly one of. A search field's submit is a tint WORD; the Nourish block below sets it. */
-.btn.primary,.hero-action{background:var(--go) !important;color:var(--on-tint) !important;box-shadow:none !important}
+.btn.primary,.hero-action{background:var(--go-fill) !important;color:var(--on-tint) !important;box-shadow:none !important}
 .btn.primary svg,.hero-action svg{color:var(--on-tint)}
 .btn.quiet{background:transparent !important;color:var(--go) !important;font-weight:400 !important;min-height:44px}
 .btn.subtle,.btn.outline{background:var(--fill) !important;color:var(--go) !important}
@@ -1712,7 +1725,7 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
 /* Capsule choices (chips): iOS bordered-prominent capsules. Selected = tint fill. */
 .qb,.meal-chip,.vchip,.sleep-opt,.dr-btn,.mood-btn,.qa-meal{font-family:var(--font-text) !important;font-size:15px !important;font-weight:500 !important;letter-spacing:-0.01em !important;
   background:var(--fill) !important;border:0 !important;color:var(--tx) !important;border-radius:100px !important;box-shadow:none !important}
-.meal-chip.selected,.vchip.on,.vchip.selected,.dr-btn.on,.mood-btn.on,.sleep-opt.on,.qa-meal.on,.qa-meal.selected,.qb.on,.qb.active{background:var(--go) !important;color:var(--on-tint) !important}
+.meal-chip.selected,.vchip.on,.vchip.selected,.dr-btn.on,.mood-btn.on,.sleep-opt.on,.qa-meal.on,.qa-meal.selected,.qb.on,.qb.active{background:var(--go-fill) !important;color:var(--on-tint) !important}
 
 /* ── Segmented control ──────────────────────────────────────────────────────────────────────────── */
 .fight-sub-tabs,.body-sub-tabs,.reflect-sub-tabs,.pt-tabs,.seg{display:flex !important;gap:0 !important;background:var(--fill2) !important;border:0 !important;border-radius:9px !important;padding:2px !important;margin:6px 0 16px !important}
@@ -1744,12 +1757,12 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 .milestone-toast>div+div{font-size:15px !important;color:var(--tx2) !important;letter-spacing:-0.01em !important;line-height:1.35 !important}
 
 /* ── Chat bubbles: iMessage ─────────────────────────────────────────────────────────────────────── */
-.comp-msg-me{background:var(--go) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important}
+.comp-msg-me{background:var(--go-fill) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important}
 .comp-msg-them{background:var(--fill) !important;color:var(--tx) !important;border-radius:18px 18px 18px 4px !important}
 
 /* ── The companion: the Feeling Door is the app's primary action and stays one tap away, as a quiet
       tint-filled control rather than a glowing gradient orb. ───────────────────────────────────── */
-#need-talk-btn,.companion-orb{background:var(--go) !important;color:var(--on-tint) !important;box-shadow:0 4px 14px rgba(0,0,0,.22) !important}
+#need-talk-btn,.companion-orb{background:var(--go-fill) !important;color:var(--on-tint) !important;box-shadow:0 4px 14px rgba(0,0,0,.22) !important}
 #need-talk-btn svg{color:var(--on-tint) !important;stroke:currentColor}
 
 /* ── Numbers: SF Rounded, tabular, like Fitness and Health ───────────────────────────────────────── */
@@ -1787,7 +1800,7 @@ button.ios-row,a.ios-row,.ios-row[onclick]{cursor:pointer}
 button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(--bg4)}
 .ios-row+.ios-row::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
 .ios-row.has-icon+.ios-row::before,.ios-row+.ios-row.has-icon::before{left:57px}
-.ios-row-icon{flex:none;width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--go)}
+.ios-row-icon{flex:none;width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--go-fill)}
 .ios-row-icon .ic{width:18px;height:18px;stroke-width:2.1}
 .ios-row-body{flex:1;min-width:0}
 .ios-row-title{font-size:17px;line-height:1.29;color:var(--tx);overflow:hidden;text-overflow:ellipsis}
@@ -2079,7 +2092,7 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 /* The urge door. It was painted at four call sites in four slightly different ways; it is one
    control, and it is the one filled button on the screen. iOS fills a destructive primary in
    systemRed with white ink — that is what this already was, minus the hand-painting. */
-.btn.vice-btn{background:var(--re) !important;color:var(--on-tint) !important;font-weight:600 !important}
+.btn.vice-btn{background:var(--re-fill) !important;color:var(--on-tint) !important;font-weight:600 !important}
 .btn.vice-btn .ic,.btn.vice-btn svg{color:var(--on-tint)}
 /* The check-in was a tinted panel inside a card — a card inside a card. Inside a card you group with
    space or a hairline. */
@@ -2091,7 +2104,7 @@ details[open]>.disclosure::after{transform:rotate(-135deg);margin-top:4px}
 /* The add-a-vice mode picker: three buttons, two written with `<br><span 11px>` and the third with a
    block span at 12px, so two neighbouring controls disagreed by a pixel. .btn.stack already draws a
    two-line button, and the selected one is a tint fill like every other capsule in the app. */
-.v-mode-btn.on{background:var(--go) !important}
+.v-mode-btn.on{background:var(--go-fill) !important}
 /* .btn.stack>div:first-child names --tx with !important, so the selected label needs to out-specify
    it rather than out-shout it — both carry !important and the class chain is what decides. Without
    this the chosen mode rendered BLACK on the tint fill. */
@@ -2856,7 +2869,7 @@ a.ios-row{text-decoration:none}
 .msg,.comp-msg{font-family:var(--font-text);font-size:17px;line-height:1.35;letter-spacing:-.022em;font-weight:400;
   max-width:80%;padding:8px 13px 9px !important;border:0 !important}
 .msg.coach,.comp-msg-them{background:var(--fill) !important;color:var(--tx) !important;border-radius:18px 18px 18px 4px !important}
-.msg.user,.comp-msg-me{background:var(--go) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important;font-weight:400}
+.msg.user,.comp-msg-me{background:var(--go-fill) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important;font-weight:400}
 /* The field and the send button: one capsule with a hairline, the round up-arrow INSIDE its trailing
    end — Messages' composer, rather than a grey box beside a blue square. The arrow stays grey until
    there is something to send. */
@@ -2865,7 +2878,7 @@ a.ios-row{text-decoration:none}
 .comp-reply-row{background:var(--cell)}
 .irow textarea,#comp-reply{flex:1;min-width:0;min-height:40px;height:40px;max-height:100px;resize:none;border-radius:20px !important;
   padding:9px 4px 9px 16px !important;line-height:22px;background:transparent !important;box-shadow:none !important}
-.sbtn{flex:none;width:32px;height:32px;margin:4px 0;padding:0;border:0;border-radius:50%;background:var(--go);color:var(--on-tint);
+.sbtn{flex:none;width:32px;height:32px;margin:4px 0;padding:0;border:0;border-radius:50%;background:var(--go-fill);color:var(--on-tint);
   display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .15s ease}
 .sbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .sbtn:active{transform:scale(.9)}
@@ -3109,7 +3122,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 .face-scale .sleep-opt,.face-scale .dr-btn{flex:1 1 0;min-width:0;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   padding:9px 2px 8px !important;border-radius:12px !important;background:var(--bg2) !important;color:var(--tx) !important;
   font-size:26px !important;line-height:1.05 !important}
-.face-scale .sleep-opt.on,.face-scale .dr-btn.on{background:var(--go) !important;color:var(--on-tint) !important}
+.face-scale .sleep-opt.on,.face-scale .dr-btn.on{background:var(--go-fill) !important;color:var(--on-tint) !important}
 .face-l{font-family:var(--font-text);font-size:13px;font-weight:500;line-height:1.2;letter-spacing:-.006em;color:var(--tx2)}
 .face-scale .on .face-l{color:var(--on-tint)}
 .day-rate-row{margin-bottom:0}
@@ -3519,7 +3532,7 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 
 /* A chosen app. .vchip.app-on painted a tinted outline, and the capsule rule's !important fill sat on
    top of it — so tapping Hevy changed nothing a person could see. Same as every other chosen capsule. */
-#onboard .vchip.app-on{background:var(--go) !important;color:var(--on-tint) !important}
+#onboard .vchip.app-on{background:var(--go-fill) !important;color:var(--on-tint) !important}
 
 /* The follow-ups under a chosen app, and the partner question: cards, their text in the card roles, a
    segmented control where there was a pair of hand-painted buttons. */

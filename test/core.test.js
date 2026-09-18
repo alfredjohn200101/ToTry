@@ -4354,7 +4354,9 @@ function fnBodyOf(code, name){
   const lightStart = head.indexOf(':root[data-theme="light"]{');
   const lightBlock = lightStart < 0 ? '' : head.slice(lightStart, head.indexOf('}', lightStart));
   const light = {};
-  for (const m of lightBlock.matchAll(/--(\w+)\s*:\s*(#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\))/g)) light[m[1]] = m[2];
+  // [\w-]+, not \w+: the old pattern stopped at the first hyphen, so --go-bg, --go-bd and every other
+  // hyphenated light token silently never entered this palette and was never measured.
+  for (const m of lightBlock.matchAll(/--([\w-]+)\s*:\s*(#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\))/g)) light[m[1]] = m[2];
 
   // Colours may be hex OR rgba. Secondary and tertiary labels are translucent on iOS, so an ink is
   // COMPOSITED over the background it is measured on — and the loop below now refuses to skip a pair
@@ -4389,6 +4391,23 @@ function fnBodyOf(code, name){
   H.ok(light.go && light.go !== dark.go, 'the light theme re-tunes the tint accent, not just the greys');
   H.ok(light.gr !== dark.gr && light.bl !== dark.bl && light.pu !== dark.pu,
     'and green, blue and purple — all five accents, or they inherit dark values onto cream');
+
+  // WHITE INK ON A FILL. The accent tokens above are tuned to be READ on their ground, which is exactly
+  // what makes them pale things to fill a button with: measured off the rendered captures, white on the
+  // dark --go was 2.83:1 and white on the dark --re 2.82:1 — under even the 3:1 large-text floor, on
+  // Today's one primary action and on "I'm feeling it", the button a person reaches for mid-urge. Every
+  // contrast pair this suite checked was ink on a BACKGROUND token; nothing asked about ink on an ACCENT,
+  // so the whole matrix passed while the two loudest buttons in the app washed out. Filled controls take
+  // --go-fill / --re-fill, and white on those is held to AA here, in both appearances.
+  const darkTok = n => { const m = rootBlock.match(new RegExp('--' + n + ':\\s*([^;]+)')); return m ? m[1].trim() : null; };
+  for (const [pal, name] of [[{ get: darkTok }, 'dark'], [{ get: n => light[n] }, 'light']]) {
+    for (const f of ['go-fill', 're-fill']) {
+      const v = pal.get(f);
+      H.ok(!!v, 'the ' + name + ' palette defines --' + f);
+      if (v) H.ok(ratio('#FFFFFF', v) >= 4.5,
+        'white ink on --' + f + ' clears AA in ' + name + ' (' + (v ? ratio('#FFFFFF', v).toFixed(2) : '?') + ':1)');
+    }
+  }
 
   // Every light token must be restored when switching back, or the muted accents stay on the dark bg.
   {

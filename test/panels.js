@@ -4489,12 +4489,18 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const cells=[...w.querySelectorAll('[onclick^="calJumpToDay"]')];
       if(!cells.length) return {err:'the month grid rendered no day cells'};
       const now=new Date();
-      // the cell the app ITSELF painted as today
-      const gold=cells.find(c=>c.textContent.trim().startsWith(String(now.getDate())) &&
-                               // the today cell is --go-bd + a gold wash; /var\(--go\)/ does NOT match
-                               // var(--go-bd), and this check first failed in all five zones on that
-                               // alone \u2014 the measurement was broken, not the app.
-                               /go-bd|rgba\(200,169,110/.test(c.getAttribute('style')||''));
+      // THE CELL THE APP ITSELF PAINTS AS TODAY, asked as an invariant rather than as a recipe.
+      // This matched an INLINE STYLE containing `go-bd` or the old gold rgba — so when the month grid
+      // was rebuilt to mark today the way iOS Calendar does (a filled tint circle applied by a CLASS),
+      // the check reported "no cell is painted as today" in all five timezones on a grid that was
+      // correct. That is the SECOND time this same assertion failed on its own recipe; the comment it
+      // replaces records the first. So: whichever cell is drawn differently from its siblings is the
+      // one the app is calling today, however it chooses to draw it.
+      const paint=c=>{ const n=c.querySelector('.cal-cell-n')||c; const st=getComputedStyle(n);
+        return st.backgroundColor+'|'+st.borderColor+'|'+st.color+'|'+st.fontWeight; };
+      const tally={}; cells.forEach(c=>{ const k=paint(c); tally[k]=(tally[k]||0)+1; });
+      const odd=cells.filter(c=>tally[paint(c)]===1);
+      const gold=odd.find(c=>c.textContent.trim().startsWith(String(now.getDate())));
       const m=((gold||cells[now.getDate()-1]).getAttribute('onclick')||'').match(/'([0-9-]{10})'/);
       return { painted: !!gold, opens: m?m[1]:'?', should: _todayLocalISO(), cells: cells.length };
     });
