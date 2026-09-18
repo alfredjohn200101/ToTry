@@ -284,10 +284,18 @@ function renderMoneyGate(){
       '<button type="button" class="ios-row tint" onclick="openCSVImport()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Update from a statement</span></span></button>'+
     '</div>'+
     '<div class="ios-footnote">'+
-      (_thin ? 'That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest. ' : '')+
+      // The tile directly above already says "over N days" — that is the data. Saying it again here,
+      // 137pt lower with a two-row card between, made "That" reach back across two surfaces for a
+      // number the reader had to re-find. Lead with the judgement instead; the span is still on screen.
+      (_thin ? 'Not a month yet — I will not turn a few days into a monthly figure and call it honest. ' : '')+
       (staleDays > 9
         ? 'Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.'
-        : 'Up to date as of '+r.to.toLocaleDateString('en-AU')+'.')+
+        // The person's own locale, medium form ("17 Sep"), not a slash-numeric date forced to en-AU
+        // inside a spoken sentence — a US reader read 17/09/2026 in the wrong order. DISPLAY ONLY:
+        // the other toLocaleDateString('en-AU') calls in this app are STORAGE DAY KEYS (00-boot:667,
+        // 02-native:208/253/620/986, 06-train:275, 04-fight:570) and re-keying them would lose a
+        // person's saved days. This is the one that is read by a human.
+        : 'Up to date as of '+r.to.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'.')+
     '</div>'+
   '</div>';
 }

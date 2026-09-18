@@ -72,6 +72,15 @@
      tokens keep doing what they are good at, which is being text and icons. */
   --go-fill:#0A6FE0;--re-fill:#D9302A;
   --re:#FF6961;--re-bg:rgba(255,105,97,0.16);--re-bd:rgba(255,105,97,0.42);
+  /* THE GROUND UNDER THE CRISIS CARD, and the one place --re-bg could not be used in both
+     appearances. On dark the red wash carries the title at 6.30:1 and the numbers at 6.28:1. On
+     LIGHT the same wash blends to (239,218,224) and drops the red title to 4.02:1 and the tint
+     numbers to 4.33:1 — both under the 4.5 floor at 17px, on the one card a person in trouble
+     reaches for. Every alpha was measured: 0.08 gives the red 4.20, 0.05 gives 4.43, and it only
+     clears 4.5 at 0.03, by which point the wash has effectively disappeared. So the wash cannot
+     both stay visible and pass, and light draws the card on the opaque cell instead — red 5.38:1,
+     tint 5.80:1 — with the red heart, the red title and the pink hairlines still signing it. */
+  --crisis-bg:rgba(255,105,97,0.16);
   --gr:#30D158;--gr-bg:rgba(48,209,88,0.16);--gr-bd:rgba(48,209,88,0.42);
   --bl:#64D2FF;--bl-bg:rgba(100,210,255,0.16);--bl-bd:rgba(100,210,255,0.42);
   --pu:#DA8FFF;--pu-bg:rgba(218,143,255,0.16);--pu-bd:rgba(218,143,255,0.42);
@@ -113,6 +122,7 @@
     --tx:#000000;--tx2:rgba(60,60,67,0.82);--tx3:rgba(60,60,67,0.74);
     --go:#0062CC;--go-bg:rgba(0,98,204,0.12);--go-bd:rgba(0,98,204,0.32);
     --re:#D70015;--re-bg:rgba(215,0,21,0.10);--re-bd:rgba(215,0,21,0.30);
+    --crisis-bg:#FFFFFF;
     --go-fill:#0062CC;--re-fill:#D70015;
     --gr:#1E7B35;--gr-bg:rgba(30,123,53,0.12);--gr-bd:rgba(30,123,53,0.32);
     --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
@@ -131,6 +141,7 @@
   --tx:#000000;--tx2:rgba(60,60,67,0.82);--tx3:rgba(60,60,67,0.74);
   --go:#0062CC;--go-bg:rgba(0,98,204,0.12);--go-bd:rgba(0,98,204,0.32);
   --re:#D70015;--re-bg:rgba(215,0,21,0.10);--re-bd:rgba(215,0,21,0.30);
+  --crisis-bg:#FFFFFF;
   --go-fill:#0062CC;--re-fill:#D70015;
   --gr:#1E7B35;--gr-bg:rgba(30,123,53,0.12);--gr-bd:rgba(30,123,53,0.32);
   --bl:#0071A4;--bl-bg:rgba(0,113,164,0.12);--bl-bd:rgba(0,113,164,0.32);
@@ -1676,6 +1687,13 @@ body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::bef
 .day-l{display:inline !important;font-family:var(--font-text) !important;font-size:15px !important;font-weight:400 !important;text-transform:none !important;letter-spacing:-0.01em !important;color:var(--tx2) !important;margin:0 !important}
 .hdr button[aria-label="Settings"]{color:var(--go) !important}
 .hdr button[aria-label="Settings"] svg{width:24px;height:24px;stroke-width:1.8}
+/* …except on Settings itself. iOS nav bar items act on the current screen or leave it; they never
+   link to it. The gear sat at the trailing edge opposite "‹ Today" while the large title read
+   "Settings", so the one control up there went to the page the person was already on. iosNavSync()
+   writes .hdr[data-tab] on every go(), so the bar answers for itself with no handler change.
+   !important because the button carries display:flex in an inline style, the same reason the colour
+   rule above it needs one. */
+.hdr[data-tab="settings"] button[aria-label="Settings"]{display:none !important}
 
 /* Large title — the first thing on every tab. */
 .page-title,.ios-large-title{font-family:var(--font-display) !important;font-size:34px !important;font-weight:700 !important;letter-spacing:.011em !important;line-height:1.2 !important;color:var(--tx) !important;margin:2px 0 6px !important}
@@ -1804,7 +1822,10 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .ios-row-icon .ic{width:18px;height:18px;stroke-width:2.1}
 .ios-row-body{flex:1;min-width:0}
 .ios-row-title{font-size:17px;line-height:1.29;color:var(--tx);overflow:hidden;text-overflow:ellipsis}
-.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+/* text-wrap:pretty — a row subtitle is one or two lines and must not end on a single word. Money's
+   first row read "Let's look at it together first — no" / "lecture.", three lines tall to carry one
+   orphan, at the top of the screen. */
+.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px;text-wrap:pretty}
 .ios-row-value{flex:none;font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;max-width:45%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ios-row-chevron{flex:none;color:var(--tx3);margin-right:-4px}
 .ios-row-chevron .ic{width:14px;height:14px;stroke-width:2.6}
@@ -1817,14 +1838,26 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 
 /* Stat tiles, as Fitness and Health draw a summary number. */
 .ios-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
-.ios-stat{background:var(--bg2);border-radius:12px;padding:12px 14px 14px}
+/* 16px inside, like .ios-row (11px 16px) and .ios-header (0 16px 7px). It was 14, so on Money the
+   tile's text box began 2pt inside where every other text box on the screen began — "NET" and
+   "PAID OFF" at device x=93 under a header at 97 and over a row at 98. The three scoped overrides
+   below (.trio, .three, .sc-grid) deliberately run tighter: they pack three columns into the width
+   two of these take. */
+.ios-stat{background:var(--bg2);border-radius:12px;padding:12px 16px 14px}
 .ios-stat-label{font-size:13px;font-weight:600;letter-spacing:-.006em;color:var(--tx2)}
 .ios-stat-value{font-family:var(--font-rounded);font-size:28px;font-weight:600;line-height:1.15;letter-spacing:0;color:var(--tx);font-variant-numeric:tabular-nums;margin-top:2px}
 .ios-stat-unit{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);margin-left:2px}
 .ios-stat-note{font-size:13px;color:var(--tx2);margin-top:2px}
 
 /* Switch — a real checkbox, drawn as the iOS toggle. */
-.ios-switch{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;cursor:pointer;transition:background .2s;margin:0}
+/* A UISwitch off-track is a plain fill with no stroke. This had one: the base field rule
+   (`input,textarea,select{…border:1px solid var(--bd)}`) matches input[type=checkbox], and the rule
+   that excludes checkboxes only comes later and only re-sets what it matches — so every switch in
+   Settings wore a 1pt ring, measured (182,182,185) around a (233,233,235) track in light and
+   (72,72,75) around (50,50,54) in dark. That is the iOS 6 switch. Reset on the component rather than
+   by widening the base rule's :not() list, which would also take width:100% and a field's padding
+   off every other checkbox and radio in the app. */
+.ios-switch{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border:0;padding:0;border-radius:16px;background:var(--fill);position:relative;cursor:pointer;transition:background .2s;margin:0}
 .ios-switch::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .2s}
 .ios-switch:checked{background:#34C759}
 .ios-switch:checked::after{transform:translateX(20px)}
@@ -3385,10 +3418,11 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 #connected-apps-list .ios-row-sub.good{color:var(--gr)}
 #connected-apps-list .btn.row-btn{margin-right:2px}
 
-/* THE CRISIS CARD. Kept a tinted ground — it is the one surface on this screen that must be found
-   without looking for it — but set as rows: a name on the left, the number on the right at 17pt in the
-   tint, a hairline between, and the whole number a 44pt target a shaking hand can land on. */
-.crisis-card{background:var(--re-bg);border:0;border-radius:var(--r);padding:13px 16px;margin:0 0 28px}
+/* THE CRISIS CARD. It is the one surface on this screen that must be found without looking for it,
+   and it is set as rows: a name on the left, the number on the right at 17pt in the tint, a hairline
+   between, and the whole number a 44pt target a shaking hand can land on. The ground is --crisis-bg
+   — the red wash on dark, the opaque cell on light, for the contrast reason written at that token. */
+.crisis-card{background:var(--crisis-bg);border:0;border-radius:var(--r);padding:13px 16px;margin:0 0 28px}
 .crisis-card .crisis-title{display:flex;align-items:center;gap:8px;margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-.022em;line-height:1.3;color:var(--re)}
 .crisis-card .crisis-title .ic{flex:none;width:18px;height:18px;stroke-width:2.2}
 .crisis-card .crisis-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0;

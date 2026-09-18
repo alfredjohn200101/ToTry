@@ -66,12 +66,16 @@ function renderFinanceGoals(){
   container.className='ios-section money-more';
   const hd=document.createElement('div'); hd.className='ios-header'; hd.textContent='Savings goals';
   container.appendChild(hd);
-  sorted.forEach((g,idx)=>{
+  sorted.forEach(g=>{
     const pct=g.target>0?Math.min(100,(g.current/g.target)*100):0;
     const card=document.createElement('div');
     card.className='card';
+    // NO SECOND CAPS LABEL. The section header "SAVINGS GOALS" sits 30pt above this card, and a
+    // "PRIORITY" eyebrow sat under it — same ink, measured (93,93,100) and (94,94,100), same left
+    // edge, two pixels apart in size — so the two read as one doubled header rather than as two
+    // things. It also said nothing the order has not: these are sorted furthest-from-target first,
+    // so the priority IS the first card.
     card.innerHTML=
-      (idx===0?'<div class="eyebrow">Priority</div>':'')+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">'+
         '<div class="card-hd" style="margin-bottom:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(g.name)+'</div>'+
         '<div class="ios-row-value">'+pct.toFixed(0)+'%</div>'+
@@ -81,10 +85,18 @@ function renderFinanceGoals(){
         '<span>'+curSym()+Math.round(g.current).toLocaleString()+' of '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
         '<span>'+curSym()+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
       '</div>'+
+      // THE COMPONENTS EXIST. Add is .btn.field-btn — "the button on one row beside a field", which
+      // is literally what this is — instead of the same recipe hand-set inline. And deleting the
+      // whole goal is not a peer of adding to it: it was a filled pink .btn.danger the same height
+      // and weight as Add, one 8px gap away, holding a tiny red × written as &#215; (the encoding
+      // that hid 101 glyphs from the icon sweep). It is the app's own quiet remove control now —
+      // .fli-del, the same grey × the meal list and the weigh-in list carry, measured 40x50 here
+      // because a .row stretches its children — and deleteFinanceGoal still asks first and still
+      // offers an undo.
       '<div class="row" style="margin:12px 0 0">'+
         '<input type="number" placeholder="Add '+curSym()+'" aria-label="Amount to add to '+_jsAttr(g.name)+'" id="goal-add-'+g.id+'">'+
-        '<button class="btn" style="width:auto;flex:none;padding-left:20px;padding-right:20px" onclick="addToGoal('+g.id+')">Add</button>'+
-        '<button class="btn danger" style="width:auto;flex:none;padding-left:16px;padding-right:16px" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
+        '<button class="btn field-btn" onclick="addToGoal('+g.id+')">Add</button>'+
+        '<button class="fli-del" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">×</button>'+
       '</div>';
     container.appendChild(card);
   });
