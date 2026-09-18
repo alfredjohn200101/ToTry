@@ -1094,6 +1094,11 @@ function svgIcon(name, size){
     stop:'<polygon points="7.86,2 16.14,2 22,7.86 22,16.14 16.14,22 7.86,22 2,16.14 2,7.86"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
     coffee:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
     shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    // Drawn to the same live area as briefcase (y3–21) and shield, because it sits in an identical
+    // 29pt tile beside them on the week and on Today's spine. It spanned only y6.5–17.5: measured on
+    // the rendered screen it came out 14.7x10.0pt against the briefcase's 16.7x15.3pt directly above
+    // it, with half the ink at the same stroke weight, so one row's icon read smaller and lighter
+    // than its neighbour's for no reason a person could name.
     dumbbell:'<path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/>',
     wallet:'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
     run:'<polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>',
@@ -1149,6 +1154,10 @@ function svgIcon(name, size){
     chevronleft:'<polyline points="15,4 7,12 15,20"/>',
     chevronright:'<polyline points="9,4 17,12 9,20"/>',
     check:'<polyline points="20,6 9,17 4,12"/>',
+    // The set had a plus and a check and no way to say "remove". Every row that ends in a dismiss
+    // was therefore a literal × typed in the UI font — a different hand, a lighter weight and a
+    // smaller mark than the chevron beside it. Same grid, same caps, same stroke as the rest.
+    close:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
     droplet:'<path d="M12 2.7 6.7 8a7.5 7.5 0 1 0 10.6 0z"/>',
     zap:'<polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>',
     users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',

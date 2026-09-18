@@ -7878,6 +7878,63 @@ H.section('Today and the week: the title is not in a box, and the small text has
   const seg = H.code(H.extractFn('_calPaintSeg'));
   H.ok(/classList\.toggle\('active'/.test(seg) && !/style\.background/.test(seg),
     'the view switcher is the app’s segmented control, selected by class rather than repainted inline');
+
+  // ── 8. ONE VERSE CARD, ONE SUBTITLE SIZE, ONE ASK ─────────────────────────────────────────────
+  // Four shapes a screenshot review found and source-reading had passed for a hundred versions.
+  // Each is EXECUTED or matched against stripped code, and each fails on the state it replaced.
+
+  // (a) The day's word is Soul's card: the label inside as an eyebrow, the two tools as the app's
+  //     .verse-tools row. Bare glyphs in the card's right margin are what reserved the 76px gutter
+  //     the scripture was wrapping early to avoid, so BOTH halves are asserted — the markup and the
+  //     absence of the gutter. A passage that is 76px short of its card is invisible to every other
+  //     check in this file.
+  const vcard = (html.match(/<div class="verse-pill hero-verse"[\s\S]*?<\/div>\s*<\/div>/) || [''])[0];
+  H.ok(/<div class="eyebrow">Today&#8217;s word<\/div>/.test(vcard), 'the day’s word carries its label inside the card, as Soul’s does');
+  H.ok(!/<div class="ios-header">Today&#8217;s word<\/div>/.test(html), 'and not also outside it as a section header');
+  H.ok(/<div class="verse-tools">/.test(vcard) && /class="btn vsave"/.test(vcard) && /class="btn vshare"/.test(vcard),
+    'its two tools are .btns in the shared .verse-tools row');
+  H.ok(/> Save<\/button>/.test(vcard) && /> Make a card<\/button>/.test(vcard), 'and each one says what it does');
+  H.ok(!/\.verse-pill[^{]*p\{[^}]*padding-right/.test(code), 'nothing reserves a right-hand gutter on a passage any more');
+
+  // (b) The reference is the reference. Five call sites printed "— Galatians 6:9" and six did not,
+  //     so the same verse opened with a dash on Today and without one on Soul.
+  H.ok(!/class="passage-ref">(&#8212;|—|\\u2014) /.test(code), 'no .passage-ref call site prepends an em dash');
+  H.ok(/hdr-ref'\)\.textContent=v\.r;/.test(H.code(H.extractFn('showV'))), 'and Home’s daily verse prints its reference alone');
+
+  // (c) The NEXT row does not repeat the hero's ask. The map is EVALUATED, not grepped: a name-match
+  //     passes on a wrong argument, and the argument is the whole of this fix.
+  const heroMapSrc = (code.match(/const _HERO_ACT = \{[^}]*\}/) || [''])[0];
+  H.ok(!!heroMapSrc, 'the step→hero act map was found');
+  const heroMap = new Function('return ' + heroMapSrc.replace(/^const _HERO_ACT = /, ''))();
+  H.ok(heroMap.morning === 'morning' && heroMap.reflect === 'evening',
+    'it knows that the step’s go(\'reflect\') is the hero’s "evening"');
+  H.ok(heroMap.train === undefined && heroMap.calendar === undefined,
+    'and that a step the hero never offers cannot collide with it (calibration)');
+  const rns = H.code(H.extractFn('renderNextStep'));
+  H.ok(/_heroAlreadyAsks\(_HERO_ACT\[step\.action\]\)/.test(rns) && /_hide\(\); return;/.test(rns),
+    'renderNextStep hides the section when the hero already asks for the same act');
+
+  // (d) One size for the sentence under a large title. The week was the only screen on .page-sub.
+  H.ok(!/\.page-sub\{/.test(code) && !/class="page-sub"/.test(html), '.page-sub is gone — there is one role for a screen subtitle');
+  H.ok(/<h2 class="page-title">Your week<\/h2>\s*<p class="page-intro">/.test(html), 'and the week’s sentence is .page-intro like the other ten screens');
+
+  // (e) The week's delete is the icon set, not a typed character, and the calendar says "weekly" only
+  //     where it is the exception. EXECUTED: calEventRow renders both kinds of event.
+  const tileSrc = (code.match(/const CAL_TYPE_TILE = \{[\s\S]*?\n\};/) || [''])[0];
+  H.ok(!!tileSrc, 'the calendar’s type tiles were found');
+  const C = H.load(['calEventRow', 'iosRow', 'svgIcon'],
+    { CAL_TYPE_TILE: new Function('return ' + tileSrc.replace(/^const CAL_TYPE_TILE = /, '').replace(/;$/, ''))() });
+  const rec = C.calEventRow({ id: 1, title: 'Work', type: 'work', start: '09:00', end: '17:00', recurring: true });
+  const one = C.calEventRow({ id: 2, title: 'Physio', type: 'personal', start: '14:00', end: '14:45', recurring: false });
+  H.ok(rec.indexOf('09:00–17:00') > -1 && rec.indexOf('weekly') === -1, 'a repeating event’s subtitle is the time, nothing else');
+  H.ok(one.indexOf('This week only') > -1, 'and the one-off — the exception — is the row that says so');
+  H.ok(rec.indexOf('<svg class="ic"') > -1 && rec.indexOf('>×<') === -1 && rec.indexOf('&#215;') === -1,
+    'the remove mark is svgIcon(), not a × typed in the text face');
+  H.ok(C.svgIcon('close').indexOf('<line x1="6" y1="6" x2="18" y2="18"/>') > -1, 'and svgIcon has a close to draw it with');
+  // The dumbbell shares a tile with the briefcase on this screen and had half its ink. Both paths
+  // must reach the same live area — measured from the path itself, so a redraw that shrinks it fails.
+  const db = C.svgIcon('dumbbell');
+  H.ok(/M6\.5 4\.5v15/.test(db) && /M17\.5 4\.5v15/.test(db), 'the dumbbell’s plates run 15 of the 24 units, not 11');
 }
 
 H.section('Settings: every on/off is a switch that shows what was saved, and the crisis card leads');

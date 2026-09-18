@@ -284,9 +284,14 @@ function renderLifeWoven(){
     // wrong; it is the wrong thing to say. Day one is where everybody starts, and where anybody
     // who slips returns.
     fightTxt = mc === 0 ? 'day one' : plural(mc,'day')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
-  // SPIRIT — the daily rhythm
+  // SPIRIT — the daily rhythm. A row VALUE states a value: iOS puts "On" and "Automatic" in this
+  // slot, never an instruction. Its neighbours here say "30 days clean", "825 cal left", "$6,350
+  // debt" — states — and this one said "set your intention", a lowercase imperative asking for the
+  // third time on one screen for something the hero's own button already asks for. Same four
+  // states, said as states, and "day closed ✓" loses the typed check: a character borrowed from a
+  // font is not this app's icon language, and the row is a door, not a checkbox.
   const mornDone=ritualLog('totry_mornings').some(dOn); const evenDone=ritualLog('totry_evenings').some(dOn);
-  const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
+  const spiritTxt = evenDone?'Day closed' : mornDone?'Morning kept' : (h<15?'Morning open':'Evening open');
   // MONEY
   const m=s.money||{}; const moneyBits=[];
   if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
@@ -366,6 +371,11 @@ function homeGreetingAction(){
   else if(t==='companion'){ if(typeof openCompanionForUrge==='function') openCompanionForUrge(); }
 }
 
+// The hero's button names the ACT ('morning' / 'evening' / 'companion'); the next step names the
+// ACTION it runs ('morning' / 'reflect' / …). These two pairs are the same room by different names —
+// the evening ritual lives in tab-reflect — and they are the only two that can collide. Declared
+// above its one reader, because in one shared top-level scope a const has a temporal dead zone.
+const _HERO_ACT = { morning:'morning', reflect:'reflect' };
 function renderNextStep(){
   const el = document.getElementById('next-step-anchor');
   if(!el) return;
@@ -376,6 +386,13 @@ function renderNextStep(){
   // Don't compete with the first-run card for brand-new users.
   if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ _hide(); return; }
   const step = getNextStep();
+  // TWO ASKS FOR ONE ACT. The hero's filled button and this row resolved to the same room — "Begin
+  // the morning" 24pt above "Start your morning", both go('morning') — and the softening subtitle
+  // ("just this one thing for now") sat under the SECOND copy of the first thing. 32-presence.js
+  // dedupes its own card against the hero for exactly this reason, in _heroAlreadyAsks: "two buttons
+  // to the same room is not emphasis". This row never asked. The hero keeps the ask because it is
+  // above the fold; NEXT appears when the hero is hidden or is asking for something else.
+  if(typeof _heroAlreadyAsks === 'function' && _heroAlreadyAsks(_HERO_ACT[step.action])){ _hide(); return; }
   const t = document.getElementById('next-step-text');
   const sub = document.getElementById('next-step-sub');
   if(t) t.textContent = step.text;
