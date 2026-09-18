@@ -381,6 +381,13 @@ function loadTodaySplitCard(){
   const nameEl=document.getElementById('pt-today-split-name');const detailEl=document.getElementById('pt-today-split-detail');
   const hf=document.getElementById('today-focus');const hd=document.getElementById('today-detail');
   const wrap=document.getElementById('home-today-mission-wrap');
+  // `wrap` is HOME's mission card. TRAIN's card is this one, and nothing had ever hidden it — so a
+  // person with no routine assigned met the same offer three times in one screenful: the "Routines"
+  // segment, the "Build a routine" row, and then this card saying "Build a routine in Routines and
+  // assign it to today". One decision, drawn twice, in two visual languages.
+  const ptCard=document.getElementById('pt-today-split-card');
+  const ptShow=function(on){ if(ptCard) ptCard.style.display = on ? '' : 'none'; };
+  ptShow(true);
   // If the user trains from Hevy, surface THEIR real routines (WS2). If they've picked today's
   // routine, show it with last weights; otherwise prompt them to pick from their actual Hevy routines.
   if(typeof isHevyUser === 'function' && isHevyUser()){
@@ -445,17 +452,21 @@ function loadTodaySplitCard(){
   // and the card kept telling them to do the thing they had just done. Name it, and let them start it.
   if(today && today.routine && !today.focus){
     if(nameEl)nameEl.textContent=String(today.routine);
-    if(detailEl)detailEl.innerHTML='Assigned to today. <span class="tlink" onclick="_startAssignedRoutine()">Start this routine</span>';
+    // An action inside a card is a .card-foot.tint line, not a tint run buried mid-sentence. A blue
+    // word inside a paragraph is a WEB hyperlink, and iOS does not draw one anywhere.
+    if(detailEl)detailEl.innerHTML='Assigned to today.'+
+      '<button type="button" class="card-foot tint footnote-link" onclick="_startAssignedRoutine()">Start this routine</button>';
     if(wrap) wrap.style.display='';
     return;
   }
 
   if(!today || !today.focus){
-    // No routine assigned for today
+    // NO ROUTINE ASSIGNED: say nothing. The ROUTINES list two components above already carries
+    // "Build a routine", and the segmented control above that carries "Routines" — a card whose whole
+    // content is "go and do the thing those two already offer" is the same decision a third time.
     if(nameEl)nameEl.textContent='No routine set for today';
-    // The segment this sends you to is called "Routines". It has not been called "Routines & Split"
-    // since the split planner moved into Log — the app was naming a screen that no longer exists.
-    if(detailEl)detailEl.innerHTML='Build a routine in <span class="tlink" onclick="setPTTab(\'routines\')">Routines</span> and assign it to today.';
+    if(detailEl)detailEl.innerHTML='';
+    ptShow(false);
     if(wrap) wrap.style.display='none';
     return;
   }

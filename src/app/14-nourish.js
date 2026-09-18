@@ -3858,7 +3858,15 @@ function applyNutGentle(eaten, goalCal){
   // The WORD already says which state it is in, so the colour does not have to: it is a control, and
   // a control is the tint. Off-state used to be the tertiary grey — placeholder colour, at 11px, in
   // caps, for the switch that turns the calorie numbers off for someone in recovery.
-  if(tb){ tb.textContent = on ? 'Numbers off' : 'Numbers on'; tb.style.color = 'var(--go)'; }
+  // A TINT WORD IN A CARD'S CORNER IS A BUTTON, AND A BUTTON'S TITLE NAMES ITS ACTION. This said
+  // "Numbers on" — the state it was already in — while every macro figure under it was visible, so
+  // nothing told a person what the tap would do. It says the verb now, and the title says the rest.
+  // (.cal-gentle already paints it the tint; the inline colour was the call site re-painting a class.)
+  if(tb){
+    tb.textContent = on ? 'Show numbers' : 'Hide numbers';
+    tb.title = on ? 'Show the calorie and macro figures again'
+                  : 'Turn the numbers off — log food without seeing calories';
+  }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
@@ -4012,9 +4020,16 @@ function renderNutritionLog(){
   const dateEl=document.getElementById('nut-date');
   if(dateEl){
     const st = computeNutStreak();
-    dateEl.textContent = today;
+    // nutDayKey() is a STORAGE key \u2014 an en-AU "18/09/2026" \u2014 and it was printed straight onto the
+    // screen, one line under a navigator already saying "Today". No iOS screen shows a date in that
+    // form. Same day, written the way a phone writes it; the key stays the key.
+    const dayShown = (function(){
+      try{ return nutViewDate().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'}); }
+      catch(_){ return today; }
+    })();
+    dateEl.textContent = dayShown;
     if(st.n >= 2){
-      dateEl.innerHTML = today + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -4181,7 +4196,7 @@ function renderNutritionLog(){
   // Relabel the hero calorie figure to make "remaining" explicit (macros now in legend, no .macro-met)
   const calLblEl=document.getElementById('nut-cal-hero-lbl');
   if(calLblEl) calLblEl.textContent = remCal>=0 ? 'cal left' : 'cal over';
-  // Macro donut ring: each arc sized by that macro's share of calories (P×4, C×4, F×9)
+  // Macro donut ring: the eaten share of the day's target, split between the macros (P×4, C×4, F×9)
   const pCal = (totals.pro||0)*4, cCal = (totals.carb||0)*4, fCal = (totals.fat||0)*9;
   const macroTotal = pCal + cCal + fCal;
   // Read the radius off the element instead of hardcoding it. This was 251.2 for r=40, and the ring
@@ -4197,7 +4212,16 @@ function renderNutritionLog(){
     el.setAttribute('stroke-dashoffset', (-offset * C).toFixed(1));
   };
   if(macroTotal > 0){
-    const pf = pCal/macroTotal, cf = cCal/macroTotal, ff = fCal/macroTotal;
+    // A RING IS PROGRESS TOWARD A GOAL. Each arc was that macro's SHARE of what had been eaten, so the
+    // three always summed to 360° — swept off the render they measured 108° + 170° + 81° = 359°, with
+    // no grey track anywhere, while the middle of the same ring read "625 CAL LEFT". On an iPhone a
+    // closed ring is the Activity-ring vocabulary for a goal met, so the hero graphic told a person
+    // with 625 left that they were finished, and it closed at 100 calories exactly as it did at 2,100.
+    // The three arcs now fill only the eaten share of the target, split by macro; the gap that is left
+    // IS the calories left, which is the track the SVG has always drawn and nobody ever saw. Over the
+    // target the ring closes, and the red "cal over" state carries what happens after that.
+    const eaten = goalCal > 0 ? Math.min(1, Math.max(0, (totals.cal||0)/goalCal)) : 1;
+    const pf = pCal/macroTotal*eaten, cf = cCal/macroTotal*eaten, ff = fCal/macroTotal*eaten;
     setArc('ring-pro', pf, 0);
     setArc('ring-carb', cf, pf);
     setArc('ring-fat', ff, pf+cf);
@@ -5712,9 +5736,12 @@ function renderNutSetupNudge(){
       // The dismiss was a bare \u00d7 glyph. It is the only "no" on this prompt, and iOS gives a "no" a
       // word \u2014 the aria-label already said "Dismiss" to anybody using a screen reader, so the
       // sighted person was the one being asked to read a multiplication sign.
+      // Both are .footnote-link now — the role the app already names for "a footnote that is really a
+      // control", 44pt tall. They were two 13px text runs 34px high, one tint and one in the secondary
+      // grey; a decline painted as dimmer text is not a control anywhere in iOS.
       '<span class="setup-strip-acts">' +
-        '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
-        '<button class="setup-strip-x" onclick="dismissNutSetup()">Not now</button>' +
+        '<button type="button" class="footnote-link" onclick="openNutSetup()">Set a real one</button>' +
+        '<button type="button" class="footnote-link" onclick="dismissNutSetup()">Not now</button>' +
       '</span>' +
     '</div>';
 }
