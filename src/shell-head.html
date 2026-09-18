@@ -610,8 +610,12 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
    Step 0 has the ritual's large title, so its step name stays unspoken there (morningStep hides it). */
 .mstep-nav{display:flex;flex-wrap:wrap;align-items:center;margin:0 0 8px}
 .mstep-dots{display:flex;gap:6px;align-items:center;height:16px}
-.mstep-dot{width:7px;height:7px;border-radius:4px;background:var(--bg4);transition:background .25s,width .25s}
-.mstep-dot.on{background:var(--go);width:20px}
+/* iOS's page control keeps every indicator the SAME circle and changes only its fill — the current
+   one was 20x7 against six 7x7 dots and animated its width between steps, which is a web/Material
+   shape sitting beside an inset list, a 50pt filled button and a segmented control. The tint against
+   the recess carries the current step on its own. */
+.mstep-dot{width:7px;height:7px;border-radius:50%;background:var(--bg4);transition:background .25s}
+.mstep-dot.on{background:var(--go)}
 .mstep-label{flex-basis:100%;margin-top:12px;font-family:var(--font-display);font-size:34px;font-weight:500;
   line-height:1.1;letter-spacing:0;color:var(--tx)}
 .mstep-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:20px 0 0}
@@ -628,7 +632,11 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .ritual-hero-inner{display:block}
 .ritual-hero-glow{display:none}
 .ritual-eyebrow{margin:0 0 6px}
-.ritual-title{font-family:var(--font-display);font-size:40px;font-weight:500;color:var(--tx);line-height:1.06;letter-spacing:0}
+/* text-wrap:balance because a 40pt display title is ONE optical block: "Close the day with grace"
+   broke as "Close the day with" / "grace", leaving a five-letter widow alone on the second line.
+   The leading is already tight (1.06) and is deliberately left alone — loosening it would open the
+   very gap the widow sits in. */
+.ritual-title{font-family:var(--font-display);font-size:40px;font-weight:500;color:var(--tx);line-height:1.06;letter-spacing:0;text-wrap:balance}
 .ritual-line{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin-top:8px}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
 .sdot.on{background:var(--gr)}
@@ -1701,6 +1709,12 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
   text-transform:uppercase;color:var(--tx2) !important}
 .lbl,.hub-section-label{padding:0 16px;margin:22px 0 7px !important}
 .card .lbl,.card .eyebrow,.modal .lbl,.modal .eyebrow{padding:0;margin:0 0 6px !important}
+/* The 16px inset above is the Settings pattern for a header over an inset LIST, whose rows are
+   themselves inset 16 — so header and row titles both land at 32 and the edge is clean. Over a
+   control that runs to the PAGE margin (a bare textarea, a row of face tiles) the same inset leaves
+   the label hanging 16px right of everything it sits over. .flush is that case; it beats the rule
+   above on specificity, the way .photo-group .ios-header already does at :2013. */
+.lbl.flush{padding-left:0;padding-right:0}
 .card-hd{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.022em !important;color:var(--tx) !important}
 
 /* ── Buttons ────────────────────────────────────────────────────────────────────────────────────── */
@@ -4645,10 +4659,21 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="ritual-hero-inner">
       <div class="ritual-eyebrow" id="morning-eyebrow">A new day</div>
       <div class="ritual-title" id="morning-greeting">Set your intention</div>
-      <div class="ritual-line">Before the world starts pulling, choose who you’ll be in it.</div>
+      <div class="ritual-line">Before the world starts pulling, choose who you’ll be in it. Take it at your own pace — there’s no wrong way.</div>
     </div>
   </div>
-  <p class="page-intro ritual-intro" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there’s no wrong way.</p>
+  <!-- ONE opening line, the way Evening already does it. A `.page-intro` sat here too — "A few quiet
+       minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it
+       at your own pace — there's no wrong way." — in the identical secondary grey two pixels smaller
+       than the `.ritual-line` above it, so the two read as one five-line wall of grey filling the
+       whole screen above the first control. `.ritual-hero` is specified as ONE secondary line, and
+       `.page-intro` is the same job under a different name. What the cut sentence did that the flow
+       does not: it named the steps, and its verb was tradition-aware ("then pray" / "then make du'a"
+       / "then sit with it"). Both survive elsewhere — the page control names every step as you reach
+       it, step 4's own label is set per tradition by applyFaithMorning(), and the Soul hub's
+       #soul-morning-desc still carries the tradition-aware description of this ritual. Only the
+       grace clause is kept, because nothing else says it. -->
+
   <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware.
        And the morning light anchor: the cheapest circadian lever there is — daylight in the eyes early
        shifts the whole clock, costs nothing and needs no device. Two destinations, so one inset list:
@@ -4734,9 +4759,11 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
   <!-- Today in the Church (compact — taps through to full readings) -->
   <div id="morning-liturgy" style="display:none;margin-bottom:14px"></div>
-  <div class="lbl">One thing I am grateful for</div>
+  <!-- .flush: a .ritual-field is a bare textarea at the page margin, not a row inside an inset list,
+       so the .lbl's 16px inset would hang these labels right of the field they name. -->
+  <div class="lbl flush">One thing I am grateful for</div>
   <textarea id="morning-gratitude" class="ritual-field" placeholder="What are you genuinely grateful for this morning?"></textarea>
-  <div class="lbl">My intention for today</div>
+  <div class="lbl flush">My intention for today</div>
   <textarea id="morning-intention" class="ritual-field" placeholder="What would make today a good day?"></textarea>
   <!-- Daily check-in (only shows if not done today). Its title was 11px tint capitals, its thirty
        choices bordered boxes, and its save a second filled button on a step whose one filled button is
@@ -6421,11 +6448,21 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
          can do this. It was a purple-bordered panel with a purple 11px caps label: a colour this card
          does not mean anything by. -->
     <div id="evening-day-evidence" class="card ritual-card" style="display:none">
-      <div class="eyebrow">The day you actually lived</div>
+      <!-- The eyebrow was "THE DAY YOU ACTUALLY LIVED" — a five-word clause set as a tracked caps
+           LABEL, which is the shape docs/DESIGN.md names as one of the loudest generated-looking
+           things in the app. Two words say it. And the footnote was "However it felt, this is real.
+           You showed up." — the SAME reassurance the ritual line says four lines above it, in the
+           same secondary grey; the card's one closing line now says what only this card can say,
+           which is where its evidence came from. -->
+      <div class="eyebrow">Your day</div>
       <div id="evening-day-evidence-list" class="evidence-list"></div>
-      <div class="card-foot">However it felt, this is real. You showed up.</div>
+      <div class="card-foot">Drawn from what you logged today.</div>
     </div>
-    <div class="lbl">How did today go?</div>
+    <!-- A section header is a LABEL, not a sentence: this was "How did today go?" — a full question,
+         question mark and all, in 13px tracked caps, a shape that appears nowhere in iOS. It is also
+         .flush, because the face tiles below it run to the page margin and the .lbl inset left it
+         hanging 16px right of every other left edge on the screen. -->
+    <div class="lbl flush">How it went</div>
     <!-- Face over word, the same control as the morning's sleep scale. The words were 11px spans
          under a <br>, which is the size the owner is pointing at. -->
     <div class="day-rate-row face-scale">
@@ -6435,9 +6472,9 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <button class="dr-btn" onclick="setDayRate(this,4)">&#128578;<span class="face-l">Good</span></button>
       <button class="dr-btn" onclick="setDayRate(this,5)">&#128170;<span class="face-l">Strong</span></button>
     </div>
-    <div class="lbl">One win from today</div>
+    <div class="lbl flush">One win from today</div>
     <textarea id="evening-win" class="ritual-field" placeholder="What did you do well today, even if it was small?"></textarea>
-    <div class="lbl">One thing to release</div>
+    <div class="lbl flush">One thing to release</div>
     <textarea id="evening-release" class="ritual-field" placeholder="What do you need to let go of before you sleep?"></textarea>
     <!-- The heaviest question the app asks. It was a purple-bordered box with an italic purple question
          and an 11px caps label — decoration on the one place that most needs to read plainly. -->
