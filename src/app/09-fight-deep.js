@@ -703,7 +703,12 @@ function renderVices(){
       // This was a 12px teal line under its own full-width rule, centred, which made a sentence of
       // grace read like a caption on a chart. It is the card's closing footnote: 13px, left, in the
       // secondary grey, under the rows.
-      totalInsight='<div class="vice-note">' + total + ' total clean days &middot; ' + v.relapseCount + ' reset' + (v.relapseCount===1?'':'s') + ' &middot; you keep going</div>';
+      // AND IT SAYS THE NUMBER ONCE. This read "56 total clean days · 6 resets · you keep going" —
+      // three fragments joined by middots, the last of them a sentence rather than a stat, and the
+      // same 6 the card already says six lines above as "came back 6 times". "Resets" is the colder
+      // of the two words for the same fact, so it is the one that goes. A footnote is one role: a
+      // sentence here, not a strip of facts.
+      totalInsight='<div class="vice-note">' + plural(total, 'clean day') + ' in all. You keep going.</div>';
     }
     
     // Live HH:MM:SS clock for hours-precision when day < 7
@@ -1021,10 +1026,18 @@ function renderVices(){
       totalInsight;
     list.appendChild(c);
   });
-  if(_closedRows.length){
-    const grp = document.createElement('div');
-    grp.innerHTML = iosList(_closedRows, { header:'Your other fights' });
-    list.appendChild(grp.firstElementChild);
+  // THE CLOSED FIGHTS GO BELOW THE FOOTNOTE, NOT ABOVE IT. Appending them here put them between the
+  // open card and #fight-tap-hint, so "When an urge hits — tap it" read as an instruction about the
+  // Doomscroll row. Their own container sits after the footnote in the shell, so the order on screen
+  // is: the card, the line that explains its red button, then the section for the other fights.
+  const other = document.getElementById('vices-other');
+  if(other){
+    other.innerHTML = '';
+    if(_closedRows.length){
+      const grp = document.createElement('div');
+      grp.innerHTML = iosList(_closedRows, { header:'Your other fights' });
+      other.appendChild(grp.firstElementChild);
+    }
   }
 
   // Add-a-vice form: expanded for the first-time user (they need it), collapsed behind a button

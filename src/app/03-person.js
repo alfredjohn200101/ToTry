@@ -1664,7 +1664,17 @@ async function maybeUpdateCoachMemory(){
     }
   }catch(_){ }
 }
-function persistCoachHistory(){ try{ ls('totry_coach_history', cH.slice(-20)); }catch(e){} }
+function persistCoachHistory(){ try{ ls('totry_coach_history', cH.slice(-20)); }catch(e){} syncCoachClear(); }
+// "Clear history" only exists once there IS a history. It hangs off persistCoachHistory rather than
+// off the two or three call sites that change cH, so every path that adds, clears or restores the
+// conversation moves it — including clearCoachHistory itself, which persists an empty array and so
+// puts the button away the moment the thing it acts on is gone.
+function syncCoachClear(){
+  try{
+    const b = document.getElementById('coach-clear');
+    if(b) b.style.display = (cH && cH.length) ? '' : 'none';
+  }catch(_){ }
+}
 
 // Restore visible coach messages on page load
 function restoreCoachMessages(){
@@ -5090,7 +5100,7 @@ function go(name){
     // got a Money tab of empty card headers, and v348 + v355 shipped doing nothing at all.
     if(typeof renderTransactions==='function') renderTransactions();
   }
-  if(name==='coach'){if(typeof renderCoachQuickReplies==='function')renderCoachQuickReplies();if(typeof restoreCoachMessages==='function' && !window.__coachRestored){restoreCoachMessages();window.__coachRestored=true;}}
+  if(name==='coach'){if(typeof renderCoachQuickReplies==='function')renderCoachQuickReplies();if(typeof restoreCoachMessages==='function' && !window.__coachRestored){restoreCoachMessages();window.__coachRestored=true;}if(typeof syncCoachClear==='function')syncCoachClear();}
   if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();if(typeof renderLifeWoven==='function')renderLifeWoven();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();if(typeof renderHomeDepthFold==='function')renderHomeDepthFold();}
   if(name==='settings'){
     // Each render is guarded independently: a single failing widget must never blank the whole

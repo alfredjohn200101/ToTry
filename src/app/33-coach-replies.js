@@ -63,7 +63,10 @@ function renderCoachQuickReplies(){
     chips.push({p: 8, ic:'moon', label: 'Get me to bed clean', prompt: 'It is late at night and I feel my willpower is gone. What do I do for the next 20 minutes to get to sleep without falling?'});
   }
   if(dueSoon.length > 0){
-    chips.push({p: 7, ic:'stop', label: 'What bill first?', prompt: 'I have ' + dueSoon.length + ' bill' + (dueSoon.length===1?'':'s') + ' due in the next week. ' + getDebtStr() + '. What do I pay first?'});
+    // 'stop' is an octagon with an X through it — iOS's mark for stop, error or remove. On the first
+    // chip above the composer it read "cancel" rather than a question about money. 'wallet' is the
+    // icon Money already uses for exactly this subject.
+    chips.push({p: 7, ic:'wallet', label: 'What bill first?', prompt: 'I have ' + dueSoon.length + ' bill' + (dueSoon.length===1?'':'s') + ' due in the next week. ' + getDebtStr() + '. What do I pay first?'});
   }
   
   // PRIORITY 2 — time of day
