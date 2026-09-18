@@ -1520,9 +1520,16 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         const shown = !!r[k];
         if (shown !== c.expect[k])
           findings.push(`grow handoff (${c.label}): ${k} ${shown ? 'says "'+r[k].slice(0,54)+'"' : 'says nothing'} — expected the opposite`);
-        // a handoff must point somewhere or state a result; a bare stat is not a handoff
-        if (shown && !/→|that is what|trend starts|shows up|start here/.test(r[k]))
-          findings.push(`grow handoff (${c.label}): ${k} reads as a statistic, not a hand-off — "${r[k].slice(0,54)}"`);
+        // A handoff must say something TRUE about this front — a figure, or the state that has no
+        // figure yet. It used to be allowed to say so with a typed "→ do the next thing", and that
+        // was the defect: these lines are row subtitles in an inset list, so the arrow landed beside
+        // the row's own chevron and the instruction wrapped alone onto a second line. The chevron is
+        // the affordance and the order of the rows is the handoff; what the line owes is a fact.
+        if (shown && !/\d|nothing logged|trend starts|shows up|Holding steady|hours apart/.test(r[k]))
+          findings.push(`grow handoff (${c.label}): ${k} says nothing a person can act on — "${r[k].slice(0,54)}"`);
+        // and it must NOT imitate the chevron it sits beside
+        if (shown && /→/.test(r[k]))
+          findings.push(`grow handoff (${c.label}): ${k} draws its own arrow next to the row's chevron — "${r[k].slice(0,54)}"`);
       }
       await ctx.close();
     }
