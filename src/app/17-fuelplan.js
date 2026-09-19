@@ -672,7 +672,7 @@ function calEventRow(e, opts){
     // word marked nothing, on a screen already titled "Your week", and turned every subtitle into a
     // dot-joined strip instead of a time. The exception is what is worth saying: an event that does
     // NOT repeat only appears during the week it was added, and now the row says so.
-    sub: time + (e.recurring ? ' · weekly' : ''),
+    sub: time + (e.recurring ? '' : ' · This week only'),
     onclick: 'editCalEvent(' + e.id + ')',
     // No chevron: the row already carries a control at its end, and two trailing marks on one row is
     // the shape iOS never draws. Calendar.app's own list rows are tappable without one.
@@ -681,7 +681,7 @@ function calEventRow(e, opts){
     // The mark is the app's own icon, on the same grid and stroke as the chevron every other row
     // ends in — it was a literal × in the text face, the one hand-drawn control in a list of system
     // rows. The row and the delete are both unchanged: tap the row to edit, tap the mark to remove.
-    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">×</button>'
+    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">' + svgIcon('close', 18) + '</button>'
   });
 }
 const CAL_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];

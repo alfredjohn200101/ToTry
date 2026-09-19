@@ -4898,7 +4898,7 @@ function showV(v){
   // NO EM DASH. .passage-ref and .vr are the same footnote role and they already carry their own
   // gap; Soul printed "Jeremiah 29:11 (ESV)" while Home printed "\u2014 Galatians 6:9 (ESV)", so the only
   // difference a person saw between the day's verse in two places was a stray dash on one of them.
-  document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
+  document.getElementById('hdr-ref').textContent=v.r;
   // The two controls on the verse were text glyphs \u2014 a WHITE HEART SUIT at 20px beside a SHARE ARROW
   // at 16px, the app's own icon language nowhere near them and two neighbouring controls four pixels
   // apart. Both are svgIcon() now, at one size; "saved" fills the same heart rather than swapping it
@@ -4916,7 +4916,7 @@ function showV(v){
 function nextVerse(){const VS=activeVerses();vi=(vi+1)%VS.length;showV(VS[vi]);}
 function saveHdrVerse(){
   const v=document.getElementById('hdr-verse').textContent;
-  const r=document.getElementById('hdr-ref').textContent.replace('\u2014 ','');
+  const r=document.getElementById('hdr-ref').textContent;
   if(!v||v.includes('Loading'))return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v)){

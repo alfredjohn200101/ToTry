@@ -377,7 +377,7 @@ function homeGreetingAction(){
 // ACTION it runs ('morning' / 'reflect' / …). These two pairs are the same room by different names —
 // the evening ritual lives in tab-reflect — and they are the only two that can collide. Declared
 // above its one reader, because in one shared top-level scope a const has a temporal dead zone.
-const _HERO_ACT = { morning:'morning', reflect:'reflect' };
+const _HERO_ACT = { morning:'morning', reflect:'evening' };
 function renderNextStep(){
   const el = document.getElementById('next-step-anchor');
   if(!el) return;

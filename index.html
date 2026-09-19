@@ -2807,7 +2807,10 @@ a.ios-row{text-decoration:none}
    value holding a margin open for two floating glyphs — so a three-line wrap ended at x802 and x681
    in a card 1130 wide, with 95pt of empty surface beside the scripture. The tools are a row under
    the reference now, and the passage runs the card's full measure. */
-.verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45;padding-right:76px}
+/* No right-hand gutter. The 76px was reserved for two bare glyph buttons floating in the card's
+   margin; they are a .verse-tools row under the reference now, as Soul draws them, so the passage
+   runs the full width of its card instead of wrapping early to avoid them. */
+.verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45}
 .verse-pill.hero-verse .vr{font-size:13px !important;color:var(--tx2) !important;margin-top:6px;letter-spacing:-.006em}
 /* Saved is the same heart, filled — not a different character in a different font. */
 .vsave.saved .ic{fill:currentColor}
@@ -3941,7 +3944,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
     <div class="ob-features">
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="ob-feature-t">The fight</div><div class="ob-feature-s">Vices, urges, streaks — met with grace, not shame.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
 
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><div><div class="ob-feature-t">Your money</div><div class="ob-feature-s">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div></div>
@@ -4200,7 +4203,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="ios-header">Health</div>
     <div class="ios-list">
       <button type="button" class="ios-row has-icon" onclick="go('train')">
-        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
 
         <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" style="display:block">Train</span>
@@ -4595,7 +4598,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        Today, Plans and the Bible put under a passage, each one carrying its own word. -->
   <div class="ios-section" id="home-verse-section">
     <div class="verse-pill hero-verse" onclick="nextVerse()">
-      <div class="ios-header">Today&#8217;s word</div>
+      <div class="eyebrow">Today&#8217;s word</div>
       <p id="hdr-verse">Loading today&#8217;s word...</p>
       <div class="vr" id="hdr-ref"></div>
       <div class="verse-tools">
@@ -4937,7 +4940,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <button class="ci-skip" onclick="skipCheckin()">Skip</button>
     </div>
     <div class="ci-row-v2">
-      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
+      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
 
       <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
       <div class="ci-dot-row" role="radiogroup" aria-label="Body — 1 (low) to 10 (high)" data-target="physical">
@@ -5614,9 +5617,9 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
                dumbbell sat on the tint blue while the IDENTICAL glyph sat on orange on Grow and on
                green in the calendar. One drawing, three colours, on three screens a person walks in
                one session. Training is orange everywhere now. -->
-          <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+          <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
 
-          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
 
           <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
           <span class="ios-row-body"><span class="ios-row-title" style="display:block">Strength workout</span><span class="ios-row-sub" style="display:block">Log sets, reps &amp; weight</span></span>
@@ -6922,7 +6925,7 @@ Amen.</div></div>
        person came for is first now — a standard segmented control on the grouped background, then
        the days as rows — and the two utilities sit under it, in the order you reach for them. -->
   <h2 class="page-title">Your week</h2>
-  <p class="page-sub">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
+  <p class="page-intro">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
 
   <div class="seg" role="tablist" aria-label="Calendar view">
     <button id="calview-day" class="fst" role="tab" onclick="setCalView('day')">Day</button>
@@ -8840,14 +8843,13 @@ function svgIcon(name, size){
     stopsquare:'<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
     coffee:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
     shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
-    dumbbell:'<path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/>',
 
     // Drawn to the same live area as briefcase (y3–21) and shield, because it sits in an identical
     // 29pt tile beside them on the week and on Today's spine. It spanned only y6.5–17.5: measured on
     // the rendered screen it came out 14.7x10.0pt against the briefcase's 16.7x15.3pt directly above
     // it, with half the ink at the same stroke weight, so one row's icon read smaller and lighter
     // than its neighbour's for no reason a person could name.
-    dumbbell:'<path d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11"/>',
+    dumbbell:'<path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/>',
     wallet:'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
     run:'<polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>',
     bike:'<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
@@ -15999,7 +16001,7 @@ function showV(v){
   // NO EM DASH. .passage-ref and .vr are the same footnote role and they already carry their own
   // gap; Soul printed "Jeremiah 29:11 (ESV)" while Home printed "\u2014 Galatians 6:9 (ESV)", so the only
   // difference a person saw between the day's verse in two places was a stray dash on one of them.
-  document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
+  document.getElementById('hdr-ref').textContent=v.r;
   // The two controls on the verse were text glyphs \u2014 a WHITE HEART SUIT at 20px beside a SHARE ARROW
   // at 16px, the app's own icon language nowhere near them and two neighbouring controls four pixels
   // apart. Both are svgIcon() now, at one size; "saved" fills the same heart rather than swapping it
@@ -16017,7 +16019,7 @@ function showV(v){
 function nextVerse(){const VS=activeVerses();vi=(vi+1)%VS.length;showV(VS[vi]);}
 function saveHdrVerse(){
   const v=document.getElementById('hdr-verse').textContent;
-  const r=document.getElementById('hdr-ref').textContent.replace('\u2014 ','');
+  const r=document.getElementById('hdr-ref').textContent;
   if(!v||v.includes('Loading'))return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v)){
@@ -37289,7 +37291,7 @@ function calEventRow(e, opts){
     // word marked nothing, on a screen already titled "Your week", and turned every subtitle into a
     // dot-joined strip instead of a time. The exception is what is worth saying: an event that does
     // NOT repeat only appears during the week it was added, and now the row says so.
-    sub: time + (e.recurring ? ' · weekly' : ''),
+    sub: time + (e.recurring ? '' : ' · This week only'),
     onclick: 'editCalEvent(' + e.id + ')',
     // No chevron: the row already carries a control at its end, and two trailing marks on one row is
     // the shape iOS never draws. Calendar.app's own list rows are tappable without one.
@@ -37298,7 +37300,7 @@ function calEventRow(e, opts){
     // The mark is the app's own icon, on the same grid and stroke as the chevron every other row
     // ends in — it was a literal × in the text face, the one hand-drawn control in a list of system
     // rows. The row and the delete are both unchanged: tap the row to edit, tap the mark to remove.
-    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">×</button>'
+    trailing: '<button class="cal-row-x" onclick="event.stopPropagation();deleteCalEvent(' + e.id + ')" aria-label="Remove this event">' + svgIcon('close', 18) + '</button>'
   });
 }
 const CAL_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -52643,7 +52645,7 @@ function homeGreetingAction(){
 // ACTION it runs ('morning' / 'reflect' / …). These two pairs are the same room by different names —
 // the evening ritual lives in tab-reflect — and they are the only two that can collide. Declared
 // above its one reader, because in one shared top-level scope a const has a temporal dead zone.
-const _HERO_ACT = { morning:'morning', reflect:'reflect' };
+const _HERO_ACT = { morning:'morning', reflect:'evening' };
 function renderNextStep(){
   const el = document.getElementById('next-step-anchor');
   if(!el) return;
