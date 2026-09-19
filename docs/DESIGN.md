@@ -130,6 +130,10 @@ This is the part the owner is pointing at, and it is invisible in a wireframe. R
   audited this way yet — Today's `flame` for Spirit is also orange, and whether that collides with
   training or reads as its own thing on its own list is an open question, not a decided one.
 - **Screen subtitle** `.page-sub` — the sentence under a `.page-title`. 17px, `--tx2`.
+
+- **Screen subtitle** `.page-intro` — the sentence under a `.page-title`. 15px, `--tx2`. There was a
+  second role for this one slot (`.page-sub`, at 17) and one screen using it, so the same sentence in
+  the same place was 2px bigger on the week than on the other ten screens. `.page-sub` is gone.
 - **Section header with an action** — `<div class="ios-header home-section-hd"><span>Today's
   habits</span><button class="hd-action" onclick="…">Add or edit</button></div>`. That is Settings'
   "Edit": the label at 13 caps, the verb at 15 in the tint. Not an 11px caps micro-link.
@@ -161,7 +165,8 @@ This is the part the owner is pointing at, and it is invisible in a wireframe. R
 Each of these replaced an inline recipe that was written out two to nine times. Use them; do not
 re-paint them at a call site.
 
-- `.page-intro` — a screen's opening sentence under the large title. 15/secondary.
+- `.page-intro` — a screen's opening sentence under the large title. 15/secondary. The only role for
+  that slot; see Components above.
 - `.card-display` / `.card-sub` / `.card-note` — inside a `.card`: the headline in the ToTry face
   (26), the line under it (15 secondary), fine print (13 secondary). The last two replaced centred
   italics.
@@ -204,7 +209,10 @@ re-paint them at a call site.
   up its own surface and runs to the card's edges, hairlines inset 16 on both sides, and carries the
   14pt gap *under* itself so nothing that follows needs a margin. Not a card in a card.
 - `.passage` (+ `.lg`) and `.passage-ref` — scripture and the traditions' words in New York, upright,
-  left-aligned, with the reference as a 13pt footnote. Never italic, never the tint.
+  left-aligned, with the reference as a 13pt footnote. Never italic, never the tint. **The reference
+  is the reference alone** — no "— " in front of it. Four call sites prepended one and six did not,
+  so the day's verse on Today opened with a dash and the same verse on Soul did not; the class
+  already supplies the gap the dash was standing in for.
 - `.field-label` — a sentence stem over a field ("I am becoming a person who…"), 15 secondary.
   `.field-tall` — a textarea's height. `.btn.field-btn` — the button on one row beside a field.
 - `.row-rank` — a number that ranks a row (values, the 99 Names), SF Rounded.

@@ -3977,7 +3977,7 @@ function _renderDailyPassage(el,t){
   // got "Today's reflection" in caps under "Today in the Church". The title already says it.
   el.innerHTML='<div class="ios-section"><div class="card">'+
       '<div id="daily-passage-text" class="passage lg">“'+_escFew(v.t)+'”</div>'+
-      '<div id="daily-passage-ref" class="passage-ref">— '+_escFew(v.r)+'</div>'+
+      '<div id="daily-passage-ref" class="passage-ref">'+_escFew(v.r)+'</div>'+
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+
     '</div></div>'+
     iosList([
@@ -3990,7 +3990,7 @@ function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
   el.innerHTML='<div class="ios-section"><div class="ios-header">Ayah for today</div><div class="card">'+
-      '<div class="passage lg">“'+_escFew(a.t)+'”</div><div class="passage-ref">— '+_escFew(a.r)+'</div>'+
+      '<div class="passage lg">“'+_escFew(a.t)+'”</div><div class="passage-ref">'+_escFew(a.r)+'</div>'+
     '</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
@@ -4737,7 +4737,7 @@ function renderThread(){
     html+='<div class="ios-row thread-row"><div class="ios-row-body">'+
       '<div class="thread-path'+(isMine?' mine':'')+'">'+(isMine?'<b>'+_escFew(_THREAD_LABELS[k])+'</b><span>Your path</span>':'<span>'+_escFew(_THREAD_LABELS[k])+'</span>')+'</div>'+
       '<div class="passage">“'+_escFew(L.t)+'”</div>'+
-      '<div class="passage-ref">— '+_escFew(L.r)+'</div></div></div>';
+      '<div class="passage-ref">'+_escFew(L.r)+'</div></div></div>';
   });
   html+='</div></div>';
   html+='<div class="btn-row"><button class="btn" onclick="_threadNav(-1)">'+svgIcon('chevronleft',18)+'Previous</button><button class="btn" onclick="_threadNav(1)">Next'+svgIcon('chevronright',18)+'</button></div>';
@@ -4895,12 +4895,16 @@ function showV(v){
     catch(_){ v = { t:'', r:'' }; }
   }
   document.getElementById('hdr-verse').textContent=v.t;
+  // NO EM DASH. .passage-ref and .vr are the same footnote role and they already carry their own
+  // gap; Soul printed "Jeremiah 29:11 (ESV)" while Home printed "\u2014 Galatians 6:9 (ESV)", so the only
+  // difference a person saw between the day's verse in two places was a stray dash on one of them.
   document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
   // The two controls on the verse were text glyphs \u2014 a WHITE HEART SUIT at 20px beside a SHARE ARROW
   // at 16px, the app's own icon language nowhere near them and two neighbouring controls four pixels
   // apart. Both are svgIcon() now, at one size; "saved" fills the same heart rather than swapping it
-  // for a different character in a different font.
-  document.getElementById('vsave-btn').innerHTML=svgIcon('heart',20);
+  // for a different character in a different font. They carry their own word as well: they are
+  // ordinary .btns in a .verse-tools row under the reference, not bare glyphs in the card's margin.
+  document.getElementById('vsave-btn').innerHTML=svgIcon('heart',20)+' Save';
   document.getElementById('vsave-btn').classList.remove('saved');
   // Persist the current verse so the scripture share card can use it.
   try{ ls('totry_hdr_verse_text', v.t); ls('totry_hdr_verse_ref', v.r); }catch(_){ }
@@ -4920,7 +4924,7 @@ function saveHdrVerse(){
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('vsave-btn');
-  btn.innerHTML=svgIcon('heart',20);btn.classList.add('saved');
+  btn.innerHTML=svgIcon('heart',20)+' Saved';btn.classList.add('saved');
 }
 
 // ── NAV ───────────────────────────────────────────────────────

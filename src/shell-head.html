@@ -238,15 +238,18 @@ button:focus:not(:focus-visible){outline:none}
 .day-n{font-family:var(--font-text);font-size:27px;font-weight:400;color:var(--go);line-height:1}
 .day-l{font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;margin-top:2px}
 .verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;position:relative}
-.verse-pill p{font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx2);line-height:1.6;padding-right:62px}
+/* No padding-right here either: the 62px was the other half of the gutter the two floating glyphs
+   needed, and they are a row under the reference now. Scripture runs the card's full measure. */
+.verse-pill p{font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx2);line-height:1.6}
 .verse-pill .vr{font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:4px;letter-spacing:0.01em}
-.vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:var(--t-hd);padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+/* The verse's two tools. They used to be bare glyphs absolutely positioned in the card's right
+   margin — which is what reserved the 76px gutter the passage was wrapping early to avoid, and what
+   made their hit boxes overlap twice before this (right:34px inside a 44px box at right:10px, so
+   "make a card" and "save" were partly the same button). They are ordinary .btns in the app's
+   .verse-tools row now, so the row does the sizing and the 44pt target, and each one says its word.
+   These two classes only carry the STATE and the tint the row cannot: saved is the same heart,
+   filled. */
 .vsave.saved{color:var(--go)}
-/* .vsave sits at right:10px and is 44px wide, so it occupies right 10..54. This was at right:34px —
-   inside that — and the two 44px hit boxes overlapped by 20px with the share icon 3px higher as well.
-   A tap in the overlap hit whichever came later in the DOM, so "make a card from this verse" and
-   "save this verse" were partly the same button. Clear of it, and on the same baseline. */
-.vshare{position:absolute;top:50%;transform:translateY(-50%);right:58px;background:none;border:none;color:var(--tx3);font-size:var(--t-md);cursor:pointer;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vshare:active{color:var(--go)}
 /* 44x44 tap targets for the tiny "×" delete glyphs in Money. Measured at 414x896 they were 8.2x16 in
    the font-size:var(--t-md) rows and 9.3x18 in the font-size:var(--t-lg) rows — the smallest controls in the app, and
@@ -532,11 +535,10 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .hero-verse{margin-top:16px;background:var(--fill2)!important;border-color:transparent!important}
 .hero-verse p{color:var(--tx)}
 .hero-verse .vr{color:var(--go)}
-/* ...and the verse pill's own two controls, for the same reason. .vsave and .vshare are text glyphs
-   (a heart and a share arrow) coloured var(--tx3), which is right on a card and wrong here: on the
-   always-dark hero the light theme took them to 3.24:1, and the SAVED heart — var(--go), the one
-   piece of state this control has — to 3.27:1 from 8.35:1 in dark. A control whose only feedback is
-   a colour change must keep that change visible in both themes. */
+/* ...and the verse pill's own two controls, for the same reason: on the always-dark hero the light
+   theme took them to 3.24:1, and the SAVED heart to 3.27:1 from 8.35:1 in dark. They are .btns in a
+   .verse-tools row now and carry the tint from the component, but this stays as the floor for any
+   theme that reaches them first. */
 .hero-verse .vsave, .hero-verse .vshare{color:var(--go)}
 .hero-verse .vsave.saved{color:var(--go)}
 /* ════ RITUAL HEROES — morning (dawn) and evening (dusk) each FEEL like their hour. ════ */
@@ -2776,22 +2778,37 @@ a.ios-row{text-decoration:none}
    20px on the foundation commit too, so this is not new; it is simply on the screen I own, and it is
    the only tab that shows the chip. Same pixels, a real hit box. */
 .hdr[data-tab="home"] .day-chip{min-height:44px;align-items:center;white-space:nowrap}
-#home-hero.home-hero{background:transparent !important;padding:0 !important;margin:0 0 20px !important;display:block !important;border-radius:0 !important}
+/* 28px, which is what .ios-section uses, so the hero ends the way every other section on this screen
+   ends. It was 20: the gap from the day's one button to the NEXT header measured 23.7pt while the two
+   boundaries below it on the same screen measured 31.3pt — one section sitting 8pt tighter than the
+   rest, which nobody can name and everybody feels. */
+#home-hero.home-hero{background:transparent !important;padding:0 !important;margin:0 0 28px !important;display:block !important;border-radius:0 !important}
 #home-hero .hero-inner{padding:0 !important;display:block}
 .hero-sub{font-size:17px;color:var(--tx2);margin-top:6px;line-height:1.35;max-width:none;letter-spacing:-.022em}
 /* The identity line was 17px ITALIC — a caption in italics is the loudest of the small-text tells.
-   It is the subheadline role: 15pt, secondary, upright, under the sentence it belongs to. */
-.hero-identity{margin-top:10px !important;padding:5px 0 !important}
-.hero-identity-text{font-size:15px !important;font-style:normal !important;color:var(--tx2) !important;line-height:1.33;margin-top:0 !important;letter-spacing:-.016em}
+   It is the subheadline role: 15pt, upright, under the sentence it belongs to.
+   AND IT IS A CONTROL, NOT A CAPTION. #hero-identity opens Settings, and it was drawn as a second
+   grey paragraph: same ink as the sentence above it, one step smaller, no chevron, no row box and a
+   25px box to land a thumb on. A person read two subtitles, one of which happened to be tappable.
+   It carries the system chevron now — the mark every other door in this app ends in — and a 44pt
+   box. The words stay the person's own ink rather than going tint: they are their identity, not a
+   link label, and the chevron is what says it goes somewhere. The size comes off the scale rather
+   than a literal, which is all the !important was standing in for. */
+.hero-identity{margin-top:10px !important;padding:0 !important;min-height:44px;align-items:center;flex-wrap:nowrap}
+.hero-identity-text{font-size:var(--t-sm);font-style:normal;color:var(--tx2);line-height:1.33;margin-top:0;letter-spacing:-.016em;flex:0 1 auto}
+.hero-identity .ios-row-chevron{margin:0}
 .hero-journey{font-size:13px;color:var(--go);line-height:1.38;margin-top:8px;padding:5px 0;cursor:pointer;letter-spacing:-.006em}
 .hero-action{margin-top:18px !important;border-radius:12px !important}
 
 /* The day's word on a surface of its own: no border, no tint, a reading face at reading size. The
    reference under it was 11px in the tint, which read as a link to somewhere it does not go. */
 .verse-pill.hero-verse{background:var(--bg2) !important;border:0 !important;border-radius:var(--r) !important;padding:16px !important;margin-top:0 !important}
+/* NOTHING RESERVES A GUTTER ANY MORE. This carried padding-right:76px — a hand-painted call-site
+   value holding a margin open for two floating glyphs — so a three-line wrap ended at x802 and x681
+   in a card 1130 wide, with 95pt of empty surface beside the scripture. The tools are a row under
+   the reference now, and the passage runs the card's full measure. */
 .verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45;padding-right:76px}
 .verse-pill.hero-verse .vr{font-size:13px !important;color:var(--tx2) !important;margin-top:6px;letter-spacing:-.006em}
-.verse-pill.hero-verse .vsave,.verse-pill.hero-verse .vshare{color:var(--go)}
 /* Saved is the same heart, filled — not a different character in a different font. */
 .vsave.saved .ic{fill:currentColor}
 
@@ -2810,9 +2827,10 @@ a.ios-row{text-decoration:none}
 .btn-row{display:flex;gap:8px}
 .btn-row>.btn{flex:1}
 
-/* The sentence under a large title. On the week it was a 17px paragraph in --tx3, the grey reserved
-   for chevrons and placeholders; a sentence a person is meant to read is the secondary label. */
-.page-sub{font-size:17px;color:var(--tx2);line-height:1.35;letter-spacing:-.022em;margin:0 0 20px}
+/* .page-sub is gone. The sentence under a large title is .page-intro, which ten screens already use
+   at 15/secondary — this was the eleventh, at 17, and it had exactly one user (the week). Two
+   neighbouring sizes in the same slot, 2px apart: the difference nobody can name and everybody
+   feels. One role for that sentence; docs/DESIGN.md names only .page-intro now. */
 /* A section header with an action on its end — Settings' "Edit". 13pt caps on the left, a 15pt tint
    verb on the right, and a 44pt hit box that hangs DOWN rather than up over the tile above it. */
 .ios-header.home-section-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -2855,8 +2873,16 @@ a.ios-row{text-decoration:none}
 /* ═══ THE WEEK ═══════════════════════════════════════════════════════════════════════════════════
    Events are rows. The delete lives at the end of the row, sized like a control rather than a 15px
    glyph, and an event that has already happened dims rather than changing colour. */
-.cal-row-x{flex:none;background:none;border:0;cursor:pointer;color:var(--tx3);font-size:20px;line-height:1;
-  width:44px;height:44px;margin:-8px -12px -8px 0;display:flex;align-items:center;justify-content:center}
+/* THE MARK IS AN ICON, NOT A CHARACTER. It was a literal × typed at font-size:20 — 9.3x9.3pt of a
+   text face, lighter and smaller than any other trailing mark in the app, where DESIGN.md says
+   svgIcon() only. And the -12px margin put its ink 21pt in from the card edge while every chevron in
+   the app sits on 15.3, so a list of deletes and a list of chevrons had ragged trailing edges.
+   The arithmetic, because it is not obvious: the glyph is centred in a 44px box, so its ink sits
+   (44-18)/2 + 4.5 = 17.5px inside the box's right edge; with the row's own 16px padding that lands
+   the ink at 33.5 + margin-right. -17px puts it on 16.5, where the chevron's is. The 44pt hit box
+   is unchanged — it simply runs out to the card's edge, and nothing else is there. */
+.cal-row-x{flex:none;background:none;border:0;cursor:pointer;color:var(--tx3);line-height:1;
+  width:44px;height:44px;margin:-8px -17px -8px 0;display:flex;align-items:center;justify-content:center}
 .cal-row-x:active{opacity:.4}
 .cal-row.is-past{opacity:.5}
 .cal-row.cal-free .ios-row-title,.cal-free .ios-row-title{color:var(--tx3)}
@@ -3916,6 +3942,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="ob-features">
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="ob-feature-t">The fight</div><div class="ob-feature-s">Vices, urges, streaks — met with grace, not shame.</div></div></div>
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
+
+      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><div><div class="ob-feature-t">Your money</div><div class="ob-feature-s">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div></div>
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><div class="ob-feature-t">Your spirit</div><div class="ob-feature-s">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div></div>
       <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="ob-feature-t">One coach who sees all of it</div><div class="ob-feature-s">Not five apps — one that remembers your whole story and speaks to it.</div></div></div>
@@ -4173,6 +4201,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="ios-list">
       <button type="button" class="ios-row has-icon" onclick="go('train')">
         <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+
+        <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" style="display:block">Train</span>
           <span class="ios-row-sub hc-hand" id="hand-train"></span>
           <span class="ios-row-sub hc-desc">Workouts, routines, strength over time. Synced with Hevy.</span></span>
@@ -4533,6 +4563,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
 
       <div class="hero-identity" id="hero-identity" onclick="go('settings')" style="display:none">
         <span class="hero-identity-text" id="hero-identity-text"></span>
+        <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
       </div>
       <div id="journey-badge" class="hero-journey" onclick="editJourneyStart()" style="display:none"></div>
 
@@ -4554,14 +4585,23 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     </div>
   </div>
 
-  <!-- The day's word, on a surface of its own. Scripture keeps New York — a reading face. -->
+  <!-- The day's word, on a surface of its own. Scripture keeps New York — a reading face.
+       ONE VERSE CARD, NOT TWO. Soul draws the same content as a card with its label INSIDE as an
+       eyebrow, the passage across the full measure and the action on its own line under the
+       reference; Home drew the label outside as a section header and hung two bare glyphs in the
+       card's right margin, vertically centred against the middle of a passage they had narrowed by
+       76px to make room for. Same words, two cards. This is Soul's: the eyebrow inside, the
+       scripture full measure, and the two tools as the app's own .verse-tools row — the same pair
+       Today, Plans and the Bible put under a passage, each one carrying its own word. -->
   <div class="ios-section" id="home-verse-section">
-    <div class="ios-header">Today&#8217;s word</div>
     <div class="verse-pill hero-verse" onclick="nextVerse()">
+      <div class="ios-header">Today&#8217;s word</div>
       <p id="hdr-verse">Loading today&#8217;s word...</p>
       <div class="vr" id="hdr-ref"></div>
-      <button class="vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-      <button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <div class="verse-tools">
+        <button class="btn vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Save</button>
+        <button class="btn vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Make a card</button>
+      </div>
     </div>
   </div>
 
@@ -4898,6 +4938,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     </div>
     <div class="ci-row-v2">
       <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
+
+      <div class="ci-label-row"><span class="ci-icon"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
       <div class="ci-dot-row" role="radiogroup" aria-label="Body — 1 (low) to 10 (high)" data-target="physical">
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 1 out of 10" data-val="1" onclick="setCheckin('physical',1)">1</button>
         <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 2 out of 10" data-val="2" onclick="setCheckin('physical',2)">2</button>
@@ -5575,6 +5617,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
           <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
 
           <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4v16M3.5 7.5v9M17.5 4v16M20.5 7.5v9M6.5 12h11"/></svg></span>
+
+          <span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
           <span class="ios-row-body"><span class="ios-row-title" style="display:block">Strength workout</span><span class="ios-row-sub" style="display:block">Log sets, reps &amp; weight</span></span>
           <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
         </button>
