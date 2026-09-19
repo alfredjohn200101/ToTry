@@ -3483,20 +3483,20 @@ function applyFaithLabels(){
     set('soul-intro', 'The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: '+(introTail[t]||introTail.christianity)+'. Stay grounded here, and the rest holds.');
     set('soul-reflect-desc', t==='christianity' ? 'Close the day: how it went, journal, examen, wins.' : 'Close the day: how it went, journal, review, wins.');
     // THE CARD NEXT TO IT SAID "AND PRAYER" TO EVERYONE. This function rewrote the Reflect blurb for
-    // every tradition and could not reach the Morning one beside it, or the Morning tab's own intro,
-    // because neither had an id — so a secular person read "Close the day: … review, wins" directly
-    // under "Start the day: gratitude, intention, a word, and prayer", and the ritual itself never
-    // mentions prayer at any of its five steps. Only these two blurbs carried it.
+    // every tradition and could not reach the Morning one beside it, because neither had an id — so a
+    // secular person read "Close the day: … review, wins" directly under "Start the day: gratitude,
+    // intention, a word, and prayer". This blurb is where the Morning ritual is named per tradition.
+    // It wrote #morning-intro-desc as well, a second paragraph inside the Morning ritual itself; that
+    // paragraph is gone (it stacked a second, indistinguishable grey under the ritual's own line, and
+    // .ritual-hero is specified as ONE secondary line). The tradition's own word for the practice
+    // still reaches the ritual: applyFaithMorning() sets #morning-pray-lbl on the step where it is
+    // actually done, which is a truer place for it than a description of the steps.
     const _mDesc = { christianity:'Start the day: gratitude, intention, a word, and prayer.',
       islam:'Start the day: gratitude, intention, a word, and du\u2019a.',
       hinduism:'Start the day: gratitude, intention, a word, and prayer.',
       buddhism:'Start the day: gratitude, intention, a word, and a moment of stillness.',
       secular:'Start the day: gratitude, intention, a word, and a moment of stillness.' };
-    const _mIntro = { christianity:'then pray', islam:'then make du\u2019a', hinduism:'then pray',
-      buddhism:'then sit with it for a moment', secular:'then sit with it for a moment' };
     set('soul-morning-desc', _mDesc[t] || _mDesc.christianity);
-    set('morning-intro-desc', 'A few quiet minutes to set the day: receive a word, name your gratitude and intention, '
-      + (_mIntro[t] || _mIntro.christianity) + '. Take it at your own pace \u2014 there\u2019s no wrong way.');
   }catch(_){}
 }
 
