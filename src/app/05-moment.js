@@ -1349,7 +1349,13 @@ function renderValuesCard(){
   const el=document.getElementById('values-body'); if(!el) return;
   const o=getValues();
   if(!o){
-    el.innerHTML='<p class="card-lede">Five words for what your life is actually for. Once you’ve named them, the counsel argues from <em>your</em> standard instead of mine — and the Feeling Door asks the only question that matters: does the next hour move toward them?</p>'+
+    // "me" MEANT TWO PEOPLE THREE LINES APART. The title is the person's own voice — "What actually
+    // matters to me", like every card on this tab — and the lede then switched to the app addressing
+    // them ("instead of mine"), inside one card. It also named a feature as a proper noun mid-sentence
+    // and ran to five lines against a one-line lede in the card directly below. One voice, one length,
+    // and the <em> goes with the clause it was emphasising: this app stresses with <b> on the one word
+    // that matters, and .card-sub/.card-note exist precisely because they replaced hand-set italics.
+    el.innerHTML='<p class="card-lede">Five words for what your life is actually for. Name them and the counsel argues from your standard, not a generic one.</p>'+
       '<button class="btn" onclick="openValuesSort()">Sort my values</button>';
     return;
   }

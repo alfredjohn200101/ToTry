@@ -844,7 +844,10 @@ async function renderLiturgy(){
   const dateEl = document.getElementById('liturgy-date');
   if(!box) return;
   if(typeof faithTradition==='function' && faithTradition()!=='christianity'){
-    box.innerHTML = '<div class="ios-empty">'+svgIcon('calendar',44)+'<div class="ios-empty-body">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
+    // The empty-state component leads with a title in the label ink; this branch printed a paragraph
+    // of secondary grey with nothing for the eye to land on. Its title is its own \u2014 this is not an
+    // error, it is a page that belongs to another tradition.
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('calendar',44)+'<div class="ios-empty-title">A Catholic calendar</div><div class="ios-empty-body">Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
     if(dateEl) dateEl.textContent = '';
     return;
   }
@@ -853,7 +856,13 @@ async function renderLiturgy(){
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ d = {readings:null,celebration:null}; }
   if(!d || (!d.readings && !d.celebration)){
-    box.innerHTML = '<div class="ios-empty">'+svgIcon('cloud',44)+'<div class="ios-empty-body">Today\u2019s readings couldn\u2019t load right now. Your verse and prayer above are ready whenever you are.</div></div><button class="btn" onclick="renderLiturgy()">Try again</button>';
+    // THE LINE POINTED AT NOTHING. This branch replaces the whole of #liturgy-content, so "your verse
+    // and prayer above" named two things that cannot exist here \u2014 above it there is only the title and
+    // the date, and no state of this screen has ever carried a verse or a prayer. One state, one
+    // sentence, one action, nothing referring off-screen; and the title the component asks for, so the
+    // first thing under the date is in the label ink rather than a paragraph of grey. "Try again" is
+    // the only control on the screen, which is what .btn.primary is for.
+    box.innerHTML = '<div class="ios-empty">'+svgIcon('cloud',44)+'<div class="ios-empty-title">Readings unavailable</div><div class="ios-empty-body">Couldn\u2019t reach them just now.</div></div><button class="btn primary" onclick="renderLiturgy()">Try again</button>';
     return;
   }
   let html = '';

@@ -5061,10 +5061,18 @@ function fnBodyOf(code, name){
   H.ok(/id="read-saved-list"/.test(H.html), 'with its own container');
   H.ok(/function renderSavedVerses\(containerId\)/.test(H.html),
     'and the renderer takes a container so one function paints both readers');
-  H.ok(/renderSavedVerses\('read-saved-list'\)/.test(H.extractFn('openReader')),
-    'openReader paints it');
-  H.ok(/panel\.style\.display = saved\.length \? '' : 'none'/.test(H.extractFn('openReader')),
+  // The painting moved out of openReader() into _renderReader() so that go('read') can paint too —
+  // the tab used to fill only from its opener, so any other route into it (a deep link, a restored
+  // tab, the screenshot harness) landed on a blank page. Same two behaviours, asked of the function
+  // that now paints, plus the handover itself: if the dispatch went, the reader would open empty.
+  H.ok(/renderSavedVerses\('read-saved-list'\)/.test(H.extractFn('_renderReader')),
+    'the reader paints it');
+  H.ok(/panel\.style\.display = saved\.length \? '' : 'none'/.test(H.extractFn('_renderReader')),
     'hidden while empty, so it never adds a "nothing here" block to a reading screen');
+  H.ok(/_renderReader\(window\.__readT/.test(H.code(H.extractFn('go'))),
+    'and go() is what calls it, so the tab paints however it was reached');
+  H.ok(/window\.__readT = t/.test(H.extractFn('openReader')),
+    'openReader records which book, so go() opens the one that was asked for');
 }
 
 // ── the Money mediums ─────────────────────────────────────────────────────────────────────────
@@ -7651,6 +7659,32 @@ H.section('one icon language — the app draws its own icons, and only once');
   H.ok(/😴/.test(H.html), 'the mood faces are still faces');
   H.ok(/✝/.test(H.html) && /☪/.test(H.html) && /ὔ9|🕉/.test(H.html),
        'the traditions keep their own marks');
+
+  // 7. A TYPED GLYPH IS NOT AN EMOJI, AND EVERY CHECK ABOVE IS LOOKING FOR EMOJI. The read-aloud
+  // control read "▶ Listen" and its neighbour "✦ Make a card" — U+25B6 is Geometric Shapes and
+  // U+2726 is Dingbats, solid shapes at the label's own weight and baseline, sitting sixty pixels
+  // above two rows carrying real stroked svgIcons. Two icon languages in one screenful, and not one
+  // assertion in this section could see them. The third copy was the worst spelling of all: the
+  // chapter button wrote it as the HTML ENTITY &#9654;, a number that no search for the character
+  // can find. And the button REDRAWS ITSELF — Speak.paint() rewrites it on every tap — so fixing the
+  // markup alone would have restored the mark the first time anyone pressed Listen.
+  const TRANSPORT = /[■▶◀]|&#(?:9632|9654|9664);|\\u(?:25A0|25B6|25C0)/i;
+  const speakBtns = [...H.html.matchAll(/<button[^>]*data-speak=[^>]*>([\s\S]*?)<\/button>/g)].map(m => m[1]);
+  H.ok(speakBtns.length >= 2, 'the shell carries ' + speakBtns.length + ' read-aloud buttons');
+  H.eq(speakBtns.filter(s => TRANSPORT.test(s)), [], 'none of them types a play or stop mark');
+  // Inlined in the shell's own markup, or built by svgIcon() where the button is a JS string — the
+  // third of these three is _verseToolsHTML()'s template, and the parity check above already holds
+  // the inlined literals byte-identical to svgIcon()'s own path.
+  H.ok(speakBtns.every(s => /<svg class="ic"|svgIcon\(/.test(s)), 'each carries a drawn icon instead');
+  const speakPaint = H.code(H.extractFn('paint'));
+  H.ok(!TRANSPORT.test(speakPaint) && /svgIcon\('play'/.test(speakPaint) && /svgIcon\('stopsquare'/.test(speakPaint),
+       'and the function that redraws it on every tap uses icons for BOTH states');
+  const verseTools = H.code(H.extractFn('_verseToolsHTML'));
+  H.ok(!TRANSPORT.test(verseTools) && /svgIcon\('play'/.test(verseTools) && /svgIcon\('sparkle'/.test(verseTools),
+       'so do the two tools under a passage');
+  H.ok(TRANSPORT.test('&#9654; Listen') && TRANSPORT.test('▶ Listen') && TRANSPORT.test("'\\u25A0 Stop'")
+       && !TRANSPORT.test("svgIcon('play',18)+'Listen'"),
+       'the detector reads the entity, the character AND the escape, and does not flag an icon call (calibration)');
 }
 
 H.section('one type scale — no size sits between two steps, and every declared step is used');

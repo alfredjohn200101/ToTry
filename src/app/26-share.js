@@ -18,10 +18,14 @@ function verseCardEyebrow(){
 }
 
 // Shared markup for the two quiet tools under a passage. IDs only — no text in attributes.
+// THE MARKS WERE TYPED CHARACTERS, NOT ICONS: U+25B6 BLACK RIGHT-POINTING TRIANGLE and U+2726 BLACK
+// FOUR POINTED STAR — solid shapes set at the label's own weight and baseline, sixty pixels above two
+// rows carrying real stroked svgIcons. Two icon languages in one screenful. The icon-language gate
+// could not see them: it checks four EMOJI encodings, and these live in Geometric Shapes and Dingbats.
 function _verseToolsHTML(textId, refId){
   return '<div class="verse-tools">' +
-    '<button class="btn" data-speak="' + textId + '|' + refId + '" onclick="Speak.toggleFrom(this)" aria-pressed="false">\u25B6 Listen</button>' +
-    '<button class="btn" onclick="shareVerseFrom(\'' + textId + '\',\'' + refId + '\')">\u2726 Make a card</button>' +
+    '<button class="btn" data-speak="' + textId + '|' + refId + '" onclick="Speak.toggleFrom(this)" aria-pressed="false">' + svgIcon('play',16) + 'Listen</button>' +
+    '<button class="btn" onclick="shareVerseFrom(\'' + textId + '\',\'' + refId + '\')">' + svgIcon('sparkle',16) + 'Make a card</button>' +
   '</div>';
 }
 
@@ -51,7 +55,14 @@ window.Speak = (function(){
   function paint(playing){
     if(!btn) return;
     const long = /chapter/i.test(btn.textContent || '');
-    btn.innerHTML = playing ? '\u25A0 Stop' : (long ? '\u25B6 Listen to this chapter' : '\u25B6 Listen');
+    // This is where the play triangle came BACK: fixing the two call sites alone would have put a
+    // typed U+25B6 on the button the moment anyone tapped it. The button is redrawn here on every
+    // state change, so the icons belong here too.
+    // 16, the size the "Make a card" button beside it has always drawn its sparkle at: an 18 here would
+    // put two icons one wrong pixel apart on one row, and the button redraws itself, so the mismatch
+    // would have appeared mid-tap.
+    btn.innerHTML = playing ? (svgIcon('stopsquare',16) + 'Stop')
+                            : (svgIcon('play',16) + (long ? 'Listen to this chapter' : 'Listen'));
     btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
   }
   function stop(){

@@ -3540,7 +3540,7 @@ function applyFaithMorning(){
 
 // ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
 function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
-function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); _renderTodayAnchor(); }
+function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); else _renderTodayAnchor(); }
 function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } // Buddhism and secular used to fall through to the breath menu because they had no practice at all.
 if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
 function openMetta(){ if(typeof go==='function') go('practice'); _renderPractice('metta'); }
@@ -3584,9 +3584,15 @@ function _fetchT(u, ms, init){
 // grey at 15px was the one colour a sentence a person is waiting on should never be in.
 function _readLoading(){ return '<div class="tr-loading">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card ios-empty"><div class="ios-empty-body">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div></div>'; }
+// The tradition whose book is open. Held so that go('read') — a back gesture, a deep link, the
+// screenshot harness — can paint the reader it last showed instead of an empty page.
 function openReader(t){
+  window.__readT = t;
+  if(typeof go==='function'){ go('read'); return; }
+  _renderReader(t);
+}
+function _renderReader(t){
   const f=FAITHS[t]||curFaith();
-  if(typeof go==='function') go('read');
   const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'The Dhammapada \u2014 all 26 chapters, translated by Bhikkhu Sujato.',secular:'Meditations \u2014 Marcus Aurelius, all 12 books, trans. George Long.'};
   const ttl=document.getElementById('read-title'); if(ttl) ttl.textContent=f.bookName.replace(/^the /,'').replace(/^./,c=>c.toUpperCase());
   // go() named the bar from the static "Read" before the line above renamed the page, so the title
@@ -3941,7 +3947,9 @@ function _dailyIndex(len){ let d; try{ d=(typeof getDayCount==='function')?getDa
 function _renderTodayAnchor(){
   const t=faithTradition(), f=curFaith();
   const ttl=document.getElementById('today-title'); if(ttl) ttl.textContent=f.todayTitle;
-  const sub=document.getElementById('today-sub'); if(sub) sub.textContent=f.todayDesc;
+  // The shell ships this <p> empty and hidden, so its 24px margin does not hold a gap under the title
+  // before a tradition has named it. Un-hide it the moment there are words.
+  const sub=document.getElementById('today-sub'); if(sub){ sub.textContent=f.todayDesc||''; sub.hidden=!f.todayDesc; }
   // The large title changes after go() has already copied the old one into the navigation bar, so a
   // Muslim scrolling "Prayer times" saw "Today" fade in above it. Re-read it once the words are set.
   try{ if(typeof iosNavSync==='function') iosNavSync('today'); }catch(_){ }
@@ -3954,10 +3962,20 @@ function _renderTodayAnchor(){
 // with it are destinations, so they are rows — the first of the pair was a button that wrapped "Sit
 // with it — a / minute" across two lines inside itself.
 function _renderDailyPassage(el,t){
-  const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
+  // The bank comes from the REGISTRY, not from a ternary that has to name every tradition. The old one
+  // named Hinduism and Buddhism and sent everyone else to the Stoics, so any tradition it did not name
+  // — Christianity, were this screen ever reached by one — read a secular reflection under its own
+  // title. curFaith() already holds each tradition's own verses.
+  const _f=curFaith();
+  const bank=(_f&&_f.verses&&_f.verses.length)?_f.verses:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
-  const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="ios-section"><div class="ios-header">'+kind+'</div><div class="card">'+
+  // THE SCREEN SAID ITS OWN NAME TWICE. This header was built from a `kind` string word-for-word
+  // identical to curFaith().todayTitle, which is the 40pt title 60px above it — "Today's verse" over
+  // "TODAY'S VERSE", labelling the section's only card. A section header names a group so a reader can
+  // tell it from the group above; repeating the title makes 13pt caps decoration. Worse for anyone the
+  // ternary did not name: it fell through to the secular wording, so a Christian reaching this screen
+  // got "Today's reflection" in caps under "Today in the Church". The title already says it.
+  el.innerHTML='<div class="ios-section"><div class="card">'+
       '<div id="daily-passage-text" class="passage lg">“'+_escFew(v.t)+'”</div>'+
       '<div id="daily-passage-ref" class="passage-ref">— '+_escFew(v.r)+'</div>'+
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+
@@ -4020,7 +4038,10 @@ async function _loadSalah(){
   if(!coords){
     try{ const _c = ls('totry_city'); if(_c){ return _loadSalahByCity(_c); } }catch(_){}
   }
-  if(!coords){ box.innerHTML='<div class="ios-empty">'+svgIcon('map',44)+'<div class="ios-empty-body">Allow location to see today’s prayer times.</div></div><button class="btn" onclick="_promptCity()">Or enter your city</button>'; return; }
+  // The empty state leads with its title, like every other one in the app. Without it not a word on
+  // this panel was in the label ink. The button stays a plain .btn: it is the "or" path, and the ayah
+  // card above it already carries controls, so this screen has no one main action to fill.
+  if(!coords){ box.innerHTML='<div class="ios-empty">'+svgIcon('map',44)+'<div class="ios-empty-title">Location needed</div><div class="ios-empty-body">Allow location to see today’s prayer times.</div></div><button class="btn" onclick="_promptCity()">Or enter your city</button>'; return; }
   try{
     const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
@@ -4482,24 +4503,37 @@ function renderPlans(){
   // a 28px title at a fake 700 and a centred tertiary paragraph: a landing page inside a tab.
   let h='<h2 class="page-title">Short plans</h2>'+
     '<p class="page-intro">Five to seven days on one thing you’re actually carrying. Finishable — not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p>';
+  // A HUB IS ROWS. These three are destinations — pick one and open it — and every other set of
+  // destinations in the app is an inset grouped list: Soul's own Bible / Reading plans, Grow's Train /
+  // Nourish / Track, Train's session rows, Morning's steps. Only here was the same act a full-width
+  // card with a 22px serif headline, and only here did a card wear a row's disclosure chevron. The
+  // sharpest evidence was the transition itself: Soul's "Reading plans" ROW opened a screen whose own
+  // choices were cards, one tap apart.
+  // Where a person has got to is the row's VALUE, in the secondary ink — it was set in the tint inside
+  // a card that was itself one button, so a blue phrase in the middle read as a second link going
+  // somewhere else. The tint means actionable; a progress reading is not an action, and the row is
+  // already the control. "· whenever you're ready" and "· read it again any time" are not lost: a value
+  // is one short line, and the footnote under the list says the same thing better ("No streaks, no
+  // percentage: a plan is a door, not a scoreboard").
+  const rows=[];
   READING_PLANS.forEach(function(p){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
     const going=!!(s&&!s.done&&d>0);
-    const line=(s&&s.done)?'Finished · read it again any time':(d>0?'Day '+(d+1)+' of '+n+' · whenever you’re ready':n+' days');
-    // The name speaks in the ToTry face with the chevron that says the whole card is the way in, the
-    // line under it says what the plan is for, and where a person has got to is the footnote — in the
-    // tint while it is under way. The status was 12px caps OVER the title, which for a plan not yet
-    // begun printed "7 DAYS" directly above "7 days · …"; and the "Begin ›" micro-link under each card
-    // is gone, because the card was already the control.
-    h+='<div class="card plan-card" role="button" tabindex="0" aria-label="'+(going?'Continue ':'Begin ')+_escFew(p.title)+'" onclick="openPlan(\''+p.id+'\')">'+
-      '<div class="home-card-top"><div class="card-title">'+p.title+'</div><span class="plan-chev">'+svgIcon('chevronright',14)+'</span></div>'+
-      '<p class="card-body flush">'+p.sub+'</p>'+
-      ((going||(s&&s.done))?'<p class="card-foot'+(going?' tint':'')+'">'+line+'</p>':'')+'</div>';
+    rows.push(iosRow({
+      title:p.title, sub:p.sub,
+      value:(s&&s.done)?'Finished':(going?'Day '+(d+1)+' of '+n:''),
+      onclick:'openPlan(\''+p.id+'\')',
+      label:(going?'Continue ':'Begin ')+p.title
+    }));
   });
+  if(rows.length) h+=iosList(rows);
   h+='<p class="ios-footnote">Written for your path — '+f.label+' — not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
   el.innerHTML=h;
   try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
+  // Hand the bar back: renderPlanDay() borrows it to mean "Plans", and without this the list kept a
+  // back button pointing at itself — a dead end, which is worse than the two arrows it replaced.
+  try{ if(typeof updateHubBackBar==='function') updateHubBackBar('plans'); }catch(_){ }
 }
 function openPlan(id){
   const p=_planById(id); if(!p) return;
@@ -4518,11 +4552,14 @@ function renderPlanDay(id,i){
   // Buddhism and Secular — so someone reading a plan day had no way through to the Dhammapada or the
   // Stoics, even though openReader() serves both. Every tradition has a bookName; use it.
   const readLbl = (function(){ try{ const bn=(FAITHS[t]||curFaith()).bookName; return bn?('Open it in '+bn):''; }catch(_){ return ''; } })();
-  // The plan's name is the screen's large title and "Day 3 of 7" is its subtitle; the way back to the
-  // list is a tint control with the chevron iOS uses. It was a grey "‹ Plans" box facing a 12px
-  // tertiary "DAY 3 OF 7", over a 22px title at a fake 700.
-  let h='<button class="btn quiet plan-back" onclick="renderPlans()">'+svgIcon('chevronleft',20)+'Plans</button>'+
-    '<h2 class="page-title">'+p.title+'</h2>'+
+  // TWO BACK ARROWS, 6px APART, DRAWN DIFFERENTLY. The nav bar's "‹ Soul" sat at y61–105 and this
+  // screen put its own "‹ Plans" directly under it at y111–155 — one chevron at 24 and one at 20 with
+  // a heavier stroke override, their ink starting at x=16.0 and x=21.8, over a title starting at 16.
+  // Three left edges and two mismatched glyphs in the top 200px. iOS never stacks two back arrows: the
+  // bar's own back now means "Plans" while a plan is open (the screen already writes its own title per
+  // state and re-syncs the bar), and renderPlans() hands it back to "Soul". Matching their drawing
+  // would only have made the duplication tidier.
+  let h='<h2 class="page-title">'+p.title+'</h2>'+
     '<p class="page-intro plan-day-of">Day '+(i+1)+' of '+days.length+'</p>'+
     // The passage on an ordinary card, upright in the reading face, its source at footnote size. It was
     // a tint-filled card with a tint border and the reference in the tint as well: three blues for one
@@ -4551,6 +4588,7 @@ function renderPlanDay(id,i){
   h+='<p class="ios-footnote">One day at a time is the whole design. Come back tomorrow, or in a fortnight — day '+(i+1)+' will still be here.</p>';
   el.innerHTML=h;
   try{ if(typeof iosNavSync==='function') iosNavSync('plans'); }catch(_){ }
+  try{ if(typeof updateHubBackBar==='function') updateHubBackBar('plans',{label:'Plans',onclick:function(){ renderPlans(); }}); }catch(_){ }
   try{ const tab=document.getElementById('tab-plans'); if(tab) tab.scrollTop=0; }catch(_){}
 }
 function _planDone(id,i){
@@ -4673,13 +4711,15 @@ function _planOpenFull(id,i){
 }
 
 function openThreads(){
-  if(typeof go==='function') go('threads');
-  if(typeof window.__threadIdx!=='number'){ let s=0; try{ if(typeof getDayCount==='function') s=getDayCount()%SHARED_THREADS.length; }catch(_){ } window.__threadIdx=s; }
-  renderThread();
+  if(typeof go==='function') go('threads'); else renderThread();
 }
 function _threadNav(d){ window.__threadIdx=(((window.__threadIdx||0)+d)%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length; renderThread(); }
 function renderThread(){
   const el=document.getElementById('threads-content'); if(!el) return;
+  // The day's thread is seeded HERE, not in the opener. go('threads') paints this screen now — a tab
+  // reached by any route has to paint something — and a seed that lived only in openThreads() would
+  // have meant everyone who arrived another way read thread 1 for ever.
+  if(typeof window.__threadIdx!=='number'){ let s=0; try{ if(typeof getDayCount==='function') s=getDayCount()%SHARED_THREADS.length; }catch(_){ } window.__threadIdx=s; }
   const idx=(((window.__threadIdx||0))%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length;
   const th=SHARED_THREADS[idx]; const mine=faithTradition();
   const order=[mine].concat(['christianity','islam','hinduism','buddhism','secular'].filter(x=>x!==mine));
@@ -4931,29 +4971,36 @@ function iosNavSync(name){
     sync();
   }catch(_){ }
 }
-function updateHubBackBar(name){
+function updateHubBackBar(name, within){
   // APPLE-NATIVE: the way back lives in the navigation bar's leading slot, as a tint chevron and the
   // parent's name — not as a grey text link inside the scrolling content, which scrolled away with it.
   // It keeps id="hub-back-bar": the morning ritual's layout skips it by id, and the gate asserts it
   // stays on screen through every ritual step.
+  // `within` is for a screen with a state INSIDE its tab — Plans is the list, then one plan — which
+  // otherwise has to draw a SECOND back control in its own content, stacked under this one and drawn
+  // at a different size and weight. iOS never shows two back arrows: the one bar changes what it means.
   const existing=document.getElementById('hub-back-bar');
   if(existing) existing.remove();
   const lead=document.getElementById('ios-nav-lead');
-  let target=null, label=null;
-  const parent=TAB_PARENT[name];
-  if(parent){ target=parent; label=HUB_LABELS[parent]||'Back'; }
-  else if(name === 'coach'){
-    // Coach is parentless (floating button): back to wherever the person came from.
-    target = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
-    label = HUB_LABELS[target] || ({home:'Today',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings',fight:'Fight'}[target]) || 'Back';
+  let target=null, label=null, act=null;
+  if(within && within.label){ label=within.label; act=within.onclick; }
+  else{
+    const parent=TAB_PARENT[name];
+    if(parent){ target=parent; label=HUB_LABELS[parent]||'Back'; }
+    else if(name === 'coach'){
+      // Coach is parentless (floating button): back to wherever the person came from.
+      target = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
+      label = HUB_LABELS[target] || ({home:'Today',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings',fight:'Fight'}[target]) || 'Back';
+    }
+    if(target) act=()=>go(target);
   }
-  if(!target || !lead) return;
+  if(!act || !label || !lead) return;
   const bar=document.createElement('button');
   bar.id='hub-back-bar';
   bar.type='button';
   bar.setAttribute('aria-label','Back to '+label);
   bar.innerHTML=svgIcon('chevronleft',24)+'<span>'+label+'</span>';
-  bar.onclick=()=>go(target);
+  bar.onclick=act;
   lead.appendChild(bar);
 }
 
@@ -5065,6 +5112,20 @@ function go(name){
   if(name==='why'){initWhyTab();}
   if(name==='liturgy'){renderLiturgy();}
   if(name==='plans' && typeof renderPlans==='function'){renderPlans();}
+  // A SCREEN REACHED BY ANY ROUTE HAS TO PAINT SOMETHING. These four filled their content div only
+  // from their openers, so anything that arrives by go() alone — a deep link, a restored tab, the
+  // screenshot harness — landed on a bare page: threads and practice empty, today showing nothing but
+  // the static title in its shell. Each calls the same renderer its opener calls; none of them calls
+  // go(), so there is no loop.
+  if(name==='threads' && typeof renderThread==='function'){renderThread();}
+  if(name==='today' && typeof _renderTodayAnchor==='function'){_renderTodayAnchor();}
+  if(name==='practice' && typeof _paintPractice==='function'){
+    if(!window.__practice) window.__practice={kind:({islam:'dhikr',hinduism:'japa',buddhism:'metta'}[faithTradition()]||'stillness'),phase:0,count:0};
+    _paintPractice();
+  }
+  if(name==='read' && typeof _renderReader==='function'){
+    _renderReader(window.__readT||(faithTradition()==='christianity'?'secular':faithTradition()));
+  }
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
