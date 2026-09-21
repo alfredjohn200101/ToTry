@@ -1958,7 +1958,13 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
    and is 54 tall, so content ended UNDER it: Threads' "Next ›" pager, Plans' closing footnote and the
    evening ritual's Continue button were each partly covered — three screens reporting the same defect
    independently. 156 = the orb's top plus an 8pt gap. */
-.tab{padding-top:calc(var(--st) + 58px) !important}
+/* AND THE SCROLLER CARRIES THE BODY SIZE. `body` never set one, so every container that does not
+   declare a size was the browser's 16 while the app's body text is 17 — and a 17px paragraph beside
+   a 16px wrapper is the one-pixel disagreement npm run panels counts. It found it twice on the same
+   shape (a message above its two answers, a message above its card). Components all declare their
+   own sizes; this only reaches the wrappers nobody sized, which is exactly the set that should agree
+   with the prose they hold. */
+.tab{padding-top:calc(var(--st) + 58px) !important;font-size:var(--t-base)}
 
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
    top edge that tells a person it is a material and not a painted strip. */
