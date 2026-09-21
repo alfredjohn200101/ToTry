@@ -17,6 +17,14 @@
 //
 // A screen can be "clean" and still be too quiet: lots of fill with nothing bigger than 17px reads as a
 // settings page, not a home screen. The numbers are here to argue with, not to pass or fail.
+//
+// READ A LOW FILL BEFORE BELIEVING IT. Four kinds of screen measure thin and are RIGHT to:
+//   • network-fed ones (Today in the Church, the readers, plans) — this harness blocks the network, so
+//     they render their offline state. Liturgy reads 23% here and is full of readings on a real phone.
+//   • stepped flows (the morning and evening rituals) — one question at a time is the design.
+//   • a new conversation (Coach) — messages fill from the top, as Messages does.
+//   • a practice (Stillness) — a breathing exercise earns its quiet.
+// Look at the screenshot before acting on a number from this file.
 import pw from '../node_modules/playwright/index.js'; const { chromium } = pw;
 import http from 'http'; import fs from 'fs'; import path from 'path'; import url from 'url';
 import { seedSource } from './seed-person.mjs';

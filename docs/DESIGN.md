@@ -66,6 +66,39 @@ those a piece of text is doing, it is San Francisco.
 - **Left-align** content. Centre only: an empty state, a single hero number, a sheet's one-line
   confirmation. Never centre a paragraph or a card that also has left-aligned content.
 
+## The ToTry layer — what is OURS inside the iOS one
+
+The owner, seeing the Apple pass: *"even for certain buttons it doesn't need to be apple code like day
+numbers"*, and *"we can keep it going with ios style whilst still maintaining a to try design language"*.
+Three things carry the identity; everything else is Apple's system, unmodified.
+
+1. **The display face** — headlines, greetings, ritual and sheet titles. `--font-display`. Never named at
+   a call site.
+2. **THE NUMBER THAT IS EARNED.** A day count, a score, a streak — the numbers a person BUILT — are set
+   in the ToTry face at hero size (`.totry-count`, and `.vice-day-num` / `.score-big` / `.streak-num`).
+   Numbers a person READS — calories, grams, kilos, money, a breath timer — stay **SF Rounded**, where
+   legibility at a glance beats character. If you cannot say whether a number was earned or measured, it
+   is measured.
+   **Size it for the face**: Cormorant's x-height is smaller than San Francisco's, so a number set in it
+   needs roughly a fifth more size to hold the same weight — 58 where SF would be 40, 42 where SF was 34.
+   Sizing a serif like a sans is how a brand face ends up looking timid.
+3. **The wordmark and the gold** — `--brand`, on the name itself. Not on controls.
+
+## Space — a screen has to carry its own height
+
+`node scripts/density-audit.mjs` reports, per screen: the share of the first screenful that carries
+content, the widest empty band in it, the largest type, and the side margins. Targets that came out of
+the owner's note (*"areas where it feels like the space is underutilised and gone too small"*):
+
+- **No band over ~120px of nothing** in the first screenful, unless the screen is one of the four kinds
+  that earn their quiet (see the caveat at the top of that script — read the screenshot first).
+- **A hub's rows are destinations, not settings.** `.ios-list.hub`: a 38px tile, a 20pt title, room for
+  the live line under it. Grow and Soul's "Draw near" use it. Settings-style lists do not.
+- **A stat tile exists for its number** — 34px, not 28. A box drawn around emptiness is where thin type
+  shows most.
+- The scroller clears **48px** for the 44pt bar, not 58: ten pixels times twenty-one screens is a band of
+  nothing at the top of the whole app.
+
 ## Liquid Glass — and where it is NOT allowed
 
 Glass is the **navigation layer**: the nav bar, the floating tab capsule, sheets, the banner, the FAB.
