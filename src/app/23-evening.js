@@ -20,6 +20,12 @@ const _EVENING_STEPS = [
   { key:'did',        label:'What you did' },
   { key:'tomorrow',   label:'Tomorrow' },
   { key:'reflection', label:'Reflection' },
+  // THE THREE GOOD THINGS AND THE EXAMEN ARE TWO QUESTIONS, SO THEY ARE TWO STEPS. They shared one:
+  // 234px of gratitude, 229px of examen and the finish button came to 1,020px on a 414x896 phone, and
+  // npm run panels fails a ritual step that does not fit a screen — "a step that does not fit a screen
+  // is still a form", which is the whole thing this flow was built to stop being. The order is
+  // unchanged and is the point: grace first, review after, the examen last.
+  { key:'good',       label:'Three good things' },
   { key:'close',      label:'Close' },
 ];
 const _EVENING_ANCHORS = {
@@ -28,7 +34,8 @@ const _EVENING_ANCHORS = {
   'evening-numbers':      3,
   'evening-tomorrow-lbl': 4,
   'eve-prayer-label':     5,
-  'evening-good-lbl':     6,   // three good things, then the examen, then done — grace before review
+  'evening-good-lbl':     6,   // grace first: the three good things get their own step…
+  'examen-label':         7,   // …and the examen follows it, last, with the finish button
 };
 const _EVENING_OVERRIDE = {};
 let _eStep = 0;

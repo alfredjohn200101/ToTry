@@ -459,9 +459,13 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
    11px in the tertiary grey — two of the smallest things on the screen carrying the day's protein. */
 .macro-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   font-size:var(--t-sm);letter-spacing:-.016em;margin-bottom:4px}
-/* The wrapper carries the size too, so the label row and the bar under it agree — a textless div at
-   the inherited 16px beside a 15px label is a one-pixel disagreement waiting to be counted. */
-.nut-macros{font-size:var(--t-sm)}
+/* THE SIZE BELONGS TO THE LEAVES. This lived on the .nut-macros WRAPPER, which fixed the pair inside
+   it and created one outside it: a 15px wrapper beside the ring's 16px wrapper, and once that was
+   matched, the card disagreed with the day-nav above it and the log bar below. A size on a textless
+   container propagates the problem UP the tree one pair at a time. The macro line — its label row and
+   the bar under it — carries 15 itself, and every wrapper stays at the inherited size, so each level
+   agrees with its own siblings. */
+.nut-macros .macro-row,.nut-macros .goal-bar-wrap{font-size:var(--t-sm)}
 .macro-row .mr-n{color:var(--tx)}
 .macro-row .mr-v{color:var(--tx2);font-variant-numeric:tabular-nums}
 .macro-row+.goal-bar-wrap{margin:0 0 12px}
@@ -5252,11 +5256,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--pu)"></div></div>
     </div>
 
-    <!-- THE NUDGE IS ABOUT THE TARGET, SO IT LIVES WITH THE TARGET. It used to float as naked 13px
-         text under the "More ways to log" row — two components below its own subject — where it read
-         as that row's footer. Inside the card, under the macros, it is a footnote about the number
-         the card is showing. -->
-    <div id="nut-setup-nudge"></div>
   </div>
 
   <!-- The starter-target warning and the goals/TDEE link used to sit ABOVE the ring, so 170px of
@@ -5328,6 +5327,15 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <!-- Today's diary. It is a LIST, so it is inset grouped lists — one section per meal — not one
        bordered card holding four hand-drawn header rows. renderNutritionLog builds it. -->
   <div id="nut-log-list" class="nut-diary"><div class="ios-empty"><div class="ios-empty-title">Nothing logged yet</div></div></div>
+
+  <!-- THE TARGET NUDGE IS A FOOTNOTE UNDER THE DAY, NOT A BANNER ABOVE THE LOG. It lived under the
+       macros inside the hero card, which reads well — it IS about the number that card shows — and
+       put advisory copy back above the log bar, which is the one thing a food tracker must keep in
+       reach: `npm run panels` measures that bar's distance from the top and had failed on exactly
+       this before ("nut-setup-nudge crept back above the log bar"). As the day's footnote it keeps
+       the fixer's point — it is not naked text under "More ways to log" any more — without paying
+       for it in the only place on this screen where height is expensive. -->
+  <div id="nut-setup-nudge"></div>
 
   <!-- The CALCULATOR stays down here: it is 170px of settings and no reason to make a person scroll
        past it before they can type what they just ate. The one-line NUDGE is not the calculator, and
