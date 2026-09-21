@@ -7971,6 +7971,36 @@ H.section('Today and the week: the title is not in a box, and the small text has
   H.ok(/M6\.5 4\.5v15/.test(db) && /M17\.5 4\.5v15/.test(db), 'the dumbbell’s plates run 15 of the 24 units, not 11');
 }
 
+H.section('no element survived a merge twice — one tile per row, and no line repeated verbatim');
+{
+  // THE MERGE ARTIFACT NOTHING COULD SEE. Twelve branches touched src/shell-head.html, and conflicts in
+  // it were almost always two branches APPENDING their own section — so they were resolved by keeping
+  // both sides, with a guard that refused when the two shared a substantial line. That guard cannot see
+  // the case where both sides edited the SAME element and differed only inside it: the two versions
+  // share no line, so "keep both" kept the element twice. It shipped a row on Grow with two dumbbell
+  // tiles side by side, an onboarding feature listed twice, a check-in label row twice, and a Train row
+  // wearing the new orange tile AND the old blue one. Every id, handler, icon, contrast and type check
+  // passed all four: each copy is individually valid markup.
+  const rows = H.html.match(/<button[^>]*class="ios-row[^"]*"[\s\S]{0,1400}?<\/button>/g) || [];
+  H.ok(rows.length > 20, 'the row scan found the app\'s rows (' + rows.length + ')');
+  const twoTiles = rows.filter(r => (r.match(/ios-row-icon/g) || []).length > 1);
+  H.ok(twoTiles.length === 0,
+    'no row carries two icon tiles' + (twoTiles.length ? ' — e.g. ' + (twoTiles[0].match(/ios-row-title[^>]*>([^<]{0,30})/) || [])[1] : ''));
+
+  // and the shape that produced them: the same long line twice in a row, with or without the blank
+  // line the resolver inserted between the two sides.
+  const lines = H.html.split('\n');
+  const repeats = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    const a = lines[i].trim();
+    if (a.length < 60) continue;
+    if (a === lines[i + 1].trim()) repeats.push(i + 1);
+    else if (i + 2 < lines.length && !lines[i + 1].trim() && a === lines[i + 2].trim()) repeats.push(i + 1);
+  }
+  H.ok(repeats.length === 0,
+    'no element is repeated verbatim on the next line' + (repeats.length ? ' — first at line ' + repeats[0] : ''));
+}
+
 H.section('Settings: every on/off is a switch that shows what was saved, and the crisis card leads');
 {
   const html = H.html;
