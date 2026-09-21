@@ -46,6 +46,17 @@
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+/* AND THE TEXT FACE. The owner, on the Apple-native pass: "the fonts look too much apple coded and not
+   to try design language ... something about it feels like u ripped too much" — with San Francisco
+   carrying every row, label and button, the app READ as Apple whatever the headlines said. Outfit is
+   the app's own text face, and it was here all along: one VARIABLE file, real weights 300-700. (It was
+   nearly ruled out on the grounds that it ships a single weight — a claim from the file's SIZE and a
+   grep for `fvar` in compressed woff2 bytes, neither of which can answer that question. Rendering it at
+   400 and 700 with font-synthesis off gives different widths, which can.) */
+@font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;font-display:swap;src:url('fonts/outfit.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;font-display:swap;src:url('fonts/outfit-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 
 
 :root{
@@ -104,10 +115,15 @@
        md 16 (callout) · base/lg 17 (body/headline) · hd 20 (title 3) · xl 22 (title 2)
        title1 28 · 2xl 34 (large title) */
   --t-micro:11px;--t-mini:12px;--t-cap:13px;--t-sm:15px;--t-base:17px;--t-md:16px;--t-lg:17px;--t-hd:20px;--t-xl:22px;--t-title1:28px;--t-2xl:34px;
-  --font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  /* Outfit first — the app's own text face — with the system stack behind it, so a device that cannot
+     load the file still gets a native-feeling face rather than Times. */
+  --font-text:'Outfit',-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
   --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",system-ui,sans-serif;
   --font-serif:ui-serif,"New York","Iowan Old Style",Georgia,serif;
-  --font-rounded:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  /* The data face is Outfit too, with tabular figures. It was SF Rounded — Fitness' number face — and
+     with the interface now in the app's own text face, a rounded Apple numeral in a stat tile was the
+     one place San Francisco still spoke. Earned counts stay in the serif; this is what a person READS. */
+  --font-rounded:'Outfit',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
 }
@@ -216,7 +232,7 @@ button:focus:not(:focus-visible){outline:none}
    11px capitals tracked at 0.01em in the third grey: the smallest text on the first screen. */
 .ob-by{font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);letter-spacing:0;text-align:center;margin-bottom:32px}
 .ob-title{font-family:var(--font-display);font-size:34px;font-weight:500;color:var(--tx);margin-bottom:10px;line-height:1.1}
-.ob-desc{font-size:var(--t-base);color:var(--tx2);line-height:1.38;letter-spacing:-.022em;margin-bottom:24px}
+.ob-desc{font-size:var(--t-base);color:var(--tx2);line-height:1.38;letter-spacing:-0.006em;margin-bottom:24px}
 .ob-prog{display:flex;gap:8px;justify-content:center;align-items:center;height:44px;margin:-11px auto 18px}
 .ob-dot{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
 .ob-dot.on{background:var(--go)}
@@ -227,7 +243,7 @@ button:focus:not(:focus-visible){outline:none}
 /* The founder's own words are the app SPEAKING, so they are in its own face, upright — they were
    centred italic San Francisco in the tint, which read as a link, over an 11px attribution. */
 .ob-quote{font-family:var(--font-display);font-size:26px;font-weight:500;font-style:normal;color:var(--tx);text-align:left;line-height:1.2;letter-spacing:0;margin:6px 0 8px}
-.ob-attr{font-family:var(--font-text);font-size:15px;color:var(--tx2);letter-spacing:-.016em;text-align:left;margin-bottom:36px}
+.ob-attr{font-family:var(--font-text);font-size:15px;color:var(--tx2);letter-spacing:-0.004em;text-align:left;margin-bottom:36px}
 .hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,var(--go-bg) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
@@ -389,7 +405,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .logbar-mag{flex:0 0 auto;display:flex;align-items:center;padding:0 0 0 12px;color:var(--tx3)}
 .logbar-mag .ic{width:17px;height:17px;stroke-width:2.2}
 .logbar-in{flex:1;min-width:0;background:transparent;border:0;color:var(--tx);font-size:var(--t-base);
-  letter-spacing:-.022em;padding:11px 8px 11px 8px;outline:none;font-family:var(--font-text)}
+  letter-spacing:-0.006em;padding:11px 8px 11px 8px;outline:none;font-family:var(--font-text)}
 .logbar-in::placeholder{color:var(--tx3)}
 .logbar-in:focus{background:transparent}
 .logbar-ic{flex:0 0 auto;width:38px;align-self:stretch;background:transparent;border:0;
@@ -443,7 +459,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 /* The day navigator: the day itself, then two tint chevrons. No boxes, no caps. */
 .nut-daynav{display:flex;align-items:center;gap:2px;margin:0 0 12px;padding:0 2px}
 .nut-daynav-lbl{flex:1;min-width:0;background:none;border:0;padding:6px 0;margin:0;text-align:left;
-  font-family:var(--font-text);font-size:var(--t-base);font-weight:600;letter-spacing:-.022em;
+  font-family:var(--font-text);font-size:var(--t-base);font-weight:600;letter-spacing:-0.006em;
   color:var(--tx);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nut-daynav-lbl:active{opacity:.45}
 .nut-daynav-ch{flex:0 0 auto;width:40px;height:36px;background:none;border:0;padding:0;
@@ -458,7 +474,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 /* One macro, its numbers and its bar. The label was 11px in the macro's own colour with the value
    11px in the tertiary grey — two of the smallest things on the screen carrying the day's protein. */
 .macro-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  font-size:var(--t-sm);letter-spacing:-.016em;margin-bottom:4px}
+  font-size:var(--t-sm);letter-spacing:-0.004em;margin-bottom:4px}
 /* THE SIZE BELONGS TO THE LEAVES. This lived on the .nut-macros WRAPPER, which fixed the pair inside
    it and created one outside it: a 15px wrapper beside the ring's 16px wrapper, and once that was
    matched, the card disagreed with the day-nav above it and the log bar below. A size on a textless
@@ -652,7 +668,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
    The leading is already tight (1.06) and is deliberately left alone — loosening it would open the
    very gap the widow sits in. */
 .ritual-title{font-family:var(--font-display);font-size:40px;font-weight:500;color:var(--tx);line-height:1.06;letter-spacing:0;text-wrap:balance}
-.ritual-line{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin-top:8px}
+.ritual-line{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx2);margin-top:8px}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--bg4)}
 .sdot.on{background:var(--gr)}
 .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -972,7 +988,7 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .bible-search-result:active{background:var(--bg4)}
 .bsr-ref{font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin-bottom:4px}
 .bsr-text{font-family:var(--font-serif);font-size:17px;color:var(--tx);line-height:1.5}
-.bsr-why{font-size:15px;letter-spacing:-.016em;color:var(--tx2);line-height:1.4;margin-top:6px}
+.bsr-why{font-size:15px;letter-spacing:-0.004em;color:var(--tx2);line-height:1.4;margin-top:6px}
 .bible-tab-row{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:12px}
 /* Inline text links inside prose ("set your weekly training split", "add today's Watch ring"). They
    measured 12-20px tall because a span's line-height IS its hit box. inline-block plus vertical padding
@@ -1008,8 +1024,8 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .cal-hero .ch-lbl{font-family:var(--font-text);font-size:var(--t-cap);font-weight:400;color:var(--tx2);text-transform:uppercase;letter-spacing:.045em;margin-top:3px}
 .food-result{background:var(--bg2);border:0;border-radius:var(--rm);padding:11px 16px;margin-bottom:8px;cursor:pointer}
 .food-result:active{background:var(--bg4)}
-.fr-name{font-size:var(--t-base);font-weight:400;letter-spacing:-.022em;color:var(--tx);line-height:1.29;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fr-brand{font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.fr-name{font-size:var(--t-base);font-weight:400;letter-spacing:-0.006em;color:var(--tx);line-height:1.29;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-brand{font-size:var(--t-sm);letter-spacing:-0.004em;color:var(--tx2);margin-top:1px}
 .fr-macros{display:flex;flex-wrap:wrap;gap:8px;font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);margin-top:2px}
 .fr-cal{color:var(--tx);font-variant-numeric:tabular-nums}
 /* Source badges (STRAVA / HEVY / COMMUNITY / CUSTOM) — base style; color set per-source. */
@@ -1702,7 +1718,12 @@ input:focus,textarea:focus,select:focus{
    ═══════════════════════════════════════════════════════════════════════════════════════════════════ */
 
 html,body{background:var(--bg)}
-body{font-family:var(--font-text);color:var(--tx);letter-spacing:-0.022em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+/* The tracking is Outfit's, not San Francisco's. SF is drawn tight and is tracked tighter still on
+   Apple's platforms (-0.022em at body size); Outfit is a geometric face with wider counters, and at
+   that value it reads cramped — the words close up and the app looks squeezed rather than set. The
+   104 declarations that carried SF's numbers moved with the face. Caps headers keep their positive
+   .045em, which is a separate decision about capitals. */
+body{font-family:var(--font-text);color:var(--tx);letter-spacing:-0.006em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 /* Ambient glows, auroras, daypart skins: first-party apps are flat. */
 body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::before,
 .companion-orb::before,.ritual-hero-glow,#tab-morning.dawn::before,#tab-reflect.dusk::before,.vice-card::before{display:none !important;background:none !important}
@@ -1758,10 +1779,10 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
    the label hanging 16px right of everything it sits over. .flush is that case; it beats the rule
    above on specificity, the way .photo-group .ios-header already does at :2013. */
 .lbl.flush{padding-left:0;padding-right:0}
-.card-hd{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.022em !important;color:var(--tx) !important}
+.card-hd{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em !important;color:var(--tx) !important}
 
 /* ── Buttons ────────────────────────────────────────────────────────────────────────────────────── */
-.btn{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.022em !important;
+.btn{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em !important;
   min-height:50px;border-radius:12px !important;border:0 !important;box-shadow:none !important;
   background:var(--fill) !important;color:var(--go) !important;transition:opacity .15s,transform .1s}
 .btn:active{opacity:.6;transform:none !important}
@@ -1794,7 +1815,7 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
 
 /* ── Text fields ────────────────────────────────────────────────────────────────────────────────── */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),textarea,select{
-  font-family:var(--font-text) !important;font-size:17px !important;letter-spacing:-0.022em;background:var(--fill2) !important;border:0 !important;border-radius:10px !important;color:var(--tx) !important}
+  font-family:var(--font-text) !important;font-size:17px !important;letter-spacing:-0.006em;background:var(--fill2) !important;border:0 !important;border-radius:10px !important;color:var(--tx) !important}
 input::placeholder,textarea::placeholder{color:var(--tx3) !important}
 input:focus,textarea:focus,select:focus{outline:none;box-shadow:0 0 0 2px var(--go-bd) !important}
 input[type="range"]{accent-color:var(--go)}
@@ -1841,11 +1862,11 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 .hdr-row{display:grid !important;grid-template-columns:1fr auto 1fr;align-items:center !important;column-gap:8px}
 .hdr-row>:last-child{justify-self:end}
 .ios-nav-lead{justify-self:start;min-width:0;display:flex;align-items:center}
-.ios-nav-title{font-family:var(--font-text);font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--tx);opacity:0;transform:translateY(4px);
+.ios-nav-title{font-family:var(--font-text);font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--tx);opacity:0;transform:translateY(4px);
   transition:opacity .18s ease,transform .18s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw;pointer-events:none}
 .hdr.ios-scrolled .ios-nav-title{opacity:1;transform:none}
 #hub-back-bar{display:flex !important;align-items:center;gap:1px;background:none !important;border:0 !important;padding:0 8px 0 0 !important;margin:0 0 0 -7px !important;
-  min-height:44px;color:var(--go) !important;font-family:var(--font-text) !important;font-size:17px !important;font-weight:400 !important;letter-spacing:-.022em;cursor:pointer;white-space:nowrap}
+  min-height:44px;color:var(--go) !important;font-family:var(--font-text) !important;font-size:17px !important;font-weight:400 !important;letter-spacing:-0.006em;cursor:pointer;white-space:nowrap}
 #hub-back-bar .ic{width:24px;height:24px;stroke-width:2.4}
 #hub-back-bar:active{opacity:.5}
 
@@ -1857,7 +1878,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 .ios-footnote{font-family:var(--font-text);font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);padding:7px 16px 0}
 .ios-list{background:var(--bg2);border-radius:10px;overflow:hidden}
 .ios-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:11px 16px;background:transparent;border:0;margin:0;
-  text-align:left;color:var(--tx);font-family:var(--font-text);font-size:17px;letter-spacing:-.022em;-webkit-tap-highlight-color:transparent}
+  text-align:left;color:var(--tx);font-family:var(--font-text);font-size:17px;letter-spacing:-0.006em;-webkit-tap-highlight-color:transparent}
 button.ios-row,a.ios-row,.ios-row[onclick]{cursor:pointer}
 button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(--bg4)}
 .ios-row+.ios-row::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
@@ -1869,7 +1890,7 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* text-wrap:pretty — a row subtitle is one or two lines and must not end on a single word. Money's
    first row read "Let's look at it together first — no" / "lecture.", three lines tall to carry one
    orphan, at the top of the screen. */
-.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px;text-wrap:pretty}
+.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px;text-wrap:pretty}
 .ios-row-value{flex:none;font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;max-width:45%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ios-row-chevron{flex:none;color:var(--tx3);margin-right:-4px}
 .ios-row-chevron .ic{width:14px;height:14px;stroke-width:2.6}
@@ -2009,7 +2030,7 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
    a glance beats character. */
 .totry-count{font-family:var(--font-display) !important;font-weight:500 !important;font-size:58px !important;
   line-height:.94 !important;letter-spacing:-.01em !important;color:var(--tx) !important;font-variant-numeric:lining-nums}
-.totry-count-pre,.totry-count-lbl{font-family:var(--font-text);font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
+.totry-count-pre,.totry-count-lbl{font-family:var(--font-text);font-size:15px;letter-spacing:-0.004em;color:var(--tx2)}
 
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
    top edge that tells a person it is a material and not a painted strip. */
@@ -2088,7 +2109,14 @@ input.row-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
    a footnote is a footnote — 13pt, secondary, left. Two of these were centred italics. */
 .card-display{font-family:var(--font-display);font-size:26px;font-weight:500;line-height:1.15;color:var(--tx);margin-bottom:4px}
 .card-sub{font-size:15px;line-height:1.4;color:var(--tx2);margin-bottom:18px}
+/* A FOOTNOTE THAT CARRIES A .tlink NEEDS ROOM FOR ITS TARGET. .tlink builds a 44pt tap area out of
+   padding plus negative margins, so its box reaches ~14px past the line it sits on — and where the next
+   thing was a button (Track's "Measurements card" above "Log this week") the two shared a hit area:
+   the bottom of a sentence could open the measurements sheet instead of saving the week. The paragraph
+   makes room rather than the link shrinking, because the 44pt target is the part worth keeping. */
 .card-note{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin:8px 0 0}
+.card-note:has(.tlink){margin-bottom:16px}
+@supports not selector(:has(*)){ .card-note{margin-bottom:16px} }
 .card-hd+.photo-grid,.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 /* The weekly check-in's six sliders: one label role, one value role, one note size. */
 .wk-sliders{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
@@ -2109,7 +2137,7 @@ input.row-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 /* A disclosure control inside a sheet: a row you tap to open more, with the chevron iOS uses. */
 .disclosure{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
   min-height:44px;padding:0 14px;background:var(--fill2);border-radius:10px;
-  font-size:17px;letter-spacing:-.022em;color:var(--go)}
+  font-size:17px;letter-spacing:-0.006em;color:var(--go)}
 .disclosure::-webkit-details-marker{display:none}
 .disclosure::after{content:'';width:8px;height:8px;border-right:2px solid var(--tx3);border-bottom:2px solid var(--tx3);
   transform:rotate(45deg);margin-right:3px;transition:transform .18s}
@@ -2160,7 +2188,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The Fight's lede: the sentence that answers "am I winning this?", under the large title. It was a
    centred 22px display-face headline at font-weight:700 — a fake bold on a family with one roman
    weight — wrapping across two centred lines; the evidence under it was 12px blue CAPITALS. */
-.fight-lede{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx2);margin:0 0 8px}
+.fight-lede{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx2);margin:0 0 8px}
 .fight-evidence-line{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin:0 0 4px}
 #fight-panel-vices>#fight-evidence{margin-bottom:14px}
 
@@ -2168,10 +2196,10 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    person opens the screen to read is SF Rounded, like every other figure in the app. */
 .vice-day{display:flex;align-items:baseline;gap:7px;margin:1px 0 3px;flex-wrap:wrap}
 .vice-day-num{font-family:var(--font-display);font-size:58px;font-weight:500;line-height:.94;letter-spacing:-.01em;color:var(--tx);font-variant-numeric:lining-nums}
-.vice-day-pre,.vice-day-lbl{font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
+.vice-day-pre,.vice-day-lbl{font-size:15px;letter-spacing:-0.004em;color:var(--tx2)}
 /* Two lines of supporting fact, one size, one grey. They were 12px and 13px in --tx3 — the faintest
    ink in the app on the sentence that says how many days a person has held. */
-.vice-meta{font-size:15px;line-height:1.35;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.vice-meta{font-size:15px;line-height:1.35;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px}
 .vice-meta .clean{color:var(--gr)}
 .vice-meta .hold{color:var(--go)}
 /* A footnote inside a card is 13, the same as .ios-footnote outside one. Never 11, never 11.5. */
@@ -2194,11 +2222,11 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 .vice-rows{margin-top:12px}
 .vice-inrow{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 0;margin:0;
   background:none;border:0;border-top:.5px solid var(--bd);text-align:left;cursor:pointer;
-  font-family:var(--font-text);font-size:17px;letter-spacing:-.022em;color:var(--tx)}
+  font-family:var(--font-text);font-size:17px;letter-spacing:-0.006em;color:var(--tx)}
 .vice-inrow:active{opacity:.5}
 .vice-inrow .body{flex:1;min-width:0}
 .vice-inrow .t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vice-inrow .s{display:block;font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.vice-inrow .s{display:block;font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px}
 .vice-inrow .val{flex:none;max-width:44%;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vice-inrow .chev{flex:none;color:var(--tx3);margin-right:-2px;display:flex}
 .vice-inrow .chev .ic{width:14px;height:14px;stroke-width:2.6}
@@ -2206,7 +2234,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    the other side. */
 .vice-inrow.lead{border-top:0;border-bottom:.5px solid var(--bd);margin-bottom:10px}
 /* The pledge, kept. It was a tint-filled panel inside the card with its count at 11px underneath. */
-.vice-pledge{display:flex;align-items:center;gap:8px;font-size:15px;line-height:1.35;letter-spacing:-.016em;color:var(--gr);margin:0 0 12px}
+.vice-pledge{display:flex;align-items:center;gap:8px;font-size:15px;line-height:1.35;letter-spacing:-0.004em;color:var(--gr);margin:0 0 12px}
 .vice-pledge .ic{flex:none;stroke-width:2.4}
 /* The Add row: the same row, with no hairline above it because it is alone in its card. */
 .vice-inrow.add-row{border-top:0;color:var(--go);gap:12px}
@@ -2232,7 +2260,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The check-in was a tinted panel inside a card — a card inside a card. Inside a card you group with
    space or a hairline. */
 .vice-ask{border-top:.5px solid var(--bd);margin-top:12px;padding-top:12px}
-.vice-ask-q{font-size:17px;line-height:1.4;letter-spacing:-.022em;color:var(--tx);margin-bottom:12px}
+.vice-ask-q{font-size:17px;line-height:1.4;letter-spacing:-0.006em;color:var(--tx);margin-bottom:12px}
 .vice-2up{display:flex;gap:10px}
 .vice-2up>.btn{flex:1;min-width:0;margin:0}
 #v-mode-toggle>.btn{margin:0}
@@ -2354,7 +2382,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The disclosure that holds the target and the TDEE calculator, drawn as the row it is. */
 .nut-target-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:11px 16px;
   background:var(--bg2);border-radius:var(--rm);cursor:pointer;list-style:none;
-  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-.022em;color:var(--tx)}
+  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-0.006em;color:var(--tx)}
 .nut-target-row::-webkit-details-marker{display:none}
 .nut-target-row .ic{color:var(--tx2);flex:none}
 .nut-target-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2363,7 +2391,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The vitamins panel opener: a row, in sentence case, at the row size. */
 .nut-micro-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
   min-height:44px;margin-top:14px;padding:11px 16px;background:var(--bg2);border:0;border-radius:var(--rm);
-  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-.022em;color:var(--tx);cursor:pointer;text-align:left}
+  font-family:var(--font-text);font-size:var(--t-base);letter-spacing:-0.006em;color:var(--tx);cursor:pointer;text-align:left}
 .nut-micro-toggle:active{background:var(--bg4)}
 #micro-panel-arrow{color:var(--tx3);font-size:var(--t-sm);transition:transform .2s}
 /* The diary. Four grouped sections with 28px between them is a screen and a half of air for four
@@ -2417,7 +2445,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    Train intro sat 2px off every other screen's the moment a new person saw one. Its three call sites
    say .page-intro now. (The max-width:36em it also carried never bit — 36em of 15px is 540px and the
    column is 361.) */
-.tr-card-body{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);margin-top:2px}
+.tr-card-body{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2);margin-top:2px}
 .tr-strong{color:var(--tx)}
 .tr-card-btn{margin-top:12px}
 .tr-card-out{margin-top:12px;padding-top:12px;border-top:.5px solid var(--bd)}
@@ -2462,7 +2490,7 @@ a.ios-row{text-decoration:none}
    matching the shape of that selector is what wins it. */
 .tr-searchbar input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){
   flex:1;min-width:0;background:transparent !important;border:0 !important;border-radius:0 !important;
-  box-shadow:none !important;padding:11px 14px;letter-spacing:-.022em}
+  box-shadow:none !important;padding:11px 14px;letter-spacing:-0.006em}
 .tr-searchbar input:focus{box-shadow:none !important}
 /* The submit is a tint WORD inside the capsule, like Mail's — not a filled block and not a grey box.
    .btn's 50pt height and 12px radius are for the full-width button; in here it stretches to the bar. */
@@ -2492,8 +2520,8 @@ a.ios-row{text-decoration:none}
 .ex-result{background:transparent !important;border:0 !important;border-radius:0 !important;padding:11px 16px !important;margin-bottom:0 !important;position:relative;min-height:44px}
 .ex-result+.ex-result::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
 .ex-result:active{background:var(--bg4) !important}
-.ex-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;margin-bottom:1px !important;display:flex;align-items:center;gap:6px}
-.ex-meta{font-size:15px !important;color:var(--tx2) !important;letter-spacing:-.016em !important;font-family:var(--font-text)}
+.ex-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em;margin-bottom:1px !important;display:flex;align-items:center;gap:6px}
+.ex-meta{font-size:15px !important;color:var(--tx2) !important;letter-spacing:-0.004em !important;font-family:var(--font-text)}
 /* 11px caps with no tracking, jammed against the name. Footnote size, real tracking, its own space. */
 .src-tag{font-size:13px !important;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2) !important;font-weight:400}
 .src-tag.tint{color:var(--go) !important}
@@ -2514,7 +2542,7 @@ a.ios-row{text-decoration:none}
 
 /* ── The exercise card, as Fitness draws a workout: opaque, dense, no borders. ─────────────────── */
 .session-exercise{background:var(--bg2) !important;border:0 !important;border-radius:12px !important;padding:12px 14px 10px !important;margin-bottom:10px !important;box-shadow:none !important}
-.se-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;gap:0 !important;margin-bottom:8px !important;min-width:0}
+.se-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em;gap:0 !important;margin-bottom:8px !important;min-width:0}
 .tr-ex-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .se-name button{min-width:34px;min-height:34px;border-radius:8px;color:var(--tx3);background:none;border:0;cursor:pointer;font-family:var(--font-text);font-size:15px;padding:0}
 .se-name button:active{background:var(--bg4)}
@@ -2578,7 +2606,7 @@ a.ios-row{text-decoration:none}
 .workout-history-item+.workout-history-item::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--bd)}
 .workout-history-item:active{background:var(--bg4)}
 .whi-date{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em !important;margin-bottom:2px !important;text-transform:none}
-.whi-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;margin-bottom:1px !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.whi-name{font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em;margin-bottom:1px !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The date above this line is 13. Two secondary lines, stacked, in the same ink, two pixels
    apart is the shape the owner is pointing at — they agree now. */
 .whi-meta{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em;font-variant-numeric:tabular-nums}
@@ -2590,7 +2618,7 @@ a.ios-row{text-decoration:none}
 .pr-card:active{background:var(--bg4)}
 .tr-pr-l{flex:1;min-width:0}
 .tr-pr-r{text-align:right;flex:none}
-.pr-ex{font-size:17px !important;font-weight:600 !important;letter-spacing:-.022em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-ex{font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pr-val{font-family:var(--font-rounded) !important;font-size:17px !important;font-weight:600;color:var(--tx) !important;font-variant-numeric:tabular-nums;line-height:1.29 !important}
 /* 11px, under every row, is the size the owner is pointing at. Footnote size, secondary grey. */
 .pr-date{font-size:13px !important;color:var(--tx2) !important;letter-spacing:-.006em;margin-top:1px !important}
@@ -2601,18 +2629,18 @@ a.ios-row{text-decoration:none}
 .tr-row-del:active{background:var(--bg4)}
 
 /* The per-session sheet. */
-.tr-sheet-sub{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin:2px 0 16px}
+.tr-sheet-sub{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin:2px 0 16px}
 .tr-sheet-scroll{max-height:55vh;overflow-y:auto;background:var(--bg2);border-radius:10px;padding:0 16px}
 .tr-hist-ex{padding:12px 0;border-bottom:.5px solid var(--bd)}
 .tr-hist-ex:last-child{border-bottom:0}
-.tr-hist-ex-name{font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--tx);margin-bottom:4px}
+.tr-hist-ex-name{font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--tx);margin-bottom:4px}
 .tr-hist-sets{display:flex;flex-wrap:wrap;gap:4px 14px}
-.tr-hist-set{font-size:15px;letter-spacing:-.016em;color:var(--tx2);font-variant-numeric:tabular-nums}
+.tr-hist-set{font-size:15px;letter-spacing:-0.004em;color:var(--tx2);font-variant-numeric:tabular-nums}
 .tr-hist-set.done{color:var(--gr)}
 .tr-hist-set b{color:var(--go);font-weight:400}
 /* The note a person wrote mid-set was set in italic on a grey block with a tint bar down its left —
    three decorations for one sentence. It is their own words at body size. */
-.tr-hist-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx);margin-top:6px}
+.tr-hist-note{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx);margin-top:6px}
 /* .btn.quiet sets color with !important, so a bare .tr-delete lost to it and the destructive
    action rendered in the tint — the one colour it must never be. */
 .btn.tr-delete{color:var(--re) !important;margin-top:4px}
@@ -2620,12 +2648,12 @@ a.ios-row{text-decoration:none}
 /* Mobility: a move is a title, the cue that tells you how to do it, and a duration. */
 .tr-mob-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:.5px solid var(--bd)}
 .tr-mob-main{flex:1;min-width:0}
-.tr-mob-name{font-size:17px;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
-.tr-mob-cue{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
+.tr-mob-name{font-size:17px;line-height:1.29;letter-spacing:-0.006em;color:var(--tx)}
+.tr-mob-cue{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px}
 .tr-mob-dur{flex:none;font-size:15px;color:var(--tx2);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px}
 .tr-mob-hd{font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2);margin:16px 0 0}
 .tr-mob-hd.tint{color:var(--go);margin-top:0}
-.tr-mob-lede{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2)}
+.tr-mob-lede{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2)}
 .tr-mob-note{font-size:13px;line-height:1.38;color:var(--go);margin-top:4px}
 .tr-mob-foot{font-size:13px;color:var(--tx2);margin-top:10px}
 .tr-seg{margin-bottom:12px !important}
@@ -2639,14 +2667,14 @@ a.ios-row{text-decoration:none}
 .tr-hdr-row{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
 .tr-hdr-hd{flex:1;padding:0 16px 0 16px !important}
 .tr-hdr-btn{width:auto !important;min-height:32px !important;padding:0 8px !important;font-size:15px !important;flex:none}
-.tr-week{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);padding:0 16px;margin-bottom:10px}
-.tr-trend{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);padding:0 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:6px}
+.tr-week{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px;margin-bottom:10px}
+.tr-trend{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:6px}
 .tr-trend .ic{flex:none;color:var(--go);margin-top:2px}
 
 /* Weekly volume: a label, a bar, a number, a freshness. Four cells, two sizes, tabular figures. */
 .tr-vol-hd{font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px}
 .tr-vol-row{display:flex;align-items:center;gap:10px;padding:7px 0}
-.tr-vol-name{min-width:78px;font-size:15px;letter-spacing:-.016em;color:var(--tx)}
+.tr-vol-name{min-width:78px;font-size:15px;letter-spacing:-0.004em;color:var(--tx)}
 .tr-vol-track{flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
 .tr-vol-fill{height:100%;background:var(--go);transition:width .4s}
 .tr-vol-val{min-width:60px;text-align:right;font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
@@ -2664,8 +2692,8 @@ a.ios-row{text-decoration:none}
 .tr-sets-block{margin-top:16px;padding-top:14px;border-top:.5px solid var(--bd)}
 .tr-sets-row{margin-bottom:9px}
 .tr-sets-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px}
-.tr-sets-name{font-size:15px;letter-spacing:-.016em;color:var(--tx)}
-.tr-sets-tag{font-size:15px;letter-spacing:-.016em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tr-sets-name{font-size:15px;letter-spacing:-0.004em;color:var(--tx)}
+.tr-sets-tag{font-size:15px;letter-spacing:-0.004em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tr-sets-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
 .tr-sets-fill{height:100%}
 .tr-balance{margin-top:10px;padding:11px 13px;background:var(--go-bg);border-radius:10px;font-size:13px;line-height:1.45;color:var(--tx2);display:flex;gap:7px;align-items:flex-start}
@@ -2681,12 +2709,12 @@ a.ios-row{text-decoration:none}
 .tr-unit-seg{margin:0 0 7px !important;width:96px;flex:none}
 .tr-pace{font-size:13px;color:var(--go);margin:-8px 0 16px;min-height:16px}
 .tr-sheet-block{margin-top:20px;padding-top:16px;border-top:.5px solid var(--bd)}
-.tr-sheet-line{font-size:17px;letter-spacing:-.022em;color:var(--tx);margin-bottom:2px}
-.tr-sheet-body{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2)}
+.tr-sheet-line{font-size:17px;letter-spacing:-0.006em;color:var(--tx);margin-bottom:2px}
+.tr-sheet-body{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2)}
 .tr-sheet-go{margin-top:14px}
 .tr-sheet-alt{margin-top:10px}
 .tr-sheet-stats{margin-bottom:4px}
-.tr-setline{display:flex;justify-content:space-between;gap:12px;font-size:15px;letter-spacing:-.016em;color:var(--tx2);padding:2px 0;font-variant-numeric:tabular-nums}
+.tr-setline{display:flex;justify-content:space-between;gap:12px;font-size:15px;letter-spacing:-0.004em;color:var(--tx2);padding:2px 0;font-variant-numeric:tabular-nums}
 .tr-proof-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
 .tr-proof-clip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;background:var(--fill2);border-radius:8px;font-size:15px;color:var(--tx2)}
 .tr-proof-clip .ic{color:var(--go)}
@@ -2715,7 +2743,7 @@ a.ios-row{text-decoration:none}
    verse changed shape with the door it came through. */
 .card-body.flush{margin-bottom:0}
 /* A sentence that is the thing a person reads, inside a card: body size, label ink. */
-.card-text{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx)}
+.card-text{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx)}
 
 /* The still centre: the day's word and one thing to do with it, before any menu. */
 #soul-still>.card,#faith-door>.card{margin-bottom:28px}
@@ -2778,7 +2806,7 @@ a.ios-row{text-decoration:none}
 .sac-card>.btn.quiet{margin-top:4px}
 /* A switch on the leading label's row, the way Settings draws one. */
 .card-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:10px;
-  font-size:17px;letter-spacing:-.022em;color:var(--tx);cursor:pointer}
+  font-size:17px;letter-spacing:-0.006em;color:var(--tx);cursor:pointer}
 .modal .card-toggle{margin:0 0 12px}
 
 /* READ. The book picker is a field at field size; a 13px <select> is what iOS zooms the page for. */
@@ -2794,7 +2822,7 @@ a.ios-row{text-decoration:none}
 .rd-v-saved+.rd-v::before,.rd-v-saved::before{left:10px;right:10px}
 .rd-v:first-child{padding-top:4px}
 .rd-n{font-family:var(--font-rounded);font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:4px;font-variant-numeric:tabular-nums}
-.rd-src{font-size:15px;line-height:1.5;letter-spacing:-.016em;color:var(--tx2);margin-bottom:6px}
+.rd-src{font-size:15px;line-height:1.5;letter-spacing:-0.004em;color:var(--tx2);margin-bottom:6px}
 .rd-src.ar{font-size:22px;line-height:1.9;color:var(--tx);text-align:right}
 .rd-src.pli{font-family:var(--font-serif);font-size:15px}
 .rd-src.dev{font-size:17px;line-height:1.7;color:var(--tx)}
@@ -2839,7 +2867,7 @@ a.ios-row{text-decoration:none}
    rest, which nobody can name and everybody feels. */
 #home-hero.home-hero{background:transparent !important;padding:0 !important;margin:0 0 28px !important;display:block !important;border-radius:0 !important}
 #home-hero .hero-inner{padding:0 !important;display:block}
-.hero-sub{font-size:17px;color:var(--tx2);margin-top:6px;line-height:1.35;max-width:none;letter-spacing:-.022em}
+.hero-sub{font-size:17px;color:var(--tx2);margin-top:6px;line-height:1.35;max-width:none;letter-spacing:-0.006em}
 /* The identity line was 17px ITALIC — a caption in italics is the loudest of the small-text tells.
    It is the subheadline role: 15pt, upright, under the sentence it belongs to.
    AND IT IS A CONTROL, NOT A CAPTION. #hero-identity opens Settings, and it was drawn as a second
@@ -2850,7 +2878,7 @@ a.ios-row{text-decoration:none}
    link label, and the chevron is what says it goes somewhere. The size comes off the scale rather
    than a literal, which is all the !important was standing in for. */
 .hero-identity{margin-top:10px !important;padding:0 !important;min-height:44px;align-items:center;flex-wrap:nowrap}
-.hero-identity-text{font-size:var(--t-sm);font-style:normal;color:var(--tx2);line-height:1.33;margin-top:0;letter-spacing:-.016em;flex:0 1 auto}
+.hero-identity-text{font-size:var(--t-sm);font-style:normal;color:var(--tx2);line-height:1.33;margin-top:0;letter-spacing:-0.004em;flex:0 1 auto}
 .hero-identity .ios-row-chevron{margin:0}
 .hero-journey{font-size:13px;color:var(--go);line-height:1.38;margin-top:8px;padding:5px 0;cursor:pointer;letter-spacing:-.006em}
 .hero-action{margin-top:18px !important;border-radius:12px !important}
@@ -2876,7 +2904,7 @@ a.ios-row{text-decoration:none}
 .home-card{margin-bottom:14px}
 .home-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
 .card-say{font-family:var(--font-display);font-size:22px;font-weight:500;font-style:normal;color:var(--tx);line-height:1.26;letter-spacing:0;margin-bottom:8px}
-.card-body{font-size:15px;color:var(--tx2);line-height:1.45;letter-spacing:-.016em;margin-bottom:12px}
+.card-body{font-size:15px;color:var(--tx2);line-height:1.45;letter-spacing:-0.004em;margin-bottom:12px}
 .card-foot{font-size:13px;color:var(--tx2);line-height:1.38;letter-spacing:-.006em;margin-top:8px}
 .card-foot.tint{color:var(--go)}
 .card-x{background:none;border:0;color:var(--tx3);font-size:20px;line-height:1;cursor:pointer;flex:none;padding:12px;margin:-12px -12px -12px 0}
@@ -2897,7 +2925,7 @@ a.ios-row{text-decoration:none}
    gets the four points it was missing, in the direction that hangs down rather than up over the tile
    above it. Measured on all three: Today's "Add or edit", the journal's "New entry", the coach. */
 .hd-action{background:none;border:0;cursor:pointer;flex:none;font-family:var(--font-text);font-size:15px;font-weight:400;
-  letter-spacing:-.016em;text-transform:none;color:var(--go);padding:9px 0 17px;margin:-9px 0 -17px}
+  letter-spacing:-0.004em;text-transform:none;color:var(--go);padding:9px 0 17px;margin:-9px 0 -17px}
 .hd-action:active{opacity:.4}
 
 /* The identity strip: a centred tint panel with an 11px gold caps label and an italic line, now an
@@ -2905,9 +2933,9 @@ a.ios-row{text-decoration:none}
 .identity-strip{text-align:left !important;padding:16px !important}
 .identity-strip:active{transform:none}
 .id-label{font-size:13px !important;color:var(--tx2) !important;opacity:1 !important;margin-bottom:6px !important}
-.id-text{font-size:17px !important;font-style:normal !important;line-height:1.35;letter-spacing:-.022em}
+.id-text{font-size:17px !important;font-style:normal !important;line-height:1.35;letter-spacing:-0.006em}
 .id-text em{color:var(--tx) !important;font-weight:500}
-.id-empty{font-size:17px !important;color:var(--tx2) !important;letter-spacing:-.022em}
+.id-empty{font-size:17px !important;color:var(--tx2) !important;letter-spacing:-0.006em}
 
 /* The two streaks, as the stat tiles the rest of the app uses. They were tinted boxes with coloured
    borders, a coloured number and an italic caption — a second visual language for two numbers. */
@@ -3008,7 +3036,7 @@ a.ios-row{text-decoration:none}
    Centred, it broke "What are you feeling, / Alfred?" around a lone name, over a centred sub that
    left "there." on a line of its own. */
 .feel-greeting{text-align:left;font-size:34px;line-height:1.1;margin:0}
-.feel-sub{text-align:left;font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin:6px 0 18px}
+.feel-sub{text-align:left;font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx2);margin:6px 0 18px}
 /* Two-line titles and captions break into even halves instead of leaving one word on a line of its own
    ("…take it from / there.", "frozen, staring at / it"). A widow is the smallest of the small-text tells. */
 .feel-greeting,.comp-greeting{text-wrap:balance}
@@ -3029,10 +3057,10 @@ a.ios-row{text-decoration:none}
   padding:10px 12px 11px;border:0;border-radius:12px;background:var(--cell,var(--bg2));text-align:left;font-family:var(--font-text);min-height:44px}
 .feel-chip:active{transform:scale(.97);background:var(--bg4)}
 .feel-chip-emoji{font-size:19px;line-height:22px;text-align:center}
-.feel-chip-label{font-size:17px;font-weight:600;line-height:22px;letter-spacing:-.022em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feel-chip-label{font-size:17px;font-weight:600;line-height:22px;letter-spacing:-0.006em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* balance, not pretty: pretty only protects the LAST line, which is why "putting something / off" —
    a phrasal verb split across two lines — survived it. balance evens the two halves instead. */
-.feel-chip-sub{grid-column:2;font-size:15px;line-height:1.3;letter-spacing:-.016em;color:var(--tx2);text-wrap:balance}
+.feel-chip-sub{grid-column:2;font-size:15px;line-height:1.3;letter-spacing:-0.004em;color:var(--tx2);text-wrap:balance}
 .btn.feel-skip{margin-top:8px;align-self:stretch;padding:0}
 
 /* ── THE COMPANION ──────────────────────────────────────────────────────────────────────────────── */
@@ -3045,7 +3073,7 @@ a.ios-row{text-decoration:none}
 .comp-dismiss::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--fill);z-index:-1}
 .comp-dismiss:active{opacity:.5}
 .comp-greeting{font-size:34px !important;line-height:1.1 !important;margin:6px 44px 0 0 !important;white-space:pre-line}
-.comp-sub{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2);margin:6px 0 20px;max-width:none}
+.comp-sub{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx2);margin:6px 0 20px;max-width:none}
 /* The two answers, as a grouped list: the face is content and stays, in the row-icon slot so the
    separator insets past it exactly as it does past an icon tile. */
 .comp-choices{display:block;gap:0;margin:0 0 6px;background:var(--cell) !important}
@@ -3062,12 +3090,12 @@ a.ios-row{text-decoration:none}
 .comp-meet-head{margin:4px 0 12px}
 .comp-meet-title{font-size:34px !important;line-height:1.1}
 /* The mechanism was 11px blue capitals under the title. It is the line under a title: a subheadline. */
-.comp-meet-mech{font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-.016em;text-transform:none;color:var(--tx2);margin-top:4px}
+.comp-meet-mech{font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-0.004em;text-transform:none;color:var(--tx2);margin-top:4px}
 .comp-meet-mech:empty{display:none}
 .comp-conversation{gap:8px;padding:2px 0 10px}
 /* A quiet way onward, as a control a thumb can land on: tint, 15pt, 44pt tall, left edge. */
 .comp-link{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:2px 0;padding:6px 0;background:none;border:0;cursor:pointer;
-  font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--go);text-align:left}
+  font-family:var(--font-text);font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--go);text-align:left}
 .comp-link:active{opacity:.5}
 .comp-link .ic{flex:none}
 .comp-link>.ic:last-child{width:12px;height:12px;stroke-width:2.6;color:var(--tx3)}
@@ -3079,7 +3107,7 @@ a.ios-row{text-decoration:none}
    Three chats drew three bubbles: the coach's was a bordered rounded rectangle at 17px on a 1.65
    line-height with a hardcoded black on the tint, the PT's the same, and the Companion's a softer one
    at 16px. They are one component — the two iMessage bubbles, 17pt, tails toward the speaker. */
-.msg,.comp-msg{font-family:var(--font-text);font-size:17px;line-height:1.35;letter-spacing:-.022em;font-weight:400;
+.msg,.comp-msg{font-family:var(--font-text);font-size:17px;line-height:1.35;letter-spacing:-0.006em;font-weight:400;
   max-width:80%;padding:8px 13px 9px !important;border:0 !important}
 .msg.coach,.comp-msg-them{background:var(--fill) !important;color:var(--tx) !important;border-radius:18px 18px 18px 4px !important}
 .msg.user,.comp-msg-me{background:var(--go-fill) !important;color:var(--on-tint) !important;border-radius:18px 18px 4px 18px !important;font-weight:400}
@@ -3142,9 +3170,9 @@ a.crisis-row{display:flex;margin:0;line-height:normal}
 a.crisis-row:active{opacity:.5}
 .crisis-row+.crisis-row{border-top:.5px solid var(--bd)}
 .crisis-who{flex:1;min-width:0}
-.crisis-name{display:block;font-size:17px;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
-.crisis-where{display:block;font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:1px}
-.crisis-num{flex:none;font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--go);font-variant-numeric:tabular-nums;white-space:nowrap}
+.crisis-name{display:block;font-size:17px;line-height:1.29;letter-spacing:-0.006em;color:var(--tx)}
+.crisis-where{display:block;font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px}
+.crisis-num{flex:none;font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--go);font-variant-numeric:tabular-nums;white-space:nowrap}
 /* A row that names several numbers (000 · 911 · 999) cannot be one call, so each number is its own. */
 .crisis-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:2px}
 a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;margin:0;line-height:normal;text-decoration:none}
@@ -3156,12 +3184,12 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
    inside it, an italic line, and its alternatives as a stack of grey slabs with left-aligned text the
    flex button could not honour. They rise from the bottom like every sheet; the title is the sheet
    title; the message is body text; the alternatives are a grouped list; the way out is last. */
-.moment-body{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx);margin:0 0 16px}
+.moment-body{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx);margin:0 0 16px}
 .moment-body b{font-weight:600}
-.moment-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);margin:0 0 14px}
+.moment-note{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2);margin:0 0 14px}
 .moment-note b{font-weight:600;color:var(--tx)}
 .modal .card.moment-plan{padding:12px 14px 13px;margin:0 0 16px;border:0}
-.moment-plan-text{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx)}
+.moment-plan-text{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx)}
 .moment-list .ios-section{margin:12px 0 6px}
 .moment-field{min-height:88px;line-height:1.4;margin-bottom:14px}
 .moment-field.tall{min-height:130px}
@@ -3220,7 +3248,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 
 /* A label for the field under it, when the label is a sentence stem rather than a section name —
    "I am becoming a person who…" was a 12px line in the tint, which read as a link. */
-.field-label{display:block;font-size:15px;line-height:1.35;letter-spacing:-.016em;color:var(--tx2);margin:0 0 6px}
+.field-label{display:block;font-size:15px;line-height:1.35;letter-spacing:-0.004em;color:var(--tx2);margin:0 0 6px}
 .field-tall{height:96px;resize:none;margin:0 0 10px}
 /* A button that sits on one row beside a field — Add, Add promise, Save letter. .btn is a full-width
    50pt button; each of these was `width:auto;white-space:nowrap;padding:10px 14px` written at the call. */
@@ -3237,7 +3265,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 
 /* SHARED THREADS: one grouped list, one cell per tradition, the person's own path first. */
 .thread-row{align-items:flex-start;padding-top:12px;padding-bottom:14px}
-.thread-path{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;letter-spacing:-.016em;color:var(--tx2);margin-bottom:5px}
+.thread-path{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;letter-spacing:-0.004em;color:var(--tx2);margin-bottom:5px}
 .thread-path.mine b{font-weight:600;color:var(--tx)}
 .thread-row .passage-ref{margin-top:6px}
 
@@ -3285,7 +3313,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 /* YOUR WHY: a board in the first person. The reason is the hero, set in our own face; every other
    section is a card with its title in that face and the sentence under it in the lede role. */
 .why-text{white-space:pre-wrap;margin:2px 0 14px}
-.why-text.is-empty{font-family:var(--font-text);font-size:15px;line-height:1.45;letter-spacing:-.016em;color:var(--tx2)}
+.why-text.is-empty{font-family:var(--font-text);font-size:15px;line-height:1.45;letter-spacing:-0.004em;color:var(--tx2)}
 .values-list .ios-row.first .ios-row-title{font-weight:600}
 .values-why{margin:0}
 #values-body .card-note+.btn{margin-top:14px}
@@ -3293,7 +3321,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 .due-ok{color:var(--gr)}
 .promise-due{border-top:.5px solid var(--bd);padding:12px 0 14px}
 .promise-due+.promise-due{padding-top:12px}
-.promise-text{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx);margin-bottom:10px}
+.promise-text{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx);margin-bottom:10px}
 .letter-arrived{border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd);padding:14px 0 16px;margin-bottom:14px}
 .letter-arrived .card-say{white-space:pre-wrap;margin:6px 0 12px}
 
@@ -3318,12 +3346,12 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 /* NEW: body text inside a card. docs/DESIGN.md's Body role is 17 regular in the label colour; .card-body
    is the 15 secondary sentence that SUPPORTS something, and "your day ahead" is not supporting anything
    — it is the whole card. */
-.card-text{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx)}
+.card-text{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx)}
 
 /* Affirmation and identity: one card, left, upright, a hairline between the two thoughts. */
 .affirm-card{text-align:left}
 .affirm-becoming{border-top:.5px solid var(--bd);margin-top:14px;padding-top:12px}
-.affirm-identity{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx2)}
+.affirm-identity{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx2)}
 .affirm-identity em{font-style:normal;font-weight:600;color:var(--tx)}
 .affirm-identity .affirm-set{color:var(--go)}
 .affirm-becoming .card-foot{margin-top:6px}
@@ -3351,7 +3379,7 @@ a.crisis-num{display:inline-flex;align-items:center;min-height:44px;padding:0;ma
 /* What they actually did today, as capsules that carry an icon rather than an emoji. */
 .evidence-list{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
 .evidence-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:var(--fill2);
-  font-size:15px;line-height:1.3;letter-spacing:-.016em;color:var(--tx);white-space:nowrap}
+  font-size:15px;line-height:1.3;letter-spacing:-0.004em;color:var(--tx);white-space:nowrap}
 .evidence-chip .ic{color:var(--go);flex:none}
 
 /* Habits ticked in the evening: a list, with the circle Reminders uses for "done". */
@@ -3401,10 +3429,10 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
    made the rows read as a form. */
 .checkin-strip .ci-header{align-items:baseline;margin-bottom:12px}
 .checkin-strip .card-hd{margin:0}
-.checkin-strip .ci-skip{flex:none;margin:-12px -8px -12px 0;padding:12px 8px;color:var(--go);font-size:15px;letter-spacing:-.016em}
+.checkin-strip .ci-skip{flex:none;margin:-12px -8px -12px 0;padding:12px 8px;color:var(--go);font-size:15px;letter-spacing:-0.004em}
 .checkin-strip .ci-row-v2{margin-bottom:12px}
 .ci-label-row .ci-icon{width:22px;display:flex;align-items:center;color:var(--tx2)}
-.ci-label-row .ci-label{font-size:15px;letter-spacing:-.016em;color:var(--tx)}
+.ci-label-row .ci-label{font-size:15px;letter-spacing:-0.004em;color:var(--tx)}
 .ci-label-row .ci-val{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
 .ci-dot{height:38px;margin:0;border:0;border-radius:8px;background:var(--fill2);color:var(--tx2);font-size:15px;font-variant-numeric:tabular-nums}
 .ci-dot:hover{color:var(--tx2)}
@@ -3415,7 +3443,7 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 /* The end of a ritual: a one-line confirmation, centred like an empty state, in the ritual's face. */
 .ritual-done{text-align:center;padding:32px 8px 4px}
 .ritual-done-title{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-bottom:10px}
-.ritual-done-line{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx2);max-width:320px;margin:0 auto}
+.ritual-done-line{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx2);max-width:320px;margin:0 auto}
 .ritual-done .btn{margin-top:22px}
 /* The name, signed in its own face and gold — the one place the ritual says it. */
 .ritual-brand{font-family:var(--font-brand);font-style:italic;font-size:1.12em;color:var(--brand)}
@@ -3429,7 +3457,7 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 #examen-card .btn.quiet{margin:2px 0 -8px}
 .examen-done{margin:8px 0 0}
 .reach-prayer-hd{margin-top:16px !important;padding-top:14px;border-top:.5px solid var(--bd)}
-.reach-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--go);margin-bottom:6px}
+.reach-note{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--go);margin-bottom:6px}
 #call-prompt .card-body{margin:8px 0 0}
 #call-prompt .btn-row{margin-top:14px}
 #call-prompt .btn-row+.btn-row{margin-top:0}
@@ -3464,7 +3492,7 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 .examen-entry+.examen-entry{margin-top:16px}
 /* A person's own words read back to them: body size, their line breaks kept, and selectable (.selectable
    is in the user-select exemption) so they can copy what they wrote. */
-.examen-entry .selectable,.je-sheet-body .selectable{font-size:17px;line-height:1.41;letter-spacing:-.022em;color:var(--tx);white-space:pre-wrap}
+.examen-entry .selectable,.je-sheet-body .selectable{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx);white-space:pre-wrap}
 .je-sheet-body .selectable{margin-bottom:14px}
 
 /* ── Reflect's other three panels: Journal, Goals, Weekly ─────────────────────────────────────── */
@@ -3476,7 +3504,7 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 .j-entry .je-mood{font-size:20px;line-height:1;margin:0;display:flex;align-items:center;color:var(--go)}
 .j-entry .je-mood .ic{width:18px;height:18px}
 .j-entry .je-date{font-family:var(--font-text);font-size:13px;letter-spacing:-.006em;color:var(--tx2);margin:0}
-.j-entry .je-prev{font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx);-webkit-line-clamp:3}
+.j-entry .je-prev{font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx);-webkit-line-clamp:3}
 .je-meta{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:6px}
 .je-meta .good{color:var(--gr)}
 .je-sheet-mood{font-size:34px;line-height:1;margin:6px 0 12px;color:var(--go)}
@@ -3496,7 +3524,7 @@ input.list-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
 .goals-moved{margin-top:22px}
 
 /* Weekly: the conscience questions as a card of hairline-separated lines, at body size in the label ink. */
-.conscience-card .conscience-q{padding:11px 0;border-bottom:.5px solid var(--bd);font-size:17px;line-height:1.35;letter-spacing:-.022em;color:var(--tx)}
+.conscience-card .conscience-q{padding:11px 0;border-bottom:.5px solid var(--bd);font-size:17px;line-height:1.35;letter-spacing:-0.006em;color:var(--tx)}
 .conscience-card .conscience-q:first-child{padding-top:0}
 .conscience-card .conscience-q:last-child{border-bottom:0;padding-bottom:0}
 .review-list .ios-row-title{white-space:normal}
@@ -3561,7 +3589,7 @@ select.row-field:focus{box-shadow:none !important}
 #settings-height:placeholder-shown+.row-unit{display:none}
 /* "10 Apr 2026 (custom)" is a whole value; the default 45% cut it to "(cust…". */
 #settings-start-date{max-width:62%}
-.row-unit{flex:none;margin-left:-6px;font-size:17px;letter-spacing:-.022em;color:var(--tx2)}
+.row-unit{flex:none;margin-left:-6px;font-size:17px;letter-spacing:-0.006em;color:var(--tx2)}
 /* A time on a row is iOS's compact date picker: the value in a grey capsule, not bare text. */
 input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([type="range"]){width:auto;min-width:0;
   padding:5px 10px !important;border-radius:8px !important;background:var(--fill) !important;color:var(--tx) !important;
@@ -3593,13 +3621,13 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
    between, and the whole number a 44pt target a shaking hand can land on. The ground is --crisis-bg
    — the red wash on dark, the opaque cell on light, for the contrast reason written at that token. */
 .crisis-card{background:var(--crisis-bg);border:0;border-radius:var(--r);padding:13px 16px;margin:0 0 28px}
-.crisis-card .crisis-title{display:flex;align-items:center;gap:8px;margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-.022em;line-height:1.3;color:var(--re)}
+.crisis-card .crisis-title{display:flex;align-items:center;gap:8px;margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-0.006em;line-height:1.3;color:var(--re)}
 .crisis-card .crisis-title .ic{flex:none;width:18px;height:18px;stroke-width:2.2}
 .crisis-card .crisis-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0;
-  font-size:17px;line-height:1.3;letter-spacing:-.022em;color:var(--tx)}
+  font-size:17px;line-height:1.3;letter-spacing:-0.006em;color:var(--tx)}
 .crisis-card .crisis-line+.crisis-line{border-top:.5px solid var(--re-bd)}
 .crisis-name{flex:1 1 auto;min-width:0}
-.crisis-how{display:block;margin-top:1px;font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
+.crisis-how{display:block;margin-top:1px;font-size:15px;letter-spacing:-0.004em;color:var(--tx2)}
 .crisis-card .crisis-line a{flex:none;display:flex;align-items:center;min-height:44px;margin:0;padding:0 0 0 14px;line-height:1.3;
   font-weight:500;color:var(--go);white-space:nowrap;font-variant-numeric:tabular-nums;text-decoration:none}
 .crisis-card .crisis-line a.crisis-wide{flex:1 1 auto;gap:8px;padding:0;font-weight:400}
@@ -3639,7 +3667,7 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 /* It keeps its own scroll, so Close stays on screen under a document this long — as it always did. */
 .legal{max-height:60vh;overflow-y:auto;font-size:15px;line-height:1.47;letter-spacing:-.01em;color:var(--tx2)}
 .modal .legal p{font-size:15px;line-height:1.47;margin:0 0 12px}
-.legal h4{font-family:var(--font-text);font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-.022em;color:var(--tx);margin:22px 0 4px}
+.legal h4{font-family:var(--font-text);font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-0.006em;color:var(--tx);margin:22px 0 4px}
 .legal h4:first-child{margin-top:0}
 .legal strong{font-weight:600;color:var(--tx)}
 .legal ul{margin:0 0 12px;padding-left:18px}
@@ -3669,13 +3697,13 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .search-results{max-height:55vh;overflow-y:auto}
 .search-hit{align-items:flex-start}
 .search-hit-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.search-hit-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px;font-weight:600;letter-spacing:-.022em;color:var(--tx)}
-.search-hit-date{flex:none;font-size:15px;letter-spacing:-.016em;color:var(--tx2);font-variant-numeric:tabular-nums}
-.search-hit-text{display:block;margin-top:2px;font-size:15px;line-height:1.38;letter-spacing:-.016em;color:var(--tx2)}
+.search-hit-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--tx)}
+.search-hit-date{flex:none;font-size:15px;letter-spacing:-0.004em;color:var(--tx2);font-variant-numeric:tabular-nums}
+.search-hit-text{display:block;margin-top:2px;font-size:15px;line-height:1.38;letter-spacing:-0.004em;color:var(--tx2)}
 .search-hit-text.verse{font-family:var(--font-serif);letter-spacing:0}
 .search-results mark{background:var(--go-bg);color:var(--tx);border-radius:3px;padding:0 1px}
 .synth-stats{display:block;margin-top:4px}
-.modal .synth-text{font-size:17px;line-height:1.5;letter-spacing:-.022em;color:var(--tx);margin-bottom:16px}
+.modal .synth-text{font-size:17px;line-height:1.5;letter-spacing:-0.006em;color:var(--tx);margin-bottom:16px}
 
 /* ═══ FIRST RUN — the sign-in screen and the twelve onboarding steps ══════════════════════════════
    The first screens anyone sees, so the brand is felt most here and the small text had the least
@@ -3716,8 +3744,8 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .ob-features{display:flex;flex-direction:column;gap:20px;margin:6px 0 32px}
 .ob-feature{display:flex;align-items:flex-start;gap:16px}
 .ob-feature>.ic{flex:none;width:30px;height:30px;color:var(--go);stroke-width:1.7;margin-top:1px}
-.ob-feature-t{font-size:17px;font-weight:600;line-height:1.29;letter-spacing:-.022em;color:var(--tx)}
-.ob-feature-s{font-size:15px;line-height:1.33;letter-spacing:-.016em;color:var(--tx2);margin-top:2px}
+.ob-feature-t{font-size:17px;font-weight:600;line-height:1.29;letter-spacing:-0.006em;color:var(--tx)}
+.ob-feature-s{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:2px}
 
 /* A section header over a group of capsules starts where the capsules start, not at a list's inset. */
 .ios-header.ob-hd{padding:0 0 8px;margin-top:8px}
@@ -3771,13 +3799,13 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .auth-brand .ob-by{margin:6px 0 0}
 .auth-step{width:100%;max-width:380px;margin-bottom:auto;text-align:center}
 .auth-title{font-family:var(--font-display);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:0;color:var(--tx);margin-bottom:8px}
-.auth-sub{font-size:17px;line-height:1.38;letter-spacing:-.022em;color:var(--tx2);margin-bottom:24px}
+.auth-sub{font-size:17px;line-height:1.38;letter-spacing:-0.006em;color:var(--tx2);margin-bottom:24px}
 /* The address the code went to. It was in the tint, which says "tap me" about something that is not a link. */
 .auth-email{color:var(--tx);font-weight:600}
 .auth-step input{margin-bottom:12px}
 .auth-step .btn+.btn{margin-top:10px}
 .auth-foot{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin-top:10px}
-.auth-note{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx);margin-top:12px}
+.auth-note{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx);margin-top:12px}
 .auth-or{display:flex;align-items:center;gap:12px;margin:26px 0 16px;font-size:13px;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2)}
 .auth-or::before,.auth-or::after{content:'';flex:1;height:.5px;background:var(--bd)}
 .auth-quiet{display:flex;flex-direction:column;margin-top:6px}
@@ -3790,11 +3818,11 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
    the base field rule's specificity (its :not() arguments count), or its 17px !important wins. */
 #auth-otp-input{font-family:var(--font-rounded) !important;font-size:28px !important;font-weight:600;text-align:center;
   letter-spacing:.3em !important;font-variant-numeric:tabular-nums;padding:12px !important}
-#auth-otp-input:placeholder-shown{font-family:var(--font-text) !important;font-size:17px !important;font-weight:400;letter-spacing:-.022em !important;padding:19px 12px !important}
+#auth-otp-input:placeholder-shown{font-family:var(--font-text) !important;font-size:17px !important;font-weight:400;letter-spacing:-0.006em !important;padding:19px 12px !important}
 /* The helplines, as rows: the service, the country it answers in, and the number in the tint
    because it dials. Each is a 44pt target; the strip they replace was 15px text on a 30px line. */
 .auth-help{text-align:left;margin-top:36px}
-.auth-help-lead{font-size:15px;line-height:1.38;letter-spacing:-.016em;color:var(--tx2);padding:0 16px 8px}
+.auth-help-lead{font-size:15px;line-height:1.38;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px 8px}
 .auth-help .ios-row-value{color:var(--go)}
 /* A helpline row is a tel: link, and every tel: link gets the inline 30px treatment for numbers that
    sit inside a sentence (:1252). A row is not in a sentence: it keeps the row's own box. */
@@ -3818,7 +3846,7 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 .fr-heat{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
 .fr-heat i{aspect-ratio:1;border-radius:3px;background:var(--gr)}
 .fr-heat .l0{background:var(--fill)}.fr-heat .l1{opacity:.3}.fr-heat .l2{opacity:.5}.fr-heat .l3{opacity:.75}
-.fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-.016em;color:var(--tx2);padding:0 16px 4px}
+.fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px 4px}
 .fr-sheet-list{margin-bottom:20px}
 
 /* ═══ SHARED ROLES, DECIDED ONCE ═════════════════════════════════════════════════════════════════
@@ -5492,7 +5520,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        row with it rather than in a column of its own that pushed every line 31px inward. -->
   <div class="card" id="fuel-plan-card">
     <div class="card-hd" style="display:flex;align-items:center;gap:8px"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2c-1.7 1-3 3-3 6v4h3"/><path d="M18 2v20"/></svg>Your fuel plan</div>
-    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4;letter-spacing:-.016em;margin-bottom:12px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
+    <div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4;letter-spacing:-0.004em;margin-bottom:12px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
     <div id="fuel-plan-summary"></div>
     <button class="btn" id="fuel-plan-btn" onclick="openFuelPlan()">Build my fuel plan</button>
   </div>
@@ -5539,7 +5567,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <details style="margin-bottom:10px">
       <!-- Measured 329x18: a control eighteen pixels tall, under the 24pt floor the rest of the app
            holds. Padding only — nothing around it moves, and the text stays where it was. -->
-      <summary style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--go);cursor:pointer;padding:9px 0;min-height:34px;display:flex;align-items:center">How to export from MyFitnessPal</summary>
+      <summary style="font-size:var(--t-sm);letter-spacing:-0.004em;color:var(--go);cursor:pointer;padding:9px 0;min-height:34px;display:flex;align-items:center">How to export from MyFitnessPal</summary>
       <div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-top:6px">On a computer, sign in at myfitnesspal.com → your username → <em>Settings</em> → <em>Export Data / Reports</em> → request a CSV of your diary. They email you a file. Import it below.</div>
     </details>
     <button class="btn" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>

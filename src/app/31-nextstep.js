@@ -628,7 +628,7 @@ function renderHomeHabits(){
     // two different colours. The name is a plain row title; both sub-lines are the one 13pt footnote
     // size, and the tap is advertised the way iOS advertises one \u2014 the anchor line in the tint.
     nameCell.innerHTML =
-      '<div style="font-size:17px;letter-spacing:-.022em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + _escFew(h.n) + '</div>' +
+      '<div style="font-size:17px;letter-spacing:-0.006em;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + _escFew(h.n) + '</div>' +
       (_anc
         ? '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
         : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:13px;color:var(--go);margin-top:1px">Anchor it to a cue</div>') : '')) +

@@ -72,13 +72,22 @@ The owner, seeing the Apple pass: *"even for certain buttons it doesn't need to 
 numbers"*, and *"we can keep it going with ios style whilst still maintaining a to try design language"*.
 Three things carry the identity; everything else is Apple's system, unmodified.
 
+0. **The text face is OURS.** `--font-text` is **Outfit** — the app's own face, one variable file with
+   real weights 300–700, with the system stack behind it as a fallback. It carries rows, labels, buttons,
+   values, the tab bar: everything San Francisco used to. The owner, on the Apple-native build: *"the
+   fonts look too much apple coded and not to try design language ... something about it feels like u
+   ripped too much"* — with SF on ~95% of the visible text, the app read as Apple whatever the headlines
+   said. **Tracking moved with the face**: SF is drawn tight and tracked tighter (-0.022em at body size);
+   Outfit has wider counters and reads cramped at that, so the 104 declarations carrying SF's numbers are
+   -0.006em / -0.004em now. Capitals keep their positive .045em, which is a separate decision.
 1. **The display face** — headlines, greetings, ritual and sheet titles. `--font-display`. Never named at
    a call site.
 2. **THE NUMBER THAT IS EARNED.** A day count, a score, a streak — the numbers a person BUILT — are set
    in the ToTry face at hero size (`.totry-count`, and `.vice-day-num` / `.score-big` / `.streak-num`).
-   Numbers a person READS — calories, grams, kilos, money, a breath timer — stay **SF Rounded**, where
-   legibility at a glance beats character. If you cannot say whether a number was earned or measured, it
-   is measured.
+   Numbers a person READS — calories, grams, kilos, money, a breath timer — are **Outfit with tabular
+   figures** (`--font-rounded`). They were SF Rounded, Fitness' number face, which was the last place the
+   system face still spoke once the interface became ours. If you cannot say whether a number was earned
+   or measured, it is measured.
    **Size it for the face**: Cormorant's x-height is smaller than San Francisco's, so a number set in it
    needs roughly a fifth more size to hold the same weight — 58 where SF would be 40, 42 where SF was 34.
    Sizing a serif like a sans is how a brand face ends up looking timid.

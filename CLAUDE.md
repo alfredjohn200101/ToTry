@@ -54,10 +54,14 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
   explicit choice). Default appearance is **System**; `applyTheme()` only sets/removes `data-theme`.
   The tint is iOS blue in ONE token, `--go` (the name is historical). Native side follows too:
   `ViewController.applyAppearance()`, the privacy cover, and a light/dark launch image.
-- **`--font-display` IS the ToTry face** (Cormorant Garamond): every headline role speaks in it, so the
-  app sounds like itself. **San Francisco** (`--font-text`) for everything a person OPERATES, **New
-  York** (`--font-serif`) for scripture, **SF Rounded** for numbers. `font-synthesis` is off globally —
-  the brand face has ONE roman weight and a `700` would otherwise render as a fake bold.
+- **BOTH FACES ARE THE APP'S OWN.** `--font-text` is **Outfit** (one variable woff2, real weights
+  300–700) — rows, labels, buttons, values, the tab bar, and the data numbers (`--font-rounded`), with
+  the system stack only as a fallback. `--font-display` is **Cormorant Garamond** — headlines and the
+  counts a person EARNS. **New York** (`--font-serif`) stays for scripture. San Francisco renders
+  nowhere: the owner's words were *"the fonts look too much apple coded ... u ripped too much"*, and with
+  SF on ~95% of visible text the app read as Apple whatever the headlines said. `font-synthesis` is off
+  globally, so every weight must be real — which is why Outfit's variable file matters. Tracking moved
+  with the face (SF's -0.022em → -0.006em; caps keep +.045em).
 - **Liquid Glass is the NAVIGATION layer only.** `.hdr` and `.nav` are absolutely positioned over a
   full-height scroller (they were flex siblings of it, so nothing ever passed behind them and the blur
   had nothing to refract); the tab bar is a floating capsule. `--glass`/`--glass-2`/`--glass-line`/

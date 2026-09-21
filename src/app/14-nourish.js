@@ -481,7 +481,7 @@ function openMoreWaysToLog(){
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">More ways to log</h3>' +
-    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-0.004em">' +
       'Whatever gets the meal down. None of them is better than the others.</p>' +
     iosList(ways.map(w => iosRow({ icon: w[0], tone: w[1], title: w[2], sub: w[3],
       onclick: 'closeModal(this);setTimeout(function(){' + _jsCode(w[4]) + '},220)' })), {}) +
@@ -527,7 +527,7 @@ function openQuickAdd(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Quick add</h3>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-.016em">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:18px;line-height:1.4;letter-spacing:-0.004em">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
     // FOUR GLYPHS AND NO WORDS. The meal picker was four capsules carrying only an icon — a sunrise,
     // a sun, a moon and an apple — with the name hidden in aria-label, so a sighted person had to
     // decode a pictogram to answer "which meal?", and the selected one was a hand-painted border and
@@ -3598,7 +3598,7 @@ function renderFoodGroups(){
   box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:8px">Food groups</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
     order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-cap);letter-spacing:-.006em;padding:5px 11px;border-radius:var(--rp);background:var(--fill2);color:'+(counts[g]>0?'var(--tx)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
-    '</div><div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.4">'+nudge+'</div>'+
+    '</div><div style="font-size:var(--t-sm);letter-spacing:-0.004em;color:var(--tx2);line-height:1.4">'+nudge+'</div>'+
     '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">Last 7 days \u2014 a rough read from food names.</div></div>';
 }
 
@@ -3724,7 +3724,7 @@ function renderNourishmentScore(totals, goals){
         '<div style="flex:1;min-width:0">'+
           '<div class="eyebrow" style="margin-bottom:1px">Nourishment</div>'+
           '<div class="card-hd" style="color:'+r.col+';margin-bottom:2px">'+r.tier+'</div>'+
-          '<div style="font-size:var(--t-sm);letter-spacing:-.016em;color:var(--tx2);line-height:1.34">'+r.tip+'</div>'+
+          '<div style="font-size:var(--t-sm);letter-spacing:-0.004em;color:var(--tx2);line-height:1.34">'+r.tip+'</div>'+
       (r.basis ? '<div style="font-size:var(--t-cap);letter-spacing:-.006em;color:var(--tx2);line-height:1.38;margin-top:5px">'+
         _escFew(r.basis)+'</div>' : '')+
         '</div>'+

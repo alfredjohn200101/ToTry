@@ -4744,7 +4744,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // Since the Apple-native redesign the app's face IS the system: San Francisco for everything, New York
       // for scripture, SF Rounded for big numbers. A control that resolves to anything else — Arial from the
       // UA button default being the historic one — is still the defect this check exists for.
-      const BRAND=/-apple-system|BlinkMacSystemFont|system-ui|SF Pro|ui-serif|New York|ui-rounded/;
+      // The app's OWN faces now, not the system's: Outfit carries the interface, Cormorant the headlines
+      // and earned counts, New York the scripture. The system stack stays in the regex because it is the
+      // FALLBACK in every family — a phone that cannot load the woff2 still renders a native face, and
+      // that is a pass, not a failure.
+      const BRAND=/Outfit|Cormorant|-apple-system|BlinkMacSystemFont|system-ui|SF Pro|ui-serif|New York|ui-rounded/;
       const CODE=/(function\s*\(|typeof\s|=>|localStorage|document\.)/;
       const BRACE=/\)\s*\{|;\s*\}|\}\s*\)\s*\(/;
       const looksLikeSource=t => t.length>=40 && CODE.test(t) && BRACE.test(t);
@@ -4778,10 +4782,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // serif fallback and reports San Francisco missing when BlinkMacSystemFont is rendering it — which is
       // exactly what the first draft of this probe did. (The scripture serif is not measured: its chain ends
       // in Georgia, an acceptable reading face on a machine without New York.)
-      for(const f of ['-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui']){
-        const w=wid(f+', serif');
-        rendering['San Francisco'] = (w!==serifW);
-      }
+      // MEASURE THE APP'S OWN FACES, NOT THE SYSTEM'S. This probed San Francisco, which was right while SF
+      // WAS the interface. It is Outfit now, and SF is the FALLBACK behind it — so if outfit.woff2 fails to
+      // load, every control quietly renders in San Francisco, the app looks like the Apple knock-off the
+      // owner rejected, and a probe asking "is SF rendering?" answers yes. It has to ask for the faces that
+      // make this app look like itself; each is measured against the fallback it would collapse into.
+      rendering['Outfit'] = (wid("'Outfit', serif") !== serifW);
+      rendering['Cormorant Garamond'] = (wid("'Cormorant Garamond', sans-serif") !== sansW);
       const calSrcPos=looksLikeSource("(function(el){ const v=parseInt(el.value,10); if(typeof showToast==='function') return; })");
       const calSrcNeg=looksLikeSource("You don’t have to carry this alone. Reach out to someone who knows you, today.");
       const pairsIn=(root)=>{
@@ -4868,7 +4875,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push(`typeface: a brand face is DECLARED but not RENDERING — ${Object.entries(r.rendering).filter(([,v])=>!v).map(([k])=>k).join(', ')} measured the same width as a generic fallback, so the app is in system fonts however the stylesheet reads`);
     else if(r.controls < 150) findings.push(`typeface: only ${r.controls} controls reached — the scan is not walking the app`);
     else if(r.badFont.length) findings.push(`typeface: ${r.badFont.length} kind(s) of control render outside the app's three fonts — ${r.badFont.slice(0,5).join(', ')}`);
-    else console.log(`typeface: San Francisco is really rendering, and all ${r.controls} visible controls use the system face`);
+    else console.log(`typeface: Outfit and Cormorant are really rendering, and all ${r.controls} visible controls are in one of the app's own faces`);
 
     // SOURCE ON SCREEN
     if(!r.calSrcPos || r.calSrcNeg)

@@ -113,7 +113,7 @@ function renderFirstRun(){
       return '<div' + tap + ' style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:.5px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:17px;letter-spacing:-.022em;' + textStyle + '">' + s.label + '</div>' +
+          '<div style="font-size:17px;letter-spacing:-0.006em;' + textStyle + '">' + s.label + '</div>' +
           (s.done ? '' : '<div style="font-size:13px;color:var(--tx2);margin-top:1px;line-height:1.38">' + s.desc + '</div>') +
         '</div>' +
         (s.done ? '' : '<span class="ios-row-chevron">'+svgIcon('chevronright',14)+'</span>') +
