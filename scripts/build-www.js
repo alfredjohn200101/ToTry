@@ -37,6 +37,11 @@ const ASSETS = [
   'fonts/dm-mono-400.woff2',
   'fonts/dm-mono-500.woff2',
   'fonts/outfit.woff2',
+  'fonts/outfit-ext.woff2',
+  // …and Outfit's latin-ext file. Added with the face itself and nearly shipped without it: the
+  // @font-face for it loads only for accented characters, so everything looked right in English and
+  // a name with an á or an ł would have fallen back to the system sans mid-sentence. A list of files
+  // to copy is only as good as the last person who added a file.
 ];
 
 fs.rmSync(WWW, { recursive: true, force: true });

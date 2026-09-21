@@ -7971,6 +7971,26 @@ H.section('Today and the week: the title is not in a box, and the small text has
   H.ok(/M6\.5 4\.5v15/.test(db) && /M17\.5 4\.5v15/.test(db), 'the dumbbell’s plates run 15 of the 24 units, not 11');
 }
 
+H.section('every font the CSS asks for is a font the build actually ships');
+{
+  // A @font-face whose file never reaches www/ does not break anything — the text just renders in the
+  // fallback, which is the system face, which is what this app spent a week getting away from. It has
+  // happened here before: the brand faces were loaded from fonts.googleapis.com and with no network the
+  // whole app came up in the system serif, reported from a real phone as "the lock screen doesn't look
+  // like the logo". Outfit's latin-ext file was one build away from repeating it — added with the face,
+  // left out of the copy list, and invisible in English because that file only loads for accented
+  // characters. A list of files to copy is only as good as the last person who added a file.
+  const fs = require('fs'), path = require('path');
+  const root = path.join(__dirname, '..');
+  const asked = [...H.html.matchAll(/url\('(fonts\/[^']+)'\)/g)].map(m => m[1]);
+  H.ok(asked.length >= 3, 'the shell asks for its font files (' + asked.length + ')');
+  const copied = fs.readFileSync(path.join(root, 'scripts/build-www.js'), 'utf8');
+  const missing = [...new Set(asked)].filter(f => !copied.includes("'" + f + "'"));
+  H.ok(missing.length === 0, 'and the build copies every one of them' + (missing.length ? ' — missing: ' + missing.join(', ') : ''));
+  const onDisk = [...new Set(asked)].filter(f => !fs.existsSync(path.join(root, f)));
+  H.ok(onDisk.length === 0, 'and each file is actually in the repo' + (onDisk.length ? ' — missing: ' + onDisk.join(', ') : ''));
+}
+
 H.section('no element survived a merge twice — one tile per row, and no line repeated verbatim');
 {
   // THE MERGE ARTIFACT NOTHING COULD SEE. Twelve branches touched src/shell-head.html, and conflicts in
