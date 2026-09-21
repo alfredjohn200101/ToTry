@@ -100,8 +100,14 @@
   /* The glass: the thin material the bars are made of, the thick one sheets use, the hairline that
      edges it and the specular highlight along its top. Content never sits on it — see ToTry × LIQUID
      GLASS at the end of this file for why. */
-  --glass:rgba(30,30,32,0.58);--glass-2:rgba(28,28,30,0.84);--glass-line:rgba(255,255,255,0.10);
-  --glass-hi:rgba(255,255,255,0.14);--glass-shadow:0 12px 34px rgba(0,0,0,0.5);
+  --glass:rgba(30,30,32,0.58);--glass-2:rgba(28,28,30,0.84);--glass-line:rgba(255,255,255,0.20);
+  --glass-hi:rgba(255,255,255,0.34);--glass-shadow:0 16px 40px rgba(0,0,0,0.6);
+  /* THE MATERIAL, not just a tint. A flat translucent panel over a near-black screen is black: there is
+     nothing for it to refract, which is why the bar read as a painted strip rather than glass. What sells
+     it is the GRADIENT down the face, a backdrop that LIFTS what is behind it (brightness), and a bright
+     specular rim along the top edge — the three things iOS 26's own bars do. */
+  --glass-grad:linear-gradient(180deg,rgba(124,124,136,0.30),rgba(20,20,24,0.48));
+  --glass-filter:blur(26px) saturate(220%) brightness(1.38);
   /* A sheet that carries content, and the cells inside it: iOS's elevated pair. Promoted from the three
      Coach surfaces that declared it, so every sheet is the same surface. */
   --sheet:#1C1C1E;--cell:#2C2C2E;
@@ -145,8 +151,10 @@
     --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
     --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
     --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
-    --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
-    --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
+    --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(255,255,255,0.75);
+    --glass-hi:rgba(255,255,255,0.95);--glass-shadow:0 14px 34px rgba(0,0,0,0.16);
+    --glass-grad:linear-gradient(180deg,rgba(255,255,255,0.62),rgba(255,255,255,0.44));
+    --glass-filter:blur(26px) saturate(190%) brightness(1.06);
     --sheet:#F2F2F7;--cell:#FFFFFF;
   }
 }
@@ -164,8 +172,10 @@
   --pu:#8944AB;--pu-bg:rgba(137,68,171,0.12);--pu-bd:rgba(137,68,171,0.32);
   --fill:rgba(120,120,128,0.16);--fill2:rgba(118,118,128,0.12);
   --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
-  --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(0,0,0,0.07);
-  --glass-hi:rgba(255,255,255,0.85);--glass-shadow:0 10px 28px rgba(0,0,0,0.12);
+  --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(255,255,255,0.75);
+  --glass-hi:rgba(255,255,255,0.95);--glass-shadow:0 14px 34px rgba(0,0,0,0.16);
+  --glass-grad:linear-gradient(180deg,rgba(255,255,255,0.62),rgba(255,255,255,0.44));
+  --glass-filter:blur(26px) saturate(190%) brightness(1.06);
   --sheet:#F2F2F7;--cell:#FFFFFF;
 }
 /* ── DESIGN SYSTEM UTILITIES ──
@@ -1986,8 +1996,8 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* ── The chrome floats; the content runs under it ───────────────────────────────────────────────── */
 .app{position:relative}
 .hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
-.hdr.ios-scrolled{background:var(--glass) !important;-webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
-  border-bottom:.5px solid var(--glass-line) !important}
+.hdr.ios-scrolled{background:var(--glass-grad) !important;-webkit-backdrop-filter:var(--glass-filter) !important;backdrop-filter:var(--glass-filter) !important;
+  border-bottom:.5px solid var(--glass-line) !important;box-shadow:inset 0 1px 0 var(--glass-hi) !important}
 /* The scroller clears the floating orb as well as the tab capsule. The orb is fixed at var(--sb)+94
    and is 54 tall, so content ended UNDER it: Threads' "Next ›" pager, Plans' closing footnote and the
    evening ritual's Continue button were each partly covered — three screens reporting the same defect
@@ -2035,16 +2045,16 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
    top edge that tells a person it is a material and not a painted strip. */
 .nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sb) + 10px);z-index:60;border-radius:27px;overflow:hidden;
-  padding:0 !important;border:.5px solid var(--glass-line) !important;background:var(--glass) !important;
-  -webkit-backdrop-filter:blur(30px) saturate(190%) !important;backdrop-filter:blur(30px) saturate(190%) !important;
-  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important}
+  padding:0 !important;border:.5px solid var(--glass-line) !important;background:var(--glass-grad) !important;
+  -webkit-backdrop-filter:var(--glass-filter) !important;backdrop-filter:var(--glass-filter) !important;
+  box-shadow:var(--glass-shadow),inset 0 1.5px 0 var(--glass-hi),inset 0 -1px 0 rgba(0,0,0,.30) !important}
 .nb{padding:9px 2px 9px !important}
 
 /* Sheets, the banner and the FAB are chrome too, so they are the same material. */
 .modal{background:var(--glass-2) !important;-webkit-backdrop-filter:blur(40px) saturate(180%) !important;backdrop-filter:blur(40px) saturate(180%) !important;
   border-radius:28px 28px 0 0 !important;box-shadow:inset 0 .5px 0 var(--glass-hi),0 -20px 60px rgba(0,0,0,.35) !important}
 .milestone-toast{background:var(--glass-2) !important;border:.5px solid var(--glass-line) !important;
-  box-shadow:var(--glass-shadow),inset 0 .5px 0 var(--glass-hi) !important;-webkit-backdrop-filter:blur(30px) saturate(180%) !important;backdrop-filter:blur(30px) saturate(180%) !important}
+  box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-hi) !important;-webkit-backdrop-filter:var(--glass-filter) !important;backdrop-filter:var(--glass-filter) !important}
 /* Clear of the floating tab bar, the way Mail's compose button clears iOS 26's. */
 #need-talk-btn{bottom:calc(var(--sb) + 94px) !important;right:16px !important}
 #need-talk-btn,.companion-orb{box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 .5px 0 var(--glass-hi) !important}
