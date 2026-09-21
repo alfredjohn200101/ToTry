@@ -4952,6 +4952,9 @@ function iosNavSync(name){
     const tab=document.getElementById('tab-'+name);
     if(!hdr || !slot || !tab) return;
     hdr.dataset.tab = name;
+    // …and on the shell itself, so chrome outside the bar can answer to the screen a person is on
+    // (the floating orb hides on the conversation, where it sat on the composer's own send button).
+    const shell=document.querySelector('.app'); if(shell) shell.dataset.tab = name;
     // The wordmark signs the home screen: in the bar's leading slot on Today, where no back button needs it.
     const lead=document.getElementById('ios-nav-lead');
     if(lead){

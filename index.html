@@ -1545,6 +1545,11 @@ html, body, .app{
   #need-talk-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px var(--go-bd)}
 }
 .app.onboarding-active #need-talk-btn{display:none}
+/* AND NOT ON THE CONVERSATION SCREENS. The orb opens the Feeling Door, which is a way INTO a
+   conversation — on Coach it sat on top of the composer's own send button, offering a door to the
+   room the person is already standing in. The tab's own data attribute drives it, so it is one rule
+   rather than a show/hide call in every go(). */
+.app[data-tab="coach"] #need-talk-btn{display:none}
 
 
 /* New check-in dots */
@@ -1819,7 +1824,11 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 #need-talk-btn svg{color:var(--on-tint) !important;stroke:currentColor}
 
 /* ── Numbers: SF Rounded, tabular, like Fitness and Health ───────────────────────────────────────── */
-.stat-num,.hero-day,.score-big,.sos-timer-num{font-family:var(--font-rounded) !important;font-weight:600 !important;font-variant-numeric:tabular-nums;letter-spacing:0 !important}
+/* Data stays SF Rounded: a stat tile, the breath timer. The two EARNED counts — the day a person is
+   on, and the score they built — moved to .totry-count below. */
+.stat-num,.sos-timer-num{font-family:var(--font-rounded) !important;font-weight:600 !important;font-variant-numeric:tabular-nums;letter-spacing:0 !important}
+.hero-day,.score-big,.streak-card .streak-num{font-family:var(--font-display) !important;font-weight:500 !important;
+  letter-spacing:-.01em !important;font-variant-numeric:lining-nums}
 .bar-wrap,.goal-bar-wrap,.vice-bar-wrap{background:var(--fill) !important;border-radius:3px !important}
 
 /* ── Scripture keeps a serif: New York, Apple's own. ─────────────────────────────────────────────── */
@@ -1964,12 +1973,39 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
    shape (a message above its two answers, a message above its card). Components all declare their
    own sizes; this only reaches the wrappers nobody sized, which is exactly the set that should agree
    with the prose they hold. */
-.tab{padding-top:calc(var(--st) + 58px) !important;font-size:var(--t-base)}
+/* 48, not 58: the bar is a 44pt row and the title sits right under it, the way iOS opens a screen.
+   The extra ten was a band of nothing at the top of all twenty-one screens — measured before it went,
+   the first 121px of every pane carried no content at all. */
+.tab{padding-top:calc(var(--st) + 48px) !important;font-size:var(--t-base)}
 /* …and every surface that is NOT inside .tab: a sheet, the Feeling Door, the companion, the SOS and
    onboarding are appended to <body>, so the scroller's size never reached them. The last pair panels
    found was in one of them — the letting-go sheet's message at 17 beside its card at the browser's
    16. Same rule, same reason: a wrapper nobody sized agrees with the prose it holds. */
 .modal,.feel-door,.companion-overlay,.sos-overlay,.ob,#onboard{font-size:var(--t-base)}
+
+/* ── A HUB'S ROWS ARE DESTINATIONS, NOT SETTINGS ──────────────────────────────────────────────────
+   Grow is three rows and a card, and at Settings' row height that left a 282px band of nothing under
+   it on a 393x852 phone — measured, and the owner's note: "areas where it feels like the space is
+   underutilised and gone too small". A screen whose whole job is to send you somewhere should let
+   those somewheres carry it: a bigger tile, a 20pt title, and room for the live line under it. Health
+   does the same with its category rows. Settings-style rows stay exactly as they are. */
+.ios-list.hub .ios-row{min-height:66px;padding:14px 16px;gap:14px}
+.ios-list.hub .ios-row-icon{width:38px;height:38px;border-radius:9px}
+.ios-list.hub .ios-row-icon .ic{width:23px;height:23px}
+.ios-list.hub .ios-row-title{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.ios-list.hub .ios-row-sub{font-size:15px;line-height:1.33;margin-top:2px}
+.ios-list.hub .ios-row+.ios-row::before{left:68px}
+
+/* ── THE NUMBER THAT IS EARNED ────────────────────────────────────────────────────────────────────
+   Not every number is a metric. A day count is the one thing in this app a person built themselves,
+   and SF Rounded — the face Fitness and Health use for a step count — says "measured" when this one
+   means "kept". The owner: "even for certain buttons it doesn't need to be apple code like day
+   numbers". So the counts a person EARNS are set in the ToTry face, at a size that carries the screen;
+   data a person READS (calories, grams, weights, money) stays SF Rounded, because there legibility at
+   a glance beats character. */
+.totry-count{font-family:var(--font-display) !important;font-weight:500 !important;font-size:58px !important;
+  line-height:.94 !important;letter-spacing:-.01em !important;color:var(--tx) !important;font-variant-numeric:lining-nums}
+.totry-count-pre,.totry-count-lbl{font-family:var(--font-text);font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
 
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
    top edge that tells a person it is a material and not a painted strip. */
@@ -2127,7 +2163,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The hero of the card this app exists for. It was 28px of San Francisco at weight 500; a number a
    person opens the screen to read is SF Rounded, like every other figure in the app. */
 .vice-day{display:flex;align-items:baseline;gap:7px;margin:1px 0 3px;flex-wrap:wrap}
-.vice-day-num{font-family:var(--font-rounded);font-size:40px;font-weight:600;line-height:1.05;letter-spacing:0;color:var(--tx);font-variant-numeric:tabular-nums}
+.vice-day-num{font-family:var(--font-display);font-size:58px;font-weight:500;line-height:.94;letter-spacing:-.01em;color:var(--tx);font-variant-numeric:lining-nums}
 .vice-day-pre,.vice-day-lbl{font-size:15px;letter-spacing:-.016em;color:var(--tx2)}
 /* Two lines of supporting fact, one size, one grey. They were 12px and 13px in --tx3 — the faintest
    ink in the app on the sentence that says how many days a person has held. */
@@ -2211,7 +2247,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    centred caption. It is one hero number on an opaque card, in the label colour, with its caption
    set upright. */
 .score-hero{background:var(--bg2) !important;border:0 !important;padding:22px 16px 20px !important;margin-bottom:28px !important}
-.score-big{font-size:64px !important;color:var(--tx) !important;line-height:1 !important}
+.score-big{font-size:76px !important;color:var(--tx) !important;line-height:.94 !important}
 .score-lbl{margin-top:8px !important}
 .score-sub{font-size:15px !important;font-style:normal !important;line-height:1.4;letter-spacing:-.01em;color:var(--tx2) !important;margin-top:10px !important;max-width:290px;margin-left:auto;margin-right:auto}
 /* Three tiles that fit one row at phone width, and reflow to two when the streak tile withholds
@@ -2875,7 +2911,7 @@ a.ios-row{text-decoration:none}
 .streak-card{background:var(--bg2) !important;border:0 !important;border-radius:12px !important;
   padding:12px 14px 14px !important;text-align:left !important}
 .streak-card:active{background:var(--bg4) !important}
-.streak-card .streak-num{font-family:var(--font-rounded) !important;font-size:28px !important;font-weight:600 !important;
+.streak-card .streak-num{font-size:34px !important;font-weight:500 !important;
   color:var(--tx) !important;line-height:1.15;margin:2px 0 0 !important;letter-spacing:0}
 .streak-card .streak-sub{font-size:13px !important;font-style:normal !important;color:var(--tx2) !important;margin-top:2px !important}
 
@@ -4214,7 +4250,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        Settings row shows its current value instead of its description. -->
   <div class="ios-section">
     <div class="ios-header">Health</div>
-    <div class="ios-list">
+    <div class="ios-list hub">
       <button type="button" class="ios-row has-icon" onclick="go('train')">
         <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" style="display:block">Train</span>
@@ -4294,7 +4330,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        below read aloud. -->
   <div class="ios-section">
     <div class="ios-header" id="soul-drawnear-label">Draw near</div>
-    <div class="ios-list">
+    <div class="ios-list hub">
       <button type="button" class="ios-row has-icon" id="soul-book-card" onclick="openScripture()">
         <span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" id="soul-book-title" style="display:block">Bible</span>
@@ -16062,6 +16098,9 @@ function iosNavSync(name){
     const tab=document.getElementById('tab-'+name);
     if(!hdr || !slot || !tab) return;
     hdr.dataset.tab = name;
+    // …and on the shell itself, so chrome outside the bar can answer to the screen a person is on
+    // (the floating orb hides on the conversation, where it sat on the composer's own send button).
+    const shell=document.querySelector('.app'); if(shell) shell.dataset.tab = name;
     // The wordmark signs the home screen: in the bar's leading slot on Today, where no back button needs it.
     const lead=document.getElementById('ios-nav-lead');
     if(lead){
