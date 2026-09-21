@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v604**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v605**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -72,6 +72,16 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
   For anything that depends on the MATERIAL or the display face, confirm in WebKit:
   `node scripts/sim-serve.mjs` serves the real bundle to the booted simulator. Both it and `ios-shot`
   seed from `scripts/seed-person.mjs` — one person, one source; an invented key renders an empty screen.
+- **A FILL IS NOT A LABEL.** `--go` / `--re` are tuned to be READ on the ground, which made them pale
+  things to fill a button with: white on the dark tint measured **2.83:1** on Today's primary action and
+  on "I'm feeling it". Filled controls take `--go-fill` / `--re-fill`; a test holds white on those to AA
+  in both appearances. The contrast matrix had passed because every pair it checked was ink on a
+  BACKGROUND token — nothing had ever asked about ink on an ACCENT.
+- **`node scripts/craft-audit.mjs`** measures the thing the owner actually complains about: it walks the
+  screens and asks the BROWSER for every visible text run under the footnote size, the census of greys
+  and families, caps labels that WRAP, and same-styled neighbours a pixel apart. It calibrates on planted
+  defects first and refuses to report if it cannot find them. 16 Sep → 21 Sep, ten screens, dark:
+  under-13px 126 → 0, wrapping caps 9 → 0, neighbours 2 → 0, greys 5 → 3, DM Mono 38 → 0.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -104,7 +114,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 2230 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 2367 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -212,7 +222,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      the identical sentence with the box left blank got the full response. A validation rule must
      never be able to outrank a disclosure — and this door was not in this list, which is how it
      shipped. When you add a free-text surface, add its door here the same day.
-   - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
+   - `npm run personas` — 566 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
      **It takes well over ten minutes, and much longer on a machine that is swapping.** The three

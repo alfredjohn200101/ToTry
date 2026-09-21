@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v604-one-gap-one-label-one-weight'
+const CACHE = 'totry-v605-totry-x-liquid-glass'
 
 const CORE = [
   './',
