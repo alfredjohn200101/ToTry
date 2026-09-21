@@ -1965,6 +1965,11 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
    own sizes; this only reaches the wrappers nobody sized, which is exactly the set that should agree
    with the prose they hold. */
 .tab{padding-top:calc(var(--st) + 58px) !important;font-size:var(--t-base)}
+/* …and every surface that is NOT inside .tab: a sheet, the Feeling Door, the companion, the SOS and
+   onboarding are appended to <body>, so the scroller's size never reached them. The last pair panels
+   found was in one of them — the letting-go sheet's message at 17 beside its card at the browser's
+   16. Same rule, same reason: a wrapper nobody sized agrees with the prose it holds. */
+.modal,.feel-door,.companion-overlay,.sos-overlay,.ob,#onboard{font-size:var(--t-base)}
 
 /* The tab bar as iOS 26 draws it: a capsule of glass floating clear of the edges, with the specular
    top edge that tells a person it is a material and not a painted strip. */
