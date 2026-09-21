@@ -1887,9 +1887,13 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
    "PAID OFF" at device x=93 under a header at 97 and over a row at 98. The three scoped overrides
    below (.trio, .three, .sc-grid) deliberately run tighter: they pack three columns into the width
    two of these take. */
-.ios-stat{background:var(--bg2);border-radius:12px;padding:12px 16px 14px}
+/* A STAT TILE EXISTS FOR ITS NUMBER. At 28px in a half-width box the figure sat in the middle of a
+   lot of nothing — the owner's "space underutilised and gone too small", and the tile is where it is
+   most visible because the box is drawn around the emptiness. The number carries the tile now (34),
+   and the tile holds it a little more closely. */
+.ios-stat{background:var(--bg2);border-radius:12px;padding:13px 16px 15px}
 .ios-stat-label{font-size:13px;font-weight:600;letter-spacing:-.006em;color:var(--tx2)}
-.ios-stat-value{font-family:var(--font-rounded);font-size:28px;font-weight:600;line-height:1.15;letter-spacing:0;color:var(--tx);font-variant-numeric:tabular-nums;margin-top:2px}
+.ios-stat-value{font-family:var(--font-rounded);font-size:34px;font-weight:600;line-height:1.08;letter-spacing:-.01em;color:var(--tx);font-variant-numeric:tabular-nums;margin-top:3px}
 .ios-stat-unit{font-family:var(--font-rounded);font-size:15px;font-weight:600;color:var(--tx2);margin-left:2px}
 .ios-stat-note{font-size:13px;color:var(--tx2);margin-top:2px}
 
@@ -2310,7 +2314,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    Fitness draws a row of three. */
 .ios-stats.three{grid-template-columns:repeat(3,1fr);gap:8px}
 .ios-stats.three .ios-stat{padding:10px 11px 12px}
-.ios-stats.three .ios-stat-value{font-size:22px}
+.ios-stats.three .ios-stat-value{font-size:26px}
 .ios-stats.three .ios-stat-label{font-size:12px;letter-spacing:.03em}
 
 /* A stat tile's figure carries the two money meanings, and only those two. */
@@ -2911,7 +2915,10 @@ a.ios-row{text-decoration:none}
 .streak-card{background:var(--bg2) !important;border:0 !important;border-radius:12px !important;
   padding:12px 14px 14px !important;text-align:left !important}
 .streak-card:active{background:var(--bg4) !important}
-.streak-card .streak-num{font-size:34px !important;font-weight:500 !important;
+/* 42, not 34: the ToTry face carries a smaller x-height than San Francisco, so a number set in it
+   needs about a fifth more size to hold the same weight on a tile. The same reason .totry-count is 58
+   where the SF version was 40. */
+.streak-card .streak-num{font-size:42px !important;font-weight:500 !important;
   color:var(--tx) !important;line-height:1.15;margin:2px 0 0 !important;letter-spacing:0}
 .streak-card .streak-sub{font-size:13px !important;font-style:normal !important;color:var(--tx2) !important;margin-top:2px !important}
 
