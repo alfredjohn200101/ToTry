@@ -106,11 +106,11 @@
      nothing for it to refract, which is why the bar read as a painted strip rather than glass. What sells
      it is the GRADIENT down the face, a backdrop that LIFTS what is behind it (brightness), and a bright
      specular rim along the top edge — the three things iOS 26's own bars do. */
-  --glass-grad:linear-gradient(180deg,rgba(124,124,136,0.30),rgba(58,58,68,0.40));
-  --glass-filter:blur(26px) saturate(220%) brightness(1.38);
+  --glass-grad:linear-gradient(180deg,rgba(78,78,90,0.60),rgba(46,46,56,0.68));
+  --glass-filter:blur(30px) saturate(135%) brightness(1.10);
   /* The hairline that edges the capsule, as ONE ring whose brightness travels: specular at the top,
      nearly nothing at the bottom. */
-  --glass-rim:linear-gradient(180deg,rgba(255,255,255,0.50),rgba(255,255,255,0.13) 45%,rgba(255,255,255,0.05));
+  --glass-rim:linear-gradient(180deg,rgba(255,255,255,0.50),rgba(255,255,255,0.13) 45%,rgba(255,255,255,0.05));--nb-sel:rgba(255,255,255,0.22);--nb-sel-ink:#FFFFFF;
   /* A sheet that carries content, and the cells inside it: iOS's elevated pair. Promoted from the three
      Coach surfaces that declared it, so every sheet is the same surface. */
   --sheet:#1C1C1E;--cell:#2C2C2E;
@@ -156,9 +156,9 @@
     --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
     --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(255,255,255,0.75);
     --glass-hi:rgba(255,255,255,0.95);--glass-shadow:0 14px 34px rgba(0,0,0,0.16);
-    --glass-grad:linear-gradient(180deg,rgba(252,252,254,0.62),rgba(226,226,236,0.52));
-    --glass-filter:blur(26px) saturate(190%) brightness(1.06);
-    --glass-rim:linear-gradient(180deg,rgba(60,60,67,0.16),rgba(60,60,67,0.22) 50%,rgba(60,60,67,0.28));
+    --glass-grad:linear-gradient(180deg,rgba(252,252,254,0.74),rgba(228,228,238,0.66));
+    --glass-filter:blur(30px) saturate(135%) brightness(1.03);
+    --glass-rim:linear-gradient(180deg,rgba(60,60,67,0.16),rgba(60,60,67,0.22) 50%,rgba(60,60,67,0.28));--nb-sel:rgba(255,255,255,0.92);--nb-sel-ink:var(--go-fill);
     --sheet:#F2F2F7;--cell:#FFFFFF;
   }
 }
@@ -178,9 +178,9 @@
   --bar:rgba(249,249,249,0.86);--on-tint:#FFFFFF;--brand:#8A6D35;
   --glass:rgba(255,255,255,0.62);--glass-2:rgba(255,255,255,0.88);--glass-line:rgba(255,255,255,0.75);
   --glass-hi:rgba(255,255,255,0.95);--glass-shadow:0 14px 34px rgba(0,0,0,0.16);
-  --glass-grad:linear-gradient(180deg,rgba(252,252,254,0.62),rgba(226,226,236,0.52));
-  --glass-filter:blur(26px) saturate(190%) brightness(1.06);
-  --glass-rim:linear-gradient(180deg,rgba(60,60,67,0.16),rgba(60,60,67,0.22) 50%,rgba(60,60,67,0.28));
+  --glass-grad:linear-gradient(180deg,rgba(252,252,254,0.74),rgba(228,228,238,0.66));
+  --glass-filter:blur(30px) saturate(135%) brightness(1.03);
+  --glass-rim:linear-gradient(180deg,rgba(60,60,67,0.16),rgba(60,60,67,0.22) 50%,rgba(60,60,67,0.28));--nb-sel:rgba(255,255,255,0.92);--nb-sel-ink:var(--go-fill);
   --sheet:#F2F2F7;--cell:#FFFFFF;
 }
 /* ── DESIGN SYSTEM UTILITIES ──
@@ -327,7 +327,7 @@ button[onclick^="deleteTransaction("]:not(.ios-row-x),button[onclick^="deleteSub
 .hc-hand.on + .hc-desc{display:none}
 /* A screen's opening sentence: body size, secondary grey, and the same edge as the title above it.
    Three tabs wrote this as three copies of an inline recipe, one of them in the tertiary grey. */
-.page-intro{font-size:15px;line-height:1.4;letter-spacing:-.01em;color:var(--tx2);margin:0 0 22px;padding:0 2px}
+.page-intro{font-size:15px;line-height:1.4;letter-spacing:-.004em;color:var(--tx2);margin:0 0 22px;padding:0 2px}
 .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
 .hub-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:18px 16px;cursor:pointer;transition:transform .12s,border-color .12s;display:flex;flex-direction:column;gap:8px;text-align:left}
 .hub-card:active{transform:scale(0.97)}
@@ -1769,10 +1769,12 @@ body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::bef
 
 /* ── Tab bar ────────────────────────────────────────────────────────────────────────────────────── */
 .nav{background:var(--bar) !important;border-top:.5px solid var(--bd) !important;-webkit-backdrop-filter:saturate(180%) blur(20px) !important;backdrop-filter:saturate(180%) blur(20px) !important;box-shadow:none !important}
-.nb{border-top:0 !important;padding:6px 2px 2px !important;color:var(--tx3) !important;gap:1px}
+.nb{border-top:0 !important;padding:6px 2px 2px !important;color:var(--tx2) !important;gap:1px}
 .nb span{font-family:var(--font-text) !important;font-size:10px !important;font-weight:500 !important;letter-spacing:.01em !important;text-transform:none !important;line-height:1.2}
 .nb svg{width:26px !important;height:26px !important;stroke-width:1.9 !important}
-.nb.active{color:var(--go) !important}
+.nb.active{color:var(--nb-sel-ink) !important;position:relative}
+.nb.active::before{content:'';position:absolute;left:50%;top:1px;bottom:1px;transform:translateX(-50%);
+  width:64px;border-radius:21px;background:var(--nb-sel);z-index:-1;pointer-events:none}
 .nb.active svg{transform:none !important;fill:var(--go-bg)}
 
 /* ── Surfaces: inset grouped cells. No borders, no shadows — separation is the grouped background. ─ */
@@ -1912,7 +1914,7 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .ios-row.destructive .ios-row-title{color:var(--re)}
 .ios-row.tint .ios-row-title{color:var(--go)}
 /* Settings-style tile colours: each is a system colour, used only as the ground of a white glyph. */
-.tone-blue{background:#0A84FF}.tone-green{background:#30B454}.tone-red{background:#FF3B30}.tone-orange{background:#FF9500}
+.tone-blue{background:var(--go-fill)}.tone-green{background:#30B454}.tone-red{background:#FF3B30}.tone-orange{background:#FF9500}
 .tone-yellow{background:#F0B400}.tone-purple{background:#AF52DE}.tone-indigo{background:#5856D6}.tone-pink{background:#FF2D55}
 .tone-teal{background:#30B0C7}.tone-gray{background:#8E8E93}.tone-mint{background:#00B39B}.tone-brown{background:#A2845E}
 
@@ -2087,7 +2089,6 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .eyebrow,.lbl,.hub-section-label,.ios-header,.ritual-eyebrow,.hero-lbl,.hero-dayl,.sc-ml,.met .ml,.score-lbl,.sos-phase-lbl,.ws-lbl,.df-lbl,.saved-lbl{
   letter-spacing:.045em !important;font-size:13px !important;font-weight:400 !important;color:var(--tx2) !important}
 .ios-row-title{white-space:nowrap}
-.ios-row-sub{letter-spacing:-.01em}
 .ios-stat-label{font-size:13px;font-weight:400;letter-spacing:.045em;text-transform:uppercase;color:var(--tx2)}
 
 /* ── GROW AND TRACK: the roles those two screens were painting by hand ──────────────────────────
@@ -2213,7 +2214,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
 /* The Fight's lede: the sentence that answers "am I winning this?", under the large title. It was a
    centred 22px display-face headline at font-weight:700 — a fake bold on a family with one roman
    weight — wrapping across two centred lines; the evidence under it was 12px blue CAPITALS. */
-.fight-lede{font-size:17px;line-height:1.41;letter-spacing:-0.006em;color:var(--tx2);margin:0 0 8px}
+.fight-lede{font-size:15px;line-height:1.4;letter-spacing:-.004em;color:var(--tx2);margin:0 0 24px}
 .fight-evidence-line{font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);margin:0 0 4px}
 #fight-panel-vices>#fight-evidence{margin-bottom:14px}
 
@@ -2524,19 +2525,12 @@ a.ios-row{text-decoration:none}
   color:var(--go) !important;font-weight:400 !important}
 .tr-find:active{opacity:.45}
 
-/* Search: the field is the control, the button is secondary to it. */
-.tr-searchbar{display:flex;gap:8px;margin-bottom:10px}
-.tr-searchbar input{flex:1;min-width:0}
-.tr-find{width:auto !important;white-space:nowrap;padding:0 16px !important}
-/* ONE FINISH FOR THE SHAPE. The field and its submit are the same height and 8px apart, and they were
-   painted as two different controls: the field on --fill2 at radius 10 (the app-wide field rule), the
-   button on --fill at radius 12 (.btn). In dark the submit read as a distinctly lighter slab than the
-   field it submits — and matched the 25 capsules below it instead. Measured on the rendered page: field
-   rgb(21,21,23), Find rgb(29,29,31). The button comes to the field, never the reverse: --fill2 arrives
-   from the base input rule, so moving THAT would repaint every input, textarea and select in the app.
-   Both declarations need !important — .btn sets background and border-radius with it. Lands on all
-   three rows that share the class: Train's exercise Find, the Word's Find, Read's Search. */
-.tr-searchbar .btn{background:var(--fill2) !important;border-radius:10px !important}
+/* The previous round's version of this row lived here — `.tr-searchbar{gap:8px}` plus
+   `.tr-searchbar .btn{background:var(--fill2)}` — and it OUTRANKED the capsule above: two classes
+   (0,2,0) beat `.tr-find` (0,1,0), so --fill2 was painted a second time over the bar's own --fill2
+   and that double coat was the grey slab the capsule exists to remove. Measured: dark stepped
+   rgb(21,21,23) to rgb(37,37,40) at a hard edge, which is exactly 21 + .18*(118-21). Deleted rather
+   than adjusted: two rules for one row is how the slab came back. */
 .tr-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .tr-results{margin-bottom:20px}
 .tr-results:empty{margin-bottom:0;background:none}
@@ -2892,7 +2886,7 @@ a.ios-row{text-decoration:none}
    rest, which nobody can name and everybody feels. */
 #home-hero.home-hero{background:transparent !important;padding:0 !important;margin:0 0 28px !important;display:block !important;border-radius:0 !important}
 #home-hero .hero-inner{padding:0 !important;display:block}
-.hero-sub{font-size:17px;color:var(--tx2);margin-top:6px;line-height:1.35;max-width:none;letter-spacing:-0.006em}
+.hero-sub{font-size:15px;color:var(--tx2);margin-top:6px;line-height:1.4;max-width:none;letter-spacing:-.004em}
 /* The identity line was 17px ITALIC — a caption in italics is the loudest of the small-text tells.
    It is the subheadline role: 15pt, upright, under the sentence it belongs to.
    AND IT IS A CONTROL, NOT A CAPTION. #hero-identity opens Settings, and it was drawn as a second
@@ -3159,7 +3153,6 @@ a.ios-row{text-decoration:none}
 #tab-coach{padding-left:16px !important;padding-right:16px !important;padding-bottom:calc(var(--sb) + 101px) !important}
 .coach-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .coach-head .page-title{flex:1;min-width:0}
-#tab-coach .page-intro{margin:0 0 14px}
 #tab-coach .coach-thread{flex:1 1 auto;min-height:140px;max-height:none;margin:0 -16px 10px;padding:10px 16px 6px;
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px);mask-image:linear-gradient(to bottom,transparent 0,#000 14px)}
 #tab-coach .coach-suggest{flex:none;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;margin:0 -16px 10px;padding:0 16px;
@@ -3169,7 +3162,7 @@ a.ios-row{text-decoration:none}
 #tab-coach .coach-suggest:empty{display:none}
 .coach-suggest .qb{flex:none;display:inline-flex;align-items:center;gap:6px}
 .coach-suggest .qb .ic{width:15px;height:15px;stroke-width:2;color:var(--go)}
-#tab-coach .coach-compose{flex:none;margin-right:64px}
+#tab-coach .coach-compose{flex:none}
 /* When the coach cannot answer, the one thing offered is a small capsule under its message, not a
    full-width grey slab with a border hand-painted at the call site. */
 .msgs>.btn.row-btn{align-self:flex-start;margin:2px 0 4px}
@@ -4370,7 +4363,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        words; the rows under it already say what the rest of the sentence said. -->
   <div class="ios-section">
     <div class="ios-header">Daily rhythm</div>
-    <div class="ios-list">
+    <div class="ios-list hub">
       <button type="button" class="ios-row has-icon" onclick="go('morning')">
         <span class="ios-row-icon tone-orange"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><polyline points="8,6 12,2 16,6"/><line x1="2" y1="22" x2="22" y2="22"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" style="display:block">Morning</span>

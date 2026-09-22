@@ -7529,7 +7529,28 @@ H.section('"you are here" is one treatment, and it is not the one that means dan
   const shared = ios.match(/\.fst\.active,\.bst\.active,\.rst\.active\{([^}]*)\}/);
   H.ok(!!shared, 'all three sub-tab strips share ONE selected-segment rule');
   H.ok(shared && !/var\(--re\)/.test(shared[1]), 'and that selected state is never the danger colour');
-  H.ok(/\.nb\.active\{[^}]*color:var\(--go\)/.test(ios), 'the tab bar marks the current tab in the tint');
+  // The tab bar's mark used to BE the tint — and that is the one pairing a material cannot rescue.
+  // Measured on the phone with the app's own blue button passing under the capsule, the selected
+  // label sat at 2.03:1: pale tint ink on a ground the backdrop had turned the same blue. So the mark
+  // is now a seat (--nb-sel) plus the ink that seat can carry (--nb-sel-ink) — tint on near-white in
+  // light, white on a lifted neutral in dark. The invariant that matters is unchanged and is what is
+  // asserted: there IS one distinct mark, it is declared per appearance, and it is never the danger
+  // colour. Fault-injected by pointing --nb-sel-ink at --re and at --tx2 (the unselected ink).
+  H.ok(/\.nb\.active\{[^}]*color:var\(--nb-sel-ink\)/.test(ios), 'the tab bar marks the current tab with its own ink token');
+  H.ok(/\.nb\.active::before\{[^}]*background:var\(--nb-sel\)/.test(ios), 'and seats it on a capsule, so the mark does not depend on the backdrop');
+  H.ok(!/--nb-sel-ink:\s*var\(--re\)/.test(code), 'the selected tab is never the danger colour');
+  H.ok(!/--nb-sel-ink:\s*var\(--tx2\)/.test(code), 'and never the same ink as the tabs a person is NOT on');
+  {
+    // Both tokens must exist in EVERY appearance, or one theme silently loses the mark — the exact
+    // shape of the --bg4 bug, where the one token applyTheme never re-set left a progress bar black.
+    // Counted against --glass-rim rather than parsed out of :root blocks: the seat belongs to the
+    // same chrome the glass does, so "as many seats as rims" is the invariant, and a block that
+    // gained a rim without a seat fails here. Fault-injected by deleting one of each.
+    const rims = (code.match(/--glass-rim:/g) || []).length;
+    H.eq(rims >= 3, true, 'the glass rim is declared in all three appearance blocks');
+    H.eq((code.match(/--nb-sel:/g) || []).length, rims, 'every appearance that declares the glass also seats the selected tab');
+    H.eq((code.match(/--nb-sel-ink:/g) || []).length, rims, 'and gives that seat an ink of its own');
+  }
   // CALIBRATION: --re must still mean danger somewhere, or this is only proving the token was deleted.
   H.ok(/\.btn\.danger\{[^}]*var\(--re\)/.test(code), 'and --re still means danger (calibration)');
 }

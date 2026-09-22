@@ -23,6 +23,9 @@ const TABS = (args[0] || 'home').split(',');
 const MODE = args[1] && !args[1].startsWith('--') ? args[1] : 'both';
 const OUT = args[2] && !args[2].startsWith('--') ? args[2] : path.join(ROOT, '.sim-shots');
 const scrIdx = args.indexOf('--scroll'); const SCROLL = scrIdx > -1 ? +args[scrIdx + 1] : 0;
+// Extra CSS injected into the served document, before first paint — for putting a deliberate
+// worst case behind the chrome (a saturated block under the tab bar, say) and measuring it.
+const cssIdx = args.indexOf('--css'); const EXTRA = cssIdx > -1 ? args[cssIdx + 1] : '';
 const PORT = 8788;
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -31,7 +34,7 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 // The chrome under test is positioned off the safe-area insets, so they go in BEFORE the first paint.
 // Moving it afterwards is what broke the Chromium captures; here it would also make the bar jump.
-const HEAD = '<style id="__shot">.milestone-toast,#update-ready-bar{display:none !important}</style>';
+const HEAD = () => '<style id="__shot">.milestone-toast,#update-ready-bar{display:none !important}' + EXTRA + '</style>';
 // After boot: take the guest door if the wall is up (Safari has a live network, so a seeded device
 // with no Supabase session can still land on it), clear banners, then go where we were asked.
 const TAIL = (tab, scroll) => `<script>
@@ -60,8 +63,11 @@ const srv = http.createServer((q, r) => {
       const tab = (u.searchParams.get('tab') || TAB).replace(/[^a-z]/g, '') || 'home';
       const scroll = +(u.searchParams.get('scroll') || SCR) || 0;
       b = Buffer.from(String(b)
-        .replace('<body>', () => '<body>\n<script>' + seedSource() + ';</script>')
-        .replace('</head>', () => HEAD + '</head>')
+        // Wipe first. Safari keeps localStorage per ORIGIN across runs, so without this the capture
+        // is the seed merged with whatever the last run left behind — which is how Nourish rendered
+        // an empty food log on the phone and a full one in Chromium off the same seed.
+        .replace('<body>', () => '<body>\n<script>try{localStorage.clear()}catch(e){}' + seedSource() + ';</script>')
+        .replace('</head>', () => HEAD() + '</head>')
         .replace('</body>', () => TAIL(tab, scroll) + '</body>'));
     }
     r.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream', 'cache-control': 'no-store' });
@@ -78,7 +84,7 @@ for (const scheme of (MODE === 'both' ? ['light', 'dark'] : [MODE])) {
   sh('simctl', 'ui', 'booted', 'appearance', scheme);
   await sleep(600);
   for (const tab of TABS) {
-    const name = tab + (SCROLL ? '-s' + SCROLL : '') + '-' + scheme + '.png';
+    const name = tab + (SCROLL ? '-s' + SCROLL : '') + (EXTRA ? '-x' : '') + '-' + scheme + '.png';
     const dest = path.join(OUT, name);
     // A fresh query string each time, so Safari reloads rather than restoring the page it had.
     sh('simctl', 'openurl', 'booted', 'http://localhost:' + PORT + '/index.html?tab=' + tab + (SCROLL ? '&scroll=' + SCROLL : '') + '&n=' + (Date.now() % 100000));
