@@ -319,6 +319,16 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      (`#feel-door.open`), so on the first tap into the app it sat on top of two of the ten feeling
      chips. Right size, correct accessible name, simply not clickable: every geometry and
      DOM-presence assertion in the suite passed it.
+   - `node scripts/orb-audit.mjs` — what does the floating orb actually cover? It is `position:fixed`
+     over the scroller, so what it lands on is decided by CONTENT HEIGHT, not by CSS — one screenshot
+     proves nothing either way, which is how a visual reviewer reported it covering Fight's red urge
+     button while a differently-seeded capture showed it covering Train's "Edit" instead. Calibrated
+     on a control planted under the orb and one deliberately clear of it. Measured 24 Sep 2026: six
+     controls across five screens lose their own CENTRE to it; Train's "Edit" (72% covered) and
+     "Find" (33%) are the real breakages, the rest are full-width rows still tappable elsewhere.
+     `npm run panels` carries the same check. Only `elementFromPoint` is valid evidence here:
+     `el.click()` dispatches straight onto the element and bypasses hit-testing, so a fully covered
+     control still "works" for a script and fails only for the thumb.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — bundle parity across source, www, iOS **and Android**, by sha256. It
      compared APP_VERSION STRINGS until 5 Sep 2026 and reported that as "the iOS bundle matches the
@@ -384,6 +394,21 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    prominent. Never weaken them.
 
 ## WHAT TO DO NEXT (in priority order)
+0. **THE DAY KEY IS A LOCALE FORMATTER — read `docs/DAY-KEY.md` before shipping anything.**
+   `new Date().toLocaleDateString('en-AU')` is a PERSISTED object key and is not a stable string:
+   Chromium pads both fields, WebKit/iOS pads neither, and **300 of the 365 days of 2026 disagree**
+   (only the 10th–31st of Oct/Nov/Dec match, which is why it reads as irreproducible). Nine
+   cloud-synced stores are keyed by it. `totry_nutlog` doubles the day forever — each device reads
+   only its own half, so a person sees "Nothing logged then" over food they logged, re-logs it, and
+   every aggregate counts it twice, the AI brief included. `totry_trackers`, `totry_water` and the
+   burn ledgers have no union branch at all and fall to last-write-wins: one device's whole map
+   replaces the other's. It begins on the FIRST sync of a new device, not in an edge case. A second
+   divergence rides with it — `{month:'short'}` is "Sept" in Chromium and "Sep" in WebKit, persisted
+   into `.date` fields compared by string equality at 38 sites. Two rounds have been designed and
+   implemented; round 2 was gate-green and REFUTED on data loss (it erased 2000ml of logged water and
+   a whole tracker day, demonstrated by executing the real functions). The doc holds the census of all
+   433 call sites bucketed, the design that survived, and the three corrections. **This is the
+   biggest known defect in the app.**
 1. **The App Store.** The wrapper builds, launches and runs (Xcode 26.6, Release, iPhone 17 sim:
    ~2.8s to first paint, branded splash, crisis gate verified ON DEVICE with iOS smart quotes, `tel:`
    links hand off correctly). What is left is yours and cannot be automated: archive → TestFlight,
