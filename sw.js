@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v605-totry-x-liquid-glass'
+const CACHE = 'totry-v606-the-material-holds-its-ground'
 
 const CORE = [
   './',

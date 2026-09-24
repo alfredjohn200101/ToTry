@@ -2365,7 +2365,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push(`fight: the Score panel still carries the scoreboard of losses — "${r.score.slice(0,80)}"`);
     else if (!/DAYS IN THE FIGHT/i.test(r.score))
       findings.push(`fight: the Score panel does not lead with the fight — "${r.score.slice(0,70)}"`);
-    else if (!/URGES MET 3\b/.test(r.score))
+    // Case-insensitively: this asserts the NUMBER, not the typography. It was written when
+    // .ios-stat-label carried text-transform:uppercase, and it broke the day that label went to
+    // sentence case — because a section header and a tile label had become the same object (13px,
+    // caps, .045em, same ink, 25pt apart) and "YOUR MONEY, HONESTLY" over "NET" read as one doubled
+    // header. innerText reflects the rendered transform, so a caps-locked assertion is an assertion
+    // about the stylesheet. The win count is the invariant.
+    else if (!/urges met\s*3\b/i.test(r.score))
       findings.push(`fight: "urges met" is not the real win count — "${r.score.slice(0,80)}" (seeded 3 wins from 54)`);
     else console.log('fight: hero reads the abstinence fight, no filler, no ticking seconds, and Score leads with the fight');
     await ctx.close();
