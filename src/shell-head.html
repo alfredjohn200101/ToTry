@@ -424,6 +424,14 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .logbar-in{flex:1;min-width:0;background:transparent;border:0;color:var(--tx);font-size:var(--t-base);
   letter-spacing:-0.006em;padding:11px 8px 11px 8px;outline:none;font-family:var(--font-text)}
 .logbar-in::placeholder{color:var(--tx2)}
+/* THREE STACKED SURFACES, TWO GAPS, NEITHER OF THEM THE SECTION GAP. Measured on the rendered page:
+   the hero card's bottom to the search capsule was 18px and the capsule to "More ways to log" was 8,
+   so the field a person is asked to use optically belonged to the row beneath it while the card above
+   floated away from both. The app's section gap is 28 (measured, same screen, "More ways to log" to
+   COMMON FOODS). The capsule and the row ARE one group — both are ways to log — so the 8 inside it
+   stays and the gap above it becomes the section gap. Margins collapse between siblings, so this has
+   to out-measure the hero's own 18 rather than add to it. */
+#tab-nourish .logbar{margin-top:28px}
 .logbar-in:focus{background:transparent}
 .logbar-ic{flex:0 0 auto;width:38px;align-self:stretch;background:transparent;border:0;
   color:var(--go);font-size:var(--t-base);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
