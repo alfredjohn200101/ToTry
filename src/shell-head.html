@@ -344,7 +344,9 @@ button[onclick^="deleteTransaction("]:not(.ios-row-x),button[onclick^="deleteSub
    at the same weight, and inherits its ink from currentColor — so an icon in a gold card is
    gold and an icon in a quiet row is quiet. The vertical-align keeps it optically centred
    against a cap-height line of text without needing a flex wrapper at every call site. */
-.ic{display:inline-block;vertical-align:-0.16em;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic{display:inline-block;vertical-align:-0.16em;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.ic *{vector-effect:non-scaling-stroke}
+
 .ic+*{margin-left:1px}
 .nb span{font-size:var(--t-micro);letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
@@ -1068,7 +1070,7 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
    so it cannot reach into a neighbour in either direction, whatever the row height turns out to be. */
 .fli-del{min-width:40px;min-height:34px;margin:0;display:inline-flex;
   align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
-  font-size:var(--t-md);color:var(--tx3);font-family:inherit}
+  font-size:var(--t-base);color:var(--tx3);font-family:inherit}
 .fli-del:active{color:var(--tx2)}
 .goal-bar-wrap{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:6px 0 2px}
 .goal-bar{height:6px;border-radius:3px;transition:width 0.4s}
@@ -2357,7 +2359,7 @@ button.footnote-link{background:transparent;border:0;padding:0;font-family:var(-
    row — right size for the eye, wrong size for a thumb. A real 44x44 target, which is the floor
    npm run panels measures. */
 .ios-row-x{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-11px -12px -11px 0;
-  background:none;border:0;padding:0;color:var(--tx3);font-family:var(--font-text);font-size:19px;line-height:1;cursor:pointer}
+  background:none;border:0;padding:0;color:var(--tx3);font-family:var(--font-text);font-size:var(--t-base);line-height:1;cursor:pointer}
 .ios-row-x:active{opacity:.45}
 /* The progress line a debt or budget row carries, drawn by the app's one bar component. Both halves
    are <span>s inside a row, so they have to be told to be blocks. */
