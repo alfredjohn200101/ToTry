@@ -5008,6 +5008,66 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── THE ORB TAKES TAPS THAT WERE NOT MEANT FOR IT ─────────────────────────────────────────────
+  // #need-talk-btn is position:fixed over the scroller, so whether it lands on a control is decided
+  // by CONTENT HEIGHT, not by CSS — which is why one screenshot proves nothing either way. A visual
+  // reviewer reported it covering Fight's red urge button; on a differently-seeded capture it did
+  // not, and on a third it covered Train's "Edit" instead. Only a hit-test over every screen settles
+  // it, and only elementFromPoint is valid evidence: el.click() dispatches straight onto the element
+  // and bypasses hit-testing, so a fully covered control still "works" for a script and fails only
+  // for the thumb. An overlap on a full-width row is a nuisance — the row is tappable elsewhere; a
+  // SMALL trailing control losing its centre is a control a person cannot reach at all.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:393, height:852 }, hasTouch:true, isMobile:true });
+    const page = await ctx.newPage();
+    await page.addInitScript(sd=>{ for(const [k,v] of Object.entries(sd)) localStorage.setItem(k,JSON.stringify(v)); }, ESTAB);
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    await page.addStyleTag({ content: ':root{--st:59px;--sb:34px}.milestone-toast,#update-ready-bar,#ios-install-banner{display:none !important}' });
+
+    // CALIBRATE: a control planted under the orb must be caught, one planted clear of it must not.
+    const cal = await page.evaluate(() => {
+      const orb = document.getElementById('need-talk-btn'); if(!orb) return null;
+      const o = orb.getBoundingClientRect();
+      const mk = (id, left) => { const el=document.createElement('button'); el.id=id;
+        el.style.cssText='position:fixed;left:'+left+'px;top:'+(o.top+12)+'px;width:26px;height:26px;z-index:1';
+        document.body.appendChild(el); const q=el.getBoundingClientRect();
+        const hit=document.elementFromPoint(q.x+q.width/2, q.y+q.height/2);
+        const stolen = !!(hit && hit!==el && !el.contains(hit)); el.remove(); return stolen; };
+      return { under: mk('__u', o.left+14), clear: mk('__c', 8) };
+    });
+    if(!cal) console.log('orb: no orb on the opening screen — nothing to hit-test');
+    else if(!cal.under || cal.clear) findings.push(`orb: THE MEASUREMENT IS WRONG, NOT THE APP — planted-under caught ${cal.under}, planted-clear wrongly caught ${cal.clear}`);
+    else {
+      const stolen = [];
+      for(const tab of ['home','fight','grow','track','nourish','train','money','soul','settings']){
+        await page.evaluate(t => { try{ go(t); }catch(e){} }, tab);
+        await page.waitForTimeout(600);
+        const hits = await page.evaluate(t => {
+          const orb = document.getElementById('need-talk-btn');
+          if(!orb || getComputedStyle(orb).display === 'none') return [];
+          const pane = document.getElementById('tab-'+t); if(!pane) return [];
+          const out = [];
+          pane.querySelectorAll('button,a,input,select,textarea,summary,[onclick],[role="button"]').forEach(el => {
+            if(el===orb || orb.contains(el)) return;
+            const r = el.getBoundingClientRect();
+            if(r.width<4 || r.height<4 || r.bottom<0 || r.top>innerHeight) return;
+            const s = getComputedStyle(el);
+            if(s.visibility==='hidden' || s.display==='none' || +s.opacity<0.05) return;
+            const hit = document.elementFromPoint(r.x+r.width/2, r.y+r.height/2);
+            if(!(hit && (hit===orb || orb.contains(hit)))) return;      // its own CENTRE is stolen
+            out.push(((el.textContent||el.getAttribute('aria-label')||el.tagName).trim().replace(/\s+/g,' ')).slice(0,34) + ' (' + Math.round(r.width) + 'x' + Math.round(r.height) + ')');
+          });
+          return out;
+        }, tab);
+        hits.forEach(h => stolen.push(tab + ': ' + h));
+      }
+      if(stolen.length) findings.push(`orb: ${stolen.length} control(s) lose their own centre to the floating orb and cannot be tapped — ${stolen.join('; ')}`);
+      else console.log('orb: no control loses its centre to the floating orb on any of the nine screens');
+    }
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.
