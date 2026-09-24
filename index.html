@@ -2927,6 +2927,8 @@ a.ios-row{text-decoration:none}
    runs the full width of its card instead of wrapping early to avoid them. */
 .verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45;text-wrap:balance}
 .verse-pill.hero-verse .vr{font-size:13px !important;color:var(--tx2) !important;margin-top:6px;letter-spacing:-.006em}
+button.vr{background:none;border:0;padding:0;font-family:var(--font-text);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:28px}
+button.vr:active{opacity:.5}
 /* Saved is the same heart, filled — not a different character in a different font. */
 .vsave.saved .ic{fill:currentColor}
 
@@ -4712,7 +4714,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="verse-pill hero-verse" onclick="nextVerse()">
       <div class="eyebrow">Today&#8217;s word</div>
       <p id="hdr-verse">Loading today&#8217;s word...</p>
-      <div class="vr" id="hdr-ref"></div>
+      <button type="button" class="vr" id="hdr-ref" onclick="event.stopPropagation();readHdrVerseContext()" aria-label="Read this verse in its chapter"></button>
       <div class="verse-tools">
         <button class="btn vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Save</button>
         <button class="btn vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Make a card</button>
@@ -14289,6 +14291,8 @@ function openMyBook(){
     if(t !== 'christianity' && typeof openReader === 'function'){ openReader(t); return; }
   }catch(_){}
   if(typeof go === 'function') go('bible');
+  // A function named "open my book" has to open the book. See openScripture() above.
+  if(typeof setBibleTab === 'function') setBibleTab('read');
 }
 // The fallback text when a generated reflection fails or comes back empty.
 //
@@ -14751,7 +14755,7 @@ function applyFaithMorning(){
 }
 
 // ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
-function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
+function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); if(typeof setBibleTab==='function') setBibleTab('read'); return; } openReader(t); }
 function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); else _renderTodayAnchor(); }
 function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } // Buddhism and secular used to fall through to the breath menu because they had no practice at all.
 if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
@@ -16126,6 +16130,21 @@ function showV(v){
   if(mr)mr.textContent='\u2014 '+v.r;
 }
 function nextVerse(){const VS=activeVerses();vi=(vi+1)%VS.length;showV(VS[vi]);}
+// The reference under Today's word, made a door. Christians land in the chapter through
+// readVerseContext(), which is the only caller in the app that has ever put a person on actual
+// scripture; every other tradition has its own reader and its own reference parser, so hand it to
+// openScripture() rather than guessing at a chapter.
+function readHdrVerseContext(){
+  try{
+    const el = document.getElementById('hdr-ref');
+    const ref = el ? (el.textContent || '').trim() : '';
+    if(!ref) return;
+    if(faithTradition() === 'christianity' && typeof readVerseContext === 'function'){
+      readVerseContext(encodeURIComponent(ref)); return;
+    }
+    if(typeof openScripture === 'function') openScripture();
+  }catch(_){}
+}
 function saveHdrVerse(){
   const v=document.getElementById('hdr-verse').textContent;
   const r=document.getElementById('hdr-ref').textContent;

@@ -3077,6 +3077,8 @@ function openMyBook(){
     if(t !== 'christianity' && typeof openReader === 'function'){ openReader(t); return; }
   }catch(_){}
   if(typeof go === 'function') go('bible');
+  // A function named "open my book" has to open the book. See openScripture() above.
+  if(typeof setBibleTab === 'function') setBibleTab('read');
 }
 // The fallback text when a generated reflection fails or comes back empty.
 //
@@ -3539,7 +3541,7 @@ function applyFaithMorning(){
 }
 
 // ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
-function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
+function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); if(typeof setBibleTab==='function') setBibleTab('read'); return; } openReader(t); }
 function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); else _renderTodayAnchor(); }
 function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } // Buddhism and secular used to fall through to the breath menu because they had no practice at all.
 if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
@@ -4914,6 +4916,21 @@ function showV(v){
   if(mr)mr.textContent='\u2014 '+v.r;
 }
 function nextVerse(){const VS=activeVerses();vi=(vi+1)%VS.length;showV(VS[vi]);}
+// The reference under Today's word, made a door. Christians land in the chapter through
+// readVerseContext(), which is the only caller in the app that has ever put a person on actual
+// scripture; every other tradition has its own reader and its own reference parser, so hand it to
+// openScripture() rather than guessing at a chapter.
+function readHdrVerseContext(){
+  try{
+    const el = document.getElementById('hdr-ref');
+    const ref = el ? (el.textContent || '').trim() : '';
+    if(!ref) return;
+    if(faithTradition() === 'christianity' && typeof readVerseContext === 'function'){
+      readVerseContext(encodeURIComponent(ref)); return;
+    }
+    if(typeof openScripture === 'function') openScripture();
+  }catch(_){}
+}
 function saveHdrVerse(){
   const v=document.getElementById('hdr-verse').textContent;
   const r=document.getElementById('hdr-ref').textContent;

@@ -2927,6 +2927,8 @@ a.ios-row{text-decoration:none}
    runs the full width of its card instead of wrapping early to avoid them. */
 .verse-pill.hero-verse p{font-size:17px !important;font-style:normal !important;color:var(--tx) !important;line-height:1.45;text-wrap:balance}
 .verse-pill.hero-verse .vr{font-size:13px !important;color:var(--tx2) !important;margin-top:6px;letter-spacing:-.006em}
+button.vr{background:none;border:0;padding:0;font-family:var(--font-text);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:28px}
+button.vr:active{opacity:.5}
 /* Saved is the same heart, filled — not a different character in a different font. */
 .vsave.saved .ic{fill:currentColor}
 
@@ -4712,7 +4714,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <div class="verse-pill hero-verse" onclick="nextVerse()">
       <div class="eyebrow">Today&#8217;s word</div>
       <p id="hdr-verse">Loading today&#8217;s word...</p>
-      <div class="vr" id="hdr-ref"></div>
+      <button type="button" class="vr" id="hdr-ref" onclick="event.stopPropagation();readHdrVerseContext()" aria-label="Read this verse in its chapter"></button>
       <div class="verse-tools">
         <button class="btn vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Save</button>
         <button class="btn vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Make a card</button>
