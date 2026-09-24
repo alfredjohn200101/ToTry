@@ -29,9 +29,20 @@ function extractFn(name){
   return html.slice(m.index, end);
 }
 
+// THE DAY PRIMITIVE IS ALWAYS IN SCOPE. dayKeyOf()/dayKeyNorm() are what every day-keyed store in
+// the app now goes through, so a loaded function that touches a date reaches for them the same way it
+// reaches for Date — and in the shipped bundle it finds them, because there is one top-level scope.
+// Extracting a caller without them reproduced a ReferenceError the app cannot actually have, which is
+// the harness lying about the code rather than the code being wrong. Re-declaring a function
+// declaration in sloppy mode is legal, so naming either one in `names` as well is harmless.
+// _dayKeyEnginePads is here for a sharper reason than the other two: migrateDayKeys() wraps every
+// store in its own try/catch so one bad store cannot break boot, which means a helper missing from
+// an extract does not throw — the migration silently moves NOTHING and the run reports a clean
+// no-op. That is a harness lying in the direction of "already fixed", which is the worst direction.
+const DAY_PRIMITIVES = ['dayKeyNorm', 'dayKeyOf', '_dayKeyEnginePads'];
 // Define the named functions (+ any provided globals/stubs) in one scope and return them.
 function load(names, globals){
-  const src = names.map(extractFn).join('\n\n');
+  const src = DAY_PRIMITIVES.concat(names).map(extractFn).join('\n\n');
   const provided = Object.assign({
     Math, Date, JSON, Array, Object, isNaN, parseFloat, parseInt, String, Number, RegExp, console
   }, globals || {});

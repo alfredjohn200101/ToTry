@@ -272,7 +272,7 @@ async function _researchProtocol(name, key){
 // wired from the evening ritual, with a per-tradition closing line); this did not. Daylight in the eyes
 // early sets tonight's sleep more than anything done at bedtime. One screen, no timer, nothing logged
 // but the fact it was done — so the card can stop asking once they have been out.
-function _sleepDayKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
+function _sleepDayKey(){ try{ return dayKeyOf(); }catch(_){ return 'x'; } }
 // Has this person already been out today? _morningLightGo() has always WRITTEN totry_morning_light_last,
 // and nothing ever read it — so the card asked "Get light in your eyes" every time they opened the
 // Morning tab, including straight after they had done it and told the app so. A test asserted this

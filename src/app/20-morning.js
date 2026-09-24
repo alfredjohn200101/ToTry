@@ -205,7 +205,7 @@ function renderMorningDayAhead(){
     const out = document.getElementById('morning-day-ahead-text');
     if(!card || !out) return;
     const bits = [];
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
 
     // 1) What's actually on today — their real schedule (calendar stores Mon=0).
     const dow = (new Date().getDay() + 6) % 7;
@@ -219,7 +219,7 @@ function renderMorningDayAhead(){
 
     // 2) Going by their OWN history — are they likely training today? (Never if they already did,
     //    and never if the calendar already says it — no point telling them what they can see.)
-    const trainedToday = (ls('totry_workouts')||[]).some(w => w && w.ts && new Date(w.ts).toLocaleDateString('en-AU') === todayKey);
+    const trainedToday = (ls('totry_workouts')||[]).some(w => w && w.ts && dayKeyOf(w.ts) === todayKey);
     const gymOnCal = events.some(e => e && e.type === 'gym');
     const usual = _usualTrainingToday();
     if(usual && !trainedToday && !gymOnCal){
@@ -258,7 +258,7 @@ function logMorningSleep(v){
   ls('totry_checkins', checkins.slice(0,300));
   // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so
   // a morning sleep rating shows as "Xh" there instead of a stale 0h. (Was two disconnected stores.)
-  try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
+  try{ const _dk=dayKeyOf(); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('light');
   // Reflect selection in the UI. THIS NEVER PAINTED: it set inline background and colour, and the
@@ -566,6 +566,6 @@ function _weekStats(){
   // Money — the fourth front, so the weekly word can speak to a man's whole life, not just body+soul.
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
   // Nutrition consistency — days actually logged this week.
-  let nutDays = 0; try{ const nl=ls('totry_nutlog')||{}; for(let i=0;i<7;i++){ const d=new Date(now-i*86400000).toLocaleDateString('en-AU'); if((nl[d]||[]).length) nutDays++; } }catch(_){}
+  let nutDays = 0; try{ const nl=ls('totry_nutlog')||{}; for(let i=0;i<7;i++){ const d=dayKeyOf(now-i*86400000); if((nl[d]||[]).length) nutDays++; } }catch(_){}
   return { workouts: workouts.length, journalEntries: journal.length, wins, slips7, longestStreak: longest, reclaimed, nutDays };
 }

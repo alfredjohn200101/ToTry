@@ -579,7 +579,7 @@ function viceModeLabel(v){
 //   v.pledgeDays  int          lifetime days pledged. NEVER resets, never decrements. Breaking it
 //                              is not recorded, not counted, not mentioned. It is re-made, not owed.
 //   v.stage      'curious'|'torn'|'ready'|'rebuilding'|'shaky'   +  v.stageAt (ISO)
-function _vDay(){ return new Date().toLocaleDateString('en-AU'); }
+function _vDay(){ return dayKeyOf(); }
 function vicePledgedToday(v){ return !!(v && v.pledge === _vDay()); }
 
 // B1 — THE DAILY PLEDGE. One tap. One day. Grace-based by construction: there is no "did you keep
@@ -1209,7 +1209,7 @@ function saveQuickLog(){
     else if(/food binge|junk|fast food/.test(name))savedNow=15;
     if(savedNow>0){
       const savings=ls('totry_vice_savings_log')||[];
-      savings.push({vice:v.n,amount:savedNow,ts:new Date().toISOString(),date:new Date().toLocaleDateString('en-AU')});
+      savings.push({vice:v.n,amount:savedNow,ts:new Date().toISOString(),date:dayKeyOf()});
       ls('totry_vice_savings_log',savings);
     }
     // Auto-log this victory into the Reflect wins log
@@ -1218,7 +1218,7 @@ function saveQuickLog(){
     _wins.unshift({
       text: 'Defeated an urge to ' + v.n.toLowerCase() + ' — chose who I\'m becoming.',
       ts: new Date().toISOString(),
-      date: new Date().toLocaleDateString('en-AU'),
+      date: dayKeyOf(),
       source: 'vice'
     });
     ls('totry_wins', _wins.slice(0, 500));
@@ -1261,7 +1261,7 @@ function saveQuickLog(){
     trigger,
     note,
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_fight_log', fightLog.slice(0, 200));
   

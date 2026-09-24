@@ -3,11 +3,11 @@
 // a relapse is handled by the post-relapse card (we defer), otherwise we give him ONE clear
 // thing — and on a low-energy day we strip the ask down to the smallest possible step.
 function isLowEnergyToday(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   return ls('totry_low_day') === today;
 }
 function toggleLowEnergyDay(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   if(ls('totry_low_day') === today){ ls('totry_low_day', ''); }
   else { ls('totry_low_day', today); haptic('tap'); }
   renderTodayForYou();
@@ -28,7 +28,7 @@ function renderWeeklyCheckin(){
   let proSum = 0, proDays = 0;
   for(let i = 1; i <= 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
-    const es = log[d.toLocaleDateString('en-AU')]||[];
+    const es = log[dayKeyOf(d)]||[];
     if(es.length){ proDays++; proSum += es.reduce((a,e) => a + (parseFloat(e.pro)||0), 0); }
   }
   const proAvg = proDays ? Math.round(proSum / proDays) : 0;
@@ -66,7 +66,7 @@ function renderWeeklyCheckin(){
 // Nudges are dismissible per-day so they never nag.
 function computeProactiveNudge(){
   const now = Date.now();
-  const dayKey = ts => new Date(ts).toLocaleDateString('en-AU');
+  const dayKey = ts => dayKeyOf(ts);
   const since = d => now - d*86400000;
   // Read the shared nervous system so the nudge speaks from the SAME truth as the coach and the
   // weekly synthesis — no contradicting numbers across the app. Rule-specific windows (e.g. the
@@ -130,7 +130,7 @@ function computeProactiveNudge(){
     return { id:'overtrained', tone:'care',
       eyebrow:'A word before you train',
       text: hi + 'you\u2019ve trained ' + trainedDays.size + ' of the last 6 days without a real rest. Strength is built in recovery, not just effort. ' + (trainedToday ? 'You\u2019ve already moved today \u2014 maybe let that be enough.' : 'Today might be the day your body grows by resting.'),
-      actions: [{label:'Take a rest day', onclick:'ls(\'totry_low_day\', new Date().toLocaleDateString(\'en-AU\'));if(typeof renderTodayForYou===\'function\')renderTodayForYou();dismissNudge(\'overtrained\')'},
+      actions: [{label:'Take a rest day', onclick:'ls(\'totry_low_day\', dayKeyOf());if(typeof renderTodayForYou===\'function\')renderTodayForYou();dismissNudge(\'overtrained\')'},
                 {label:'I\u2019m good', ghost:true, onclick:'dismissNudge(\'overtrained\')'}] };
   }
 
@@ -206,7 +206,7 @@ function computeProactiveNudge(){
       // count consecutive prior days with an evening
       let streak = 0;
       for(let i=1;i<=30;i++){
-        const k = new Date(now - i*86400000).toLocaleDateString('en-AU');
+        const k = dayKeyOf(now - i*86400000);
         if(evenings.some(e => dayKey(e.ts) === k)) streak++; else break;
       }
       // Third ask. The hero already says "Close the day" over a gold button, the Today-for-you card was
@@ -294,7 +294,7 @@ function renderHomeInsight(){
   if(typeof renderProactiveNudge === 'function' && renderProactiveNudge()){ box.style.display='none'; return; }
   const now = Date.now();
   const cutoff = now - 28*86400000; // last 4 weeks
-  const dayKey = (ts) => new Date(ts).toLocaleDateString('en-AU');
+  const dayKey = (ts) => dayKeyOf(ts);
 
   // Gather per-day signals
   const evenings = ritualLog('totry_evenings').filter(e => e.ts && new Date(e.ts).getTime() >= cutoff);
@@ -423,7 +423,7 @@ function renderTodayForYou(){
   // that makes people quit apps for good.
   (function(){
     const lastBack = ls('totry_last_return_ease');
-    const tkNow = new Date().toLocaleDateString('en-AU');
+    const tkNow = dayKeyOf();
     if(lastBack === tkNow) return; // only ease once per day
     const lastActivity = [ls('totry_evenings'),ls('totry_journal'),ls('totry_workouts'),ls('totry_checkins')]
       .flatMap(a => Array.isArray(a)?a:[])
@@ -453,8 +453,8 @@ function renderTodayForYou(){
   // morning ritual leads from Home (no hunting through Soul); evening leads to Reflect.
   const _doneToday = (key) => {
     const v = ls(key); if(!v) return false;
-    const tk = new Date().toLocaleDateString('en-AU');
-    if(Array.isArray(v)) return v.some(e => e && (e.date === tk || (typeof getDayCount==='function' && e.day === getDayCount()) || (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === tk)));
+    const tk = dayKeyOf();
+    if(Array.isArray(v)) return v.some(e => e && (dayKeyNorm(e.date) === tk || (typeof getDayCount==='function' && e.day === getDayCount()) || (e.ts && dayKeyOf(e.ts) === tk)));
     if(typeof v === 'object') return !!v[tk];
     return false;
   };

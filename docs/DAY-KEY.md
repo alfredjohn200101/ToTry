@@ -1,8 +1,10 @@
 # The day key is a locale formatter, and that is a data bug
 
-> Status, 24 Sep 2026: **found, measured, designed, implemented once, and REFUTED twice. Not merged.**
-> Nothing in this document is in `main` or in `ios-native`. Read it before starting the next round —
-> it exists so that round begins from the corrections rather than re-deriving them.
+> Status, 24 Sep 2026: **SHIPPED as v607**, on `ios-native`, with all three refutations applied.
+> This document is kept as the record of how it was found and what the refuters caught — the three
+> numbered items under "What the refuters caught" are now executing assertions in `test/core.test.js`
+> and each was fault-injected by corrupting an argument. What it still does NOT cover is unchanged:
+> see "Scope this fix does NOT cover" below, and the two additions at the end.
 
 ## The bug
 
@@ -132,9 +134,43 @@ deliberate no-op that says so in its own copy, so two devices in different zones
 keys for the same moment with no engine difference at all. That is a separate, still-open bug. Fixing
 both at once would make neither provable.
 
+## How each refutation was answered (v607)
+
+1. **The three half-applied renames** are fixed, and guarded as a CLASS rather than as three sites.
+   `test/core.test.js` now scans HANDLER STRINGS — both `on*="…"` attributes and the `{label, onclick:'…'}`
+   nudge-action shape, stepping over `&apos;` and `\'` — and fails if any of them formats a date. The
+   scanner calibrates on two planted defects (one per escape spelling) plus one clean handler, and
+   reports "the MEASUREMENT is wrong, not the app" rather than a number when its own calibration fails.
+   All three writers now spell it `dayKeyOf()`, which takes no argument, so there is no quoted locale
+   left for an escaping to swallow. **A FOURTH site of the same shape was found by asking the question
+   of the whole tree**: `syncWeightTodayRow()` — the row that answers "did I weigh in today" — was
+   still on the raw formatter while both writers of `totry_body` had moved to `dayKeyOf()`.
+2. **The migration prefers the device's own spelling**, decided by asking the engine
+   (`_dayKeyEnginePads()`, probed on 2 Sep 2026 because both fields are single-digit), not by assuming
+   canonical is newest. Both directions are asserted, so it is a rule about whose data it is rather
+   than a flipped constant. `opts.zeroIsAbsent` (migration only — the pull has cts/lts and does not
+   take it) stops a freshly-initialised `{water:0,sleep:0,steps:0}` flattening a filled day. Both
+   losses named above are executing tests that were seen to FAIL on the pre-correction functions.
+3. **No store takes `Math.max`.** Both claims were verified in this tree first: `saveEvening()` reads
+   `#evening-move` and assigns it onto `totry_watch_burns_byday` (hand-typed, "editable until
+   midnight"), and `syncStrava()` rebuilds `totry_strava_burns_byday` whole ("re-syncs replace rather
+   than double-count"), skipping Hevy-sourced activities — which is the double-count removal `Math.max`
+   would have reinstated. The rule is asserted for every store name, so a new store cannot be added to
+   an exemption list that no longer exists.
+
+## Two more things this does NOT cover, found while fixing it
+
+- **The `.date` field on array rows still carries the engine's `{month:'short'}` spelling.** Those rows
+  union by id so nothing is lost, and the comparisons around them go through `dayKeyNorm()` — but
+  `dayKeyNorm` requires a four-digit year and `.date` is written as `"22 Sept"`, with none. So on a row
+  that has no `ts`, the `dayKeyNorm(e.date)` half of those comparisons can never match and the
+  engine-native `e.date === todayShort` half is what actually decides. Every current writer also writes
+  a `ts`, so the path is reachable only for legacy rows. Fixing it properly needs a short-date
+  comparison primitive of its own, which is a separate change.
+- **The timezone**, unchanged and still open — see the section above.
+
 ## Where the refuted implementation lives
 
-Worktree `.claude/worktrees/wf_12957e88-cde-1`, commit `8bb5da3` — 36 files, +1281/−461, gate green in
-that tree (2210 assertions, 21 crisis doors, 551 personas, 34 edge, preflight ready). **It is based on
-`c1ddd82` (v601.7), which is far behind `ios-native`**, so every line number in it is stale and it
-cannot be merged as-is. Treat it as a reference implementation of the design, not as a patch.
+Worktree `.claude/worktrees/wf_12957e88-cde-1`, commit `8bb5da3`, based on `c1ddd82` (v601.7). Kept as
+the reference implementation of the DESIGN; its line numbers are stale and its merge rule is the
+refuted one. v607 was built by replaying it onto current HEAD and then applying the three corrections.

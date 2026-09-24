@@ -205,7 +205,7 @@ const Health = {
       const sum=async(dataType)=>{ try{ const r=await p.queryAggregated({ startDate:iso(start), endDate:iso(now), dataType, bucket:'day' }); const arr=(r&&r.aggregatedData)||[]; return arr.reduce((s,x)=>s+(x.value||0),0); }catch(_){ return null; } };
       const steps=await sum('steps');
       const active=await sum('active-calories');
-      const auKey=now.toLocaleDateString('en-AU');
+      const auKey=dayKeyOf(now);
       if(steps!=null && steps>0){ try{ ls('totry_today_steps', Math.round(steps)); const tr=ls('totry_trackers')||{}; if(!tr[auKey])tr[auKey]={water:0,sleep:0,steps:0}; tr[auKey].steps=Math.round(steps); ls('totry_trackers',tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){} }
       if(active!=null && active>0){ try{ const w=ls('totry_watch_burns_byday')||{}; w[auKey]=Math.round(active); ls('totry_watch_burns_byday',w); if(typeof reconcileBurns==='function') reconcileBurns(); if(typeof renderNutritionLog==='function') renderNutritionLog(); }catch(_){} }
       // Mindful minutes — read the SHARED Apple Health ledger (Watch Breathe/Reflect, Calm, Headspace,
@@ -250,7 +250,7 @@ const Health = {
         try{
           const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(n.date||''));
           if(!m) return;
-          const key = new Date(+m[1], +m[2]-1, +m[3]).toLocaleDateString('en-AU');
+          const key = dayKeyOf(new Date(+m[1], +m[2]-1, +m[3]));
           if(!tr[key]) tr[key] = { water:0, sleep:0, steps:0 };
           // NEVER overwrite a figure the person typed themselves. A value with no _sleepSrc came from
           // them, and their own account of the night outranks the watch's.
@@ -627,7 +627,7 @@ function _cancelReachOuts(){
   try{ const now=Date.now(); _saveReachLog(_reachLog().filter(function(e){ return e && e.ts <= now; })); }catch(_){}
 }
 function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
-function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
+function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return dayKeyOf(m.ts)===dayKeyOf(); }catch(_){ return false; } }
 // A tap is the strongest receptivity signal we can get, and it is GROUND TRUTH — everything else here
 // is a guess. So it may overrule the guess.
 //

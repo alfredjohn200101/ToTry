@@ -489,7 +489,7 @@ function saveExamen(){
   const log = ls('totry_examens') || [];
   log.unshift({
     flagged: !!_exCrisis,
-    date: new Date().toLocaleDateString('en-AU'),
+    date: dayKeyOf(),
     ts: new Date().toISOString(),
     day: getDayCount(),
     ..._examenAnswers
@@ -619,7 +619,7 @@ function computeDayActivity(){
     if(!ts) return;
     const d = new Date(ts);
     if(isNaN(d.getTime())) return;
-    const key = d.toLocaleDateString('en-AU');
+    const key = dayKeyOf(d);
     map[key] = (map[key] || 0) + 1;
   };
   (ls('totry_journal') || []).forEach(j => addDate(j.ts));
@@ -709,7 +709,7 @@ function renderActivityHeatmap(){
       // Don't render cells in the future — the week simply stops at today.
       if(cellDate > today) continue;
       
-      const key = cellDate.toLocaleDateString('en-AU');
+      const key = dayKeyOf(cellDate);
       const score = activity[key] || 0;
       
       // Color buckets — green-gold scale
@@ -754,7 +754,7 @@ function showDayActivityDetail(dateKey){
   // dateKey is 'DD/MM/YYYY' au format
   // Collect every entry with this date
   const items = [];
-  const matchDate = (ts) => ts && new Date(ts).toLocaleDateString('en-AU') === dateKey;
+  const matchDate = (ts) => ts && dayKeyOf(ts) === dateKey;
   
   (ls('totry_journal') || []).forEach(j => { if(matchDate(j.ts)) items.push({kind: 'Journal', text: j.text?.slice(0, 80), mood: j.mood}); });
   (ls('totry_evenings') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Evening reflection', text: e.win || e.release || e.see || ''}); });
@@ -837,14 +837,19 @@ function showDayActivityDetail(dateKey){
 // moves it more — and we chronically under-estimate how much it lands. So the third slot points at a
 // person, and offers to carry it. No streak, no daily obligation, no scoring — three lines on the
 // days you feel like it, and nothing at all on the days you don't.
-function _tgtKey(){ return new Date().toLocaleDateString('en-AU'); }
+function _tgtKey(){ return dayKeyOf(); }
 function getTGT(d){ try{ const all=ls('totry_tgt')||{}; return all[d||_tgtKey()]||null; }catch(_){ return null; } }
 function saveTGT(patch){
   try{
     const all=ls('totry_tgt')||{}; const k=_tgtKey();
     all[k]=Object.assign({ts:new Date().toISOString()}, all[k]||{}, patch);
     // keep it light — a season of entries, not a lifetime archive
-    const keys=Object.keys(all); if(keys.length>120){ keys.sort(); delete all[keys[0]]; }
+    // EVICT THE OLDEST DAY, NOT THE ALPHABETICALLY FIRST. A plain .sort() on 'DD/MM/YYYY' is
+    // LEXICOGRAPHIC — '01/12/2025' sorts before '02/01/2026' — so the eviction threw away a day from
+    // this month to keep one from last year. _pruneNutLog() already sorts through _auKeyMs for
+    // exactly this reason; the canonical key made the two spellings agree but not the ordering.
+    const keys=Object.keys(all);
+    if(keys.length>120){ keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); }); delete all[keys[0]]; }
     ls('totry_tgt', all);
   }catch(_){}
 }
@@ -940,7 +945,7 @@ function _tgtCopyAndDone(){
 }
 
 function completeEvening(){
-  const _todayStrForBurns = () => new Date().toLocaleDateString('en-AU');
+  const _todayStrForBurns = () => dayKeyOf();
   const win=document.getElementById('evening-win')?.value.trim()||'';
   const release=document.getElementById('evening-release')?.value.trim()||'';
   // The heaviest question ("if the people you love watched today, what would they see?"). It used
@@ -956,10 +961,10 @@ function completeEvening(){
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';
   const tasks=[t1,t2,t3].filter(Boolean);
-  if(tasks.length)ls('totry_tomorrow_tasks',{tasks,date:new Date().toLocaleDateString('en-AU'),ts:new Date().toISOString()});
+  if(tasks.length)ls('totry_tomorrow_tasks',{tasks,date:dayKeyOf(),ts:new Date().toISOString()});
   // Steps entered at night (from the user's watch) — store where the rest of the app reads them.
   const stepsVal=parseInt(document.getElementById('evening-steps')?.value||'0');
-  if(stepsVal>0){ ls('totry_today_steps', stepsVal); try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=stepsVal; ls('totry_trackers',_tr); }catch(_){} }
+  if(stepsVal>0){ ls('totry_today_steps', stepsVal); try{ const _tr=ls('totry_trackers')||{}; const _dk=dayKeyOf(); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=stepsVal; ls('totry_trackers',_tr); }catch(_){} }
   // Apple Watch rings, entered at a glance. Move = active calories → feed the burn ledger so it
   // affects the nutrition net (idempotent via its own per-day key, like Strava/strength).
   const moveCal=parseInt(document.getElementById('evening-move')?.value||'0')||0;
@@ -980,10 +985,10 @@ function completeEvening(){
   }catch(_){ }
   const goalsHit=window.__goalsHit||null;
   const log=ls('totry_evenings')||[];
-  const _todayStr=new Date().toLocaleDateString('en-AU');
+  const _todayStr=dayKeyOf();
   const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,see,flagged:!!_evCrisis,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
   // Editable until midnight: replace today's existing entry rather than stacking duplicates.
-  const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
+  const _exIdx=log.findIndex(e=>e.ts && dayKeyOf(e.ts)===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
   if(typeof logEvent==='function') logEvent('evening_done');
   ls('totry_evenings',log.slice(0,1200)); // keep years of reflections, not ~3 months — his honest evenings shouldn't silently vanish
@@ -993,8 +998,8 @@ function completeEvening(){
   if(typeof renderHomeHabits === 'function') renderHomeHabits();
   // Has the examen been done today? It's the closing act — if not done, gently point there
   // instead of falsely declaring the day complete.
-  const today=new Date().toLocaleDateString('en-AU');
-  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
   const done=document.getElementById('evening-done');
 
   // THE CRISIS RESPONSE FIRES FIRST, AND UNCONDITIONALLY.
@@ -1067,8 +1072,8 @@ function initEveningTab(){
   if(el)el.textContent=(userName?userName+', ':'')+'the day winds down';
   // Close the arc: if a morning intention was set today, reflect it back here.
   try{
-    const _t=new Date().toLocaleDateString('en-AU');
-    const _m=ritualLog('totry_mornings').find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===_t);
+    const _t=dayKeyOf();
+    const _m=ritualLog('totry_mornings').find(x=>x.ts&&dayKeyOf(x.ts)===_t);
     const _recall=document.getElementById('evening-intention-recall');
     const _txt=document.getElementById('evening-intention-text');
     if(_m&&_m.intention&&_m.intention.trim()&&_recall&&_txt){ _txt.textContent='\u201c'+_m.intention.trim()+'\u201d'; _recall.style.display='block'; }
@@ -1077,8 +1082,8 @@ function initEveningTab(){
   // The winning man sees his evidence: reflect the day he ACTUALLY lived, from the whole-life data,
   // so looking back is grounded in what he really did \u2014 not a blank recall. Grace over shame.
   try{
-    const _au=new Date().toLocaleDateString('en-AU');
-    const _isToday=(ts)=> ts && new Date(ts).toLocaleDateString('en-AU')===_au;
+    const _au=dayKeyOf();
+    const _isToday=(ts)=> ts && dayKeyOf(ts)===_au;
     const ev=[];
     // One icon language: the evidence chips draw svgIcon(), gold so they read as icons on the
     // neutral chip, not as dim text.
@@ -1100,8 +1105,8 @@ function initEveningTab(){
   // the user can adjust it as the day finishes (e.g. steps added later) rather than starting blank
   // or creating a duplicate. completeEvening() updates today's entry in place.
   try{
-    const today=new Date().toLocaleDateString('en-AU');
-    const todays=ritualLog('totry_evenings').find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const today=dayKeyOf();
+    const todays=ritualLog('totry_evenings').find(e=>e.ts && dayKeyOf(e.ts)===today);
     if(todays){
       const setv=(id,v)=>{const n=document.getElementById(id); if(n&&v!=null&&n.value==='') n.value=v;};
       // THE IDS WERE WRONG, AND THAT ERASED PEOPLE'S EVENINGS. completeEvening() reads #evening-win,
@@ -1149,8 +1154,8 @@ function initEveningTab(){
   try{ renderTGT(); }catch(_){}
   if(typeof updateExamenCount === 'function') updateExamenCount();
   // Reflect today's examen state — if done, show the green confirmation in the card.
-  const today=new Date().toLocaleDateString('en-AU');
-  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
   const edt=document.getElementById('examen-done-today');
   // '' rather than 'block': the confirmation is a flex row (a check beside its line), and an inline
   // display:block would stack the icon above the words.

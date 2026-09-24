@@ -510,7 +510,7 @@ function getLifeState(){
   const now = Date.now();
   const L = (typeof ls==='function') ? ls : (()=>null);
   const within = (ts, days) => { const t = new Date(ts).getTime(); return !isNaN(t) && (now - t) <= days*86400000; };
-  const auKey = ts => new Date(ts).toLocaleDateString('en-AU');
+  const auKey = ts => dayKeyOf(ts);
   const avg = (arr, f) => { const v = arr.map(f).filter(x=>x!=null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 
   // ── TRAINING ──
@@ -889,7 +889,7 @@ function buildPTCtx(){
     }
   }catch(_){}
   // Today's nutrition so far
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = Math.round(todayEntries.reduce((a,e)=>a+(e.cal||0),0));
@@ -981,7 +981,7 @@ function buildCtx(){
   
   // ── LIVE TODAY STATE ──
   // Today's nutrition log so far
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = Math.round(todayEntries.reduce((a,e)=>a+(e.cal||0),0));
@@ -1133,8 +1133,8 @@ function buildCtx(){
   // written, in an app whose entire claim is that the fronts talk to each other.
   const todayMorning = mornings.find(m => {
     if(!m) return false;
-    if(m.ts){ try{ if(new Date(m.ts).toLocaleDateString('en-AU') === todayKey) return true; }catch(_){} }
-    return m.date === todayKey;   // tolerate any older row that stored the plain key
+    if(m.ts){ try{ if(dayKeyOf(m.ts) === todayKey) return true; }catch(_){} }
+    return dayKeyNorm(m.date) === todayKey;   // tolerate any older row that stored the plain key
   });
   let moodCtx = '';
   if(todayMorning){
@@ -1650,7 +1650,7 @@ async function maybeUpdateCoachMemory(){
     ls('totry_coach_memory', mem);
     // Only re-distill every 4 user exchanges, and not more than once/day, to respect cost.
     if(mem.exchanges % 4 !== 0) return;
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     if(mem.updated === today) return;
     if(!navigator.onLine || !sb || !currentUser) return;
     // Feed recent conversation + existing summary; ask for a tight evolving memory.
@@ -2067,7 +2067,7 @@ function goCoach(t){go('coach');document.getElementById('coach-in').value=t;send
 function trackAPIUsage(kind, tokens){
   try{
     const log = ls('totry_usage_log') || {};
-    const day = new Date().toLocaleDateString('en-AU');
+    const day = dayKeyOf();
     if(!log[day]) log[day] = {ai: 0, tokens: 0, calls: []};
     log[day].ai = (log[day].ai || 0) + 1;
     log[day].tokens = (log[day].tokens || 0) + (tokens || 0);
@@ -2096,7 +2096,7 @@ function renderUsageStats(){
   // Aggregate
   let totalCalls = 0, totalTokens = 0;
   let today = 0, last7 = 0;
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const wkAgo = Date.now() - 7 * 86400000;
   
   days.forEach(d => {
@@ -4767,7 +4767,7 @@ function pickDailyContextualVerse(){
   const VS = activeVerses();
   const _dc = () => { try{ return (typeof getDayCount==='function') ? getDayCount() : Math.floor(Date.now()/86400000); }catch(_){ return Math.floor(Date.now()/86400000); } };
   try{
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     const cacheKey = 'totry_verse_today';
     const cached = ls(cacheKey);
     // KEYED BY TRADITION, AND BOUNDS-CHECKED. The banks are very different sizes (Christianity 44,
@@ -4778,7 +4778,7 @@ function pickDailyContextualVerse(){
     // half-dead app for the rest of that day, and nothing told them why.
     const _tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
     const _bankLen = (typeof activeVerses==='function') ? (activeVerses()||[]).length : 0;
-    if(cached && cached.date === today && cached.tr === _tr &&
+    if(cached && dayKeyNorm(cached.date) === today && cached.tr === _tr &&
        typeof cached.idx === 'number' && cached.idx >= 0 && cached.idx < _bankLen){ return cached.idx; }
 
     // What's the person facing? Build a light theme-weight map.
@@ -5263,7 +5263,7 @@ function renderDayCounter(){
     try{
       if(!tmrw || !tmrw.date) return false;
       const t = new Date(); const y = new Date(Date.now() - 86400000);
-      return tmrw.date === t.toLocaleDateString('en-AU') || tmrw.date === y.toLocaleDateString('en-AU');
+      return dayKeyNorm(tmrw.date) === dayKeyOf(t) || dayKeyNorm(tmrw.date) === dayKeyOf(y);
     }catch(_){ return false; }
   })();
   if(_tmrwFresh && tmrw&&tmrw.tasks?.length){
@@ -5363,7 +5363,7 @@ function _soulTodayCta(){
 
 function openSoulToday(){
   const now = new Date();
-  const todayKey = now.toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf(now);
   const todayDow = (now.getDay()+6)%7;
   const dateLabel = now.toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long'});
 
@@ -5399,7 +5399,7 @@ function openSoulToday(){
   // anyone. The line directly below already matches the evening by timestamp, and every other reader
   // of this store in the codebase does too — this one line was the outlier.
   const mornings = (typeof ritualLog === 'function') ? ritualLog('totry_mornings') : (ls('totry_mornings')||[]);
-  const tm = mornings.find(m => m && m.ts && new Date(m.ts).toLocaleDateString('en-AU') === todayKey);
+  const tm = mornings.find(m => m && m.ts && dayKeyOf(m.ts) === todayKey);
   let moodHtml = '';
   if(tm){
     if(tm.mood) moodHtml += '<div style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
@@ -5407,7 +5407,7 @@ function openSoulToday(){
   }
   const didMorning = !!tm;
   const evenings = (typeof ritualLog === 'function') ? ritualLog('totry_evenings') : (ls('totry_evenings')||[]);
-  const didEvening = evenings.some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===todayKey);
+  const didEvening = evenings.some(e=>e && e.ts && dayKeyOf(e.ts)===todayKey);
 
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='soul-today-modal';
@@ -5679,14 +5679,14 @@ function renderAdaptiveMorning(){
   if(!card || !tag || !headline || !body) return;
   
   // Look at yesterday's data
-  const yesterdayKey = new Date(Date.now() - 86400000).toLocaleDateString('en-AU');
+  const yesterdayKey = dayKeyOf(Date.now() - 86400000);
   const evenings = ls('totry_evenings') || [];
   // Match on the CALENDAR day already computed two lines up, not on a day NUMBER. e.day is written
   // from getDayCount() at the time the evening was saved, so any day the person did not open the app
   // shifts every later match — and the morning card then quotes a different night's reflection back
   // to them as if it were last night's. yesterdayKey was computed and never used.
-  const yEvening = evenings.find(e => (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === yesterdayKey)
-                                      || e.date === yesterdayKey);
+  const yEvening = evenings.find(e => (e.ts && dayKeyOf(e.ts) === yesterdayKey)
+                                      || dayKeyNorm(e.date) === yesterdayKey);
   
   // Yesterday's habits
   loadH();

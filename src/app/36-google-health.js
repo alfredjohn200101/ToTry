@@ -133,7 +133,7 @@ async function syncGoogleHealth(){
       let filled = 0;
       stepDays.forEach(function(d){
         if(!d.ms || !(d.steps > 0)) return;
-        const k = new Date(d.ms).toLocaleDateString('en-AU');
+        const k = dayKeyOf(d.ms);
         if(!tr[k]) tr[k] = { water:0, sleep:0, steps:0 };
         if(!(tr[k].steps > 0)){ tr[k].steps = d.steps; filled++; }
       });
@@ -144,7 +144,7 @@ async function syncGoogleHealth(){
     if(today && today.steps > 0){
       ls('totry_today_steps', today.steps);
       // Mirror into the daily trackers store the Track tab reads, so synced steps show there too.
-      try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=today.steps; ls('totry_trackers',_tr); }catch(_){}
+      try{ const _tr=ls('totry_trackers')||{}; const _dk=dayKeyOf(); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=today.steps; ls('totry_trackers',_tr); }catch(_){}
     }
     showToast('Google synced', 'Activity data updated.');
   }catch(e){

@@ -224,7 +224,7 @@ function openRosary(){
   // Resume if there's saved progress from today.
   try{
     const sp = ls('totry_rosary_progress');
-    if(sp && sp.date === new Date().toLocaleDateString('en-AU') && sp.i>0 && sp.i<built.steps.length){ _rosary.i = sp.i; }
+    if(sp && dayKeyNorm(sp.date) === dayKeyOf() && sp.i>0 && sp.i<built.steps.length){ _rosary.i = sp.i; }
   }catch(_){}
   let ov = document.getElementById('rosary-overlay');
   if(!ov){ ov = document.createElement('div'); ov.id='rosary-overlay'; document.body.appendChild(ov); }
@@ -239,7 +239,7 @@ function closeRosary(){
   // the same day dropped the person on the closing Sign of the Cross with the whole rosary skipped.
   try{
     if(_rosaryDone){ localStorage.removeItem('totry_rosary_progress'); }
-    else { ls('totry_rosary_progress', { date:new Date().toLocaleDateString('en-AU'), i:_rosary?_rosary.i:0 }); }
+    else { ls('totry_rosary_progress', { date:dayKeyOf(), i:_rosary?_rosary.i:0 }); }
   }catch(_){}
   _rosaryDone = false;
   const ov=document.getElementById('rosary-overlay'); if(ov) ov.remove();
@@ -555,7 +555,7 @@ function checkLettersDue(){
   const dueNow=letters.filter(l=>!l.delivered&&new Date(l.deliverAt).getTime()<=now);
   if(dueNow.length){
     // Show a notification toast
-    const today=new Date().toLocaleDateString('en-AU');
+    const today=dayKeyOf();
     const lastNotice=ls('totry_letter_notice');
     if(lastNotice!==today){
       ls('totry_letter_notice',today);
@@ -577,7 +577,7 @@ async function showAIMorningSentence(){
   if(!card||!textEl)return;
   
   // Check if we have today's sentence cached
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const cached=ls('totry_ai_morning_'+today);
   
   if(cached){
@@ -645,7 +645,7 @@ async function showAIMorningSentence(){
 
 function refreshAIMorning(){
   // Force regenerate
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   localStorage.removeItem('totry_ai_morning_'+today);
   // AND CLEAR THE ONCE-A-DAY GUARD, or this button deletes the card instead of refreshing it.
   // showAIMorningSentence() refuses to re-fire when __aiMorningAttempted is set — right, because
@@ -693,8 +693,8 @@ function openShareCustomizer(){
   const dayCount = getDayCount();
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   const totalWins = vices.reduce((s,v)=>s+(v.w||0),0);
-  const today = new Date().toLocaleDateString('en-AU');
-  const todayWorkout = (ls('totry_workouts')||[]).find(w => w.date === today || new Date(w.ts||'').toLocaleDateString('en-AU') === today);
+  const today = dayKeyOf();
+  const todayWorkout = (ls('totry_workouts')||[]).find(w => dayKeyNorm(w.date) === today || dayKeyOf(w.ts||'') === today);
   const journalCount = (ls('totry_journal')||[]).length;
   const habitsToday = (function(){loadH();const ti=tIdx();return habits.filter(h=>h.d[ti]===1).length;})();
   const habitsTotal = habits.length;
@@ -789,8 +789,8 @@ function renderCustomShareCard(prefs){
   loadV();
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   const totalWins = vices.reduce((s,v)=>s+(v.w||0),0);
-  const today = new Date().toLocaleDateString('en-AU');
-  const todayWorkout = (ls('totry_workouts')||[]).find(w => w.date === today || new Date(w.ts||'').toLocaleDateString('en-AU') === today);
+  const today = dayKeyOf();
+  const todayWorkout = (ls('totry_workouts')||[]).find(w => dayKeyNorm(w.date) === today || dayKeyOf(w.ts||'') === today);
   const journalCount = (ls('totry_journal')||[]).length;
   loadH();
   const ti = tIdx();
@@ -1082,16 +1082,16 @@ function _renderShareCanvas(style, theme){
   const identity=ls('totry_identity')||'';
   loadV();
   const wins=vices.reduce((s,v)=>s+(v.w||0),0);
-  const today=new Date().toLocaleDateString('en-AU');
-  const todayJournal=(ls('totry_journal')||[]).find(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
-  const todayEvening=ritualLog('totry_evenings').find(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
-  const todayWorkout=(ls('totry_workouts')||[]).find(w=>w.date===today||new Date(w.ts||'').toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const todayJournal=(ls('totry_journal')||[]).find(j=>dayKeyOf(j.ts)===today);
+  const todayEvening=ritualLog('totry_evenings').find(e=>dayKeyOf(e.ts)===today);
+  const todayWorkout=(ls('totry_workouts')||[]).find(w=>dayKeyNorm(w.date)===today||dayKeyOf(w.ts||'')===today);
   // Counted from totry_fight_log, NOT totry_vice_savings_log. The savings log is only appended when
   // savedNow > 0, and savedNow comes from a hardcoded seven-entry regex table (weed, vape,
   // cigarettes, alcohol, gambling, spending, junk food). Lust, porn, doomscrolling and gaming match
   // none of it — so the people this app was built for saw "0 urges fought and won" on their share
   // card no matter how many they had actually won. A win is a win whether or not it saved money.
-  const todayWins=(ls('totry_fight_log')||[]).filter(f=>f&&f.won&&f.ts&&new Date(f.ts).toLocaleDateString('en-AU')===today).length;
+  const todayWins=(ls('totry_fight_log')||[]).filter(f=>f&&f.won&&f.ts&&dayKeyOf(f.ts)===today).length;
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   // shareVerseFrom() stashes the exact verse the person tapped in window._verseCardOverride, and the
   // card used to ignore it — so "Make a card" on a mid-craving verse produced a card of whatever

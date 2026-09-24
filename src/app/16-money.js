@@ -479,7 +479,7 @@ function _pruneNutLog(log){
     // comparator ordered days arbitrarily, so "keep the newest 120" could evict recent days and keep old
     // ones, and with no guard the very diary the caller was mid-write on could be deleted underneath it.
     keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); });
-    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+    const today=nutDayKey();
     // Compare by PARSED date, not string equality: '10/8/2026' and '10/08/2026' are the same day but
     // different strings, so a string guard silently stops protecting today the moment any write path
     // produces an unpadded key. Timestamps cannot drift apart on formatting.

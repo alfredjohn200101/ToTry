@@ -163,6 +163,17 @@ function restoreKeys(data){
             if(k === 'totry_f' && parsed && Array.isArray(parsed.d)){
               tombstoneRevoke.apply(null, ['totry_f'].concat(parsed.d.map(function(d){ return String((d && d.n) || '').toLowerCase(); })));
             }
+            // AND THE THIRD SHAPE: totry_nutlog is an OBJECT OF ARRAYS, so it is neither the
+            // Array.isArray case above nor totry_v nor totry_f — it fell through all three. Restoring
+            // a backup to get a deleted meal back said "Restored" and the next cloud pull read the
+            // surviving tombstone and deleted it again, on every device, for the 180 days a tombstone
+            // lives. Same harm as the note above, arriving through the one door it does not cover.
+            // Ids are syncIdOf(entry), exactly as the nutlog union looks them up.
+            if(k === 'totry_nutlog' && parsed && typeof parsed === 'object' && !Array.isArray(parsed) && typeof syncIdOf === 'function'){
+              const _ids = [];
+              Object.keys(parsed).forEach(function(d){ (Array.isArray(parsed[d]) ? parsed[d] : []).forEach(function(e){ _ids.push(syncIdOf(e)); }); });
+              if(_ids.length) tombstoneRevoke.apply(null, ['totry_nutlog'].concat(_ids));
+            }
           }
         }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
@@ -173,6 +184,11 @@ function restoreKeys(data){
       try{ console.warn('[restore] did not fit:', k, e && e.name); }catch(_){ }
     }
   });
+  // A backup file carries whatever spelling the device that EXPORTED it produced, so a file made in
+  // the PWA and restored in the App Store build (or the reverse) lands a whole second set of day
+  // keys. Normalise and merge here, through the same raw write + explicit push this function uses, so
+  // the merged map is what reaches the cloud rather than the file's two-spelling version.
+  try{ if(typeof migrateDayKeys === 'function') migrateDayKeys({raw:true}); }catch(_){ }
   return out;
 }
 function restoreReport(r){
@@ -371,6 +387,272 @@ function lsArr(k){
   }catch(_){ return []; }
 }
 
+// ── THE DAY KEY, BUILT FROM PARTS AND NEVER FROM A FORMATTER ──────────────────────────────────────
+// `new Date().toLocaleDateString('en-AU')` was this app's PERSISTED day key, and it is not a stable
+// string. Chromium zero-pads both fields, WebKit/iOS pads neither: the same instant is "22/09/2026"
+// in the PWA on a desktop browser and "22/9/2026" in the App Store build. 300 of the 365 days of 2026
+// diverge — only the 10th–31st of October, November and December agree — and the two are compared by
+// string equality and used as OBJECT KEYS in six cloud-synced stores.
+//
+// What that cost: totry_nutlog's per-date union (01-sync.js) unions key STRINGS, so one day survived
+// as two keys forever and each device read only its own half. totry_trackers, totry_water,
+// totry_calorie_burns, totry_strava_burns_byday, totry_watch_burns_byday, totry_tgt and
+// totry_usage_log had no union branch at all and fell to scalar last-write-wins — one device's whole
+// map REPLACED the other's. It began on the FIRST sync of a new device: with nothing local, the pull
+// adopts the other engine's keys wholesale.
+//
+// A SECOND divergence rides with it: {month:'short'} in en-AU is "Sept" in Chromium and "Sep" in
+// WebKit (a CLDR data difference, so only Jun/Jul/Sep differ), and `new Date("5 Sept 2026")` is a
+// real date in Chromium and Invalid Date in WebKit. dayKeyNorm collapses both spellings.
+//
+// WHAT THIS DOES NOT FIX: the day key is still decided by the DEVICE'S TIMEZONE. Two devices in
+// different zones still disagree about which day an evening belongs to, and totry_timezone is a
+// deliberate no-op that says so in its own copy. That is a separate, still-open bug.
+
+// Canonical zero-padded DD/MM/YYYY from a Date, epoch ms, an ISO timestamp, a bare YYYY-MM-DD, or a
+// key already in either engine's spelling. '' for anything it cannot read WITH CERTAINTY — a wrong
+// day is worse than no day, because a wrong day is written to disk and then synced.
+//
+// "Today" is `arguments.length === 0`, NOT `v === undefined`: dayKeyOf(w.ts) on a row with a missing
+// ts must return '' rather than silently filing a year-old workout under this morning.
+function dayKeyOf(v){
+  try{
+    let d = null;
+    if(arguments.length === 0){ d = new Date(); }
+    else if(v instanceof Date){ d = v; }
+    else if(typeof v === 'number'){ if(!isFinite(v)) return ''; d = new Date(v); }
+    else if(typeof v === 'string'){
+      const s = v.trim();
+      if(!s) return '';
+      const already = dayKeyNorm(s);
+      if(already) return already;                       // a day key in either spelling, or "5 Sept 2026"
+      // A BARE YYYY-MM-DD IS READ AS LOCAL PARTS. Both engines read "2026-09-22" through Date as UTC
+      // midnight, which is the PREVIOUS day everywhere west of Greenwich — so parsing it would have
+      // quietly shifted every Health-imported night back one day.
+      const ymd = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+      if(ymd) return dayKeyNorm(ymd[3] + '/' + ymd[2] + '/' + ymd[1]);
+      // A full ISO 8601 timestamp — the one string shape both engines parse identically. Anything
+      // else (a locale long form, "5 Sept", a two-digit year) is refused rather than guessed at.
+      if(!/^\d{4}-\d{1,2}-\d{1,2}[T ]\d{1,2}:\d{2}/.test(s)) return '';
+      const t = Date.parse(s);
+      if(isNaN(t)) return '';
+      d = new Date(t);
+    }
+    else return '';
+    if(!d || isNaN(d.getTime())) return '';
+    return dayKeyNorm(d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear());
+  }catch(_){ return ''; }
+}
+
+// Either engine's spelling → the canonical one; '' when unreadable. This is also the ONE place that
+// pads, which is what makes dayKeyNorm(canonical) === canonical — and that identity is what makes the
+// migration below idempotent.
+function dayKeyNorm(s){
+  try{
+    if(s === null || s === undefined) return '';
+    const str = String(s).trim();
+    if(!str) return '';
+    let d = 0, m = 0, y = 0;
+    // "22/9/2026" and "22/09/2026". A FOUR-DIGIT YEAR IS REQUIRED: a two-digit year is ambiguous
+    // (is "26" 1926 or 2026?) and a year-less key cannot be a day key at all, so both are refused.
+    let mt = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(str);
+    if(mt){ d = +mt[1]; m = +mt[2]; y = +mt[3]; }
+    else{
+      // "5 Sept 2026" / "5 Sep 2026" / "Mon, 5 September 2026" — the {month:'short'} forms the two
+      // engines spell differently. Three letters settles it: all twelve English abbreviations are
+      // distinct at three, so "Sept" and "September" both collapse onto "Sep".
+      mt = /(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})/.exec(str);
+      if(!mt) return '';
+      const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const i = MON.indexOf(mt[2].slice(0,3).toLowerCase());
+      if(i < 0) return '';
+      d = +mt[1]; m = i + 1; y = +mt[3];
+    }
+    if(!(d >= 1 && d <= 31) || !(m >= 1 && m <= 12) || !(y >= 1000 && y <= 9999)) return '';
+    return (d < 10 ? '0' : '') + d + '/' + (m < 10 ? '0' : '') + m + '/' + y;
+  }catch(_){ return ''; }
+}
+
+// ONE merge rule for a day-keyed map, called by BOTH migrateDayKeys() and the cloud-pull branch in
+// 01-sync.js. Two implementations WILL drift — the note above syncIdOf() in that file says exactly
+// this about exactly this shape of bug — so there is one definition and both sides call it.
+//
+// `keep` is the side that wins a conflict, and every caller passes the NEWER side there.
+//  • array day (totry_nutlog): union by syncIdOf. syncIdOf is 'i'+id and contains no date, which is
+//    why moving an entry from one spelling to the other cannot orphan its tombstone.
+//  • object day (totry_trackers, totry_tgt, totry_usage_log): field by field, keep winning any field
+//    it actually carries. Strict === is what lets a real `false` survive: `keep[f] === undefined ||
+//    null || ''` never matches it, so a told:false the person set on the newer device is copied
+//    rather than skipped.
+//  • scalar day (totry_water, totry_calorie_burns): keep wins outright.
+//
+// NO STORE TAKES Math.max. An earlier draft exempted the two burn sub-ledgers as "append-only
+// importer totals, never corrected downward". Both halves of that are false in this tree:
+//  • totry_watch_burns_byday is HAND-TYPED. saveEvening() reads #evening-move — a number input in
+//    the evening check-in, which the same function's own comment calls "editable until midnight" —
+//    and assigns it straight onto the day. A typo'd 8000 corrected to 800 five minutes later is the
+//    ordinary case, and Math.max would restore the 8000 and then _queueWrite would push the undone
+//    correction to every device the person owns.
+//  • totry_strava_burns_byday is a FULL REPLACE. syncStrava() rebuilds `freshByDay` from the whole
+//    activity list each time and writes it whole, with its own comment saying "re-syncs replace
+//    rather than double-count". A day legitimately goes DOWN when an activity is deleted on Strava,
+//    when its calories are corrected, and — the one that matters — when a session is newly
+//    recognised as a Hevy duplicate and skipped. That skip IS the double-count removal, so Math.max
+//    would reinstate exactly the number the block exists to take away.
+//
+// opts.zeroIsAbsent — FOR THE MIGRATION ONLY, and this is the difference between a merge and a data
+// loss. adjustTracker() and the Health sync both CREATE a day as {water:0,sleep:0,steps:0}, so an
+// `undefined || null || ''` guard lets those zeros through as deliberate values and they flatten a
+// day the other spelling already holds. The cloud pull does not pass it: there a day's two sides
+// carry cts/lts, so recency answers the question and a zero really is the newer device's answer.
+// The migration has no per-day recency stamp at all, so within ONE device's own history a 0 beside
+// a real number is a skeleton, not a decision.
+function _mergeDayMaps(keep, add, storeKey, opts){
+  try{
+    const zeroIsAbsent = !!(opts && opts.zeroIsAbsent);
+    const idOf = function(x){
+      try{ if(typeof syncIdOf === 'function') return String(syncIdOf(x)); }catch(_){ }
+      if(x && typeof x === 'object') return x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x));
+      return String(x);
+    };
+    const combine = function(a, b){                      // a wins
+      if(a === undefined || a === null) return b;
+      if(b === undefined || b === null) return a;
+      if(Array.isArray(a) || Array.isArray(b)){
+        const seen = Object.create(null), res = [];
+        [].concat(Array.isArray(a) ? a : [], Array.isArray(b) ? b : []).forEach(function(x){
+          const id = idOf(x);
+          if(seen[id]) return;
+          seen[id] = 1; res.push(x);
+        });
+        return res;
+      }
+      if(typeof a === 'number' && typeof b === 'number'){
+        // The winner's own figure, even when it is smaller — a correction is the commonest reason a
+        // day goes down. Under zeroIsAbsent a literal 0 is the one number that is not an answer.
+        return (zeroIsAbsent && a === 0 && b !== 0) ? b : a;
+      }
+      if(typeof a === 'object' && typeof b === 'object'){
+        const o = Object.assign({}, b);
+        Object.keys(a).forEach(function(f){
+          const av = a[f];
+          if(av === undefined || av === null || av === '') return;   // absent on the winner ≠ erase
+          // The {water:0,sleep:0,steps:0} skeleton. Only in the migration, and only where the other
+          // side actually has a figure: otherwise 0 stays a value, which is what a person who drank
+          // nothing today means by it.
+          if(zeroIsAbsent && av === 0 && typeof b[f] === 'number' && b[f] !== 0) return;
+          o[f] = av;
+        });
+        return o;
+      }
+      return a;
+    };
+    const out = {};
+    const fold = function(src){
+      if(!src || typeof src !== 'object' || Array.isArray(src)) return;
+      Object.keys(src).forEach(function(k){
+        // A key this cannot read keeps its OWN name rather than being folded into anything — an
+        // unreadable key is data we do not understand, and collapsing several of them together
+        // would destroy more than it repairs.
+        const nk = dayKeyNorm(k) || k;
+        out[nk] = (out[nk] === undefined) ? src[k] : combine(out[nk], src[k]);
+      });
+    };
+    fold(keep);                                          // the winner goes in first, so it is always `a`
+    fold(add);
+    return out;
+  }catch(_){ return (keep && typeof keep === 'object') ? keep : {}; }
+}
+
+// DOES THIS ENGINE ZERO-PAD? Asked of the engine at the moment it matters, never assumed. 2 September
+// 2026 is the probe because BOTH fields are single-digit: Chromium answers "02/09/2026", WebKit/iOS
+// answers "2/9/2026". This is the one question that tells the migration which of two spellings of a
+// day is the one THIS device has been writing all along, and therefore which one is on the person's
+// own screen right now. `true` on a throw: a padding engine is the case where canonical and the
+// device's own spelling are the same string, so it is the answer that can do the least harm.
+function _dayKeyEnginePads(){
+  try{ return /^0\d\/0\d\/\d{4}$/.test(new Date(2026, 8, 2).toLocaleDateString('en-AU')); }
+  catch(_){ return true; }
+}
+
+// Every day-keyed store this app has, in one list, so a new one cannot be added without being seen.
+function dayKeyedStores(){
+  return ['totry_nutlog','totry_trackers','totry_water','totry_calorie_burns',
+          'totry_strava_burns_byday','totry_watch_burns_byday','totry_workout_burns_byday',
+          'totry_tgt','totry_usage_log'];
+}
+
+// Normalise AND MERGE — never overwrite — every day-keyed store. Idempotent: dayKeyNorm(canonical)
+// === canonical, so a second run finds nothing to move. Runs on every boot, because a cloud pull can
+// reintroduce the other engine's spelling at any time.
+//
+// opts.raw makes the writes go through _originalSetItem + syncToCloud the way restoreKeys does, so a
+// restore's merged map is what reaches the cloud instead of the file's raw two-spelling version.
+function migrateDayKeys(opts){
+  const raw = !!(opts && opts.raw);
+  const out = { moved: 0, merged: 0, stores: [] };
+  // Asked ONCE per run, not once per store: this is an Intl call and it runs on every boot. The
+  // answer cannot change between two stores in the same run.
+  const pads = _dayKeyEnginePads();
+  const _mo = { zeroIsAbsent: true };
+  dayKeyedStores().forEach(function(k){
+    try{
+      const before = localStorage.getItem(k);
+      if(before === null || before === undefined) return;
+      let v = null;
+      try{ v = JSON.parse(before); }catch(_){ return; }                 // not JSON: not ours to touch
+      if(!v || typeof v !== 'object' || Array.isArray(v)) return;
+      const keys = Object.keys(v);
+      if(!keys.length) return;
+      // WHICH SIDE WINS WHEN ONE DAY EXISTS UNDER BOTH SPELLINGS? THE DEVICE'S OWN.
+      //
+      // An earlier draft picked the already-canonical spelling, reasoning that it is the one this
+      // device will write from now on. On a padding engine that is the same answer — canonical IS
+      // what Chromium has always written. On WebKit it is the opposite of the truth: a padded key is
+      // a spelling that device has NEVER produced, so it can only have arrived by a pre-fix cloud
+      // pull, which is the OTHER phone's stale copy. Preferring it threw away the figures the person
+      // was looking at while the migration ran — measured, against the real functions:
+      //   totry_water  {"22/9/2026":2000,"22/09/2026":750} → {"22/09/2026":750}
+      //   the 2000ml logged today, replaced by another phone's older number.
+      //
+      // So ask the engine (_dayKeyEnginePads) which spelling is this device's own, and let that side
+      // win. Deterministic, and it appeals to something real rather than to a coin toss — there is
+      // still no per-day recency stamp, which is why zeroIsAbsent below carries the rest of the load.
+      const canon = {}, foreign = {};
+      let dirty = false, collided = 0;
+      keys.forEach(function(dk){
+        const nk = dayKeyNorm(dk);
+        if(!nk || nk === dk){ canon[dk] = v[dk]; return; }
+        dirty = true;
+        if(foreign[nk] !== undefined) collided++;        // two foreign spellings of one day (rare)
+        foreign[nk] = (foreign[nk] === undefined) ? v[dk] : _mergeDayMaps({x:foreign[nk]}, {x:v[dk]}, k, _mo).x;
+      });
+      if(!dirty) return;
+      Object.keys(foreign).forEach(function(nk){ if(canon[nk] !== undefined) collided++; });
+      // A SKELETON IS NOT AN ANSWER. Whichever side wins, a 0 on it does not erase a real figure on
+      // the other: adjustTracker() and the Health sync both create a day as {water:0,sleep:0,steps:0},
+      // so without this the winner's empty day flattened a day the other spelling had filled —
+      //   {"22/9/2026":{water:0,sleep:7.5,steps:14000},"22/09/2026":{water:0,sleep:0,steps:0}}
+      //   → {"22/09/2026":{water:0,sleep:0,steps:0}}, the whole day gone, on BOTH engines.
+      const next = pads ? _mergeDayMaps(canon, foreign, k, _mo)
+                        : _mergeDayMaps(foreign, canon, k, _mo);
+      const after = JSON.stringify(next);
+      if(after === before) return;
+      if(raw){
+        const w = (typeof _originalSetItem === 'function' && _originalSetItem) || localStorage.setItem.bind(localStorage);
+        w(k, after);
+        try{
+          if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1) syncToCloud(k, next);
+        }catch(_){ }
+      }else{
+        try{ ls(k, next); }catch(_){ try{ localStorage.setItem(k, after); }catch(__){ } }
+      }
+      out.moved++; out.merged += collided; out.stores.push(k);
+    }catch(_){ }                                                        // one bad store must never break boot
+  });
+  return out;
+}
+
 // ── THE CURRENCY SYMBOL, IN ONE PLACE ─────────────────────────────────────────────
 // Settings has offered nine currencies since the money tab existed. Picking one saved the choice and
 // fetched exchange rates — and changed nothing a person could see, because every amount in the app
@@ -530,7 +812,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v606';
+const APP_VERSION = 'v607';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -664,7 +946,7 @@ async function proceedAfterAuth(user){
     if(typeof repairJourneyStart === 'function') repairJourneyStart();
   try{
     if(!localStorage.getItem('totry_first_open')){ localStorage.setItem('totry_first_open','1'); logEvent('first_open'); }
-    const tk = new Date().toLocaleDateString('en-AU');
+    const tk = dayKeyOf();
     if(localStorage.getItem('totry_open_logged') !== tk){ localStorage.setItem('totry_open_logged', tk); logEvent('open'); }
   }catch(_){ }
   if(typeof renderTemplates === 'function') renderTemplates();

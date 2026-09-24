@@ -117,7 +117,7 @@ function quickSpend(){
     category: cat,
     note: '',
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   // Reset inputs
@@ -182,7 +182,7 @@ function saveTransaction(){
     category: window.__transCategory,
     note: note,
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   document.querySelector('.modal-bg.open')?.remove();
@@ -1475,7 +1475,7 @@ function monthlyPaymentRate(){
   // therefore produced a debt-free date years too soon, on the screen someone is most likely to believe.
   // Distinct DAYS is the honest unit, and a real month of history is the honest minimum: until then this
   // returns null, which callers already treat as "not enough dated history to say" and print no date.
-  const distinctDays = new Set(pays.map(p => new Date(_T(p)).toLocaleDateString('en-AU'))).size;
+  const distinctDays = new Set(pays.map(p => dayKeyOf(_T(p)))).size;
   if(distinctDays < 2 || spanDays < 25) return null;
   // PAYMENT OCCASIONS, NOT PAYMENT RECORDS. Paying three debts on payday is three records and ONE
   // occasion; using the record count inflates the covered span, which inflates the monthly rate,

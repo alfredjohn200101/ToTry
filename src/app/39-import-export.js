@@ -70,7 +70,7 @@ function importEufyCSV(event){
     const unitIsLb = cols.weight!=null && /lb/.test(header[cols.weight]||'');
     const num = (row, f) => { const i = cols[f]; if(i==null) return null; const v = parseFloat(String(row[i]||'').replace(/[^0-9.\-]/g,'')); return (isNaN(v)||v===0) ? null : v; };
     const existing = ls('totry_body') || [];
-    const dayKey = (d, w) => new Date(d).toLocaleDateString('en-AU') + '|' + (Math.round(w*10)/10);
+    const dayKey = (d, w) => dayKeyOf(d) + '|' + (Math.round(w*10)/10);
     const existingKeys = new Set(existing.filter(en => en.weight>0 && en.ts).map(en => dayKey(en.ts, en.weight)));
     // Decide day-first vs month-first ONCE, from every date in the file, before reading any of them.
     const _dateOrder = _eufyDateOrder(rows.slice(1).map(r => r && r[cols.date]));
@@ -221,8 +221,8 @@ function saveScaleScreenshotEntry(){
   Object.keys(comp).forEach(k => { if(comp[k]==null || isNaN(comp[k])) delete comp[k]; });
   const entries = ls('totry_body') || [];
   // Replace an existing same-day entry, else add.
-  const dayStr = d.toLocaleDateString('en-AU');
-  const idx = entries.findIndex(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === dayStr);
+  const dayStr = dayKeyOf(d);
+  const idx = entries.findIndex(e => e.ts && dayKeyOf(e.ts) === dayStr);
   const entry = {
     date: d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     ts: d.toISOString(), weight: Math.round(w*10)/10,
@@ -519,13 +519,13 @@ function importFoodCSV(event){
       const cal = Math.round(parseFloat(val(row,'calories')) || 0);
       if(!name || cal <= 0) continue;
       // ts must be the HISTORICAL date — the digest, adaptive TDEE and reports window by ts.
-      let dateKey = new Date().toLocaleDateString('en-AU');
+      let dateKey = dayKeyOf();
       let entryTs = new Date().toISOString();
       const dRaw = val(row,'date');
       if(dRaw){
         const d = (typeof _csvDate === 'function') ? _csvDate(dRaw, _dayFirst) : null;
         if(d && !isNaN(d.getTime())){
-          dateKey = d.toLocaleDateString('en-AU');
+          dateKey = dayKeyOf(d);
           entryTs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0).toISOString();
         } else {
           // Refuse rather than silently retarget today — a row landing on the wrong day is worse than
