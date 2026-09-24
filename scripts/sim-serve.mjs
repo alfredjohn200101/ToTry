@@ -19,7 +19,13 @@ const srv = http.createServer((q, r) => {
     let b = fs.readFileSync(p);
     if (p.endsWith('index.html')) {
       // Seed BEFORE the app's own script runs, so boot reads a real person rather than an empty device.
-      b = Buffer.from(String(b).replace('<body>', '<body>\n<script>' + seedSource() + ';</script>'));
+      // ANCHOR ON A STRING THAT OCCURS EXACTLY ONCE. '<body>' does not: the literal appears inside a
+      // CSS comment 147,000 characters before the real tag, and .replace takes the FIRST match — so
+      // this seeded a comment and served an UNSEEDED device, silently, for as long as it has existed.
+      const anchor = '</head>\n<body>';
+      const n = String(b).split(anchor).length - 1;
+      if(n !== 1) throw new Error('sim-serve: anchor occurs ' + n + ' times, expected exactly 1');
+      b = Buffer.from(String(b).replace(anchor, () => anchor + '\n<script>' + seedSource() + ';</script>'));
     }
     r.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream', 'cache-control': 'no-store' });
     r.end(b);

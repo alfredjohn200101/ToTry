@@ -26,7 +26,12 @@ const scrIdx = args.indexOf('--scroll'); const SCROLL = scrIdx > -1 ? +args[scrI
 // Extra CSS injected into the served document, before first paint — for putting a deliberate
 // worst case behind the chrome (a saturated block under the tab bar, say) and measuring it.
 const cssIdx = args.indexOf('--css'); const EXTRA = cssIdx > -1 ? args[cssIdx + 1] : '';
-const PORT = 8788;
+// AN EPHEMERAL PORT, NOT A FIXED ONE. This used to bind 8788, and on 24 Sep 2026 a different
+// process was already on it: three of ten captures came back as another page entirely — one showed
+// the auth wall, one was blank, and one rendered the literal text "guest=null goErr=null", a string
+// that appears nowhere in this app. A screenshot harness that can silently photograph somebody
+// else's server is worse than one that fails. Port 0 lets the OS pick a free one every run.
+let PORT = 0;
 fs.mkdirSync(OUT, { recursive: true });
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -34,7 +39,7 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 // The chrome under test is positioned off the safe-area insets, so they go in BEFORE the first paint.
 // Moving it afterwards is what broke the Chromium captures; here it would also make the bar jump.
-const HEAD = () => '<style id="__shot">.milestone-toast,#update-ready-bar{display:none !important}' + EXTRA + '</style>';
+const HEAD = () => '<style id="__shot">.milestone-toast,#update-ready-bar,#ios-install-banner{display:none !important}' + EXTRA + '</style>';
 // After boot: take the guest door if the wall is up (Safari has a live network, so a seeded device
 // with no Supabase session can still land on it), clear banners, then go where we were asked.
 const TAIL = (tab, scroll) => `<script>
@@ -62,19 +67,33 @@ const srv = http.createServer((q, r) => {
     if (p.endsWith('index.html')) {
       const tab = (u.searchParams.get('tab') || TAB).replace(/[^a-z]/g, '') || 'home';
       const scroll = +(u.searchParams.get('scroll') || SCR) || 0;
-      b = Buffer.from(String(b)
-        // Wipe first. Safari keeps localStorage per ORIGIN across runs, so without this the capture
-        // is the seed merged with whatever the last run left behind — which is how Nourish rendered
-        // an empty food log on the phone and a full one in Chromium off the same seed.
-        .replace('<body>', () => '<body>\n<script>try{localStorage.clear()}catch(e){}' + seedSource() + ';</script>')
-        .replace('</head>', () => HEAD() + '</head>')
-        .replace('</body>', () => TAIL(tab, scroll) + '</body>'));
+      // INJECT AT AN ANCHOR THAT OCCURS EXACTLY ONCE, AND FAIL LOUDLY IF IT DOES NOT. This used
+      // `.replace('<body>', …)`, which takes the FIRST match — and this document carries the literal
+      // "<body>" inside a CSS comment 147,000 characters before the real tag. So the seed was
+      // written into a comment and every capture booted an UNSEEDED device. It looked like it worked
+      // only because the harness used a fixed port, so the origin already held state from an earlier
+      // run; the moment the port became ephemeral, three of ten screens came back as the sign-in
+      // wall. Wipe first (Safari keeps localStorage per ORIGIN), and set totry_guest — the flag the
+      // app's own guest door writes (src/app/02-native.js:1053) — whose branch hides the wall and
+      // runs initApp outright rather than racing checkAuth's async Supabase check on a live network.
+      const injectOnce = (html, anchor, addition) => {
+        const n = html.split(anchor).length - 1;
+        if (n !== 1) throw new Error('sim-shot: anchor ' + JSON.stringify(anchor) + ' occurs ' + n + ' times, expected exactly 1');
+        return html.replace(anchor, () => addition);
+      };
+      let h = String(b);
+      h = injectOnce(h, '</head>\n<body>', HEAD() + '</head>\n<body>\n<script>'
+        + 'try{localStorage.clear()}catch(e){}' + seedSource()
+        + ';try{localStorage.setItem("totry_guest","true")}catch(e){}</script>');
+      h = injectOnce(h, '</body>', TAIL(tab, scroll) + '</body>');
+      b = Buffer.from(h);
     }
     r.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream', 'cache-control': 'no-store' });
     r.end(b);
   } catch (e) { r.writeHead(404); r.end('not found'); }
 });
-await new Promise(z => srv.listen(PORT, z));
+await new Promise(z => srv.listen(0, z));
+PORT = srv.address().port;
 
 const sh = (...a) => execFileSync('xcrun', a, { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
 try { sh('simctl', 'list', 'devices', 'booted'); } catch (e) { console.error('no booted simulator'); process.exit(1); }
@@ -88,7 +107,7 @@ for (const scheme of (MODE === 'both' ? ['light', 'dark'] : [MODE])) {
     const dest = path.join(OUT, name);
     // A fresh query string each time, so Safari reloads rather than restoring the page it had.
     sh('simctl', 'openurl', 'booted', 'http://localhost:' + PORT + '/index.html?tab=' + tab + (SCROLL ? '&scroll=' + SCROLL : '') + '&n=' + (Date.now() % 100000));
-    await sleep(8000);
+    await sleep(15000);   // a fresh origin has no service-worker cache and must fetch a 4MB document
     sh('simctl', 'io', 'booted', 'screenshot', dest);
     console.log(dest);
   }
