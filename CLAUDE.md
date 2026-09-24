@@ -72,10 +72,33 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
   nav bar (`updateHubBackBar` → `#ios-nav-lead`); `iosNavSync()` fades the title into the bar on scroll.
 - **The small text is the tell**: three greys and no fourth, 13px section headers with .045em tracking,
   a row title that truncates instead of wrapping, footnotes at 13 not 11.
-- Verify visually: `npm run build:index && node scripts/ios-shot.mjs <tab> both`, then LOOK at both.
-  For anything that depends on the MATERIAL or the display face, confirm in WebKit:
-  `node scripts/sim-serve.mjs` serves the real bundle to the booted simulator. Both it and `ios-shot`
-  seed from `scripts/seed-person.mjs` — one person, one source; an invented key renders an empty screen.
+- **THE SCREENSHOT CAN OMIT THE APP.** `ios-shot` renders in Chromium and injected the phone's
+  safe-area insets with `addStyleTag()` AFTER boot. That rule moves the tab bar up 34px, and Chromium
+  then composites the moved element over a backdrop snapshot it never re-samples — so **every
+  screenshot this project had ever taken of the new chrome was missing the glass**, and the owner and
+  six independent reviewers all read the same true thing about a false render ("that clear glass at
+  the bottom don't look clear glassy to me"). Four high-severity findings were artifacts of it.
+  Settled by measurement, after every cheaper method lied: a calibrated stripe probe (2px stripes
+  behind the bar; blur destroys high-frequency energy) reading 53.8 sharp / 2.7 blurred. Playwright's
+  **WebKit draws no `backdrop-filter` at all, on any page**, so it can neither confirm nor deny. Four
+  structural hypotheses were each built as a live repro on the booted simulator and every one blurred.
+  So: `node scripts/sim-shot.mjs <tab[,tab]> [light|dark|both] [out] [--scroll N] [--css '…']`
+  screenshots from **WebKit on the booted simulator** — use it for anything about glass, blur or a web
+  face, and for `--css` to put a deliberate worst case behind the chrome and measure it. `ios-shot` is
+  still the faster read for layout and now PROVES the glass is in the picture before handing one over,
+  saying "THE MEASUREMENT IS WRONG, NOT THE APP" when its own references fail to separate. Both seed
+  from `scripts/seed-person.mjs` — one person, one source; an invented key renders an empty screen.
+  When many reviewers agree about a rendered image, that is evidence about the IMAGE, not the app.
+- **A MATERIAL THAT REPEATS ITS BACKDROP IS A WINDOW.** The capsule was a 30%-opaque tint under
+  `saturate(220%) brightness(1.38)` — it amplified whatever scrolled beneath it, so wherever the app's
+  own blue passed under the bar every tab label fell under AA (measured on the phone: 1.56–2.36:1 in
+  dark). Three separate causes, three separate fixes: the tint is 0.60–0.68 opaque at saturate(135%);
+  the bar's ink is `--tx2`, not the footnote grey `--tx3`; and the selected tab has a SEAT
+  (`--nb-sel`) plus the ink that seat can carry (`--nb-sel-ink`) — tint on near-white in light, white
+  on a lifted neutral in dark. Tint ink on a tint-coloured ground is the one pairing a material cannot
+  rescue: it was still 2.03:1 after the material was fixed. Now 4.63–5.64:1 everywhere. The rim is one
+  masked gradient ring (`--glass-rim`), not a border plus an inset highlight — two strokes on the top
+  edge is the giveaway of a painted pill, and a white rim on a white material is no rim at all.
 - **A FILL IS NOT A LABEL.** `--go` / `--re` are tuned to be READ on the ground, which made them pale
   things to fill a button with: white on the dark tint measured **2.83:1** on Today's primary action and
   on "I'm feeling it". Filled controls take `--go-fill` / `--re-fill`; a test holds white on those to AA
@@ -242,6 +265,11 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Run it in the background and wait on the output rather
      than in a foreground call, or it will be killed mid-run and you will read a truncated pass:
      `(npm run panels > /tmp/panels.out 2>&1; echo DONE >> /tmp/panels.out) &` then poll for DONE.
+     **And do not REBUILD while it runs.** It serves `www/` per request, so `npm run build:www` under
+     a live run hands one page a half-written bundle: on 23 Sep 2026 that produced a lone finding —
+     "the clean streak survived a slip (1)" — which did not reproduce in isolation (the same scenario
+     driven on its own returns 0, with the anchor and `_calDaysSince` both correct). A finding that
+     will not reproduce is a finding about the harness until proven otherwise.
      It covers, in one browser each: 19 sub-panels x 3 people; a 24pt tap-target floor; the
      sheet-dialog a11y floor and an accessible NAME on every control; the live SOS; all seven Feeling
      Door paths clicked through to where they LAND; the app booting with the network CUT; every front
