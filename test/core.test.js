@@ -7517,6 +7517,33 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
+H.section('"numbers off" hides the vitamin panel too');
+{
+  // The promise is total or it is worthless — applyNutGentle's own comment says so: "a 'numbers off'
+  // promise that leaks a red over-budget figure two cards down is worse than no promise at all."
+  // micro-panel and its toggle were NOT in the HIDE list, and they are SIBLINGS of nut-extended in
+  // the markup rather than children, so hiding the parent never reached them. Nineteen rows of
+  // milligrams and four --re "max" bars, one tap away, for the person the mode exists for — the same
+  // person _renderNourishCare routes to the Butterfly Foundation. Dormant only because _microKnown
+  // is false until a logged row carries a micronutrient; resolving ingredients against USDA makes
+  // that true for everyone, so this had to be closed before that work, not after.
+  const fn = H.extractFn('applyNutGentle');
+  const hide = (fn.match(/const HIDE\s*=\s*\[([\s\S]*?)\]/) || [])[1] || '';
+  H.ok(/'micro-panel-toggle'/.test(hide), 'numbers off hides the vitamin panel toggle');
+  H.ok(/'micro-panel'/.test(hide), 'and the panel itself');
+  const restore = (fn.match(/const RESTORE\s*=\s*\{([\s\S]*?)\}/) || [])[1] || '';
+  H.ok(!/micro-panel/.test(restore), 'and does not force them back on — _microKnown owns them');
+  // The reason it leaked, pinned so nobody "simplifies" the two ids away believing the parent covers
+  // them: they really are siblings of nut-extended, not inside it.
+  const html = H.html;
+  const ext = html.indexOf('id="nut-extended"');
+  const tog = html.indexOf('id="micro-panel-toggle"');
+  H.ok(ext > -1 && tog > ext, 'the toggle sits after nut-extended in the markup');
+  const between = html.slice(ext, tog);
+  H.ok((between.match(/<\/div>/g) || []).length >= 1,
+    'with nut-extended already closed before it — which is why hiding the parent never hid the panel');
+}
+
 H.section('a logged plan lands in the meals it was built for, not all in Snacks');
 {
   // The diary groups on `(e.meal || 'snack')` (14-nourish.js), and _fuelLogPlan wrote rows with no

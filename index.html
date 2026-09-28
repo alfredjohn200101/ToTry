@@ -33617,8 +33617,17 @@ function applyNutGentle(eaten, goalCal){
   }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
+  // 'micro-panel-toggle' and 'micro-panel' are SIBLINGS of nut-extended in the markup
+  // (shell-head.html), not children, so hiding nut-extended never reached them: "numbers off" left
+  // the vitamin panel's nineteen rows and its four red over-budget bars — sugar, sodium, saturated
+  // fat, cholesterol — one tap away, for the person _renderNourishCare routes to the Butterfly
+  // Foundation two cards above. It has been dormant only because _microKnown is false until a
+  // logged row actually carries a micronutrient, which almost never happens today; resolving recipe
+  // ingredients against USDA would make it true for everyone and light the leak up at once. Neither
+  // id goes in RESTORE: _microKnown owns them, exactly as nut-extended's owner keeps it.
   const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
-                'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
+                'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card',
+                'micro-panel-toggle','micro-panel'];
   // 'nut-extended' was in here, so turning gentle mode OFF forced the four extended macros back to
   // display:grid — including for a day whose entries carry no fibre, sugar, sodium or saturated fat,
   // which is exactly the case renderNutritionLog had just decided to hide. Two renderers disagreeing,
