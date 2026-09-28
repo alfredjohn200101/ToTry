@@ -484,12 +484,43 @@ function _fuelCopyShopList(){
 }
 
 // Push the plan's meals into today's food log — closes the loop with the tracker.
+// WHICH MEAL OF THE DAY IS THIS? The planner's meals carry a dish name, not a slot, so the slot comes
+// from the name when the name says so and from the position otherwise. Position is the honest default:
+// a 3-meal day is breakfast/lunch/dinner, and the snacks in a 4- or 5-meal day sit between them, which
+// is how _fuelGenerate is asked to build it in the first place.
+function _fuelMealSlot(name, i, n){
+  const s = String(name || '').toLowerCase();
+  if(/\bbreakfast\b|\bbrekky\b/.test(s)) return 'breakfast';
+  if(/\blunch\b/.test(s)) return 'lunch';
+  if(/\bdinner\b|\bsupper\b/.test(s)) return 'dinner';
+  if(/\bsnack\b/.test(s)) return 'snack';
+  const BY_COUNT = {
+    1: ['lunch'],
+    2: ['breakfast','dinner'],
+    3: ['breakfast','lunch','dinner'],
+    4: ['breakfast','lunch','snack','dinner'],
+    5: ['breakfast','snack','lunch','snack','dinner'],
+    6: ['breakfast','snack','lunch','snack','dinner','snack']
+  };
+  const row = BY_COUNT[n];
+  if(row && row[i]) return row[i];
+  // More meals than the table names: the ends are still the ends, the middle alternates.
+  if(i === 0) return 'breakfast';
+  if(i === n - 1) return 'dinner';
+  return (i % 2) ? 'snack' : 'lunch';
+}
 function _fuelLogPlan(btn){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
   const today = new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
   plan.meals.forEach(function(mm, i){
     log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
+      // WITHOUT THIS THE WHOLE PLANNED DAY FILED UNDER SNACKS. The diary groups on
+      // `(e.meal||'snack')` (14-nourish.js:3314), and every row this function wrote carried no
+      // `meal` at all — so a person tapped "log the plan", got breakfast, lunch and dinner stacked
+      // under Snacks, and found the three sections the plan was built around empty. logRecipeAsMeal
+      // has always set it; this path never did.
+      meal: _fuelMealSlot(mm.name, i, plan.meals.length),
       cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10,
       // Every 7-day nutrition figure resolves a day from entries[0].ts. A day whose first entry came
       // from the fuel plan had no ts at all, so the WHOLE DAY dropped out of the weekly digest and the

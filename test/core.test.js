@@ -7517,6 +7517,55 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
+H.section('a logged plan lands in the meals it was built for, not all in Snacks');
+{
+  // The diary groups on `(e.meal || 'snack')` (14-nourish.js), and _fuelLogPlan wrote rows with no
+  // `meal` field at all — so tapping "log the plan" put breakfast, lunch and dinner under SNACKS and
+  // left the three sections the plan was built around empty. logRecipeAsMeal has always set the
+  // slot; the planner's path never did. Asserted by EXECUTING the mapper, not by grepping for it:
+  // a grep passes on a wrong argument, which is how a 180-day data-loss bug shipped here.
+  const { _fuelMealSlot } = H.load(['_fuelMealSlot']);
+  H.eq(_fuelMealSlot(null, 0, 3), 'breakfast', 'a three-meal day opens with breakfast');
+  H.eq(_fuelMealSlot(null, 1, 3), 'lunch',     'and its middle meal is lunch');
+  H.eq(_fuelMealSlot(null, 2, 3), 'dinner',    'and it ends at dinner');
+  H.eq(_fuelMealSlot(null, 2, 4), 'snack',     'a four-meal day puts the extra one in as a snack');
+  H.eq(_fuelMealSlot(null, 3, 4), 'dinner',    'and still ends at dinner');
+  H.eq(_fuelMealSlot(null, 0, 1), 'lunch',     'one meal a day is not breakfast by default');
+  H.eq(_fuelMealSlot(null, 6, 7), 'dinner',    'past the table, the last meal is still dinner');
+  // The name wins when the name actually says so — a "Post-gym snack" in the middle of a three-meal
+  // day is a snack, not lunch.
+  H.eq(_fuelMealSlot('Post-gym snack', 1, 3), 'snack', 'a meal that names its own slot keeps it');
+  H.eq(_fuelMealSlot('Big breakfast burrito', 2, 3), 'breakfast', 'even out of position');
+  // And the thing that was actually broken: no row may fall through to the diary's snack default.
+  const code = H.code(H.html);
+  H.ok(/\(e\.meal\s*\|\|\s*'snack'\)/.test(code), "the diary still groups on (e.meal||'snack') — the default this exists to stop relying on");
+  // AND DRIVE THE REAL WRITER. Asserting that _fuelLogPlan merely CALLS the mapper is the assertion
+  // this repo has already been burned by: it passes on a wrong argument. Swapping the index and the
+  // count — _fuelMealSlot(name, n, i) — leaves that grep green while every row comes back wrong.
+  // So run it and read what it wrote.
+  {
+    const store = { totry_meal_plan: { meals: [
+      { name: 'Overnight oats', cal: 500, pro: 30, carbs: 60, fat: 12 },
+      { name: 'Chicken and rice', cal: 700, pro: 55, carbs: 80, fat: 15 },
+      { name: 'Salmon and greens', cal: 600, pro: 45, carbs: 30, fat: 28 }
+    ] } };
+    const { _fuelLogPlan } = H.load(['_fuelMealSlot', '_fuelLogPlan'], {
+      ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; return v; },
+      showToast: () => {}, haptic: () => {}, syncToCloud: () => {},
+      renderNutritionLog: () => {}, renderNutrition: () => {}, updateTrackerDisplay: () => {},
+      recomputeAdaptiveTDEE: () => {}, dayKeyOf: undefined
+    });
+    _fuelLogPlan(null);
+    const days = Object.keys(store.totry_nutlog || {});
+    H.eq(days.length, 1, 'logging the plan writes exactly one day');
+    const rows = (store.totry_nutlog || {})[days[0]] || [];
+    H.eq(rows.length, 3, 'and one row per planned meal');
+    H.eq(rows.map(r => r.meal).join(','), 'breakfast,lunch,dinner',
+      'each row lands in the meal it was built for — not all three in Snacks');
+    H.eq(rows.filter(r => !r.meal).length, 0, 'and no row falls through to the diary default');
+  }
+}
+
 H.section('"you are here" is one treatment, and it is not the one that means danger');
 {
   // Four tab strips. Before the Apple-native redesign three said gold for the selected tab and the
