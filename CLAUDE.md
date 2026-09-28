@@ -89,6 +89,24 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
   saying "THE MEASUREMENT IS WRONG, NOT THE APP" when its own references fail to separate. Both seed
   from `scripts/seed-person.mjs` — one person, one source; an invented key renders an empty screen.
   When many reviewers agree about a rendered image, that is evidence about the IMAGE, not the app.
+- **AND SAFARI IS NOT THE APP EITHER.** `sim-shot` fixed Chromium by serving the bundle to the
+  simulator's Safari, and it is what caught the missing glass — but it is still a web page in a
+  browser, with Safari's toolbar along the bottom, its URL bar, "◀ Safari" in the status bar and a
+  page inset below a status bar it does not own. Every screenshot shown to the owner looked like a
+  PWA because it WAS one, and they said so: *"still looking like pwa where dynamic island isn't
+  accounted for"*. The renderer had been fixed one step short of the thing that ships.
+  `node scripts/app-shot.mjs install | launch [light|dark] | capture <name> [out]` drives the real
+  Capacitor build. Measured on it, and invisible in any Safari capture: the safe area IS honoured
+  (the wordmark sits 13pt below the 59pt inset), the glass bar DOES materialise on scroll and extend
+  behind the status bar and the Dynamic Island, and the large title DOES collapse into the bar with a
+  back button on a sub-screen. `viewport-fit=cover`, `contentInset: "never"` and `black-translucent`
+  are all set, and the status bar style reads the app's own theme rather than the device's.
+  It deliberately does NOT navigate: the app declares no `CFBundleURLTypes`, so there is no
+  `totry://` to open a screen with, `simctl` cannot synthesise touches, and `idb` will not install on
+  this machine. Taps come from the simulator control tool. `capture` hashes the frame BELOW the top
+  180px and says when a capture is identical to the last one, so a tap that missed is visible instead
+  of silent — the first version hashed the whole file and was useless, because the status bar's
+  minute changes between any two captures and every screen therefore looked "different".
 - **A MATERIAL THAT REPEATS ITS BACKDROP IS A WINDOW.** The capsule was a 30%-opaque tint under
   `saturate(220%) brightness(1.38)` — it amplified whatever scrolled beneath it, so wherever the app's
   own blue passed under the bar every tab label fell under AA (measured on the phone: 1.56–2.36:1 in
