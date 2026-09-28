@@ -14,7 +14,11 @@ const path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 function extractFn(name){
-  const re = new RegExp('function\\s+' + name.replace(/[$]/g, '\\$&') + '\\s*\\(', 'g');
+  // The `async` has to come WITH the function. This matched `function name(` and sliced from there,
+  // so an async function arrived as a plain one whose body still contained `await` — a SyntaxError
+  // at load, which is why nothing in this suite was ever async. Optional prefix, and the slice starts
+  // at the match so the keyword is carried through.
+  const re = new RegExp('(?:async\\s+)?function\\s+' + name.replace(/[$]/g, '\\$&') + '\\s*\\(', 'g');
   const m = re.exec(html);
   if(!m) throw new Error('function not found in index.html: ' + name);
   const open = html.indexOf('{', m.index);

@@ -3089,12 +3089,42 @@ function showExerciseProgress(exName){
   '</div>';
   document.body.appendChild(m);
 }
+// CACHED, AND IT WAS NOT. initPTTab() calls this on EVERY Train tab open, and it went straight to the
+// model with no cache and no tried-marker — measured as roughly a quarter of a median person's whole
+// AI volume, for a line of text nobody asked for. Every other automatic call in this app is already
+// guarded: showAIMorningSentence caches under a day key AND sets a tried-marker so a failure does not
+// re-fire (25-soul.js), generateWeeklySynthesis gates on a week key plus __synthesisAttempted
+// (24-review.js), generateAIPushMessages is at-most-weekly (28-init.js). This was the outlier.
+//
+// That matters more than it sounds: every free tier in the chain is metered PER PROJECT — the app's
+// key, not the person's — so the whole app shares roughly 500 free calls a day. An unguarded
+// automatic call is not one person's cost, it is everyone's ceiling.
+//
+// The key is the local date built from PARTS plus the number of logged sessions, so it refreshes the
+// moment a workout is logged and never otherwise. Built from parts deliberately: this app's day key
+// is a locale formatter that two engines spell differently (docs/DAY-KEY.md), and a cache must not
+// inherit that. One row, not one per day, so nothing accumulates.
+function _ptSuggKey(){
+  const d = new Date(), h = (ls('totry_workouts')||[]).length;
+  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ':' + h;
+}
 async function getProgressiveSuggestion(){
   const history=ls('totry_workouts')||[];if(history.length<2)return;
+  const _k = _ptSuggKey();
+  const _el = () => document.getElementById('pt-today-split-detail');
+  try{
+    const c = ls('totry_ai_pt_sugg');
+    if(c && c.k === _k && c.v){ const e=_el(); if(e) e.textContent = c.v; return; }
+    // A failure must not re-fire on the next tab open either — the same reason the morning sentence
+    // keeps a tried-marker. In-memory is enough: a fresh launch may reasonably try once more.
+    if(window.__ptSuggTried === _k) return;
+    window.__ptSuggTried = _k;
+  }catch(_){ }
   const todayFocus=getUserSplit()[tIdx()]?.focus||'Workout';
   const recent=history.slice(0,3).map(s=>((s&&Array.isArray(s.exercises))?s.exercises:[]).map(ex=>(ex&&ex.name||'?')+': '+((ex&&Array.isArray(ex.sets))?ex.sets:[]).map(set=>(set&&set.weight!=null?set.weight:'?')+'kg\u00d7'+(set&&set.reps!=null?set.reps:'?')).join(', ')).join('; ')).join('\n');
   const suggestion=await api(buildPTCtx(),[],'Based on these recent sessions:\n'+recent+'\nToday is '+todayFocus+'. Give specific progressive overload targets — what weight and reps to aim for on the main lifts, with a sentence of why for each. Be concrete with numbers; a short paragraph is fine.',500);
-  if(suggestion){const el=document.getElementById('pt-today-split-detail');if(el)el.textContent=suggestion;}
+  if(suggestion){const el=_el();if(el)el.textContent=suggestion;
+    try{ ls('totry_ai_pt_sugg', { k:_k, v:suggestion }); }catch(_){ }}
 }
 
 // updateStravaBtn() removed: #strava-link-status is not in the shell, and it read 'strava_token'

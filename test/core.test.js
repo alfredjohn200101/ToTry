@@ -7517,6 +7517,45 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
+H.section('the Train tab does not ask the model the same question twice');
+{
+  // initPTTab() calls getProgressiveSuggestion() on EVERY Train open, and it went to the model every
+  // time with no cache and no tried-marker — roughly a quarter of a median person's whole AI volume
+  // for a line nobody asked for. Every other automatic call was already guarded; this was the
+  // outlier. It matters beyond one person: every free tier in the chain is metered PER PROJECT, so
+  // the whole app shares one daily allowance and an unguarded automatic call is everyone's ceiling.
+  //
+  // DRIVEN, not greped: a grep for the cache key passes on a cache that is written and never READ,
+  // which is the shape this repo already shipped once with a tombstone argument. The suite is
+  // synchronous, so this drives the branch that is synchronous and is the one that matters — a
+  // valid cache must return before any await, without calling api() at all.
+  let calls = 0;
+  const store = { totry_workouts: [ { exercises: [] }, { exercises: [] } ] };
+  const el = { textContent: '' };
+  const { _ptSuggKey, getProgressiveSuggestion } = H.load(['_ptSuggKey', 'getProgressiveSuggestion'], {
+    ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; return v; },
+    api: async () => { calls++; return 'asked the model'; },
+    getUserSplit: () => [{ focus: 'Push' }],
+    tIdx: () => 0,
+    buildPTCtx: () => 'ctx',
+    document: { getElementById: () => el },
+  });
+  // The key must change when a workout is logged, and not otherwise — that is what makes the cache
+  // a cache rather than a day-long freeze on yesterday's advice.
+  const k1 = _ptSuggKey();
+  H.eq(_ptSuggKey(), k1, 'the key is stable within a day for the same history');
+  store.totry_workouts = store.totry_workouts.concat([{ exercises: [] }]);
+  H.ok(_ptSuggKey() !== k1, 'and changes the moment a workout is logged');
+  // Built from date PARTS, never a locale formatter — this app's day key is one, and two engines
+  // spell it differently (docs/DAY-KEY.md). A cache must not inherit that.
+  H.ok(/^\d{4}-\d{2}-\d{2}:\d+$/.test(_ptSuggKey()), 'and is engine-stable YYYY-MM-DD:count');
+  // A valid cache returns before any await and never reaches api().
+  store.totry_ai_pt_sugg = { k: _ptSuggKey(), v: 'from the cache' };
+  getProgressiveSuggestion();
+  H.eq(calls, 0, 'a cached suggestion asks nobody');
+  H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
+}
+
 H.section('"numbers off" hides the vitamin panel too');
 {
   // The promise is total or it is worthless — applyNutGentle's own comment says so: "a 'numbers off'
