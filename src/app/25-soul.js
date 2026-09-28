@@ -43,6 +43,23 @@
 // _faithLine() returns a line from the person's OWN tradition and returns nothing at all for someone
 // secular or with scripture turned down. Stillness is offered to everyone either way, because
 // breathing needs no belief — and that is stated plainly rather than implied.
+// THE DAY COUNT IS A DOOR TO THE EVIDENCE. "167 days in" sits in the header on every screen and
+// opened the Reflect tab, which is tonight — not the hundred and sixty-seven. The number is the
+// claim; What you've built is what stands behind it, and it is built from nothing but the person's
+// own honesty and input. Soul because this is the examen's own act: looking back at what was
+// actually there, without flattering it and without a scoreboard of absence.
+function openYourRecord(){
+  try{ if(typeof go === 'function') go('soul'); }catch(_){ }
+  // The heatmap sizes its cells to the card it sits in, so it can only draw once that card has a
+  // width — the same reason the old <details> re-drew on toggle. One frame after the tab is shown.
+  setTimeout(function(){
+    try{ if(typeof renderActivityHeatmap === 'function') renderActivityHeatmap(); }catch(_){ }
+    try{
+      const el = document.getElementById('soul-record');
+      if(el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    }catch(_){ }
+  }, 60);
+}
 function renderSoulStill(){
   const el = document.getElementById('soul-still');
   if(!el) return;

@@ -742,7 +742,14 @@ function renderActivityHeatmap(){
   const legend = document.getElementById('activity-heatmap-legend');
   if(legend){
     // A footnote under the chart (.heatmap-legend), in sentence case: it was 11px caps in the faintest grey.
-    legend.innerHTML = '<span>' + totalDays + ' of ' + totalCells + ' days \u00b7 ' + showupRate + '% show-up</span>' +
+    // COUNT WHAT WAS DONE, NOT WHAT WAS MISSED. This read "12 of 78 days \u00b7 15% show-up", which is a
+    // scoreboard of absence: the denominator is fixed at twelve weeks, so the percentage is low by
+    // construction for months and a person three weeks in was told "1% show-up" about a record they
+    // had only just started. The app does not do that anywhere else — the Fight counts urges WON and
+    // says "came back 6 times", never the losses. The grid already shows the gaps; the words do not
+    // have to score them. totalCells and showupRate stay computed: the grid uses the span, and a
+    // future surface may want the rate honestly framed.
+    legend.innerHTML = '<span>' + (typeof plural === 'function' ? plural(totalDays, 'day') : totalDays + ' days') + ' you showed up</span>' +
       '<span class="heatmap-scale">Less ' +
         ['var(--fill)','var(--go-bd)','var(--go)']
           .map(c => '<i style="background:' + c + '"></i>').join('') +

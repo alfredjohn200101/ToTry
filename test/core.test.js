@@ -8205,7 +8205,11 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
 
   // ── 4. THE GROUP ROWS ─────────────────────────────────────────────────────────────────────────
   const summaries = [...tab.matchAll(/<summary([^>]*)>/g)].map(m => m[1]);
-  H.ok(summaries.length === 8 && summaries.every(a => a === ' class="ios-row has-icon"'), 'all eight groups open from an iOS row with an icon tile (' + summaries.length + ')');
+  // Seven since the record moved out. "History & insights" — the show-up heatmap, the past Sundays,
+  // the search and the year in review — was the eighth, and it was the person's own accumulating
+  // evidence filed between "Connected apps" and "Your data & account". It lives in Soul now, behind
+  // the day count. The number is still pinned, so a group cannot be added without the icon row.
+  H.ok(summaries.length === 7 && summaries.every(a => a === ' class="ios-row has-icon"'), 'all seven groups open from an iOS row with an icon tile (' + summaries.length + ')');
   H.ok(!/settings-group-hint|setting-row|sr-label|sr-desc/.test(tab), 'no comma-separated hint strip, no hand-built setting row');
   const theme = (tab.match(/<select id="settings-theme"[\s\S]*?<\/select>/) || [''])[0];
   H.eq([...theme.matchAll(/<option value="(\w+)">([^<]+)</g)].map(m => m[1] + '=' + m[2]), ['system=System', 'light=Light', 'dark=Dark'], 'Theme offers System / Light / Dark');

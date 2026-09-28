@@ -4286,7 +4286,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <!-- Singular by default: the static markup is only ever seen before hydration, and anyone seeing it
            un-hydrated is on day 1. It used to read "1 days in" for that first beat — the very first words a
            new person reads. Runtime still switches to "days in" from day 2 (see the .day-l update). -->
-      <div class="day-chip" onclick="go('reflect')"><div class="day-n" id="day-num">1</div><div class="day-l">day in</div></div>
+      <div class="day-chip" onclick="openYourRecord()"><div class="day-n" id="day-num">1</div><div class="day-l">day in</div></div>
       <button onclick="go('settings')" aria-label="Settings" style="background:none;border:none;padding:6px;margin:0;cursor:pointer;color:var(--tx3);display:flex;align-items:center;line-height:0;-webkit-tap-highlight-color:transparent"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
@@ -4469,6 +4469,39 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       </button>
     </div>
   </div>
+
+  <!-- WHAT YOU'VE BUILT — the record, out of Settings. The show-up map, every Sunday the coach has
+       written, the year, and a search across everything a person has ever put in. All four already
+       existed and all four sat inside one CLOSED <details> called "History & insights", filed between
+       "Connected apps" and "Your data & account" — which is where you go to change your units, not to
+       see what a hundred and sixty-seven days hold. So a person three months in met the same app as
+       someone on day nine, not because the record was never kept but because it was never anywhere
+       they would look.
+       It belongs in Soul: this is the same act as the examen — looking back honestly at what was
+       actually there. And the day count in the header opens it, because that number is the claim and
+       this is the evidence behind it, built from nothing but their own honesty and input. -->
+  <div class="ios-section" id="soul-record">
+    <div class="ios-header">What you&rsquo;ve built</div>
+    <div class="card heatmap-card">
+      <div id="activity-heatmap" class="heatmap-scroll"></div>
+      <div id="activity-heatmap-legend" class="heatmap-legend"></div>
+    </div>
+    <div class="ios-footnote">The days you actually showed up &mdash; past 12 weeks. Tap a day to see what you did.</div>
+    <div class="ios-footnote" style="margin-bottom:10px">Every Sunday the coach has written for you, and one bar that searches everything you have put in &mdash; journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers.</div>
+    <div class="ios-list">
+      <button type="button" class="ios-row has-icon" onclick="showSynthesisHistory()"><span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Past Sundays</span></span><span class="ios-row-value" id="synthesis-count">0</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+      <button type="button" class="ios-row has-icon" onclick="openUniversalSearch()"><span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Search your history</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
+    </div>
+    <div class="ios-section" style="margin-top:18px">
+      <div class="ios-header">Year in review</div>
+      <div class="ios-list">
+        <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Year</span></span><select id="year-review-select" class="row-field" aria-label="Year to review"></select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
+        <button type="button" class="ios-row tint" onclick="showYearInReview(parseInt(document.getElementById('year-review-select').value))"><span class="ios-row-body"><span class="ios-row-title" style="display:block">View year in review</span></span></button>
+      </div>
+      <div class="ios-footnote">Your full year of trying &mdash; anytime.</div>
+    </div>
+  </div>
+
   <div class="ios-section">
     <div class="ios-header">Your anchor</div>
     <div class="ios-list">
@@ -7323,40 +7356,6 @@ Amen.</div></div>
   <div class="settings-stack">
   <!-- The heatmap sizes its cells to the card it sits in, and a closed <details> has no width to measure,
        so it draws again the moment the group opens. -->
-  <details ontoggle="if(this.open &amp;&amp; typeof renderActivityHeatmap==='function') renderActivityHeatmap()">
-    <summary class="ios-row has-icon"><span class="ios-row-icon tone-teal"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">History &amp; insights</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
-    <div class="settings-group-body">
-      <div class="ios-section">
-        <div class="ios-header">Show-up heatmap</div>
-        <div class="card heatmap-card">
-          <div id="activity-heatmap" class="heatmap-scroll"></div>
-          <div id="activity-heatmap-legend" class="heatmap-legend"></div>
-        </div>
-        <div class="ios-footnote">The days you actually showed up — past 12 weeks. Tap a day to see what you did.</div>
-      </div>
-      <div class="ios-section">
-        <div class="ios-list">
-          <button type="button" class="ios-row has-icon" onclick="showSynthesisHistory()"><span class="ios-row-icon tone-brown"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Past Sundays</span></span><span class="ios-row-value" id="synthesis-count">0</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
-        </div>
-        <div class="ios-footnote">Every weekly synthesis the Coach has written for you. Read what you were navigating, week by week.</div>
-      </div>
-      <div class="ios-section">
-        <div class="ios-list">
-          <button type="button" class="ios-row has-icon" onclick="openUniversalSearch()"><span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Search your history</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
-        </div>
-        <div class="ios-footnote">Find anything you’ve written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</div>
-      </div>
-      <div class="ios-section">
-        <div class="ios-header">Year in review</div>
-        <div class="ios-list">
-          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Year</span></span><select id="year-review-select" class="row-field" aria-label="Year to review"></select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
-          <button type="button" class="ios-row tint" onclick="showYearInReview(parseInt(document.getElementById('year-review-select').value))"><span class="ios-row-body"><span class="ios-row-title" style="display:block">View year in review</span></span></button>
-        </div>
-        <div class="ios-footnote">See your full year of trying — anytime. Auto-prompts in late December.</div>
-      </div>
-    </div>
-  </details>
-
   <details id="connected-apps-section">
     <summary class="ios-row has-icon"><span class="ios-row-icon tone-blue"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Connected apps</span></span><span class="ios-row-value" id="connected-apps-hint">Nothing linked yet</span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></summary>
     <div class="settings-group-body">
@@ -16375,7 +16374,7 @@ function go(name){
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
-  if(name==='soul'){ if(typeof renderSoulStill==='function') renderSoulStill(); if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
+  if(name==='soul'){ if(typeof renderSoulStill==='function') renderSoulStill(); if(typeof renderActivityHeatmap==='function') renderActivityHeatmap(); if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='coach'){ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
@@ -45978,7 +45977,14 @@ function renderActivityHeatmap(){
   const legend = document.getElementById('activity-heatmap-legend');
   if(legend){
     // A footnote under the chart (.heatmap-legend), in sentence case: it was 11px caps in the faintest grey.
-    legend.innerHTML = '<span>' + totalDays + ' of ' + totalCells + ' days \u00b7 ' + showupRate + '% show-up</span>' +
+    // COUNT WHAT WAS DONE, NOT WHAT WAS MISSED. This read "12 of 78 days \u00b7 15% show-up", which is a
+    // scoreboard of absence: the denominator is fixed at twelve weeks, so the percentage is low by
+    // construction for months and a person three weeks in was told "1% show-up" about a record they
+    // had only just started. The app does not do that anywhere else — the Fight counts urges WON and
+    // says "came back 6 times", never the losses. The grid already shows the gaps; the words do not
+    // have to score them. totalCells and showupRate stay computed: the grid uses the span, and a
+    // future surface may want the rate honestly framed.
+    legend.innerHTML = '<span>' + (typeof plural === 'function' ? plural(totalDays, 'day') : totalDays + ' days') + ' you showed up</span>' +
       '<span class="heatmap-scale">Less ' +
         ['var(--fill)','var(--go-bd)','var(--go)']
           .map(c => '<i style="background:' + c + '"></i>').join('') +
@@ -47567,6 +47573,23 @@ async function renderLiturgy(){
 // _faithLine() returns a line from the person's OWN tradition and returns nothing at all for someone
 // secular or with scripture turned down. Stillness is offered to everyone either way, because
 // breathing needs no belief — and that is stated plainly rather than implied.
+// THE DAY COUNT IS A DOOR TO THE EVIDENCE. "167 days in" sits in the header on every screen and
+// opened the Reflect tab, which is tonight — not the hundred and sixty-seven. The number is the
+// claim; What you've built is what stands behind it, and it is built from nothing but the person's
+// own honesty and input. Soul because this is the examen's own act: looking back at what was
+// actually there, without flattering it and without a scoreboard of absence.
+function openYourRecord(){
+  try{ if(typeof go === 'function') go('soul'); }catch(_){ }
+  // The heatmap sizes its cells to the card it sits in, so it can only draw once that card has a
+  // width — the same reason the old <details> re-drew on toggle. One frame after the tab is shown.
+  setTimeout(function(){
+    try{ if(typeof renderActivityHeatmap === 'function') renderActivityHeatmap(); }catch(_){ }
+    try{
+      const el = document.getElementById('soul-record');
+      if(el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    }catch(_){ }
+  }, 60);
+}
 function renderSoulStill(){
   const el = document.getElementById('soul-still');
   if(!el) return;
