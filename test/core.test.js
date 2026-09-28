@@ -7517,6 +7517,39 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
+H.section('the brief says what the person has built, not just how often they turned up');
+{
+  // getLifeState().training was four fields — sessions7, sessions14, daysTrained7, lastTitle — so the
+  // entire training picture handed to every surface that reads it, for someone with a hundred logged
+  // sessions and fifteen PRs, was "4 sessions in 7 days, last: Upper". _ptIntel() computes the
+  // estimated 1RMs and the weekly sets on the same stores and has three call sites, all inside Train.
+  // The brother, the Feeling Door, the moment and brotherGuidance were blind to the front this app
+  // holds the most data about. Fixed ONCE in lifeStateBrief(), which is where the units bug was fixed
+  // for the same reason: every AI surface reads it.
+  //
+  // Driven, not greped — a grep for 'topLifts' passes on a brief that computes the field and never
+  // says it, which is the exact shape of the cache that is written and never read.
+  // lifeStateBrief(s) takes the state — it does not fetch it.
+  const { lifeStateBrief } = H.load(['lifeStateBrief'], {
+    ls: () => null, prefersMetric: () => true, wFmt: v => v + 'kg', dFmt: v => v + 'km',
+  });
+  const brief = lifeStateBrief({
+    training: { sessions7: 3, sessions14: 6, daysTrained7: 3, lastTitle: 'Push',
+      tonnage7: 7718, topLifts: [{ name: 'Leg Press', orm: 327 }, { name: 'Squat', orm: 166 }],
+      recentPR: { name: 'Squat', orm: 166 } },
+    nutrition: {}, body: {}, soul: {}, fight: {}, readiness: {}, money: {}, sex: {}, activity: {},
+  }) || '';
+  const line = brief.split('\n').find(l => l.indexOf('Training') === 0) || '';
+  H.ok(/3 sessions in 7 days/.test(line), 'the brief still carries the session count');
+  H.ok(/7,718kg moved this week/.test(line), 'and the kilograms actually moved');
+  H.ok(/Leg Press ~327kg/.test(line), 'and the lifts the person has built');
+  H.ok(/New PR in the last three weeks: Squat ~166kg/.test(line), 'and a record while it is still news');
+  // SMALL ON PURPOSE. This line reaches the 2am companion prompt; _ptIntel()'s eight lines belong to
+  // the PT coach. If it ever grows past a couple of hundred characters, it has stopped being a
+  // clause and started being a briefing.
+  H.ok(line.length < 260, 'and stays one clause, not a briefing (' + line.length + ' chars)');
+}
+
 H.section('the Train tab does not ask the model the same question twice');
 {
   // initPTTab() calls getProgressiveSuggestion() on EVERY Train open, and it went to the model every

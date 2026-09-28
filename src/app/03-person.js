@@ -647,6 +647,57 @@ function getLifeState(){
           const _l = _sorted[0] || workouts[0];
           return _l ? (_l.title||_l.splitFocus||_l.type||'Workout') : null;
         }catch(_){ return workouts[0] ? (workouts[0].title||workouts[0].splitFocus||'Workout') : null; }
+      })(),
+      // WHAT THE PERSON HAS ACTUALLY BUILT. This object was four fields — sessions7, sessions14,
+      // daysTrained7, lastTitle — so the whole training picture handed to every surface that reads
+      // getLifeState(), for someone with a hundred logged sessions and fifteen PRs, was "4 sessions
+      // in 7 days, last: Upper". Meanwhile _ptIntel() computes the estimated 1RMs, the weekly sets
+      // per muscle and any live plateau on the same stores — and has three call sites, all inside
+      // Train. The brother, the Feeling Door, the moment, brotherGuidance and the Companion were all
+      // blind to the front this app holds the most data about.
+      // Structured rather than _ptIntel's formatted string, because non-AI surfaces want these too,
+      // and deliberately SMALL: the brief reaches the 2am companion prompt and _ptIntel's eight lines
+      // belong to the PT coach, not to a hard moment.
+      topLifts: (function(){
+        try{
+          const prs = ls('totry_prs') || {};
+          return Object.keys(prs)
+            .map(function(n){ return { name: n, orm: Math.round((prs[n]||{}).orm || 0) }; })
+            .filter(function(x){ return x.orm > 0; })
+            .sort(function(a, b){ return b.orm - a.orm; })
+            .slice(0, 3);
+        }catch(_){ return []; }
+      })(),
+      recentPR: (function(){
+        try{
+          const prs = ls('totry_prs') || {};
+          const rows = Object.keys(prs).map(function(n){
+            const p = prs[n] || {};
+            return { name: n, orm: Math.round(p.orm || 0), ts: new Date(p.date || 0).getTime() };
+          }).filter(function(x){ return x.orm > 0 && !isNaN(x.ts) && x.ts > 0; });
+          if(!rows.length) return null;
+          rows.sort(function(a, b){ return b.ts - a.ts; });
+          // Only while it is still news. A personal record from March is not a thing to open a
+          // hard moment with.
+          return within(new Date(rows[0].ts).toISOString(), 21) ? { name: rows[0].name, orm: rows[0].orm } : null;
+        }catch(_){ return null; }
+      })(),
+      // Kilograms actually moved this week: every non-warm-up set's weight by its reps. The number a
+      // lifter feels and the app never said.
+      tonnage7: (function(){
+        try{
+          let kg = 0;
+          (train7 || []).forEach(function(w){
+            ((w && Array.isArray(w.exercises)) ? w.exercises : []).forEach(function(ex){
+              ((ex && Array.isArray(ex.sets)) ? ex.sets : []).forEach(function(st){
+                if(!st || (st.type || 'normal') === 'warmup') return;
+                const wt = Number(st.weight), rp = Number(st.reps);
+                if(wt > 0 && rp > 0) kg += wt * rp;
+              });
+            });
+          });
+          return kg > 0 ? Math.round(kg) : null;
+        }catch(_){ return null; }
       })()
     },
     nutrition: {
@@ -730,7 +781,15 @@ function lifeStateBrief(s){
   // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
   const _un = (typeof _unitsNote==='function') ? _unitsNote() : '';
   if(_un) lines.push(_un.replace(/^\\n/,'').replace(/^\n/,''));
-  if(t.sessions7 != null) lines.push('Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:''));
+  if(t.sessions7 != null){
+    // One clause, not eight. _ptIntel() is the PT coach's briefing; this is the sentence every other
+    // surface needs so it can speak to what the person has built instead of how often they turned up.
+    let tl = 'Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:'');
+    if(t.tonnage7) tl += ', '+t.tonnage7.toLocaleString()+'kg moved this week';
+    if(t.topLifts && t.topLifts.length) tl += '. Best lifts: '+t.topLifts.map(function(x){ return x.name+' ~'+x.orm+'kg'; }).join(', ');
+    if(t.recentPR) tl += '. New PR in the last three weeks: '+t.recentPR.name+' ~'+t.recentPR.orm+'kg';
+    lines.push(tl);
+  }
   // Gentle mode ("numbers on/off") is a promise that this person does not see calorie or macro
   // figures — often because counting them is the thing that hurt them. Handing the raw numbers to the
   // coach broke that promise from the other side: the diary hid them and then the coach said them out
