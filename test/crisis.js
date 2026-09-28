@@ -131,6 +131,21 @@ const DOORS = [
       if(typeof journalCrisisOf === 'function' && typeof journalMeetCrisis === 'function'){
         const k = journalCrisisOf(p); if(k) journalMeetCrisis(k);
       } }, phrase) },
+  // PASTE A RECIPE. The third free-text box in Nourish and the only one that was never a door: the
+  // meal describer and the food search both gated, this one handed the text straight to the model.
+  // Nobody expects a disclosure in a recipe box, which is the whole reason it has to ask — the same
+  // shape as onboarding's identity field, which took one, stored it verbatim, and printed it back.
+  // `also` asserts what the helpline check cannot see: that the box did not KEEP what was typed.
+  { name: 'paste a recipe (Nourish)',
+    go: async page => page.evaluate(async () => { go('nourish'); if(typeof openPasteRecipe==='function') openPasteRecipe(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const t = document.getElementById('paste-recipe-text'); if(t) t.value = p;
+      if(typeof parsePastedRecipe === 'function') await parsePastedRecipe();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const t = document.getElementById('paste-recipe-text');
+      return (t && t.value.indexOf(p) > -1) ? 'the recipe box kept the disclosure' : null;
+    }, phrase) },
   { name: 'the meal describer (Nourish)',
     go: async page => page.evaluate(async () => { go('nourish'); }),
     fire: async (page, phrase) => page.evaluate(async p => {

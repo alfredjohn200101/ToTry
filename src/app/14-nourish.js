@@ -2527,6 +2527,7 @@ function openPasteRecipe(){
   document.querySelector('.modal-bg.open')?.remove();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div id="paste-recipe-crisis"></div>'+
     '<h3 style="margin-bottom:6px">Paste a recipe</h3>'+
     '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
     '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:var(--t-base);line-height:1.5;margin-bottom:12px"></textarea>'+
@@ -2539,6 +2540,21 @@ function openPasteRecipe(){
 async function parsePastedRecipe(){
   const text=(document.getElementById('paste-recipe-text')?.value||'').trim();
   if(!text){ showToast('Paste something first','Add the ingredients and I’ll build it.'); return; }
+  // BEFORE THE MODEL SEES IT. This is the third free-text box in Nourish that reaches the AI, and it
+  // was the only one that was not a crisis door: the meal describer and the food search both gate,
+  // this did not. The rule in CLAUDE.md is that a free-text surface gets its door the same day, and
+  // the reason is on the record — onboarding's first three fields took a suicide disclosure, stored
+  // it verbatim and printed it back as a vice card, while detectCrisis() answered correctly for the
+  // same sentence one function away. The door simply never asked. A recipe box is not where anyone
+  // expects this, which is exactly why it has to ask too.
+  try{
+    const _c = (typeof detectCrisis === 'function') ? detectCrisis(text) : null;
+    if(_c){
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('paste-recipe-crisis', _c);
+      const _ta = document.getElementById('paste-recipe-text'); if(_ta) _ta.value = '';
+      return;
+    }
+  }catch(_){ }
   const btn=document.querySelector('.modal-bg.open .btn.primary');
   if(btn){ btn.textContent='Working out the macros…'; btn.disabled=true; }
   const prompt='Parse this into a structured recipe with macros:\n\n"'+text+'"\n\n'+
