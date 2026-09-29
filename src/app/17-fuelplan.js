@@ -658,8 +658,18 @@ function _fuelLogPlan(btn){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
   const today = dayKeyOf();
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
+  // THE LAST STEP OF THE LOOP, AND IT WAS THROWING AWAY THE BEST NUMBERS IN IT.
+  // A recipe's ingredients now carry the full nutrient set their source knew — USDA's 28 keys via
+  // the food search, Open Food Facts' via the barcode. The planner builds the week around those
+  // recipes. Then this logged the MODEL's four estimated numbers for them: the person cooked the
+  // recipe they built, and the diary recorded a guess about it — no micronutrients, and macros that
+  // disagree with the recipe's own screen. Summed exactly the way logRecipeAsMeal sums them, at one
+  // serving, so the two paths cannot drift apart.
+  const _recipes = (typeof ls === 'function' ? ls('totry_recipes') : null) || [];
+  const _byName = {};
+  _recipes.forEach(function(r){ if(r && r.name) _byName[String(r.name).trim().toLowerCase()] = r; });
   plan.meals.forEach(function(mm, i){
-    log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
+    const row = { id: Date.now()+i,  id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
       // WITHOUT THIS THE WHOLE PLANNED DAY FILED UNDER SNACKS. The diary groups on
       // `(e.meal||'snack')` (14-nourish.js:3314), and every row this function wrote carried no
       // `meal` at all — so a person tapped "log the plan", got breakfast, lunch and dinner stacked
@@ -677,7 +687,23 @@ function _fuelLogPlan(btn){
       // filed today's meals under today's key with Tuesday's timestamp, and every ts-based reader
       // then disagreed with the key it was stored under.
       ts: new Date().toISOString(), date: today,
-      source: 'Fuel plan' });
+      source: 'Fuel plan' };
+    const r = _byName[String(mm.name||'').trim().toLowerCase()];
+    if(r && Array.isArray(r.ingredients) && r.ingredients.length && typeof nutPick === 'function' && typeof NUTRIENTS !== 'undefined'){
+      const tot = {};
+      r.ingredients.forEach(function(ing){
+        NUTRIENTS.forEach(function(k){ const v = Number(ing && ing[k]); if(isFinite(v)) tot[k] = (tot[k]||0) + v; });
+      });
+      const one = nutPick(tot, 1 / Math.max(1, parseInt(r.servings) || 1));
+      // Only where the recipe actually knows something. An ingredient list with no numbers in it
+      // must not replace the model's estimate with zeros — "unknown" never becomes "none".
+      if(one && isFinite(one.cal) && one.cal > 0){
+        NUTRIENTS.forEach(function(k){ if(typeof one[k] === 'number' && isFinite(one[k])) row[k] = one[k]; });
+        row.serving = '1 serving';
+        row.source = 'Your recipe';
+      }
+    }
+    log[today].push(row);
   });
   if(typeof _pruneNutLog==='function') _pruneNutLog(log);
   ls('totry_nutlog', log); if(typeof syncToCloud==='function') syncToCloud();

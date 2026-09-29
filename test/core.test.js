@@ -8028,6 +8028,61 @@ H.section('an ingredient carries every nutrient its source knew, not four of the
   H.ok(!/ingredients\.push\(\{ name: food\.name/.test(lb), 'and no longer hand-builds four macros');
 }
 
+H.section('logging the plan records the recipe you cooked, not a guess about it');
+{
+  // The last step of the loop, and it was throwing away the best numbers in it. A recipe's
+  // ingredients now carry the full nutrient set their source knew — USDA's 28 keys through the food
+  // search, Open Food Facts' through the barcode — and the planner builds the week around those
+  // recipes. Then this logged the MODEL's four estimated numbers for them. The person cooked the
+  // recipe they built, and the diary recorded a guess about it: no micronutrients, and macros that
+  // disagree with the recipe's own screen.
+  const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
+                 'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
+  const RECIPES = [
+    { name:'Chicken pesto pasta', servings:4, ingredients:[
+      { name:'Chicken 500g', cal:550, pro:110, carb:0, fat:12, sodium:220, potassium:1670, b6:3 },
+      { name:'Pasta 400g', cal:1480, pro:52, carb:300, fat:6, magnesium:200, iron:6 } ] },
+    { name:'Numberless', servings:1, ingredients:[{ name:'a pinch of salt' }] },
+  ];
+  const plan = { meals:[
+    { name:'Chicken pesto pasta', cal:999, pro:9, carbs:9, fat:9, items:'model guess' },
+    { name:'Scrambled eggs', cal:400, pro:30, carbs:2, fat:28, items:'3 eggs' },
+    { name:'Numberless', cal:300, pro:10, carbs:5, fat:5, items:'model guess' },
+  ] };
+  let wrote = null;
+  const fns = H.load(['_fuelLogPlan','nutPick','_fuelMealSlot'], { NUTRIENTS,
+    ls: (k, v) => { if(k === 'totry_meal_plan') return plan; if(k === 'totry_recipes') return RECIPES;
+                    if(k === 'totry_nutlog' && v === undefined) return {};
+                    if(k === 'totry_nutlog'){ wrote = v; } return v; },
+    dayKeyOf: () => '30/09/2026', _pruneNutLog: () => {}, syncToCloud: () => {},
+    renderNutritionLog: () => {}, autoTickHabits: () => {}, haptic: () => {},
+    closeModal: () => {}, showToast: () => {}, document: {} });
+  fns._fuelLogPlan();
+  const rows = wrote['30/09/2026'];
+  const by = {}; rows.forEach(function(r){ by[r.name] = r; });
+
+  const mine = by['Chicken pesto pasta'];
+  H.eq(mine.source, 'Your recipe', 'a planned meal that IS their recipe is logged as theirs');
+  H.eq(mine.cal, 508, 'with the recipe\'s own total at one serving, not the model\'s 999');
+  H.eq(mine.pro, 40.5, 'and its protein');
+  H.ok(mine.potassium > 0 && mine.b6 > 0 && mine.magnesium > 0,
+    'carrying the micronutrients the ingredients knew');
+  H.eq(mine.serving, '1 serving', 'and says what a serving is rather than repeating the model\'s items line');
+
+  // A meal the model invented is untouched — this must not widen into every row.
+  H.eq(by['Scrambled eggs'].source, 'Fuel plan', 'a meal that is not one of their recipes is unchanged');
+  H.eq(by['Scrambled eggs'].cal, 400, 'keeping the model\'s estimate, which is all there is');
+
+  // UNKNOWN NEVER BECOMES NONE. A recipe whose ingredients carry no numbers must not replace a
+  // usable estimate with zeros — the same rule nutPick keeps about an absent nutrient.
+  H.eq(by['Numberless'].cal, 300, 'a recipe with no numbers in it does not zero the plan\'s estimate');
+  H.eq(by['Numberless'].source, 'Fuel plan', 'and is not claimed as a recipe-backed row');
+
+  // Every row still carries its meal slot — the defect this function was fixed for once before.
+  H.ok(rows.every(function(r){ return !!r.meal; }), 'and every row still lands in a meal, not Snacks');
+}
+
 H.section('where you shop is a setting, and a plan you are set up for is one tap');
 {
   // openFuelPlan() ran the ENTIRE elicitation and then the shop picker on every single build. A
