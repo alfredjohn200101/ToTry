@@ -446,7 +446,22 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    prominent. Never weaken them.
 
 ## WHAT TO DO NEXT (in priority order)
-0. **THE DAY KEY IS A LOCALE FORMATTER — read `docs/DAY-KEY.md` before shipping anything.**
+0. **THE DAY KEY — FIXED AND MERGED (v607, 29 Sep 2026). Read `docs/DAY-KEY.md` before you touch a
+   date.** `dayKeyOf()` is now the only way to spell a day: it builds from date PARTS, never a
+   formatter, and `npm run engines` proves it in Chromium AND WebKit across all 365 days of 2026
+   (old formatter 300/365 forked, dayKeyOf 0/365). Round 3 was reviewed before merging by DRIVING the
+   migration on seven cases it had not chosen, on both engines — the round-2 refutation shape (two
+   objects with different fields, where `sleep:7.5` on the LOSING side must survive `sleep:0` on the
+   winner) now unions correctly, arrays dedupe by id, non-day keys are untouched, and every case is
+   idempotent. **One deliberate loss remains and is not a bug:** when both spellings hold a real
+   SCALAR, the device's own spelling wins and the other is discarded — "keep the copy the person is
+   looking at". `Math.max` is refused for every store, and that generalises further than the commit
+   argued: `setWaterCount()` ASSIGNS, so water can go down, and a max would restore water somebody
+   removed. **What is left is the second divergence**: `{month:'short'}` is "Sept" in Chromium and
+   "Sep" in WebKit, persisted into `.date` fields compared by string equality at 38 sites. That one
+   is still open.
+   The original entry, kept because it explains what the fix is for:
+   **THE DAY KEY WAS A LOCALE FORMATTER.**
    `new Date().toLocaleDateString('en-AU')` is a PERSISTED object key and is not a stable string:
    Chromium pads both fields, WebKit/iOS pads neither, and **300 of the 365 days of 2026 disagree**
    (only the 10th–31st of Oct/Nov/Dec match, which is why it reads as irreproducible). Nine
