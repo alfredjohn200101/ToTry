@@ -457,9 +457,21 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    SCALAR, the device's own spelling wins and the other is discarded — "keep the copy the person is
    looking at". `Math.max` is refused for every store, and that generalises further than the commit
    argued: `setWaterCount()` ASSIGNS, so water can go down, and a max would restore water somebody
-   removed. **What is left is the second divergence**: `{month:'short'}` is "Sept" in Chromium and
-   "Sep" in WebKit, persisted into `.date` fields compared by string equality at 38 sites. That one
-   is still open.
+   removed. **The second divergence, re-measured 29 Sep 2026, is smaller than this file
+   said and BIGGER than it said, in different ways.** Bigger: `{month:'short'}` differs on **three**
+   months, not one — Chromium spells June, July and Sept where WebKit spells Jun, Jul and Sep
+   (`npm run engines` reports it). Smaller: it is **display only**. The line about "38 sites compared
+   by string equality" described the tree BEFORE v607; the day-key work moved every live comparison
+   to `ts` first (`e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr`), and `13-body.js` even
+   carries a `dayKeyNorm(e.date)` fallback behind that. What actually remains is (a) the same session
+   reading "5 Sept 2026" on the PWA and "5 Sep 2026" in the App Store build, and (b) a bounded legacy
+   path for entries written before `ts` existed. Not data loss.
+   Two things that cost time and are written down so they do not cost it again. **The eight raw
+   `toLocaleDateString('en-AU')===today` comparisons in `autoTickHabits` are DEAD** — there is a bare
+   `return;` above them and `today` is never bound in that block, so it would throw if it ever ran.
+   Any day-key sweep will surface them; they are not a finding. And **`toDateString()` is
+   engine-stable** (0 of 12), which is what makes `36-google-health.js:143` safe — `npm run engines`
+   now asserts that rather than assuming it, because it would be a silent defect if it changed.
    The original entry, kept because it explains what the fix is for:
    **THE DAY KEY WAS A LOCALE FORMATTER.**
    `new Date().toLocaleDateString('en-AU')` is a PERSISTED object key and is not a stable string:
