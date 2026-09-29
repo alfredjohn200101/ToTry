@@ -6494,8 +6494,14 @@ H.section('a prompt never gives the model two orders it cannot both obey');
     'and still sizes the plan by the target — the numbers are how it is built');
   H.ok(/Do NOT write any calorie/.test(fg),
     'while forbidding a figure in any text it returns');
-  H.ok(/_gentleRule \+ "Build a realistic /.test(H.code(fg)),
-    'and the rule is actually prepended to the prompt, not merely defined');
+  // Pinned on the RULE LEADING, not on what follows it: the recipe seam now sits between the rule
+  // and the brief, and this assertion failed on correct code for that reason alone. What has to hold
+  // is that _gentleRule is the FIRST thing in the prompt, so nothing can be read before the
+  // instruction that protects this person.
+  H.ok(/const prompt = _gentleRule \+/.test(H.code(fg)),
+    'and the rule leads the prompt, not merely defined');
+  H.ok(!/const prompt = (?!_gentleRule)/.test(H.code(fg)),
+    'nothing is concatenated ahead of it');
   // A person who wants numbers must be unaffected.
   H.ok(/: ''/.test(fg), 'a numbers-on person gets no extra instruction at all');
   // The renderer's own guards must stay — this fix must not become the reason they were removed.
@@ -7757,6 +7763,78 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(/const\s+ti\s*=/.test(fn), 'renderDayCounter declares its own ti');
   const uses = (fn.match(/\[ti\]/g) || []).length;
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
+}
+
+H.section('the meal planner has heard of the food you already chose');
+{
+  // `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string.
+  // The collectors stopped at collecting and the planner invented every meal, so a person who had
+  // built a shelf of their own recipes opened the plan and met a stranger's week. Both ends were
+  // already in this app, plus the store routing, the prices, the diary and the whole-person brief;
+  // nothing joined them. docs/REELS-TO-PLAN.md phase 1, and it needs no third-party service.
+  //
+  // Seeded in the shape editRecipe(-1) creates and saveCurrentRecipe persists — ingredient totals
+  // for the whole recipe, divided by servings — not a shape invented for this test.
+  const RECIPES = [
+    { name:'Chicken pesto pasta', servings:4, ingredients:[
+      { name:'Chicken breast 500g', cal:550, pro:110 }, { name:'Pasta 400g', cal:1480, pro:52 },
+      { name:'Pesto 190g', cal:900, pro:12 }, { name:'Parmesan 60g', cal:240, pro:22 } ] },
+    { name:'Overnight oats', servings:2, ingredients:[
+      { name:'Rolled oats 160g', cal:600, pro:20 }, { name:'Greek yoghurt 300g', cal:180, pro:30 } ] },
+  ];
+  const load = (recipes) => H.load(['_fuelRecipeLines','_fuelMergeRecipeShopping'],
+    { ls: (k) => (k === 'totry_recipes' ? recipes : null) });
+
+  const block = load(RECIPES)._fuelRecipeLines();
+  H.ok(/Chicken pesto pasta/.test(block), 'the block names their recipe');
+  H.ok(/about 793 kcal, 49g protein per serving/.test(block),
+    'with macros PER SERVING, which is what a meal slot is sized by');
+  H.ok(/Chicken breast 500g, Pasta 400g/.test(block),
+    'and the ingredient names, which is what a shopping list is made of');
+  H.eq(load(null)._fuelRecipeLines(), '', 'someone with no recipes adds nothing to the prompt');
+  H.eq(load([])._fuelRecipeLines(), '', 'nor an empty shelf');
+  // Bounded: this rides in a prompt and must not crowd out the rest of the brief.
+  const many = []; for(let i = 0; i < 20; i++) many.push({ name:'R' + i, servings:1, ingredients:[{ name:'x', cal:10 }] });
+  H.eq((load(many)._fuelRecipeLines().match(/\u00b7 "/g) || []).length, 8, 'and it is capped at 8 recipes');
+
+  // The seam is WIRED, not merely defined — the shape this repo has shipped broken before.
+  // READ THE FILE, NOT extractFn, FOR THIS ONE. The harness's brace matcher is naive by its own
+  // header — it does not skip braces inside strings — and _fuelGenerate embeds a JSON schema full of
+  // them, so extractFn returns 6187 of its ~7391 characters and stops inside parsePlan. An assertion
+  // on anything in that function's TAIL is silently testing nothing: this one failed on correct code
+  // for exactly that reason. (The gentle-rule assertions above survive only because they sit early.)
+  const fgSrc = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  const fg = fgSrc.slice(fgSrc.indexOf('async function _fuelGenerate'));
+  H.ok(fg.length > 7000, 'calibration: the whole function is in hand, not a truncated prefix');
+  H.ok(/_fuelRecipeLines\(\)/.test(fg), 'the generator asks for the block');
+  H.ok(/_gentleRule \+ _recipeBlock \+/.test(fg), 'and it is concatenated into the prompt');
+  H.ok(/_fuelMergeRecipeShopping\(plan\)/.test(fg), 'and the returned plan goes through the merge');
+
+  // WHAT THE MODEL FORGETS, THE APP STILL OWES THEM: if a meal names their recipe, every ingredient
+  // reaches the one shopping list, or the plan tells them to cook something the list cannot buy.
+  const plan = () => ({
+    meals: [{ name:'Chicken pesto pasta' }, { name:'Scrambled eggs' }],
+    shopping: [{ item:'Pasta 400g', price:2.2, shop:'Coles' }, { item:'Eggs 12pk', price:6.5, shop:'Coles' }] });
+  const out = load(RECIPES)._fuelMergeRecipeShopping(plan());
+  H.eq(out.meals[0].mine, true, 'a meal that names their recipe is marked as theirs');
+  H.eq(out.meals[1].mine, undefined, 'one the model invented is not');
+  H.eq(out.shopping.length, 5, 'the three missing ingredients are added and the one already there is not');
+  const added = out.shopping.filter((x) => x.fromRecipe);
+  H.eq(added.length, 3, 'three carry their source');
+  H.ok(added.every((x) => !x.price), 'and no price — we do not know what it costs at their store');
+  H.ok(added.every((x) => x.shop === 'From your recipes'), 'they group as what they are');
+  // Idempotent: a regenerate, or a second pass, must not double the list.
+  const twice = load(RECIPES)._fuelMergeRecipeShopping(load(RECIPES)._fuelMergeRecipeShopping(plan()));
+  H.eq(twice.shopping.length, 5, 'running the merge twice adds nothing');
+  // Someone with no recipes is completely untouched.
+  H.eq(JSON.stringify(load(null)._fuelMergeRecipeShopping(plan())), JSON.stringify(plan()),
+    'and a person with no recipes gets exactly the plan the model returned');
+
+  // A GROUP WE DID NOT PRICE MUST NOT SHOW A TOTAL OF ZERO — "$0.00" beside those rows says free.
+  const render = H.code(H.extractFn('_fuelRenderPlan'));
+  H.ok(/_unpriced/.test(render), 'the render knows an unpriced group when it sees one');
+  H.ok(!/>'\+money\(sub\)\+'</.test(render), 'and does not print a zero subtotal for it');
 }
 
 H.section('two spellings of one day inside ONE map do not resolve by JSON order');

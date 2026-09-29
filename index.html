@@ -37505,6 +37505,81 @@ function _fuelShopGenerate(){
   _fuelGenerate();
 }
 
+// ── THE SEAM: THE PLANNER HAS NEVER HEARD OF THE PERSON'S OWN RECIPES ────────────────────────────
+// `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string. The
+// collectors stopped at collecting and the planner invented every meal, so someone who had built up
+// a shelf of their own food opened the plan and met a stranger's week. Both ends were already in
+// this app, plus the store routing, the prices, the diary and the whole-person brief; nothing joined
+// them. This is that join, and it needs no third-party service (docs/REELS-TO-PLAN.md, phase 1).
+function _fuelRecipeLines(){
+  try{
+    const rs = (typeof ls === 'function' ? ls('totry_recipes') : null) || [];
+    if(!Array.isArray(rs) || !rs.length) return '';
+    // Bounded on purpose: this rides in a prompt, and a person with forty recipes must not push the
+    // rest of the brief out of the model's attention.
+    const lines = rs.slice(0, 8).map(function(r){
+      if(!r || !r.name) return '';
+      const sv = Math.max(1, parseInt(r.servings) || 1);
+      const ing = (r.ingredients || []);
+      const tot = ing.reduce(function(a, x){
+        a.cal += (parseFloat(x && x.cal) || 0); a.pro += (parseFloat(x && x.pro) || 0); return a;
+      }, { cal:0, pro:0 });
+      // Ingredient NAMES, because that is what a shopping list is made of. Macros stay per serving,
+      // because that is what a meal slot is sized by.
+      const names = ing.map(function(x){ return (x && x.name) ? String(x.name) : ''; })
+                       .filter(Boolean).slice(0, 12).join(', ');
+      const per = (tot.cal > 0)
+        ? ' (about ' + Math.round(tot.cal / sv) + ' kcal, ' + Math.round(tot.pro / sv) + 'g protein per serving)'
+        : '';
+      return '\u00b7 "' + String(r.name) + '"' + per + (names ? ' \u2014 ' + names : '');
+    }).filter(Boolean);
+    if(!lines.length) return '';
+    return "\n\nTHEIR OWN SAVED RECIPES. Build the day around these wherever one genuinely fits the "
+      + "targets and the dietary rules \u2014 a plan made of food they already chose is worth more than a "
+      + "better-optimised plan of food they did not. Name each one EXACTLY as written here so the app "
+      + "can recognise it, and put its ingredients on the shopping list. Do not use one that breaks a "
+      + "dietary rule or a dislike, and do not feel obliged to use any of them:\n" + lines.join('\n');
+  }catch(_){ return ''; }
+}
+
+// WHAT THE MODEL FORGETS, THE APP STILL OWES THEM. If a meal names one of their recipes, every
+// ingredient of that recipe has to reach the one shopping list — otherwise the plan tells them to
+// cook something and the list they shop from is missing half of it. Added items carry `fromRecipe`
+// and NO price: we genuinely do not know what it costs at their store, and a 0 in the price column
+// reads as free. The row renders the recipe name there instead.
+function _fuelMergeRecipeShopping(plan){
+  try{
+    if(!plan || !Array.isArray(plan.meals)) return plan;
+    const rs = (typeof ls === 'function' ? ls('totry_recipes') : null) || [];
+    if(!Array.isArray(rs) || !rs.length) return plan;
+    const norm = function(x){ return String(x == null ? '' : x).trim().toLowerCase(); };
+    const byName = {};
+    rs.forEach(function(r){ if(r && r.name) byName[norm(r.name)] = r; });
+    if(!Array.isArray(plan.shopping)) plan.shopping = [];
+    const have = plan.shopping.map(function(s){ return norm(s && s.item); });
+    const already = function(n){
+      const k = norm(n); if(!k) return true;
+      return have.some(function(h){ return h === k || h.indexOf(k) > -1 || k.indexOf(h) > -1; });
+    };
+    plan.meals.forEach(function(m){
+      const r = m && byName[norm(m.name)];
+      if(!r) return;
+      m.mine = true;                                  // so the plan can say this one is theirs
+      (r.ingredients || []).forEach(function(x){
+        const n = x && x.name ? String(x.name) : '';
+        if(!n || already(n)) return;
+        // A GROUP OF ITS OWN, because these are the ones we cannot place. An empty `shop` falls into
+        // the generic "Shopping" heading beside real store groups, which reads as if we had simply
+        // failed to route them. Named, they read as what they are: the rest of what your own recipe
+        // needs, for you to pick up wherever you already buy it.
+        plan.shopping.push({ item: n, price: 0, shop: 'From your recipes', fromRecipe: String(r.name) });
+        have.push(norm(n));
+      });
+    });
+    return plan;
+  }catch(_){ return plan; }
+}
+
 async function _fuelGenerate(){
   const p = getMealPrefs();
   const ctx = _fuelCtx();
@@ -37537,7 +37612,8 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const prompt = _gentleRule + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const _recipeBlock = _fuelRecipeLines();
+  const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -37554,6 +37630,7 @@ async function _fuelGenerate(){
   // A model returning {"meals":"see below"} passed `!plan.meals`, was persisted AND synced, and then
   // every consumer does plan.meals.map(...) — so "View my plan" threw and did nothing, on every device.
   if(!plan || !Array.isArray(plan.meals) || !plan.meals.length){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
+  plan = _fuelMergeRecipeShopping(plan);
   plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0; plan.preworkout = preworkout; plan.lead = lead;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
@@ -37629,7 +37706,7 @@ function _fuelRenderPlan(plan){
     '</div>';
   }
   // Interactive shopping checklist — tap an item off as you shop (persists), per-store progress.
-  const row1 = function(s){ const got=!!s.got; return '<div onclick="_fuelToggleShopItem(this,'+s._i+')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:var(--t-sm);cursor:pointer"><div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0"><span class="fuel-tick" style="width:16px;height:16px;border-radius:4px;border:1px solid '+(got?'var(--go)':'var(--bd2)')+';background:'+(got?'var(--go)':'transparent')+';display:inline-flex;align-items:center;justify-content:center;font-size:var(--t-cap);color:#231803;flex-shrink:0">'+(got?'✓':'')+'</span><span class="fuel-item" style="color:var(--tx2)'+(got?';text-decoration:line-through;opacity:0.45':'')+'">'+_esc(s.item||'')+'</span></div><span class="fuel-price" style="font-family:var(--font-text);color:var(--tx);white-space:nowrap'+(got?';opacity:0.45':'')+'">'+money(s.price)+'</span></div>'; };
+  const row1 = function(s){ const got=!!s.got; return '<div onclick="_fuelToggleShopItem(this,'+s._i+')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:var(--t-sm);cursor:pointer"><div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0"><span class="fuel-tick" style="width:16px;height:16px;border-radius:4px;border:1px solid '+(got?'var(--go)':'var(--bd2)')+';background:'+(got?'var(--go)':'transparent')+';display:inline-flex;align-items:center;justify-content:center;font-size:var(--t-cap);color:#231803;flex-shrink:0">'+(got?'✓':'')+'</span><span class="fuel-item" style="color:var(--tx2)'+(got?';text-decoration:line-through;opacity:0.45':'')+'">'+_esc(s.item||'')+'</span></div><span class="fuel-price" style="font-family:var(--font-text);color:var(--tx);white-space:nowrap'+(got?';opacity:0.45':'')+'">'+((!s.price && s.fromRecipe) ? _esc(s.fromRecipe) : money(s.price))+'</span></div>'; };
   const shopHtml = (function(){
     const items = (plan.shopping||[]).map(function(s,idx){ s._i=idx; return s; });
     if(!items.length) return '';
@@ -37638,7 +37715,12 @@ function _fuelRenderPlan(plan){
     if(order.length <= 1) return items.map(row1).join(''); // single store — flat list
     return order.map(function(k){
       const list=groups[k]; const sub=list.reduce(function(a,s){ return a+(s.price||0); },0); const gotN=list.filter(function(s){ return s.got; }).length;
-      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:var(--t-base);font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:var(--t-mini);color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
+      // A GROUP WE DELIBERATELY DID NOT PRICE MUST NOT SHOW A TOTAL OF ZERO. The recipe items carry
+      // no price because we do not know what they cost at this person's store — printing "$0.00"
+      // beside them says they are free, which is the same lie the row avoids by showing the recipe
+      // name where the price would be.
+      const _unpriced = sub === 0 && list.length > 0 && list.every(function(s){ return !s.price && s.fromRecipe; });
+      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:var(--t-base);font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:var(--t-mini);color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+(_unpriced ? '' : money(sub))+'</div></div>'+list.map(row1).join('')+'</div>';
     }).join('');
   })();
   const total = plan.total||0; const budget = plan.budget||p.budget||0;
