@@ -7663,6 +7663,62 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('a tracker skeleton from the other phone does not erase the night you logged');
+{
+  // v607 put ONE merge rule in _mergeDayMaps() and gave it opts.zeroIsAbsent precisely because seven
+  // writers create a totry_trackers day as {water:0,sleep:0,steps:0} before filling in the one field
+  // they came for — logMorningSleep, the evening steps box, Health.syncToday, the Google Health
+  // backfill and adjustTracker among them. migrateDayKeys passes the flag. The cloud PULL did not,
+  // on the reasoning that both sides carry cts/lts so "a zero really is the newer device's answer".
+  // That reasoning does not hold for a skeleton: those zeros mean "this device had no row for this
+  // day". The correction reached one of the rule's two callers and not the other.
+  //
+  // Driven end-to-end before the fix: a device with no local row, where logMorningSleep(7) had just
+  // run, produced {water:0,sleep:0,steps:0,sleepQuality:7}; pulled against a cloud row of
+  // {water:1500,sleep:7.5,steps:12000} it returned the all-zero day — and _queueWrite pushed the
+  // flattened map back up, so the hours and the step count were gone on BOTH devices and in the
+  // cloud, with getLifeState().sleep reading null for a night it had just erased.
+  //
+  // THE FLAG IS NOT BLANKET, AND THAT IS THE POINT. It belongs to stores that HAVE skeleton writers,
+  // which is this one and no other. setWaterCount() ASSIGNS, so a 0 in totry_water is somebody
+  // clearing it deliberately and the flag there would resurrect it. Both directions are asserted, so
+  // this is a rule about which stores seed placeholders rather than a constant someone can flip.
+  const { _mergeDayMaps } = H.load(['_mergeDayMaps','dayKeyNorm'], {
+    syncIdOf: (x) => (x && x.id !== undefined) ? 'i' + x.id : JSON.stringify(x),
+  });
+  const DK = '29/09/2026';
+  // The pull's own argument list, including the store-conditional opts it now passes.
+  const pull = (k, keep, add) => _mergeDayMaps({ [DK]: keep }, { [DK]: add }, k,
+    k === 'totry_trackers' ? { zeroIsAbsent: true } : undefined)[DK];
+
+  const skeleton = pull('totry_trackers', { water:0, sleep:0, steps:0, sleepQuality:7 },
+                                            { water:1500, sleep:7.5, steps:12000 });
+  H.eq(skeleton.sleep, 7.5, 'the night the other device logged survives a skeleton');
+  H.eq(skeleton.steps, 12000, 'and so does the step count');
+  H.eq(skeleton.sleepQuality, 7, 'while the field this device actually set is kept');
+
+  // Whichever of the three the writer did not fill is the one that was being lost.
+  const stepsOnly = pull('totry_trackers', { water:0, sleep:0, steps:9000 }, { water:0, sleep:7.5, steps:0 });
+  H.eq(stepsOnly.steps, 9000, 'the steps this device typed win');
+  H.eq(stepsOnly.sleep, 7.5, 'and the hours the other device holds are not zeroed');
+
+  // Two real days still resolve by recency, not by magnitude — nothing here is a Math.max.
+  const real = pull('totry_trackers', { sleep:8, steps:11000 }, { sleep:7.5, steps:9000 });
+  H.eq(real.sleep, 8, 'two real figures still resolve by which side is newer');
+  H.eq(real.steps, 11000, 'on every field');
+
+  // The other direction of the rule: a deliberate zero must NOT be resurrected.
+  H.eq(pull('totry_water', 0, 2000), 0, 'water someone cleared on purpose stays cleared');
+  H.eq(pull('totry_water', 750, 2000), 750, 'and an ordinary figure still resolves by recency');
+  H.eq(pull('totry_watch_burns_byday', 800, 8000), 800, 'a burn corrected 8000 -> 800 is not undone');
+
+  // The call site itself: the flag must be store-conditional, never blanket.
+  const src = H.code(H.extractFn('pullFromCloud'));
+  H.ok(/zeroIsAbsent/.test(src), 'the pull passes the flag');
+  H.ok(/totry_trackers['"]?\s*\?/.test(src) || /k === 'totry_trackers'/.test(src),
+    'and only for the store that seeds skeletons');
+}
+
 H.section('one typed plan for tomorrow does not take the whole front screen down');
 {
   // `ti` WAS NEVER DECLARED IN renderDayCounter(). Every other split[ti] in the bundle sits under its
@@ -8875,8 +8931,16 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     const store = { totry_trackers: JSON.stringify({ '22/9/2026': {water:0}, '22/09/2026': {water:0} }) };
     migrationOn(store, WebKitDate)();
     H.eq((JSON.parse(store.totry_trackers)['22/09/2026']||{}).water, 0, 'a real zero is still a zero');
-    // And zeroIsAbsent belongs to the MIGRATION only: the cloud pull has cts/lts, so there recency
-    // answers the question and a 0 really is the newer device's answer.
+    // CORRECTED 29 Sep 2026. This said zeroIsAbsent belonged to the MIGRATION only, because the pull
+    // has cts/lts "so there recency answers the question and a 0 really is the newer device's
+    // answer". That holds for a VALUE zero and not for a SKELETON one — and the two assertions
+    // fifteen lines above prove the identical hazard exists, they just proved it of the migration.
+    // Seven writers seed a totry_trackers day as {water:0,sleep:0,steps:0} before setting the one
+    // field they came for, so those zeros mean "this device had no row", and recency cannot tell
+    // them from a reading. Driven: the pull returned the all-zero day over real figures and
+    // _queueWrite pushed the flattened map back up. The pull now passes the flag for totry_trackers
+    // and ONLY for it — see the section "a tracker skeleton from the other phone…".
+    // What stays true, and is why the flag is not blanket:
     H.eq(M({'02/09/2026': 0}, {'2/9/2026': 1800}, 'totry_water')['02/09/2026'], 0,
       'without the flag a zero is a value, which is what the pull needs');
     H.eq(M({'02/09/2026': 0}, {'2/9/2026': 1800}, 'totry_water', {zeroIsAbsent:true})['02/09/2026'], 1800,
@@ -8884,8 +8948,10 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     // …and the pull really does call it without the flag. Two merges of one map with different rules
     // is how the two sides drift apart again, which is the whole reason there is one _mergeDayMaps.
     const pull = H.code(H.extractFn('pullFromCloud'));
-    H.ok(/_mergeDayMaps\(_keep, _add, k\)/.test(pull), 'the cloud pull merges on recency, not on zeroIsAbsent');
-    H.ok(!/_mergeDayMaps\([^)]*zeroIsAbsent/.test(pull), 'and nothing in the pull asks for the migration’s rule');
+    H.ok(/_mergeDayMaps\(_keep, _add, k,/.test(pull), 'the cloud pull passes an opts argument');
+    H.ok(/zeroIsAbsent/.test(pull), 'and asks for the skeleton rule');
+    H.ok(/totry_trackers/.test(pull.slice(pull.indexOf('_mergeDayMaps(_keep'), pull.indexOf('_mergeDayMaps(_keep') + 160)),
+      'for totry_trackers specifically — never blanket, or a cleared water would come back');
   }
 
   {

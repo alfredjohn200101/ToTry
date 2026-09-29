@@ -9989,7 +9989,29 @@ async function pullFromCloud(){
         const _cloudNewer = (cts >= lts) && !pendingLocal;
         const _keep = _cloudNewer ? cv : (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {});
         const _add  = _cloudNewer ? (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {}) : cv;
-        nv = _mergeDayMaps(_keep, _add, k);
+        // AND A SKELETON IS NOT AN ANSWER. Seven writers create a totry_trackers day as
+        // {water:0,sleep:0,steps:0} before filling in the one field they came to set —
+        // logMorningSleep, the evening steps box, Health.syncToday, the Google Health backfill and
+        // adjustTracker among them. Those zeros mean "this device had no row for this day", not "the
+        // person recorded zero", and the combine loop copies every non-null field of the winner, so a
+        // literal 0 passed straight over the other device's real figures. Driven against the shipped
+        // bundle: a device with no local row where logMorningSleep(7) ran produced
+        // {water:0,sleep:0,steps:0,sleepQuality:7}; pulled against a cloud row of
+        // {water:1500,sleep:7.5,steps:12000} it returned the all-zero day, and _queueWrite then
+        // pushed the flattened map back up — so the night's hours and the step count were gone on
+        // BOTH devices and in the cloud. getLifeState().sleep read null for a night it had just
+        // erased while still calling its quality "good".
+        //
+        // `zeroIsAbsent` is the rule migrateDayKeys already uses for exactly this, and it belongs to
+        // the stores that HAVE skeleton writers — which is this one and no other. It is deliberately
+        // NOT blanket: setWaterCount() ASSIGNS, so a 0 in totry_water is somebody clearing it on
+        // purpose, and the flag there would resurrect it. Measured both ways before choosing.
+        //
+        // The deeper fix — seed the day as {} and let each writer add only its own field — was
+        // measured and is NOT free: updateTrackerDisplay() does `s.textContent = t.sleep`, so a
+        // partial day would print "undefined" on the Track tab. It needs the ~85 field reads moved
+        // with it, so it is a separate piece of work, not a one-line swap.
+        nv = _mergeDayMaps(_keep, _add, k, k === 'totry_trackers' ? { zeroIsAbsent: true } : undefined);
         _queueWrite(k, nv);
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
