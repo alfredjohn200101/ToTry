@@ -2781,6 +2781,7 @@ function editRecipe(idx, prefill){
     '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Ingredients</div>' +
     '<button class="btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="window.__recipeScan=true;openBarcodeScanner()">'+svgIcon("camera")+' Scan an ingredient</button>' +
     '<button class="btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="_recipeFromSearch()">'+svgIcon("search")+' Search the food database</button>' +
+    '<button class="btn" id="recipe-lookup-btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="lookupRecipeNutrition()">'+svgIcon("check")+' Look up the real nutrition</button>' +
     '<div id="recipe-ingredients" style="margin-bottom:10px"></div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
       '<input type="text" id="recipe-add-name" placeholder="Ingredient (e.g. 100g chicken)" style="flex:2">' +
@@ -2800,6 +2801,72 @@ function editRecipe(idx, prefill){
   renderRecipeIngredients();
 }
 
+// REAL NUMBERS FOR THE LINES THAT STATE A REAL WEIGHT.
+// A recipe that arrives by paste, link or screenshot carries four numbers the MODEL estimated and no
+// micronutrients at all, while the same recipe built through the food search carries USDA's whole
+// 28-key set. This closes that gap for the half of it that can be closed HONESTLY.
+//
+// The research's own warning is the design constraint: "the hard part is the parse, not the lookup —
+// '1 tbsp olive oil' to a food id AND a gram weight. A wrong match is worse than no match." So this
+// resolves ONLY the lines that state a weight this app can read without guessing. "500g chicken
+// breast" is resolvable; "1 tbsp olive oil" and "1 onion" are not, and are left exactly as they are
+// rather than being converted by an assumed density or an average onion.
+function _recipeGrams(name){
+  const m = /(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/i.exec(String(name || ''));
+  if(!m) return 0;
+  const n = parseFloat(m[1]); if(!isFinite(n) || n <= 0) return 0;
+  const u = m[2].toLowerCase();
+  // ml is treated as grams, which is true for water and close enough for stock, milk and juice —
+  // and this only ever runs on a line the person can see and correct.
+  const g = u === 'kg' ? n * 1000 : u === 'l' ? n * 1000 : n;
+  // A sanity band, because "2015 beef stew" would otherwise read as two kilograms of something.
+  return (g >= 1 && g <= 5000) ? g : 0;
+}
+
+async function lookupRecipeNutrition(){
+  const r = (typeof window !== 'undefined') ? window.__editingRecipe : null;
+  if(!r || !Array.isArray(r.ingredients) || !r.ingredients.length){
+    if(typeof showToast === 'function') showToast('Nothing to look up', 'Add an ingredient first.');
+    return;
+  }
+  const targets = [];
+  r.ingredients.forEach(function(ing, i){
+    if(ing && ing.__usda) return;                     // already real; do not spend a call on it
+    const g = _recipeGrams(ing && ing.name);
+    if(g) targets.push({ i: i, g: g, name: String(ing.name) });
+  });
+  if(!targets.length){
+    if(typeof showToast === 'function') showToast('Nothing I can measure', 'I can only look up lines that state a weight, like "500g chicken breast". The rest stay as they are.');
+    return;
+  }
+  const btn = document.getElementById('recipe-lookup-btn');
+  if(btn){ btn.textContent = 'Looking up ' + targets.length + '\u2026'; btn.disabled = true; }
+  let done = 0;
+  await Promise.all(targets.map(async function(t){
+    try{
+      const hits = (typeof searchUSDA === 'function') ? await searchUSDA(t.name) : [];
+      // The whole food, not a branded packet — __generic is the flag searchUSDA already sets, and
+      // the ranker's own reason for existing.
+      const pick = (hits || []).filter(function(h){ return h && h.__generic; })[0] || (hits || [])[0];
+      if(!pick) return;
+      const n = (typeof nutPick === 'function') ? nutPick(pick, t.g / 100) : null;
+      if(!n || !isFinite(n.cal) || n.cal <= 0) return;
+      const ing = r.ingredients[t.i];
+      if(typeof NUTRIENTS !== 'undefined') NUTRIENTS.forEach(function(k){ if(typeof n[k] === 'number' && isFinite(n[k])) ing[k] = n[k]; });
+      ing.__usda = pick.name;                         // what it matched, so the row can say so
+      done++;
+    }catch(_){ }
+  }));
+  if(btn){ btn.textContent = 'Look up the real nutrition'; btn.disabled = false; }
+  if(typeof renderRecipeIngredients === 'function') renderRecipeIngredients();
+  const left = targets.length - done;
+  if(typeof showToast === 'function'){
+    showToast(done ? ('Looked up ' + plural(done, 'ingredient')) : 'No matches',
+      done ? ('Real figures, micronutrients and all. ' + (left ? plural(left, 'line') + ' had no match and kept the estimate.' : 'Tap any row to check it.'))
+           : 'Nothing matched well enough to use. The estimates stand.');
+  }
+}
+
 function renderRecipeIngredients(){
   const r = window.__editingRecipe;
   const box = document.getElementById('recipe-ingredients');
@@ -2816,7 +2883,10 @@ function renderRecipeIngredients(){
       // addRecipeIngredient() reads a free-text <input> and pushes it straight in, so this is the
       // person's own typing going out as live HTML. The static scan that found the other injection
       // doors missed this one because the value never passes through a shared sink.
-      row.innerHTML = '<div style="flex:1;color:var(--tx)">' + _escFew(ing.name) + '</div>' +
+      // WHERE THE NUMBERS CAME FROM, on the row itself. An estimate and a USDA figure look identical
+      // once they are both just a number, and only one of them is worth trusting to the gram.
+      row.innerHTML = '<div style="flex:1;color:var(--tx)">' + _escFew(ing.name) +
+          (ing.__usda ? '<span style="display:block;font-size:var(--t-mini);color:var(--go)">' + _escFew(ing.__usda) + '</span>' : '') + '</div>' +
         '<div style="font-family:var(--font-text);color:var(--tx3);font-size:var(--t-mini)">' + Math.round(ing.cal||0) + 'kcal · P' + Math.round(ing.pro||0) + ' C' + Math.round(ing.carb||0) + ' F' + Math.round(ing.fat||0) + '</div>' +
         '<button onclick="removeRecipeIngredient(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0 4px">×</button>';
       box.appendChild(row);

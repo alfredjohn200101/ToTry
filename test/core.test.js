@@ -7765,6 +7765,77 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('real numbers for the lines that state a real weight');
+{
+  // A recipe that arrives by paste, link or screenshot carries four numbers the MODEL estimated and
+  // no micronutrients at all, while the same recipe built through the food search carries USDA's
+  // whole 28-key set. This closes that gap for the half of it that can be closed HONESTLY.
+  //
+  // The research's own warning is the design constraint: "the hard part is the parse, not the lookup
+  // — '1 tbsp olive oil' to a food id AND a gram weight. A wrong match is worse than no match." So
+  // only lines stating a weight this app can read WITHOUT guessing are resolved. An assumed density
+  // for a tablespoon or an average onion would be exactly the confident wrong number the whole
+  // nutrition side refuses to write.
+  const { _recipeGrams } = H.load(['_recipeGrams'], {});
+  [['500g chicken breast',500], ['400 g pasta',400], ['1.5kg beef',1500], ['250ml stock',250],
+   ['1 L milk',1000]].forEach(function(c){
+    H.eq(_recipeGrams(c[0]), c[1], 'reads a stated weight: ' + c[0]);
+  });
+  [['1 tbsp olive oil',0], ['1 onion',0], ['a pinch of salt',0], ['0g nothing',0],
+   ['2015 beef stew',0], ['6" sub',0]].forEach(function(c){
+    H.eq(_recipeGrams(c[0]), c[1], 'and refuses to guess one: ' + c[0]);
+  });
+  H.eq(_recipeGrams('9000g flour'), 0, 'with a sanity band, so a stray number is not two kilograms');
+
+  const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
+                 'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
+  const rec = { name:'T', servings:1, ingredients:[
+    { name:'500g chicken breast', cal:9999, pro:1, carb:1, fat:1 },   // resolvable, deliberately wrong
+    { name:'1 tbsp olive oil', cal:120, pro:0, carb:0, fat:14 },      // not resolvable
+    { name:'400g pasta', cal:1400, pro:50, carb:290, fat:6 },         // resolvable, no match
+  ] };
+  let searched = 0;
+  const load = (r) => H.load(['lookupRecipeNutrition','_recipeGrams','nutPick'], {
+    NUTRIENTS, window: { __editingRecipe: r },
+    document: { getElementById: () => ({ textContent:'', disabled:false }) },
+    // A BRANDED PACKET FIRST, which is what USDA actually returns for a whole-food query — 1.9
+    // million branded products against ~8k generic ones, which is the reason searchUSDA asks for
+    // them separately at all. The first cut of this fixture returned only the generic row, so
+    // removing the __generic filter changed nothing and the injection passed.
+    searchUSDA: async (q) => { searched++; return /chicken/i.test(q)
+      ? [{ name:'TYSON crispy chicken strips', __generic:false, cal:290, pro:14, carb:18, fat:17 },
+         { name:'Chicken, breast, raw', __generic:true, cal:120, pro:22.5, carb:0, fat:2.6, sodium:45, potassium:334, b6:0.6 }] : []; },
+    renderRecipeIngredients: () => {}, showToast: () => {}, plural: (n, w) => n + ' ' + w, console });
+
+  H.defer(load(rec).lookupRecipeNutrition().then(async function(){
+    const chicken = rec.ingredients[0], oil = rec.ingredients[1], pasta = rec.ingredients[2];
+    H.eq(chicken.cal, 600, 'a weighed line takes USDA\'s figure — 120/100g at 500g, not the model\'s 9999');
+    H.eq(chicken.pro, 112.5, 'and its protein');
+    H.ok(chicken.potassium > 0 && chicken.b6 > 0, 'and the micronutrients that were never there before');
+    H.eq(chicken.__usda, 'Chicken, breast, raw', 'marked with what it actually matched');
+
+    H.eq(oil.cal, 120, 'a line with no readable weight keeps its estimate');
+    H.ok(!oil.__usda, 'and is not claimed as real');
+    H.eq(pasta.cal, 1400, 'and so does one that simply had no match');
+    H.ok(!pasta.__usda, 'which is the honest outcome, not a wrong match');
+
+    // Two calls, not three: the tablespoon was never worth spending one on.
+    H.eq(searched, 2, 'only the measurable lines are looked up at all');
+
+    // A second pass must not re-spend calls on what is already real.
+    searched = 0;
+    await load(rec).lookupRecipeNutrition();
+    H.eq(searched, 1, 'a second run leaves the resolved line alone and retries only the unmatched one');
+  }));
+
+  // The row has to SAY where its numbers came from — an estimate and a USDA figure look identical
+  // once they are both just a number, and only one is worth trusting to the gram.
+  const rr = H.code(H.extractFn('renderRecipeIngredients'));
+  H.ok(/ing\.__usda/.test(rr), 'the row shows what a resolved ingredient matched');
+  H.ok(/_escFew\(ing\.__usda\)/.test(rr), 'escaped, because it is a food name from an API');
+}
+
 H.section('a recipe can come from a screenshot, and what comes back is still gated');
 {
   // The reel-to-real door that touches no platform: someone screenshots what they saw, the way they
