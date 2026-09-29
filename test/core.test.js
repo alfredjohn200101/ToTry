@@ -7615,6 +7615,78 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('an assigned routine is not dropped by the day it was assigned to');
+{
+  // THE SPLIT EDITOR TELLS PEOPLE TO ASSIGN A ROUTINE TO A DAY, and the card that reads it took
+  // `today.routine && !today.focus` — while every day of an app-generated split carries a focus. So
+  // the assignment was silently dropped for the overwhelmingly common case, and the card went on
+  // showing the generic focus. Driven before the fix: {routine:'Push A', focus:'Push'} rendered
+  // "Today: Push", byte-identical to the same day with no routine at all.
+  //
+  // The same branch REVEALED Home's mission card and never wrote it. loadTodaySplitCard is the only
+  // writer of #today-focus, whose static default in the shell is the literal string "Loading..." —
+  // so the app's front screen sat on a loading state forever, for the person who did what it asked.
+  //
+  // The elements record every write AND which sink took it, because the thing worth holding is not
+  // only what the card says but how it got there: `focus` is a MODEL's words (04-fight.js maps an AI
+  // split straight onto {focus}) and the routine name is the person's own typing, so neither may
+  // reach an HTML sink. Proven separately in a real DOM against a calibrated control that DID fire
+  // the handler; here it is held structurally, which a stub can actually measure.
+  const mkEl = (id) => ({ id, _t:'', _h:'', rec:[],
+    style:{ display: id === 'home-today-mission-wrap' ? 'none' : '' },
+    get textContent(){ return this._t; },
+    set textContent(v){ this._t = String(v); this.rec.push(['text', String(v)]); },
+    get innerHTML(){ return this._h; },
+    set innerHTML(v){ this._h = String(v); this.rec.push(['html', String(v)]); },
+    insertAdjacentHTML(pos, h){ this._h += String(h); this.rec.push(['html', String(h)]); } });
+
+  const paint = (day) => {
+    const els = {};
+    ['pt-today-split-name','pt-today-split-detail','today-focus','today-detail',
+     'home-today-mission-wrap','pt-today-split-card'].forEach(id => { els[id] = mkEl(id); });
+    els['today-focus']._t = 'Loading...';   // the shell's own static default for that element
+    const { loadTodaySplitCard } = H.load(['loadTodaySplitCard'], {
+      document: { getElementById: (id) => els[id] || null },
+      window: {}, getUserSplit: () => [day], tIdx: () => 0,
+      ls: (k) => (k === 'totry_routines' ? [{ id:'r1', name:'Push A' }] : null),
+      isHevyUser: () => false, svgIcon: () => '', showToast: () => {},
+    });
+    loadTodaySplitCard();
+    return els;
+  };
+
+  // The bug, in the shape it shipped: a day carrying BOTH.
+  const both = paint({ routine:'Push A', focus:'Push', detail:'Chest, shoulders, triceps.' });
+  H.eq(both['pt-today-split-name'].textContent, 'Push A',
+    'a day with a focus AND a routine names the ROUTINE they chose');
+  H.ok(/Push day/.test(both['pt-today-split-detail'].textContent),
+    'and keeps the focus beside it rather than losing it');
+  H.ok(/Start this routine/.test(both['pt-today-split-detail'].innerHTML),
+    'and can still be started from the card');
+
+  // Home's mission card, the half nothing wrote.
+  const only = paint({ routine:'Push A' });
+  H.ok(only['home-today-mission-wrap'].style.display !== 'none', 'Home shows the mission card');
+  H.eq(only['today-focus'].textContent, 'Push A', 'and Home says the routine, not "Loading..."');
+  H.ok(only['today-detail'].textContent.length > 0, 'and Home has a body under it');
+
+  // A day with no routine is untouched — the fix must not widen into the ordinary case.
+  const plain = paint({ focus:'Push', detail:'Chest, shoulders, triceps.' });
+  H.eq(plain['pt-today-split-name'].textContent, 'Today: Push', 'a focus-only day is unchanged');
+  H.eq(plain['today-focus'].textContent, 'Today: Push', 'on Home too');
+
+  // Neither the model's words nor the person's typing may reach an HTML sink.
+  const EVIL = '<img src=x onerror=alert(1)>';
+  [ paint({ routine:'Push A', focus:EVIL }), paint({ routine:EVIL, focus:'Push' }) ].forEach((els, i) => {
+    const sunk = Object.keys(els).some(id => els[id].rec.some(r => r[0] === 'html' && r[1].indexOf(EVIL) > -1));
+    H.ok(!sunk, 'the ' + (i ? 'routine name' : 'model\'s focus') + ' never reaches an HTML sink');
+  });
+  // ...and the element it DID go to received it as text, so it is on screen, just inert.
+  const evilFocus = paint({ routine:'Push A', focus:EVIL });
+  H.ok(evilFocus['pt-today-split-detail'].textContent.indexOf(EVIL) > -1,
+    'it is still shown to the person, as text');
+}
+
 H.section('"numbers off" hides the vitamin panel too');
 {
   // The promise is total or it is worthless — applyNutGentle's own comment says so: "a 'numbers off'

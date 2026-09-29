@@ -450,12 +450,35 @@ function loadTodaySplitCard(){
   // control wrote totry_split[i].routine and NOTHING read it — not this card, not the coach, nothing
   // loaded it into a session. So a person followed the app's own instruction ("assign it to today"),
   // and the card kept telling them to do the thing they had just done. Name it, and let them start it.
-  if(today && today.routine && !today.focus){
+  //
+  // It took `!today.focus` to get here, and EVERY day of an app-generated split carries a focus — so
+  // the moment someone assigned a routine to one of those days the assignment was dropped again and the
+  // card went back to showing the generic focus. Driven before the fix: {routine:'Push A', focus:'Push'}
+  // rendered "Today: Push", byte-identical to the same day with no routine at all. The routine is the
+  // more specific of the two AND the one they chose by hand, so it leads; the focus is what the day is
+  // FOR, so it stays beside it instead of vanishing.
+  //
+  // The same branch also REVEALED Home's mission card and never wrote it. loadTodaySplitCard is the only
+  // writer of #today-focus, and that element's static default is the string "Loading..." — so the app's
+  // front screen sat on a loading state forever, for exactly the person who did what it asked.
+  if(today && today.routine){
+    const isRestDay = today.rest === true || /^rest/i.test(today.focus||'');
+    const ctx = isRestDay ? 'Assigned to today, on a rest day.'
+              : (today.focus ? 'Assigned to today · ' + today.focus + ' day.' : 'Assigned to today.');
     if(nameEl)nameEl.textContent=String(today.routine);
+    // `focus` is a MODEL's words (04-fight.js maps an AI split straight onto {focus}), and the routine
+    // name is the person's own typing — so neither is built into a markup string. The line is set as
+    // TEXT and the button appended as a static literal, which makes an injection here structurally
+    // impossible rather than dependent on an escape being right.
     // An action inside a card is a .card-foot.tint line, not a tint run buried mid-sentence. A blue
     // word inside a paragraph is a WEB hyperlink, and iOS does not draw one anywhere.
-    if(detailEl)detailEl.innerHTML='Assigned to today.'+
-      '<button type="button" class="card-foot tint footnote-link" onclick="_startAssignedRoutine()">Start this routine</button>';
+    if(detailEl){
+      detailEl.textContent=ctx;
+      if(detailEl.insertAdjacentHTML)detailEl.insertAdjacentHTML('beforeend',
+        '<button type="button" class="card-foot tint footnote-link" onclick="_startAssignedRoutine()">Start this routine</button>');
+    }
+    if(hf)hf.textContent=String(today.routine);
+    if(hd)hd.textContent=ctx+' Log it in the Workout tab.';
     if(wrap) wrap.style.display='';
     return;
   }
