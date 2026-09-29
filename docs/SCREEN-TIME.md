@@ -71,7 +71,33 @@ appear in the store listing — and `QUERY_ALL_PACKAGES` is restricted harder st
 3. `totry_usage_log` counts **AI calls, not time**, is dev-only, and is keyed by the broken day key
    (`docs/DAY-KEY.md`). It is not a foundation to build on.
 
-## 2. Micronutrients from a recipe's ingredients: yes, and it is one function wide
+## 2. Micronutrients from a recipe's ingredients: BUILT, 30 Sep 2026
+
+> **What shipped, and where the gap actually was.** The research below said "the gap is one function:
+> `parsePastedRecipe`". That was the wrong function. The gap was the **landing** — every writer of an
+> ingredient built `{name, cal, pro, carb, fat}` by hand, so even the paths that already HAD micros
+> threw them away. The barcode path is the proof: the Open Food Facts parse forty lines above it
+> works out fiber, sodium, calcium, iron and vitamin C per 100g, and the push kept four numbers.
+>
+> `_recipeAddFromFood(food, grams)` is now the one landing, built on the existing `nutPick` — every
+> NUTRIENTS key scaled, and an absent nutrient left **absent** rather than becoming a confident zero.
+> The barcode path goes through it, and the FOOD SEARCH now can too: `_recipeFromSearch()` arms a
+> flag and `addFoodToLog` routes the finished entry into the open recipe instead of the diary, which
+> means the recipe inherits the gramsEquiv scaling that fixed the 100x-sodium bug rather than a
+> second implementation of it. That matters because the search reaches **USDA**, and USDA is where
+> the micros actually are.
+>
+> Driven end to end, which the research had asserted but not done: two ingredients summed the way
+> `logRecipeAsMeal` sums them, at one serving of two, reach the diary carrying fiber, sodium, vit_c,
+> calcium, iron, magnesium and zinc — including two only the second ingredient knew.
+>
+> **Still true and still unbuilt:** `parsePastedRecipe` asks the model for four estimated numbers and
+> never touches USDA, and `searchUSDA` still asks for `Foundation,SR Legacy` when SR Legacy and
+> Survey (FNDDS) are the ones that resolve 28/28. Both remain worth doing; neither was the thing
+> stopping a recipe from carrying a micronutrient.
+
+### The original research, kept because it explains the downstream that made this cheap
+
 
 The owner asked: *"wouldn't getting the ingredients of that recipe provide the micros and macros?"*
 
