@@ -7517,6 +7517,32 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
+H.section('the 2am door knows what they have built, and knows not to argue with it');
+{
+  // SOUL-ARCHITECTURE calls the Companion "the whole reason the app exists" and says it "knows
+  // everything (sleep, training, vices, faith)". Driven, it knew none of the training: _companionSay
+  // never called getLifeState(), never read the brief, never touched _ptIntel(). The one surface a
+  // person actually reaches in the feeling had no idea they had trained a hundred times.
+  // Verified by DRIVING it — stubbing api(), opening the companion and capturing the system prompt,
+  // which now carries "they set a personal record in the last three weeks — Squat, around 166kg".
+  // What is pinned here is the half a browser test would not think to check: the RULE that comes with
+  // the data. Evidence in a hard moment is one sentence away from "you trained four times, you
+  // shouldn't feel like this", which is the thing this app must never say.
+  const fn = H.extractFn('_companionSay');
+  H.ok(/getLifeState\s*\(/.test(fn), 'the companion asks the whole-person object what they have built');
+  H.ok(/WHAT THEY HAVE BUILT/.test(fn), 'and puts it in the prompt');
+  H.ok(/never a reason they should not feel what they feel/.test(fn),
+    'and tells the model it is evidence to hand back, never an argument against the feeling');
+  H.ok(/If it does not fit the moment, say nothing about it/.test(fn),
+    'and that silence is allowed');
+  // Two facts, not the briefing. _ptIntel()'s eight lines belong to the PT coach; this is a 2am
+  // prompt and every clause in it costs the model's attention at the worst moment of someone's week.
+  // H.code() first: this assertion failed on correct code because the COMMENT above it says
+  // "never touched _ptIntel()". Two tests in this repo have already matched their own explanation —
+  // strip comments before any absence check.
+  H.ok(!/_ptIntel\s*\(/.test(H.code(fn)), 'and does not paste the PT coach briefing into a 2am prompt');
+}
+
 H.section('the brief says what the person has built, not just how often they turned up');
 {
   // getLifeState().training was four fields — sessions7, sessions14, daysTrained7, lastTitle — so the

@@ -22401,6 +22401,28 @@ async function _companionSay(userText, opening){
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
+    // WHAT THEY HAVE BUILT. SOUL-ARCHITECTURE calls this the whole reason the app exists and says it
+    // "knows everything (sleep, training, vices, faith)" — and it did not. _companionSay() never
+    // called getLifeState(), never read the brief, never touched _ptIntel(). The one surface a person
+    // actually reaches in the feeling had no idea they had trained a hundred times. That is the
+    // difference between something that knows them and a chatbot with a nice voice.
+    //
+    // Two facts, not the brief. This is a 2am prompt and _ptIntel()'s eight lines belong to the PT
+    // coach. And the instruction matters as much as the data: evidence is here to remind someone who
+    // they have been, NEVER to argue them out of what they are feeling. "You trained four times, you
+    // shouldn't feel like this" is the exact sentence this app must never say.
+    + (function(){ try{
+        const st = (typeof getLifeState === 'function') ? getLifeState() : null;
+        const t = st && st.training; if(!t) return '';
+        const bits = [];
+        if(t.recentPR) bits.push('they set a personal record in the last three weeks \u2014 ' + t.recentPR.name + ', around ' + t.recentPR.orm + 'kg');
+        else if(t.topLifts && t.topLifts.length) bits.push('their strongest lift is ' + t.topLifts[0].name + ', around ' + t.topLifts[0].orm + 'kg');
+        if(t.sessions7) bits.push('they trained ' + ((typeof plural === 'function') ? plural(t.sessions7, 'time') : t.sessions7 + ' times') + ' in the last week');
+        if(!bits.length) return '';
+        return 'WHAT THEY HAVE BUILT, if and only if it genuinely helps: ' + bits.join('; ') + '. '
+          + 'This is evidence of who they have been, to hand back to them \u2014 never a reason they should not feel what they feel, and never a lecture. '
+          + 'If it does not fit the moment, say nothing about it. ';
+      }catch(_){ return ''; } })()
     + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=safeMornings().find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{
         if(typeof loadV==='function') loadV();
