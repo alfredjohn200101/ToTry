@@ -397,7 +397,17 @@ function _focusHistoryLine(focus){
     // 'once' rather than plural()'s correct-but-clunky '1 time' — this is the sentence someone
     // meets on their SECOND session, and day two is where most people are.
     let out = 'You\u2019ve trained this ' + (mine.length === 1 ? 'once' : plural(mine.length, 'time')) + '.';
-    const last = mine[0];   // newest first — the order saveWorkoutSession unshifts into
+    // NEWEST BY TIMESTAMP, NOT BY POSITION. saveWorkoutSession unshifts, but that order is not a
+    // property of totry_workouts: the cloud pull's union() concats local and cloud into a Map, and
+    // Map.set on an existing key does not move it — so every cloud-only row is APPENDED at the end.
+    // A Push session logged on the other phone therefore arrives last, and mine[0] was whatever this
+    // device already had. 03-person.js already records this exact fact about this exact array, for
+    // lastTitle, after the brief told the model "last: Workout".
+    const last = mine.slice().sort(function(a, b){
+      const ta = (a && (a.ts || a.date)) ? new Date(a.ts || a.date).getTime() : 0;
+      const tb = (b && (b.ts || b.date)) ? new Date(b.ts || b.date).getTime() : 0;
+      return (isFinite(tb) ? tb : 0) - (isFinite(ta) ? ta : 0);
+    })[0];
     const t = (last.ts || last.date) ? new Date(last.ts || last.date).getTime() : NaN;
     let when = '';
     if(isFinite(t)){

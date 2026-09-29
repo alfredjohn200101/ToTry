@@ -77,7 +77,7 @@ function saveCurrentVerse(){
   if(!curVerse.verse)return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(v=>v.verse===curVerse.verse)){
-    saved.unshift({...curVerse,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({...curVerse,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),ts:new Date().toISOString()});   // ts: the date has no year, so every reader's dayKeyNorm() returns ''
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('save-verse-btn');
@@ -208,7 +208,7 @@ function saveVerseResult(idx){
   const v=verses[idx];if(!v)return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v.verse)){
-    saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),ts:new Date().toISOString()});
     ls('totry_sv',saved.slice(0,200));
     renderSavedVerses();
     showToast('Verse saved',v.reference);   // the entity is printed literally now that showToast escapes
@@ -471,7 +471,14 @@ function saveContextualVerse(ref, text){
   saved.unshift({
     verse: text,
     reference: ref + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' (ESV)' : ''),
-    date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'})
+    // ts, BECAUSE THE DATE HAS NO YEAR. This stores "29 Sept", and both readers of totry_sv ask
+    // for a canonical day key — dayKeyNorm() requires a four-digit year by design, so it returns
+    // '' and the comparison can never be true. Keeping a passage therefore never ticked the
+    // scripture or faith habit, on any engine, for anyone. Both readers already prefer `ts`;
+    // nothing had ever written one. (Rows saved before this stay unrecoverable — a day with no
+    // year cannot be resolved after the fact — so this fixes it from here forward.)
+    date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'}),
+    ts: new Date().toISOString()
   });
   ls('totry_sv', saved.slice(0, 200));
   if(typeof renderSavedVerses === 'function') renderSavedVerses();
@@ -1474,7 +1481,14 @@ function saveVerseFromReader(text,ref){
   saved.unshift({
     verse: text,
     reference: ref,
-    date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})
+    // ts, BECAUSE THE DATE HAS NO YEAR. This stores "29 Sept", and both readers of totry_sv ask
+    // for a canonical day key — dayKeyNorm() requires a four-digit year by design, so it returns
+    // '' and the comparison can never be true. Keeping a passage therefore never ticked the
+    // scripture or faith habit, on any engine, for anyone. Both readers already prefer `ts`;
+    // nothing had ever written one. (Rows saved before this stay unrecoverable — a day with no
+    // year cannot be resolved after the fact — so this fixes it from here forward.)
+    date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
+    ts: new Date().toISOString()
   });
   ls('totry_sv', saved.slice(0,200));
   renderSavedVersesEverywhere();

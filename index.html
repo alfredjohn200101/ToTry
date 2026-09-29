@@ -26774,7 +26774,7 @@ function saveCurrentVerse(){
   if(!curVerse.verse)return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(v=>v.verse===curVerse.verse)){
-    saved.unshift({...curVerse,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({...curVerse,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),ts:new Date().toISOString()});   // ts: the date has no year, so every reader's dayKeyNorm() returns ''
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('save-verse-btn');
@@ -26905,7 +26905,7 @@ function saveVerseResult(idx){
   const v=verses[idx];if(!v)return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v.verse)){
-    saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),ts:new Date().toISOString()});
     ls('totry_sv',saved.slice(0,200));
     renderSavedVerses();
     showToast('Verse saved',v.reference);   // the entity is printed literally now that showToast escapes
@@ -27168,7 +27168,14 @@ function saveContextualVerse(ref, text){
   saved.unshift({
     verse: text,
     reference: ref + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' (ESV)' : ''),
-    date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'})
+    // ts, BECAUSE THE DATE HAS NO YEAR. This stores "29 Sept", and both readers of totry_sv ask
+    // for a canonical day key — dayKeyNorm() requires a four-digit year by design, so it returns
+    // '' and the comparison can never be true. Keeping a passage therefore never ticked the
+    // scripture or faith habit, on any engine, for anyone. Both readers already prefer `ts`;
+    // nothing had ever written one. (Rows saved before this stay unrecoverable — a day with no
+    // year cannot be resolved after the fact — so this fixes it from here forward.)
+    date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'}),
+    ts: new Date().toISOString()
   });
   ls('totry_sv', saved.slice(0, 200));
   if(typeof renderSavedVerses === 'function') renderSavedVerses();
@@ -28171,7 +28178,14 @@ function saveVerseFromReader(text,ref){
   saved.unshift({
     verse: text,
     reference: ref,
-    date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})
+    // ts, BECAUSE THE DATE HAS NO YEAR. This stores "29 Sept", and both readers of totry_sv ask
+    // for a canonical day key — dayKeyNorm() requires a four-digit year by design, so it returns
+    // '' and the comparison can never be true. Keeping a passage therefore never ticked the
+    // scripture or faith habit, on any engine, for anyone. Both readers already prefer `ts`;
+    // nothing had ever written one. (Rows saved before this stay unrecoverable — a day with no
+    // year cannot be resolved after the fact — so this fixes it from here forward.)
+    date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
+    ts: new Date().toISOString()
   });
   ls('totry_sv', saved.slice(0,200));
   renderSavedVersesEverywhere();
@@ -42086,7 +42100,17 @@ function _focusHistoryLine(focus){
     // 'once' rather than plural()'s correct-but-clunky '1 time' — this is the sentence someone
     // meets on their SECOND session, and day two is where most people are.
     let out = 'You\u2019ve trained this ' + (mine.length === 1 ? 'once' : plural(mine.length, 'time')) + '.';
-    const last = mine[0];   // newest first — the order saveWorkoutSession unshifts into
+    // NEWEST BY TIMESTAMP, NOT BY POSITION. saveWorkoutSession unshifts, but that order is not a
+    // property of totry_workouts: the cloud pull's union() concats local and cloud into a Map, and
+    // Map.set on an existing key does not move it — so every cloud-only row is APPENDED at the end.
+    // A Push session logged on the other phone therefore arrives last, and mine[0] was whatever this
+    // device already had. 03-person.js already records this exact fact about this exact array, for
+    // lastTitle, after the brief told the model "last: Workout".
+    const last = mine.slice().sort(function(a, b){
+      const ta = (a && (a.ts || a.date)) ? new Date(a.ts || a.date).getTime() : 0;
+      const tb = (b && (b.ts || b.date)) ? new Date(b.ts || b.date).getTime() : 0;
+      return (isFinite(tb) ? tb : 0) - (isFinite(ta) ? ta : 0);
+    })[0];
     const t = (last.ts || last.date) ? new Date(last.ts || last.date).getTime() : NaN;
     let when = '';
     if(isFinite(t)){

@@ -7759,6 +7759,51 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('the last session is the newest one, whichever device logged it');
+{
+  // _focusHistoryLine took mine[0] on the comment "newest first — the order saveWorkoutSession
+  // unshifts into". That order is not a property of totry_workouts: the cloud pull's union() concats
+  // local and cloud into a Map, and Map.set on an existing key does not move it, so every cloud-only
+  // row is APPENDED. A Push session logged on the other phone arrives last, and mine[0] was whatever
+  // this device already had — so the card named an older session and an older top set.
+  // 03-person.js already records this exact fact about this exact array, for lastTitle.
+  const DAY = 86400000, now = Date.now();
+  const sess = (daysAgo, w) => ({ ts: new Date(now - daysAgo * DAY).toISOString(), splitFocus:'Push',
+    exercises:[{ name:'Bench Press', sets:[{ weight:w, reps:5, done:true }] }] });
+  const line = (hist) => {
+    const fns = H.load(['_focusHistoryLine','plural'], { ls: (k) => (k === 'totry_workouts' ? hist : null), Date });
+    return fns._focusHistoryLine('Push');
+  };
+  const newestFirst = line([sess(2,105), sess(9,100), sess(16,95)]);
+  const newestLast  = line([sess(9,100), sess(16,95), sess(2,105)]);   // what a cloud pull produces
+  H.eq(newestFirst, newestLast, 'the array order does not change the answer');
+  H.ok(/2 days ago/.test(newestLast), 'the most recent session is the one named');
+  H.ok(/105kg/.test(newestLast), 'and its top set is the one reported');
+  H.ok(!/9 days ago|100kg/.test(newestLast), 'not the one this device happened to hold first');
+}
+
+H.section('keeping a passage can actually tick the habit that counts it');
+{
+  // All four totry_sv writers stored {day:'numeric',month:'short'} — "29 Sept" — and no ts. Both
+  // readers ask for a canonical day key, and dayKeyNorm() requires a four-digit year BY DESIGN, so
+  // it returns '' and the comparison can never be true. Keeping a passage therefore never ticked the
+  // scripture or faith habit, on any engine, for anyone. Pre-existing, not from the merge: before
+  // v607 the faith branch did new Date("29 Sept") — which is the year 2001 — and the bible branch
+  // compared "29 Sept" to a day key. Both were already dead; the merge was outcome-neutral here.
+  const { dayKeyNorm, dayKeyOf } = H.load(['dayKeyNorm','dayKeyOf'], { Date });
+  H.eq(dayKeyNorm('29 Sept'), '', 'a year-less date has no canonical day key — by design');
+  H.eq(dayKeyOf('29 Sept'), '', 'and dayKeyOf agrees');
+  H.ok(dayKeyOf(new Date().toISOString()) !== '', 'while a ts resolves, which is why the readers prefer it');
+  // Every writer of totry_sv must stamp one. A grep is the right shape here: the four are in four
+  // different functions and the defect is the ABSENCE of a field, which no single driven call shows.
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'app', '11-scripture.js'), 'utf8');
+  const saves = src.split('\n').filter(l => /totry_sv|saved\.unshift/.test(l) || /month:'short'/.test(l));
+  const dated = (src.match(/month:'short'\}\)/g) || []).length;
+  const stamped = (src.match(/ts: ?new Date\(\)\.toISOString\(\)/g) || []).length;
+  H.ok(dated > 0, 'calibration: the year-less dates are still there to be checked (' + dated + ')');
+  H.ok(stamped >= dated, 'every saved passage carries a ts (' + stamped + ' stamps for ' + dated + ' dates)');
+}
+
 H.section('the split list does not clip the app\'s own templates');
 {
   // The orb fix moved the focus from a flex:1 div that wrapped into iosRow's `value` slot —
