@@ -7765,6 +7765,70 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('an ingredient carries every nutrient its source knew, not four of them');
+{
+  // The owner asked: "wouldn't getting the ingredients of that recipe provide the micros and macros?"
+  // Everything downstream was already built — logRecipeAsMeal() sums ingredients across the whole
+  // NUTRIENTS list (9 macro/extended + the 19 the vitamin panel asks for) and needs no change. But
+  // every WRITER of an ingredient built {name, cal, pro, carb, fat} by hand, so no recipe had ever
+  // carried a micronutrient. The barcode path is the sharpest case: the Open Food Facts parse forty
+  // lines above it works out fiber, sodium, calcium, iron and vitamin C per 100g, and the push threw
+  // all of them away.
+  const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
+                 'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
+  const mk = () => ({ name:'Yoghurt bowl', servings:2, ingredients:[] });
+
+  const add = (recipe, food, grams) => {
+    const fns = H.load(['_recipeAddFromFood','nutPick'],
+      { window: { __editingRecipe: recipe }, renderRecipeIngredients: () => {}, NUTRIENTS });
+    return fns._recipeAddFromFood(food, grams);
+  };
+  // The shape lookupBarcode actually builds: per-100g, some micros present, others simply absent.
+  const YOG = { per100:true, name:'Greek yoghurt', cal:97, pro:9, carb:4, fat:5, sodium:36, calcium:110, iron:0.1, vit_c:0.8 };
+  const OATS = { per100:true, name:'Rolled oats', cal:379, pro:13, carb:67, fat:7, fiber:10, magnesium:177, iron:4.7, zinc:4 };
+
+  const r1 = mk();
+  H.eq(add(r1, YOG, 150), true, 'a scanned food lands in the open recipe');
+  const ing = r1.ingredients[0];
+  H.eq(ing.name, 'Greek yoghurt (150g)', 'the amount is in the name, where the list shows it');
+  H.eq(ing.cal, 146, 'macros scale by grams/100');
+  H.eq(ing.calcium, 165, 'and so do the micros — 110mg per 100g at 150g');
+  H.eq(ing.sodium, 54, 'sodium too, not the raw-qty 100x shape');
+  H.ok(!('vit_d' in ing), 'a nutrient the source did not know stays ABSENT, never a confident zero');
+
+  // No open recipe, or no amount, must not throw or half-write.
+  H.eq(add(null, YOG, 150), false, 'nothing to add to is not an error');
+  H.eq(add(mk(), YOG, 0), false, 'and neither is an amount of nothing');
+
+  // THE PAYOFF, DRIVEN RATHER THAN ASSERTED: the research claimed logRecipeAsMeal needs no change.
+  // This sums exactly the way that function does and checks what reaches the diary.
+  const r2 = mk();
+  add(r2, YOG, 300); add(r2, OATS, 80);
+  const tot = {};
+  r2.ingredients.forEach((i) => NUTRIENTS.forEach((k) => {
+    const v = Number(i[k]); if(isFinite(v)) tot[k] = (tot[k] || 0) + v; }));
+  const fns = H.load(['nutPick'], { NUTRIENTS });
+  const row = fns.nutPick(tot, 1 / r2.servings);          // one serving of two
+  H.eq(row.cal, 297, 'one serving of the recipe carries its calories');
+  const carried = Object.keys(row).filter((k) => MICRO.indexOf(k) > -1 || k === 'fiber' || k === 'sodium');
+  H.ok(carried.length >= 6, 'and the micronutrients the vitamin panel reads (' + carried.join(', ') + ')');
+  H.ok(carried.indexOf('magnesium') > -1 && carried.indexOf('zinc') > -1,
+    'including ones only the second ingredient knew');
+
+  // The barcode path must actually GO through it — the shape this repo has shipped defined-but-unwired.
+  const lb = H.code(H.extractFn('lookupBarcode'));
+  // THE WHOLE CALL, NOT JUST ITS NAME. Matching the call text alone passes on
+  // `if(false && _recipeAddFromFood(food, g))` — fault-injected exactly that and this assertion
+  // reported green, which is the same string-not-behaviour mistake as the ` autofocus` one.
+  // lookupBarcode is network-bound and cannot be driven here, so the honest ceiling is to pin the
+  // exact guard shape rather than the identifier.
+  H.ok(/if\(_recipeAddFromFood\(food, g\)\)\{/.test(lb.replace(/\s+/g, '')
+         .replace('if(_recipeAddFromFood(food,g)){', 'if(_recipeAddFromFood(food, g)){')),
+    'the barcode scan calls the shared landing as its own condition, ungated');
+  H.ok(!/ingredients\.push\(\{ name: food\.name/.test(lb), 'and no longer hand-builds four macros');
+}
+
 H.section('the meal planner has heard of the food you already chose');
 {
   // `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string.

@@ -32679,10 +32679,7 @@ async function lookupBarcode(barcode){
     if(_recipeMode){   // captured and cleared at the top, so a failed scan cannot leak into the next
       try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){}
       const g = parseFloat(await askText('How much ' + food.name + '?', 'Grams that go into this recipe.', {value:'100', type:'number', confirmLabel:'Add it'})) || 100;
-      const f = g / 100;
-      if(window.__editingRecipe){
-        window.__editingRecipe.ingredients.push({ name: food.name + ' (' + g + 'g)', cal: Math.round((food.cal||0)*f), pro: Math.round((food.pro||0)*f*10)/10, carb: Math.round((food.carb||0)*f*10)/10, fat: Math.round((food.fat||0)*f*10)/10 });
-        if(typeof renderRecipeIngredients === 'function') renderRecipeIngredients();
+      if(_recipeAddFromFood(food, g)){
         showToast('Ingredient added', food.name + ' \u00b7 ' + g + 'g');
       }
       return;
@@ -32813,6 +32810,33 @@ async function parsePastedRecipe(){
     if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
     showToast('Couldn’t read that','Try pasting just the ingredient lines — or add them manually.');
   }
+}
+
+// AN INGREDIENT MAY CARRY EVERY NUTRIENT ITS SOURCE KNEW, NOT FOUR OF THEM.
+// logRecipeAsMeal() already sums ingredients across the whole NUTRIENTS list (28 keys: 9 macro and
+// extended, plus the 19 the vitamin panel asks for) and needs no change — "the moment an ingredient
+// object carries micros, they land in the diary and the panel". But every writer of an ingredient
+// built {name, cal, pro, carb, fat} by hand, so no recipe has ever carried one. The barcode path is
+// the sharpest case: the Open Food Facts parse forty lines above it works out fiber, sodium,
+// calcium, iron and vitamin C per 100g, and the push threw all of them away.
+//
+// nutPick(src, mult) is the existing copier and it already does exactly the right thing — every
+// NUTRIENTS key scaled, and an absent nutrient left ABSENT rather than becoming a confident zero,
+// which is the rule the whole nutrition side keeps. `food` here is per-100g by construction, so the
+// multiplier is grams/100.
+function _recipeAddFromFood(food, grams){
+  try{
+    if(!food || typeof window === 'undefined' || !window.__editingRecipe) return false;
+    const g = Math.max(0, parseFloat(grams) || 0);
+    if(!g) return false;
+    const n = (typeof nutPick === 'function') ? nutPick(food, g / 100) : {};
+    // The amount belongs in the NAME, because that is the only place the recipe list shows it and it
+    // is the shape the hand-typed path already uses ("Ingredient (e.g. 100g chicken)").
+    const ing = Object.assign({ name: String(food.name || 'Ingredient') + ' (' + g + 'g)' }, n);
+    window.__editingRecipe.ingredients.push(ing);
+    if(typeof renderRecipeIngredients === 'function') renderRecipeIngredients();
+    return true;
+  }catch(_){ return false; }
 }
 
 function editRecipe(idx, prefill){
