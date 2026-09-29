@@ -13,7 +13,15 @@ function _daysShowedUp(){
     (ls('totry_examens')||[]).forEach(function(x){ add(x&&x.ts); });
     (ls('totry_fight_log')||[]).forEach(function(x){ add(x&&x.ts); });
     (ls('totry_moments_won')||[]).forEach(function(x){ add(x&&x.ts); });
-    (ls('totry_checkins')||[]).forEach(function(x){ if(x&&x.date) days.add(x.date); else add(x&&x.ts); });
+    // NORMALISE IT LIKE EVERY OTHER SOURCE. Every other line here goes through dayKeyOf(); this one
+    // added the raw string. saveCheckin writes dayKeyOf() now, but totry_checkins is a synced ARRAY,
+    // so migrateDayKeys never touches it — and any check-in written before v607 on WebKit still holds
+    // the unpadded spelling. Both spellings of one day then landed as two Set members, so a day that
+    // also had a morning or a workout counted twice.
+    (ls('totry_checkins')||[]).forEach(function(x){
+      if(x && x.date){ days.add((typeof dayKeyNorm === 'function' ? dayKeyNorm(x.date) : '') || x.date); }
+      else add(x && x.ts);
+    });
     return days.size;
   }catch(_){ return 0; }
 }

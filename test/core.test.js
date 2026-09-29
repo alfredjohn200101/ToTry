@@ -7759,6 +7759,65 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('two spellings of one day inside ONE map do not resolve by JSON order');
+{
+  // fold() walked Object.keys in whatever order JSON.parse produced, and the FIRST key to normalise
+  // won. A single map can hold both '5/9/2026' and '05/09/2026' — the ordinary legacy state for
+  // anyone who used the PWA and the iOS build before v607, because the pre-fix pull adopted the
+  // other engine's spelling wholesale. So which figure survived was arbitrary, and two devices
+  // reading the SAME cloud row could keep different numbers. Canonical wins now, deterministically.
+  const { _mergeDayMaps } = H.load(['_mergeDayMaps','dayKeyNorm'], { syncIdOf: (x) => JSON.stringify(x) });
+  const short_first = _mergeDayMaps({ '5/9/2026': 1200, '05/09/2026': 2000 }, {}, 'totry_water');
+  const canon_first = _mergeDayMaps({ '05/09/2026': 2000, '5/9/2026': 1200 }, {}, 'totry_water');
+  H.eq(JSON.stringify(short_first), JSON.stringify(canon_first), 'the JSON order does not decide the answer');
+  H.eq(short_first['05/09/2026'], 2000, 'and the canonical spelling is the one that wins');
+  const o = (a, b) => _mergeDayMaps(a, {}, 'totry_trackers');
+  H.eq(JSON.stringify(o({ '5/9/2026': { sleep:6 }, '05/09/2026': { sleep:8, steps:9000 } })),
+       JSON.stringify(o({ '05/09/2026': { sleep:8, steps:9000 }, '5/9/2026': { sleep:6 } })),
+       'object days too');
+}
+
+H.section('the day a check-in names is counted once, not twice');
+{
+  // Every other source in _daysShowedUp goes through dayKeyOf(); the check-in line added the raw
+  // string. saveCheckin writes dayKeyOf() now, but totry_checkins is a synced ARRAY so
+  // migrateDayKeys never touches it, and any check-in written before v607 on WebKit still holds the
+  // unpadded spelling. Both spellings of one day then landed as two Set members — so a day that also
+  // had a morning or a workout was counted twice in "N days you showed up".
+  const src = H.code(H.extractFn('_daysShowedUp'));
+  H.ok(/dayKeyNorm\(x\.date\)/.test(src), 'a check-in date is normalised like every other source');
+  H.ok(!/days\.add\(x\.date\)\s*;/.test(src), 'and the raw string no longer goes into the Set');
+}
+
+H.section('the PT prompt never says "Invalid Date"');
+{
+  // logCardioSession stores date: dayKeyOf(when) — a zero-padded DD/MM/YYYY key — while every other
+  // writer of that field stores the en-AU long form. buildPTCtx did new Date(w.date), and V8 and JSC
+  // both read a slashed string as US m/d/yyyy, so any day past the 12th parsed as Invalid Date and
+  // that string went into the coach's prompt verbatim.
+  const src = H.code(H.extractFn('buildPTCtx'));
+  H.ok(!/new Date\(w\.date\)/.test(src), 'the raw date is not handed to new Date()');
+  H.ok(/dayKeyOf\(w\.date\)/.test(src), 'it goes through dayKeyOf, which reads both shapes');
+  // Calibration on the trap itself, so this cannot pass by the platform having changed.
+  H.ok(isNaN(new Date('22/09/2026').getTime()), 'calibration: a slashed DD/MM/YYYY really is Invalid Date');
+  H.ok(!isNaN(new Date('09/22/2026').getTime()), 'calibration: the same string US-ordered parses fine');
+}
+
+H.section('the seeded person has the sleep every harness thought they had');
+{
+  // scripts/seed-person.mjs keyed totry_trackers by an ISO slice while every writer and reader of
+  // that store uses dayKeyOf(), and dayKeyNorm deliberately refuses a bare ISO string so
+  // migrateDayKeys does not fold it either. The key was simply never read: getLifeState().sleep came
+  // back entirely null, so lifeStateBrief — the text every AI surface reads — carried no sleep
+  // signal, and every screenshot, craft audit and orb audit this repo has taken was of a person with
+  // no sleep data. Measured after: lastNight 7.5, avg7 7.5, and the brief mentions sleep.
+  const seed = require('fs').readFileSync(require('path').join(__dirname, '..', 'scripts', 'seed-person.mjs'), 'utf8');
+  H.ok(/S\('totry_trackers', \{ \[dayKey\]/.test(seed), 'the tracker seed uses the app\'s own day key');
+  H.ok(!/S\('totry_trackers', \{ \[today\]/.test(seed), 'not an ISO slice nothing reads');
+  // And the key is built from date PARTS, because this seed has two consumers, one per engine.
+  H.ok(/_dk\(new Date\(\)\)/.test(seed), 'and it is built from date parts, not a locale formatter');
+}
+
 H.section('the last session is the newest one, whichever device logged it');
 {
   // _focusHistoryLine took mine[0] on the comment "newest first — the order saveWorkoutSession

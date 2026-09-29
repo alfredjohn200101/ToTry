@@ -550,7 +550,17 @@ function _mergeDayMaps(keep, add, storeKey, opts){
     const out = {};
     const fold = function(src){
       if(!src || typeof src !== 'object' || Array.isArray(src)) return;
-      Object.keys(src).forEach(function(k){
+      // CANONICAL KEYS FIRST, so a collision INSIDE one map is not decided by JSON order.
+      // A single map can hold both '5/9/2026' and '05/09/2026' — that is the ordinary legacy state
+      // for anyone who used the PWA and the iOS build before v607, because the pre-fix pull adopted
+      // the other engine's spelling wholesale. Folding in Object.keys order meant whichever
+      // JSON.parse happened to list first became the winner, so which figure survived was arbitrary
+      // and could differ between two devices reading the SAME cloud row. The canonical spelling is
+      // the one every device writes now, so it wins, and the result is the same everywhere.
+      Object.keys(src).sort(function(a, b){
+        const ca = (dayKeyNorm(a) === a) ? 0 : 1, cb = (dayKeyNorm(b) === b) ? 0 : 1;
+        return ca - cb;
+      }).forEach(function(k){
         // A key this cannot read keeps its OWN name rather than being folded into anything — an
         // unreadable key is data we do not understand, and collapsing several of them together
         // would destroy more than it repairs.

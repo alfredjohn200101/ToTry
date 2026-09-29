@@ -20,7 +20,14 @@ export function seedSource() {
     // n/p/c/f. Seeded the ISO way this key read back as a day with nothing in it, so Nourish
     // rendered "0 eaten", an empty plate and the first-run "Let's start simple" card — a review of
     // this screen was a review of its empty state. Match the WRITER; see CLAUDE.md on seeds.
-    const dayKey = new Date().toLocaleDateString('en-AU');
+    // BUILT FROM DATE PARTS, like dayKeyOf() itself — not from the formatter. toLocaleDateString
+    // pads in Chromium and not in WebKit, and this seed has two consumers, one per engine: a seed
+    // spelled the Chromium way renders an empty screen on the simulator. dayKeyOf() is not called
+    // directly because one consumer inlines this BEFORE the app boots, so the function may not exist
+    // yet; the rule it implements is two lines.
+    const _p2 = n => String(n).padStart(2, '0');
+    const _dk = d => _p2(d.getDate()) + '/' + _p2(d.getMonth() + 1) + '/' + d.getFullYear();
+    const dayKey = _dk(new Date());
     const a = [ago(9), ago(160), ago(30), ago(14)];
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     S('totry_onboarded', true); S('totry_name', 'Alfred'); S('totry_sex', 'male'); S('totry_faith_tradition', 'christianity');
@@ -73,7 +80,16 @@ export function seedSource() {
       { id: 3, ts: H(12, 40), name: 'Chicken & rice', brand: '', serving: '200g chicken, 1 cup rice', qty: 1, cal: 730, pro: 52, carb: 81, fat: 14, meal: 'lunch', source: 'USDA' },
       { id: 4, ts: H(15, 30), name: 'Banana', brand: '', serving: '1 medium', qty: 1, cal: 105, pro: 1, carb: 27, fat: 0, meal: 'snack', source: 'Common' }
     ] });
-    S('totry_trackers', { [today]: { sleep: 7.5, water: 6 } });
+    // dayKey, NOT today. (No backticks in this comment: the whole seed is ONE template literal, so a
+    // backtick here ends it and the file stops parsing — which is exactly what happened.)
+    // 'today' is an ISO slice ("2026-09-29"); every writer and reader of this
+    // store uses dayKeyOf() ("29/09/2026"), and dayKeyNorm deliberately refuses a bare ISO string so
+    // migrateDayKeys does not fold it either. The seeded key was simply never read: getLifeState()
+    // .sleep came back entirely null, so lifeStateBrief — the text every AI surface reads — carried
+    // no sleep signal, and every screenshot and craft audit this repo has taken was of a person with
+    // no sleep data. An invented key renders an empty screen, which is the rule this file's own
+    // header states about itself.
+    S('totry_trackers', { [dayKey]: { sleep: 7.5, water: 6, steps: 9200 } });
     // A week, in the shape _saveEventFromModal() writes one. Without it every review of the Calendar
     // was a review of its empty state — which is how a whole screen goes unlooked-at for a year.
     S('totry_cal_events', [

@@ -940,7 +940,14 @@ function buildPTCtx(){
     if(workouts.length){
       recentTraining = workouts.slice(0,5).map(w => {
         const title = w.title || w.name || w.routine || 'Session';
-        const when = w.date ? new Date(w.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
+        // NEW DATE() READS A SLASHED STRING AS US m/d/yyyy. logCardioSession stores `date:
+        // dayKeyOf(when)` — a zero-padded DD/MM/YYYY key — while every other writer of this field
+        // stores the en-AU long form, so any day past the 12th parsed as Invalid Date and this line
+        // put "Invalid Date" into the PT coach's prompt. dayKeyOf() already accepts both shapes and
+        // returns '' rather than a lie when it cannot read one.
+        const _dk = w.date ? ((typeof dayKeyOf === 'function' ? dayKeyOf(w.date) : '') || '') : '';
+        const when = _dk ? (function(){ const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(_dk);
+          return m ? String(+m[1]) + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2]-1] : ''; })() : '';
         const exCount = (w.exercises && w.exercises.length) ? w.exercises.length + ' exercises' : '';
         const vol = w.volume ? Math.round(w.volume) + 'kg volume' : '';
         return '- ' + [title, when, exCount, vol].filter(Boolean).join(', ');
