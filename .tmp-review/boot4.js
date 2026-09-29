@@ -1,0 +1,17 @@
+const http=require('http'),fs=require('fs'),path=require('path');
+const {chromium}=require('playwright');
+const ROOT='/Users/alfredjohn/Desktop/ToTry/www',PORT=8814;
+const MIME={'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
+const serve=()=>new Promise(res=>{const s=http.createServer((rq,rs)=>{const c=decodeURIComponent(rq.url.split('?')[0]);let f=path.join(ROOT,c==='/'?'index.html':c);if(!f.startsWith(ROOT)||!fs.existsSync(f)||fs.statSync(f).isDirectory())f=path.join(ROOT,'index.html');rs.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream','Cache-Control':'no-store'});fs.createReadStream(f).pipe(rs);});s.listen(PORT,'127.0.0.1',()=>res(s));});
+(async()=>{const server=await serve();const b=await chromium.launch({headless:true});
+ const ctx=await b.newContext({viewport:{width:414,height:896}});const p=await ctx.newPage();
+ const all=[];p.on('console',m=>all.push(m.type()+': '+m.text().slice(0,160)));p.on('pageerror',e=>all.push('PAGEERROR: '+e.message));
+ await p.addInitScript(()=>{const s={totry_guest:true,totry_onboarded:true,totry_name:'Alfy',totry_faith_tradition:'christianity'};
+   for(const[k,v]of Object.entries(s))localStorage.setItem(k,JSON.stringify(v));
+   const d=new Date(),pa=n=>String(n).padStart(2,'0');
+   localStorage.setItem('totry_tomorrow_tasks',JSON.stringify({tasks:['Call mum'],date:pa(d.getDate())+'/'+pa(d.getMonth()+1)+'/'+d.getFullYear(),ts:d.toISOString()}));});
+ await p.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});await p.waitForTimeout(8000);
+ console.log('messages mentioning ti / ReferenceError:');
+ console.log(all.filter(x=>/ti is not defined|ReferenceError/.test(x)).join('\n')||'  (NONE — completely silent)');
+ console.log('\nall console output ('+all.length+' lines):'); console.log(all.slice(0,25).join('\n'));
+ await b.close();server.close();})();

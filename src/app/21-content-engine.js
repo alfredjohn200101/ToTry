@@ -446,7 +446,7 @@ function loadTodaySplitCard(){
         const last = (typeof getLastWeightForExercise === 'function') ? getLastWeightForExercise(ex.name, ex.templateId) : null;
         const lastTxt = last ? ' \u00b7 last ' + last.weight + 'kg\u00d7' + last.reps : '';
         const tgt = ex.targetSets ? ex.targetSets + '\u00d7' + (ex.targetReps || '') : '';
-        return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + ex.name + '</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">' + tgt + lastTxt + '</span></div>';
+        return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + _escFew(ex.name) + '</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">' + tgt + lastTxt + '</span></div>';
       }).join('');
       if(detailEl) detailEl.innerHTML = exLines + '<div style="margin-top:8px;font-size:var(--t-cap);color:var(--tx3);cursor:pointer" onclick="openHevyTodayPicker()">Change today\u2019s routine</div>';
       if(hf) hf.textContent = todayR.title;
@@ -456,7 +456,15 @@ function loadTodaySplitCard(){
       if(nameEl) nameEl.textContent = 'Pick today\u2019s routine';
       const pickHtml = 'Choose which of your <b>' + routines.length + '</b> Hevy routine' + (routines.length===1?'':'s') + ' you\u2019re training today:' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' +
-        routines.slice(0, 8).map(r => '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--bg3)" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\')">' + r.title + '</button>').join('') +
+        // TWO DIFFERENT CONTEXTS, TWO DIFFERENT TOOLS — and the natural one is wrong for the first.
+        // `hevyId` lands inside a JS string INSIDE an attribute, and the HTML parser decodes entities
+        // before that JS is compiled: _escFew turns ' into &#39; and the parser turns it straight back
+        // into ', so the string still terminates and the injected code runs. Measured: raw and
+        // _escFew'd produce byte-identical markup and both execute. Only stripping the quote works
+        // here, which is exactly what 22-train-deep.js:494 already does with the same value and says
+        // so in its own comment — the fix reached that call site and not this one.
+        // `title` is a plain text position, so it takes the ordinary escape.
+        routines.slice(0, 8).map(r => '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--bg3)" onclick="setTodayHevyRoutine(\'' + String(r.hevyId == null ? '' : r.hevyId).replace(/[\\'"]/g, '') + '\')">' + _escFew(r.title) + '</button>').join('') +
         '</div>';
       if(detailEl) detailEl.innerHTML = pickHtml;
       // Mirror onto the HOME mission so it never shows a stale app-split day for Hevy users.

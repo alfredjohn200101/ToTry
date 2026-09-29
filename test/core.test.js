@@ -7663,6 +7663,72 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('one typed plan for tomorrow does not take the whole front screen down');
+{
+  // `ti` WAS NEVER DECLARED IN renderDayCounter(). Every other split[ti] in the bundle sits under its
+  // own `const ti = tIdx()`; this one did not, and there is no global `ti` — so the line threw
+  // ReferenceError the moment its branch ran. The branch runs whenever totry_tomorrow_tasks is dated
+  // today or yesterday, and saveEvening() writes that stamp as soon as ANY of the three "tomorrow"
+  // fields in the evening check-in is non-empty.
+  //
+  // Both hot callers are unguarded — initApp() and go('home') — so one typed task took the rest of
+  // init with it: the welcome toast, renderHomeHabits, checkMilestones, the risk-window greeting and
+  // the final go() that fills Home. NOTHING in the gate had ever seeded totry_tomorrow_tasks, which
+  // is why 2548 assertions, personas, panels and crisis were all green over a front-screen crash.
+  // Seeding it is half the fix; this is that half.
+  const el = () => ({ textContent:'', innerHTML:'', style:{}, className:'', appendChild(){}, querySelectorAll: () => [] });
+  const paint = (tasksDate) => {
+    const fns = H.load(['renderDayCounter','dayKeyOf','dayKeyNorm'], {
+      ls: (k) => (k === 'totry_tomorrow_tasks' && tasksDate
+        ? { tasks:['Call Dad'], date: tasksDate, ts: new Date().toISOString() } : null),
+      document: { getElementById: () => el(), createElement: () => el(),
+                  querySelectorAll: () => [], querySelector: () => null },
+      window: {}, Date, getDayCount: () => 42, getStreak: () => 3, tIdx: () => 0,
+      getUserSplit: () => [{ focus:'Push', detail:'Chest' },{},{},{},{},{},{}],
+      countUp: () => {}, loadV: () => {}, loadH: () => {}, loadF: () => {},
+      loadTodaySplitCard: () => {}, showToast: () => {}, svgIcon: () => '',
+      plural: (n, w) => n + ' ' + w, restartCount: () => 0, totalDaysTrying: () => 42,
+    });
+    try { fns.renderDayCounter(); return null; } catch(e){ return String(e && e.message || e); }
+  };
+  const { dayKeyOf } = H.load(['dayKeyOf','dayKeyNorm'], { Date });
+  H.eq(paint(dayKeyOf()), null, 'a plan written for today does not throw');
+  H.eq(paint(dayKeyOf(new Date(Date.now() - 86400000))), null, 'nor one written last night');
+  H.eq(paint(dayKeyOf(new Date(Date.now() - 3 * 86400000))), null, 'nor a stale one (that branch is skipped)');
+  H.eq(paint(null), null, 'nor no plan at all');
+  // The shape of the bug, held directly: no bare `ti` may survive in this function.
+  const fn = H.code(H.extractFn('renderDayCounter'));
+  H.ok(/const\s+ti\s*=/.test(fn), 'renderDayCounter declares its own ti');
+  const uses = (fn.match(/\[ti\]/g) || []).length;
+  H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
+}
+
+H.section('a Hevy routine name cannot execute, and neither can its id');
+{
+  // TWO POSITIONS, TWO TOOLS — and the natural tool is wrong for one of them. loadTodaySplitCard's
+  // Hevy branch put ex.name and r.title into innerHTML unescaped, and r.hevyId RAW into a JS string
+  // inside an onclick attribute. All three come from Hevy's /v1/routines response, and
+  // totry_hevy_routines is a SYNCED key, so the value crosses devices and survives a restore.
+  //
+  // Reaching for _escFew — today's sibling fix for editSplitDay — does NOT close the onclick hole:
+  // the HTML parser decodes &#39; back to ' BEFORE the JS is compiled, so the string still
+  // terminates. Measured in a real browser, clicking each button and counting the side effect:
+  //   old     extra code ran = 1, img injected = 1   (calibration: the door was real)
+  //   _escFew extra code ran = 1                      (the natural fix does not work here)
+  //   shipped extra code ran = 0, and the function received the whole payload as ONE inert string
+  // Only stripping the quote works in that nested context — which is exactly what
+  // 22-train-deep.js:494 already does with the same value, in a comment saying so. The fix had
+  // reached that call site and not this one.
+  const fn = H.code(H.extractFn('loadTodaySplitCard'));
+  H.ok(!/onclick="setTodayHevyRoutine\(\\'' \+ r\.hevyId/.test(fn), 'the routine id is not interpolated raw into the handler');
+  H.ok(/replace\(\/\[\\\\'"\]\/g, ''\)/.test(fn), 'it is stripped of quotes, like the sibling call site');
+  H.ok(/_escFew\(r\.title\)/.test(fn), 'the routine title is escaped for its text position');
+  H.ok(/_escFew\(ex\.name\)/.test(fn), 'and so is the exercise name');
+  // Fault-inject guard: the two must not be swapped. _escFew on the id would pass a naive
+  // "is it escaped" check while leaving the hole wide open, which is the whole lesson above.
+  H.ok(!/setTodayHevyRoutine\(\\'' \+ _escFew/.test(fn), 'the id does NOT go through _escFew, which would not close it');
+}
+
 H.section('the day you name your own training focus cannot execute it');
 {
   // THE SAME MODAL, ONE FIELD APART. editSplitDay() escaped every routine name into its <option> —

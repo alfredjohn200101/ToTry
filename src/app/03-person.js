@@ -5344,6 +5344,17 @@ function renderDayCounter(){
   })();
   if(_tmrwFresh && tmrw&&tmrw.tasks?.length){
     const det=document.getElementById('today-detail');
+    // `ti` WAS NEVER DECLARED HERE. Every other `split[ti]` in this bundle sits under its own
+    // `const ti = tIdx()`; this one did not, and there is no global `ti` — so the line threw
+    // ReferenceError the moment this branch was entered. The branch is entered whenever
+    // totry_tomorrow_tasks is dated today or yesterday, and saveEvening() writes that stamp as soon
+    // as ANY of the three "tomorrow" fields in the evening check-in is non-empty. So one typed task
+    // crashed renderDayCounter, and both hot callers are unguarded — initApp() (28-init.js) and
+    // go('home') — which took the whole rest of init with it: the welcome toast, renderHomeHabits,
+    // checkMilestones, the risk-window greeting, and the final go() that fills Home.
+    // Nothing in the gate ever seeds totry_tomorrow_tasks, which is why 2548 assertions, personas,
+    // panels and crisis were all green over a front-screen crash. The seed is the fix's other half.
+    const ti = (typeof tIdx==='function') ? tIdx() : 0;
     const split=getUserSplit();const todayDetail=split[ti]?.detail||'';
     if(det)det.textContent=todayDetail+'\n\nToday\'s priorities:\n'+tmrw.tasks.map((t,i)=>(i+1)+'. '+t).join('\n');
   }
