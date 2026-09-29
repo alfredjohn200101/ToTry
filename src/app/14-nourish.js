@@ -171,6 +171,8 @@ async function searchUSDA(query){
     ]);
     // Tag the real foods so ranking can let them compete with same-named branded packets.
     const foods = [...genericFoods.map(f => Object.assign(f, {__generic:true})), ...brandedFoods];
+    // .filter(Boolean) because the mapper returns null for a record with no calorie figure — see
+    // the note at that return. Without it a null reaches the ranker and every consumer of a result.
     return foods.map(f => {
       // USDA gives nutrients as an array we need to parse
       const n = {cal: 0, pro: 0, carb: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0,
@@ -182,12 +184,24 @@ async function searchUSDA(query){
                  potassium: 0, zinc: 0, selenium: 0, copper: 0,
                  // Fat breakdown
                  sat_fat: 0, cholesterol: 0};
+      // `n` is pre-zeroed above, so a VALUE of 0 cannot tell "USDA said zero" from "USDA said
+      // nothing" — which is why the calorie guard below needs a flag rather than a comparison.
+      // (The same pre-zeroing means every unreported micro leaves here as a confident 0 rather than
+      // absent, which is the opposite of the rule nutPick keeps. Wider than this fix; not changed
+      // blind, because every consumer of a USDA result currently reads those zeros.)
+      let _sawKcal = false, _kj = 0;
       (f.foodNutrients || []).forEach(fn => {
         const name = (fn.nutrientName || '').toLowerCase();
         const val = fn.value || 0;
         const unit = (fn.unitName || '').toLowerCase();
         
-        if(name.includes('energy') && (unit === 'kcal' || name.includes('kcal'))) n.cal = Math.round(val);
+        if(name.includes('energy') && (unit === 'kcal' || name.includes('kcal'))){ n.cal = Math.round(val); _sawKcal = true; }
+        // KILOJOULES ARE STILL CALORIES. Remembered rather than used, so a record carrying BOTH
+        // always takes the kcal figure; this only rescues one that carries kJ alone, which would
+        // otherwise be dropped by the guard below as having no calorie figure at all. The same
+        // conversion the Open Food Facts path already does one screen up — one source's unit choice
+        // should not decide whether a food is searchable.
+        else if(name.includes('energy') && unit === 'kj'){ _kj = val; }
         else if(name === 'protein') n.pro = Math.round(val * 10) / 10;
         else if(name.includes('carbohydrate, by difference')) n.carb = Math.round(val * 10) / 10;
         else if(name.includes('total lipid') || name === 'fat') n.fat = Math.round(val * 10) / 10;
@@ -237,6 +251,20 @@ async function searchUSDA(query){
         : null;
       const name = f.description || f.lowercaseDescription || 'USDA food';
       const brand = f.brandOwner || f.brandName || '';
+      // A FOOD WITH NO CALORIE FIGURE IS NOT A FOOD THIS APP CAN LOG.
+      // _sawKcal is set ONLY when USDA supplied an energy nutrient in kcal, so false here means the
+      // record has none at all — not that the food is calorie-free. Measured through the
+      // app's own key-proxy on 30 Sep 2026: Foundation's top match for "chicken breast" is
+      // "Lunchmeat, chicken breast, sliced", whose foodNutrients contain NO energy nutrient of any
+      // kind. It reached the list as an ordinary result and one tap put 0 calories into the diary
+      // against a name a person would absolutely believe — and the day's target, deficit and every
+      // aggregate downstream went quietly wrong with it. (An auditor reported this shape earlier and
+      // could not verify it, because DEMO_KEY was answering 429. Through the proxy it reproduces.)
+      //
+      // A genuinely calorie-free food is NOT caught by this: water and black coffee carry an energy
+      // nutrient whose value IS 0, so the flag is set and the record stands.
+      if(!_sawKcal && _kj > 0){ n.cal = Math.round(_kj / 4.184); _sawKcal = true; }
+      if(!_sawKcal) return null;
       return {
         id: 'usda_' + f.fdcId,
         name: name.length > 80 ? name.slice(0, 80) + '...' : name,
@@ -261,7 +289,7 @@ async function searchUSDA(query){
         servings: [Object.assign({name: servingLabel}, nutPick(n))]
                     .concat(_brandServing ? [_brandServing] : [])
       };
-    });
+    }).filter(Boolean);
   }catch(e){ console.warn('[usda] search failed:', e); return []; }
 }
 // Nutritionix — strong for branded + restaurant items USDA/OFF miss. Uses the public

@@ -69,7 +69,21 @@ function approx(actual, expected, tol, msg){
 }
 function ok(cond, msg){ if(cond) passed++; else { failed++; failures.push('  ✗ ' + msg); } }
 function section(name){ console.log('\n• ' + name); }
+// ── async assertions in a synchronous suite ──
+// This file is a plain script, so there is no top-level await, and a `return` at module level
+// silently ENDS THE RUN — the whole suite reported "0 failed" by never reaching report(). Most of
+// what is tested here is pure, but some of the app's real functions are async (searchUSDA and every
+// api() path), and "the suite is synchronous" had become a reason to test their source instead of
+// driving them. defer() takes the promise; report() waits for all of them first, so an async section
+// reads exactly like a sync one and its failures are counted the same way.
+const _deferred = [];
+function defer(p){ _deferred.push(Promise.resolve(p).catch(e => { failed++; failures.push('  ✗ deferred section threw: ' + (e && e.message || e)); })); return p; }
+
 function report(){
+  if(_deferred.length){
+    const pending = _deferred.splice(0, _deferred.length);
+    return Promise.all(pending).then(report);
+  }
   if(failures.length){ console.log('\nFAILURES:'); failures.forEach(f => console.log(f)); }
   console.log(`\n${failed ? '✗' : '✓'} ${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
@@ -80,4 +94,4 @@ function report(){
 // diagnosed a regression that did not exist. Any !/.../.test() over source goes through this.
 function code(t){ return String(t == null ? html : t).replace(/\/\/[^\n]*/g, ''); }
 
-module.exports = { extractFn, load, eq, approx, ok, section, report, html, code };
+module.exports = { extractFn, load, eq, approx, ok, section, report, html, code, defer };

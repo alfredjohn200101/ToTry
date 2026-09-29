@@ -7765,6 +7765,62 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('a food with no calorie figure is not a food you can log');
+{
+  // An auditor reported USDA's top "chicken breast" result returning 0 cal one tap from the diary
+  // and could NOT verify it — DEMO_KEY was answering 429. Measured through the app's own key-proxy
+  // on 30 Sep 2026, it reproduces exactly: Foundation's top match for "chicken breast" is
+  // "Lunchmeat, chicken breast, sliced", whose foodNutrients contain NO energy nutrient of any kind.
+  // It reached the list as an ordinary result, against a name a person would absolutely believe, and
+  // one tap put 0 calories into the diary — taking the day's target, deficit and every aggregate
+  // downstream quietly with it.
+  //
+  // The guard needs a FLAG, not a comparison: `n` is pre-initialised with every key at 0, so a value
+  // of 0 cannot tell "USDA said zero" from "USDA said nothing".
+  const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
+                 'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
+  const mk = (d, nuts) => ({ fdcId: d, description: d, dataType:'Foundation', foodNutrients: nuts });
+  const EN = (v) => ({ nutrientName:'Energy (Atwater General Factors)', unitName:'KCAL', value: v });
+  const KJ = (v) => ({ nutrientName:'Energy', unitName:'kJ', value: v });
+  const PRO = { nutrientName:'Protein', unitName:'G', value: 20 };
+  const search = (foods) => {
+    let call = 0;
+    const fns = H.load(['searchUSDA','nutPick'], { NUTRIENTS, getUSDAKey: () => null, console,
+      keyProxy: async () => (call++ ? { foods: [] } : { foods }), _fetchT: async () => ({ ok:false }) });
+    return fns.searchUSDA('x');
+  };
+
+  H.defer(search([
+    mk('Lunchmeat, no energy at all', [PRO]),
+    mk('Chicken breast, raw', [EN(120), PRO]),
+    mk('Water, bottled', [EN(0)]),
+    mk('Both units', [KJ(2000), EN(478)]),
+    mk('kJ only', [KJ(1588)]),
+  ]).then(function(r){
+    const by = {}; r.forEach(function(x){ by[x.name] = x; });
+    H.ok(!by['Lunchmeat, no energy at all'], 'a record with no energy nutrient never reaches the list');
+    H.ok(!!by['Chicken breast, raw'], 'an ordinary food is untouched');
+    H.eq(by['Chicken breast, raw'].cal, 120, 'with its calories');
+
+    // The half that makes the guard safe rather than blunt.
+    H.ok(!!by['Water, bottled'], 'a genuinely calorie-free food is KEPT');
+    H.eq(by['Water, bottled'].cal, 0, 'at zero, because that is what the source said');
+
+    // KILOJOULES ARE STILL CALORIES — the same conversion the Open Food Facts path already does.
+    // Without it the guard would drop a usable food over one source's choice of unit.
+    H.ok(!!by['kJ only'], 'a kJ-only record is recovered, not dropped');
+    H.eq(by['kJ only'].cal, 380, 'converted at 4.184 (1588 kJ)');
+    H.eq(by['Both units'].cal, 478, 'and a record carrying both still takes the kcal figure');
+
+    // The flag, pinned: a value comparison cannot work here and must not be reintroduced.
+    const src = H.code(H.extractFn('searchUSDA'));
+    H.ok(/_sawKcal/.test(src), 'the guard is a flag');
+    H.ok(/cal: 0, pro: 0/.test(src), 'because n really is pre-zeroed (calibration for the line above)');
+    H.ok(/\.filter\(Boolean\)/.test(src), 'and the dropped records are filtered, not left as nulls');
+  }));
+}
+
 H.section('the food search can feed a recipe, and cannot leak into tomorrow\'s diary');
 {
   // The barcode reaches Open Food Facts, which carries a handful of micros; the SEARCH reaches USDA,
