@@ -7765,6 +7765,72 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('the food search can feed a recipe, and cannot leak into tomorrow\'s diary');
+{
+  // The barcode reaches Open Food Facts, which carries a handful of micros; the SEARCH reaches USDA,
+  // whose adapter already maps the full 28-key set — and the recipe builder could not use it at all.
+  // Routed rather than re-plumbed: nut-search-results is hardcoded in twenty places in that file, so
+  // the person uses the search they already know and a flag says where the result goes. Exactly the
+  // shape __recipeScan uses for the barcode.
+  const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
+                 'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
+  const run = (opts) => {
+    const rec = { name:'T', servings:1, ingredients:[] };
+    const els = {}; const el = (id) => (els[id] = els[id] || { id, value:'', innerHTML:'', classList:{ remove(){} } });
+    els['sm-qty'] = { value: String(opts.qty) }; els['sm-serving-select'] = { value:'0' };
+    const log = {};
+    const currentFood = { per100:true, name:'Chicken breast', cal:120, pro:22.5, carb:0, fat:2.6,
+      sodium:45, potassium:334, b6:0.6, selenium:22,
+      servings:[{ name:opts.serving, cal:120, pro:22.5, carb:0, fat:2.6,
+                  gramsEquiv:opts.gramsEquiv, __gram:opts.exact, __exact:opts.exact }] };
+    let reopened = false;
+    const win = { __editingRecipeIdx:-1, __recipeSearch: opts.armed };
+    if(opts.recipeOpen) win.__editingRecipe = rec;
+    const fns = H.load(['addFoodToLog'], {
+      window: win, currentFood, NUTRIENTS,
+      document: { getElementById: el, querySelector: () => null },
+      ls: (k, v) => (v === undefined ? (k === 'totry_nutlog' ? log : null) : (k === 'totry_nutlog' ? Object.assign(log, v) : v)),
+      nutDayKey: () => '30/09/2026', showToast: () => {}, haptic: () => {},
+      renderNutritionLog: () => {}, rememberRecentFood: () => {}, _pruneNutLog: () => {},
+      editRecipe: () => { reopened = true; }, nutStampFor: () => new Date().toISOString(),
+    });
+    fns.addFoodToLog();
+    return { rec, win, reopened, loggedToday: (log['30/09/2026'] || []).length };
+  };
+
+  // A WEIGHED food: the label is grams, and the micros take the gramsEquiv path that fixed 100x sodium.
+  const g = run({ serving:'g', qty:150, gramsEquiv:1, exact:true, armed:true, recipeOpen:true });
+  H.eq(g.rec.ingredients.length, 1, 'the search result lands in the recipe');
+  H.eq(g.rec.ingredients[0].name, 'Chicken breast (150g)', 'and says the weight, not "150 \u00d7 g"');
+  H.eq(g.rec.ingredients[0].sodium, 67.5, 'micros scale by the gram equivalent');
+  H.ok(g.rec.ingredients[0].potassium > 0 && g.rec.ingredients[0].b6 > 0, 'and the whole USDA set comes with it');
+  H.eq(g.loggedToday, 0, 'and NOTHING was written to the diary');
+  H.eq(g.win.__recipeSearch, false, 'the flag is consumed');
+  H.eq(g.reopened, true, 'and the recipe they were building reopens');
+
+  // A COUNTED serving reads the other way round.
+  const c = run({ serving:'1 breast', qty:2, gramsEquiv:120, exact:false, armed:true, recipeOpen:true });
+  H.eq(c.rec.ingredients[0].name, 'Chicken breast (2 \u00d7 1 breast)', 'a counted serving multiplies instead');
+  H.eq(c.rec.ingredients[0].sodium, 108, 'and still scales its micros correctly');
+
+  // NOT ARMED: the ordinary path is completely untouched.
+  const plain = run({ serving:'g', qty:150, gramsEquiv:1, exact:true, armed:false, recipeOpen:true });
+  H.eq(plain.rec.ingredients.length, 0, 'an ordinary log does not touch an open recipe');
+  H.eq(plain.loggedToday, 1, 'it goes to the diary, as it always did');
+
+  // ARMED BUT NOTHING TO ADD TO — the stale-flag shape lookupBarcode had to learn. The flag must be
+  // spent either way, or the person's NEXT ordinary food log lands in a recipe they are not building.
+  const stale = run({ serving:'g', qty:150, gramsEquiv:1, exact:true, armed:true, recipeOpen:false });
+  H.eq(stale.win.__recipeSearch, false, 'a flag with no recipe behind it is still consumed');
+  H.eq(stale.loggedToday, 1, 'and the food goes where it normally would');
+
+  // The button exists and is wired to the arming function.
+  H.ok(/_recipeFromSearch\(\)/.test(H.html), 'the recipe builder offers the search');
+  const arm = H.code(H.extractFn('_recipeFromSearch'));
+  H.ok(/__editingRecipe/.test(arm), 'which refuses to arm with no recipe open');
+}
+
 H.section('an ingredient carries every nutrient its source knew, not four of them');
 {
   // The owner asked: "wouldn't getting the ingredients of that recipe provide the micros and macros?"

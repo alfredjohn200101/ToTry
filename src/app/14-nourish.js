@@ -2587,6 +2587,29 @@ async function parsePastedRecipe(){
 // NUTRIENTS key scaled, and an absent nutrient left ABSENT rather than becoming a confident zero,
 // which is the rule the whole nutrition side keeps. `food` here is per-100g by construction, so the
 // multiplier is grams/100.
+// THE OTHER HALF: THE FOOD SEARCH, WHICH IS WHERE THE MICROS ACTUALLY ARE.
+// The barcode path reaches Open Food Facts, which carries a handful of micros. The search reaches
+// USDA, whose adapter already maps the full 28-key set — and the recipe builder could not use it at
+// all: every ingredient was four numbers typed by hand.
+//
+// Routed rather than re-plumbed. `nut-search-results` is hardcoded in twenty places in this file and
+// rebuilding the app's most-used surface to render into a second container would be the risky way to
+// do this. So the person uses the search they already know, and the flag says where the result goes
+// — exactly the shape __recipeScan already uses for the barcode.
+function _recipeFromSearch(){
+  try{
+    if(typeof window === 'undefined' || !window.__editingRecipe){
+      if(typeof showToast === 'function') showToast('Open a recipe first', 'Build or edit one, then search.');
+      return;
+    }
+    window.__recipeSearch = true;
+    document.querySelector('.modal-bg.open')?.remove();
+    const el = document.getElementById('nut-search-in');
+    if(el){ try{ el.focus(); el.scrollIntoView({ block:'center' }); }catch(_){ } }
+    if(typeof showToast === 'function') showToast('Pick an ingredient', 'The next food you add goes into your recipe, not today\u2019s log.');
+  }catch(_){ }
+}
+
 function _recipeAddFromFood(food, grams){
   try{
     if(!food || typeof window === 'undefined' || !window.__editingRecipe) return false;
@@ -2620,6 +2643,7 @@ function editRecipe(idx, prefill){
     '<input type="number" id="recipe-servings" value="' + (recipe.servings || 1) + '" min="1" style="margin-bottom:14px">' +
     '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Ingredients</div>' +
     '<button class="btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="window.__recipeScan=true;openBarcodeScanner()">'+svgIcon("camera")+' Scan an ingredient</button>' +
+    '<button class="btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="_recipeFromSearch()">'+svgIcon("search")+' Search the food database</button>' +
     '<div id="recipe-ingredients" style="margin-bottom:10px"></div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
       '<input type="text" id="recipe-add-name" placeholder="Ingredient (e.g. 100g chicken)" style="flex:2">' +
@@ -3187,6 +3211,39 @@ function addFoodToLog(){
     }
   });
   
+  // INTO THE RECIPE INSTEAD OF THE DIARY, if that is where this search came from. Placed HERE, after
+  // the entry is complete, so the recipe inherits every bit of the scaling above — including the
+  // gramsEquiv rule that fixed the 100x-sodium bug. Re-deriving it would be a second implementation
+  // of the one thing in this function that has already been got wrong twice.
+  //
+  // The flag is consumed unconditionally, the way lookupBarcode learned to: left set by a path that
+  // did not complete, the person's NEXT ordinary food log would silently land in a recipe they were
+  // no longer building.
+  if(typeof window !== 'undefined' && window.__recipeSearch){
+    window.__recipeSearch = false;
+    if(window.__editingRecipe){
+      // "150g", not "150 \u00d7 g". entry.serving is the UNIT for a weighed food (__exact) and the
+      // serving's own name otherwise, so the two read completely differently and only one of them
+      // wants a multiplication sign.
+      const _u = String(entry.serving || '');
+      const _amt = (_u === 'g' || _u === 'ml')
+        ? ((entry.qty || 1) + _u)
+        : ((entry.qty || 1) + ' \u00d7 ' + (_u || 'serving'));
+      const ing = { name: entry.name + ' (' + _amt + ')' };
+      NUTRIENTS.forEach(function(k){ if(typeof entry[k] === 'number' && isFinite(entry[k])) ing[k] = entry[k]; });
+      window.__editingRecipe.ingredients.push(ing);
+      document.getElementById('serving-modal')?.classList.remove('open');
+      const _in = document.getElementById('nut-search-in'); if(_in) _in.value = '';
+      const _rr = document.getElementById('nut-search-results'); if(_rr) _rr.innerHTML = '';
+      if(typeof showToast === 'function') showToast('Ingredient added', ing.name);
+      if(typeof haptic === 'function') haptic('tick');
+      // Back to the recipe they were building, with the edit they had not saved yet — editRecipe
+      // clones its prefill, so handing it the live object is safe.
+      try{ editRecipe(window.__editingRecipeIdx, window.__editingRecipe); }catch(_){ }
+      return;
+    }
+  }
+
   const today=nutDayKey();
   // Edit mode: replace the original entry in place (keep its id + historical timestamp)
   if(window.__editingEntry){
