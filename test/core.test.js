@@ -899,11 +899,28 @@ H.section('repeated button labels need distinct accessible names');
     const re = new RegExp('onclick="' + fn + '\\(\\)"[^>]*aria-label="[^"]+"');
     H.ok(re.test(H.html), fn + '() has a distinct accessible name');
   });
-  // The split-day buttons are generated, so assert the generator emits a per-day name.
-  H.ok(/aria-label="Edit '\+_escFew\(DAYS_FULL\[i\]/.test(H.html),
-    'each split-day Edit button is named for its day');
-  H.ok(/const DAYS_FULL=\['Monday'/.test(H.html),
-    'DAYS_FULL is in scope where the label is built (an undefined name would throw and kill the row)');
+  // The split days are generated, and they are no longer seven "Edit" buttons: the ROW is the control
+  // now (the orb covered one of those buttons on every visit — see the note in renderSplitOverview).
+  // The name has to survive that change, which is the whole reason this is driven rather than greped.
+  // Driven, not greped: render the real overview and read the markup it produced. The old pair of
+  // assertions matched the SOURCE of a hand-built row, so they failed the day the row became an
+  // iosRow — while every fact they were protecting still held.
+  const _splitHtml = (focus) => {
+    const box = { innerHTML: '' };
+    const { renderSplitOverview } = H.load(['renderSplitOverview','iosRow','iosList','svgIcon'], {
+      document: { getElementById: (id) => (id === 'pt-split-overview' ? box : null) },
+      ls: (k) => (k === 'totry_split' ? [{ focus, routine:null }] : null),
+      tIdx: () => 0,
+    });
+    renderSplitOverview();
+    return box.innerHTML;
+  };
+  const named = _splitHtml('Push');
+  H.ok(/aria-label="Monday [^"]*Push[^"]*"/.test(named),
+    'each split day is named for its day and says what is on it');
+  H.ok(/aria-label="Sunday /.test(named), 'and the last day is named too, not just the first');
+  H.eq((named.match(/<button/g) || []).length, 7, 'seven days, seven controls — the row IS the control');
+  H.ok(!/>Edit</.test(named), 'and no seventh-of-seven "Edit" button left to sit under the orb');
 }
 
 H.section('navigation — one way back, not two');
@@ -7250,9 +7267,24 @@ H.section('what a person types, and what a model answers, reach the page as text
   H.ok(/_escFew\(meal\.name\|\|description\)/.test(code), 'it escapes both the reply and the typed meal');
 
   // 3. THE SPLIT DAY — escaped for the aria-label and raw for the eye, in the SAME concatenation.
-  const rs = H.code(H.extractFn('renderSplitOverview'));
-  H.ok(!/color:var\(--tx\)">'\+focusText\+'/.test(rs), 'the split day is not rendered raw');
-  H.ok(/_escFew\(focusText\)/.test(rs), 'and the visible text is escaped like its own aria-label');
+  // Driven against the rendered markup, because the escape now comes from the COMPONENT (iosRow
+  // escapes every field it is handed) rather than from a call-site _escFew this could match.
+  const _sp = (focus) => {
+    const box = { innerHTML: '' };
+    const { renderSplitOverview } = H.load(['renderSplitOverview','iosRow','iosList','svgIcon'], {
+      document: { getElementById: (id) => (id === 'pt-split-overview' ? box : null) },
+      ls: (k) => (k === 'totry_split' ? [{ focus, routine:null }] : null),
+      tIdx: () => 0,
+    });
+    renderSplitOverview();
+    return box.innerHTML;
+  };
+  const evil = _sp('<img src=x onerror=alert(1)>');
+  H.ok(!/<img/.test(evil), 'a typed split focus is not rendered as markup');
+  H.ok(/&lt;img/.test(evil), 'it is escaped (calibration: the escaped form is there)');
+  const quoted = _sp('6" Push');
+  H.ok(!/aria-label="[^"]*6" Push/.test(quoted), 'and a quote in it does not close the aria-label');
+  H.ok(/Push/.test(_sp('Push')), 'while an ordinary focus still reaches the screen');
 
   // 4. THE COACH CHIP — this one was not an injection, it was a DEAD BUTTON. An inline handler is
   //    parsed twice, entities first then JavaScript, so escaping the apostrophes to &apos; and then

@@ -148,29 +148,34 @@ function renderSplitOverview(){
   // Default to 7 empty days if not configured
   while(split.length<7)split.push({focus:'',routine:null});
   
-  overview.innerHTML='';
-  split.forEach((day,i)=>{
-    const row=document.createElement('div');
-    row.className='split-day-row';
-    const isToday=i===ti;
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rs);margin-bottom:6px';
-    // getUserSplit() returns [null × 7] when no plan is set up — that is its documented "no plan yet"
+  // THE SEVEN "EDIT" BUTTONS BECAME SEVEN ROWS. The floating orb is position:fixed over the scroller,
+  // so which control it lands on is decided by content height, not by CSS — and one of these seven
+  // stacked rows always had its small Edit button under it (measured: 72% covered, its own centre
+  // gone, the one control on all ten screens that genuinely could not be tapped). Moving one button
+  // fixes nothing when any of the seven can be the one beneath it.
+  //
+  // A row with exactly one control does not need that control: the ROW is the control. That is what
+  // iosRow already is — a 44px <button> with a title, a right-aligned value, a chevron, a tap
+  // highlight and escaping built in — and it makes the whole width the target, so the orb can cover
+  // the chevron and the row is still tappable everywhere else. It is also the rule this app keeps
+  // relearning: the component existed and was being hand-painted over at the call site.
+  const rows = split.map(function(day, i){
+    // getUserSplit() returns [null x 7] when no plan is set up — that is its documented "no plan yet"
     // value — and this dereferenced it, so a person with no split (or with any null day) got a
     // TypeError that took out the whole Train tab on open. Reading a null day as a rest day is both
     // safe and true.
     const d0 = day || {};
-    const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
-    row.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-cap);color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.01em">'+DAYS[i]+'</div>'+
-      // Escaped here too. Line 146 of this same concatenation already escapes the identical value for
-      // the aria-label — one element, one string, one value, escaped for the screen reader and raw
-      // for the eye.
-      '<div style="flex:1;font-size:var(--t-base);color:var(--tx)">'+_escFew(focusText)+'</div>'+
-      // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
-      // Edit..." seven times with nothing to tell them apart. The visible label stays short (the day is
-      // right there in the row); the accessible name says which day and what is on it.
-      '<button class="btn" style="width:auto;padding:5px 10px;font-size:var(--t-cap)" aria-label="Edit '+_escFew(DAYS_FULL[i]||DAYS[i])+' \u2014 currently '+_escFew(focusText)+'" onclick="editSplitDay('+i+')">Edit</button>';
-    overview.appendChild(row);
+    const focusText = d0.focus || (d0.routine ? d0.routine : 'Rest day');
+    const dayName = DAYS_FULL[i] || DAYS[i];
+    // Seven controls that all read "Edit" announced as "Edit, Edit, Edit..." with nothing to tell
+    // them apart. The row says which day and what is on it, so the visible text and the accessible
+    // name are finally the same fact.
+    return iosRow({ title: dayName, value: focusText, onclick: 'editSplitDay(' + i + ')',
+                    tint: i === ti, label: dayName + ' \u2014 currently ' + focusText + '. Edit this day.' });
   });
+  // No header: the <details> this sits inside is already titled "Weekly split & routines". The
+  // footnote carries the affordance the Edit buttons used to, now that the row is the control.
+  overview.innerHTML = iosList(rows, { footer: 'Tap a day to set its focus or assign a routine.' });
 }
 
 function editSplitDay(dayIdx){
