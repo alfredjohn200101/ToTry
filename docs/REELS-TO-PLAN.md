@@ -141,9 +141,27 @@ genuinely ahead of both categories, and it shipped without touching a single thi
 > 18 assertions, fault-injected five ways. The `mine` flag is set and nothing reads it yet — that is
 > the obvious next half-hour: the plan should SAY which meals are theirs.
 
-**Phase 2 — intake, ranked by what is both legal and durable.** A pasted **recipe-site URL** parsed
-from JSON-LD, fetched **from the device**; the **screenshot** path through the vision call that
-already works. Both are platform-agnostic; neither asks anyone to open a feed.
+**Phase 2 — intake. THE LINK HALF IS BUILT, 30 Sep 2026.** Both halves are platform-agnostic;
+neither asks anyone to open a feed.
+
+> **The link, and how it actually reads the page.** The plan said "parsed from JSON-LD, fetched from
+> the device". That does not work: CORS blocks a device fetch on almost every recipe site, and
+> proxying arbitrary URLs through our own backend is an SSRF surface not worth opening for a
+> convenience feature. So the MODEL reads it, through the `web_search` grounding the live-price pass
+> and the recovery timeline already use — no new dependency, no new endpoint.
+>
+> `parsePastedRecipe` takes a URL in the same box as the ingredient lines. Everything downstream is
+> unchanged: the crisis gate runs first, and the result is still an editable DRAFT rather than a
+> saved fact — which is what makes a wrong match survivable.
+>
+> **"I could not read that page" is an answer, not a failure**, and the one answer that must never
+> become a recipe, or the model guesses one from the URL alone. The copy names the real obstacle
+> (some sites do not let anything read them) instead of telling someone who pasted a paywalled link
+> that they pasted wrong.
+>
+> **§1 is enforced, not just intended:** a test asserts no surface of this path names a platform.
+
+**Still to build:** the **screenshot** path through the vision call that already works.
 
 **Phase 3 — the platforms that permit it, if wanted.** TikTok oEmbed and the YouTube Data API, called
 from the device, gated on the person's vices per §1. **Instagram is not on this list** and cannot be
