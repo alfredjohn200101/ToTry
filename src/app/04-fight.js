@@ -186,7 +186,14 @@ function editSplitDay(dayIdx){
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:10px">'+DAYS[dayIdx]+'</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Focus (or leave blank for rest day)</div>'+
-    '<input type="text" id="split-edit-focus" value="'+(day.focus||'')+'" placeholder="e.g. Push, Pull, Legs, Rest..." style="margin-bottom:10px">'+
+    // THE FIX BELOW REACHED THE ROUTINE NAME AND NOT THE FIELD ABOVE IT. A person types their own
+    // focus into this very input — 'Push, Pull, Legs, Rest...' is the placeholder — and saveSplitDay
+    // stores it verbatim, so reopening the day writes it straight back into a value="…" attribute.
+    // Driven in the real app with a seeded split: 'Push" onfocus="…" autofocus x="' closed the
+    // attribute, landed onfocus/autofocus/x as REAL attributes on the input, and fired the handler.
+    // The routine names four lines down were escaped for exactly this, in the same modal, and this
+    // field was left raw — a fix that covered the case it was handed and not the one beside it.
+    '<input type="text" id="split-edit-focus" value="'+_escFew(day.focus||'')+'" placeholder="e.g. Push, Pull, Legs, Rest..." style="margin-bottom:10px">'+
     '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Assign a saved routine (optional)</div>'+
     '<select id="split-edit-routine" style="margin-bottom:12px">'+
       '<option value="">— No routine —</option>'+

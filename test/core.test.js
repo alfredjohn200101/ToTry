@@ -7615,6 +7615,59 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('the day you name your own training focus cannot execute it');
+{
+  // THE SAME MODAL, ONE FIELD APART. editSplitDay() escaped every routine name into its <option> —
+  // with a comment explaining exactly why — and wrote `day.focus` into the value="…" of the input
+  // four lines above it RAW. A person types that field themselves ("Push, Pull, Legs, Rest..." is its
+  // own placeholder) and saveSplitDay stores it verbatim, so it comes straight back as an attribute
+  // the next time they open the day to change it.
+  //
+  // Driven in the real app on the real function before the fix: a focus of
+  //   Push" onfocus="…" autofocus x="
+  // closed the attribute, landed onfocus / autofocus / x as REAL attributes on the input, and fired
+  // the handler. This drives the same function here so the concatenation itself is held, not a grep
+  // of it — and asserts the value still ROUND-TRIPS, because a person who typed a quote has to be
+  // able to read it back and edit it, not find it silently mangled.
+  const PAYLOAD = 'Push" onfocus="boom()" autofocus x="';
+  const made = [];
+  const { editSplitDay } = H.load(['editSplitDay','_escFew'], {
+    ls: (k) => (k === 'totry_split' ? [{ focus: PAYLOAD, routine: null }] : k === 'totry_routines' ? [] : null),
+    document: { createElement: () => { const el = { className:'', innerHTML:'' }; made.push(el); return el; },
+                body: { appendChild: () => {} } },
+  });
+  editSplitDay(0);
+  H.eq(made.length, 1, 'the day editor builds its sheet');
+  const html = made[0].innerHTML;
+  // The quote that closes the attribute is the whole attack; nothing else in the payload matters.
+  H.ok(!/value="Push" onfocus/.test(html), 'a typed quote does not close the value attribute');
+  H.ok(/&quot;/.test(html), 'it is escaped instead');
+  // ASK THE TAG, NOT THE STRING. The first cut of this asserted /  autofocus/ was absent from the
+  // whole markup — and 'autofocus' is INSIDE the escaped payload, so it failed on correct code. What
+  // matters is whether it lands as an ATTRIBUTE: strip the one real value="…" and nothing the person
+  // typed may remain. Escaped, the value swallows the payload; raw, it terminates at their quote and
+  // the rest becomes attributes, which is exactly what this then sees.
+  const tag = (html.match(/<input[^>]*>/) || [''])[0];
+  const attrsOnly = tag.replace(/value="[^"]*"/, '');
+  H.ok(!/autofocus|onfocus/.test(attrsOnly), 'and no attribute the person typed lands on the input');
+  // Round-trip: what they typed is what the field offers back, once the browser unescapes it.
+  const m = html.match(/id="split-edit-focus" value="([^"]*)"/);
+  H.ok(!!m, 'the focus input still carries a value');
+  const unescaped = String(m ? m[1] : '').replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  H.eq(unescaped, PAYLOAD, 'and it is exactly what they typed, so they can edit it back');
+
+  // The ordinary case must be untouched — an escape that mangles normal input is its own defect.
+  const plain = [];
+  const f2 = H.load(['editSplitDay','_escFew'], {
+    ls: (k) => (k === 'totry_split' ? [{ focus: 'Push', routine: null }] : k === 'totry_routines' ? [] : null),
+    document: { createElement: () => { const el = { className:'', innerHTML:'' }; plain.push(el); return el; },
+                body: { appendChild: () => {} } },
+  });
+  f2.editSplitDay(0);
+  H.ok(/id="split-edit-focus" value="Push"/.test(plain[0].innerHTML), 'an ordinary focus is written plainly');
+}
+
 H.section('the Train card says something only this person\'s data could produce');
 {
   // THE COMPLAINT THIS ANSWERS: the card's body was `today.detail`, written once when the split was

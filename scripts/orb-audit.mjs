@@ -63,12 +63,22 @@ const PROBE = (tab) => {
     const probeY = Math.min(Math.max(r.top + r.height / 2, o.top + 2), o.bottom - 2);
     const top = document.elementFromPoint(probeX, probeY);
     const covered = !!top && (top === orb || orb.contains(top));
+    // THE TWO QUESTIONS ARE NOT THE SAME, AND THE HEADLINE HAS TO BE THE ONE THAT MATTERS.
+    // `covered` probes the ORB's centre column, so it is true by construction for anything that
+    // overlaps the orb at all — a 54px-wide pill sharing 2% of its area with the orb reported
+    // "STEALS THE TAP" and read as a control nobody can press, while 98% of it was free. Six of the
+    // seven it named were like that. What actually breaks a control is losing ITS OWN centre, where
+    // a thumb aims, which is the criterion npm run panels fails the build on. Both are reported now,
+    // the honest one first.
+    const c2 = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const losesItsCentre = !!c2 && (c2 === orb || orb.contains(c2));
     hits.push({
       what: (el.textContent || el.getAttribute('aria-label') || el.tagName).trim().replace(/\s+/g, ' ').slice(0, 44),
       cls: String(el.className || '').split(' ').filter(Boolean).slice(0, 2).join('.').slice(0, 30),
       overlapPx: Math.round(ox) + 'x' + Math.round(oy),
       sharePct: Math.round(ox * oy / (r.width * r.height) * 100),
       stealsTheTap: covered,
+      losesItsCentre,
     });
   });
   return { orb: { x: Math.round(o.left), y: Math.round(o.top), w: Math.round(o.width), h: Math.round(o.height) }, hits };
@@ -103,7 +113,7 @@ if (!sawUnder || sawClear) {
 }
 console.log('calibration ok — a control planted under the orb is reported, one clear of it is not\n');
 
-let total = 0, stolen = 0;
+let total = 0, stolen = 0, blocked = 0;
 for (const tab of TABS) {
   await pg.evaluate(t => { try { go(t); } catch (e) {} }, tab);
   await pg.waitForTimeout(700);
@@ -111,8 +121,10 @@ for (const tab of TABS) {
   if (r.skipped) { console.log(tab.padEnd(9) + ' ' + r.skipped); continue; }
   if (!r.hits.length) { console.log(tab.padEnd(9) + ' clear'); continue; }
   console.log(tab.padEnd(9) + ' ' + r.hits.length + ' overlapped:');
-  r.hits.forEach(h => { total++; if (h.stealsTheTap) stolen++;
-    console.log('          ' + (h.stealsTheTap ? 'STEALS THE TAP ' : 'overlaps       ') + h.overlapPx.padEnd(8) + h.sharePct + '%  ' + (h.cls ? '.' + h.cls + '  ' : '') + '"' + h.what + '"'); });
+  r.hits.forEach(h => { total++; if (h.stealsTheTap) stolen++; if (h.losesItsCentre) blocked++;
+    console.log('          ' + (h.losesItsCentre ? 'CANNOT BE TAPPED ' : h.stealsTheTap ? 'orb wins its column ' : 'overlaps             ') + h.overlapPx.padEnd(8) + h.sharePct + '%  ' + (h.cls ? '.' + h.cls + '  ' : '') + '"' + h.what + '"'); });
 }
-console.log('\n' + total + ' controls overlapped by the orb across ' + TABS.length + ' screens; ' + stolen + ' of them lose the tap to it.');
+console.log('\n' + total + ' control(s) overlapped by the orb across ' + TABS.length + ' screens.');
+console.log(blocked + ' lose their OWN centre and cannot be tapped where a thumb aims — this is the number that matters.');
+console.log(stolen + ' are merely behind the orb in its own centre column; most of those are wide enough to tap elsewhere.');
 await b.close(); srv.close();
