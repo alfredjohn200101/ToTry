@@ -257,6 +257,31 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      payload, so the assertion failed on correct code. Ask the TAG with its one real `value="…"`
      stripped — escaped, the value swallows the payload; raw, it terminates at the person's quote and
      the rest becomes attributes.
+     **(l) THE GATE ONLY SEES WHAT IT SEEDS, added 29 Sep 2026.** An adversarial review of the day's
+     own work (44 agents, six lenses, every finding sent to two refuters told to default to refuted;
+     19 survived, and every one of them was CORRECTED rather than merely confirmed) found
+     `renderDayCounter()` using a `ti` that is **never declared** — every other `split[ti]` in the
+     bundle sits under its own `const ti = tIdx()`. It threw ReferenceError whenever
+     `totry_tomorrow_tasks` was dated today or yesterday, which `saveEvening()` stamps the moment ANY
+     "tomorrow" field is non-empty — and both callers are unguarded, so one typed task took the rest
+     of `initApp()` with it. **2548 assertions, personas, panels and crisis were all green over a
+     front-screen crash, because nothing in the gate had ever seeded that key.** Coverage is bounded
+     by the seed, not by the assertion count. The same review found `scripts/seed-person.mjs` keying
+     `totry_trackers` by an ISO slice no reader uses, so `getLifeState().sleep` was null and every
+     screenshot, craft audit and orb audit this repo has taken was of a person with **no sleep data**.
+     **(m) AN ESCAPE IS CHOSEN BY CONTEXT, NOT BY HABIT.** `_escFew()` does not close an `onclick`
+     hole: the HTML parser decodes `&#39;` back to `'` **before** the JS is compiled, so the string
+     still terminates. Measured by clicking the button and counting the side effect — raw fired,
+     `_escFew` fired, `.replace(/[\\'"]/g,'')` inert. Text positions and plain `value="…"` take the
+     escape; a JS string inside an attribute takes the strip (as `22-train-deep.js:494` already did,
+     in a comment saying so). Four sites were found at once, so the rule has a check now: it scans
+     every `api()` + `JSON.parse` in `src/app` for an unescaped interpolation into `innerHTML`, and
+     **plants one of the four real defects back and requires itself to find it** before reporting.
+     **And a probe that returns zero against BROKEN code is blind, not clean.** `clip-audit.mjs`
+     reported "0 of 7 clipped" with the clipping bug in place, twice, for two different reasons — it
+     measured seven short "Rest day" rows, and then measured elements inside a closed `<details>` on
+     a hidden tab, where every dimension is 0 and `scrollWidth > clientWidth` is false. Break the code
+     on purpose and require the probe to FAIL before trusting the pass.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
