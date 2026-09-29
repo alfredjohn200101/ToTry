@@ -8028,6 +8028,47 @@ H.section('an ingredient carries every nutrient its source knew, not four of the
   H.ok(!/ingredients\.push\(\{ name: food\.name/.test(lb), 'and no longer hand-builds four macros');
 }
 
+H.section('where you shop is a setting, and a plan you are set up for is one tap');
+{
+  // openFuelPlan() ran the ENTIRE elicitation and then the shop picker on every single build. A
+  // person who had already told the app how many meals, what budget, which diet and which shops was
+  // asked all of it again to get this week's list — and the only way to change one shop was to walk
+  // the whole setup. Answered questions stay answered.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  H.ok(src.length > 20000, 'calibration: the whole module is in hand');
+
+  const { _fuelReady, _fuelShopChains } = H.load(['_fuelReady','_fuelShopChains'], { getMealPrefs: () => ({}) });
+  H.eq(_fuelReady({ mealsPerDay:4, chains:['Coles'] }), true, 'meals and shops means ready');
+  H.eq(_fuelReady({ mealsPerDay:4 }), false, 'no shops is not ready — the list would have nowhere to be from');
+  H.eq(_fuelReady({ chains:['Coles'] }), false, 'and no meal count is not ready either');
+  H.eq(_fuelReady({ mealsPerDay:4, chain:'Coles' }), true, 'the older single-chain shape still counts');
+
+  // The build goes straight to the generate when they are set up, and `force` is the road back.
+  const open = src.slice(src.indexOf('function openFuelPlan'), src.indexOf('function _fuelChipOn'));
+  H.ok(/if\(!force && _fuelReady\(\)\) \{ _fuelGenerate\(\); return; \}/.test(open),
+    'a set-up person gets their plan without being asked again');
+  H.ok(/_fuelElicit\(\)/.test(open), 'and the setup still runs for someone who has not done it');
+  H.ok(/openFuelPlan\(true\)/.test(src), 'with a way back to it from the card');
+
+  // SAVING AND GENERATING ARE TWO THINGS. They were one function, so the picker could only ever be
+  // reached as a step inside a build.
+  H.ok(/function _fuelShopSave\(andGenerate\)/.test(src), 'the picker can save without generating');
+  H.ok(/if\(andGenerate\) _fuelGenerate\(\);/.test(src), 'and generate when that is what it is for');
+  H.ok(/function _fuelShopGenerate\(\)\{ _fuelShopSave\(true\); \}/.test(src),
+    'the old entry point still means what it meant');
+  H.ok(/function _fuelShopPicker\(settingsOnly\)/.test(src), 'and it knows which of the two it is');
+
+  // The Settings row: reachable, labelled, and showing what is set without opening anything.
+  H.ok(/onclick="_fuelShopPicker\(true\)"/.test(H.html), 'Settings opens the picker in save-only mode');
+  H.ok(/id="settings-shops-value"/.test(H.html), 'and shows the current shops in the row');
+  H.ok(/>Where you shop</.test(H.html), 'under a name that says what it is');
+  const sync = H.code(H.extractFn('syncShopsRow'));
+  H.ok(/textContent/.test(sync) && !/innerHTML/.test(sync),
+    'a shop name is whatever they typed, so it is set as TEXT');
+  H.ok(/Not set/.test(sync), 'and an unset row says so rather than going blank');
+}
+
 H.section('the cost of the week is what the list adds up to, and it says what it does not know');
 {
   // The point of the shopping list is that a person can see what the week COSTS before they commit

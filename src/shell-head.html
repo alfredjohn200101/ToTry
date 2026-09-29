@@ -7180,6 +7180,19 @@ Amen.</div></div>
                declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
                changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
                because a person's debt is not a number we get to reinterpret. -->
+          <!-- WHERE THEY SHOP, SET ONCE. It used to live only at the end of the fuel-plan setup and
+               handed straight on to a generate, so changing one shop meant walking the whole
+               elicitation again. It belongs beside Currency: both are "where I am and what things
+               cost here", both are answered once, both change rarely. -->
+          <button type="button" class="ios-row" onclick="_fuelShopPicker(true)">
+            <!-- No subhead: it wrapped to two lines and the value then sat beside the SECOND one,
+                 which is the shape docs/DESIGN.md calls a row wrapping under its own value. The row
+                 above it (Currency) carries none either, and the group's footnote does the
+                 explaining — one voice per group. -->
+            <span class="ios-row-body"><span class="ios-row-title" style="display:block">Where you shop</span></span>
+            <span class="ios-row-value" id="settings-shops-value">Not set</span>
+            <span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span>
+          </button>
           <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Currency</span></span><select id="settings-currency" class="row-field" aria-label="Currency" onchange="savePref('totry_currency',this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
@@ -7192,7 +7205,7 @@ Amen.</div></div>
             <option value="SGD">SGD — Singapore Dollar</option>
           </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
         </div>
-        <div class="ios-footnote">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
+        <div class="ios-footnote">Your shops decide how the list is grouped and where its prices come from. Currency changes the symbol shown throughout — your saved amounts are never converted.</div>
       </div>
       <div class="ios-section">
         <div class="ios-list">

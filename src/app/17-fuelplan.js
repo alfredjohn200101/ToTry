@@ -25,23 +25,35 @@ function renderFuelPlanCard(){
   const p = getMealPrefs();
   const plan = ls('totry_meal_plan');
   if(plan && plan.meals){
-    sum.innerHTML = '<button class="btn" style="width:100%;margin-bottom:8px;background:var(--bg3);color:var(--go);font-size:var(--t-base);padding:11px" onclick="_fuelViewPlan()">View my plan →</button>';
+    sum.innerHTML = '<button class="btn" style="width:100%;margin-bottom:8px;background:var(--bg3);color:var(--go);font-size:var(--t-base);padding:11px" onclick="_fuelViewPlan()">View my plan →</button>'+
+      '<button class="btn quiet" style="width:100%;margin-bottom:10px;font-size:var(--t-cap);color:var(--tx3)" onclick="openFuelPlan(true)">Change my setup</button>';
     btn.textContent = 'Rebuild my plan';
     btn.style.background='transparent'; btn.style.border='1px solid var(--bd)'; btn.style.color='var(--tx2)';
   } else if(p && p.mealsPerDay){
     const bits = [p.mealsPerDay+' meals/day'];
     if(p.budget) bits.push(curSym()+_moneyG(p.budget)+'/wk');
     if(p.chain) bits.push(p.chain);
-    sum.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-bottom:10px">Set up · '+bits.join(' · ')+'</div>';
-    btn.textContent = 'Update my fuel plan';
+    // The setup is a ROAD BACK, not the only road forward — the primary button builds now.
+    sum.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-bottom:10px">Set up \u00b7 '+_esc(bits.join(' \u00b7 '))+'</div>'+
+      '<button class="btn quiet" style="width:100%;margin-bottom:10px;font-size:var(--t-cap);color:var(--tx3)" onclick="openFuelPlan(true)">Change my setup</button>';
+    btn.textContent = 'Build this week\u2019s plan';
   } else {
     sum.innerHTML = '';
     btn.textContent = 'Build my fuel plan';
   }
 }
 
-function openFuelPlan(){
+// ONE SWIFT MOTION ONCE IT IS SET UP. This ran the whole elicitation AND the shop picker on every
+// single build, so a person who had already told the app how many meals, what budget, which diet and
+// which shops was asked all of it again to get this week's list. Answered questions stay answered;
+// "Change my setup" on the card is how they come back.
+function _fuelReady(p){
+  p = p || (typeof getMealPrefs==='function' ? getMealPrefs() : null);
+  return !!(p && p.mealsPerDay && _fuelShopChains(p).length);
+}
+function openFuelPlan(force){
   if(typeof haptic==='function') haptic('tap');
+  if(!force && _fuelReady()) { _fuelGenerate(); return; }
   _fuelElicit();
 }
 
@@ -172,7 +184,7 @@ function _fuelAddShop(){
   if(inp) inp.value='';
 }
 
-function _fuelShopPicker(){
+function _fuelShopPicker(settingsOnly){
   const p = getMealPrefs();
   const country = p.country || 'Australia';
   const saved = _fuelShopChains(p);
@@ -193,21 +205,39 @@ function _fuelShopPicker(){
     '<div class="eyebrow" style="margin-bottom:6px">Your shops (pick any)</div>'+
     '<div id="fuel-shops-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn subtle" style="width:auto;padding:0 16px" onclick="_fuelAddShop()">Add</button></div>'+
-    '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
+    '<button class="btn primary" onclick="'+(settingsOnly?'_fuelShopSave(false)':'_fuelShopGenerate()')+'">'+(settingsOnly?'Save':'Build my plan \u2192')+'</button>'+
     '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:6px" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
 }
 
-function _fuelShopGenerate(){
+// WHERE THEY SHOP IS A SETTING, NOT A STEP. It was only reachable at the end of the setup flow and
+// only ever handed straight on to a generate — so changing one shop meant walking the whole
+// elicitation again, and every plan build asked again for something already answered. Saving and
+// generating are two things; this does the first and optionally the second.
+// The Settings row shows what is set without opening anything. textContent, because a shop name is
+// whatever the person typed into "Add another shop (any country)".
+function syncShopsRow(){
+  try{
+    const el = document.getElementById('settings-shops-value');
+    if(!el) return;
+    const shops = _fuelShopChains();
+    el.textContent = shops.length ? shops.join(', ') : 'Not set';
+  }catch(_){ }
+}
+
+function _fuelShopSave(andGenerate){
   const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
   const shops = Array.prototype.slice.call(document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on')).map(function(b){ return b.getAttribute('data-shop'); }).filter(Boolean);
   if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
   saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chains:shops, chain:shops.join(', ') }));
   const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
   renderFuelPlanCard();
-  _fuelGenerate();
+  try{ if(typeof syncShopsRow === 'function') syncShopsRow(); }catch(_){ }
+  if(andGenerate) _fuelGenerate();
+  else if(typeof showToast==='function') showToast('Saved', shops.join(', ') + ' \u2014 your list and prices use these from now on.');
 }
+function _fuelShopGenerate(){ _fuelShopSave(true); }
 
 // ── THE SEAM: THE PLANNER HAS NEVER HEARD OF THE PERSON'S OWN RECIPES ────────────────────────────
 // `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string. The

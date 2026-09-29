@@ -5268,6 +5268,7 @@ function go(name){
     safe(renderConnectedApps, 'renderConnectedApps');
     safe(renderActivityHeatmap, 'renderActivityHeatmap');
     safe(renderAffirmList, 'renderAffirmList');
+    safe(syncShopsRow, 'syncShopsRow');
   }
 }
 
