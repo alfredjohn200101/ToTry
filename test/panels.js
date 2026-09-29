@@ -5014,6 +5014,57 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── "PREV" MUST COMPARE LIKE WITH LIKE ────────────────────────────────────────────────────────
+  // The set row's Prev column was lastSets[si] — raw index — so when last session logged a warm-up
+  // and today does not, today's first WORKING set was shown last session's WARM-UP. The hint above
+  // the rows is the app's headline affordance on this screen ("Tap the blue numbers to reuse last
+  // session's weight x reps"), so a person who trusts it logs 46kg into a set meant for 92.5kg, and
+  // every downstream reading — e1RM, the PR store, tonnage, plateau detection — inherits it.
+  // Driven rather than greped: the mapping lives inside renderSets and only a rendered row can say
+  // what a person would actually tap. The fixture is deliberately the case that DISTINGUISHES — the
+  // obvious one (same set types in the same order) passes on the broken code too, which is how a
+  // probe can confirm a fix that changed nothing.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:393, height:852 }, hasTouch:true, isMobile:true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      localStorage.setItem('totry_onboarded','true'); localStorage.setItem('totry_guest','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy'));
+      localStorage.setItem('totry_workouts', JSON.stringify([{
+        title:'Push', ts:new Date(Date.now()-2*864e5).toISOString(),
+        exercises:[{ name:'Bench Press', sets:[
+          { weight:46, reps:8, type:'warmup' },
+          { weight:92.5, reps:8, type:'normal' },
+          { weight:92.5, reps:7, type:'normal' }]}]
+      }]));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const rows = await page.evaluate(() => {
+      try{
+        go('train');
+        // Today: three WORKING sets, no warm-up logged. Index alignment puts last session's warm-up
+        // against the first of them; type alignment does not.
+        currentSession = [{ name:'Bench Press', sets:[
+          { weight:'', reps:'', type:'normal' }, { weight:'', reps:'', type:'normal' }, { weight:'', reps:'', type:'normal' }] }];
+        const wrap = document.getElementById('pt-session-wrap'); if(wrap) wrap.style.display='block';
+        renderWorkoutSession();
+        return [...document.querySelectorAll('.set-row')].map(r => {
+          const p = r.querySelector('.tr-prev-btn');
+          return p ? p.innerText.replace(/\s+/g,'') : '';
+        });
+      }catch(e){ return { err: String(e && e.message || e) }; }
+    });
+    if(rows && rows.err) findings.push(`train prev: could not drive the set rows — ${rows.err}`);
+    else if(!rows.length) findings.push('train prev: no set rows rendered — the fixture no longer reaches renderSets');
+    else if(/^46/.test(rows[0] || ''))
+      findings.push(`train prev: the first WORKING set offers last session's WARM-UP (${rows[0]}) — tapping it logs 46kg as a working set`);
+    else if(!/^92\.5/.test(rows[0] || ''))
+      findings.push(`train prev: the first working set offers "${rows[0]}", not last session's first working set (92.5x8)`);
+    else console.log('train prev: the set row offers last session\'s working set, not its warm-up');
+    await ctx.close();
+  }
+
   // ── THE ORB TAKES TAPS THAT WERE NOT MEANT FOR IT ─────────────────────────────────────────────
   // #need-talk-btn is position:fixed over the scroller, so whether it lands on a control is decided
   // by CONTENT HEIGHT, not by CSS — which is why one screenshot proves nothing either way. A visual

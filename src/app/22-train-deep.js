@@ -733,8 +733,30 @@ function renderSets(ei){
   container.appendChild(hdr);
   if(lastSets){const lr=document.createElement('div');lr.className='tr-set-hint';lr.innerHTML='<b>Tap the blue numbers</b> to reuse last session\'s weight \u00d7 reps.';container.appendChild(lr);}
   const tl={normal:'S',warmup:'W',drop:'D',failure:'F'};
+  // PREV HAS TO COMPARE LIKE WITH LIKE. This was lastSets[si] — raw index — so today's first WORKING
+  // set was shown last session's WARM-UP. The row then says "Tap the blue numbers to reuse last
+  // session's weight x reps", which is the app's headline affordance on this screen, and tapping it
+  // loaded 46kg into a set meant for 92.5kg. A person who trusts the number logs a warm-up as a
+  // working set, and every downstream reading — e1RM, the PR store, tonnage, plateau detection —
+  // inherits it. suggestProgression() twenty lines up already filters warm-ups out before it reasons;
+  // the column a person actually READS did not.
+  // Matched by type and by ordinal WITHIN that type: today's first warm-up against last session's
+  // first warm-up, today's first working set against last session's first working set. When today
+  // has a kind last session did not, there is nothing comparable and the cell stays empty, which is
+  // the honest answer rather than the nearest row.
+  const _prevByType = (function(){
+    const out = {};
+    (lastSets || []).forEach(function(ps){
+      const t = (ps && ps.type) || 'normal';
+      (out[t] = out[t] || []).push(ps);
+    });
+    return out;
+  })();
+  const _seenByType = {};
   ex.sets.forEach((s,si)=>{
-    const lastSet=lastSets?.[si];
+    const _t = (s && s.type) || 'normal';
+    const _n = (_seenByType[_t] = (_seenByType[_t] || 0) + 1) - 1;
+    const lastSet=(_prevByType[_t] || [])[_n];
     const row=document.createElement('div');row.className='set-row';
     // Hevy-style swipe-left-to-delete: drag a row left to remove that set. Touch + mouse.
     let _sx=0,_dx=0,_drag=false;
