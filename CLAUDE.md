@@ -243,6 +243,20 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      injection doors on lines the sweep touched, each DRIVEN with a payload before and after (both
      executed on the old build; one destroyed its own textarea): the food web-search query, an
      exercise note in its textarea and toggle, and a content clip name.
+     **(k) THE FIX REACHED ONE FIELD AND NOT THE ONE FOUR LINES ABOVE IT, added 29 Sep 2026.**
+     `editSplitDay()` escapes every routine name into its `<option>` — with a comment explaining
+     exactly why — and wrote `day.focus` into the `value="…"` of the input above it RAW. A person
+     types that field themselves ("Push, Pull, Legs, Rest..." is its own placeholder) and
+     `saveSplitDay` stores it verbatim, so it comes back as an attribute the next time they open the
+     day. Driven on the real function in the real app: `Push" onfocus="…" autofocus x="` closed the
+     attribute, landed onfocus/autofocus/x as REAL attributes, and FIRED. Swept the class afterwards
+     — every `value="`+ concatenation in `src/app` — and it was the only free-text one left raw.
+     Two more things came out of it. **It was found while measuring something else entirely** (the orb
+     over that row's Edit button), which is the argument for looking at a region rather than a list.
+     And **the first test asserted the string, not the parse**: ` autofocus` is INSIDE the escaped
+     payload, so the assertion failed on correct code. Ask the TAG with its one real `value="…"`
+     stripped — escaped, the value swallows the payload; raw, it terminates at the person's quote and
+     the rest becomes attributes.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
@@ -341,12 +355,22 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      over the scroller, so what it lands on is decided by CONTENT HEIGHT, not by CSS — one screenshot
      proves nothing either way, which is how a visual reviewer reported it covering Fight's red urge
      button while a differently-seeded capture showed it covering Train's "Edit" instead. Calibrated
-     on a control planted under the orb and one deliberately clear of it. Measured 24 Sep 2026: six
-     controls across five screens lose their own CENTRE to it; Train's "Edit" (72% covered) and
-     "Find" (33%) are the real breakages, the rest are full-width rows still tappable elsewhere.
-     `npm run panels` carries the same check. Only `elementFromPoint` is valid evidence here:
-     `el.click()` dispatches straight onto the element and bypasses hit-testing, so a fully covered
-     control still "works" for a script and fails only for the thumb.
+     on a control planted under the orb and one deliberately clear of it. **CLOSED 29 Sep 2026 — 0
+     controls lose their own centre on any of the ten screens.** Only `elementFromPoint` is valid
+     evidence here: `el.click()` dispatches straight onto the element and bypasses hit-testing, so a
+     fully covered control still "works" for a script and fails only for the thumb.
+     The one real breakage was the split editor's seven stacked "Edit" buttons: which of them the orb
+     lands on is decided by scroll position, so moving one fixes nothing. **A row with exactly one
+     control does not need that control — the ROW is the control.** `iosRow` already is that: a 44px
+     `<button>` with a title, a right-aligned value, a chevron and escaping built in, so the whole
+     width is the target and the orb can cover the chevron harmlessly. The component existed and was
+     being hand-painted over at the call site, which is lesson (j) again.
+     **AND THE TOOL WAS OVERSTATING ITSELF.** Its probe sits at the ORB's centre column, so "STEALS
+     THE TAP" was true by construction for anything overlapping at all — a 54px pill sharing 2% of
+     its area was reported as a control nobody can press while 98% of it was free, and 6 of the 7 it
+     named were like that. It reports what actually breaks a control (losing its OWN centre, the
+     criterion `npm run panels` fails the build on) FIRST now, and the column overlap second. A
+     sub-measurement given a headline's name is a number that gets acted on.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — bundle parity across source, www, iOS **and Android**, by sha256. It
      compared APP_VERSION STRINGS until 5 Sep 2026 and reported that as "the iOS bundle matches the
