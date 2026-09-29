@@ -8028,6 +8028,58 @@ H.section('an ingredient carries every nutrient its source knew, not four of the
   H.ok(!/ingredients\.push\(\{ name: food\.name/.test(lb), 'and no longer hand-builds four macros');
 }
 
+H.section('the cost of the week is what the list adds up to, and it says what it does not know');
+{
+  // The point of the shopping list is that a person can see what the week COSTS before they commit
+  // to it. Both places that set plan.total preferred the MODEL's own total field. At generation that
+  // figure covers only the rows the model itself listed — so every ingredient
+  // _fuelMergeRecipeShopping adds afterwards, which is precisely the food from their OWN recipes,
+  // was excluded from the number they were shown. After the live-price pass it was still preferred
+  // over the real sum, so an item the pricer could not match left the total unchanged.
+  const { _fuelTotals } = H.load(['_fuelTotals'], {});
+  const rows = (r) => ({ shopping: r });
+
+  H.eq(JSON.stringify(_fuelTotals(rows([{ item:'a', price:2.2 }, { item:'b', price:6.5 }]))),
+       JSON.stringify({ sum:8.7, unpriced:0, complete:true }), 'a fully priced list totals itself');
+  const part = _fuelTotals(rows([{ item:'a', price:2.2 }, { item:'b', price:0, fromRecipe:'R' },
+                                 { item:'c', fromRecipe:'R' }, { item:'d', price:null }]));
+  H.eq(part.sum, 2.2, 'an incomplete one totals what it knows');
+  H.eq(part.unpriced, 3, 'and counts what it does not');
+  H.eq(part.complete, false, 'and says so');
+  H.eq(_fuelTotals({}).unpriced, 0, 'a plan with no list is not an error');
+  H.eq(_fuelTotals(rows([{ item:'a', price:'2.20' }, { item:'b', price:'x' }])).sum, 2.2,
+    'a price stored as a string still counts, and a junk one does not');
+
+  // Both write sites must take it from the rows. Read from the FILE: _fuelGenerate embeds a JSON
+  // schema full of braces and H.extractFn's matcher is naive, so it returns a truncated prefix.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  H.ok(src.length > 20000, 'calibration: the whole module is in hand');
+  H.ok(!/plan\.total = \(typeof data\.total/.test(src),
+    'the live-price pass no longer prefers the model\'s claim over the list');
+  H.eq((src.match(/plan\.total = _fuelTotals\(plan\)\.sum/g) || []).length, 2,
+    'both write sites total the rows');
+  // ORDER MATTERS: totalled BEFORE the merge, the recipe ingredients are missed again.
+  const gen = src.slice(src.indexOf('async function _fuelGenerate'));
+  H.ok(gen.indexOf('_fuelMergeRecipeShopping(plan)') < gen.indexOf('plan.total = _fuelTotals(plan).sum'),
+    'and generation totals AFTER the merge, not before');
+
+  // THE VERDICT IS WITHHELD WHILE THE LIST HAS HOLES. Over budget is certain — the missing rows can
+  // only add. Under budget is not, and claiming it is how someone plans a week they cannot afford.
+  const render = src.slice(src.indexOf('function _fuelRenderPlan'));
+  H.ok(/_budgetUnknown = budget>0 && !overBudget && !_t\.complete/.test(render),
+    'an incomplete list under budget is a question, not an answer');
+  H.ok(/_t\.complete\?'var\(--gr\)':'var\(--tx2\)'/.test(render),
+    'and it is not painted with the under-budget colour');
+  H.ok(/_t\.complete\?'':'at least '/.test(render), 'the figure itself says "at least"');
+  H.ok(/\(plan\._estimated && _t\.complete\)\?/.test(render),
+    'and the estimates line stands down while the unpriced line is already saying it');
+
+  // The model must not be asked to repeat a line the app says better, with the button attached.
+  H.ok(/do NOT write anything about prices being estimates/.test(src),
+    'the prompt stops the note duplicating the app\'s own price caveat');
+}
+
 H.section('the meal planner has heard of the food you already chose');
 {
   // `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string.

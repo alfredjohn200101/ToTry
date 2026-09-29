@@ -37689,6 +37689,27 @@ function _fuelRecipeLines(){
 // cook something and the list they shop from is missing half of it. Added items carry `fromRecipe`
 // and NO price: we genuinely do not know what it costs at their store, and a 0 in the price column
 // reads as free. The row renders the recipe name there instead.
+// THE TOTAL IS WHAT THE LIST ADDS UP TO — not what the model said it would.
+// Both places that set plan.total preferred the MODEL's own `total` field: at generation that figure
+// covers only the items the model itself listed, so every ingredient _fuelMergeRecipeShopping adds
+// afterwards was excluded from it; and after the live-price pass it was still preferred over the
+// real sum, so an item the pricer could not match silently left the total unchanged. A person
+// planning a week is being told what it costs — that number cannot come from anywhere but the rows
+// they are looking at.
+//
+// It also reports what it does NOT know. An un-priced row is food they will still be buying, so a
+// total that quietly omits it is worse than one that says it is incomplete — and "under budget" must
+// never be claimed on a figure with holes in it.
+function _fuelTotals(plan){
+  const rows = (plan && Array.isArray(plan.shopping)) ? plan.shopping : [];
+  let sum = 0, unpriced = 0;
+  rows.forEach(function(s){
+    const v = parseFloat(s && s.price);
+    if(isFinite(v) && v > 0) sum += v; else unpriced++;
+  });
+  return { sum: Math.round(sum * 100) / 100, unpriced: unpriced, complete: unpriced === 0 };
+}
+
 function _fuelMergeRecipeShopping(plan){
   try{
     if(!plan || !Array.isArray(plan.meals)) return plan;
@@ -37755,7 +37776,7 @@ async function _fuelGenerate(){
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
   const _recipeBlock = _fuelRecipeLines();
-  const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says the science is general \u2014 do NOT write anything about prices being estimates, the app says that itself, with the button that fixes it.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -37773,6 +37794,8 @@ async function _fuelGenerate(){
   // every consumer does plan.meals.map(...) — so "View my plan" threw and did nothing, on every device.
   if(!plan || !Array.isArray(plan.meals) || !plan.meals.length){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
   plan = _fuelMergeRecipeShopping(plan);
+  // AFTER the merge, so the ingredients it just added are counted rather than silently dropped.
+  plan.total = _fuelTotals(plan).sum;
   plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0; plan.preworkout = preworkout; plan.lead = lead;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
@@ -37865,8 +37888,16 @@ function _fuelRenderPlan(plan){
       return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:var(--t-base);font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:var(--t-mini);color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+(_unpriced ? '' : money(sub))+'</div></div>'+list.map(row1).join('')+'</div>';
     }).join('');
   })();
-  const total = plan.total||0; const budget = plan.budget||p.budget||0;
+  // THE TOTAL COMES FROM THE ROWS, and it says what it does not know. plan.total is recomputed by
+  // _fuelTotals at both write sites, but a plan restored from the cloud may still carry the model's
+  // old figure, so the render works it out again rather than trusting the stored one.
+  const _t = _fuelTotals(plan);
+  const total = _t.sum; const budget = plan.budget||p.budget||0;
+  // OVER budget is CERTAIN even with rows still to price — the missing ones can only add. UNDER is
+  // not: claiming it on an incomplete figure is how a person plans a week they cannot afford. The
+  // verdict is withheld until the list is whole, rather than guessed at.
   const overBudget = budget>0 && total>budget;
+  const _budgetUnknown = budget>0 && !overBudget && !_t.complete;
   const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:90vh;overflow-y:auto">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-xl);cursor:pointer">×</button></div>'+
@@ -37874,10 +37905,12 @@ function _fuelRenderPlan(plan){
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:var(--t-base)"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:var(--font-text);color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / '+curSym()+_moneyG(budget)):'')+'</div></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:var(--t-base)"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:var(--font-text);color:'+(overBudget?'var(--re)':(_t.complete?'var(--gr)':'var(--tx2)'))+'">'+(_t.complete?'':'at least ')+money(total)+(budget?(' / '+curSym()+_moneyG(budget)):'')+'</div></div>'+
+    (_t.unpriced?('<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:6px;line-height:1.5">'+plural(_t.unpriced,'item')+' '+(_t.unpriced===1?'has':'have')+' no price yet \u2014 mostly what came from your own recipes'+(plan._estimated?', and the rest are estimates':'')+'. Get live prices and this total is the real one.</div>'):'')+
     '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;color:var(--tx3);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer;background:var(--fill2)">Copy shopping list</button>'+
     (overBudget?'<div style="font-size:var(--t-cap);color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
-    (plan._estimated?'<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
+    (_budgetUnknown?'<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:6px;line-height:1.5">Under budget on what is priced so far \u2014 but not all of it is, so this is not the final answer yet.</div>':'')+
+    ((plan._estimated && _t.complete)?'<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
     ((plan.citations&&plan.citations.length)?'<div style="font-size:var(--t-mini);color:var(--tx3);line-height:1.6;margin-top:8px">Prices checked: '+plan.citations.map(_esc).join(' · ')+'</div>':'')+
     (plan.note?'<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-top:12px;font-style:italic">'+_esc(plan.note)+'</div>':'')+
     '<button class="btn primary" style="margin-top:16px" onclick="_fuelLogPlan(this)">Log today’s meals</button>'+
@@ -38077,7 +38110,9 @@ async function _fuelLivePrices(){
   if(!data || !data.prices){ if(typeof showToast==='function') showToast('Hmm','Couldn’t fetch live prices just now — try again shortly.'); return; }
   const byItem = {}; data.prices.forEach(function(pr){ if(pr && pr.item) byItem[String(pr.item).toLowerCase().trim()] = pr; });
   plan.shopping.forEach(function(s){ const mm = byItem[String(s.item||'').toLowerCase().trim()]; if(mm){ if(typeof mm.price==='number' && mm.price>0) s.price=mm.price; if(mm.shop) s.shop=mm.shop; } });
-  plan.total = (typeof data.total==='number' && data.total>0) ? data.total : plan.shopping.reduce(function(a,s){ return a+(s.price||0); },0);
+  // The model's own `total` is a CLAIM about the list; the list is the fact. They disagree whenever
+  // an item could not be matched, and taking the claim hid exactly those.
+  plan.total = _fuelTotals(plan).sum;
   plan.citations = data.citations||[]; plan._estimated = false;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
