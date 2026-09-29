@@ -371,6 +371,16 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      named were like that. It reports what actually breaks a control (losing its OWN centre, the
      criterion `npm run panels` fails the build on) FIRST now, and the column overlap second. A
      sub-measurement given a headline's name is a number that gets acted on.
+   - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
+     claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
+     only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in
+     Chromium AND WebKit over all 365 days of 2026 and compares. It calibrates by running the OLD
+     formatter through the same pipe first and refuses to report — "THE MEASUREMENT IS WRONG, NOT THE
+     APP" — if that does not disagree on ~300 days, because a WebKit that is silently behaving like
+     Chromium would make a broken fix look perfect. Measured 29 Sep 2026: old 300/365, dayKeyOf 0/365.
+     Fault-injected by putting the formatter back: 300 forked, exit 1. Any day-keyed store added to
+     `dayKeyedStores()` inherits this check for free; a new key PRODUCER does not, so keep using
+     `dayKeyOf()` and never a formatter.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — bundle parity across source, www, iOS **and Android**, by sha256. It
      compared APP_VERSION STRINGS until 5 Sep 2026 and reported that as "the iOS bundle matches the

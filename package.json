@@ -11,6 +11,7 @@
     "test": "node test/core.test.js",
     "personas": "node test/personas.js",
     "panels": "node test/panels.js",
+    "engines": "node scripts/day-key-engines.mjs",
     "preflight": "node scripts/preflight.js",
     "build:index": "node scripts/build-index.js",
     "verify:index": "node scripts/build-index.js --verify",
