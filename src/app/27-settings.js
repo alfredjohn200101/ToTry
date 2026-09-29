@@ -267,7 +267,7 @@ async function loadDemoData(){
   const now = new Date();
   const iso = d => d.toISOString();
   const dayAgo = n => new Date(now.getTime() - n*86400000);
-  const auKey = d => d.toLocaleDateString('en-AU');
+  const auKey = d => dayKeyOf(d);
   // Identity / journey (~92 days in)
   ls('totry_name','Alex');
   ls('totry_identity','I am becoming a person who keeps their promises, even to themselves.');

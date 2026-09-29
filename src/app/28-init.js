@@ -410,6 +410,11 @@ function runSchemaMigrations(){
 }
 
 async function initApp(){
+  // BEFORE ANYTHING READS A DAY. Every boot, not once: a cloud pull can reintroduce the other
+  // engine's spelling of a day key at any time, and this device's own history may carry both
+  // (see dayKeyOf() in 00-boot.js). It normalises AND MERGES — never overwrites — and it is
+  // idempotent, so a boot with nothing to move costs one JSON.parse per store.
+  try{ if(typeof migrateDayKeys === 'function') migrateDayKeys(); }catch(_){ }
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
   try{ if(typeof _watchA11y==='function') _watchA11y(); }catch(_){ }
@@ -559,7 +564,7 @@ async function initApp(){
   checkIOSInstall();requestPersistentStorage();
   // Welcome back if installed PWA
   if(isStandalone()){
-    const today=new Date().toLocaleDateString('en-AU');
+    const today=dayKeyOf();
     if(ls('totry_last_open')!==today){
       ls('totry_last_open',today);
       setTimeout(()=>showToast('Day '+getDayCount()+', '+userName,'Good to see you back. Let\'s make today count.'),1000);

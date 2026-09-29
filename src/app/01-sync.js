@@ -472,6 +472,12 @@ async function pullFromCloud(){
     // bug rather than a safe design. Do not re-derive "these are append-only" from this list.
     // totry_fight_log matters most: it is what teaches the risk window and the hard hour, so losing half
     // of it on a device switch quietly degrades the app's whole sense of when a person is vulnerable.
+    // THE DAY-KEYED MAPS. Not arrays and not scalars: an object whose KEYS are days. totry_nutlog has
+    // its own branch below because its days hold arrays that carry tombstones; these seven hold
+    // numbers or small objects. Derived from dayKeyedStores() so a new day-keyed store cannot be
+    // added in 00-boot.js and quietly keep falling through to last-write-wins here.
+    const DAYMAP = (typeof dayKeyedStores === 'function' ? dayKeyedStores() : [])
+      .filter(x => x !== 'totry_nutlog' && SYNC_KEYS.indexOf(x) !== -1);
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
@@ -582,11 +588,48 @@ async function pullFromCloud(){
           if(Object.keys(merged).length) nv[bk] = merged;
         });
         _queueWrite(k, nv);
-      } else if(k === 'totry_nutlog' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
-        nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
+      } else if(k === 'totry_nutlog' && cv && typeof cv === 'object' && !Array.isArray(cv)){
+        // ONE DAY MUST NOT SURVIVE AS TWO KEYS. This unioned the key STRINGS, and the key was
+        // `toLocaleDateString('en-AU')` — which Chromium zero-pads and WebKit does not. A day written
+        // "22/09/2026" in the PWA and "22/9/2026" in the App Store build stayed two separate diaries
+        // forever, and each device only ever read its own half. See dayKeyOf() in 00-boot.js.
+        //
+        // It also required `lv` — and on a FRESH INSTALL lv is null, so this branch was skipped and
+        // `nv = cv` adopted the other engine's spelling wholesale. That is where it began.
+        //
+        // Keys are normalised on BOTH sides first; union() still does the per-entry merge, because it
+        // is the only path that honours a tombstone, and it is called again when two spellings of one
+        // day collide so a deleted meal cannot re-enter through the back door of a key rename.
         const _cloudNewer = (cts >= lts) && !pendingLocal;
-        days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer, 'totry_nutlog'); });
+        const _normNut = (src, preferB) => {
+          const o = {};
+          if(!src || typeof src !== 'object' || Array.isArray(src)) return o;
+          Object.keys(src).forEach(d => {
+            const nd = (typeof dayKeyNorm === 'function' && dayKeyNorm(d)) || d;
+            o[nd] = (o[nd] === undefined) ? union(src[d], [], preferB, 'totry_nutlog')
+                                          : union(o[nd], src[d], preferB, 'totry_nutlog');
+          });
+          return o;
+        };
+        const _nl = _normNut(lv, false), _nc = _normNut(cv, _cloudNewer);
+        nv = {}; const days = new Set([].concat(Object.keys(_nl), Object.keys(_nc)));
+        days.forEach(d => { nv[d] = union(_nl[d], _nc[d], _cloudNewer, 'totry_nutlog'); });
         _queueWrite(k, nv);                        // push the merged truth back up — see the ARR note
+      } else if(DAYMAP.indexOf(k) > -1 && cv && typeof cv === 'object' && !Array.isArray(cv)){
+        // THE SEVEN DAY-KEYED MAPS THAT HAD NO MERGE AT ALL. They fell through to the scalar branch
+        // at the bottom, so one device's WHOLE MAP replaced the other's — every tracker figure, every
+        // glass of water, every burn total the losing device held, gone in one pull. With two engines
+        // spelling the day differently (see dayKeyOf) the two maps did not even overlap, so the loss
+        // was total rather than partial, and it began on a new device's very first sync.
+        //
+        // _mergeDayMaps() is the one merge rule, shared with migrateDayKeys(); `keep` is the newer
+        // side. It does NOT Math.max the ordinary stores — adjustTracker() and setWaterCount() both
+        // go down, and Math.max would undo a correction and then push the undo everywhere.
+        const _cloudNewer = (cts >= lts) && !pendingLocal;
+        const _keep = _cloudNewer ? cv : (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {});
+        const _add  = _cloudNewer ? (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {}) : cv;
+        nv = _mergeDayMaps(_keep, _add, k);
+        _queueWrite(k, nv);
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,

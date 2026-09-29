@@ -20,7 +20,7 @@ function renderCoachQuickReplies(){
   const split = getUserSplit();
   const todayFocus = split[ti]?.focus;
   
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = todayEntries.reduce((a,e)=>a+(e.cal||0),0);
@@ -100,7 +100,7 @@ function renderCoachQuickReplies(){
   }
   // Cronometer "Oracle"-style: if protein is tracking low today, offer food fixes via Coach.
   try{
-    const _today = new Date().toLocaleDateString('en-AU');
+    const _today = dayKeyOf();
     const _ents = (ls('totry_nutlog')||{})[_today] || [];
     if(_ents.length >= 2){
       const _pro = _ents.reduce((a,e)=>a+(e.pro||0),0);

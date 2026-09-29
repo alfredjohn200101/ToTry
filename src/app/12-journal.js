@@ -83,11 +83,11 @@ const JOURNAL_MAX = 20000;   // ~4,000 words. Long enough for anything real, sho
 // dated record (each entry carries won + ts + date), so count from that instead of a phantom baseline.
 function _winsOnDay(dayKey){
   try{
-    const key = dayKey || new Date().toLocaleDateString('en-AU');
+    const key = dayKey || dayKeyOf();
     return (ls('totry_fight_log')||[]).filter(function(e){
       if(!e || e.won !== true) return false;
-      if(e.date === key) return true;
-      if(e.ts){ try{ return new Date(e.ts).toLocaleDateString('en-AU') === key; }catch(_){ return false; } }
+      if(dayKeyNorm(e.date) === key) return true;
+      if(e.ts){ try{ return dayKeyOf(e.ts) === key; }catch(_){ return false; } }
       return false;
     }).length;
   }catch(_){ return 0; }
@@ -99,8 +99,8 @@ function saveQuickJournal(){
   if(text.length > JOURNAL_MAX){ text = text.slice(0, JOURNAL_MAX); _trimmed = true; }
   
   loadV();
-  const todayKey = new Date().toLocaleDateString('en-AU');
-  const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => new Date(t).toLocaleDateString('en-AU') === todayKey).length, 0);
+  const todayKey = dayKeyOf();
+  const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => dayKeyOf(t) === todayKey).length, 0);
   const todayWins = _winsOnDay(todayKey);
   
   // "Get it out" is the fastest way into this app's journal and it had NO gate: someone typing the
@@ -236,7 +236,7 @@ function saveEntry(){
   try{ if(typeof detectCrisis === 'function') _jCrisis = detectCrisis(text); }catch(_){ }
   // Auto-pull vice stats from today's data
   loadV();
-  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>new Date(t).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU')).length,0);
+  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(t)===dayKeyOf()).length,0);
   const todayWins=_winsOnDay();
   const entries=ls('totry_journal')||[];
   const when=_resolveEntryDate('journal-date');

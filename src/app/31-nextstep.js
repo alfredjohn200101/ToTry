@@ -21,7 +21,7 @@ function ritualLog(key){
 }
 
 function getNextStep(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   const hour = new Date().getHours();
   // 0. HARD-MOMENT AWARENESS (the nervous system). Late night is the classic danger window for
   // most compulsions — gently put the companion in front of them BEFORE anything routine.
@@ -48,14 +48,14 @@ function getNextStep(){
   try{
     if(typeof computeReadiness === 'function'){
       const _r = computeReadiness();
-      const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+      const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
         return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
       }
     }
   }catch(_){ }
   // 1. Morning ritual not done yet today?
-  const morningToday = ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
+  const morningToday = ritualLog('totry_mornings').some(m=>m.ts && dayKeyOf(m.ts)===today);
   if(!morningToday && hour < 12){
     return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', softenOk:true, action:'morning' };
   }
@@ -76,14 +76,14 @@ function getNextStep(){
     }
   }
   // 3. No training logged today?
-  const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+  const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
   if(!trainedToday && hour >= 10 && hour < 21){
     return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', softenOk:true, action:'train' };
   }
   // 3. Evening: examen / reflection not done?
   if(hour >= 17){
-    const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
-    const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
+    const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && dayKeyOf(e.ts)===today);
     if(!eveningToday || !examenToday){
       return { text:'Close your day', sub:_nextStepCloseSub(), softenOk:true, action:'reflect' };
     }
@@ -95,7 +95,7 @@ function getNextStep(){
   // opposite of this app's promise. Derive it from what actually gets written instead.
   const prayedToday = (function(){
     try{
-      const sameDay = ts => ts && new Date(ts).toLocaleDateString('en-AU') === today;
+      const sameDay = ts => ts && dayKeyOf(ts) === today;
       if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
       if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
       if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
@@ -259,8 +259,8 @@ function renderLifeWoven(){
   const box=document.getElementById('home-woven'); if(!box) return;
   const s=(typeof getLifeState==='function')?getLifeState():null;
   if(!s){ box.innerHTML=''; return; }
-  const today=new Date().toLocaleDateString('en-AU'); const h=new Date().getHours();
-  const dOn=(x)=>{ try{ return new Date(x.ts||x.createdAt||x.date||0).toLocaleDateString('en-AU')===today; }catch(_){ return false; } };
+  const today=dayKeyOf(); const h=new Date().getHours();
+  const dOn=(x)=>{ try{ return dayKeyOf(x.ts||x.createdAt||x.date||0)===today; }catch(_){ return false; } };
   // BODY — trained + fuel today
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
@@ -322,9 +322,9 @@ function renderHomeGreeting(){
   if(!hiEl || !subEl || !actEl) return;
   const name = ls('totry_name') || '';
   const h = new Date().getHours();
-  const today = new Date().toLocaleDateString('en-AU');
-  const didMorning = ritualLog('totry_mornings').some(m => m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
-  const didEvening = ritualLog('totry_evenings').some(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today = dayKeyOf();
+  const didMorning = ritualLog('totry_mornings').some(m => m.ts && dayKeyOf(m.ts)===today);
+  const didEvening = ritualLog('totry_evenings').some(e => e.ts && dayKeyOf(e.ts)===today);
 
   let hi, sub, actLabel='', actType='', daypart;
   if(h < 5){
@@ -422,13 +422,13 @@ function renderNextStep(){
 }
 // Count the open daily loops (used only to soften the framing on heavy days — never to nag).
 function _countOpenLoops(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   let open = 0;
   try{
-    if(!ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)) open++;
-    if(!ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today)) open++;
+    if(!ritualLog('totry_mornings').some(m=>m.ts && dayKeyOf(m.ts)===today)) open++;
+    if(!ritualLog('totry_evenings').some(e=>e.ts && dayKeyOf(e.ts)===today)) open++;
     if(typeof loadH==='function'){ loadH(); const ti=(typeof tIdx==='function')?tIdx():0; const undone=(typeof habits!=='undefined'&&Array.isArray(habits))?habits.filter(h=>h.d&&h.d[ti]!==1).length:0; if(undone>0) open++; }
-    const trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+    const trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
     if(!trained) open++;
   }catch(_){}
   return open;

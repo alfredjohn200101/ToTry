@@ -556,7 +556,7 @@ function quickAddLog(){
   const carb=parseFloat(document.getElementById('qa-carb')?.value)||0;
   const fat=parseFloat(document.getElementById('qa-fat')?.value)||0;
   const meal=window.__qaMeal||'snack';
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   ls('totry_nutlog', log);
@@ -1659,7 +1659,7 @@ function _pmLog(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
   if(!items.length){ if(typeof showToast==='function') showToast('Nothing to log','Name or add an item first.'); return; }
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
@@ -1715,13 +1715,13 @@ const _HUNGER_REASONS = [
 // emotional snacking peaks), only for people who've actually shown the pattern (2+ non-hunger checks),
 // once per day, dismissible. This is the emotional-eating moat made present — never a nag.
 function _emotionalEatCount(){ try{ return (ls('totry_hunger_log')||[]).filter(e=>e && e.id && e.id!=='hungry' && e.id!=='social').length; }catch(_){ return 0; } }
-function _hungerCheckedToday(){ try{ const t=new Date().toLocaleDateString('en-AU'); return (ls('totry_hunger_log')||[]).some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===t); }catch(_){ return false; } }
-function _hungerNudgeGo(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} openHungerCheck(); }
-function _hungerNudgeDismiss(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} const el=document.getElementById('nut-hunger-nudge'); if(el){ el.style.display='none'; el.innerHTML=''; } }
+function _hungerCheckedToday(){ try{ const t=dayKeyOf(); return (ls('totry_hunger_log')||[]).some(e=>e && e.ts && dayKeyOf(e.ts)===t); }catch(_){ return false; } }
+function _hungerNudgeGo(){ try{ ls('totry_hunger_nudge_day', dayKeyOf()); }catch(_){} openHungerCheck(); }
+function _hungerNudgeDismiss(){ try{ ls('totry_hunger_nudge_day', dayKeyOf()); }catch(_){} const el=document.getElementById('nut-hunger-nudge'); if(el){ el.style.display='none'; el.innerHTML=''; } }
 function renderHungerNudge(){
   const el=document.getElementById('nut-hunger-nudge'); if(!el) return;
   el.style.display='none'; el.innerHTML='';
-  const h=new Date().getHours(); const today=new Date().toLocaleDateString('en-AU');
+  const h=new Date().getHours(); const today=dayKeyOf();
   if(h<20) return;                                  // late-snack window only
   if(_emotionalEatCount()<2) return;                // only once the pattern is real
   if(_hungerCheckedToday()) return;                 // already checked in today
@@ -1973,7 +1973,7 @@ function logEstimatedMeal(){
   const meal=window.__pendingMeal;
   if(!meal){ showToast('Nothing to log','Describe a meal first.'); return; }
   const t=meal.total||{};
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   log[today].push({
@@ -2723,7 +2723,7 @@ async function logRecipeAsMeal(i){
   });
   const _rRow = nutPick(_rTot, portion);   // one source of truth for the row AND the toast
   
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   log[today].push({
@@ -2756,8 +2756,7 @@ function openRepeatDay(){
   // Relative to the day being VIEWED, like repeatMealsFrom — these counts and the enabled/disabled
   // state describe the days the copy will actually read from. Computed from Date.now(), they described
   // days around today while the person was filling in a past one.
-  const _rk = (n) => (typeof nutRelKey==='function') ? nutRelKey(n)
-              : new Date(Date.now()-n*86400000).toLocaleDateString('en-AU');
+  const _rk = (n) => nutRelKey(n);
   const _rd = (n) => { const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
               d.setDate(d.getDate()-n); return d; };
   const yKey = _rk(1);
@@ -2797,7 +2796,7 @@ function repeatLastWeekday(){
   // ran exactly once (back=7 to 7) and todayDow was never read, so neither did what they looked like.
   const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
   d.setDate(d.getDate() - 7);
-  const key = (typeof nutRelKey==='function') ? nutRelKey(7) : d.toLocaleDateString('en-AU');
+  const key = nutRelKey(7);
   const dow = d.toLocaleDateString('en-AU',{weekday:'long'});
   if(log[key] && log[key].length){ repeatMealsFrom(7, 'last ' + dow); return; }
   showToast('Nothing that ' + dow, 'No food logged on that day last week.');
@@ -2808,7 +2807,7 @@ function repeatMealsFrom(daysAgo, label){
   // from today-1 meant that while looking at Saturday you were offered "yesterday" — which was
   // actually a day AFTER the one you were filling in.
   const _base = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
-  const src = new Date(_base.getTime() - daysAgo*86400000).toLocaleDateString('en-AU');
+  const src = dayKeyOf(new Date(_base.getTime() - daysAgo*86400000));
   // Stash the RESOLVED key. confirmRepeatYesterday used to recompute it from Date.now(), so on any
   // day you had navigated to it listed one day's meals and then logged a different day's — indexing
   // the checkbox positions into an array they were never built against. Items past the end were
@@ -2844,9 +2843,8 @@ function confirmRepeatYesterday(){
   const log = ls('totry_nutlog') || {};
   const daysAgo = window.__repeatSrcDays || 1;
   // Same key the preview listed (see repeatMealsFrom); fall back to the day-nav-relative helper.
-  const src = window.__repeatSrcKey || (typeof nutRelKey==='function' ? nutRelKey(daysAgo)
-              : new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU'));
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const src = window.__repeatSrcKey || nutRelKey(daysAgo);
+  const today = nutDayKey();
   const srcMeals = log[src] || [];
   const checks = document.querySelectorAll('#repeat-yesterday-list input[type="checkbox"]');
   
@@ -3140,7 +3138,7 @@ function addFoodToLog(){
     qty,
     meal: meal,
     ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),
-    date:(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU')
+    date:nutDayKey()
   };
   
   // Carry-through full micronutrient panel if source supplied them.
@@ -3165,7 +3163,7 @@ function addFoodToLog(){
     }
   });
   
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   // Edit mode: replace the original entry in place (keep its id + historical timestamp)
   if(window.__editingEntry){
     const ed = window.__editingEntry; window.__editingEntry = null;
@@ -3209,7 +3207,7 @@ function addFoodToLog(){
   try{
     const _g = ls('totry_nut_goals')||{}; const _gc = _g.cal||0;
     if(_gc > 0){
-      const _today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+      const _today = nutDayKey();
       const _log = ls('totry_nutlog')||{}; const _dayArr = _log[_today]||[];
       const _sum = _dayArr.reduce((a,e)=>a+(e.cal||0),0);
       const _prev = _sum - (entry.cal||0);
@@ -3310,7 +3308,7 @@ function logRecentFood(name){
 // with a quick confirmation. No modal. This is what makes repeat logging "take seconds".
 // MFP-style saved meals: group foods you eat together ("my usual breakfast") and log them in one tap.
 async function saveMealGroup(meal){
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const entries = ((ls('totry_nutlog')||{})[today]||[]).filter(e => (e.meal||'snack') === meal);
   if(!entries.length){ showToast('Nothing to save', 'Log some foods in this meal first.'); return; }
   const name = await askText('Name this meal', 'For example: my usual breakfast.', {confirmLabel:'Save meal', value: meal.charAt(0).toUpperCase()+meal.slice(1)});
@@ -3329,7 +3327,7 @@ function logSavedMeal(id){
   const saved = ls('totry_saved_meals')||[];
   const m = saved.find(x=>x.id===id);
   if(!m){ return; }
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   const hr = new Date().getHours();
@@ -3436,7 +3434,7 @@ function _quickServing(food){
 }
 function quickLogSearchFood(food){
   const _qs = _quickServing(food);
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   const hr = new Date().getHours();
@@ -3459,7 +3457,7 @@ function quickLogRecent(name){
   const f = recents.find(x => x.name.toLowerCase().trim() === name.toLowerCase().trim());
   if(!f){ showToast('Not found', 'Search for it instead.'); return; }
   const _qs = _quickServing(f);
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   // Best-guess meal slot by time of day
@@ -3540,7 +3538,7 @@ function renderRecentFoods(){
 function computeNutStreak(){
   const log = ls('totry_nutlog') || {};
   let streak = 0; const today = new Date();
-  const has = d => { const k = d.toLocaleDateString('en-AU'); return (log[k]||[]).length > 0; };
+  const has = d => { const k = dayKeyOf(d); return (log[k]||[]).length > 0; };
   const cur = new Date(today);
   if(!has(cur)) cur.setDate(cur.getDate() - 1); // today not logged yet — streak still alive from yesterday
   while(has(cur)){ streak++; cur.setDate(cur.getDate() - 1); }
@@ -3588,7 +3586,7 @@ function renderFoodGroups(){
   let total = 0, unknown = 0;
   for(let i = 0; i < 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
-    (log[d.toLocaleDateString('en-AU')]||[]).forEach(e => {
+    (log[dayKeyOf(d)]||[]).forEach(e => {
       // Only classified foods were counted, and nothing tracked how many were NOT — so a week whose
     // pizza, curry and burrito the classifier does not know still produced "A genuinely balanced week.
     // Keep this shape." from whatever it happened to recognise. A verdict on a fifth of the evidence.
@@ -3826,7 +3824,7 @@ function _nourishConcern(){
     const log = ls('totry_nutlog') || {};
     let low=0, counted=0;
     for(let i=1;i<=7;i++){
-      const k = new Date(Date.now()-i*86400000).toLocaleDateString('en-AU');
+      const k = dayKeyOf(Date.now()-i*86400000);
       const items = log[k];
       // A day only counts if they actually TRACKED it. One lonely entry is almost always someone who
       // started logging and stopped — reading that as under-eating would be the app inventing a
@@ -3947,7 +3945,7 @@ function _nutCheckRollover(){
     if(document.hidden) return;
     const pane = document.getElementById('tab-nourish');
     if(!pane || getComputedStyle(pane).display === 'none') return;
-    if(new Date().toLocaleDateString('en-AU') === _nutPaintedDay) return;
+    if(dayKeyOf() === _nutPaintedDay) return;
     if(typeof renderNutritionLog === 'function') renderNutritionLog();
   }catch(_){ }
 }
@@ -3957,10 +3955,20 @@ try{
 }catch(_){ }
 const NUT_DAY_MIN = -120;
 function nutViewDate(){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+_nutDayOff); return d; }
-function nutDayKey(){ return nutViewDate().toLocaleDateString('en-AU'); }
+// THE DIARY'S DAY KEY. Through dayKeyOf(), never a formatter: toLocaleDateString('en-AU') is padded
+// by Chromium and unpadded by WebKit, and this string is the KEY of the totry_nutlog map that syncs
+// to the cloud. See the long note above dayKeyOf() in 00-boot.js.
+//
+// AND THE SECOND KEY PRODUCER IS GONE. Twenty-two call sites wrote
+// `(typeof nutDayKey==='function') ? nutDayKey() : new Date().toLocaleDateString('en-AU')`.
+// nutDayKey is a hoisted function declaration in the same single <script>, so that guard has never
+// been able to be false — the fallback was unreachable code that nonetheless had to be kept correct
+// in two places, and was not. The ternary is deleted rather than fixed on both sides, so there is one
+// producer and it cannot drift from itself.
+function nutDayKey(){ return dayKeyOf(nutViewDate()); }
 function nutIsToday(){ return _nutDayOff === 0; }
 // Key of N days BEFORE the day being viewed — so "yesterday" means the day before the one you're on.
-function nutRelKey(daysAgo){ const d=nutViewDate(); d.setDate(d.getDate()-(daysAgo||0)); return d.toLocaleDateString('en-AU'); }
+function nutRelKey(daysAgo){ const d=nutViewDate(); d.setDate(d.getDate()-(daysAgo||0)); return dayKeyOf(d); }
 // A timestamp INSIDE the day being written to. Every ts-based reader (weekly digest, adaptive TDEE,
 // the coach brief) buckets by ts — a backfilled entry stamped "now" would land on the wrong day.
 function nutStampFor(){ if(nutIsToday()) return new Date().toISOString(); const d=nutViewDate(); d.setHours(12,0,0,0); return d.toISOString(); }
@@ -4035,7 +4043,7 @@ function renderNutDayNav(){
 
 function renderNutritionLog(){
   // The real calendar day this paint belongs to — NOT nutDayKey(), which is the day being VIEWED.
-  try{ _nutPaintedDay = new Date().toLocaleDateString('en-AU'); }catch(_){ }
+  try{ _nutPaintedDay = dayKeyOf(); }catch(_){ }
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
   // exactly who needs the "set a real target" nudge, so it must run up here, not after.
@@ -4073,7 +4081,7 @@ function renderNutritionLog(){
     // eleven lines below already handle correctly. Gate this one on its own data too.
     const _microKnown = (function(){
       try{
-        const day = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+        const day = nutDayKey();
         const rows = nutLogSafe()[day] || [];
         return nutMicroKeys().some(function(k){
           return rows.some(function(r){ return (r && Number(r[k])) > 0; });
@@ -4141,7 +4149,7 @@ function renderNutritionLog(){
       else if(gi){ goalDir = gi; }
       else { const pref = _goalDirRaw(); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
       // Prefer TOTAL calories burned (active + BMR) for a true deficit; fall back to the burn number.
-      const ev = ritualLog('totry_evenings').find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
+      const ev = ritualLog('totry_evenings').find(x => x.ts && dayKeyOf(x.ts) === today);
       const totalBurned = (ev && ev.rings && ev.rings.total) ? ev.rings.total : null;
       if(burned >= 150 || (goalDir==='cut' && totalBurned)){
         if(goalDir === 'cut'){
@@ -4171,7 +4179,7 @@ function renderNutritionLog(){
   // user sees where their day's at without leaving the life-system app.
   const ringsEl = document.getElementById('nut-rings-today');
   if(ringsEl){
-    const ev = ritualLog('totry_evenings').find(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === today);
+    const ev = ritualLog('totry_evenings').find(e => e.ts && dayKeyOf(e.ts) === today);
     const r = ev && ev.rings;
     if(r && (r.move||r.exercise||r.stand)){
       const cell = (label,val,unit) => '<div style="flex:1;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+label+'</div><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">'+(val!=null?val:'\u2014')+(val!=null?'<span style=\"font-size:var(--t-mini);color:var(--tx3)\"> '+unit+'</span>':'')+'</div></div>';
@@ -4189,7 +4197,7 @@ function renderNutritionLog(){
   const trainEl = document.getElementById('nut-training-today');
   if(trainEl){
     const allTrain = (typeof getUnifiedTraining === 'function') ? getUnifiedTraining() : [];
-    const todays = allTrain.filter(t => t.ts && new Date(t.ts).toLocaleDateString('en-AU') === today);
+    const todays = allTrain.filter(t => t.ts && dayKeyOf(t.ts) === today);
     if(todays.length){
       const names = todays.map(t => (t.title || 'Workout')).join(', ');
       trainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
@@ -4295,7 +4303,7 @@ function renderNutritionLog(){
     const hr = new Date().getHours();
     const proLeft = Math.round(goalPro - totals.pro);
     const dismissedDay = ls('totry_glance_dismissed');
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
     // The hero's nudge already says "90g short on protein with dinner to go". Saying it again 800px
     // lower does not reinforce it; it just makes the screen longer and the app look like it is not
     // listening to itself. If the nudge has the protein point, the glance stays quiet.
@@ -4307,7 +4315,7 @@ function renderNutritionLog(){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
           '<div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.6">You\'ve got about <span style="color:var(--gr)">'+proLeft+'g protein</span> still to get today. If you\'re home: eggs, Greek yoghurt, chicken, or a quick shake. Out and about: a tin of tuna, jerky, a protein bar, or milk all travel well.</div>'+
-          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
+          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,dayKeyOf());document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
         '</div>';
       glanceEl.style.display = 'block';
     } else {
@@ -4327,7 +4335,7 @@ function renderNutritionLog(){
   if(list){
     if(!entries.length){
       const log=ls('totry_nutlog')||{};
-      const yKey=(typeof nutRelKey==='function')?nutRelKey(1):(function(){const y=new Date();y.setDate(y.getDate()-1);return y.toLocaleDateString('en-AU');})();
+      const yKey=nutRelKey(1);
       const hadYesterday = log[yKey] && log[yKey].length;
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
       const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
@@ -4572,7 +4580,7 @@ function renderMealSplit(){
   // A "numbers off" promise that leaks calorie counts here would be a broken promise to the exact
   // person the mode exists to protect.
   if(typeof nutGentle==='function' && nutGentle()){ wrap.style.display='none'; return; }
-  const today = (typeof nutDayKey==='function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const entries = (ls('totry_nutlog')||{})[today] || [];
   if(!entries.length){ wrap.style.display='none'; return; }
   const meals = {breakfast:0, lunch:0, dinner:0, snack:0};
@@ -4880,7 +4888,7 @@ function _isTrainingToday(){
   const dow=(new Date().getDay()+6)%7;
   if(_isTrainingDay(dow)) return true;
   // Already trained today counts, even if it wasn't planned.
-  try{ const today=new Date().toLocaleDateString('en-AU'); if((typeof getUnifiedTraining==='function'?getUnifiedTraining():[]).some(t=>t.kind==='strength'&&t.ts&&new Date(t.ts).toLocaleDateString('en-AU')===today)) return true; }catch(_){}
+  try{ const today=dayKeyOf(); if((typeof getUnifiedTraining==='function'?getUnifiedTraining():[]).some(t=>t.kind==='strength'&&t.ts&&dayKeyOf(t.ts)===today)) return true; }catch(_){}
   return false;
 }
 function _trainingDaysPerWeek(){
@@ -5261,7 +5269,7 @@ function renderBodySystemReport(){
     const out = {};
     for(let i=0;i<7;i++){
       const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
-      out[d.toLocaleDateString('en-AU')] = true;
+      out[dayKeyOf(d)] = true;
     }
     return out;
   })();
@@ -5433,7 +5441,7 @@ function renderNutTrend(){
   const days=[];
   for(let i=13;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
-    const key=d.toLocaleDateString('en-AU');
+    const key=dayKeyOf(d);
     const entries=log[key]||[];
     const cal=Math.round(entries.reduce((a,e)=>a+(e.cal||0),0));
     days.push({key, cal, label:d.toLocaleDateString('en-AU',{day:'numeric'})});
@@ -5858,7 +5866,7 @@ function waterMlOn(dateStr){
 function getWaterCount(){
   // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
   // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
-  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const water = ls('totry_water') || {};
   let v = water[today] || 0;
   // Backward-compat: old data stored cups (small numbers). If it looks like cups (<50), convert to ml.
@@ -5868,7 +5876,7 @@ function getWaterCount(){
 function setWaterCount(ml){
   // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
   // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
-  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const water = ls('totry_water') || {};
   water[today] = Math.max(0, Math.round(ml));
   ls('totry_water', water);
@@ -6027,14 +6035,14 @@ function renderFastingRhythm(){
   if(!el) return;
   // Respect a user who's turned the rhythm off, and a per-day dismissal.
   if(ls('totry_fast_rhythm_off')){ el.style.display='none'; return; }
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   if(ls('totry_fast_rhythm_dismissed') === today){ el.style.display='none'; return; }
   const f = catholicFastingDay();
   if(!f){ el.style.display='none'; return; }
   el.innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:8px">'+
       '<div style="flex:1"><span style="color:var(--go)">✝ '+f.kind+'.</span> '+f.note+'</div>'+
-      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
+      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,dayKeyOf());document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
     '</div>';
   el.style.display = 'block';
 }

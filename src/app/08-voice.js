@@ -106,7 +106,7 @@ async function _companionSay(userText, opening){
           + 'This is evidence of who they have been, to hand back to them \u2014 never a reason they should not feel what they feel, and never a lecture. '
           + 'If it does not fit the moment, say nothing about it. ';
       }catch(_){ return ''; } })()
-    + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=safeMornings().find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
+    + (function(){ try{ const today=dayKeyOf(); const m=safeMornings().find(x=>x.ts&&dayKeyOf(x.ts)===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{
         if(typeof loadV==='function') loadV();
         const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:(ls('totry_v')||[]);

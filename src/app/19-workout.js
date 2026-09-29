@@ -389,9 +389,9 @@ function interferenceNote(){
   const history = ls('totry_workouts') || [];
   if(!history.length) return null;
   const now = new Date();
-  const yKey = new Date(now.getTime() - 86400000).toLocaleDateString('en-AU');
+  const yKey = dayKeyOf(now.getTime() - 86400000);
   // Find yesterday's sessions.
-  const yest = history.filter(w => (w.date === yKey) || (w.ts && new Date(w.ts).toLocaleDateString('en-AU') === yKey));
+  const yest = history.filter(w => (dayKeyNorm(w.date) === yKey) || (w.ts && dayKeyOf(w.ts) === yKey));
   if(!yest.length) return null;
   for(const w of yest){
     const mod = sessionModality(w);
@@ -743,7 +743,7 @@ function computeReadiness(){
     const tr = ls('totry_trackers') || {};
     [0, 1].forEach(back => {
       const d = new Date(); d.setDate(d.getDate() - back);
-      const key = d.toLocaleDateString('en-AU');
+      const key = dayKeyOf(d);
       const row = tr[key];
       if(!row || row._sleepSrc !== 'health') return;
       const hrs = parseFloat(row.sleep) || 0;

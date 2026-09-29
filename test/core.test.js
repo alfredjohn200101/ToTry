@@ -3011,7 +3011,13 @@ H.section('two devices do not destroy each other\'s work')
   H.ok(/if\(i >= aLen && preferB\)/.test(pull), 'and the newer side wins an id collision');
   H.ok(/union\(lv, cv, \(cts >= lts\) && !pendingLocal, k\)/.test(pull),
     'the array branch passes real freshness, not a guess');
-  H.ok(/union\(lv\[d\], cv\[d\], _cloudNewer, 'totry_nutlog'\)/.test(pull), 'and so does the per-day nutrition merge');
+  H.ok(/union\(_nl\[d\], _nc\[d\], _cloudNewer, 'totry_nutlog'\)/.test(pull), 'and so does the per-day nutrition merge');
+  // AND IT UNIONS DAYS, NOT KEY STRINGS. It used to walk Object.keys(lv) and Object.keys(cv) raw, so
+  // "22/9/2026" (WebKit) and "22/09/2026" (Chromium) were two different days forever and each device
+  // read only its own half of one diary. Both sides are normalised before the per-day union.
+  H.ok(/dayKeyNorm\(d\)/.test(pull), 'both sides of the nutrition merge are normalised to one spelling first');
+  H.ok(/_normNut\(lv, false\)/.test(pull) && /_normNut\(cv, _cloudNewer\)/.test(pull),
+    'and each side keeps its own freshness through the normalisation');
 
   // The outbox is what makes a write "durable". It silently swallowed its own storage failure, so on a
   // full device the queue failed to save while the UI still said the change was on its way.
@@ -5240,9 +5246,16 @@ function fnBodyOf(code, name){
     // it — legal and live (one script, one scope, function declarations hoist), but invisible to
     // this isolated harness. Hand it the real one rather than a stub, or the test measures a
     // ReferenceError swallowed into null instead of the readiness a person would see.
+    // Same reason dayKeyNorm/dayKeyOf are handed in: computeReadiness now keys the tracker store
+    // through the app's own day primitive, and an isolated scope without it measures a swallowed
+    // ReferenceError instead of the readiness a person would see.
     const g = new Function('ls', 'interferenceNote', 'weeklyLoadByModality', 'cyclePhase',
+      H.extractFn('dayKeyNorm') + H.extractFn('dayKeyOf') +
       H.extractFn('_sleepHoursToRating') + cr + 'return computeReadiness;')(k => store[k], () => null, () => ({}), () => null);
-    const key = new Date().toLocaleDateString('en-AU');
+    // Keyed the way the rest of the app keys a day — not through a formatter, which pads in Chromium
+    // and does not in WebKit, so a store seeded here would not match what the app reads on a phone.
+    const { dayKeyOf } = H.load(['dayKeyOf']);
+    const key = dayKeyOf();
     store.totry_workouts = [{}]; store.totry_checkins = [];
     store.totry_trackers = { [key]: { sleep: 4, _sleepSrc: 'health' } };
     const four = g();
@@ -5518,7 +5531,10 @@ function fnBodyOf(code, name){
   H.ok(/stepDays\.forEach/.test(fn), 'every fetched day is walked, not only today');
   H.ok(/ms:parseInt\(b\.startTimeMillis\)/.test(fn),
        'each day carries its own timestamp, so it lands on the date it belongs to');
-  H.ok(/toLocaleDateString\('en-AU'\)/.test(fn),
+  // Same intent, new name: the day key is built by dayKeyOf() from the day's OWN timestamp. It used
+  // to be toLocaleDateString('en-AU'), which Chromium pads and WebKit does not — so the App Store
+  // build wrote a key the PWA could not read back, and the reverse.
+  H.ok(/dayKeyOf\(d\.ms\)/.test(fn),
        'and is keyed the way the rest of the app keys a day, or Track would never see it');
   H.ok(/if\(!\(tr\[k\]\.steps > 0\)\)/.test(fn),
        'a number the person entered themselves is never overwritten by the sync');
@@ -8573,6 +8589,406 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // ── 6. A MODEL'S WORDS ARE TEXT ───────────────────────────────────────────────────────────────
   const vs = H.code(H.extractFn('viewSingleSynthesis'));
   H.ok(/String\(s\.text \|\| ''\)\.replace\(\/&\/g, '&amp;'\)\.replace\(\/<\/g, '&lt;'\)/.test(vs), 'a past Sunday’s reflection is escaped before it is printed as markup');
+}
+
+// ── one day is one key, on both engines ──────────────────────────────────────────────────────────
+{
+  H.section('one day is one key, whichever engine wrote it');
+
+  // `new Date().toLocaleDateString('en-AU')` was this app's PERSISTED day key and it is not a stable
+  // string: Chromium zero-pads both fields, WebKit/iOS pads neither. 300 of the 365 days of 2026
+  // disagree. Six cloud-synced stores were keyed by it, so one day survived as two keys and each
+  // device read only its own half — and for the stores with no merge branch, one device's whole map
+  // replaced the other's on the first sync of a new phone.
+  //
+  // These EXECUTE the real functions rather than grepping for a call, because a grep for a call name
+  // passes on a wrong argument, which is exactly how a 180-day data-loss bug shipped here before.
+
+  const { dayKeyOf, dayKeyNorm } = H.load(['dayKeyOf', 'dayKeyNorm']);
+
+  // THE BUG, stated as an assertion. Both spellings are one day.
+  H.eq(dayKeyNorm('22/9/2026'), dayKeyNorm('22/09/2026'), 'the two engines spell one day the same way');
+  // A single-digit DAY and a single-digit MONTH — the two fields differ at once, which is the shape
+  // that a "just pad the month" fix would have walked straight past.
+  H.eq(dayKeyNorm('2/9/2026'), '02/09/2026', 'both fields pad, not just the month');
+  H.eq(dayKeyNorm('02/09/2026'), '02/09/2026', 'and a key already canonical comes back unchanged');
+  // Idempotence is what makes the migration safe to run on every boot.
+  H.eq(dayKeyNorm(dayKeyNorm('2/9/2026')), dayKeyNorm('2/9/2026'), 'normalising twice changes nothing');
+
+  // {month:'short'} in en-AU is "Sept" in Chromium and "Sep" in WebKit — a CLDR data difference, so
+  // only Jun/Jul/Sep differ. Three letters settles it.
+  H.eq(dayKeyNorm('5 Sept 2026'), dayKeyNorm('5 Sep 2026'), '"Sept" and "Sep" are the same month');
+  H.eq(dayKeyNorm('5 Sept 2026'), '05/09/2026', 'and land on the canonical key');
+  H.eq(dayKeyNorm('5 September 2026'), '05/09/2026', 'the full month name too');
+
+  // '' FOR ANYTHING IT CANNOT READ WITH CERTAINTY. A wrong day is worse than no day: a wrong day is
+  // written to disk and then synced to every device.
+  H.eq(dayKeyNorm('22/9/26'), '', 'a two-digit year is ambiguous and is refused');
+  H.eq(dayKeyNorm('5 Sept'), '', 'a year-less string is refused');
+  H.eq(dayKeyNorm('22/13/2026'), '', 'and so is a month that does not exist');
+  H.eq(dayKeyNorm(''), '', 'and empty input');
+
+  // A BARE YYYY-MM-DD IS READ AS LOCAL PARTS. Both engines read "2026-09-22" through Date as UTC
+  // midnight, which is the PREVIOUS day everywhere WEST of Greenwich — the sleep importer hands
+  // exactly this shape in. So this has to be asserted from a NEGATIVE-offset zone: run in the host's
+  // own timezone (this app's home zone is UTC+10) it passes whether or not the bug is present, which
+  // is a test that cannot fail and therefore is not yet a test.
+  {
+    const was = process.env.TZ;
+    try{
+      process.env.TZ = 'America/New_York';                 // UTC-4/-5 — where the off-by-one bites
+      const { dayKeyOf: tzKey } = H.load(['dayKeyOf']);
+      H.eq(tzKey('2026-09-22'), '22/09/2026', 'a bare date is read as local parts, not UTC midnight');
+      // calibration: the naive reading really does land on the previous day here, so the assertion
+      // above is measuring something rather than agreeing with the host clock.
+      H.eq(new Date('2026-09-22').getDate(), 21, 'and Date really would have read it as the 21st here');
+    } finally {
+      if(was === undefined) delete process.env.TZ; else process.env.TZ = was;
+    }
+  }
+
+  // "Today" is arguments.length === 0, NOT v === undefined. dayKeyOf(w.ts) on a row with a missing
+  // ts must return nothing rather than silently file a year-old workout under this morning.
+  H.eq(dayKeyOf(undefined), '', 'an absent timestamp is not today');
+  H.eq(dayKeyOf(null), '', 'and neither is null');
+  H.ok(/^\d{2}\/\d{2}\/\d{4}$/.test(dayKeyOf()), 'called with no argument at all, it is today');
+  {
+    const d = new Date(2026, 8, 2, 13, 0, 0);          // 2 September 2026, local
+    H.eq(dayKeyOf(d), '02/09/2026', 'a Date lands on its own local day');
+    H.eq(dayKeyOf(d.getTime()), '02/09/2026', 'epoch ms agree with it');
+    H.eq(dayKeyOf(d.toISOString()), '02/09/2026', 'and so does its own ISO stamp');
+  }
+
+  // ── the one merge rule ───────────────────────────────────────────────────────────────────────
+  const M = (() => {
+    const src = ['syncIdOf', 'dayKeyNorm', 'dayKeyOf', '_mergeDayMaps']
+      .map(H.extractFn).join('\n');
+    return new Function(src + '\nreturn _mergeDayMaps;')();
+  })();
+
+  // An array day (totry_nutlog) unions by syncIdOf, which is 'i'+id and carries no date — which is
+  // why moving an entry between spellings cannot orphan its tombstone.
+  {
+    const merged = M({ '02/09/2026': [{id: 1, cal: 500}] }, { '2/9/2026': [{id: 2, cal: 300}] }, 'totry_nutlog');
+    H.eq(Object.keys(merged), ['02/09/2026'], 'two spellings of one day become one key');
+    H.eq((merged['02/09/2026']||[]).length, 2, 'and the day holds BOTH devices’ meals, not one');
+    const same = M({ '02/09/2026': [{id: 1, cal: 500}] }, { '2/9/2026': [{id: 1, cal: 999}] }, 'totry_nutlog');
+    H.eq((same['02/09/2026']||[]).length, 1, 'the same entry under two spellings is one entry');
+    H.eq((same['02/09/2026']||[{}])[0].cal, 500, 'and the newer side wins the collision');
+    // IDENTITY IS syncIdOf, NOT x.id. A row with no id falls back to its ts — a raw `x.id` would
+    // read `undefined` for every such row and collapse a whole day's meals into one. Meal rows
+    // written by the older import paths have exactly this shape.
+    const noId = M({ '02/09/2026': [{ts: '2026-09-02T08:00:00.000Z', cal: 400}] },
+                   { '2/9/2026':  [{ts: '2026-09-02T19:00:00.000Z', cal: 700}] }, 'totry_nutlog');
+    H.eq((noId['02/09/2026']||[]).length, 2, 'two id-less meals are two meals, not one');
+  }
+
+  // A SCALAR DAY TAKES THE NEWER SIDE, NOT Math.max. adjustTracker() and setWaterCount() both go
+  // DOWN, so max would silently undo a correction and then push the undo to every device.
+  {
+    const w = M({ '02/09/2026': 1500 }, { '2/9/2026': 2500 }, 'totry_water');
+    H.eq(w['02/09/2026'], 1500, 'a correction downwards survives the merge');
+  }
+  // NO STORE TAKES Math.max — INCLUDING THE TWO BURN SUB-LEDGERS. An earlier draft exempted them as
+  // "append-only importer totals". Both halves of that premise are false in this tree, and these two
+  // assertions are the numbers a person would actually lose:
+  //  • totry_watch_burns_byday is HAND-TYPED. saveEvening() reads #evening-move, an input its own
+  //    function calls "editable until midnight", and assigns it onto the day. A typo'd 8000 fixed to
+  //    800 five minutes later is ordinary — and max restores the 8000 and pushes it everywhere.
+  //  • totry_strava_burns_byday is a FULL REPLACE. syncStrava() rebuilds the whole map each sync
+  //    ("re-syncs replace rather than double-count"). A day drops when an activity is deleted, when
+  //    its calories are corrected, and when a session is newly recognised as a Hevy duplicate and
+  //    skipped — and that skip IS the double-count removal, so max reinstates exactly what the
+  //    block exists to take away.
+  {
+    const b = M({ '02/09/2026': 800 }, { '2/9/2026': 8000 }, 'totry_watch_burns_byday');
+    H.eq(b['02/09/2026'], 800, 'a mistyped 8000 corrected to 800 stays corrected');
+    const s = M({ '02/09/2026': 300 }, { '2/9/2026': 780 }, 'totry_strava_burns_byday');
+    H.eq(s['02/09/2026'], 300, 'and a Hevy double-count that Strava dropped is not reinstated');
+    // The rule is the SAME rule for every store — not a list of exceptions that a new store could be
+    // added to. If any store name ever takes the larger side again, this fails.
+    ['totry_water','totry_calorie_burns','totry_watch_burns_byday','totry_strava_burns_byday',
+     'totry_workout_burns_byday','totry_usage_log','totry_trackers','totry_tgt'].forEach(k => {
+      H.eq(M({'02/09/2026': 5}, {'2/9/2026': 900}, k)['02/09/2026'], 5, 'the winner\'s own figure wins in ' + k);
+    });
+  }
+
+  // An object day merges FIELD BY FIELD, so a field only the older side carries is not erased — and
+  // strict === is what lets a real `false` and a real `0` through as values rather than absences.
+  {
+    // `|| {}` throughout: a broken day key would otherwise crash this file and take the whole suite
+    // with it, and an assertion that can only crash reports nothing — every earlier failure in the
+    // run is lost with it. A test has to be able to FAIL, not only to explode.
+    const t = M({ '02/09/2026': {steps: 9000, sleep: 0} }, { '2/9/2026': {water: 2000, sleep: 7} }, 'totry_trackers');
+    H.eq((t['02/09/2026']||{}).water, 2000, 'a field only the other device had is kept');
+    H.eq((t['02/09/2026']||{}).steps, 9000, 'the newer side keeps its own');
+    H.eq((t['02/09/2026']||{}).sleep, 0, 'and a deliberate zero is a value, not an absence');
+  }
+  // A key it cannot read keeps its own name rather than being folded into something else.
+  {
+    const odd = M({ 'garbage': 1 }, { '2/9/2026': 2 }, 'totry_water');
+    H.eq(Object.keys(odd).sort(), ['02/09/2026', 'garbage'], 'an unreadable key is left exactly as it is');
+  }
+
+  // ── the migration merges, never overwrites, and is idempotent ────────────────────────────────
+
+  // A WEBKIT-SHAPED Date, so the iOS case can actually be RUN rather than reasoned about. Node is a
+  // padding engine, exactly like Chromium, so every assertion about the non-padding device passes in
+  // the host's own engine whether or not the bug is present — which is a test that cannot fail.
+  class WebKitDate extends Date {
+    toLocaleDateString(loc, opts){
+      if(!opts) return this.getDate() + '/' + (this.getMonth() + 1) + '/' + this.getFullYear();
+      return Date.prototype.toLocaleDateString.call(this, loc, opts);
+    }
+  }
+  // Calibration for that stub: it has to reproduce the divergence the whole fix is about, or every
+  // assertion built on it is measuring the host engine twice.
+  H.eq(new Date(2026, 8, 2).toLocaleDateString('en-AU'), '02/09/2026', 'CALIBRATION: the host engine pads, like Chromium');
+  H.eq(new WebKitDate(2026, 8, 2).toLocaleDateString('en-AU'), '2/9/2026', 'CALIBRATION: and the stub does not, like WebKit');
+
+  // Build a migration bound to a chosen engine and a chosen localStorage.
+  const migrationOn = (store, DateImpl) => {
+    const src = ['syncIdOf', 'dayKeyNorm', 'dayKeyOf', '_mergeDayMaps', '_dayKeyEnginePads',
+                 'dayKeyedStores', 'migrateDayKeys'].map(H.extractFn).join('\n');
+    const localStorage = {
+      getItem: k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); }
+    };
+    const ls = (k, v) => { store[k] = JSON.stringify(v); };
+    return new Function('localStorage', 'ls', 'Date', src + '\nreturn migrateDayKeys;')(localStorage, ls, DateImpl || Date);
+  };
+
+  // THE ENGINE PROBE. Every one of the two assertions below is what decides whose copy of a day the
+  // person keeps, so it is asserted directly rather than inferred from the migration's output.
+  {
+    const pads = new Function('Date', H.extractFn('_dayKeyEnginePads') + '\nreturn _dayKeyEnginePads;');
+    H.eq(pads(Date)(), true, 'the probe recognises a padding engine');
+    H.eq(pads(WebKitDate)(), false, 'and recognises one that does not pad');
+  }
+
+  // ── THE MIGRATION MUST NOT PREFER A STALE COPY OVER THE FIGURES ON THE PERSON'S OWN SCREEN ────
+  // An earlier draft picked the already-canonical spelling as the winner. On a padding engine that
+  // IS the device's own spelling, so it was right there and only there. On iOS canonical is a
+  // spelling that device has NEVER written: it can only have arrived by a pre-fix cloud pull, which
+  // is the OTHER phone's older copy. These two ran against the real functions and lost real data.
+  {
+    // 1. The water ring. The person is looking at 2000ml; the padded key is the other phone's 750.
+    const store = { totry_water: JSON.stringify({ '22/9/2026': 2000, '22/09/2026': 750 }) };
+    migrationOn(store, WebKitDate)();
+    H.eq(JSON.parse(store.totry_water), { '22/09/2026': 2000 },
+      'on iOS the device’s own 2000ml survives the merge, not another phone’s 750');
+
+    // And the mirror case, so this is a rule about WHOSE data it is rather than a flipped constant:
+    // on a padding engine the device's own spelling is the padded one, and it must still win.
+    const store2 = { totry_water: JSON.stringify({ '22/9/2026': 2000, '22/09/2026': 750 }) };
+    migrationOn(store2, Date)();
+    H.eq(JSON.parse(store2.totry_water), { '22/09/2026': 750 },
+      'and on Chromium the padded key is this device’s own, so 750 is the right answer there');
+
+    // IDEMPOTENT ON THE NON-PADDING PATH TOO. That branch calls _mergeDayMaps with its arguments the
+    // other way round, so it writes its keys out in a different order — and it runs on EVERY boot.
+    // A second pass has to be a no-op, not a second merge that keeps re-ordering and re-pushing.
+    const again = migrationOn(store, WebKitDate)();
+    H.eq(again.moved, 0, 'a second boot on iOS has nothing left to move');
+    H.eq(JSON.parse(store.totry_water), { '22/09/2026': 2000 }, 'and changes nothing');
+  }
+  {
+    // 2. THE GUARANTEED CASE. adjustTracker() and the Health sync both CREATE a day as
+    // {water:0,sleep:0,steps:0}. The `undefined || null || ''` guard lets a 0 through as a
+    // deliberate value, so the winner's empty skeleton flattened a day the other spelling had
+    // filled — the night's sleep and 14,000 steps, gone, on BOTH engines.
+    const before = { '22/9/2026': {water:0, sleep:7.5, steps:14000}, '22/09/2026': {water:0, sleep:0, steps:0} };
+    [['iOS', WebKitDate], ['Chromium', Date]].forEach(([name, D]) => {
+      const store = { totry_trackers: JSON.stringify(before) };
+      migrationOn(store, D)();
+      H.eq(JSON.parse(store.totry_trackers), { '22/09/2026': {water:0, sleep:7.5, steps:14000} },
+        'a freshly-initialised day does not erase a filled one (' + name + ')');
+    });
+    // THE TRADE, ASSERTED SO IT IS ON THE RECORD: a zero is only treated as absent where the other
+    // side has a real figure. A day on which the person genuinely drank nothing still reads 0.
+    const store = { totry_trackers: JSON.stringify({ '22/9/2026': {water:0}, '22/09/2026': {water:0} }) };
+    migrationOn(store, WebKitDate)();
+    H.eq((JSON.parse(store.totry_trackers)['22/09/2026']||{}).water, 0, 'a real zero is still a zero');
+    // And zeroIsAbsent belongs to the MIGRATION only: the cloud pull has cts/lts, so there recency
+    // answers the question and a 0 really is the newer device's answer.
+    H.eq(M({'02/09/2026': 0}, {'2/9/2026': 1800}, 'totry_water')['02/09/2026'], 0,
+      'without the flag a zero is a value, which is what the pull needs');
+    H.eq(M({'02/09/2026': 0}, {'2/9/2026': 1800}, 'totry_water', {zeroIsAbsent:true})['02/09/2026'], 1800,
+      'and with it a zero yields to a figure');
+    // …and the pull really does call it without the flag. Two merges of one map with different rules
+    // is how the two sides drift apart again, which is the whole reason there is one _mergeDayMaps.
+    const pull = H.code(H.extractFn('pullFromCloud'));
+    H.ok(/_mergeDayMaps\(_keep, _add, k\)/.test(pull), 'the cloud pull merges on recency, not on zeroIsAbsent');
+    H.ok(!/_mergeDayMaps\([^)]*zeroIsAbsent/.test(pull), 'and nothing in the pull asks for the migration’s rule');
+  }
+
+  {
+    const store = {};
+    const run = migrationOn(store, Date);
+
+    store.totry_nutlog  = JSON.stringify({ '02/09/2026': [{id:1, cal:500}], '2/9/2026': [{id:2, cal:300}] });
+    // A day that exists under BOTH spellings with DIFFERENT values, so the test can tell which side
+    // the migration treated as the winner. Without a real collision, swapping the two arguments
+    // produces an identical result and the assertion cannot fail.
+    store.totry_water   = JSON.stringify({ '02/09/2026': 1500, '2/9/2026': 2400, '03/09/2026': 1000 });
+    store.totry_trackers= JSON.stringify({ '2/9/2026': {steps: 8000}, '02/09/2026': {sleep: 7} });
+
+    const r1 = run();
+    H.ok(r1.moved >= 3, 'the migration reports the stores it moved');
+
+    const nut = JSON.parse(store.totry_nutlog);
+    H.eq(Object.keys(nut), ['02/09/2026'], 'the diary’s two spellings become one day');
+    H.eq((nut['02/09/2026']||[]).length, 2, 'and NOTHING is overwritten — both meals survive');
+
+    const water = JSON.parse(store.totry_water);
+    H.eq(Object.keys(water).sort(), ['02/09/2026', '03/09/2026'], 'water is normalised without losing a day');
+    // THIS DEVICE'S OWN SPELLING is the winner, and this run is on a padding engine, so that is the
+    // padded key. The non-padding half of the same rule is asserted above, where it is the opposite
+    // string — which is what makes this an assertion about whose data it is, not about a constant.
+    H.eq(water['02/09/2026'], 1500, 'the spelling this device itself writes wins a collision');
+    H.eq(water['03/09/2026'], 1000, 'and a day that never collided is untouched');
+
+    const tr = JSON.parse(store.totry_trackers);
+    H.eq((tr['02/09/2026']||{}).steps, 8000, 'a tracker day keeps the field only one device had');
+    H.eq((tr['02/09/2026']||{}).sleep, 7, 'and the field only the other device had');
+
+    // IDEMPOTENT. It runs on every boot, because a cloud pull can reintroduce the other spelling at
+    // any time — so a second pass must be a no-op, not a second merge.
+    const snapshot = JSON.stringify(store);
+    const r2 = run();
+    H.eq(r2.moved, 0, 'a second run has nothing to move');
+    H.eq(JSON.stringify(store), snapshot, 'and changes not one byte');
+  }
+
+  // ── the producers, so the migration cannot be undone the moment it finishes ───────────────────
+  // _auKeyMs is never used as a lookup — every real read is raw property indexing with the
+  // engine-native string — so the migration and the key producers have to ship together. If any of
+  // these regressed to a formatter, on WebKit the diary, the water ring and the trackers would read
+  // EMPTY, the person would re-log breakfast, and the merge would keep BOTH sets.
+  const src = H.code(H.html);
+  H.ok(/function nutDayKey\(\)\{ return dayKeyOf\(nutViewDate\(\)\); \}/.test(src), 'the diary key is built from parts');
+  H.ok(/function _tgtKey\(\)\{ return dayKeyOf\(\); \}/.test(src), 'three-good-things too');
+  H.ok(/function _vDay\(\)\{ return dayKeyOf\(\); \}/.test(src), 'and the daily pledge');
+  H.ok(/const dk = dayKeyOf\(w\.ts\);/.test(src), 'and the burn ledger, or reconcileBurns re-splits the merge');
+  // The second key producer is GONE, not fixed twice: nutDayKey is a hoisted declaration in the same
+  // single <script>, so `typeof nutDayKey === 'function'` has never been able to be false.
+  H.ok(!/typeof nutDayKey\s*===\s*'function'/.test(src), 'no unreachable second producer remains');
+  H.ok(!/typeof nutRelKey\s*===\s*'function'/.test(src), 'nor for the relative key');
+  // The eviction that decides which day is thrown away has to sort by DATE. '01/12/2025' sorts
+  // before '02/01/2026' lexicographically, so a plain .sort() threw away this month to keep last year.
+  H.ok(/keys\.sort\(function\(a,b\)\{ return _auKeyMs\(a\)-_auKeyMs\(b\); \}\); delete all\[keys\[0\]\]/.test(src),
+    'the three-good-things eviction drops the oldest day, not the alphabetically first');
+
+  // And the restore path: totry_nutlog is an OBJECT OF ARRAYS, so it was neither the Array.isArray
+  // case nor totry_v nor totry_f and fell through all three — restoring a backup to get a deleted
+  // meal back let the very next cloud pull delete it again, for the 180 days a tombstone lives.
+  const rk = H.code(H.extractFn('restoreKeys'));
+  H.ok(/k === 'totry_nutlog'/.test(rk), 'a restore revokes the nutrition log’s tombstones too');
+  H.ok(/_ids\.push\(syncIdOf\(e\)\)/.test(rk), 'keyed by syncIdOf, the way the union looks them up');
+  H.ok(/migrateDayKeys\(\{raw:true\}\)/.test(rk), 'and a restored backup is normalised before it reaches the cloud');
+
+  // It runs on EVERY boot, not once behind a schema number: a pull can reintroduce the other
+  // engine's spelling at any time.
+  const ia = H.code(H.extractFn('initApp'));
+  H.ok(/migrateDayKeys\(\)/.test(ia), 'boot normalises the day keys before anything reads a day');
+}
+
+// ── no day key is produced inside a handler string ───────────────────────────────────────────────
+{
+  H.section('a handler string is code too, and the sweep has to be able to read it');
+
+  // THE HALF-APPLIED RENAME THAT HID IN AN ATTRIBUTE. Three dismiss/nudge buttons wrote their day
+  // key from inside an inline handler — `onclick="ls(&apos;totry_glance_dismissed&apos;,new
+  // Date().toLocaleDateString(&apos;en-AU&apos;))"` and `onclick:'ls(\'totry_low_day\', new
+  // Date().toLocaleDateString(\'en-AU\'))'`. The READER moved to dayKeyOf() and the WRITER did not,
+  // and nothing saw it: a grep for toLocaleDateString('en-AU') does not match &apos;en-AU&apos;, and
+  // a balanced-paren scanner reading the file as code never enters a string literal at all. On
+  // Chromium both halves still produce '22/09/2026', so every gate stayed green; on WebKit the writer
+  // stored '22/9/2026' and the reader asked for '22/09/2026', so the × on the protein glance, the ×
+  // on the Lenten-Friday strip and "Take a rest day" all silently stopped sticking — 300 days a year.
+  //
+  // So this is a guard over the CLASS, not over those three sites: it reads HANDLER STRINGS, which
+  // is the one region of the bundle every other day-key check is structurally blind to.
+  const handlerStrings = (src) => {
+    const out = [];
+    // `on*=` is the attribute form; `on*:` is the {label, onclick:'…'} nudge-action form, which is
+    // where the third one lived — an attribute-only scan would have missed it.
+    const re = /\bon[a-z]{3,14}\s*[=:]\s*(["'])/g;
+    let m;
+    while((m = re.exec(src))){
+      const q = m[1];
+      let i = m.index + m[0].length, body = '';
+      while(i < src.length){
+        const c = src[i];
+        if(c === '\\'){ body += c + (src[i+1] || ''); i += 2; continue; }  // step OVER \' and \"
+        if(c === q || c === '\n') break;                                   // a handler never spans a raw newline
+        body += c; i++;
+      }
+      if(src[i] === q) out.push({ at: m.index, body });
+    }
+    return out;
+  };
+
+  // CALIBRATE BEFORE REPORTING. A scanner that silently found nothing would report this fixed
+  // forever — which is exactly the failure mode that let the three sites ship. Both escape spellings
+  // are planted, because they are the two the app actually uses and they break a naive scanner in
+  // different ways: &apos; hides the quote from a grep, \' ends the string early if you do not step
+  // over it. A third plant is a handler that is CLEAN, so a scanner that matched everything fails too.
+  const _plantEsc  = `<button onclick="ls(&apos;k&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;))">x</button>`;
+  const _plantBk   = `{label:'x', onclick:'ls(\\'k\\', new Date().toLocaleDateString(\\'en-AU\\'));go(\\'home\\')'}`;
+  const _plantOk   = `<button onclick="ls(&apos;k&apos;,dayKeyOf())">x</button>`;
+  const _hit = (s) => handlerStrings(s).filter(h => /toLocaleDateString/.test(h.body)).length;
+  const _calEsc = _hit(_plantEsc), _calBk = _hit(_plantBk), _calOk = _hit(_plantOk);
+  H.ok(_calEsc === 1, 'CALIBRATION: the scanner reads through &apos; escaping (found ' + _calEsc + ', want 1)');
+  H.ok(_calBk === 1,  'CALIBRATION: the scanner reads through backslash escaping (found ' + _calBk + ', want 1)');
+  H.ok(_calOk === 0,  'CALIBRATION: and it clears a handler that asks dayKeyOf() (found ' + _calOk + ', want 0)');
+
+  if(_calEsc === 1 && _calBk === 1 && _calOk === 0){
+    // The rule, stated as a rule: a handler string never formats a date. Not "never formats a day
+    // key" — a display formatter inside a handler is unreadable to the same sweeps and is one edit
+    // away from becoming a key. If a handler needs a formatted date, it calls a named function, where
+    // the sweep can read it.
+    const bad = handlerStrings(H.html).filter(h => /toLocaleDateString/.test(h.body));
+    const where = bad.map(h => H.html.slice(0, h.at).split('\n').length + ': ' + h.body.slice(0, 90));
+    H.ok(bad.length === 0, 'no inline handler formats a date; it asks dayKeyOf() — ' + bad.length + ' found' +
+      (where.length ? '\n      ' + where.join('\n      ') : ''));
+    // And the three that were wrong now spell it the one way that cannot hide again: dayKeyOf()
+    // takes no argument, so there is no quoted locale left for an escaping to swallow.
+    H.ok(/totry_glance_dismissed&apos;,dayKeyOf\(\)/.test(H.html), 'the protein glance’s × writes the canonical key');
+    H.ok(/totry_fast_rhythm_dismissed&apos;,dayKeyOf\(\)/.test(H.html), 'the Lenten-Friday strip’s × writes the canonical key');
+    H.ok(/totry_low_day\\', dayKeyOf\(\)/.test(H.html), '"Take a rest day" writes the canonical key');
+  }else{
+    H.ok(false, 'the MEASUREMENT is wrong, not the app: the handler scanner failed its own calibration');
+  }
+
+  // The fourth site of the same shape, found by asking the question of the whole tree rather than of
+  // the three that were reported: totry_body's two writers both ask dayKeyOf() which day a row is,
+  // and syncWeightTodayRow — the row that answers "did I weigh in today" — was still on the formatter.
+  //
+  // AND IT IS DRIVEN, NOT GREPPED. A grep for `dayKeyOf(` here passes on `dayKeyOf(e.date)` — a
+  // totry_body row's .date is "22 Sept", with no year, so dayKeyOf refuses it and the row reads "No
+  // log today" over a weigh-in from an hour ago. That is the exact mutation a name-match cannot see,
+  // and it is the one that shipped a 180-day data-loss bug in this repo once already.
+  {
+    const els = { 'bod-current-summary': {textContent:''}, 'bod-current-value': {textContent:''} };
+    const { syncWeightTodayRow } = H.load(['syncWeightTodayRow'], {
+      document: { getElementById: id => els[id] || null },
+      ls: () => [],
+      wFmt: w => w + 'kg'
+    });
+    const now = new Date();
+    // A weigh-in an hour ago, and one from a fortnight ago, each carrying only a ts.
+    syncWeightTodayRow([{ weight: 82.4, ts: new Date(now.getTime() - 3600e3).toISOString() }]);
+    H.eq(els['bod-current-summary'].textContent, 'Logged today', 'a weigh-in an hour ago reads as logged today');
+    H.eq(els['bod-current-value'].textContent, '82.4kg', 'and the row shows it');
+    syncWeightTodayRow([{ weight: 82.4, ts: new Date(now.getTime() - 14 * 86400e3).toISOString() }]);
+    H.eq(els['bod-current-summary'].textContent, 'No log today', 'a fortnight-old one does not');
+    // A row with no weight is a reflection, not a weigh-in — the defect this row was written for.
+    syncWeightTodayRow([{ weight: 0, ts: now.toISOString() }, { weight: 79, ts: new Date(now.getTime() - 60e3).toISOString() }]);
+    H.eq(els['bod-current-value'].textContent, '79kg', 'and a blank reflection does not hide a real weigh-in');
+  }
+  const swt = H.code(H.extractFn('syncWeightTodayRow'));
+  H.ok(!/toLocaleDateString\('en-AU'\)/.test(swt), 'and no raw formatter decides identity beside it');
 }
 
 H.report();

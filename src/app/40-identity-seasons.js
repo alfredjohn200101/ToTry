@@ -69,7 +69,7 @@ function renderIdentity(){
     // No identity - check if user has affirmations and rotate through them
     const affirms=(typeof getAffirmations==='function'?getAffirmations():(ls('totry_affirms')||[]));
     if(affirms.length){
-      const today=new Date().toLocaleDateString('en-AU');
+      const today=dayKeyOf();
       const idx=Math.abs(hashStr(today))%affirms.length;
       const affirm=affirms[idx];
       if(labelEl)labelEl.textContent='Today\u2019s affirmation';
@@ -166,7 +166,7 @@ function renderSeasonSettings(){
 
 // ── DAILY CHECK-IN ────────────────────────────────────────────
 function maybeShowCheckin(){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const last=ls('totry_checkin_last');
   if(last===today)return;
   const skip=ls('totry_checkin_skip');
@@ -176,7 +176,7 @@ function maybeShowCheckin(){
 }
 
 function skipCheckin(){
-  ls('totry_checkin_skip',new Date().toLocaleDateString('en-AU'));
+  ls('totry_checkin_skip',dayKeyOf());
   const strip=document.getElementById('daily-checkin');
   if(strip)strip.style.display='none';
 }
@@ -194,7 +194,7 @@ function saveCheckin(){
     return;
   }
   haptic('success');
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const prevCheckins = ls('totry_checkins') || [];
   const prevLast = ls('totry_checkin_last');
   const checkins=[...prevCheckins];
@@ -249,7 +249,7 @@ function getResilienceStreak(){
   // thread every time Home renders; measured at 7ms for a new user and 0.9-1.1s for a long one.
   // One pass, into a Set of local date strings, then the day walk is O(days).
   const _days = new Set();
-  const _add = (ts) => { try{ if(ts!=null) _days.add(new Date(ts).toLocaleDateString('en-AU')); }catch(_){ } };
+  const _add = (ts) => { try{ if(ts!=null) _days.add(dayKeyOf(ts)); }catch(_){ } };
   try{ ritualLog('totry_mornings').forEach(m => _add(m && m.ts)); }catch(_){ }
   try{ ritualLog('totry_evenings').forEach(e => _add(e && e.ts)); }catch(_){ }
   try{ (ls('totry_journal')||[]).forEach(j => _add(j && j.ts)); }catch(_){ }
@@ -266,7 +266,7 @@ function getResilienceStreak(){
   for(let i=0;i<_limit;i++){
     const checkDate=new Date(today);
     checkDate.setDate(today.getDate()-i);
-    const dateStr=checkDate.toLocaleDateString('en-AU');
+    const dateStr=dayKeyOf(checkDate);
     const hasActivity = _days.has(dateStr);
     // NEVER MISS TWICE (Lally 2010): a single off day never breaks the chain, but two IN A ROW does.
     // The allowance resets on every day they showed up — so it forgives each isolated gap, not just

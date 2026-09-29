@@ -436,7 +436,7 @@ async function _fuelSwapMeal(i){
 }
 
 // Today's ACTUAL logged intake (from the tracker) — the day is anchored to targets, not the plan.
-function _fuelToday(){ try{ const today=new Date().toLocaleDateString('en-AU'); const arr=(ls('totry_nutlog')||{})[today]||[]; return { cal: arr.reduce(function(a,e){return a+(e.cal||0);},0), pro: arr.reduce(function(a,e){return a+(e.pro||0);},0) }; }catch(_){ return {cal:0,pro:0}; } }
+function _fuelToday(){ try{ const today=dayKeyOf(); const arr=(ls('totry_nutlog')||{})[today]||[]; return { cal: arr.reduce(function(a,e){return a+(e.cal||0);},0), pro: arr.reduce(function(a,e){return a+(e.pro||0);},0) }; }catch(_){ return {cal:0,pro:0}; } }
 
 // Grace when real life happens (a buffet, a night out, anything off-plan). The plan is a guide,
 // not a cage — let it slide, anchor to the day's TARGET, and log whatever they actually ate.
@@ -511,7 +511,7 @@ function _fuelMealSlot(name, i, n){
 }
 function _fuelLogPlan(btn){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
   plan.meals.forEach(function(mm, i){
     log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
@@ -1183,7 +1183,7 @@ function handleCSVFile(ev){
       type: amt < 0 ? 'expense' : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
           category: amt < 0 ? _autoCategory(desc) : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'Transfer' : 'Income'),
           ts: validWhen.toISOString(),
-          date: validWhen.toLocaleDateString('en-AU'),
+          date: dayKeyOf(validWhen),
         });
       }
       if(!parsed.length){ showToast('Nothing to import','Couldn\u2019t find transactions in that file. Check it has date, description, and amount columns.'); return; }

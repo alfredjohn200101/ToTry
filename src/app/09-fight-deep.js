@@ -264,7 +264,7 @@ function commitMassAddLosses(){
     v.lastLoss = whenStr;
     // Mirror into the fight log so pattern intelligence & syntheses see these losses.
     const fl = ls('totry_fight_log') || [];
-    fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null, note: 'backfilled', ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+    fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null, note: 'backfilled', ts: whenStr, date: dayKeyOf(whenStr) });
     ls('totry_fight_log', fl.slice(0, 200));
   });
   saveV();
@@ -317,7 +317,7 @@ function logLoss(whenISO){
       // analysis built on that field would have learned a pattern from someone else's answer.
       // Better an honest null than a borrowed value.
       fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null,
-        ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+        ts: whenStr, date: dayKeyOf(whenStr) });
       ls('totry_fight_log', fl.slice(0, 200));
     }catch(_){ }
     saveV();
@@ -486,7 +486,7 @@ function logWin(){
         vice:vices[curVice].n,
         amount:savedNow,
         ts:new Date().toISOString(),
-        date:new Date().toLocaleDateString('en-AU')
+        date:dayKeyOf()
       });
       ls('totry_vice_savings_log',savings);
     }
@@ -496,7 +496,7 @@ function logWin(){
     wins.unshift({
       text: 'Defeated an urge to ' + vices[curVice].n.toLowerCase() + ' — chose who I\'m becoming.',
       ts: new Date().toISOString(),
-      date: new Date().toLocaleDateString('en-AU'),
+      date: dayKeyOf(),
       source: 'vice'
     });
     ls('totry_wins', wins.slice(0, 500));
@@ -505,7 +505,7 @@ function logWin(){
   // Record into the fight log so consented vices build pattern intelligence from SOS wins too.
   if(curVice>=0 && vices[curVice]){
     const fl = ls('totry_fight_log') || [];
-    fl.unshift({ vice: vices[curVice].n, won: true, intensity: (window.__sosIntensity||null), trigger: (window.__sosTrigger||null), note: null, ts: new Date().toISOString(), date: new Date().toLocaleDateString('en-AU') });
+    fl.unshift({ vice: vices[curVice].n, won: true, intensity: (window.__sosIntensity||null), trigger: (window.__sosTrigger||null), note: null, ts: new Date().toISOString(), date: dayKeyOf() });
     ls('totry_fight_log', fl.slice(0, 200));
     window.__sosIntensity = null; window.__sosTrigger = null;
   }
@@ -778,7 +778,7 @@ function renderVices(){
       const _in = (d)=>_uses.filter(u=>{const t=new Date(u.ts).getTime(); return !isNaN(t) && (_now-t) <= d*86400000;});
       const _n7 = _in(7).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
       const _n30 = _in(30).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
-      const _days30 = new Set(_in(30).map(u=>new Date(u.ts).toLocaleDateString('en-AU'))).size;
+      const _days30 = new Set(_in(30).map(u=>dayKeyOf(u.ts))).size;
       const _lastT = _uses.length ? Math.max.apply(null, _uses.map(u=>new Date(u.ts).getTime()).filter(t=>!isNaN(t))) : 0;
       const _since = _lastT ? Math.floor((_now-_lastT)/86400000) : null;
       // The offer, once they have enough of their own data to be looking at something real — and
@@ -1753,7 +1753,7 @@ function fightStayedIn(windowDays){
     const mark = ts => {
       const t = new Date(ts).getTime();
       if(isNaN(t) || t < since || t > now) return;
-      fell[new Date(t).toLocaleDateString('en-AU')] = 1;
+      fell[dayKeyOf(t)] = 1;
     };
     (ls('totry_vice_uses')||[]).forEach(r => r && r.ts && mark(r.ts));
     try{
@@ -1767,7 +1767,7 @@ function fightStayedIn(windowDays){
       });
     }catch(_){ }
     const daysFallen = Object.keys(fell).length;
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
     return { days: Math.max(0, W - daysFallen), window: W,
              fellToday: !!fell[todayKey], daysFallen: daysFallen };
   }catch(_){ return { days:0, window:W, fellToday:false, daysFallen:0 }; }
@@ -2134,7 +2134,7 @@ function viceFrequencyRead(v){
     const lastWeek = uses.filter(t => t > now - 2*W && t <= now - W).length;
     // days they came back and told the truth — the thing nobody else counts
     const dayKeys = {};
-    uses.forEach(t => { dayKeys[new Date(t).toLocaleDateString('en-AU')] = 1; });
+    uses.forEach(t => { dayKeys[dayKeyOf(t)] = 1; });
     const daysLogged = Object.keys(dayKeys).length;
     const first = Math.min.apply(null, uses);
     const spanDays = Math.max(1, Math.round((now - first) / 86400000) + 1);
@@ -2705,7 +2705,7 @@ function _recordFightMoment(viceName, won){
   try{
     const openedAt = window.__momentOpenedAt || Date.now();
     const log = ls('totry_fight_log') || [];
-    log.unshift({ vice: viceName, won: !!won, ts: new Date(openedAt).toISOString(), date: new Date(openedAt).toLocaleDateString('en-AU'), via:'moment' });
+    log.unshift({ vice: viceName, won: !!won, ts: new Date(openedAt).toISOString(), date: dayKeyOf(openedAt), via:'moment' });
     ls('totry_fight_log', log.slice(0, 200));
   }catch(_){}
 }

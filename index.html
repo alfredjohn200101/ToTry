@@ -8025,6 +8025,17 @@ function restoreKeys(data){
             if(k === 'totry_f' && parsed && Array.isArray(parsed.d)){
               tombstoneRevoke.apply(null, ['totry_f'].concat(parsed.d.map(function(d){ return String((d && d.n) || '').toLowerCase(); })));
             }
+            // AND THE THIRD SHAPE: totry_nutlog is an OBJECT OF ARRAYS, so it is neither the
+            // Array.isArray case above nor totry_v nor totry_f — it fell through all three. Restoring
+            // a backup to get a deleted meal back said "Restored" and the next cloud pull read the
+            // surviving tombstone and deleted it again, on every device, for the 180 days a tombstone
+            // lives. Same harm as the note above, arriving through the one door it does not cover.
+            // Ids are syncIdOf(entry), exactly as the nutlog union looks them up.
+            if(k === 'totry_nutlog' && parsed && typeof parsed === 'object' && !Array.isArray(parsed) && typeof syncIdOf === 'function'){
+              const _ids = [];
+              Object.keys(parsed).forEach(function(d){ (Array.isArray(parsed[d]) ? parsed[d] : []).forEach(function(e){ _ids.push(syncIdOf(e)); }); });
+              if(_ids.length) tombstoneRevoke.apply(null, ['totry_nutlog'].concat(_ids));
+            }
           }
         }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
@@ -8035,6 +8046,11 @@ function restoreKeys(data){
       try{ console.warn('[restore] did not fit:', k, e && e.name); }catch(_){ }
     }
   });
+  // A backup file carries whatever spelling the device that EXPORTED it produced, so a file made in
+  // the PWA and restored in the App Store build (or the reverse) lands a whole second set of day
+  // keys. Normalise and merge here, through the same raw write + explicit push this function uses, so
+  // the merged map is what reaches the cloud rather than the file's two-spelling version.
+  try{ if(typeof migrateDayKeys === 'function') migrateDayKeys({raw:true}); }catch(_){ }
   return out;
 }
 function restoreReport(r){
@@ -8233,6 +8249,272 @@ function lsArr(k){
   }catch(_){ return []; }
 }
 
+// ── THE DAY KEY, BUILT FROM PARTS AND NEVER FROM A FORMATTER ──────────────────────────────────────
+// `new Date().toLocaleDateString('en-AU')` was this app's PERSISTED day key, and it is not a stable
+// string. Chromium zero-pads both fields, WebKit/iOS pads neither: the same instant is "22/09/2026"
+// in the PWA on a desktop browser and "22/9/2026" in the App Store build. 300 of the 365 days of 2026
+// diverge — only the 10th–31st of October, November and December agree — and the two are compared by
+// string equality and used as OBJECT KEYS in six cloud-synced stores.
+//
+// What that cost: totry_nutlog's per-date union (01-sync.js) unions key STRINGS, so one day survived
+// as two keys forever and each device read only its own half. totry_trackers, totry_water,
+// totry_calorie_burns, totry_strava_burns_byday, totry_watch_burns_byday, totry_tgt and
+// totry_usage_log had no union branch at all and fell to scalar last-write-wins — one device's whole
+// map REPLACED the other's. It began on the FIRST sync of a new device: with nothing local, the pull
+// adopts the other engine's keys wholesale.
+//
+// A SECOND divergence rides with it: {month:'short'} in en-AU is "Sept" in Chromium and "Sep" in
+// WebKit (a CLDR data difference, so only Jun/Jul/Sep differ), and `new Date("5 Sept 2026")` is a
+// real date in Chromium and Invalid Date in WebKit. dayKeyNorm collapses both spellings.
+//
+// WHAT THIS DOES NOT FIX: the day key is still decided by the DEVICE'S TIMEZONE. Two devices in
+// different zones still disagree about which day an evening belongs to, and totry_timezone is a
+// deliberate no-op that says so in its own copy. That is a separate, still-open bug.
+
+// Canonical zero-padded DD/MM/YYYY from a Date, epoch ms, an ISO timestamp, a bare YYYY-MM-DD, or a
+// key already in either engine's spelling. '' for anything it cannot read WITH CERTAINTY — a wrong
+// day is worse than no day, because a wrong day is written to disk and then synced.
+//
+// "Today" is `arguments.length === 0`, NOT `v === undefined`: dayKeyOf(w.ts) on a row with a missing
+// ts must return '' rather than silently filing a year-old workout under this morning.
+function dayKeyOf(v){
+  try{
+    let d = null;
+    if(arguments.length === 0){ d = new Date(); }
+    else if(v instanceof Date){ d = v; }
+    else if(typeof v === 'number'){ if(!isFinite(v)) return ''; d = new Date(v); }
+    else if(typeof v === 'string'){
+      const s = v.trim();
+      if(!s) return '';
+      const already = dayKeyNorm(s);
+      if(already) return already;                       // a day key in either spelling, or "5 Sept 2026"
+      // A BARE YYYY-MM-DD IS READ AS LOCAL PARTS. Both engines read "2026-09-22" through Date as UTC
+      // midnight, which is the PREVIOUS day everywhere west of Greenwich — so parsing it would have
+      // quietly shifted every Health-imported night back one day.
+      const ymd = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+      if(ymd) return dayKeyNorm(ymd[3] + '/' + ymd[2] + '/' + ymd[1]);
+      // A full ISO 8601 timestamp — the one string shape both engines parse identically. Anything
+      // else (a locale long form, "5 Sept", a two-digit year) is refused rather than guessed at.
+      if(!/^\d{4}-\d{1,2}-\d{1,2}[T ]\d{1,2}:\d{2}/.test(s)) return '';
+      const t = Date.parse(s);
+      if(isNaN(t)) return '';
+      d = new Date(t);
+    }
+    else return '';
+    if(!d || isNaN(d.getTime())) return '';
+    return dayKeyNorm(d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear());
+  }catch(_){ return ''; }
+}
+
+// Either engine's spelling → the canonical one; '' when unreadable. This is also the ONE place that
+// pads, which is what makes dayKeyNorm(canonical) === canonical — and that identity is what makes the
+// migration below idempotent.
+function dayKeyNorm(s){
+  try{
+    if(s === null || s === undefined) return '';
+    const str = String(s).trim();
+    if(!str) return '';
+    let d = 0, m = 0, y = 0;
+    // "22/9/2026" and "22/09/2026". A FOUR-DIGIT YEAR IS REQUIRED: a two-digit year is ambiguous
+    // (is "26" 1926 or 2026?) and a year-less key cannot be a day key at all, so both are refused.
+    let mt = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(str);
+    if(mt){ d = +mt[1]; m = +mt[2]; y = +mt[3]; }
+    else{
+      // "5 Sept 2026" / "5 Sep 2026" / "Mon, 5 September 2026" — the {month:'short'} forms the two
+      // engines spell differently. Three letters settles it: all twelve English abbreviations are
+      // distinct at three, so "Sept" and "September" both collapse onto "Sep".
+      mt = /(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})/.exec(str);
+      if(!mt) return '';
+      const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const i = MON.indexOf(mt[2].slice(0,3).toLowerCase());
+      if(i < 0) return '';
+      d = +mt[1]; m = i + 1; y = +mt[3];
+    }
+    if(!(d >= 1 && d <= 31) || !(m >= 1 && m <= 12) || !(y >= 1000 && y <= 9999)) return '';
+    return (d < 10 ? '0' : '') + d + '/' + (m < 10 ? '0' : '') + m + '/' + y;
+  }catch(_){ return ''; }
+}
+
+// ONE merge rule for a day-keyed map, called by BOTH migrateDayKeys() and the cloud-pull branch in
+// 01-sync.js. Two implementations WILL drift — the note above syncIdOf() in that file says exactly
+// this about exactly this shape of bug — so there is one definition and both sides call it.
+//
+// `keep` is the side that wins a conflict, and every caller passes the NEWER side there.
+//  • array day (totry_nutlog): union by syncIdOf. syncIdOf is 'i'+id and contains no date, which is
+//    why moving an entry from one spelling to the other cannot orphan its tombstone.
+//  • object day (totry_trackers, totry_tgt, totry_usage_log): field by field, keep winning any field
+//    it actually carries. Strict === is what lets a real `false` survive: `keep[f] === undefined ||
+//    null || ''` never matches it, so a told:false the person set on the newer device is copied
+//    rather than skipped.
+//  • scalar day (totry_water, totry_calorie_burns): keep wins outright.
+//
+// NO STORE TAKES Math.max. An earlier draft exempted the two burn sub-ledgers as "append-only
+// importer totals, never corrected downward". Both halves of that are false in this tree:
+//  • totry_watch_burns_byday is HAND-TYPED. saveEvening() reads #evening-move — a number input in
+//    the evening check-in, which the same function's own comment calls "editable until midnight" —
+//    and assigns it straight onto the day. A typo'd 8000 corrected to 800 five minutes later is the
+//    ordinary case, and Math.max would restore the 8000 and then _queueWrite would push the undone
+//    correction to every device the person owns.
+//  • totry_strava_burns_byday is a FULL REPLACE. syncStrava() rebuilds `freshByDay` from the whole
+//    activity list each time and writes it whole, with its own comment saying "re-syncs replace
+//    rather than double-count". A day legitimately goes DOWN when an activity is deleted on Strava,
+//    when its calories are corrected, and — the one that matters — when a session is newly
+//    recognised as a Hevy duplicate and skipped. That skip IS the double-count removal, so Math.max
+//    would reinstate exactly the number the block exists to take away.
+//
+// opts.zeroIsAbsent — FOR THE MIGRATION ONLY, and this is the difference between a merge and a data
+// loss. adjustTracker() and the Health sync both CREATE a day as {water:0,sleep:0,steps:0}, so an
+// `undefined || null || ''` guard lets those zeros through as deliberate values and they flatten a
+// day the other spelling already holds. The cloud pull does not pass it: there a day's two sides
+// carry cts/lts, so recency answers the question and a zero really is the newer device's answer.
+// The migration has no per-day recency stamp at all, so within ONE device's own history a 0 beside
+// a real number is a skeleton, not a decision.
+function _mergeDayMaps(keep, add, storeKey, opts){
+  try{
+    const zeroIsAbsent = !!(opts && opts.zeroIsAbsent);
+    const idOf = function(x){
+      try{ if(typeof syncIdOf === 'function') return String(syncIdOf(x)); }catch(_){ }
+      if(x && typeof x === 'object') return x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x));
+      return String(x);
+    };
+    const combine = function(a, b){                      // a wins
+      if(a === undefined || a === null) return b;
+      if(b === undefined || b === null) return a;
+      if(Array.isArray(a) || Array.isArray(b)){
+        const seen = Object.create(null), res = [];
+        [].concat(Array.isArray(a) ? a : [], Array.isArray(b) ? b : []).forEach(function(x){
+          const id = idOf(x);
+          if(seen[id]) return;
+          seen[id] = 1; res.push(x);
+        });
+        return res;
+      }
+      if(typeof a === 'number' && typeof b === 'number'){
+        // The winner's own figure, even when it is smaller — a correction is the commonest reason a
+        // day goes down. Under zeroIsAbsent a literal 0 is the one number that is not an answer.
+        return (zeroIsAbsent && a === 0 && b !== 0) ? b : a;
+      }
+      if(typeof a === 'object' && typeof b === 'object'){
+        const o = Object.assign({}, b);
+        Object.keys(a).forEach(function(f){
+          const av = a[f];
+          if(av === undefined || av === null || av === '') return;   // absent on the winner ≠ erase
+          // The {water:0,sleep:0,steps:0} skeleton. Only in the migration, and only where the other
+          // side actually has a figure: otherwise 0 stays a value, which is what a person who drank
+          // nothing today means by it.
+          if(zeroIsAbsent && av === 0 && typeof b[f] === 'number' && b[f] !== 0) return;
+          o[f] = av;
+        });
+        return o;
+      }
+      return a;
+    };
+    const out = {};
+    const fold = function(src){
+      if(!src || typeof src !== 'object' || Array.isArray(src)) return;
+      Object.keys(src).forEach(function(k){
+        // A key this cannot read keeps its OWN name rather than being folded into anything — an
+        // unreadable key is data we do not understand, and collapsing several of them together
+        // would destroy more than it repairs.
+        const nk = dayKeyNorm(k) || k;
+        out[nk] = (out[nk] === undefined) ? src[k] : combine(out[nk], src[k]);
+      });
+    };
+    fold(keep);                                          // the winner goes in first, so it is always `a`
+    fold(add);
+    return out;
+  }catch(_){ return (keep && typeof keep === 'object') ? keep : {}; }
+}
+
+// DOES THIS ENGINE ZERO-PAD? Asked of the engine at the moment it matters, never assumed. 2 September
+// 2026 is the probe because BOTH fields are single-digit: Chromium answers "02/09/2026", WebKit/iOS
+// answers "2/9/2026". This is the one question that tells the migration which of two spellings of a
+// day is the one THIS device has been writing all along, and therefore which one is on the person's
+// own screen right now. `true` on a throw: a padding engine is the case where canonical and the
+// device's own spelling are the same string, so it is the answer that can do the least harm.
+function _dayKeyEnginePads(){
+  try{ return /^0\d\/0\d\/\d{4}$/.test(new Date(2026, 8, 2).toLocaleDateString('en-AU')); }
+  catch(_){ return true; }
+}
+
+// Every day-keyed store this app has, in one list, so a new one cannot be added without being seen.
+function dayKeyedStores(){
+  return ['totry_nutlog','totry_trackers','totry_water','totry_calorie_burns',
+          'totry_strava_burns_byday','totry_watch_burns_byday','totry_workout_burns_byday',
+          'totry_tgt','totry_usage_log'];
+}
+
+// Normalise AND MERGE — never overwrite — every day-keyed store. Idempotent: dayKeyNorm(canonical)
+// === canonical, so a second run finds nothing to move. Runs on every boot, because a cloud pull can
+// reintroduce the other engine's spelling at any time.
+//
+// opts.raw makes the writes go through _originalSetItem + syncToCloud the way restoreKeys does, so a
+// restore's merged map is what reaches the cloud instead of the file's raw two-spelling version.
+function migrateDayKeys(opts){
+  const raw = !!(opts && opts.raw);
+  const out = { moved: 0, merged: 0, stores: [] };
+  // Asked ONCE per run, not once per store: this is an Intl call and it runs on every boot. The
+  // answer cannot change between two stores in the same run.
+  const pads = _dayKeyEnginePads();
+  const _mo = { zeroIsAbsent: true };
+  dayKeyedStores().forEach(function(k){
+    try{
+      const before = localStorage.getItem(k);
+      if(before === null || before === undefined) return;
+      let v = null;
+      try{ v = JSON.parse(before); }catch(_){ return; }                 // not JSON: not ours to touch
+      if(!v || typeof v !== 'object' || Array.isArray(v)) return;
+      const keys = Object.keys(v);
+      if(!keys.length) return;
+      // WHICH SIDE WINS WHEN ONE DAY EXISTS UNDER BOTH SPELLINGS? THE DEVICE'S OWN.
+      //
+      // An earlier draft picked the already-canonical spelling, reasoning that it is the one this
+      // device will write from now on. On a padding engine that is the same answer — canonical IS
+      // what Chromium has always written. On WebKit it is the opposite of the truth: a padded key is
+      // a spelling that device has NEVER produced, so it can only have arrived by a pre-fix cloud
+      // pull, which is the OTHER phone's stale copy. Preferring it threw away the figures the person
+      // was looking at while the migration ran — measured, against the real functions:
+      //   totry_water  {"22/9/2026":2000,"22/09/2026":750} → {"22/09/2026":750}
+      //   the 2000ml logged today, replaced by another phone's older number.
+      //
+      // So ask the engine (_dayKeyEnginePads) which spelling is this device's own, and let that side
+      // win. Deterministic, and it appeals to something real rather than to a coin toss — there is
+      // still no per-day recency stamp, which is why zeroIsAbsent below carries the rest of the load.
+      const canon = {}, foreign = {};
+      let dirty = false, collided = 0;
+      keys.forEach(function(dk){
+        const nk = dayKeyNorm(dk);
+        if(!nk || nk === dk){ canon[dk] = v[dk]; return; }
+        dirty = true;
+        if(foreign[nk] !== undefined) collided++;        // two foreign spellings of one day (rare)
+        foreign[nk] = (foreign[nk] === undefined) ? v[dk] : _mergeDayMaps({x:foreign[nk]}, {x:v[dk]}, k, _mo).x;
+      });
+      if(!dirty) return;
+      Object.keys(foreign).forEach(function(nk){ if(canon[nk] !== undefined) collided++; });
+      // A SKELETON IS NOT AN ANSWER. Whichever side wins, a 0 on it does not erase a real figure on
+      // the other: adjustTracker() and the Health sync both create a day as {water:0,sleep:0,steps:0},
+      // so without this the winner's empty day flattened a day the other spelling had filled —
+      //   {"22/9/2026":{water:0,sleep:7.5,steps:14000},"22/09/2026":{water:0,sleep:0,steps:0}}
+      //   → {"22/09/2026":{water:0,sleep:0,steps:0}}, the whole day gone, on BOTH engines.
+      const next = pads ? _mergeDayMaps(canon, foreign, k, _mo)
+                        : _mergeDayMaps(foreign, canon, k, _mo);
+      const after = JSON.stringify(next);
+      if(after === before) return;
+      if(raw){
+        const w = (typeof _originalSetItem === 'function' && _originalSetItem) || localStorage.setItem.bind(localStorage);
+        w(k, after);
+        try{
+          if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1) syncToCloud(k, next);
+        }catch(_){ }
+      }else{
+        try{ ls(k, next); }catch(_){ try{ localStorage.setItem(k, after); }catch(__){ } }
+      }
+      out.moved++; out.merged += collided; out.stores.push(k);
+    }catch(_){ }                                                        // one bad store must never break boot
+  });
+  return out;
+}
+
 // ── THE CURRENCY SYMBOL, IN ONE PLACE ─────────────────────────────────────────────
 // Settings has offered nine currencies since the money tab existed. Picking one saved the choice and
 // fetched exchange rates — and changed nothing a person could see, because every amount in the app
@@ -8392,7 +8674,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v606';
+const APP_VERSION = 'v607';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8526,7 +8808,7 @@ async function proceedAfterAuth(user){
     if(typeof repairJourneyStart === 'function') repairJourneyStart();
   try{
     if(!localStorage.getItem('totry_first_open')){ localStorage.setItem('totry_first_open','1'); logEvent('first_open'); }
-    const tk = new Date().toLocaleDateString('en-AU');
+    const tk = dayKeyOf();
     if(localStorage.getItem('totry_open_logged') !== tk){ localStorage.setItem('totry_open_logged', tk); logEvent('open'); }
   }catch(_){ }
   if(typeof renderTemplates === 'function') renderTemplates();
@@ -9551,6 +9833,12 @@ async function pullFromCloud(){
     // bug rather than a safe design. Do not re-derive "these are append-only" from this list.
     // totry_fight_log matters most: it is what teaches the risk window and the hard hour, so losing half
     // of it on a device switch quietly degrades the app's whole sense of when a person is vulnerable.
+    // THE DAY-KEYED MAPS. Not arrays and not scalars: an object whose KEYS are days. totry_nutlog has
+    // its own branch below because its days hold arrays that carry tombstones; these seven hold
+    // numbers or small objects. Derived from dayKeyedStores() so a new day-keyed store cannot be
+    // added in 00-boot.js and quietly keep falling through to last-write-wins here.
+    const DAYMAP = (typeof dayKeyedStores === 'function' ? dayKeyedStores() : [])
+      .filter(x => x !== 'totry_nutlog' && SYNC_KEYS.indexOf(x) !== -1);
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
@@ -9661,11 +9949,48 @@ async function pullFromCloud(){
           if(Object.keys(merged).length) nv[bk] = merged;
         });
         _queueWrite(k, nv);
-      } else if(k === 'totry_nutlog' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
-        nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
+      } else if(k === 'totry_nutlog' && cv && typeof cv === 'object' && !Array.isArray(cv)){
+        // ONE DAY MUST NOT SURVIVE AS TWO KEYS. This unioned the key STRINGS, and the key was
+        // `toLocaleDateString('en-AU')` — which Chromium zero-pads and WebKit does not. A day written
+        // "22/09/2026" in the PWA and "22/9/2026" in the App Store build stayed two separate diaries
+        // forever, and each device only ever read its own half. See dayKeyOf() in 00-boot.js.
+        //
+        // It also required `lv` — and on a FRESH INSTALL lv is null, so this branch was skipped and
+        // `nv = cv` adopted the other engine's spelling wholesale. That is where it began.
+        //
+        // Keys are normalised on BOTH sides first; union() still does the per-entry merge, because it
+        // is the only path that honours a tombstone, and it is called again when two spellings of one
+        // day collide so a deleted meal cannot re-enter through the back door of a key rename.
         const _cloudNewer = (cts >= lts) && !pendingLocal;
-        days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer, 'totry_nutlog'); });
+        const _normNut = (src, preferB) => {
+          const o = {};
+          if(!src || typeof src !== 'object' || Array.isArray(src)) return o;
+          Object.keys(src).forEach(d => {
+            const nd = (typeof dayKeyNorm === 'function' && dayKeyNorm(d)) || d;
+            o[nd] = (o[nd] === undefined) ? union(src[d], [], preferB, 'totry_nutlog')
+                                          : union(o[nd], src[d], preferB, 'totry_nutlog');
+          });
+          return o;
+        };
+        const _nl = _normNut(lv, false), _nc = _normNut(cv, _cloudNewer);
+        nv = {}; const days = new Set([].concat(Object.keys(_nl), Object.keys(_nc)));
+        days.forEach(d => { nv[d] = union(_nl[d], _nc[d], _cloudNewer, 'totry_nutlog'); });
         _queueWrite(k, nv);                        // push the merged truth back up — see the ARR note
+      } else if(DAYMAP.indexOf(k) > -1 && cv && typeof cv === 'object' && !Array.isArray(cv)){
+        // THE SEVEN DAY-KEYED MAPS THAT HAD NO MERGE AT ALL. They fell through to the scalar branch
+        // at the bottom, so one device's WHOLE MAP replaced the other's — every tracker figure, every
+        // glass of water, every burn total the losing device held, gone in one pull. With two engines
+        // spelling the day differently (see dayKeyOf) the two maps did not even overlap, so the loss
+        // was total rather than partial, and it began on a new device's very first sync.
+        //
+        // _mergeDayMaps() is the one merge rule, shared with migrateDayKeys(); `keep` is the newer
+        // side. It does NOT Math.max the ordinary stores — adjustTracker() and setWaterCount() both
+        // go down, and Math.max would undo a correction and then push the undo everywhere.
+        const _cloudNewer = (cts >= lts) && !pendingLocal;
+        const _keep = _cloudNewer ? cv : (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {});
+        const _add  = _cloudNewer ? (lv && typeof lv === 'object' && !Array.isArray(lv) ? lv : {}) : cv;
+        nv = _mergeDayMaps(_keep, _add, k);
+        _queueWrite(k, nv);
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
@@ -10015,7 +10340,7 @@ const Health = {
       const sum=async(dataType)=>{ try{ const r=await p.queryAggregated({ startDate:iso(start), endDate:iso(now), dataType, bucket:'day' }); const arr=(r&&r.aggregatedData)||[]; return arr.reduce((s,x)=>s+(x.value||0),0); }catch(_){ return null; } };
       const steps=await sum('steps');
       const active=await sum('active-calories');
-      const auKey=now.toLocaleDateString('en-AU');
+      const auKey=dayKeyOf(now);
       if(steps!=null && steps>0){ try{ ls('totry_today_steps', Math.round(steps)); const tr=ls('totry_trackers')||{}; if(!tr[auKey])tr[auKey]={water:0,sleep:0,steps:0}; tr[auKey].steps=Math.round(steps); ls('totry_trackers',tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){} }
       if(active!=null && active>0){ try{ const w=ls('totry_watch_burns_byday')||{}; w[auKey]=Math.round(active); ls('totry_watch_burns_byday',w); if(typeof reconcileBurns==='function') reconcileBurns(); if(typeof renderNutritionLog==='function') renderNutritionLog(); }catch(_){} }
       // Mindful minutes — read the SHARED Apple Health ledger (Watch Breathe/Reflect, Calm, Headspace,
@@ -10060,7 +10385,7 @@ const Health = {
         try{
           const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(n.date||''));
           if(!m) return;
-          const key = new Date(+m[1], +m[2]-1, +m[3]).toLocaleDateString('en-AU');
+          const key = dayKeyOf(new Date(+m[1], +m[2]-1, +m[3]));
           if(!tr[key]) tr[key] = { water:0, sleep:0, steps:0 };
           // NEVER overwrite a figure the person typed themselves. A value with no _sleepSrc came from
           // them, and their own account of the night outranks the watch's.
@@ -10437,7 +10762,7 @@ function _cancelReachOuts(){
   try{ const now=Date.now(); _saveReachLog(_reachLog().filter(function(e){ return e && e.ts <= now; })); }catch(_){}
 }
 function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
-function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
+function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return dayKeyOf(m.ts)===dayKeyOf(); }catch(_){ return false; } }
 // A tap is the strongest receptivity signal we can get, and it is GROUND TRUTH — everything else here
 // is a guess. So it may overrule the guess.
 //
@@ -11731,7 +12056,7 @@ function getLifeState(){
   const now = Date.now();
   const L = (typeof ls==='function') ? ls : (()=>null);
   const within = (ts, days) => { const t = new Date(ts).getTime(); return !isNaN(t) && (now - t) <= days*86400000; };
-  const auKey = ts => new Date(ts).toLocaleDateString('en-AU');
+  const auKey = ts => dayKeyOf(ts);
   const avg = (arr, f) => { const v = arr.map(f).filter(x=>x!=null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 
   // ── TRAINING ──
@@ -12169,7 +12494,7 @@ function buildPTCtx(){
     }
   }catch(_){}
   // Today's nutrition so far
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = Math.round(todayEntries.reduce((a,e)=>a+(e.cal||0),0));
@@ -12261,7 +12586,7 @@ function buildCtx(){
   
   // ── LIVE TODAY STATE ──
   // Today's nutrition log so far
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = Math.round(todayEntries.reduce((a,e)=>a+(e.cal||0),0));
@@ -12413,8 +12738,8 @@ function buildCtx(){
   // written, in an app whose entire claim is that the fronts talk to each other.
   const todayMorning = mornings.find(m => {
     if(!m) return false;
-    if(m.ts){ try{ if(new Date(m.ts).toLocaleDateString('en-AU') === todayKey) return true; }catch(_){} }
-    return m.date === todayKey;   // tolerate any older row that stored the plain key
+    if(m.ts){ try{ if(dayKeyOf(m.ts) === todayKey) return true; }catch(_){} }
+    return dayKeyNorm(m.date) === todayKey;   // tolerate any older row that stored the plain key
   });
   let moodCtx = '';
   if(todayMorning){
@@ -12930,7 +13255,7 @@ async function maybeUpdateCoachMemory(){
     ls('totry_coach_memory', mem);
     // Only re-distill every 4 user exchanges, and not more than once/day, to respect cost.
     if(mem.exchanges % 4 !== 0) return;
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     if(mem.updated === today) return;
     if(!navigator.onLine || !sb || !currentUser) return;
     // Feed recent conversation + existing summary; ask for a tight evolving memory.
@@ -13347,7 +13672,7 @@ function goCoach(t){go('coach');document.getElementById('coach-in').value=t;send
 function trackAPIUsage(kind, tokens){
   try{
     const log = ls('totry_usage_log') || {};
-    const day = new Date().toLocaleDateString('en-AU');
+    const day = dayKeyOf();
     if(!log[day]) log[day] = {ai: 0, tokens: 0, calls: []};
     log[day].ai = (log[day].ai || 0) + 1;
     log[day].tokens = (log[day].tokens || 0) + (tokens || 0);
@@ -13376,7 +13701,7 @@ function renderUsageStats(){
   // Aggregate
   let totalCalls = 0, totalTokens = 0;
   let today = 0, last7 = 0;
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const wkAgo = Date.now() - 7 * 86400000;
   
   days.forEach(d => {
@@ -16049,7 +16374,7 @@ function pickDailyContextualVerse(){
   const VS = activeVerses();
   const _dc = () => { try{ return (typeof getDayCount==='function') ? getDayCount() : Math.floor(Date.now()/86400000); }catch(_){ return Math.floor(Date.now()/86400000); } };
   try{
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     const cacheKey = 'totry_verse_today';
     const cached = ls(cacheKey);
     // KEYED BY TRADITION, AND BOUNDS-CHECKED. The banks are very different sizes (Christianity 44,
@@ -16060,7 +16385,7 @@ function pickDailyContextualVerse(){
     // half-dead app for the rest of that day, and nothing told them why.
     const _tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
     const _bankLen = (typeof activeVerses==='function') ? (activeVerses()||[]).length : 0;
-    if(cached && cached.date === today && cached.tr === _tr &&
+    if(cached && dayKeyNorm(cached.date) === today && cached.tr === _tr &&
        typeof cached.idx === 'number' && cached.idx >= 0 && cached.idx < _bankLen){ return cached.idx; }
 
     // What's the person facing? Build a light theme-weight map.
@@ -16560,7 +16885,7 @@ function renderDayCounter(){
     try{
       if(!tmrw || !tmrw.date) return false;
       const t = new Date(); const y = new Date(Date.now() - 86400000);
-      return tmrw.date === t.toLocaleDateString('en-AU') || tmrw.date === y.toLocaleDateString('en-AU');
+      return dayKeyNorm(tmrw.date) === dayKeyOf(t) || dayKeyNorm(tmrw.date) === dayKeyOf(y);
     }catch(_){ return false; }
   })();
   if(_tmrwFresh && tmrw&&tmrw.tasks?.length){
@@ -16660,7 +16985,7 @@ function _soulTodayCta(){
 
 function openSoulToday(){
   const now = new Date();
-  const todayKey = now.toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf(now);
   const todayDow = (now.getDay()+6)%7;
   const dateLabel = now.toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long'});
 
@@ -16696,7 +17021,7 @@ function openSoulToday(){
   // anyone. The line directly below already matches the evening by timestamp, and every other reader
   // of this store in the codebase does too — this one line was the outlier.
   const mornings = (typeof ritualLog === 'function') ? ritualLog('totry_mornings') : (ls('totry_mornings')||[]);
-  const tm = mornings.find(m => m && m.ts && new Date(m.ts).toLocaleDateString('en-AU') === todayKey);
+  const tm = mornings.find(m => m && m.ts && dayKeyOf(m.ts) === todayKey);
   let moodHtml = '';
   if(tm){
     if(tm.mood) moodHtml += '<div style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
@@ -16704,7 +17029,7 @@ function openSoulToday(){
   }
   const didMorning = !!tm;
   const evenings = (typeof ritualLog === 'function') ? ritualLog('totry_evenings') : (ls('totry_evenings')||[]);
-  const didEvening = evenings.some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===todayKey);
+  const didEvening = evenings.some(e=>e && e.ts && dayKeyOf(e.ts)===todayKey);
 
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='soul-today-modal';
@@ -16976,14 +17301,14 @@ function renderAdaptiveMorning(){
   if(!card || !tag || !headline || !body) return;
   
   // Look at yesterday's data
-  const yesterdayKey = new Date(Date.now() - 86400000).toLocaleDateString('en-AU');
+  const yesterdayKey = dayKeyOf(Date.now() - 86400000);
   const evenings = ls('totry_evenings') || [];
   // Match on the CALENDAR day already computed two lines up, not on a day NUMBER. e.day is written
   // from getDayCount() at the time the evening was saved, so any day the person did not open the app
   // shifts every later match — and the morning card then quotes a different night's reflection back
   // to them as if it were last night's. yesterdayKey was computed and never used.
-  const yEvening = evenings.find(e => (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === yesterdayKey)
-                                      || e.date === yesterdayKey);
+  const yEvening = evenings.find(e => (e.ts && dayKeyOf(e.ts) === yesterdayKey)
+                                      || dayKeyNorm(e.date) === yesterdayKey);
   
   // Yesterday's habits
   loadH();
@@ -17721,7 +18046,7 @@ function viceModeLabel(v){
 //   v.pledgeDays  int          lifetime days pledged. NEVER resets, never decrements. Breaking it
 //                              is not recorded, not counted, not mentioned. It is re-made, not owed.
 //   v.stage      'curious'|'torn'|'ready'|'rebuilding'|'shaky'   +  v.stageAt (ISO)
-function _vDay(){ return new Date().toLocaleDateString('en-AU'); }
+function _vDay(){ return dayKeyOf(); }
 function vicePledgedToday(v){ return !!(v && v.pledge === _vDay()); }
 
 // B1 — THE DAILY PLEDGE. One tap. One day. Grace-based by construction: there is no "did you keep
@@ -18351,7 +18676,7 @@ function saveQuickLog(){
     else if(/food binge|junk|fast food/.test(name))savedNow=15;
     if(savedNow>0){
       const savings=ls('totry_vice_savings_log')||[];
-      savings.push({vice:v.n,amount:savedNow,ts:new Date().toISOString(),date:new Date().toLocaleDateString('en-AU')});
+      savings.push({vice:v.n,amount:savedNow,ts:new Date().toISOString(),date:dayKeyOf()});
       ls('totry_vice_savings_log',savings);
     }
     // Auto-log this victory into the Reflect wins log
@@ -18360,7 +18685,7 @@ function saveQuickLog(){
     _wins.unshift({
       text: 'Defeated an urge to ' + v.n.toLowerCase() + ' — chose who I\'m becoming.',
       ts: new Date().toISOString(),
-      date: new Date().toLocaleDateString('en-AU'),
+      date: dayKeyOf(),
       source: 'vice'
     });
     ls('totry_wins', _wins.slice(0, 500));
@@ -18403,7 +18728,7 @@ function saveQuickLog(){
     trigger,
     note,
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_fight_log', fightLog.slice(0, 200));
   
@@ -21885,7 +22210,7 @@ async function _researchProtocol(name, key){
 // wired from the evening ritual, with a per-tradition closing line); this did not. Daylight in the eyes
 // early sets tonight's sleep more than anything done at bedtime. One screen, no timer, nothing logged
 // but the fact it was done — so the card can stop asking once they have been out.
-function _sleepDayKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
+function _sleepDayKey(){ try{ return dayKeyOf(); }catch(_){ return 'x'; } }
 // Has this person already been out today? _morningLightGo() has always WRITTEN totry_morning_light_last,
 // and nothing ever read it — so the card asked "Get light in your eyes" every time they opened the
 // Morning tab, including straight after they had done it and told the app so. A test asserted this
@@ -22435,7 +22760,7 @@ async function _companionSay(userText, opening){
           + 'This is evidence of who they have been, to hand back to them \u2014 never a reason they should not feel what they feel, and never a lecture. '
           + 'If it does not fit the moment, say nothing about it. ';
       }catch(_){ return ''; } })()
-    + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=safeMornings().find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
+    + (function(){ try{ const today=dayKeyOf(); const m=safeMornings().find(x=>x.ts&&dayKeyOf(x.ts)===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{
         if(typeof loadV==='function') loadV();
         const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:(ls('totry_v')||[]);
@@ -22851,7 +23176,7 @@ function commitMassAddLosses(){
     v.lastLoss = whenStr;
     // Mirror into the fight log so pattern intelligence & syntheses see these losses.
     const fl = ls('totry_fight_log') || [];
-    fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null, note: 'backfilled', ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+    fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null, note: 'backfilled', ts: whenStr, date: dayKeyOf(whenStr) });
     ls('totry_fight_log', fl.slice(0, 200));
   });
   saveV();
@@ -22904,7 +23229,7 @@ function logLoss(whenISO){
       // analysis built on that field would have learned a pattern from someone else's answer.
       // Better an honest null than a borrowed value.
       fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null,
-        ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+        ts: whenStr, date: dayKeyOf(whenStr) });
       ls('totry_fight_log', fl.slice(0, 200));
     }catch(_){ }
     saveV();
@@ -23073,7 +23398,7 @@ function logWin(){
         vice:vices[curVice].n,
         amount:savedNow,
         ts:new Date().toISOString(),
-        date:new Date().toLocaleDateString('en-AU')
+        date:dayKeyOf()
       });
       ls('totry_vice_savings_log',savings);
     }
@@ -23083,7 +23408,7 @@ function logWin(){
     wins.unshift({
       text: 'Defeated an urge to ' + vices[curVice].n.toLowerCase() + ' — chose who I\'m becoming.',
       ts: new Date().toISOString(),
-      date: new Date().toLocaleDateString('en-AU'),
+      date: dayKeyOf(),
       source: 'vice'
     });
     ls('totry_wins', wins.slice(0, 500));
@@ -23092,7 +23417,7 @@ function logWin(){
   // Record into the fight log so consented vices build pattern intelligence from SOS wins too.
   if(curVice>=0 && vices[curVice]){
     const fl = ls('totry_fight_log') || [];
-    fl.unshift({ vice: vices[curVice].n, won: true, intensity: (window.__sosIntensity||null), trigger: (window.__sosTrigger||null), note: null, ts: new Date().toISOString(), date: new Date().toLocaleDateString('en-AU') });
+    fl.unshift({ vice: vices[curVice].n, won: true, intensity: (window.__sosIntensity||null), trigger: (window.__sosTrigger||null), note: null, ts: new Date().toISOString(), date: dayKeyOf() });
     ls('totry_fight_log', fl.slice(0, 200));
     window.__sosIntensity = null; window.__sosTrigger = null;
   }
@@ -23365,7 +23690,7 @@ function renderVices(){
       const _in = (d)=>_uses.filter(u=>{const t=new Date(u.ts).getTime(); return !isNaN(t) && (_now-t) <= d*86400000;});
       const _n7 = _in(7).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
       const _n30 = _in(30).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
-      const _days30 = new Set(_in(30).map(u=>new Date(u.ts).toLocaleDateString('en-AU'))).size;
+      const _days30 = new Set(_in(30).map(u=>dayKeyOf(u.ts))).size;
       const _lastT = _uses.length ? Math.max.apply(null, _uses.map(u=>new Date(u.ts).getTime()).filter(t=>!isNaN(t))) : 0;
       const _since = _lastT ? Math.floor((_now-_lastT)/86400000) : null;
       // The offer, once they have enough of their own data to be looking at something real — and
@@ -24340,7 +24665,7 @@ function fightStayedIn(windowDays){
     const mark = ts => {
       const t = new Date(ts).getTime();
       if(isNaN(t) || t < since || t > now) return;
-      fell[new Date(t).toLocaleDateString('en-AU')] = 1;
+      fell[dayKeyOf(t)] = 1;
     };
     (ls('totry_vice_uses')||[]).forEach(r => r && r.ts && mark(r.ts));
     try{
@@ -24354,7 +24679,7 @@ function fightStayedIn(windowDays){
       });
     }catch(_){ }
     const daysFallen = Object.keys(fell).length;
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
     return { days: Math.max(0, W - daysFallen), window: W,
              fellToday: !!fell[todayKey], daysFallen: daysFallen };
   }catch(_){ return { days:0, window:W, fellToday:false, daysFallen:0 }; }
@@ -24721,7 +25046,7 @@ function viceFrequencyRead(v){
     const lastWeek = uses.filter(t => t > now - 2*W && t <= now - W).length;
     // days they came back and told the truth — the thing nobody else counts
     const dayKeys = {};
-    uses.forEach(t => { dayKeys[new Date(t).toLocaleDateString('en-AU')] = 1; });
+    uses.forEach(t => { dayKeys[dayKeyOf(t)] = 1; });
     const daysLogged = Object.keys(dayKeys).length;
     const first = Math.min.apply(null, uses);
     const spanDays = Math.max(1, Math.round((now - first) / 86400000) + 1);
@@ -25292,7 +25617,7 @@ function _recordFightMoment(viceName, won){
   try{
     const openedAt = window.__momentOpenedAt || Date.now();
     const log = ls('totry_fight_log') || [];
-    log.unshift({ vice: viceName, won: !!won, ts: new Date(openedAt).toISOString(), date: new Date(openedAt).toLocaleDateString('en-AU'), via:'moment' });
+    log.unshift({ vice: viceName, won: !!won, ts: new Date(openedAt).toISOString(), date: dayKeyOf(openedAt), via:'moment' });
     ls('totry_fight_log', log.slice(0, 200));
   }catch(_){}
 }
@@ -25678,7 +26003,7 @@ function clearViceCost(i){
 function _daysShowedUp(){
   try{
     const days = new Set();
-    const add = function(ts){ if(!ts) return; const d=new Date(ts); if(!isNaN(d)) days.add(d.toLocaleDateString('en-AU')); };
+    const add = function(ts){ if(!ts) return; const d=new Date(ts); if(!isNaN(d)) days.add(dayKeyOf(d)); };
     ritualLog('totry_mornings').forEach(function(x){ add(x&&x.ts); });
     ritualLog('totry_evenings').forEach(function(x){ add(x&&x.ts); });
     (ls('totry_journal')||[]).forEach(function(x){ add(x&&x.ts); });
@@ -25988,7 +26313,7 @@ function autoTickHabits(){
     // dayStart is carried so a branch can ask WHEN a day was, not only what it is called — the clean
     // -day tick below has to refuse days that precede the fight itself.
     const _ds = new Date(d); _ds.setHours(0,0,0,0);
-    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
+    dayList.push({ dateStr: dayKeyOf(d), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
   }
   // Determine the nutrition-goal direction once (lose = stay under, gain = hit/over, else hit).
   // Was reading totry_goal_intent, which nothing writes — so neither branch below could ever match and
@@ -26010,7 +26335,7 @@ function autoTickHabits(){
       let shouldTick=false;
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr && (m.gratitude||'').trim());
       // PRAYING COUNTS AS PRAYING. The faith habit was folded in with morning/intention and ticked
       // off the MORNING RITUAL — so filling in the morning ticked "Prayer / scripture" for someone
       // who had not prayed, and actually praying, finishing a rosary or keeping a passage ticked
@@ -26018,13 +26343,13 @@ function autoTickHabits(){
       // totry_rosaries, and totry_sv for a passage kept. The morning still counts, because for a
       // person of faith it contains a prayer \u2014 it just is not the only thing that does.
       } else if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
-        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===dateStr);
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr)
+        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && dayKeyOf(x[f])===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr)
                   || _on(ls('totry_practices'), 'ts')
                   || _on(ls('totry_rosaries'), 'ts')
                   || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
       } else if(/\b(morning|intention)\b/.test(name)){
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr);
       // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
       // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
       // counted as staying clean, "Great posture" and "Create something" as hitting a nutrition
@@ -26032,12 +26357,12 @@ function autoTickHabits(){
       // Auto-tick writes into the person's own record of themselves, so a wrong guess marks days
       // they did not do the thing \u2014 which is worse than not guessing, because they cannot tell.
       } else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
-        shouldTick = allWorkouts.some(w=>w.date===dateStr || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===dateStr))
-                  || allStrava.some(a=>a.date && new Date(a.date).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allWorkouts.some(w=>dayKeyNorm(w.date)===dateStr || (w.ts && dayKeyOf(w.ts)===dateStr))
+                  || allStrava.some(a=>a.date && dayKeyOf(a.date)===dateStr);
       } else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
-        shouldTick = allEvenings.some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allEvenings.some(e=>e.ts && dayKeyOf(e.ts)===dateStr);
       } else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
-        shouldTick = allJournal.some(j=>j.ts && new Date(j.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allJournal.some(j=>j.ts && dayKeyOf(j.ts)===dateStr);
       } else if(/\b(nutrition|macros?|protein|calories?|eat|eating|under target|hit target)\b/.test(name)){
         // Direction-aware: lose → stayed UNDER calorie target; gain → hit protein/over; else → logged + hit protein.
         const entries = nutLog[dateStr] || [];
@@ -26051,8 +26376,8 @@ function autoTickHabits(){
       } else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
         // Check ALL relapse history (not just lastLoss) for a loss on this day.
         const lossThatDay = vices.some(v=>{
-          if(v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===dateStr) return true;
-          return (v.relapseHistory||[]).some(r=>r.date && new Date(r.date).toLocaleDateString('en-AU')===dateStr);
+          if(v.lastLoss && dayKeyOf(v.lastLoss)===dateStr) return true;
+          return (v.relapseHistory||[]).some(r=>r.date && dayKeyOf(r.date)===dateStr);
         });
         // Every day without a logged loss is a clean win. But if a loss WAS logged this day,
         // actively UN-tick it (this is the one habit that can flip true→false on the same day).
@@ -26079,7 +26404,7 @@ function autoTickHabits(){
         const _afterStart = (_startTs == null) || (dayStart >= new Date(new Date(_startTs).setHours(0,0,0,0)).getTime());
         shouldTick = vices.length>0 && _liveVice && _afterStart;
       } else if(/bible|scripture|verse|word|read/.test(name)){
-        shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
+        shouldTick = allSaved.some(v=>dayKeyNorm(v.date)===dateStr || (v.ts && dayKeyOf(v.ts)===dateStr));
       } else if(/water|hydrate/.test(name)){
         const water=(typeof waterMlOn==='function')?waterMlOn(dateStr):0;
         const goal=(typeof waterBaseGoal==='function')?waterBaseGoal():2500;   // both in ml now
@@ -27944,11 +28269,11 @@ const JOURNAL_MAX = 20000;   // ~4,000 words. Long enough for anything real, sho
 // dated record (each entry carries won + ts + date), so count from that instead of a phantom baseline.
 function _winsOnDay(dayKey){
   try{
-    const key = dayKey || new Date().toLocaleDateString('en-AU');
+    const key = dayKey || dayKeyOf();
     return (ls('totry_fight_log')||[]).filter(function(e){
       if(!e || e.won !== true) return false;
-      if(e.date === key) return true;
-      if(e.ts){ try{ return new Date(e.ts).toLocaleDateString('en-AU') === key; }catch(_){ return false; } }
+      if(dayKeyNorm(e.date) === key) return true;
+      if(e.ts){ try{ return dayKeyOf(e.ts) === key; }catch(_){ return false; } }
       return false;
     }).length;
   }catch(_){ return 0; }
@@ -27960,8 +28285,8 @@ function saveQuickJournal(){
   if(text.length > JOURNAL_MAX){ text = text.slice(0, JOURNAL_MAX); _trimmed = true; }
   
   loadV();
-  const todayKey = new Date().toLocaleDateString('en-AU');
-  const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => new Date(t).toLocaleDateString('en-AU') === todayKey).length, 0);
+  const todayKey = dayKeyOf();
+  const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => dayKeyOf(t) === todayKey).length, 0);
   const todayWins = _winsOnDay(todayKey);
   
   // "Get it out" is the fastest way into this app's journal and it had NO gate: someone typing the
@@ -28097,7 +28422,7 @@ function saveEntry(){
   try{ if(typeof detectCrisis === 'function') _jCrisis = detectCrisis(text); }catch(_){ }
   // Auto-pull vice stats from today's data
   loadV();
-  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>new Date(t).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU')).length,0);
+  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(t)===dayKeyOf()).length,0);
   const todayWins=_winsOnDay();
   const entries=ls('totry_journal')||[];
   const when=_resolveEntryDate('journal-date');
@@ -28409,11 +28734,11 @@ async function logBody(){
   // two different weights and no way to tell which was current. Same identity test saveQuickWeight
   // uses (ts first, falling back to either date string), and a merge rather than a clobber so a
   // check-in with no weight typed cannot wipe a weight logged earlier the same day.
-  const _todayFull = new Date().toLocaleDateString('en-AU');
+  const _todayFull = dayKeyOf();
   const _todayShort = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'});
   const _iToday = entries.findIndex(e => e && (e.ts
-    ? new Date(e.ts).toLocaleDateString('en-AU') === _todayFull
-    : (e.date === _todayShort || e.date === _todayFull)));
+    ? dayKeyOf(e.ts) === _todayFull
+    : (e.date === _todayShort || dayKeyNorm(e.date) === _todayFull)));
   if(_iToday > -1){
     const prev = entries[_iToday];
     const merged = Object.assign({}, prev, newEntry);
@@ -28625,7 +28950,7 @@ function adjustCaloriesFromWeightTrend(){
       const adjustments = ls('totry_pt_adjustments') || [];
       adjustments.unshift({
         ts: new Date().toISOString(),
-        date: new Date().toLocaleDateString('en-AU'),
+        date: dayKeyOf(),
         oldCal,
         newCal,
         change: calAdjustment,
@@ -28727,7 +29052,7 @@ async function generateWeeklyCoachResponse(entry){
       const syntheses = ls('totry_syntheses')||[];
       syntheses.unshift({
         weekKey: getWeekKey(new Date()),
-        date: new Date().toLocaleDateString('en-AU'),
+        date: dayKeyOf(),
         text: response.trim(),
         ts: new Date().toISOString(),
         type: 'weekly_checkin'
@@ -29161,13 +29486,18 @@ function syncWeightTodayRow(entries){
   if(!sub && !val) return;
   const list = entries || ls('totry_body') || [];
   const todayStr  = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  // IDENTITY, SO IT GOES THROUGH dayKeyOf(). Both writers of totry_body — saveQuickWeight and the
+  // Sunday check-in — now ask dayKeyOf() which day a row belongs to. A reader left on the raw
+  // formatter is the same half-applied shape the dismiss buttons had: it agrees on Chromium and
+  // disagrees on WebKit, so the two halves have to move together or this row says "No log today"
+  // over a weigh-in from an hour ago and invites a duplicate.
+  const todayFull = dayKeyOf();
   // A weekly reflection saved with the weight field left blank writes an entry for today carrying no
   // weight. find() returned THAT one first and the row told a person who had weighed in an hour
   // earlier "No log" — inviting a duplicate. A reflection is not a weigh-in; only an entry that
   // actually carries a weight can answer "did I weigh in today".
   const today = list.find(e => e && (e.weight > 0) &&
-    (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+    (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   if(sub) sub.textContent = today ? 'Logged today' : 'No log today';
   // wFmt converts: appending the unit LABEL to stored kilograms told a person on lb that their
   // 82.4kg was "82.4 lb" — the wrong reading by 2.2x, contradicted by the tiles below it.
@@ -29406,8 +29736,8 @@ function renderBodyCompInsight(){
 function openQuickWeightLog(){
   const entries = ls('totry_body') || [];
   const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
-  const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+  const todayFull = dayKeyOf();                                   // identity
+  const todayEntry = entries.find(e => (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   const last = entries[0];
   
   const m = document.createElement('div');
@@ -29442,9 +29772,9 @@ function saveQuickWeight(){
   }
   const entries = ls('totry_body') || [];
   const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  const todayFull = dayKeyOf();                                   // identity
   // Replace today's entry if it exists, else create a minimal one
-  const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+  const existingIdx = entries.findIndex(e => (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
     // Deliberately NOT touching ts — see the note above; it is this entry's sync identity.
@@ -29513,7 +29843,7 @@ function openMeasurementLogger(){
 function saveMeasurement(){
   const vals = ['waist','chest','arml','armr','thighl','thighr','neck','bf','smm','fatmass','visceral','tbw','bmr','evoltpts'];
   const keys = ['waist','chest','armL','armR','thighL','thighR','neck','bf','smm','fatMass','visceral','tbw','bmr','evoltPts'];
-  const entry = {date: new Date().toLocaleDateString('en-AU'), ts: new Date().toISOString()};
+  const entry = {date: dayKeyOf(), ts: new Date().toISOString()};
   let any = false;
   // A BAND, LIKE THE WEIGH-IN HAS. Any positive number was accepted, so a fat-fingered 400 became a
   // permanent baseline that poisoned every "since your first snapshot" line after it — and there was
@@ -29657,7 +29987,7 @@ function handleProgressPhoto(event){
         photos.unshift({
           // Unique id even when several are added in the same millisecond
           id: Date.now() + fileIdx,
-          date: new Date().toLocaleDateString('en-AU'),
+          date: dayKeyOf(),
           ts: new Date().toISOString(),
           dataUrl: dataUrl
         });
@@ -29741,7 +30071,7 @@ function renderDailyDoneState(){
   try{
     const btn = document.querySelector('button[onclick="markDailyLogsDone()"]');
     if(!btn) return;
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     const done = !!ls('totry_daily_logged_'+today);
     btn.textContent = done ? 'Logged for today \u2713' : 'Done for today';
     btn.classList.toggle('primary', !done);
@@ -29749,10 +30079,10 @@ function renderDailyDoneState(){
   }catch(_){}
 }
 function markDailyLogsDone(){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const t=(ls('totry_trackers')||{})[today]||{sleep:0};
   const body=ls('totry_body')||[];
-  const hasWeight = body.some(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
+  const hasWeight = body.some(b=>dayKeyNorm(b.date)===today || (b.ts && dayKeyOf(b.ts)===today));
   ls('totry_daily_logged_'+today, 1);
   try{ renderDailyDoneState(); }catch(_){}
   const bits=[];
@@ -29763,7 +30093,7 @@ function markDailyLogsDone(){
   else { showToast('Nothing logged yet', 'Add your weight or sleep above first.'); }
 }
 function adjustTracker(type,delta){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const trackers=ls('totry_trackers')||{};
   if(!trackers[today])trackers[today]={water:0,sleep:0,steps:0};
   trackers[today][type]=Math.max(0,Math.round((trackers[today][type]+delta)*10)/10);
@@ -29799,7 +30129,7 @@ function updateTrackerDisplay(){
   // Called on every Track render, so the button is correct when the screen opens — not only in the
   // second after it is tapped. Without this the state resets visually at midnight-crossing or reload.
   try{ renderDailyDoneState(); }catch(_){}
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const t=(ls('totry_trackers')||{})[today]||{water:0,sleep:0,steps:0};
   // 'water-count' belongs to renderWaterTracker() in the Nourish tab, which paints "1.2 / 2.5 L" from
   // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so
@@ -30380,7 +30710,7 @@ function quickAddLog(){
   const carb=parseFloat(document.getElementById('qa-carb')?.value)||0;
   const fat=parseFloat(document.getElementById('qa-fat')?.value)||0;
   const meal=window.__qaMeal||'snack';
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   ls('totry_nutlog', log);
@@ -31483,7 +31813,7 @@ function _pmLog(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
   if(!items.length){ if(typeof showToast==='function') showToast('Nothing to log','Name or add an item first.'); return; }
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
@@ -31539,13 +31869,13 @@ const _HUNGER_REASONS = [
 // emotional snacking peaks), only for people who've actually shown the pattern (2+ non-hunger checks),
 // once per day, dismissible. This is the emotional-eating moat made present — never a nag.
 function _emotionalEatCount(){ try{ return (ls('totry_hunger_log')||[]).filter(e=>e && e.id && e.id!=='hungry' && e.id!=='social').length; }catch(_){ return 0; } }
-function _hungerCheckedToday(){ try{ const t=new Date().toLocaleDateString('en-AU'); return (ls('totry_hunger_log')||[]).some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===t); }catch(_){ return false; } }
-function _hungerNudgeGo(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} openHungerCheck(); }
-function _hungerNudgeDismiss(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} const el=document.getElementById('nut-hunger-nudge'); if(el){ el.style.display='none'; el.innerHTML=''; } }
+function _hungerCheckedToday(){ try{ const t=dayKeyOf(); return (ls('totry_hunger_log')||[]).some(e=>e && e.ts && dayKeyOf(e.ts)===t); }catch(_){ return false; } }
+function _hungerNudgeGo(){ try{ ls('totry_hunger_nudge_day', dayKeyOf()); }catch(_){} openHungerCheck(); }
+function _hungerNudgeDismiss(){ try{ ls('totry_hunger_nudge_day', dayKeyOf()); }catch(_){} const el=document.getElementById('nut-hunger-nudge'); if(el){ el.style.display='none'; el.innerHTML=''; } }
 function renderHungerNudge(){
   const el=document.getElementById('nut-hunger-nudge'); if(!el) return;
   el.style.display='none'; el.innerHTML='';
-  const h=new Date().getHours(); const today=new Date().toLocaleDateString('en-AU');
+  const h=new Date().getHours(); const today=dayKeyOf();
   if(h<20) return;                                  // late-snack window only
   if(_emotionalEatCount()<2) return;                // only once the pattern is real
   if(_hungerCheckedToday()) return;                 // already checked in today
@@ -31797,7 +32127,7 @@ function logEstimatedMeal(){
   const meal=window.__pendingMeal;
   if(!meal){ showToast('Nothing to log','Describe a meal first.'); return; }
   const t=meal.total||{};
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   const log=ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   log[today].push({
@@ -32547,7 +32877,7 @@ async function logRecipeAsMeal(i){
   });
   const _rRow = nutPick(_rTot, portion);   // one source of truth for the row AND the toast
   
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   log[today].push({
@@ -32580,8 +32910,7 @@ function openRepeatDay(){
   // Relative to the day being VIEWED, like repeatMealsFrom — these counts and the enabled/disabled
   // state describe the days the copy will actually read from. Computed from Date.now(), they described
   // days around today while the person was filling in a past one.
-  const _rk = (n) => (typeof nutRelKey==='function') ? nutRelKey(n)
-              : new Date(Date.now()-n*86400000).toLocaleDateString('en-AU');
+  const _rk = (n) => nutRelKey(n);
   const _rd = (n) => { const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
               d.setDate(d.getDate()-n); return d; };
   const yKey = _rk(1);
@@ -32621,7 +32950,7 @@ function repeatLastWeekday(){
   // ran exactly once (back=7 to 7) and todayDow was never read, so neither did what they looked like.
   const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
   d.setDate(d.getDate() - 7);
-  const key = (typeof nutRelKey==='function') ? nutRelKey(7) : d.toLocaleDateString('en-AU');
+  const key = nutRelKey(7);
   const dow = d.toLocaleDateString('en-AU',{weekday:'long'});
   if(log[key] && log[key].length){ repeatMealsFrom(7, 'last ' + dow); return; }
   showToast('Nothing that ' + dow, 'No food logged on that day last week.');
@@ -32632,7 +32961,7 @@ function repeatMealsFrom(daysAgo, label){
   // from today-1 meant that while looking at Saturday you were offered "yesterday" — which was
   // actually a day AFTER the one you were filling in.
   const _base = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
-  const src = new Date(_base.getTime() - daysAgo*86400000).toLocaleDateString('en-AU');
+  const src = dayKeyOf(new Date(_base.getTime() - daysAgo*86400000));
   // Stash the RESOLVED key. confirmRepeatYesterday used to recompute it from Date.now(), so on any
   // day you had navigated to it listed one day's meals and then logged a different day's — indexing
   // the checkbox positions into an array they were never built against. Items past the end were
@@ -32668,9 +32997,8 @@ function confirmRepeatYesterday(){
   const log = ls('totry_nutlog') || {};
   const daysAgo = window.__repeatSrcDays || 1;
   // Same key the preview listed (see repeatMealsFrom); fall back to the day-nav-relative helper.
-  const src = window.__repeatSrcKey || (typeof nutRelKey==='function' ? nutRelKey(daysAgo)
-              : new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU'));
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const src = window.__repeatSrcKey || nutRelKey(daysAgo);
+  const today = nutDayKey();
   const srcMeals = log[src] || [];
   const checks = document.querySelectorAll('#repeat-yesterday-list input[type="checkbox"]');
   
@@ -32964,7 +33292,7 @@ function addFoodToLog(){
     qty,
     meal: meal,
     ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),
-    date:(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU')
+    date:nutDayKey()
   };
   
   // Carry-through full micronutrient panel if source supplied them.
@@ -32989,7 +33317,7 @@ function addFoodToLog(){
     }
   });
   
-  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today=nutDayKey();
   // Edit mode: replace the original entry in place (keep its id + historical timestamp)
   if(window.__editingEntry){
     const ed = window.__editingEntry; window.__editingEntry = null;
@@ -33033,7 +33361,7 @@ function addFoodToLog(){
   try{
     const _g = ls('totry_nut_goals')||{}; const _gc = _g.cal||0;
     if(_gc > 0){
-      const _today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+      const _today = nutDayKey();
       const _log = ls('totry_nutlog')||{}; const _dayArr = _log[_today]||[];
       const _sum = _dayArr.reduce((a,e)=>a+(e.cal||0),0);
       const _prev = _sum - (entry.cal||0);
@@ -33134,7 +33462,7 @@ function logRecentFood(name){
 // with a quick confirmation. No modal. This is what makes repeat logging "take seconds".
 // MFP-style saved meals: group foods you eat together ("my usual breakfast") and log them in one tap.
 async function saveMealGroup(meal){
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const entries = ((ls('totry_nutlog')||{})[today]||[]).filter(e => (e.meal||'snack') === meal);
   if(!entries.length){ showToast('Nothing to save', 'Log some foods in this meal first.'); return; }
   const name = await askText('Name this meal', 'For example: my usual breakfast.', {confirmLabel:'Save meal', value: meal.charAt(0).toUpperCase()+meal.slice(1)});
@@ -33153,7 +33481,7 @@ function logSavedMeal(id){
   const saved = ls('totry_saved_meals')||[];
   const m = saved.find(x=>x.id===id);
   if(!m){ return; }
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   const hr = new Date().getHours();
@@ -33260,7 +33588,7 @@ function _quickServing(food){
 }
 function quickLogSearchFood(food){
   const _qs = _quickServing(food);
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   const hr = new Date().getHours();
@@ -33283,7 +33611,7 @@ function quickLogRecent(name){
   const f = recents.find(x => x.name.toLowerCase().trim() === name.toLowerCase().trim());
   if(!f){ showToast('Not found', 'Search for it instead.'); return; }
   const _qs = _quickServing(f);
-  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   // Best-guess meal slot by time of day
@@ -33364,7 +33692,7 @@ function renderRecentFoods(){
 function computeNutStreak(){
   const log = ls('totry_nutlog') || {};
   let streak = 0; const today = new Date();
-  const has = d => { const k = d.toLocaleDateString('en-AU'); return (log[k]||[]).length > 0; };
+  const has = d => { const k = dayKeyOf(d); return (log[k]||[]).length > 0; };
   const cur = new Date(today);
   if(!has(cur)) cur.setDate(cur.getDate() - 1); // today not logged yet — streak still alive from yesterday
   while(has(cur)){ streak++; cur.setDate(cur.getDate() - 1); }
@@ -33412,7 +33740,7 @@ function renderFoodGroups(){
   let total = 0, unknown = 0;
   for(let i = 0; i < 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
-    (log[d.toLocaleDateString('en-AU')]||[]).forEach(e => {
+    (log[dayKeyOf(d)]||[]).forEach(e => {
       // Only classified foods were counted, and nothing tracked how many were NOT — so a week whose
     // pizza, curry and burrito the classifier does not know still produced "A genuinely balanced week.
     // Keep this shape." from whatever it happened to recognise. A verdict on a fifth of the evidence.
@@ -33650,7 +33978,7 @@ function _nourishConcern(){
     const log = ls('totry_nutlog') || {};
     let low=0, counted=0;
     for(let i=1;i<=7;i++){
-      const k = new Date(Date.now()-i*86400000).toLocaleDateString('en-AU');
+      const k = dayKeyOf(Date.now()-i*86400000);
       const items = log[k];
       // A day only counts if they actually TRACKED it. One lonely entry is almost always someone who
       // started logging and stopped — reading that as under-eating would be the app inventing a
@@ -33771,7 +34099,7 @@ function _nutCheckRollover(){
     if(document.hidden) return;
     const pane = document.getElementById('tab-nourish');
     if(!pane || getComputedStyle(pane).display === 'none') return;
-    if(new Date().toLocaleDateString('en-AU') === _nutPaintedDay) return;
+    if(dayKeyOf() === _nutPaintedDay) return;
     if(typeof renderNutritionLog === 'function') renderNutritionLog();
   }catch(_){ }
 }
@@ -33781,10 +34109,20 @@ try{
 }catch(_){ }
 const NUT_DAY_MIN = -120;
 function nutViewDate(){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+_nutDayOff); return d; }
-function nutDayKey(){ return nutViewDate().toLocaleDateString('en-AU'); }
+// THE DIARY'S DAY KEY. Through dayKeyOf(), never a formatter: toLocaleDateString('en-AU') is padded
+// by Chromium and unpadded by WebKit, and this string is the KEY of the totry_nutlog map that syncs
+// to the cloud. See the long note above dayKeyOf() in 00-boot.js.
+//
+// AND THE SECOND KEY PRODUCER IS GONE. Twenty-two call sites wrote
+// `(typeof nutDayKey==='function') ? nutDayKey() : new Date().toLocaleDateString('en-AU')`.
+// nutDayKey is a hoisted function declaration in the same single <script>, so that guard has never
+// been able to be false — the fallback was unreachable code that nonetheless had to be kept correct
+// in two places, and was not. The ternary is deleted rather than fixed on both sides, so there is one
+// producer and it cannot drift from itself.
+function nutDayKey(){ return dayKeyOf(nutViewDate()); }
 function nutIsToday(){ return _nutDayOff === 0; }
 // Key of N days BEFORE the day being viewed — so "yesterday" means the day before the one you're on.
-function nutRelKey(daysAgo){ const d=nutViewDate(); d.setDate(d.getDate()-(daysAgo||0)); return d.toLocaleDateString('en-AU'); }
+function nutRelKey(daysAgo){ const d=nutViewDate(); d.setDate(d.getDate()-(daysAgo||0)); return dayKeyOf(d); }
 // A timestamp INSIDE the day being written to. Every ts-based reader (weekly digest, adaptive TDEE,
 // the coach brief) buckets by ts — a backfilled entry stamped "now" would land on the wrong day.
 function nutStampFor(){ if(nutIsToday()) return new Date().toISOString(); const d=nutViewDate(); d.setHours(12,0,0,0); return d.toISOString(); }
@@ -33859,7 +34197,7 @@ function renderNutDayNav(){
 
 function renderNutritionLog(){
   // The real calendar day this paint belongs to — NOT nutDayKey(), which is the day being VIEWED.
-  try{ _nutPaintedDay = new Date().toLocaleDateString('en-AU'); }catch(_){ }
+  try{ _nutPaintedDay = dayKeyOf(); }catch(_){ }
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
   // exactly who needs the "set a real target" nudge, so it must run up here, not after.
@@ -33897,7 +34235,7 @@ function renderNutritionLog(){
     // eleven lines below already handle correctly. Gate this one on its own data too.
     const _microKnown = (function(){
       try{
-        const day = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+        const day = nutDayKey();
         const rows = nutLogSafe()[day] || [];
         return nutMicroKeys().some(function(k){
           return rows.some(function(r){ return (r && Number(r[k])) > 0; });
@@ -33965,7 +34303,7 @@ function renderNutritionLog(){
       else if(gi){ goalDir = gi; }
       else { const pref = _goalDirRaw(); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
       // Prefer TOTAL calories burned (active + BMR) for a true deficit; fall back to the burn number.
-      const ev = ritualLog('totry_evenings').find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
+      const ev = ritualLog('totry_evenings').find(x => x.ts && dayKeyOf(x.ts) === today);
       const totalBurned = (ev && ev.rings && ev.rings.total) ? ev.rings.total : null;
       if(burned >= 150 || (goalDir==='cut' && totalBurned)){
         if(goalDir === 'cut'){
@@ -33995,7 +34333,7 @@ function renderNutritionLog(){
   // user sees where their day's at without leaving the life-system app.
   const ringsEl = document.getElementById('nut-rings-today');
   if(ringsEl){
-    const ev = ritualLog('totry_evenings').find(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === today);
+    const ev = ritualLog('totry_evenings').find(e => e.ts && dayKeyOf(e.ts) === today);
     const r = ev && ev.rings;
     if(r && (r.move||r.exercise||r.stand)){
       const cell = (label,val,unit) => '<div style="flex:1;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+label+'</div><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">'+(val!=null?val:'\u2014')+(val!=null?'<span style=\"font-size:var(--t-mini);color:var(--tx3)\"> '+unit+'</span>':'')+'</div></div>';
@@ -34013,7 +34351,7 @@ function renderNutritionLog(){
   const trainEl = document.getElementById('nut-training-today');
   if(trainEl){
     const allTrain = (typeof getUnifiedTraining === 'function') ? getUnifiedTraining() : [];
-    const todays = allTrain.filter(t => t.ts && new Date(t.ts).toLocaleDateString('en-AU') === today);
+    const todays = allTrain.filter(t => t.ts && dayKeyOf(t.ts) === today);
     if(todays.length){
       const names = todays.map(t => (t.title || 'Workout')).join(', ');
       trainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
@@ -34119,7 +34457,7 @@ function renderNutritionLog(){
     const hr = new Date().getHours();
     const proLeft = Math.round(goalPro - totals.pro);
     const dismissedDay = ls('totry_glance_dismissed');
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
     // The hero's nudge already says "90g short on protein with dinner to go". Saying it again 800px
     // lower does not reinforce it; it just makes the screen longer and the app look like it is not
     // listening to itself. If the nudge has the protein point, the glance stays quiet.
@@ -34131,7 +34469,7 @@ function renderNutritionLog(){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
           '<div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.6">You\'ve got about <span style="color:var(--gr)">'+proLeft+'g protein</span> still to get today. If you\'re home: eggs, Greek yoghurt, chicken, or a quick shake. Out and about: a tin of tuna, jerky, a protein bar, or milk all travel well.</div>'+
-          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
+          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,dayKeyOf());document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
         '</div>';
       glanceEl.style.display = 'block';
     } else {
@@ -34151,7 +34489,7 @@ function renderNutritionLog(){
   if(list){
     if(!entries.length){
       const log=ls('totry_nutlog')||{};
-      const yKey=(typeof nutRelKey==='function')?nutRelKey(1):(function(){const y=new Date();y.setDate(y.getDate()-1);return y.toLocaleDateString('en-AU');})();
+      const yKey=nutRelKey(1);
       const hadYesterday = log[yKey] && log[yKey].length;
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
       const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
@@ -34396,7 +34734,7 @@ function renderMealSplit(){
   // A "numbers off" promise that leaks calorie counts here would be a broken promise to the exact
   // person the mode exists to protect.
   if(typeof nutGentle==='function' && nutGentle()){ wrap.style.display='none'; return; }
-  const today = (typeof nutDayKey==='function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const entries = (ls('totry_nutlog')||{})[today] || [];
   if(!entries.length){ wrap.style.display='none'; return; }
   const meals = {breakfast:0, lunch:0, dinner:0, snack:0};
@@ -34704,7 +35042,7 @@ function _isTrainingToday(){
   const dow=(new Date().getDay()+6)%7;
   if(_isTrainingDay(dow)) return true;
   // Already trained today counts, even if it wasn't planned.
-  try{ const today=new Date().toLocaleDateString('en-AU'); if((typeof getUnifiedTraining==='function'?getUnifiedTraining():[]).some(t=>t.kind==='strength'&&t.ts&&new Date(t.ts).toLocaleDateString('en-AU')===today)) return true; }catch(_){}
+  try{ const today=dayKeyOf(); if((typeof getUnifiedTraining==='function'?getUnifiedTraining():[]).some(t=>t.kind==='strength'&&t.ts&&dayKeyOf(t.ts)===today)) return true; }catch(_){}
   return false;
 }
 function _trainingDaysPerWeek(){
@@ -35085,7 +35423,7 @@ function renderBodySystemReport(){
     const out = {};
     for(let i=0;i<7;i++){
       const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
-      out[d.toLocaleDateString('en-AU')] = true;
+      out[dayKeyOf(d)] = true;
     }
     return out;
   })();
@@ -35257,7 +35595,7 @@ function renderNutTrend(){
   const days=[];
   for(let i=13;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
-    const key=d.toLocaleDateString('en-AU');
+    const key=dayKeyOf(d);
     const entries=log[key]||[];
     const cal=Math.round(entries.reduce((a,e)=>a+(e.cal||0),0));
     days.push({key, cal, label:d.toLocaleDateString('en-AU',{day:'numeric'})});
@@ -35682,7 +36020,7 @@ function waterMlOn(dateStr){
 function getWaterCount(){
   // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
   // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
-  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const water = ls('totry_water') || {};
   let v = water[today] || 0;
   // Backward-compat: old data stored cups (small numbers). If it looks like cups (<50), convert to ml.
@@ -35692,7 +36030,7 @@ function getWaterCount(){
 function setWaterCount(ml){
   // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
   // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
-  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+  const today = nutDayKey();
   const water = ls('totry_water') || {};
   water[today] = Math.max(0, Math.round(ml));
   ls('totry_water', water);
@@ -35851,14 +36189,14 @@ function renderFastingRhythm(){
   if(!el) return;
   // Respect a user who's turned the rhythm off, and a per-day dismissal.
   if(ls('totry_fast_rhythm_off')){ el.style.display='none'; return; }
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   if(ls('totry_fast_rhythm_dismissed') === today){ el.style.display='none'; return; }
   const f = catholicFastingDay();
   if(!f){ el.style.display='none'; return; }
   el.innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:8px">'+
       '<div style="flex:1"><span style="color:var(--go)">✝ '+f.kind+'.</span> '+f.note+'</div>'+
-      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
+      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,dayKeyOf());document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
     '</div>';
   el.style.display = 'block';
 }
@@ -36843,7 +37181,7 @@ function _pruneNutLog(log){
     // comparator ordered days arbitrarily, so "keep the newest 120" could evict recent days and keep old
     // ones, and with no guard the very diary the caller was mid-write on could be deleted underneath it.
     keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); });
-    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+    const today=nutDayKey();
     // Compare by PARSED date, not string equality: '10/8/2026' and '10/08/2026' are the same day but
     // different strings, so a string guard silently stops protecting today the moment any write path
     // produces an unpadded key. Timestamps cannot drift apart on formatting.
@@ -37311,7 +37649,7 @@ async function _fuelSwapMeal(i){
 }
 
 // Today's ACTUAL logged intake (from the tracker) — the day is anchored to targets, not the plan.
-function _fuelToday(){ try{ const today=new Date().toLocaleDateString('en-AU'); const arr=(ls('totry_nutlog')||{})[today]||[]; return { cal: arr.reduce(function(a,e){return a+(e.cal||0);},0), pro: arr.reduce(function(a,e){return a+(e.pro||0);},0) }; }catch(_){ return {cal:0,pro:0}; } }
+function _fuelToday(){ try{ const today=dayKeyOf(); const arr=(ls('totry_nutlog')||{})[today]||[]; return { cal: arr.reduce(function(a,e){return a+(e.cal||0);},0), pro: arr.reduce(function(a,e){return a+(e.pro||0);},0) }; }catch(_){ return {cal:0,pro:0}; } }
 
 // Grace when real life happens (a buffet, a night out, anything off-plan). The plan is a guide,
 // not a cage — let it slide, anchor to the day's TARGET, and log whatever they actually ate.
@@ -37386,7 +37724,7 @@ function _fuelMealSlot(name, i, n){
 }
 function _fuelLogPlan(btn){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
   plan.meals.forEach(function(mm, i){
     log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
@@ -38058,7 +38396,7 @@ function handleCSVFile(ev){
       type: amt < 0 ? 'expense' : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
           category: amt < 0 ? _autoCategory(desc) : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'Transfer' : 'Income'),
           ts: validWhen.toISOString(),
-          date: validWhen.toLocaleDateString('en-AU'),
+          date: dayKeyOf(validWhen),
         });
       }
       if(!parsed.length){ showToast('Nothing to import','Couldn\u2019t find transactions in that file. Check it has date, description, and amount columns.'); return; }
@@ -38361,7 +38699,7 @@ function quickSpend(){
     category: cat,
     note: '',
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   // Reset inputs
@@ -38426,7 +38764,7 @@ function saveTransaction(){
     category: window.__transCategory,
     note: note,
     ts: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-AU')
+    date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   document.querySelector('.modal-bg.open')?.remove();
@@ -39719,7 +40057,7 @@ function monthlyPaymentRate(){
   // therefore produced a debt-free date years too soon, on the screen someone is most likely to believe.
   // Distinct DAYS is the honest unit, and a real month of history is the honest minimum: until then this
   // returns null, which callers already treat as "not enough dated history to say" and print no date.
-  const distinctDays = new Set(pays.map(p => new Date(_T(p)).toLocaleDateString('en-AU'))).size;
+  const distinctDays = new Set(pays.map(p => dayKeyOf(_T(p)))).size;
   if(distinctDays < 2 || spanDays < 25) return null;
   // PAYMENT OCCASIONS, NOT PAYMENT RECORDS. Paying three debts on payday is three records and ONE
   // occasion; using the record count inflates the covered span, which inflates the monthly rate,
@@ -40228,9 +40566,9 @@ function interferenceNote(){
   const history = ls('totry_workouts') || [];
   if(!history.length) return null;
   const now = new Date();
-  const yKey = new Date(now.getTime() - 86400000).toLocaleDateString('en-AU');
+  const yKey = dayKeyOf(now.getTime() - 86400000);
   // Find yesterday's sessions.
-  const yest = history.filter(w => (w.date === yKey) || (w.ts && new Date(w.ts).toLocaleDateString('en-AU') === yKey));
+  const yest = history.filter(w => (dayKeyNorm(w.date) === yKey) || (w.ts && dayKeyOf(w.ts) === yKey));
   if(!yest.length) return null;
   for(const w of yest){
     const mod = sessionModality(w);
@@ -40582,7 +40920,7 @@ function computeReadiness(){
     const tr = ls('totry_trackers') || {};
     [0, 1].forEach(back => {
       const d = new Date(); d.setDate(d.getDate() - back);
-      const key = d.toLocaleDateString('en-AU');
+      const key = dayKeyOf(d);
       const row = tr[key];
       if(!row || row._sleepSrc !== 'health') return;
       const hrs = parseFloat(row.sleep) || 0;
@@ -40911,7 +41249,7 @@ function renderMorningDayAhead(){
     const out = document.getElementById('morning-day-ahead-text');
     if(!card || !out) return;
     const bits = [];
-    const todayKey = new Date().toLocaleDateString('en-AU');
+    const todayKey = dayKeyOf();
 
     // 1) What's actually on today — their real schedule (calendar stores Mon=0).
     const dow = (new Date().getDay() + 6) % 7;
@@ -40925,7 +41263,7 @@ function renderMorningDayAhead(){
 
     // 2) Going by their OWN history — are they likely training today? (Never if they already did,
     //    and never if the calendar already says it — no point telling them what they can see.)
-    const trainedToday = (ls('totry_workouts')||[]).some(w => w && w.ts && new Date(w.ts).toLocaleDateString('en-AU') === todayKey);
+    const trainedToday = (ls('totry_workouts')||[]).some(w => w && w.ts && dayKeyOf(w.ts) === todayKey);
     const gymOnCal = events.some(e => e && e.type === 'gym');
     const usual = _usualTrainingToday();
     if(usual && !trainedToday && !gymOnCal){
@@ -40964,7 +41302,7 @@ function logMorningSleep(v){
   ls('totry_checkins', checkins.slice(0,300));
   // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so
   // a morning sleep rating shows as "Xh" there instead of a stale 0h. (Was two disconnected stores.)
-  try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
+  try{ const _dk=dayKeyOf(); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('light');
   // Reflect selection in the UI. THIS NEVER PAINTED: it set inline background and colour, and the
@@ -41289,7 +41627,7 @@ function _weekStats(){
   // Money — the fourth front, so the weekly word can speak to a man's whole life, not just body+soul.
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
   // Nutrition consistency — days actually logged this week.
-  let nutDays = 0; try{ const nl=ls('totry_nutlog')||{}; for(let i=0;i<7;i++){ const d=new Date(now-i*86400000).toLocaleDateString('en-AU'); if((nl[d]||[]).length) nutDays++; } }catch(_){}
+  let nutDays = 0; try{ const nl=ls('totry_nutlog')||{}; for(let i=0;i<7;i++){ const d=dayKeyOf(now-i*86400000); if((nl[d]||[]).length) nutDays++; } }catch(_){}
   return { workouts: workouts.length, journalEntries: journal.length, wins, slips7, longestStreak: longest, reclaimed, nutDays };
 }
 // ── WEEKLY CONTENT ENGINE — ToTry is the PRODUCER, never the editor ──────────────
@@ -43229,7 +43567,7 @@ function showWorkoutSummary(s){
     // source of truth) so this session is counted exactly once, never stacked with a later resync.
     recomputeWorkoutBurns();
     const goals = ls('totry_nut_goals') || defaultNutGoals();
-    const todayEntries = ((ls('totry_nutlog')||{})[new Date().toLocaleDateString('en-AU')]) || [];
+    const todayEntries = ((ls('totry_nutlog')||{})[dayKeyOf()]) || [];
     const proSoFar = Math.round(todayEntries.reduce((a,e)=>a+(e.pro||0),0));
     const proGoal = goals.pro || 170;
     const proLeft = Math.max(0, proGoal - proSoFar);
@@ -43580,7 +43918,7 @@ function saveEditTraining(id){
   // erased a real figure and then reported success. A blank box the person SAW means "clear it"; a box
   // that was never on screen means nothing at all, and must leave the stored value alone.
   const shown = id => !!document.getElementById(id);
-  const patch = { type, splitFocus: type, date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  const patch = { type, splitFocus: type, date: dayKeyOf(when), ts: when.toISOString() };
   if(shown('edit-cardio-time'))     patch.durationMinutes = mins ? Math.round(mins) : null;
   // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
   // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
@@ -43816,7 +44154,7 @@ function saveCardioManually(){
     exercises: [],
     volume: 0,
     completedSets: 0,
-    date: when.toLocaleDateString('en-AU'),
+    date: dayKeyOf(when),
     ts: when.toISOString()
   });
   ls('totry_workouts', _capWorkouts(workouts));
@@ -45930,7 +46268,7 @@ function saveExamen(){
   const log = ls('totry_examens') || [];
   log.unshift({
     flagged: !!_exCrisis,
-    date: new Date().toLocaleDateString('en-AU'),
+    date: dayKeyOf(),
     ts: new Date().toISOString(),
     day: getDayCount(),
     ..._examenAnswers
@@ -46060,7 +46398,7 @@ function computeDayActivity(){
     if(!ts) return;
     const d = new Date(ts);
     if(isNaN(d.getTime())) return;
-    const key = d.toLocaleDateString('en-AU');
+    const key = dayKeyOf(d);
     map[key] = (map[key] || 0) + 1;
   };
   (ls('totry_journal') || []).forEach(j => addDate(j.ts));
@@ -46150,7 +46488,7 @@ function renderActivityHeatmap(){
       // Don't render cells in the future — the week simply stops at today.
       if(cellDate > today) continue;
       
-      const key = cellDate.toLocaleDateString('en-AU');
+      const key = dayKeyOf(cellDate);
       const score = activity[key] || 0;
       
       // Color buckets — green-gold scale
@@ -46202,7 +46540,7 @@ function showDayActivityDetail(dateKey){
   // dateKey is 'DD/MM/YYYY' au format
   // Collect every entry with this date
   const items = [];
-  const matchDate = (ts) => ts && new Date(ts).toLocaleDateString('en-AU') === dateKey;
+  const matchDate = (ts) => ts && dayKeyOf(ts) === dateKey;
   
   (ls('totry_journal') || []).forEach(j => { if(matchDate(j.ts)) items.push({kind: 'Journal', text: j.text?.slice(0, 80), mood: j.mood}); });
   (ls('totry_evenings') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Evening reflection', text: e.win || e.release || e.see || ''}); });
@@ -46285,14 +46623,19 @@ function showDayActivityDetail(dateKey){
 // moves it more — and we chronically under-estimate how much it lands. So the third slot points at a
 // person, and offers to carry it. No streak, no daily obligation, no scoring — three lines on the
 // days you feel like it, and nothing at all on the days you don't.
-function _tgtKey(){ return new Date().toLocaleDateString('en-AU'); }
+function _tgtKey(){ return dayKeyOf(); }
 function getTGT(d){ try{ const all=ls('totry_tgt')||{}; return all[d||_tgtKey()]||null; }catch(_){ return null; } }
 function saveTGT(patch){
   try{
     const all=ls('totry_tgt')||{}; const k=_tgtKey();
     all[k]=Object.assign({ts:new Date().toISOString()}, all[k]||{}, patch);
     // keep it light — a season of entries, not a lifetime archive
-    const keys=Object.keys(all); if(keys.length>120){ keys.sort(); delete all[keys[0]]; }
+    // EVICT THE OLDEST DAY, NOT THE ALPHABETICALLY FIRST. A plain .sort() on 'DD/MM/YYYY' is
+    // LEXICOGRAPHIC — '01/12/2025' sorts before '02/01/2026' — so the eviction threw away a day from
+    // this month to keep one from last year. _pruneNutLog() already sorts through _auKeyMs for
+    // exactly this reason; the canonical key made the two spellings agree but not the ordering.
+    const keys=Object.keys(all);
+    if(keys.length>120){ keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); }); delete all[keys[0]]; }
     ls('totry_tgt', all);
   }catch(_){}
 }
@@ -46388,7 +46731,7 @@ function _tgtCopyAndDone(){
 }
 
 function completeEvening(){
-  const _todayStrForBurns = () => new Date().toLocaleDateString('en-AU');
+  const _todayStrForBurns = () => dayKeyOf();
   const win=document.getElementById('evening-win')?.value.trim()||'';
   const release=document.getElementById('evening-release')?.value.trim()||'';
   // The heaviest question ("if the people you love watched today, what would they see?"). It used
@@ -46404,10 +46747,10 @@ function completeEvening(){
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';
   const tasks=[t1,t2,t3].filter(Boolean);
-  if(tasks.length)ls('totry_tomorrow_tasks',{tasks,date:new Date().toLocaleDateString('en-AU'),ts:new Date().toISOString()});
+  if(tasks.length)ls('totry_tomorrow_tasks',{tasks,date:dayKeyOf(),ts:new Date().toISOString()});
   // Steps entered at night (from the user's watch) — store where the rest of the app reads them.
   const stepsVal=parseInt(document.getElementById('evening-steps')?.value||'0');
-  if(stepsVal>0){ ls('totry_today_steps', stepsVal); try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=stepsVal; ls('totry_trackers',_tr); }catch(_){} }
+  if(stepsVal>0){ ls('totry_today_steps', stepsVal); try{ const _tr=ls('totry_trackers')||{}; const _dk=dayKeyOf(); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=stepsVal; ls('totry_trackers',_tr); }catch(_){} }
   // Apple Watch rings, entered at a glance. Move = active calories → feed the burn ledger so it
   // affects the nutrition net (idempotent via its own per-day key, like Strava/strength).
   const moveCal=parseInt(document.getElementById('evening-move')?.value||'0')||0;
@@ -46428,10 +46771,10 @@ function completeEvening(){
   }catch(_){ }
   const goalsHit=window.__goalsHit||null;
   const log=ls('totry_evenings')||[];
-  const _todayStr=new Date().toLocaleDateString('en-AU');
+  const _todayStr=dayKeyOf();
   const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,see,flagged:!!_evCrisis,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
   // Editable until midnight: replace today's existing entry rather than stacking duplicates.
-  const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
+  const _exIdx=log.findIndex(e=>e.ts && dayKeyOf(e.ts)===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
   if(typeof logEvent==='function') logEvent('evening_done');
   ls('totry_evenings',log.slice(0,1200)); // keep years of reflections, not ~3 months — his honest evenings shouldn't silently vanish
@@ -46441,8 +46784,8 @@ function completeEvening(){
   if(typeof renderHomeHabits === 'function') renderHomeHabits();
   // Has the examen been done today? It's the closing act — if not done, gently point there
   // instead of falsely declaring the day complete.
-  const today=new Date().toLocaleDateString('en-AU');
-  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
   const done=document.getElementById('evening-done');
 
   // THE CRISIS RESPONSE FIRES FIRST, AND UNCONDITIONALLY.
@@ -46515,8 +46858,8 @@ function initEveningTab(){
   if(el)el.textContent=(userName?userName+', ':'')+'the day winds down';
   // Close the arc: if a morning intention was set today, reflect it back here.
   try{
-    const _t=new Date().toLocaleDateString('en-AU');
-    const _m=ritualLog('totry_mornings').find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===_t);
+    const _t=dayKeyOf();
+    const _m=ritualLog('totry_mornings').find(x=>x.ts&&dayKeyOf(x.ts)===_t);
     const _recall=document.getElementById('evening-intention-recall');
     const _txt=document.getElementById('evening-intention-text');
     if(_m&&_m.intention&&_m.intention.trim()&&_recall&&_txt){ _txt.textContent='\u201c'+_m.intention.trim()+'\u201d'; _recall.style.display='block'; }
@@ -46525,8 +46868,8 @@ function initEveningTab(){
   // The winning man sees his evidence: reflect the day he ACTUALLY lived, from the whole-life data,
   // so looking back is grounded in what he really did \u2014 not a blank recall. Grace over shame.
   try{
-    const _au=new Date().toLocaleDateString('en-AU');
-    const _isToday=(ts)=> ts && new Date(ts).toLocaleDateString('en-AU')===_au;
+    const _au=dayKeyOf();
+    const _isToday=(ts)=> ts && dayKeyOf(ts)===_au;
     const ev=[];
     // One icon language: the evidence chips draw svgIcon(), gold so they read as icons on the
     // neutral chip, not as dim text.
@@ -46548,8 +46891,8 @@ function initEveningTab(){
   // the user can adjust it as the day finishes (e.g. steps added later) rather than starting blank
   // or creating a duplicate. completeEvening() updates today's entry in place.
   try{
-    const today=new Date().toLocaleDateString('en-AU');
-    const todays=ritualLog('totry_evenings').find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const today=dayKeyOf();
+    const todays=ritualLog('totry_evenings').find(e=>e.ts && dayKeyOf(e.ts)===today);
     if(todays){
       const setv=(id,v)=>{const n=document.getElementById(id); if(n&&v!=null&&n.value==='') n.value=v;};
       // THE IDS WERE WRONG, AND THAT ERASED PEOPLE'S EVENINGS. completeEvening() reads #evening-win,
@@ -46597,8 +46940,8 @@ function initEveningTab(){
   try{ renderTGT(); }catch(_){}
   if(typeof updateExamenCount === 'function') updateExamenCount();
   // Reflect today's examen state — if done, show the green confirmation in the card.
-  const today=new Date().toLocaleDateString('en-AU');
-  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
   const edt=document.getElementById('examen-done-today');
   // '' rather than 'block': the confirmation is a flex row (a check beside its line), and an inline
   // display:block would stack the icon above the words.
@@ -46957,8 +47300,8 @@ function haptic(pattern){
 function getFreezes(){return ls('totry_freezes')||[];}
 function addFreeze(reason){
   const freezes=getFreezes();
-  const today=new Date().toLocaleDateString('en-AU');
-  if(!freezes.find(f=>f.date===today)){
+  const today=dayKeyOf();
+  if(!freezes.find(f=>dayKeyNorm(f.date)===today)){
     freezes.unshift({date:today,ts:new Date().toISOString(),reason:reason||'rest'});
     ls('totry_freezes',freezes.slice(0,90));
     showToast('Freeze used','Your streak is protected today. Rest fully.');
@@ -47150,7 +47493,7 @@ async function generateWeeklySynthesis(){
     if(response&&response.trim()){
       const synthesis = {
         weekKey:thisWeekKey,
-        date:today.toLocaleDateString('en-AU'),
+        date:dayKeyOf(today),
         text:response.trim(),
         ts:new Date().toISOString(),
         stats: {
@@ -47247,11 +47590,11 @@ function computeYearInReview(year){
   
   // Days "tried" = days with any activity (journal/evening/workout/morning logged)
   const allActivityDates = new Set();
-  (ls('totry_journal')||[]).forEach(j => { if(inYear(j.ts)) allActivityDates.add(new Date(j.ts).toLocaleDateString('en-AU')); });
-  ritualLog('totry_evenings').forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
-  ritualLog('totry_mornings').forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(new Date(m.ts || m.createdAt).toLocaleDateString('en-AU')); });
-  (ls('totry_workouts')||[]).forEach(w => { if(inYear(w.ts)) allActivityDates.add(new Date(w.ts).toLocaleDateString('en-AU')); });
-  (ls('totry_examens')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
+  (ls('totry_journal')||[]).forEach(j => { if(inYear(j.ts)) allActivityDates.add(dayKeyOf(j.ts)); });
+  ritualLog('totry_evenings').forEach(e => { if(inYear(e.ts)) allActivityDates.add(dayKeyOf(e.ts)); });
+  ritualLog('totry_mornings').forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(dayKeyOf(m.ts || m.createdAt)); });
+  (ls('totry_workouts')||[]).forEach(w => { if(inYear(w.ts)) allActivityDates.add(dayKeyOf(w.ts)); });
+  (ls('totry_examens')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(dayKeyOf(e.ts)); });
   
   // Fight wins
   loadV();
@@ -47977,7 +48320,7 @@ function openRosary(){
   // Resume if there's saved progress from today.
   try{
     const sp = ls('totry_rosary_progress');
-    if(sp && sp.date === new Date().toLocaleDateString('en-AU') && sp.i>0 && sp.i<built.steps.length){ _rosary.i = sp.i; }
+    if(sp && dayKeyNorm(sp.date) === dayKeyOf() && sp.i>0 && sp.i<built.steps.length){ _rosary.i = sp.i; }
   }catch(_){}
   let ov = document.getElementById('rosary-overlay');
   if(!ov){ ov = document.createElement('div'); ov.id='rosary-overlay'; document.body.appendChild(ov); }
@@ -47992,7 +48335,7 @@ function closeRosary(){
   // the same day dropped the person on the closing Sign of the Cross with the whole rosary skipped.
   try{
     if(_rosaryDone){ localStorage.removeItem('totry_rosary_progress'); }
-    else { ls('totry_rosary_progress', { date:new Date().toLocaleDateString('en-AU'), i:_rosary?_rosary.i:0 }); }
+    else { ls('totry_rosary_progress', { date:dayKeyOf(), i:_rosary?_rosary.i:0 }); }
   }catch(_){}
   _rosaryDone = false;
   const ov=document.getElementById('rosary-overlay'); if(ov) ov.remove();
@@ -48308,7 +48651,7 @@ function checkLettersDue(){
   const dueNow=letters.filter(l=>!l.delivered&&new Date(l.deliverAt).getTime()<=now);
   if(dueNow.length){
     // Show a notification toast
-    const today=new Date().toLocaleDateString('en-AU');
+    const today=dayKeyOf();
     const lastNotice=ls('totry_letter_notice');
     if(lastNotice!==today){
       ls('totry_letter_notice',today);
@@ -48330,7 +48673,7 @@ async function showAIMorningSentence(){
   if(!card||!textEl)return;
   
   // Check if we have today's sentence cached
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const cached=ls('totry_ai_morning_'+today);
   
   if(cached){
@@ -48398,7 +48741,7 @@ async function showAIMorningSentence(){
 
 function refreshAIMorning(){
   // Force regenerate
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   localStorage.removeItem('totry_ai_morning_'+today);
   // AND CLEAR THE ONCE-A-DAY GUARD, or this button deletes the card instead of refreshing it.
   // showAIMorningSentence() refuses to re-fire when __aiMorningAttempted is set — right, because
@@ -48446,8 +48789,8 @@ function openShareCustomizer(){
   const dayCount = getDayCount();
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   const totalWins = vices.reduce((s,v)=>s+(v.w||0),0);
-  const today = new Date().toLocaleDateString('en-AU');
-  const todayWorkout = (ls('totry_workouts')||[]).find(w => w.date === today || new Date(w.ts||'').toLocaleDateString('en-AU') === today);
+  const today = dayKeyOf();
+  const todayWorkout = (ls('totry_workouts')||[]).find(w => dayKeyNorm(w.date) === today || dayKeyOf(w.ts||'') === today);
   const journalCount = (ls('totry_journal')||[]).length;
   const habitsToday = (function(){loadH();const ti=tIdx();return habits.filter(h=>h.d[ti]===1).length;})();
   const habitsTotal = habits.length;
@@ -48542,8 +48885,8 @@ function renderCustomShareCard(prefs){
   loadV();
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   const totalWins = vices.reduce((s,v)=>s+(v.w||0),0);
-  const today = new Date().toLocaleDateString('en-AU');
-  const todayWorkout = (ls('totry_workouts')||[]).find(w => w.date === today || new Date(w.ts||'').toLocaleDateString('en-AU') === today);
+  const today = dayKeyOf();
+  const todayWorkout = (ls('totry_workouts')||[]).find(w => dayKeyNorm(w.date) === today || dayKeyOf(w.ts||'') === today);
   const journalCount = (ls('totry_journal')||[]).length;
   loadH();
   const ti = tIdx();
@@ -48835,16 +49178,16 @@ function _renderShareCanvas(style, theme){
   const identity=ls('totry_identity')||'';
   loadV();
   const wins=vices.reduce((s,v)=>s+(v.w||0),0);
-  const today=new Date().toLocaleDateString('en-AU');
-  const todayJournal=(ls('totry_journal')||[]).find(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
-  const todayEvening=ritualLog('totry_evenings').find(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
-  const todayWorkout=(ls('totry_workouts')||[]).find(w=>w.date===today||new Date(w.ts||'').toLocaleDateString('en-AU')===today);
+  const today=dayKeyOf();
+  const todayJournal=(ls('totry_journal')||[]).find(j=>dayKeyOf(j.ts)===today);
+  const todayEvening=ritualLog('totry_evenings').find(e=>dayKeyOf(e.ts)===today);
+  const todayWorkout=(ls('totry_workouts')||[]).find(w=>dayKeyNorm(w.date)===today||dayKeyOf(w.ts||'')===today);
   // Counted from totry_fight_log, NOT totry_vice_savings_log. The savings log is only appended when
   // savedNow > 0, and savedNow comes from a hardcoded seven-entry regex table (weed, vape,
   // cigarettes, alcohol, gambling, spending, junk food). Lust, porn, doomscrolling and gaming match
   // none of it — so the people this app was built for saw "0 urges fought and won" on their share
   // card no matter how many they had actually won. A win is a win whether or not it saved money.
-  const todayWins=(ls('totry_fight_log')||[]).filter(f=>f&&f.won&&f.ts&&new Date(f.ts).toLocaleDateString('en-AU')===today).length;
+  const todayWins=(ls('totry_fight_log')||[]).filter(f=>f&&f.won&&f.ts&&dayKeyOf(f.ts)===today).length;
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   // shareVerseFrom() stashes the exact verse the person tapped in window._verseCardOverride, and the
   // card used to ignore it — so "Make a card" on a mid-craving verse produced a card of whatever
@@ -49983,7 +50326,7 @@ async function loadDemoData(){
   const now = new Date();
   const iso = d => d.toISOString();
   const dayAgo = n => new Date(now.getTime() - n*86400000);
-  const auKey = d => d.toLocaleDateString('en-AU');
+  const auKey = d => dayKeyOf(d);
   // Identity / journey (~92 days in)
   ls('totry_name','Alex');
   ls('totry_identity','I am becoming a person who keeps their promises, even to themselves.');
@@ -51438,6 +51781,11 @@ function runSchemaMigrations(){
 }
 
 async function initApp(){
+  // BEFORE ANYTHING READS A DAY. Every boot, not once: a cloud pull can reintroduce the other
+  // engine's spelling of a day key at any time, and this device's own history may carry both
+  // (see dayKeyOf() in 00-boot.js). It normalises AND MERGES — never overwrites — and it is
+  // idempotent, so a boot with nothing to move costs one JSON.parse per store.
+  try{ if(typeof migrateDayKeys === 'function') migrateDayKeys(); }catch(_){ }
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
   try{ if(typeof _watchA11y==='function') _watchA11y(); }catch(_){ }
@@ -51587,7 +51935,7 @@ async function initApp(){
   checkIOSInstall();requestPersistentStorage();
   // Welcome back if installed PWA
   if(isStandalone()){
-    const today=new Date().toLocaleDateString('en-AU');
+    const today=dayKeyOf();
     if(ls('totry_last_open')!==today){
       ls('totry_last_open',today);
       setTimeout(()=>showToast('Day '+getDayCount()+', '+userName,'Good to see you back. Let\'s make today count.'),1000);
@@ -52750,7 +53098,7 @@ function ritualLog(key){
 }
 
 function getNextStep(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   const hour = new Date().getHours();
   // 0. HARD-MOMENT AWARENESS (the nervous system). Late night is the classic danger window for
   // most compulsions — gently put the companion in front of them BEFORE anything routine.
@@ -52777,14 +53125,14 @@ function getNextStep(){
   try{
     if(typeof computeReadiness === 'function'){
       const _r = computeReadiness();
-      const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+      const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
         return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
       }
     }
   }catch(_){ }
   // 1. Morning ritual not done yet today?
-  const morningToday = ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
+  const morningToday = ritualLog('totry_mornings').some(m=>m.ts && dayKeyOf(m.ts)===today);
   if(!morningToday && hour < 12){
     return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', softenOk:true, action:'morning' };
   }
@@ -52805,14 +53153,14 @@ function getNextStep(){
     }
   }
   // 3. No training logged today?
-  const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+  const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
   if(!trainedToday && hour >= 10 && hour < 21){
     return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', softenOk:true, action:'train' };
   }
   // 3. Evening: examen / reflection not done?
   if(hour >= 17){
-    const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
-    const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
+    const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && dayKeyOf(e.ts)===today);
     if(!eveningToday || !examenToday){
       return { text:'Close your day', sub:_nextStepCloseSub(), softenOk:true, action:'reflect' };
     }
@@ -52824,7 +53172,7 @@ function getNextStep(){
   // opposite of this app's promise. Derive it from what actually gets written instead.
   const prayedToday = (function(){
     try{
-      const sameDay = ts => ts && new Date(ts).toLocaleDateString('en-AU') === today;
+      const sameDay = ts => ts && dayKeyOf(ts) === today;
       if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
       if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
       if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
@@ -52988,8 +53336,8 @@ function renderLifeWoven(){
   const box=document.getElementById('home-woven'); if(!box) return;
   const s=(typeof getLifeState==='function')?getLifeState():null;
   if(!s){ box.innerHTML=''; return; }
-  const today=new Date().toLocaleDateString('en-AU'); const h=new Date().getHours();
-  const dOn=(x)=>{ try{ return new Date(x.ts||x.createdAt||x.date||0).toLocaleDateString('en-AU')===today; }catch(_){ return false; } };
+  const today=dayKeyOf(); const h=new Date().getHours();
+  const dOn=(x)=>{ try{ return dayKeyOf(x.ts||x.createdAt||x.date||0)===today; }catch(_){ return false; } };
   // BODY — trained + fuel today
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
@@ -53051,9 +53399,9 @@ function renderHomeGreeting(){
   if(!hiEl || !subEl || !actEl) return;
   const name = ls('totry_name') || '';
   const h = new Date().getHours();
-  const today = new Date().toLocaleDateString('en-AU');
-  const didMorning = ritualLog('totry_mornings').some(m => m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
-  const didEvening = ritualLog('totry_evenings').some(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const today = dayKeyOf();
+  const didMorning = ritualLog('totry_mornings').some(m => m.ts && dayKeyOf(m.ts)===today);
+  const didEvening = ritualLog('totry_evenings').some(e => e.ts && dayKeyOf(e.ts)===today);
 
   let hi, sub, actLabel='', actType='', daypart;
   if(h < 5){
@@ -53151,13 +53499,13 @@ function renderNextStep(){
 }
 // Count the open daily loops (used only to soften the framing on heavy days — never to nag).
 function _countOpenLoops(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   let open = 0;
   try{
-    if(!ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)) open++;
-    if(!ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today)) open++;
+    if(!ritualLog('totry_mornings').some(m=>m.ts && dayKeyOf(m.ts)===today)) open++;
+    if(!ritualLog('totry_evenings').some(e=>e.ts && dayKeyOf(e.ts)===today)) open++;
     if(typeof loadH==='function'){ loadH(); const ti=(typeof tIdx==='function')?tIdx():0; const undone=(typeof habits!=='undefined'&&Array.isArray(habits))?habits.filter(h=>h.d&&h.d[ti]!==1).length:0; if(undone>0) open++; }
-    const trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
+    const trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && dayKeyOf(t.ts)===today);
     if(!trained) open++;
   }catch(_){}
   return open;
@@ -53440,11 +53788,11 @@ function renderHomeHabits(){
 // a relapse is handled by the post-relapse card (we defer), otherwise we give him ONE clear
 // thing — and on a low-energy day we strip the ask down to the smallest possible step.
 function isLowEnergyToday(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   return ls('totry_low_day') === today;
 }
 function toggleLowEnergyDay(){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = dayKeyOf();
   if(ls('totry_low_day') === today){ ls('totry_low_day', ''); }
   else { ls('totry_low_day', today); haptic('tap'); }
   renderTodayForYou();
@@ -53465,7 +53813,7 @@ function renderWeeklyCheckin(){
   let proSum = 0, proDays = 0;
   for(let i = 1; i <= 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
-    const es = log[d.toLocaleDateString('en-AU')]||[];
+    const es = log[dayKeyOf(d)]||[];
     if(es.length){ proDays++; proSum += es.reduce((a,e) => a + (parseFloat(e.pro)||0), 0); }
   }
   const proAvg = proDays ? Math.round(proSum / proDays) : 0;
@@ -53503,7 +53851,7 @@ function renderWeeklyCheckin(){
 // Nudges are dismissible per-day so they never nag.
 function computeProactiveNudge(){
   const now = Date.now();
-  const dayKey = ts => new Date(ts).toLocaleDateString('en-AU');
+  const dayKey = ts => dayKeyOf(ts);
   const since = d => now - d*86400000;
   // Read the shared nervous system so the nudge speaks from the SAME truth as the coach and the
   // weekly synthesis — no contradicting numbers across the app. Rule-specific windows (e.g. the
@@ -53567,7 +53915,7 @@ function computeProactiveNudge(){
     return { id:'overtrained', tone:'care',
       eyebrow:'A word before you train',
       text: hi + 'you\u2019ve trained ' + trainedDays.size + ' of the last 6 days without a real rest. Strength is built in recovery, not just effort. ' + (trainedToday ? 'You\u2019ve already moved today \u2014 maybe let that be enough.' : 'Today might be the day your body grows by resting.'),
-      actions: [{label:'Take a rest day', onclick:'ls(\'totry_low_day\', new Date().toLocaleDateString(\'en-AU\'));if(typeof renderTodayForYou===\'function\')renderTodayForYou();dismissNudge(\'overtrained\')'},
+      actions: [{label:'Take a rest day', onclick:'ls(\'totry_low_day\', dayKeyOf());if(typeof renderTodayForYou===\'function\')renderTodayForYou();dismissNudge(\'overtrained\')'},
                 {label:'I\u2019m good', ghost:true, onclick:'dismissNudge(\'overtrained\')'}] };
   }
 
@@ -53643,7 +53991,7 @@ function computeProactiveNudge(){
       // count consecutive prior days with an evening
       let streak = 0;
       for(let i=1;i<=30;i++){
-        const k = new Date(now - i*86400000).toLocaleDateString('en-AU');
+        const k = dayKeyOf(now - i*86400000);
         if(evenings.some(e => dayKey(e.ts) === k)) streak++; else break;
       }
       // Third ask. The hero already says "Close the day" over a gold button, the Today-for-you card was
@@ -53731,7 +54079,7 @@ function renderHomeInsight(){
   if(typeof renderProactiveNudge === 'function' && renderProactiveNudge()){ box.style.display='none'; return; }
   const now = Date.now();
   const cutoff = now - 28*86400000; // last 4 weeks
-  const dayKey = (ts) => new Date(ts).toLocaleDateString('en-AU');
+  const dayKey = (ts) => dayKeyOf(ts);
 
   // Gather per-day signals
   const evenings = ritualLog('totry_evenings').filter(e => e.ts && new Date(e.ts).getTime() >= cutoff);
@@ -53860,7 +54208,7 @@ function renderTodayForYou(){
   // that makes people quit apps for good.
   (function(){
     const lastBack = ls('totry_last_return_ease');
-    const tkNow = new Date().toLocaleDateString('en-AU');
+    const tkNow = dayKeyOf();
     if(lastBack === tkNow) return; // only ease once per day
     const lastActivity = [ls('totry_evenings'),ls('totry_journal'),ls('totry_workouts'),ls('totry_checkins')]
       .flatMap(a => Array.isArray(a)?a:[])
@@ -53890,8 +54238,8 @@ function renderTodayForYou(){
   // morning ritual leads from Home (no hunting through Soul); evening leads to Reflect.
   const _doneToday = (key) => {
     const v = ls(key); if(!v) return false;
-    const tk = new Date().toLocaleDateString('en-AU');
-    if(Array.isArray(v)) return v.some(e => e && (e.date === tk || (typeof getDayCount==='function' && e.day === getDayCount()) || (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === tk)));
+    const tk = dayKeyOf();
+    if(Array.isArray(v)) return v.some(e => e && (dayKeyNorm(e.date) === tk || (typeof getDayCount==='function' && e.day === getDayCount()) || (e.ts && dayKeyOf(e.ts) === tk)));
     if(typeof v === 'object') return !!v[tk];
     return false;
   };
@@ -54082,7 +54430,7 @@ function renderCoachQuickReplies(){
   const split = getUserSplit();
   const todayFocus = split[ti]?.focus;
   
-  const todayKey = new Date().toLocaleDateString('en-AU');
+  const todayKey = dayKeyOf();
   const nutLog = ls('totry_nutlog') || {};
   const todayEntries = nutLog[todayKey] || [];
   const todayCals = todayEntries.reduce((a,e)=>a+(e.cal||0),0);
@@ -54162,7 +54510,7 @@ function renderCoachQuickReplies(){
   }
   // Cronometer "Oracle"-style: if protein is tracking low today, offer food fixes via Coach.
   try{
-    const _today = new Date().toLocaleDateString('en-AU');
+    const _today = dayKeyOf();
     const _ents = (ls('totry_nutlog')||{})[_today] || [];
     if(_ents.length >= 2){
       const _pro = _ents.reduce((a,e)=>a+(e.pro||0),0);
@@ -54754,7 +55102,8 @@ async function syncStravaActivities(){
           }
         }
         if(!cals) return;
-        const dk = new Date(a.date).toLocaleDateString('en-AU');
+        const dk = dayKeyOf(a.date);
+        if(!dk) return;                     // an activity with no readable date has no day to land on
         freshByDay[dk] = (freshByDay[dk]||0) + Math.round(cals);
       });
       // Write only the Strava sub-ledger; reconcileBurns() folds it into the aggregate (single
@@ -54921,7 +55270,7 @@ async function syncGoogleHealth(){
       let filled = 0;
       stepDays.forEach(function(d){
         if(!d.ms || !(d.steps > 0)) return;
-        const k = new Date(d.ms).toLocaleDateString('en-AU');
+        const k = dayKeyOf(d.ms);
         if(!tr[k]) tr[k] = { water:0, sleep:0, steps:0 };
         if(!(tr[k].steps > 0)){ tr[k].steps = d.steps; filled++; }
       });
@@ -54932,7 +55281,7 @@ async function syncGoogleHealth(){
     if(today && today.steps > 0){
       ls('totry_today_steps', today.steps);
       // Mirror into the daily trackers store the Track tab reads, so synced steps show there too.
-      try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=today.steps; ls('totry_trackers',_tr); }catch(_){}
+      try{ const _tr=ls('totry_trackers')||{}; const _dk=dayKeyOf(); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=today.steps; ls('totry_trackers',_tr); }catch(_){}
     }
     showToast('Google synced', 'Activity data updated.');
   }catch(e){
@@ -55543,15 +55892,15 @@ function getTodayHevyRoutine(){
   const routines = ls('totry_hevy_routines') || [];
   if(!routines.length) return null;
   const pick = ls('totry_hevy_today_pick') || {};
-  const todayKey = new Date().toLocaleDateString('en-AU');
-  if(pick.date === todayKey && pick.hevyId){
+  const todayKey = dayKeyOf();
+  if(dayKeyNorm(pick.date) === todayKey && pick.hevyId){
     const found = routines.find(r => r.hevyId === pick.hevyId);
     if(found) return found;
   }
   return null;
 }
 function setTodayHevyRoutine(hevyId){
-  ls('totry_hevy_today_pick', { date: new Date().toLocaleDateString('en-AU'), hevyId });
+  ls('totry_hevy_today_pick', { date: dayKeyOf(), hevyId });
   if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
   // renderHevyRoutines() has never existed; loadTodaySplitCard() on the line above is the refresh.
   haptic('success');
@@ -55600,7 +55949,7 @@ function recomputeWorkoutBurns(){
       if(w.via === 'strava' && direct.some(d => d.id !== w.id && _sessionsOverlap(d.ts, w.ts, 90))) return;
       const cal = _burnForWorkout(w);
       if(cal <= 0) return;
-      const dk = new Date(w.ts).toLocaleDateString('en-AU');
+      const dk = dayKeyOf(w.ts);
       byDay[dk] = (byDay[dk]||0) + cal;
     });
     ls('totry_workout_burns_byday', byDay);
@@ -55852,7 +56201,7 @@ function importEufyCSV(event){
     const unitIsLb = cols.weight!=null && /lb/.test(header[cols.weight]||'');
     const num = (row, f) => { const i = cols[f]; if(i==null) return null; const v = parseFloat(String(row[i]||'').replace(/[^0-9.\-]/g,'')); return (isNaN(v)||v===0) ? null : v; };
     const existing = ls('totry_body') || [];
-    const dayKey = (d, w) => new Date(d).toLocaleDateString('en-AU') + '|' + (Math.round(w*10)/10);
+    const dayKey = (d, w) => dayKeyOf(d) + '|' + (Math.round(w*10)/10);
     const existingKeys = new Set(existing.filter(en => en.weight>0 && en.ts).map(en => dayKey(en.ts, en.weight)));
     // Decide day-first vs month-first ONCE, from every date in the file, before reading any of them.
     const _dateOrder = _eufyDateOrder(rows.slice(1).map(r => r && r[cols.date]));
@@ -56003,8 +56352,8 @@ function saveScaleScreenshotEntry(){
   Object.keys(comp).forEach(k => { if(comp[k]==null || isNaN(comp[k])) delete comp[k]; });
   const entries = ls('totry_body') || [];
   // Replace an existing same-day entry, else add.
-  const dayStr = d.toLocaleDateString('en-AU');
-  const idx = entries.findIndex(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === dayStr);
+  const dayStr = dayKeyOf(d);
+  const idx = entries.findIndex(e => e.ts && dayKeyOf(e.ts) === dayStr);
   const entry = {
     date: d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     ts: d.toISOString(), weight: Math.round(w*10)/10,
@@ -56301,13 +56650,13 @@ function importFoodCSV(event){
       const cal = Math.round(parseFloat(val(row,'calories')) || 0);
       if(!name || cal <= 0) continue;
       // ts must be the HISTORICAL date — the digest, adaptive TDEE and reports window by ts.
-      let dateKey = new Date().toLocaleDateString('en-AU');
+      let dateKey = dayKeyOf();
       let entryTs = new Date().toISOString();
       const dRaw = val(row,'date');
       if(dRaw){
         const d = (typeof _csvDate === 'function') ? _csvDate(dRaw, _dayFirst) : null;
         if(d && !isNaN(d.getTime())){
-          dateKey = d.toLocaleDateString('en-AU');
+          dateKey = dayKeyOf(d);
           entryTs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0).toISOString();
         } else {
           // Refuse rather than silently retarget today — a row landing on the wrong day is worse than
@@ -56513,7 +56862,7 @@ function renderIdentity(){
     // No identity - check if user has affirmations and rotate through them
     const affirms=(typeof getAffirmations==='function'?getAffirmations():(ls('totry_affirms')||[]));
     if(affirms.length){
-      const today=new Date().toLocaleDateString('en-AU');
+      const today=dayKeyOf();
       const idx=Math.abs(hashStr(today))%affirms.length;
       const affirm=affirms[idx];
       if(labelEl)labelEl.textContent='Today\u2019s affirmation';
@@ -56610,7 +56959,7 @@ function renderSeasonSettings(){
 
 // ── DAILY CHECK-IN ────────────────────────────────────────────
 function maybeShowCheckin(){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const last=ls('totry_checkin_last');
   if(last===today)return;
   const skip=ls('totry_checkin_skip');
@@ -56620,7 +56969,7 @@ function maybeShowCheckin(){
 }
 
 function skipCheckin(){
-  ls('totry_checkin_skip',new Date().toLocaleDateString('en-AU'));
+  ls('totry_checkin_skip',dayKeyOf());
   const strip=document.getElementById('daily-checkin');
   if(strip)strip.style.display='none';
 }
@@ -56638,7 +56987,7 @@ function saveCheckin(){
     return;
   }
   haptic('success');
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const prevCheckins = ls('totry_checkins') || [];
   const prevLast = ls('totry_checkin_last');
   const checkins=[...prevCheckins];
@@ -56693,7 +57042,7 @@ function getResilienceStreak(){
   // thread every time Home renders; measured at 7ms for a new user and 0.9-1.1s for a long one.
   // One pass, into a Set of local date strings, then the day walk is O(days).
   const _days = new Set();
-  const _add = (ts) => { try{ if(ts!=null) _days.add(new Date(ts).toLocaleDateString('en-AU')); }catch(_){ } };
+  const _add = (ts) => { try{ if(ts!=null) _days.add(dayKeyOf(ts)); }catch(_){ } };
   try{ ritualLog('totry_mornings').forEach(m => _add(m && m.ts)); }catch(_){ }
   try{ ritualLog('totry_evenings').forEach(e => _add(e && e.ts)); }catch(_){ }
   try{ (ls('totry_journal')||[]).forEach(j => _add(j && j.ts)); }catch(_){ }
@@ -56710,7 +57059,7 @@ function getResilienceStreak(){
   for(let i=0;i<_limit;i++){
     const checkDate=new Date(today);
     checkDate.setDate(today.getDate()-i);
-    const dateStr=checkDate.toLocaleDateString('en-AU');
+    const dateStr=dayKeyOf(checkDate);
     const hasActivity = _days.has(dateStr);
     // NEVER MISS TWICE (Lally 2010): a single off day never breaks the chain, but two IN A ROW does.
     // The allowance resets on every day they showed up — so it forgives each isolated gap, not just

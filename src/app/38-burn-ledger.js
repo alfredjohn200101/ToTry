@@ -27,7 +27,7 @@ function recomputeWorkoutBurns(){
       if(w.via === 'strava' && direct.some(d => d.id !== w.id && _sessionsOverlap(d.ts, w.ts, 90))) return;
       const cal = _burnForWorkout(w);
       if(cal <= 0) return;
-      const dk = new Date(w.ts).toLocaleDateString('en-AU');
+      const dk = dayKeyOf(w.ts);
       byDay[dk] = (byDay[dk]||0) + cal;
     });
     ls('totry_workout_burns_byday', byDay);

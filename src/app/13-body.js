@@ -221,11 +221,11 @@ async function logBody(){
   // two different weights and no way to tell which was current. Same identity test saveQuickWeight
   // uses (ts first, falling back to either date string), and a merge rather than a clobber so a
   // check-in with no weight typed cannot wipe a weight logged earlier the same day.
-  const _todayFull = new Date().toLocaleDateString('en-AU');
+  const _todayFull = dayKeyOf();
   const _todayShort = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'});
   const _iToday = entries.findIndex(e => e && (e.ts
-    ? new Date(e.ts).toLocaleDateString('en-AU') === _todayFull
-    : (e.date === _todayShort || e.date === _todayFull)));
+    ? dayKeyOf(e.ts) === _todayFull
+    : (e.date === _todayShort || dayKeyNorm(e.date) === _todayFull)));
   if(_iToday > -1){
     const prev = entries[_iToday];
     const merged = Object.assign({}, prev, newEntry);
@@ -437,7 +437,7 @@ function adjustCaloriesFromWeightTrend(){
       const adjustments = ls('totry_pt_adjustments') || [];
       adjustments.unshift({
         ts: new Date().toISOString(),
-        date: new Date().toLocaleDateString('en-AU'),
+        date: dayKeyOf(),
         oldCal,
         newCal,
         change: calAdjustment,
@@ -539,7 +539,7 @@ async function generateWeeklyCoachResponse(entry){
       const syntheses = ls('totry_syntheses')||[];
       syntheses.unshift({
         weekKey: getWeekKey(new Date()),
-        date: new Date().toLocaleDateString('en-AU'),
+        date: dayKeyOf(),
         text: response.trim(),
         ts: new Date().toISOString(),
         type: 'weekly_checkin'
@@ -973,13 +973,18 @@ function syncWeightTodayRow(entries){
   if(!sub && !val) return;
   const list = entries || ls('totry_body') || [];
   const todayStr  = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  // IDENTITY, SO IT GOES THROUGH dayKeyOf(). Both writers of totry_body — saveQuickWeight and the
+  // Sunday check-in — now ask dayKeyOf() which day a row belongs to. A reader left on the raw
+  // formatter is the same half-applied shape the dismiss buttons had: it agrees on Chromium and
+  // disagrees on WebKit, so the two halves have to move together or this row says "No log today"
+  // over a weigh-in from an hour ago and invites a duplicate.
+  const todayFull = dayKeyOf();
   // A weekly reflection saved with the weight field left blank writes an entry for today carrying no
   // weight. find() returned THAT one first and the row told a person who had weighed in an hour
   // earlier "No log" — inviting a duplicate. A reflection is not a weigh-in; only an entry that
   // actually carries a weight can answer "did I weigh in today".
   const today = list.find(e => e && (e.weight > 0) &&
-    (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+    (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   if(sub) sub.textContent = today ? 'Logged today' : 'No log today';
   // wFmt converts: appending the unit LABEL to stored kilograms told a person on lb that their
   // 82.4kg was "82.4 lb" — the wrong reading by 2.2x, contradicted by the tiles below it.
@@ -1218,8 +1223,8 @@ function renderBodyCompInsight(){
 function openQuickWeightLog(){
   const entries = ls('totry_body') || [];
   const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
-  const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+  const todayFull = dayKeyOf();                                   // identity
+  const todayEntry = entries.find(e => (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   const last = entries[0];
   
   const m = document.createElement('div');
@@ -1254,9 +1259,9 @@ function saveQuickWeight(){
   }
   const entries = ls('totry_body') || [];
   const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
-  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  const todayFull = dayKeyOf();                                   // identity
   // Replace today's entry if it exists, else create a minimal one
-  const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+  const existingIdx = entries.findIndex(e => (e.ts ? dayKeyOf(e.ts) === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
     // Deliberately NOT touching ts — see the note above; it is this entry's sync identity.
@@ -1325,7 +1330,7 @@ function openMeasurementLogger(){
 function saveMeasurement(){
   const vals = ['waist','chest','arml','armr','thighl','thighr','neck','bf','smm','fatmass','visceral','tbw','bmr','evoltpts'];
   const keys = ['waist','chest','armL','armR','thighL','thighR','neck','bf','smm','fatMass','visceral','tbw','bmr','evoltPts'];
-  const entry = {date: new Date().toLocaleDateString('en-AU'), ts: new Date().toISOString()};
+  const entry = {date: dayKeyOf(), ts: new Date().toISOString()};
   let any = false;
   // A BAND, LIKE THE WEIGH-IN HAS. Any positive number was accepted, so a fat-fingered 400 became a
   // permanent baseline that poisoned every "since your first snapshot" line after it — and there was
@@ -1469,7 +1474,7 @@ function handleProgressPhoto(event){
         photos.unshift({
           // Unique id even when several are added in the same millisecond
           id: Date.now() + fileIdx,
-          date: new Date().toLocaleDateString('en-AU'),
+          date: dayKeyOf(),
           ts: new Date().toISOString(),
           dataUrl: dataUrl
         });
@@ -1553,7 +1558,7 @@ function renderDailyDoneState(){
   try{
     const btn = document.querySelector('button[onclick="markDailyLogsDone()"]');
     if(!btn) return;
-    const today = new Date().toLocaleDateString('en-AU');
+    const today = dayKeyOf();
     const done = !!ls('totry_daily_logged_'+today);
     btn.textContent = done ? 'Logged for today \u2713' : 'Done for today';
     btn.classList.toggle('primary', !done);
@@ -1561,10 +1566,10 @@ function renderDailyDoneState(){
   }catch(_){}
 }
 function markDailyLogsDone(){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const t=(ls('totry_trackers')||{})[today]||{sleep:0};
   const body=ls('totry_body')||[];
-  const hasWeight = body.some(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
+  const hasWeight = body.some(b=>dayKeyNorm(b.date)===today || (b.ts && dayKeyOf(b.ts)===today));
   ls('totry_daily_logged_'+today, 1);
   try{ renderDailyDoneState(); }catch(_){}
   const bits=[];
@@ -1575,7 +1580,7 @@ function markDailyLogsDone(){
   else { showToast('Nothing logged yet', 'Add your weight or sleep above first.'); }
 }
 function adjustTracker(type,delta){
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const trackers=ls('totry_trackers')||{};
   if(!trackers[today])trackers[today]={water:0,sleep:0,steps:0};
   trackers[today][type]=Math.max(0,Math.round((trackers[today][type]+delta)*10)/10);
@@ -1611,7 +1616,7 @@ function updateTrackerDisplay(){
   // Called on every Track render, so the button is correct when the screen opens — not only in the
   // second after it is tapped. Without this the state resets visually at midnight-crossing or reload.
   try{ renderDailyDoneState(); }catch(_){}
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=dayKeyOf();
   const t=(ls('totry_trackers')||{})[today]||{water:0,sleep:0,steps:0};
   // 'water-count' belongs to renderWaterTracker() in the Nourish tab, which paints "1.2 / 2.5 L" from
   // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so

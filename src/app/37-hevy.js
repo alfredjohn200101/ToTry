@@ -417,15 +417,15 @@ function getTodayHevyRoutine(){
   const routines = ls('totry_hevy_routines') || [];
   if(!routines.length) return null;
   const pick = ls('totry_hevy_today_pick') || {};
-  const todayKey = new Date().toLocaleDateString('en-AU');
-  if(pick.date === todayKey && pick.hevyId){
+  const todayKey = dayKeyOf();
+  if(dayKeyNorm(pick.date) === todayKey && pick.hevyId){
     const found = routines.find(r => r.hevyId === pick.hevyId);
     if(found) return found;
   }
   return null;
 }
 function setTodayHevyRoutine(hevyId){
-  ls('totry_hevy_today_pick', { date: new Date().toLocaleDateString('en-AU'), hevyId });
+  ls('totry_hevy_today_pick', { date: dayKeyOf(), hevyId });
   if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
   // renderHevyRoutines() has never existed; loadTodaySplitCard() on the line above is the refresh.
   haptic('success');

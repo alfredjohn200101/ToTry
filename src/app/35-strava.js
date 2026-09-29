@@ -371,7 +371,8 @@ async function syncStravaActivities(){
           }
         }
         if(!cals) return;
-        const dk = new Date(a.date).toLocaleDateString('en-AU');
+        const dk = dayKeyOf(a.date);
+        if(!dk) return;                     // an activity with no readable date has no day to land on
         freshByDay[dk] = (freshByDay[dk]||0) + Math.round(cals);
       });
       // Write only the Strava sub-ledger; reconcileBurns() folds it into the aggregate (single

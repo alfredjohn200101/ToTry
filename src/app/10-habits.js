@@ -5,7 +5,7 @@
 function _daysShowedUp(){
   try{
     const days = new Set();
-    const add = function(ts){ if(!ts) return; const d=new Date(ts); if(!isNaN(d)) days.add(d.toLocaleDateString('en-AU')); };
+    const add = function(ts){ if(!ts) return; const d=new Date(ts); if(!isNaN(d)) days.add(dayKeyOf(d)); };
     ritualLog('totry_mornings').forEach(function(x){ add(x&&x.ts); });
     ritualLog('totry_evenings').forEach(function(x){ add(x&&x.ts); });
     (ls('totry_journal')||[]).forEach(function(x){ add(x&&x.ts); });
@@ -315,7 +315,7 @@ function autoTickHabits(){
     // dayStart is carried so a branch can ask WHEN a day was, not only what it is called — the clean
     // -day tick below has to refuse days that precede the fight itself.
     const _ds = new Date(d); _ds.setHours(0,0,0,0);
-    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
+    dayList.push({ dateStr: dayKeyOf(d), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
   }
   // Determine the nutrition-goal direction once (lose = stay under, gain = hit/over, else hit).
   // Was reading totry_goal_intent, which nothing writes — so neither branch below could ever match and
@@ -337,7 +337,7 @@ function autoTickHabits(){
       let shouldTick=false;
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr && (m.gratitude||'').trim());
       // PRAYING COUNTS AS PRAYING. The faith habit was folded in with morning/intention and ticked
       // off the MORNING RITUAL — so filling in the morning ticked "Prayer / scripture" for someone
       // who had not prayed, and actually praying, finishing a rosary or keeping a passage ticked
@@ -345,13 +345,13 @@ function autoTickHabits(){
       // totry_rosaries, and totry_sv for a passage kept. The morning still counts, because for a
       // person of faith it contains a prayer \u2014 it just is not the only thing that does.
       } else if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
-        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===dateStr);
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr)
+        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && dayKeyOf(x[f])===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr)
                   || _on(ls('totry_practices'), 'ts')
                   || _on(ls('totry_rosaries'), 'ts')
                   || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
       } else if(/\b(morning|intention)\b/.test(name)){
-        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && dayKeyOf(m.ts)===dateStr);
       // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
       // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
       // counted as staying clean, "Great posture" and "Create something" as hitting a nutrition
@@ -359,12 +359,12 @@ function autoTickHabits(){
       // Auto-tick writes into the person's own record of themselves, so a wrong guess marks days
       // they did not do the thing \u2014 which is worse than not guessing, because they cannot tell.
       } else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
-        shouldTick = allWorkouts.some(w=>w.date===dateStr || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===dateStr))
-                  || allStrava.some(a=>a.date && new Date(a.date).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allWorkouts.some(w=>dayKeyNorm(w.date)===dateStr || (w.ts && dayKeyOf(w.ts)===dateStr))
+                  || allStrava.some(a=>a.date && dayKeyOf(a.date)===dateStr);
       } else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
-        shouldTick = allEvenings.some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allEvenings.some(e=>e.ts && dayKeyOf(e.ts)===dateStr);
       } else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
-        shouldTick = allJournal.some(j=>j.ts && new Date(j.ts).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allJournal.some(j=>j.ts && dayKeyOf(j.ts)===dateStr);
       } else if(/\b(nutrition|macros?|protein|calories?|eat|eating|under target|hit target)\b/.test(name)){
         // Direction-aware: lose → stayed UNDER calorie target; gain → hit protein/over; else → logged + hit protein.
         const entries = nutLog[dateStr] || [];
@@ -378,8 +378,8 @@ function autoTickHabits(){
       } else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
         // Check ALL relapse history (not just lastLoss) for a loss on this day.
         const lossThatDay = vices.some(v=>{
-          if(v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===dateStr) return true;
-          return (v.relapseHistory||[]).some(r=>r.date && new Date(r.date).toLocaleDateString('en-AU')===dateStr);
+          if(v.lastLoss && dayKeyOf(v.lastLoss)===dateStr) return true;
+          return (v.relapseHistory||[]).some(r=>r.date && dayKeyOf(r.date)===dateStr);
         });
         // Every day without a logged loss is a clean win. But if a loss WAS logged this day,
         // actively UN-tick it (this is the one habit that can flip true→false on the same day).
@@ -406,7 +406,7 @@ function autoTickHabits(){
         const _afterStart = (_startTs == null) || (dayStart >= new Date(new Date(_startTs).setHours(0,0,0,0)).getTime());
         shouldTick = vices.length>0 && _liveVice && _afterStart;
       } else if(/bible|scripture|verse|word|read/.test(name)){
-        shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
+        shouldTick = allSaved.some(v=>dayKeyNorm(v.date)===dateStr || (v.ts && dayKeyOf(v.ts)===dateStr));
       } else if(/water|hydrate/.test(name)){
         const water=(typeof waterMlOn==='function')?waterMlOn(dateStr):0;
         const goal=(typeof waterBaseGoal==='function')?waterBaseGoal():2500;   // both in ml now

@@ -95,8 +95,8 @@ function haptic(pattern){
 function getFreezes(){return ls('totry_freezes')||[];}
 function addFreeze(reason){
   const freezes=getFreezes();
-  const today=new Date().toLocaleDateString('en-AU');
-  if(!freezes.find(f=>f.date===today)){
+  const today=dayKeyOf();
+  if(!freezes.find(f=>dayKeyNorm(f.date)===today)){
     freezes.unshift({date:today,ts:new Date().toISOString(),reason:reason||'rest'});
     ls('totry_freezes',freezes.slice(0,90));
     showToast('Freeze used','Your streak is protected today. Rest fully.');
@@ -288,7 +288,7 @@ async function generateWeeklySynthesis(){
     if(response&&response.trim()){
       const synthesis = {
         weekKey:thisWeekKey,
-        date:today.toLocaleDateString('en-AU'),
+        date:dayKeyOf(today),
         text:response.trim(),
         ts:new Date().toISOString(),
         stats: {
@@ -385,11 +385,11 @@ function computeYearInReview(year){
   
   // Days "tried" = days with any activity (journal/evening/workout/morning logged)
   const allActivityDates = new Set();
-  (ls('totry_journal')||[]).forEach(j => { if(inYear(j.ts)) allActivityDates.add(new Date(j.ts).toLocaleDateString('en-AU')); });
-  ritualLog('totry_evenings').forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
-  ritualLog('totry_mornings').forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(new Date(m.ts || m.createdAt).toLocaleDateString('en-AU')); });
-  (ls('totry_workouts')||[]).forEach(w => { if(inYear(w.ts)) allActivityDates.add(new Date(w.ts).toLocaleDateString('en-AU')); });
-  (ls('totry_examens')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
+  (ls('totry_journal')||[]).forEach(j => { if(inYear(j.ts)) allActivityDates.add(dayKeyOf(j.ts)); });
+  ritualLog('totry_evenings').forEach(e => { if(inYear(e.ts)) allActivityDates.add(dayKeyOf(e.ts)); });
+  ritualLog('totry_mornings').forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(dayKeyOf(m.ts || m.createdAt)); });
+  (ls('totry_workouts')||[]).forEach(w => { if(inYear(w.ts)) allActivityDates.add(dayKeyOf(w.ts)); });
+  (ls('totry_examens')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(dayKeyOf(e.ts)); });
   
   // Fight wins
   loadV();

@@ -1016,7 +1016,7 @@ function showWorkoutSummary(s){
     // source of truth) so this session is counted exactly once, never stacked with a later resync.
     recomputeWorkoutBurns();
     const goals = ls('totry_nut_goals') || defaultNutGoals();
-    const todayEntries = ((ls('totry_nutlog')||{})[new Date().toLocaleDateString('en-AU')]) || [];
+    const todayEntries = ((ls('totry_nutlog')||{})[dayKeyOf()]) || [];
     const proSoFar = Math.round(todayEntries.reduce((a,e)=>a+(e.pro||0),0));
     const proGoal = goals.pro || 170;
     const proLeft = Math.max(0, proGoal - proSoFar);
@@ -1367,7 +1367,7 @@ function saveEditTraining(id){
   // erased a real figure and then reported success. A blank box the person SAW means "clear it"; a box
   // that was never on screen means nothing at all, and must leave the stored value alone.
   const shown = id => !!document.getElementById(id);
-  const patch = { type, splitFocus: type, date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  const patch = { type, splitFocus: type, date: dayKeyOf(when), ts: when.toISOString() };
   if(shown('edit-cardio-time'))     patch.durationMinutes = mins ? Math.round(mins) : null;
   // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
   // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
@@ -1603,7 +1603,7 @@ function saveCardioManually(){
     exercises: [],
     volume: 0,
     completedSets: 0,
-    date: when.toLocaleDateString('en-AU'),
+    date: dayKeyOf(when),
     ts: when.toISOString()
   });
   ls('totry_workouts', _capWorkouts(workouts));
