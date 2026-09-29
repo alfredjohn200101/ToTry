@@ -7765,6 +7765,83 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('a recipe can come from a link, and the link never names a platform');
+{
+  // docs/REELS-TO-PLAN.md phase 2. The framing is the part that was decided first, in §1: instagram,
+  // tiktok and youtube are literal strings in this app's OWN vice classifier, mapping to the
+  // `scrolling` fight whose science line calls the scroll "boredom or avoidance in disguise". A
+  // feature whose copy said "paste a reel" would have the app that counts someone's clean days
+  // telling them opening Instagram is productive meal planning. So this takes a LINK, from wherever
+  // they already had it, and never names or offers to open a platform.
+  //
+  // The model READS the page (web_search grounding, the same capability the live-price pass uses)
+  // rather than the app fetching it: a device fetch is blocked by CORS on almost every recipe site,
+  // and proxying arbitrary URLs through our own backend is an SSRF surface not worth opening for a
+  // convenience feature.
+  const run = (text, reply) => {
+    let seen = null, toast = null, drafted = null;
+    const ta = { value: text }, btn = { textContent:'', disabled:false };
+    const fns = H.load(['parsePastedRecipe'], {
+      document: { getElementById: (id) => (id === 'paste-recipe-text' ? ta : { innerHTML:'' }),
+                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }) },
+      api: async (sys, m, prompt, tok, opts) => { seen = { prompt, tok, opts }; return reply; },
+      detectCrisis: () => null, showCrisisResponse: () => {}, showToast: (a) => { toast = a; },
+      editRecipe: (i, r) => { drafted = r; }, haptic: () => {}, console,
+    });
+    return fns.parsePastedRecipe().then(() => ({ seen, toast, drafted }));
+  };
+  const OK = JSON.stringify({ name:'Pesto pasta', servings:4,
+    ingredients:[{ name:'500g chicken', cal:550, pro:110, carb:0, fat:12 }] });
+
+  H.defer(Promise.all([
+    run('https://example.com/recipes/pesto-pasta', OK),
+    run('500g chicken breast\n2 cups rice', OK),
+    run('https://paywalled.example/recipe', '{"error":"unreadable"}'),
+    // THE CASE THE EXPLICIT CHECK ACTUALLY EXISTS FOR: a model that says it could not read the page
+    // and then guesses a recipe anyway. The bare {"error":"unreadable"} above is ALSO caught by the
+    // downstream "no ingredients" guard, so removing the check does not change that one — I
+    // fault-injected it and the suite stayed green, which means that assertion was not covering what
+    // I thought. This one is only caught by the check itself.
+    run('https://paywalled.example/recipe',
+        '{"error":"unreadable","name":"Probably Pasta","servings":2,"ingredients":[{"name":"guessed","cal":500,"pro":20,"carb":50,"fat":10}]}'),
+  ]).then(function(r){
+    const link = r[0], typed = r[1], dead = r[2], hedged = r[3];
+
+    H.eq(link.seen.opts && link.seen.opts.web_search, true, 'a link asks the model to read the page');
+    H.ok(/Read this page and extract its recipe: https:\/\/example\.com/.test(link.seen.prompt),
+      'naming the URL the person pasted');
+    H.ok(link.seen.tok >= 2000, 'with room to answer — grounding replies are longer, and this repo floors at 2000');
+    H.eq(link.drafted && link.drafted.name, 'Pesto pasta', 'and it drafts a recipe they can edit');
+
+    // ONE SCHEMA, BOTH DOORS. Built as a ternary in front of the shared tail, a ? b : c + d binds
+    // as `a ? b : (c + d)` and the link branch silently ended at "Return ONLY JSON:" with nothing
+    // after it. Both prompts must carry the schema.
+    H.ok(/"servings":number/.test(link.seen.prompt), 'the link prompt carries the schema');
+    H.ok(/"servings":number/.test(typed.seen.prompt), 'and so does the typed one');
+
+    // The ordinary paste is untouched — no search, no extra tokens, no behaviour change.
+    H.eq(typed.seen.opts, undefined, 'typed text does not invoke the search tool');
+    H.eq(typed.seen.tok, 900, 'nor change its token budget');
+    H.eq(typed.drafted && typed.drafted.name, 'Pesto pasta', 'and still drafts');
+
+    // "I could not read that page" is an ANSWER, not a failure, and the one answer that must never
+    // become a recipe — otherwise the model guesses a recipe from the URL alone.
+    H.eq(dead.drafted, null, 'an unreadable page drafts nothing');
+    H.ok(/would not open/.test(dead.toast || ''), 'and names the real obstacle');
+    H.ok(!/pasting just the ingredient lines/.test(dead.toast || ''),
+      'rather than telling them they pasted wrong');
+    H.eq(hedged.drafted, null, 'and a model that says unreadable then guesses anyway drafts nothing');
+    H.ok(/would not open/.test(hedged.toast || ''), 'it is treated as the refusal it is');
+  }));
+
+  // THE FRAMING, HELD. No surface of this feature may name a platform or offer to open one.
+  const modal = H.code(H.extractFn('openPasteRecipe'));
+  H.ok(/or a link/.test(modal), 'the door says a link is welcome');
+  H.ok(!/instagram|tiktok|reel|youtube/i.test(modal), 'and names no platform');
+  const parse = H.code(H.extractFn('parsePastedRecipe'));
+  H.ok(!/instagram|tiktok|reel/i.test(parse), 'nor does the path behind it');
+}
+
 H.section('a food with no calorie figure is not a food you can log');
 {
   // An auditor reported USDA's top "chicken breast" result returning 0 cal one tap from the diary

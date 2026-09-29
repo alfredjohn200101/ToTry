@@ -2553,9 +2553,9 @@ function openPasteRecipe(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div id="paste-recipe-crisis"></div>'+
-    '<h3 style="margin-bottom:6px">Paste a recipe</h3>'+
-    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
-    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:var(--t-base);line-height:1.5;margin-bottom:12px"></textarea>'+
+    '<h3 style="margin-bottom:6px">Paste a recipe or a link</h3>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a note, a message, a photo’s caption — or just drop a link and I’ll read the page. I’ll turn it into a recipe you can edit before you save.</p>'+
+    '<textarea id="paste-recipe-text" placeholder="https://… a link to the recipe\n\nor the lines themselves:\n500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:var(--t-base);line-height:1.5;margin-bottom:12px"></textarea>'+
     '<button class="btn primary" onclick="parsePastedRecipe()" style="margin-bottom:8px">Build the recipe</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
@@ -2581,15 +2581,45 @@ async function parsePastedRecipe(){
     }
   }catch(_){ }
   const btn=document.querySelector('.modal-bg.open .btn.primary');
-  if(btn){ btn.textContent='Working out the macros…'; btn.disabled=true; }
-  const prompt='Parse this into a structured recipe with macros:\n\n"'+text+'"\n\n'+
-    'For each ingredient, respect any stated quantity EXACTLY and estimate accurate nutrition for it. Macros are for the WHOLE recipe (every ingredient), not per serving. Ignore non-ingredient lines (instructions, headings, method). Return ONLY this JSON, no markdown:\n'+
-    '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'+
+  // A LINK IS A RECIPE FROM ANYWHERE TOO — and the word "anywhere" is doing deliberate work.
+  // docs/REELS-TO-PLAN.md §1: instagram, tiktok and youtube are literal strings in this app's OWN
+  // vice classifier, mapping to the `scrolling` fight whose science line calls the scroll "boredom
+  // or avoidance in disguise". A feature whose copy said "paste a reel" would have the app that
+  // counts someone's clean days telling them that opening Instagram is productive meal planning.
+  // So this path never names a platform and never offers to open one: it takes a link, from
+  // wherever the person already had it.
+  const _url = (text.match(/https?:\/\/[^\s<>"']+/) || [])[0] || '';
+  if(btn){ btn.textContent = _url ? 'Reading that page…' : 'Working out the macros…'; btn.disabled=true; }
+  // web_search:true is Gemini's google_search grounding — the same capability the live-price pass and
+  // the recovery timeline already use. The model READS the page rather than the app fetching it,
+  // which is what makes this work at all: a device fetch is blocked by CORS on almost every recipe
+  // site, and proxying arbitrary URLs through our own backend is an SSRF surface we are not opening
+  // for a convenience feature.
+  // ONE SCHEMA, BOTH DOORS. `a ? b : c + d` binds as `a ? b : (c + d)`, so building this as a
+  // ternary in front of the shared tail silently gave the link branch a prompt that ended at
+  // "Return ONLY JSON:" with no schema after it. Named and appended to both instead.
+  const _schemaTail = 'For each ingredient, respect the stated quantity EXACTLY and estimate accurate nutrition for it. '
+    + 'Macros are for the WHOLE recipe (every ingredient), not per serving.\nReturn ONLY JSON:\n'
+    + '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'+
     'servings = how many meals the whole recipe makes (estimate from the amounts if not stated; default 1). Numbers only. sodium not needed.';
+  const _lead = _url
+    ? ('Read this page and extract its recipe: ' + _url + '\n\n'
+       + 'Use the page\u2019s OWN ingredient list and serving count \u2014 do not substitute a similar recipe you know. '
+       + 'If you cannot actually read that page, return exactly {"error":"unreadable"} and nothing else; '
+       + 'do NOT guess a recipe from the URL alone.\n\n')
+    : ('Parse this into a structured recipe with macros:\n\n"' + text + '"\n\n');
+  const prompt = _lead + _schemaTail;
   try{
-    const raw=await api('You are a precise nutrition coach who converts recipe ingredient lists into accurate per-ingredient macros.',[],prompt,900);
+    // A link needs the search tool AND room to answer: grounding returns a longer reply, and this
+    // repo's own floor is 2000 because a thinking model spends the budget before it writes anything.
+    const raw=await api('You are a precise nutrition coach who converts recipe ingredient lists into accurate per-ingredient macros.',[],prompt,
+      _url ? 2400 : 900, _url ? { web_search:true, timeout:45000 } : undefined);
     const mm=raw.match(/\{[\s\S]*\}/); if(!mm) throw new Error('no json');
     const parsed=JSON.parse(mm[0]);
+    // THE MODEL SAYING IT COULD NOT READ THE PAGE IS AN ANSWER, NOT A FAILURE — and it is the one
+    // answer that must not become a recipe. Without this it would fall through to "no ingredients"
+    // and the person would be told the paste was unreadable, when what happened is that the SITE was.
+    if(parsed && parsed.error === 'unreadable') throw new Error('unreadable');
     const recipe={ name:parsed.name||'New recipe', servings:Math.max(1, parseInt(parsed.servings)||1),
       ingredients:(parsed.ingredients||[]).map(function(i){ return { name:String(i.name||'ingredient'), cal:Math.round(i.cal||0), pro:Math.round((i.pro||0)*10)/10, carb:Math.round((i.carb||0)*10)/10, fat:Math.round((i.fat||0)*10)/10 }; }) };
     if(!recipe.ingredients.length) throw new Error('no ingredients');
@@ -2599,7 +2629,10 @@ async function parsePastedRecipe(){
     if(typeof showToast==='function') showToast('Recipe drafted', recipe.ingredients.length+' ingredients — review, tweak anything, then save.');
   }catch(e){
     if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
-    showToast('Couldn’t read that','Try pasting just the ingredient lines — or add them manually.');
+    // Name the actual obstacle. "Try pasting the ingredient lines" is useless advice to someone who
+    // pasted a link that is behind a login or a paywall — and it reads as if they did it wrong.
+    if(_url) showToast('That page would not open', 'Some sites do not let anything read them. Copy the ingredient lines across and paste those instead.');
+    else showToast('Couldn\u2019t read that','Try pasting just the ingredient lines \u2014 or add them manually.');
   }
 }
 
