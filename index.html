@@ -17769,9 +17769,9 @@ async function generateRecommendation(){
       '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Your recommended split</div>';
     recSplit.forEach(d=>{
       html+='<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase">'+d.day+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+d.focus+'</div></div>';
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase">'+_escFew(d.day)+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(d.focus)+'</div></div>';
       if(d.exercises&&d.exercises.length){
-        html+='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+d.exercises.join(', ')+'</div>';
+        html+='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+_escFew(d.exercises.join(', '))+'</div>';
       }
       html+='</div>';
     });
@@ -41546,7 +41546,10 @@ function renderPlateauCard(){
   card.className='card';
   card.style.cssText='display:block;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd)';
   card.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+svgIcon("mountain")+' Plateau spotted</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">'+p.detail+'</div>'+
+    // p.detail is built in detectPlateau() as `name + ' has stalled — …'`, and `name` is ex.name off
+    // totry_workouts — free text: saveCustomExercise() stores #cx-name verbatim, and the Hevy, Strava
+    // and CSV importers write the same field. Nothing between that input and this sink escaped it.
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">'+_escFew(p.detail)+'</div>'+
     '<button class="btn primary" id="plateau-explain-btn" onclick="explainPlateau()" style="font-size:var(--t-base)">Why am I stuck?</button>'+
     '<div id="plateau-explain-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>';
 }
@@ -44783,14 +44786,18 @@ async function generateGoalRoutine(){
       const plan=JSON.parse(mt[0]);
       window.__pendingGoalRoutine=plan;
       let html='';
+        // A MODEL'S REPLY IS A PERSON'S TYPING WEARING A HAT. This block is api() + JSON.parse
+        // and then innerHTML, which is the class CLAUDE.md names by name — and the prompt carries
+        // the goal the person typed, so the model paraphrases their own words back into these
+        // fields. Driven before the fix: five of them executed and three live <img> landed.
       (plan.days||[]).forEach((d,di)=>{
-        html+='<div class="card"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
-          (d.focus?'<div style="font-size:var(--t-cap);color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
-          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:var(--t-mini)">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
+        html+='<div class="card"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;margin-bottom:2px">'+_escFew(d.name||'Day '+(di+1))+'</div>'+
+          (d.focus?'<div style="font-size:var(--t-cap);color:var(--go);margin-bottom:8px">'+_escFew(d.focus)+'</div>':'')+
+          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+_escFew(ex.name)+(ex.note?' <span style="color:var(--tx3);font-size:var(--t-mini)">('+_escFew(ex.note)+')</span>':'')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
           '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:var(--t-sm);background:var(--bg3)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
           '</div>';
       });
-      if(plan.summary) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+plan.summary+'</div>';
+      if(plan.summary) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+_escFew(plan.summary)+'</div>';
       html+='<button class="btn primary" onclick="saveAllGoalRoutineDays()" style="margin-top:4px">Save all days as routines</button>';
       out.innerHTML=html;
     } else if(out){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t draft that. Try describing your goal differently.</div>'; }
@@ -55955,7 +55962,10 @@ function openHevyTodayPicker(){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:12px">Today\u2019s routine</div>'+
     '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">'+
-    routines.map(r => '<button class="btn stack" style="background:var(--bg3);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:var(--t-base)">' + r.title + '</div><div style="color:var(--tx3);font-size:var(--t-cap);margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
+    // The id lands in a JS string inside an attribute, where _escFew does NOT help — the parser
+    // decodes &#39; back to ' before the JS compiles. Strip the quote, as 22-train-deep.js:494
+    // already does with this same value. The title is a text position and takes the escape.
+    routines.map(r => '<button class="btn stack" style="background:var(--bg3);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + String(r.hevyId == null ? '' : r.hevyId).replace(/[\\'"]/g, '') + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:var(--t-base)">' + _escFew(r.title) + '</div><div style="color:var(--tx3);font-size:var(--t-cap);margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
     '</div>'+
     '<button class="btn quiet" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>';
   document.body.appendChild(m);

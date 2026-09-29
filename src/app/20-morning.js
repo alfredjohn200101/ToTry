@@ -469,7 +469,10 @@ function renderPlateauCard(){
   card.className='card';
   card.style.cssText='display:block;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd)';
   card.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+svgIcon("mountain")+' Plateau spotted</div>'+
-    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">'+p.detail+'</div>'+
+    // p.detail is built in detectPlateau() as `name + ' has stalled — …'`, and `name` is ex.name off
+    // totry_workouts — free text: saveCustomExercise() stores #cx-name verbatim, and the Hevy, Strava
+    // and CSV importers write the same field. Nothing between that input and this sink escaped it.
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">'+_escFew(p.detail)+'</div>'+
     '<button class="btn primary" id="plateau-explain-btn" onclick="explainPlateau()" style="font-size:var(--t-base)">Why am I stuck?</button>'+
     '<div id="plateau-explain-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>';
 }

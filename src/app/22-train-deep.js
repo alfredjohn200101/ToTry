@@ -2191,14 +2191,18 @@ async function generateGoalRoutine(){
       const plan=JSON.parse(mt[0]);
       window.__pendingGoalRoutine=plan;
       let html='';
+        // A MODEL'S REPLY IS A PERSON'S TYPING WEARING A HAT. This block is api() + JSON.parse
+        // and then innerHTML, which is the class CLAUDE.md names by name — and the prompt carries
+        // the goal the person typed, so the model paraphrases their own words back into these
+        // fields. Driven before the fix: five of them executed and three live <img> landed.
       (plan.days||[]).forEach((d,di)=>{
-        html+='<div class="card"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
-          (d.focus?'<div style="font-size:var(--t-cap);color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
-          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:var(--t-mini)">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
+        html+='<div class="card"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;margin-bottom:2px">'+_escFew(d.name||'Day '+(di+1))+'</div>'+
+          (d.focus?'<div style="font-size:var(--t-cap);color:var(--go);margin-bottom:8px">'+_escFew(d.focus)+'</div>':'')+
+          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+_escFew(ex.name)+(ex.note?' <span style="color:var(--tx3);font-size:var(--t-mini)">('+_escFew(ex.note)+')</span>':'')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
           '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:var(--t-sm);background:var(--bg3)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
           '</div>';
       });
-      if(plan.summary) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+plan.summary+'</div>';
+      if(plan.summary) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+_escFew(plan.summary)+'</div>';
       html+='<button class="btn primary" onclick="saveAllGoalRoutineDays()" style="margin-top:4px">Save all days as routines</button>';
       out.innerHTML=html;
     } else if(out){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t draft that. Try describing your goal differently.</div>'; }

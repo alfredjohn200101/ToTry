@@ -439,7 +439,10 @@ function openHevyTodayPicker(){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:12px">Today\u2019s routine</div>'+
     '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">'+
-    routines.map(r => '<button class="btn stack" style="background:var(--bg3);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:var(--t-base)">' + r.title + '</div><div style="color:var(--tx3);font-size:var(--t-cap);margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
+    // The id lands in a JS string inside an attribute, where _escFew does NOT help — the parser
+    // decodes &#39; back to ' before the JS compiles. Strip the quote, as 22-train-deep.js:494
+    // already does with this same value. The title is a text position and takes the escape.
+    routines.map(r => '<button class="btn stack" style="background:var(--bg3);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + String(r.hevyId == null ? '' : r.hevyId).replace(/[\\'"]/g, '') + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:var(--t-base)">' + _escFew(r.title) + '</div><div style="color:var(--tx3);font-size:var(--t-cap);margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
     '</div>'+
     '<button class="btn quiet" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>';
   document.body.appendChild(m);

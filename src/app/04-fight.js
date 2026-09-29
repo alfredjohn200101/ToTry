@@ -281,9 +281,9 @@ async function generateRecommendation(){
       '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Your recommended split</div>';
     recSplit.forEach(d=>{
       html+='<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase">'+d.day+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+d.focus+'</div></div>';
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase">'+_escFew(d.day)+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(d.focus)+'</div></div>';
       if(d.exercises&&d.exercises.length){
-        html+='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+d.exercises.join(', ')+'</div>';
+        html+='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+_escFew(d.exercises.join(', '))+'</div>';
       }
       html+='</div>';
     });

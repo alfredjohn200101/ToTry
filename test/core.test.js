@@ -7759,6 +7759,51 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('after every api() + JSON.parse, nothing reaches innerHTML raw');
+{
+  // CLAUDE.md states this rule in words — "After every api() + JSON.parse, grep the next ~45 lines
+  // for innerHTML" — and nothing enforced it, so it was only ever as good as whoever remembered.
+  // An adversarial pass found four live sites at once: generateGoalRoutine (five raw fields, three
+  // live <img> when driven), generateRecommendation, renderPlateauCard and openHevyTodayPicker.
+  //
+  // A model's reply is a person's typing wearing a hat: the prompt carries the goal, the meal, the
+  // exercise name they typed, and the model paraphrases it back. Same class as their own input.
+  const fs2 = require('fs'), path2 = require('path');
+  const DIR = path2.join(__dirname, '..', 'src', 'app');
+  const scan = (override) => {
+    const out = [];
+    for(const f of fs2.readdirSync(DIR).filter(x => x.endsWith('.js'))){
+      const text = (override && override.file === f) ? override.text : fs2.readFileSync(path2.join(DIR, f), 'utf8');
+      const lines = text.split('\n');
+      for(let i = 0; i < lines.length; i++){
+        if(!/JSON\.parse/.test(lines[i])) continue;
+        if(!/\bapi\(/.test(lines.slice(Math.max(0, i - 6), i + 1).join('\n'))) continue;
+        for(let j = i; j < Math.min(lines.length, i + 45); j++){
+          const L = lines[j];
+          if(/^\s*\/\//.test(L)) continue;
+          if(!/innerHTML\s*\+?=/.test(L) && !/html\s*\+?=\s*'/.test(L)) continue;
+          const m = L.match(/\+\s*((?:[a-zA-Z_$][\w$]*)(?:\.[a-zA-Z_$][\w$]*)+)\s*\+/g) || [];
+          const raw = m.filter(x => !/_escFew|_esc\(|esc\(|escapeHtml|\.length|svgIcon/.test(x));
+          if(raw.length) out.push(f + ':' + (j + 1) + ' ' + raw.join(' '));
+        }
+      }
+    }
+    return out;
+  };
+
+  // CALIBRATE FIRST. An instrument that cannot fail is not evidence — plant the defect this was
+  // written for (one of the four real ones, put back) and require the scan to find it.
+  const victim = '22-train-deep.js';
+  const good = fs2.readFileSync(path2.join(DIR, victim), 'utf8');
+  const planted = good.replace("'+_escFew(plan.summary)+'", "'+plan.summary+'");
+  H.ok(planted !== good, 'calibration: the planted line exists to be broken');
+  const cal = scan({ file: victim, text: planted });
+  H.ok(cal.some(x => /plan\.summary/.test(x)), 'calibration: the scan finds a planted raw model field');
+
+  const live = scan(null);
+  H.eq(live.length, 0, 'no model reply reaches innerHTML unescaped' + (live.length ? ' \u2014 ' + live.join(' | ') : ''));
+}
+
 H.section('a Hevy routine name cannot execute, and neither can its id');
 {
   // TWO POSITIONS, TWO TOOLS — and the natural tool is wrong for one of them. loadTodaySplitCard's
