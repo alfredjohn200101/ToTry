@@ -7615,6 +7615,66 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('Train does not tell you the same lift has stalled and is ready to load');
+{
+  // TWO SURFACES OF THE SAME TAB, ONE SEGMENT APART, RUNNING WITHOUT KNOWING ABOUT EACH OTHER.
+  // renderPlateauCard() draws detectPlateau() in Train > History; suggestProgression() draws under
+  // each exercise in Train > Log. Driven before the fix, on ONE history — five weekly sessions of
+  // 100kg × 5 against a 5-rep target — History said "Bench Press has stalled, your estimated 1RM
+  // hasn't improved in your last 3 sessions" and Log said "You hit 100kg × 5 last time, ready to try
+  // 102.5kg today." Both true to their own logic; together they read as an app that does not know
+  // what it thinks.
+  //
+  // The Log side is the right one. e1RM is a DERIVED number that cannot move while you repeat a set,
+  // so hitting your rep ceiling every week — unambiguous success, and the exact moment double
+  // progression says to add load — registers to the plateau detector as a flat line. So a load bump
+  // defers the card. A REP nudge does not: it fires on a set merely NEAR the ceiling, which is
+  // compatible with a stall.
+  //
+  // The two are coupled on suggestProgression().kind, not on its sentence — a copy edit must not be
+  // able to silently un-couple them, which is the label-vs-action drift this repo has shipped before.
+  const DAY = 86400000, now = Date.now();
+  const mk = (rows) => rows.map((r, i) => ({ ts: new Date(now - i * 7 * DAY).toISOString(),
+    exercises: [{ name:'Bench Press', targetReps:'5',
+      sets:[{ weight:60, reps:5, type:'warmup' }, { weight:r[0], reps:r[1], type:'normal' }] }] }));
+  const read = (rows) => {
+    const history = mk(rows);
+    const fns = H.load(['detectPlateau','suggestProgression','getLastPerformance','bestE1RMFromSets','estE1RM'], {
+      ls: (k) => (k === 'totry_workouts' ? history : null), Date,
+      adaptiveNutritionSuggestion: () => null,
+    });
+    return { stall: !!fns.detectPlateau(),
+             prog: fns.suggestProgression({ name:'Bench Press', targetReps:'5' }, fns.getLastPerformance('Bench Press')) };
+  };
+
+  // suggestProgression says WHAT KIND of step it is, which is what makes the coupling checkable.
+  const earned = read([[100,5],[100,5],[100,5],[100,5],[100,5]]);
+  H.eq(earned.prog && earned.prog.kind, 'load', 'hitting the rep target every week earns a LOAD bump');
+  H.ok(!earned.stall, 'and that lift is not also called stalled in the next segment');
+
+  // The blast radius, measured rather than assumed: a real stall must survive the fix.
+  const declining = read([[100,3],[100,3],[100,4],[100,5],[100,5]]);
+  H.ok(declining.stall, 'a lift losing reps is still called stalled');
+  H.ok(!declining.prog, 'and Log stays silent on it, so the two still agree');
+
+  const floorless = read([[100,2],[100,2],[100,2],[100,2],[100,2]]);
+  H.ok(floorless.stall, 'a lift flat well under its target is still called stalled');
+
+  // Climbing was already exempt (a run of consecutive improvements is progress) — hold it, because
+  // this fix adds a second exemption and the first must not be lost behind it.
+  const climbing = read([[110,5],[107.5,5],[105,5],[102.5,5],[100,5]]);
+  H.ok(!climbing.stall, 'a climbing lift is still not called stalled');
+
+  // The coupling is structural. If the load branch ever stops declaring itself, the deferral above
+  // is silently dead and the contradiction returns with every test still green.
+  const sp = H.code(H.extractFn('suggestProgression'));
+  H.ok(/kind\s*:\s*'load'/.test(sp), "suggestProgression still declares kind:'load'");
+  H.ok(/kind\s*:\s*'rep'/.test(sp), "and kind:'rep' for the weaker nudge");
+  const dp = H.code(H.extractFn('detectPlateau'));
+  H.ok(/prog\.kind\s*===\s*'load'/.test(dp), 'and detectPlateau defers on that field, not on the copy');
+  H.ok(!/'rep'/.test(dp), 'and a rep nudge is deliberately not a deferral');
+}
+
 H.section('an assigned routine is not dropped by the day it was assigned to');
 {
   // THE SPLIT EDITOR TELLS PEOPLE TO ASSIGN A ROUTINE TO A DAY, and the card that reads it took

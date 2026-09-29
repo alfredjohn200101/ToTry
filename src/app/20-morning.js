@@ -394,12 +394,15 @@ function detectPlateau(){
   const PLATEAU_WINDOW_MS = 90 * 86400000;   // a lift untouched for a quarter has not plateaued, it has stopped
   const _now = Date.now();
   const byEx = {};
+  // The most recent exercise OBJECT per name, kept alongside the e1RM series because the stall test
+  // below needs its sets and its rep target, not just its numbers.
+  const lastExByName = {};
   [...history].reverse().forEach(w => {
     const wt = w && (w.ts || w.date) ? new Date(w.ts || w.date).getTime() : NaN;
     if(!isFinite(wt) || (_now - wt) > PLATEAU_WINDOW_MS) return;   // outside the window: not evidence of a stall
     (w.exercises || []).forEach(ex => {
       const e = (typeof bestE1RMFromSets==='function') ? bestE1RMFromSets(ex.sets) : 0;
-      if(e > 0){ (byEx[ex.name] = byEx[ex.name] || []).push({ e, ts: wt }); }
+      if(e > 0){ (byEx[ex.name] = byEx[ex.name] || []).push({ e, ts: wt }); lastExByName[ex.name] = ex; }
     });
   });
   for(const name of Object.keys(byEx)){
@@ -410,6 +413,20 @@ function detectPlateau(){
       const priorBest = Math.max(...series.slice(0, -3));   // best WITHIN the window, not all time
       // And a run of consecutive improvements is progress however it compares to an older peak.
       const climbing = recent.length === 3 && recent[0] < recent[1] && recent[1] < recent[2];
+      // A LIFT THAT EARNED A LOAD BUMP HAS NOT STALLED — IT HAS A NEXT STEP.
+      // This card and suggestProgression() are two surfaces of the same tab, one segment apart, and
+      // they ran without knowing about each other. Driven: five weekly sessions of 100kg × 5 against a
+      // 5-rep target put "Bench Press has stalled — your estimated 1RM hasn't improved in your last 3
+      // sessions" in History while Log said "You hit 100kg × 5 last time — ready to try 102.5kg today."
+      // Both true to their own logic, and together they read as an app that does not know what it
+      // thinks. The Log side is the right one: e1RM is a DERIVED number that cannot move while you
+      // repeat a set, so hitting your rep ceiling every week — unambiguous success — registers here as
+      // a flat line. Only a LOAD bump defers this card; a rep nudge is compatible with a stall, since
+      // it fires on a set that is merely near the ceiling rather than at it.
+      const lastEx = lastExByName[name];
+      const prog = (lastEx && typeof suggestProgression === 'function')
+        ? suggestProgression(lastEx, lastEx.sets) : null;
+      if(prog && prog.kind === 'load') continue;
       if(!climbing && recent.every(v => v <= priorBest)){
         return { type:'lift', name, detail: name + ' has stalled — your estimated 1RM hasn\u2019t improved in your last 3 sessions (best ~' + priorBest + 'kg).' };
       }

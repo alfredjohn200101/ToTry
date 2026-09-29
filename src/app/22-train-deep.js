@@ -230,7 +230,7 @@ function suggestProgression(ex, lastSets){
     // Hit fewer than ceiling reps — earn it by adding a rep, but only if they were already at/above
     // a reasonable floor (don't nudge a set that collapsed).
     if(r >= Math.max(5, ceiling-4)){
-      return { text: 'Last time: '+w+'kg × '+r+'. You\'re close — try for '+(r+1)+' reps at '+w+'kg today.' };
+      return { kind:'rep', text: 'Last time: '+w+'kg × '+r+'. You\'re close — try for '+(r+1)+' reps at '+w+'kg today.' };
     }
     return null;
   }
@@ -238,7 +238,9 @@ function suggestProgression(ex, lastSets){
   const bump = w >= 60 ? 2.5 : w >= 20 ? 2.5 : 1;
   const newW = Math.round((w + bump)*2)/2;
   const lowReps = repHi ? (String(ex.targetReps).match(/(\d+)/)?.[1] || Math.max(5, ceiling-4)) : Math.max(5, ceiling-4);
-  return { text: 'You hit '+w+'kg × '+r+' last time — ready to try '+newW+'kg today. Build back up the reps.' };
+  // `kind` exists so detectPlateau can ask what this IS rather than read what it SAYS. The two ran
+  // independently and contradicted each other on the same lift on the same day — see the note there.
+  return { kind:'load', text: 'You hit '+w+'kg × '+r+' last time — ready to try '+newW+'kg today. Build back up the reps.' };
 }
 
 // ── EXERCISE FORM LOOKUP ─────────────────────────────────────
