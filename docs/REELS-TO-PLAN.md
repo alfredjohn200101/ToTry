@@ -122,10 +122,24 @@ All three returned `refuted: true`.
 
 ## 5. The shape that survives
 
-**Phase 1 — the seam, and nothing else.** No platform, no URL, no new intake. Saved recipes become
-something `_fuelGenerate` can build a week around, and their ingredients merge into the one
-store-routed shopping list. Every dependency already exists. This is the part that is genuinely ahead
-of both categories, and it ships without touching a single third-party service.
+**Phase 1 — the seam, and nothing else. BUILT, 30 Sep 2026.** No platform, no URL, no new intake.
+Saved recipes become something `_fuelGenerate` can build a week around, and their ingredients merge
+into the one store-routed shopping list. Every dependency already existed. This is the part that is
+genuinely ahead of both categories, and it shipped without touching a single third-party service.
+
+> `_fuelRecipeLines()` puts the shelf into the prompt — the name exactly as they wrote it, macros
+> **per serving** (what a meal slot is sized by) and the ingredient **names** (what a shopping list is
+> made of), capped at 8 so it cannot crowd out the rest of the brief. Nothing at all for someone with
+> no recipes.
+>
+> `_fuelMergeRecipeShopping()` is the half that does not depend on the model: a meal naming one of
+> their recipes is marked `mine`, and any ingredient of it missing from the list is added — otherwise
+> the plan tells them to cook something the list cannot buy. Those rows carry `fromRecipe` and **no
+> price** (we do not know what it costs at their store, and a 0 reads as free), show the recipe name
+> where the price would be, group under "From your recipes", and that group prints no subtotal.
+>
+> 18 assertions, fault-injected five ways. The `mine` flag is set and nothing reads it yet — that is
+> the obvious next half-hour: the plan should SAY which meals are theirs.
 
 **Phase 2 — intake, ranked by what is both legal and durable.** A pasted **recipe-site URL** parsed
 from JSON-LD, fetched **from the device**; the **screenshot** path through the vision call that
