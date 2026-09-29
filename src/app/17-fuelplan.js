@@ -378,7 +378,7 @@ function _fuelRenderPlan(plan){
   const _gentle = (typeof nutGentle==='function' && nutGentle());   // numbers off means numbers off
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_esc(mm.name||'Meal')+(mm.mine?'<span style="font-size:var(--t-cap);color:var(--go);font-weight:400;margin-left:6px">one of yours</span>':'')+'</div><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em">↻ swap this meal</button>'+

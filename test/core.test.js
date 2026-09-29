@@ -7833,6 +7833,10 @@ H.section('the meal planner has heard of the food you already chose');
 
   // A GROUP WE DID NOT PRICE MUST NOT SHOW A TOTAL OF ZERO — "$0.00" beside those rows says free.
   const render = H.code(H.extractFn('_fuelRenderPlan'));
+  // And the person SEES that the planner used their food — the whole point of the seam. `mine` was
+  // set and nothing read it for half an hour, which is how a feature ships invisible.
+  H.ok(/mm\.mine\?/.test(render), 'a meal that is theirs is marked on screen');
+  H.ok(/one of yours/.test(render), 'in words, not a symbol nobody can name');
   H.ok(/_unpriced/.test(render), 'the render knows an unpriced group when it sees one');
   H.ok(!/>'\+money\(sub\)\+'</.test(render), 'and does not print a zero subtotal for it');
 }
