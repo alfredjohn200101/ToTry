@@ -170,7 +170,13 @@ function renderSplitOverview(){
     // Seven controls that all read "Edit" announced as "Edit, Edit, Edit..." with nothing to tell
     // them apart. The row says which day and what is on it, so the visible text and the accessible
     // name are finally the same fact.
-    return iosRow({ title: dayName, value: focusText, onclick: 'editSplitDay(' + i + ')',
+    // `value` CLIPS. It is max-width:45%;white-space:nowrap;text-overflow:ellipsis — about 19
+    // characters — and the app's own starter templates write focus strings like
+    // 'Legs (quads, hamstrings, glutes, calves)'. Measured on STARTER_TEMPLATES: Push/Pull/Legs lost
+    // 6 of its 7 days at every viewport from 320 to 430px, Upper/Lower 2-4. The orb fix was right and
+    // the slot it chose for the displaced text was not. `.ios-row-sub` wraps by default, so the focus
+    // sits under the day at full width and nothing is hidden.
+    return iosRow({ title: dayName, sub: focusText, onclick: 'editSplitDay(' + i + ')',
                     tint: i === ti, label: dayName + ' \u2014 currently ' + focusText + '. Edit this day.' });
   });
   // No header: the <details> this sits inside is already titled "Weekly split & routines". The

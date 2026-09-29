@@ -4943,11 +4943,16 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <div id="home-tour-prompt" class="card home-card" style="display:none"></div>
 
   <!-- Today's training mission — only when there's a real plan, populated by renderHome() -->
+  <!-- #today-detail is written with textContent and a '\n\n' between the two sentences, and
+       .card-body sets no white-space — so the break collapsed to a single space and the code had
+       been asking for something the element could not honour since before the mission card carried
+       a person's own history. Same family as the .btn text-align and button{color:inherit} traps.
+       pre-line makes the break real without touching any other card body. -->
   <div id="home-today-mission-wrap" style="display:none">
     <div class="ios-header">Today’s mission</div>
     <div class="card">
       <div class="card-hd" id="today-focus">Loading...</div>
-      <div id="today-detail" class="card-body" style="margin-top:5px"></div>
+      <div id="today-detail" class="card-body" style="margin-top:5px;white-space:pre-line"></div>
     </div>
   </div>
 
@@ -17658,7 +17663,13 @@ function renderSplitOverview(){
     // Seven controls that all read "Edit" announced as "Edit, Edit, Edit..." with nothing to tell
     // them apart. The row says which day and what is on it, so the visible text and the accessible
     // name are finally the same fact.
-    return iosRow({ title: dayName, value: focusText, onclick: 'editSplitDay(' + i + ')',
+    // `value` CLIPS. It is max-width:45%;white-space:nowrap;text-overflow:ellipsis — about 19
+    // characters — and the app's own starter templates write focus strings like
+    // 'Legs (quads, hamstrings, glutes, calves)'. Measured on STARTER_TEMPLATES: Push/Pull/Legs lost
+    // 6 of its 7 days at every viewport from 320 to 430px, Upper/Lower 2-4. The orb fix was right and
+    // the slot it chose for the displaced text was not. `.ios-row-sub` wraps by default, so the focus
+    // sits under the day at full width and nothing is hidden.
+    return iosRow({ title: dayName, sub: focusText, onclick: 'editSplitDay(' + i + ')',
                     tint: i === ti, label: dayName + ' \u2014 currently ' + focusText + '. Edit this day.' });
   });
   // No header: the <details> this sits inside is already titled "Weekly split & routines". The
@@ -41500,10 +41511,20 @@ function detectPlateau(){
       // repeat a set, so hitting your rep ceiling every week — unambiguous success — registers here as
       // a flat line. Only a LOAD bump defers this card; a rep nudge is compatible with a stall, since
       // it fires on a set that is merely near the ceiling rather than at it.
+      //
+      // AND A LIFT THAT IS SLIDING HAS NOT EARNED ANYTHING. suggestProgression() only ever looks at
+      // the SINGLE most recent session, so it says kind:'load' whenever that session's top set met
+      // its rep ceiling — 90kg x 5 against a 5-rep target qualifies exactly as 110kg x 5 does. This
+      // card is the ONLY surface that sees the trend, so handing its verdict unconditionally to a
+      // surface that structurally cannot see one silenced the very case it exists for. The blast
+      // radius measured when the deferral landed covered 'losing reps' and 'flat under target'; it
+      // never covered 'losing LOAD while still hitting the ceiling'. So the deferral now asks the
+      // trend too: defer only when the lift is not below where it recently was.
       const lastEx = lastExByName[name];
       const prog = (lastEx && typeof suggestProgression === 'function')
         ? suggestProgression(lastEx, lastEx.sets) : null;
-      if(prog && prog.kind === 'load') continue;
+      const sliding = recent.length === 3 && recent[recent.length - 1] < recent[0];
+      if(prog && prog.kind === 'load' && !sliding) continue;
       if(!climbing && recent.every(v => v <= priorBest)){
         return { type:'lift', name, detail: name + ' has stalled — your estimated 1RM hasn\u2019t improved in your last 3 sessions (best ~' + priorBest + 'kg).' };
       }
@@ -42077,7 +42098,14 @@ function _focusHistoryLine(focus){
     let best = null;
     (last.exercises || []).forEach(function(ex){
       (((ex && ex.sets) || [])).forEach(function(st){
-        if(!st || (st.type || 'normal') === 'warmup') return;
+        // AND A SET THEY NEVER TICKED IS NOT A SET THEY DID. saveWorkoutSession filters at the
+        // EXERCISE level and then deep-clones the whole exercise, so every row left filled-but-
+        // unticked is persisted with its weight and reps — and loadRoutine loads a saved routine's
+        // sets with done:false, while the Prev column invites tapping last session's numbers into
+        // rows that may not be completed. So a heavier unticked set is the ordinary case, and it was
+        // being handed back as "your top set". `=== false` rather than falsy: imported sessions
+        // (Hevy, Strava, CSV) carry no `done` field at all and are all real work.
+        if(!st || st.done === false || (st.type || 'normal') === 'warmup') return;
         const w = parseFloat(st.weight) || 0, r = parseInt(st.reps) || 0;
         if(w > 0 && r > 0 && (!best || w > best.w)) best = { w: w, r: r, name: ex.name };
       });

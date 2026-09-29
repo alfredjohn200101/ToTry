@@ -423,10 +423,20 @@ function detectPlateau(){
       // repeat a set, so hitting your rep ceiling every week — unambiguous success — registers here as
       // a flat line. Only a LOAD bump defers this card; a rep nudge is compatible with a stall, since
       // it fires on a set that is merely near the ceiling rather than at it.
+      //
+      // AND A LIFT THAT IS SLIDING HAS NOT EARNED ANYTHING. suggestProgression() only ever looks at
+      // the SINGLE most recent session, so it says kind:'load' whenever that session's top set met
+      // its rep ceiling — 90kg x 5 against a 5-rep target qualifies exactly as 110kg x 5 does. This
+      // card is the ONLY surface that sees the trend, so handing its verdict unconditionally to a
+      // surface that structurally cannot see one silenced the very case it exists for. The blast
+      // radius measured when the deferral landed covered 'losing reps' and 'flat under target'; it
+      // never covered 'losing LOAD while still hitting the ceiling'. So the deferral now asks the
+      // trend too: defer only when the lift is not below where it recently was.
       const lastEx = lastExByName[name];
       const prog = (lastEx && typeof suggestProgression === 'function')
         ? suggestProgression(lastEx, lastEx.sets) : null;
-      if(prog && prog.kind === 'load') continue;
+      const sliding = recent.length === 3 && recent[recent.length - 1] < recent[0];
+      if(prog && prog.kind === 'load' && !sliding) continue;
       if(!climbing && recent.every(v => v <= priorBest)){
         return { type:'lift', name, detail: name + ' has stalled — your estimated 1RM hasn\u2019t improved in your last 3 sessions (best ~' + priorBest + 'kg).' };
       }

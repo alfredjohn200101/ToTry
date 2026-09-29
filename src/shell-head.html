@@ -4943,11 +4943,16 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <div id="home-tour-prompt" class="card home-card" style="display:none"></div>
 
   <!-- Today's training mission — only when there's a real plan, populated by renderHome() -->
+  <!-- #today-detail is written with textContent and a '\n\n' between the two sentences, and
+       .card-body sets no white-space — so the break collapsed to a single space and the code had
+       been asking for something the element could not honour since before the mission card carried
+       a person's own history. Same family as the .btn text-align and button{color:inherit} traps.
+       pre-line makes the break real without touching any other card body. -->
   <div id="home-today-mission-wrap" style="display:none">
     <div class="ios-header">Today’s mission</div>
     <div class="card">
       <div class="card-hd" id="today-focus">Loading...</div>
-      <div id="today-detail" class="card-body" style="margin-top:5px"></div>
+      <div id="today-detail" class="card-body" style="margin-top:5px;white-space:pre-line"></div>
     </div>
   </div>
 

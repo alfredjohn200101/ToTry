@@ -409,7 +409,14 @@ function _focusHistoryLine(focus){
     let best = null;
     (last.exercises || []).forEach(function(ex){
       (((ex && ex.sets) || [])).forEach(function(st){
-        if(!st || (st.type || 'normal') === 'warmup') return;
+        // AND A SET THEY NEVER TICKED IS NOT A SET THEY DID. saveWorkoutSession filters at the
+        // EXERCISE level and then deep-clones the whole exercise, so every row left filled-but-
+        // unticked is persisted with its weight and reps — and loadRoutine loads a saved routine's
+        // sets with done:false, while the Prev column invites tapping last session's numbers into
+        // rows that may not be completed. So a heavier unticked set is the ordinary case, and it was
+        // being handed back as "your top set". `=== false` rather than falsy: imported sessions
+        // (Hevy, Strava, CSV) carry no `done` field at all and are all real work.
+        if(!st || st.done === false || (st.type || 'normal') === 'warmup') return;
         const w = parseFloat(st.weight) || 0, r = parseInt(st.reps) || 0;
         if(w > 0 && r > 0 && (!best || w > best.w)) best = { w: w, r: r, name: ex.name };
       });

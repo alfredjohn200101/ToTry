@@ -7759,6 +7759,22 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('the split list does not clip the app\'s own templates');
+{
+  // The orb fix moved the focus from a flex:1 div that wrapped into iosRow's `value` slot —
+  // max-width:45%; white-space:nowrap; text-overflow:ellipsis, about 19 characters — while the app's
+  // own STARTER_TEMPLATES write 'Legs (quads, hamstrings, glutes, calves)'. Measured in a browser at
+  // 393px with the broken slot: Push/Pull/Legs clipped 7 of 7 rows (client 148px, scroll 291px).
+  // With `sub`, which wraps and has no max-width: 0 of 7 (client 307px). scripts/clip-audit.mjs
+  // holds the probe and the two ways it lied before it worked.
+  const fn = H.code(H.extractFn('renderSplitOverview'));
+  H.ok(/sub:\s*focusText/.test(fn), 'the focus goes in the row subhead, which wraps');
+  H.ok(!/value:\s*focusText/.test(fn), 'and not in the value slot, which ellipsises at ~19 characters');
+  // The value slot really is the clipping one — pinned so nobody moves it back believing it is fine.
+  H.ok(/\.ios-row-value\{[^}]*text-overflow:ellipsis/.test(H.html.replace(/\s+/g, '')) ||
+       /ios-row-value\{[^}]*ellipsis/.test(H.html), '.ios-row-value does ellipsise');
+}
+
 H.section('after every api() + JSON.parse, nothing reaches innerHTML raw');
 {
   // CLAUDE.md states this rule in words — "After every api() + JSON.parse, grep the next ~45 lines
