@@ -41658,6 +41658,53 @@ function renderUnifiedTraining(){
   card.style.display = 'block';
 }
 
+// A CARD THAT SAYS THE SAME THING TO EVERYONE IS A CATALOGUE, NOT A COACH. The Train card's body was
+// `today.detail` — a string written once when the split was generated ("Template: 5×5 Strength", or a
+// sentence from the model) and never touched again. Someone on their first Push day and someone on
+// their fifteenth read the identical line, from an app whose whole claim is that it knows them.
+//
+// Every session stores `splitFocus` (saveWorkoutSession, 22-train-deep.js), so what a person has built
+// on THIS day of their week is answerable from their own data: how many times they have done it, and
+// the heaviest working set of the last one — the number to beat, which is why anyone opens a training
+// app standing at the rack. No history means no claim: the catalogue string is the only honest thing
+// to say to someone on their first one, so it stays for them.
+function _focusHistoryLine(focus){
+  try{
+    if(!focus) return '';
+    const hist = ls('totry_workouts') || [];
+    const mine = hist.filter(function(w){ return w && w.splitFocus === focus; });
+    if(!mine.length) return '';
+    // The focus string itself is never built into this line. It can be long enough to be a sentence
+    // ("Legs (quads, hamstrings, glutes, calves)"), and it is a MODEL's words on an AI-generated split.
+    // 'once' rather than plural()'s correct-but-clunky '1 time' — this is the sentence someone
+    // meets on their SECOND session, and day two is where most people are.
+    let out = 'You\u2019ve trained this ' + (mine.length === 1 ? 'once' : plural(mine.length, 'time')) + '.';
+    const last = mine[0];   // newest first — the order saveWorkoutSession unshifts into
+    const t = (last.ts || last.date) ? new Date(last.ts || last.date).getTime() : NaN;
+    let when = '';
+    if(isFinite(t)){
+      const d = Math.floor((Date.now() - t) / 86400000);
+      when = d <= 0 ? 'earlier today' : d === 1 ? 'yesterday' : plural(d, 'day') + ' ago';
+    }
+    // Warm-ups are excluded for the reason suggestProgression excludes them: a warm-up handed back as
+    // "your top set" is a number that reads as a collapse.
+    let best = null;
+    (last.exercises || []).forEach(function(ex){
+      (((ex && ex.sets) || [])).forEach(function(st){
+        if(!st || (st.type || 'normal') === 'warmup') return;
+        const w = parseFloat(st.weight) || 0, r = parseInt(st.reps) || 0;
+        if(w > 0 && r > 0 && (!best || w > best.w)) best = { w: w, r: r, name: ex.name };
+      });
+    });
+    // Lifted load stays kilograms everywhere in this app on purpose, unlike body weight (CLAUDE.md).
+    const top = best ? best.name + ' ' + best.w + 'kg \u00d7 ' + best.r : '';
+    if(when && top) out += ' Last was ' + when + ' \u2014 top set ' + top + '.';
+    else if(when)   out += ' Last was ' + when + '.';
+    else if(top)    out += ' Top set last time: ' + top + '.';
+    return out;
+  }catch(_){ return ''; }
+}
+
 function loadTodaySplitCard(){
   const split=getUserSplit();const ti=tIdx();const today=split[ti];
   const nameEl=document.getElementById('pt-today-split-name');const detailEl=document.getElementById('pt-today-split-detail');
@@ -41795,10 +41842,12 @@ function loadTodaySplitCard(){
   // the app draws its own icons or none.
   const todayLabel = 'Today: '+today.focus;
   if(nameEl)nameEl.textContent=todayLabel;
-  if(detailEl)detailEl.textContent=today.detail||'';
+  // Their own history where there is any; the catalogue string only for someone who has none yet.
+  const body = _focusHistoryLine(today.focus) || today.detail || '';
+  if(detailEl)detailEl.textContent=body;
   if(hf){
     hf.textContent=todayLabel;
-    if(hd)hd.textContent=(today.detail||'')+(today.detail?'\n\n':'')+'Log your session in the Workout tab.';
+    if(hd)hd.textContent=body+(body?'\n\n':'')+'Log your session in the Workout tab.';
   }
   if(wrap) wrap.style.display='block';
 }

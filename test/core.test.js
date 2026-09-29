@@ -7615,6 +7615,71 @@ H.section('the Train tab does not ask the model the same question twice');
   H.eq(el.textContent, 'from the cache', 'and is what the screen shows');
 }
 
+H.section('the Train card says something only this person\'s data could produce');
+{
+  // THE COMPLAINT THIS ANSWERS: the card's body was `today.detail`, written once when the split was
+  // generated and never touched again — so someone on their first Push day and someone on their
+  // fifteenth read the identical line, from an app whose whole claim is that it knows them.
+  //
+  // Every session stores `splitFocus`, so what they have built on THIS day of their week is theirs to
+  // be told. A person with no history keeps the catalogue string: it is the only honest thing to say
+  // to someone on their first one, and the fix must not invent a past for them.
+  const DAY = 86400000, now = Date.now();
+  const sess = (daysAgo, w, r) => ({ ts: new Date(now - daysAgo * DAY).toISOString(), splitFocus:'Push',
+    exercises:[{ name:'Bench Press', sets:[{ weight:60, reps:8, type:'warmup' }, { weight:w, reps:r, type:'normal' }] },
+               { name:'Overhead Press', sets:[{ weight:50, reps:6, type:'normal' }] }] });
+  const body = (history) => {
+    const els = {};
+    const mk = (id) => (els[id] = { id, _t:'', _h:'', style:{ display: id === 'home-today-mission-wrap' ? 'none' : '' },
+      get textContent(){ return this._t; }, set textContent(v){ this._t = String(v); },
+      get innerHTML(){ return this._h; }, set innerHTML(v){ this._h = String(v); },
+      insertAdjacentHTML(pos, h){ this._h += h; } });
+    ['pt-today-split-name','pt-today-split-detail','today-focus','today-detail',
+     'home-today-mission-wrap','pt-today-split-card'].forEach(mk);
+    const fns = H.load(['loadTodaySplitCard','_focusHistoryLine','plural'], {
+      document:{ getElementById: (id) => els[id] || null }, window:{},
+      getUserSplit: () => [{ focus:'Push', detail:'Template: 5\u00d75 Strength' }], tIdx: () => 0,
+      ls: (k) => (k === 'totry_workouts' ? history : null),
+      isHevyUser: () => false, svgIcon: () => '', showToast: () => {}, Date,
+    });
+    fns.loadTodaySplitCard();
+    return { train: els['pt-today-split-detail'].textContent, home: els['today-detail'].textContent };
+  };
+
+  const beginner = body([]);
+  H.eq(beginner.train, 'Template: 5\u00d75 Strength', 'someone on their first one keeps the catalogue string');
+  H.ok(!/trained this/.test(beginner.train), 'and is not told about a history they do not have');
+
+  const lifter = body([sess(4,100,5), sess(11,100,5), sess(18,97.5,5), sess(25,95,5),
+                       sess(32,95,5), sess(39,92.5,5), sess(46,90,5), sess(53,90,5)]);
+  H.ok(lifter.train !== beginner.train, 'and a lifter with eight of them does NOT read the same line');
+  H.ok(/trained this 8 times/.test(lifter.train), 'the count is what they actually built');
+  H.ok(/4 days ago/.test(lifter.train), 'the gap is real');
+  H.ok(/Bench Press 100kg \u00d7 5/.test(lifter.train), 'and the top set is the number to beat');
+  // The warm-up is 60kg and the second exercise tops out at 50kg: picking either would hand back a
+  // number that reads as a collapse. This is the same exclusion suggestProgression makes.
+  H.ok(!/60kg/.test(lifter.train) && !/50kg/.test(lifter.train), 'warm-ups and lighter lifts are not "your top set"');
+  // Home's mission card reads from the same string — the two cannot drift into different claims.
+  H.ok(lifter.home.indexOf(lifter.train) === 0, 'and Home leads with the identical line');
+
+  // plural() takes the SINGULAR and already carries the number; "1 time" is correct and clunky, and
+  // this is the sentence someone meets on their SECOND session, where most people are.
+  H.ok(/trained this once\./.test(body([sess(1,80,5)]).train), 'one session reads "once", not "1 time"');
+  H.ok(/Last was yesterday/.test(body([sess(1,80,5)]).train), 'and yesterday is named, not counted');
+  H.ok(/earlier today/.test(body([sess(0,102.5,5), sess(7,100,5)]).train), 'a session already done today says so');
+
+  // A session with nothing but warm-ups has no top set to offer. It must degrade to the clause it can
+  // stand behind rather than printing "top set undefined 0kg".
+  const warmOnly = body([{ ts:new Date(now - 3*DAY).toISOString(), splitFocus:'Push',
+    exercises:[{ name:'Bench Press', sets:[{ weight:40, reps:10, type:'warmup' }] }] }]);
+  H.ok(/trained this once\. Last was 3 days ago\.$/.test(warmOnly.train), 'a warm-up-only session claims no top set');
+  H.ok(!/undefined|NaN|null/.test(warmOnly.train), 'and prints no hole where the number would be');
+
+  // Another day's work is not this day's. splitFocus is the key, and it has to actually be read.
+  H.eq(body([{ ...sess(3,100,5), splitFocus:'Pull' }]).train, 'Template: 5\u00d75 Strength',
+    'a Pull session is not counted as a Push');
+}
+
 H.section('Train does not tell you the same lift has stalled and is ready to load');
 {
   // TWO SURFACES OF THE SAME TAB, ONE SEGMENT APART, RUNNING WITHOUT KNOWING ABOUT EACH OTHER.
@@ -7705,7 +7770,7 @@ H.section('an assigned routine is not dropped by the day it was assigned to');
     ['pt-today-split-name','pt-today-split-detail','today-focus','today-detail',
      'home-today-mission-wrap','pt-today-split-card'].forEach(id => { els[id] = mkEl(id); });
     els['today-focus']._t = 'Loading...';   // the shell's own static default for that element
-    const { loadTodaySplitCard } = H.load(['loadTodaySplitCard'], {
+    const { loadTodaySplitCard } = H.load(['loadTodaySplitCard','_focusHistoryLine','plural'], {
       document: { getElementById: (id) => els[id] || null },
       window: {}, getUserSplit: () => [day], tIdx: () => 0,
       ls: (k) => (k === 'totry_routines' ? [{ id:'r1', name:'Push A' }] : null),
