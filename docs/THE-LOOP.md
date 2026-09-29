@@ -16,7 +16,7 @@ this was before 30 Sep 2026: every link existed, none of them were joined.
 
 ---
 
-## 1. A recipe comes in — ✅ text, link, barcode, search
+## 1. A recipe comes in — ✅ text, link, screenshot, barcode, search
 
 `openPasteRecipe` / `parsePastedRecipe` take typed lines **or a URL**; the model reads the page
 through the same `web_search` grounding the live-price pass uses. Barcode and the food search both
@@ -27,7 +27,18 @@ land ingredients directly.
 nothing here names a platform or offers to open one — a test asserts it. The app takes *a recipe from
 anywhere*.
 
-**Open:** the screenshot path, through the vision call that already works.
+**The screenshot is the reel-to-real door that touches no platform:** someone screenshots what they
+saw, the way they already do, and the app never goes near the feed. Built on the vision call that
+already reads a workout summary and a plate of food, with its own file input — one input cannot mean
+two things, and a shared one sends a recipe screenshot to the meal estimator.
+
+**All three doors now share one path** — `_recipeFromParsed` → `_recipeDraftGuard` → `_recipeDraft` —
+so a fourth cannot quietly normalise its numbers differently, and all of them land in an **editable
+draft** rather than a saved fact.
+
+**And every intake is a crisis door, including one that cannot be gated on the way IN.** A screenshot
+carries no typed words for `detectCrisis` to read, so the check moves to the only text that door ever
+produces: what the model read out of the image.
 
 ## 2. It carries real nutrition — ✅
 
@@ -37,10 +48,19 @@ every writer of an ingredient hand-built four macros, so **no recipe had ever ca
 micronutrient** — including the barcode path, whose Open Food Facts parse works out fiber, sodium,
 calcium, iron and vitamin C forty lines above the push that threw them away.
 
-**Open:** `parsePastedRecipe` still asks the model for four estimated numbers and never touches USDA.
-And `searchUSDA` asks for `Foundation`, measured at **17.6/28** micro coverage against SR Legacy's
-23.2 and Survey (FNDDS)'s 27.0 — but Survey's names are prepared dishes ("Fried broccoli", "Lomi
-salmon"), so that is a real trade-off, deliberately un-made.
+**A recipe from any of the three model-parsed doors can now be resolved against USDA** —
+`lookupRecipeNutrition()` on the editor — but only for lines that state a weight the app can read
+**without guessing**. "500g chicken breast" becomes USDA's real figures with its micronutrients; "1
+tbsp olive oil" and "1 onion" keep the model's estimate and are not claimed as real. The research's
+own warning is the constraint: *a wrong match is worse than no match*, and an assumed density or an
+average onion is exactly the confident wrong number this side of the app refuses to write. The row
+says which is which, because an estimate and a USDA figure look identical once they are both just a
+number.
+
+**Open:** `searchUSDA` asks for `Foundation`, measured at **17.6/28** micro coverage against SR
+Legacy's 23.2 and Survey (FNDDS)'s 27.0 — but Survey's names are prepared dishes ("Fried broccoli",
+"Lomi salmon"), so that is a real trade-off, deliberately un-made. And the un-weighed lines are still
+estimates; resolving those needs a volume-to-weight table someone has to be willing to stand behind.
 
 ## 3. The planner builds a week around it — ✅
 
@@ -94,13 +114,13 @@ becomes none.**
 
 ## What is still open, in order of what the loop would gain
 
-1. **The screenshot intake** (link 1). The vision call already works; this is plumbing.
-2. **`parsePastedRecipe` → USDA** (link 2). The research named this as "the gap" and it was wrong —
-   the gap was the landing — but it is still true that a pasted recipe's ingredients are four guessed
-   numbers, so a recipe that arrives by paste carries no micros at all.
-3. **The USDA data-type trade-off** (link 2). Measured, not decided.
-4. **Pricing the rows the pricer cannot match** (link 6). Today they stay unpriced and the total says
+1. **Pricing the rows the pricer cannot match** (link 6). Today they stay unpriced and the total says
    so, which is honest but not finished.
+2. **The un-weighed ingredient lines** (link 2). "1 tbsp olive oil" and "1 onion" are still the
+   model's estimate. Closing this needs a volume-and-count-to-weight table, and the only honest
+   version of it shows the person the assumed weight so they can correct it.
+3. **The USDA data-type trade-off** (link 2). Measured, not decided: better micros against worse
+   names.
 
 ## The rule this chain keeps
 
