@@ -282,6 +282,28 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      measured seven short "Rest day" rows, and then measured elements inside a closed `<details>` on
      a hidden tab, where every dimension is 0 and `scrollWidth > clientWidth` is false. Break the code
      on purpose and require the probe to FAIL before trusting the pass.
+     **(n) A `return` AT MODULE LEVEL ENDS THE RUN SILENTLY, added 30 Sep 2026.** `core.test.js` is a
+     plain script, and Node wraps a module in a function — so a stray top-level `return` is legal and
+     simply stops execution. It stopped before `H.report()`, and the suite exited **0 with no summary
+     at all**. Nothing said "aborted"; the section header had already printed. It happened because
+     "the suite is synchronous" had become a reason to grep an async function's source instead of
+     driving it. **`H.defer(promise)` exists now** — `report()` waits on deferred promises, so an
+     async section (`searchUSDA`, anything behind `api()`) reads like a sync one and its failures are
+     counted. Fault-inject the mechanism as well as the code: a deliberately wrong async assertion
+     must come back as a failure, not a skip.
+     **(o) AND A FOOD WITH NO CALORIE FIGURE WAS LOGGABLE.** An auditor reported USDA's top "chicken
+     breast" result at 0 cal and could not verify it (DEMO_KEY was 429ing). Measured through the
+     app's own key-proxy with the public anon key, it reproduces: Foundation's top match is
+     "Lunchmeat, chicken breast, sliced", whose `foodNutrients` hold **no energy nutrient of any
+     kind**, and one tap put 0 calories into the diary under a name anyone would believe. The guard
+     has to be a FLAG — `n` is pre-initialised with every key at 0, so a *value* of 0 cannot tell
+     "USDA said zero" from "USDA said nothing", and the first cut dropped nothing. Water still logs,
+     because a genuinely calorie-free food carries an energy nutrient whose value IS 0; a kJ-only
+     record is converted at 4.184 rather than dropped. **And the first measurement was wrong, not the
+     app**: it matched `nutrientName === 'energy'` while USDA says "Energy (Atwater General
+     Factors)". Micro coverage by data type, measured over five foods: Foundation 17.6/28, SR Legacy
+     23.2, Survey (FNDDS) 27.0 — Survey is tempting and its names are prepared dishes ("Fried
+     broccoli", "Lomi salmon"), so that is a real trade-off, left un-made on purpose.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
