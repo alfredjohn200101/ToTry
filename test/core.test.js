@@ -7765,6 +7765,61 @@ H.section('one typed plan for tomorrow does not take the whole front screen down
   H.ok(uses === 0 || /const\s+ti\s*=[\s\S]*\[ti\]/.test(fn), 'and declares it BEFORE it indexes with it');
 }
 
+H.section('a recipe can come from a screenshot, and what comes back is still gated');
+{
+  // The reel-to-real door that touches no platform: someone screenshots what they saw, the way they
+  // already do, and the app never goes near the feed. docs/REELS-TO-PLAN.md §1 is why it is framed
+  // as "a screenshot" and not as any platform's name. Built on the vision call that already reads a
+  // workout summary and a plate of food, landing in the SAME editable draft as the other two doors.
+  const run = (reply, crisisOn) => {
+    let drafted = null, toast = null, crisis = null;
+    const btn = { textContent:'Build the recipe', disabled:false };
+    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft'], {
+      document: { getElementById: () => ({ click(){} }),
+                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }) },
+      downscaleImage: async () => 'data:image/jpeg;base64,AAAA',
+      sb: { functions: { invoke: async () => ({ data: { text: reply } }) } },
+      detectCrisis: (t) => (crisisOn && /end it/i.test(t) ? { kind:'suicide' } : null),
+      showCrisisResponse: (id) => { crisis = id; },
+      editRecipe: (i, r) => { drafted = r; }, showToast: (a) => { toast = a; }, haptic: () => {}, console,
+    });
+    return fns.handleRecipeScreenshot({ target: { files: [{ type:'image/png' }], value:'' } })
+      .then(() => ({ drafted, toast, crisis }));
+  };
+  const OK = JSON.stringify({ name:'Pesto pasta', servings:4,
+    ingredients:[{ name:'500g chicken', cal:550, pro:110, carb:0, fat:12 }] });
+
+  H.defer(Promise.all([
+    run(OK, false),
+    run('{"error":"unreadable"}', false),
+    run(JSON.stringify({ name:'I want to end it', servings:1, ingredients:[{ name:'x', cal:1 }] }), true),
+  ]).then(function(r){
+    H.eq(r[0].drafted && r[0].drafted.name, 'Pesto pasta', 'a recipe in the image becomes an editable draft');
+    H.eq(r[1].drafted, null, 'an image with no recipe in it drafts nothing');
+    H.ok(/No recipe in that image/.test(r[1].toast || ''), 'and says what it actually could not find');
+
+    // EVERY INTAKE IS A CRISIS DOOR — and this one cannot be gated on the way IN. A screenshot
+    // carries no typed words for detectCrisis to read, so the check moves to the only text this door
+    // ever produces: what the model read out of the image. CLAUDE.md's rule is that a new surface
+    // gets its door the same day; an image surface gets it on its output.
+    H.eq(r[2].drafted, null, 'a disclosure read out of an image never becomes a recipe');
+    H.eq(r[2].crisis, 'paste-recipe-crisis', 'it is met the way every other door meets it');
+  }));
+
+  // ONE DRAFT PATH FOR EVERY INTAKE, so a third door cannot normalise its numbers differently.
+  const src = H.code(H.extractFn('handleRecipeScreenshot'));
+  H.ok(/_recipeFromParsed\(/.test(src) && /_recipeDraft\(/.test(src), 'the screenshot uses the shared draft path');
+  H.ok(/_recipeDraftGuard\(recipe\)/.test(src), 'and the shared guard');
+  const paste = H.code(H.extractFn('parsePastedRecipe'));
+  H.ok(/_recipeFromParsed\(/.test(paste) && /_recipeDraftGuard\(recipe\)/.test(paste), 'and so does the paste');
+  H.ok(!/instagram|tiktok|reel/i.test(src), 'and the door names no platform');
+  // Its own input, because one input cannot mean two things.
+  H.ok(/id="recipe-shot-input"[^>]*onchange="handleRecipeScreenshot/.test(H.html),
+    'the screenshot has its own file input, not the meal estimator\'s');
+  H.ok(!/id="recipe-shot-input"[^>]*capture=/.test(H.html),
+    'and no capture attribute — a recipe is already on the phone');
+}
+
 H.section('a recipe can come from a link, and the link never names a platform');
 {
   // docs/REELS-TO-PLAN.md phase 2. The framing is the part that was decided first, in §1: instagram,
@@ -7781,7 +7836,7 @@ H.section('a recipe can come from a link, and the link never names a platform');
   const run = (text, reply) => {
     let seen = null, toast = null, drafted = null;
     const ta = { value: text }, btn = { textContent:'', disabled:false };
-    const fns = H.load(['parsePastedRecipe'], {
+    const fns = H.load(['parsePastedRecipe','_recipeFromParsed','_recipeDraftGuard','_recipeDraft'], {
       document: { getElementById: (id) => (id === 'paste-recipe-text' ? ta : { innerHTML:'' }),
                   querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }) },
       api: async (sys, m, prompt, tok, opts) => { seen = { prompt, tok, opts }; return reply; },

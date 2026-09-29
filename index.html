@@ -5470,6 +5470,10 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        handleMealPhoto(). Do not merge them back into one. -->
   <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
+  <!-- The recipe door's own input. Separate from the two above for the reason their comment gives:
+       one input cannot mean two things, and a shared one sends a recipe screenshot to the meal
+       estimator. No `capture` attribute — a recipe is something already on the phone. -->
+  <input type="file" id="recipe-shot-input" accept="image/*" style="display:none" onchange="handleRecipeScreenshot(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
@@ -32808,11 +32812,96 @@ function openPasteRecipe(){
     '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a note, a message, a photo’s caption — or just drop a link and I’ll read the page. I’ll turn it into a recipe you can edit before you save.</p>'+
     '<textarea id="paste-recipe-text" placeholder="https://… a link to the recipe\n\nor the lines themselves:\n500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:var(--t-base);line-height:1.5;margin-bottom:12px"></textarea>'+
     '<button class="btn primary" onclick="parsePastedRecipe()" style="margin-bottom:8px">Build the recipe</button>'+
+    '<button class="btn" style="margin-bottom:8px;background:var(--bg3);font-size:var(--t-sm)" onclick="document.getElementById(\'recipe-shot-input\').click()">'+svgIcon("camera")+' Use a screenshot instead</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
   document.body.appendChild(m);
   setTimeout(function(){ var t=document.getElementById('paste-recipe-text'); if(t) t.focus(); }, 200);
 }
+// ONE DRAFT PATH FOR EVERY INTAKE. Typed lines, a link and a screenshot all end in the same place:
+// an EDITABLE draft, never a saved fact, which is what makes a wrong guess survivable. Written once
+// so a third door cannot quietly normalise its numbers differently from the first two.
+function _recipeFromParsed(parsed){
+  if(parsed && parsed.error === 'unreadable') throw new Error('unreadable');
+  const recipe = { name: parsed && parsed.name || 'New recipe',
+    servings: Math.max(1, parseInt(parsed && parsed.servings) || 1),
+      ingredients:((parsed && parsed.ingredients)||[]).map(function(i){ return { name:String(i.name||'ingredient'), cal:Math.round(i.cal||0), pro:Math.round((i.pro||0)*10)/10, carb:Math.round((i.carb||0)*10)/10, fat:Math.round((i.fat||0)*10)/10 }; }) };
+  if(!recipe.ingredients.length) throw new Error('no ingredients');
+  return recipe;
+}
+
+// AND EVERY INTAKE IS A CRISIS DOOR — this one could not be gated on the way IN. A screenshot carries
+// no typed words for detectCrisis to read, so the check moves to what comes BACK: if the model read
+// something in that image that this app must never file as a recipe name or an ingredient, it is met
+// the way every other door meets it. CLAUDE.md's rule is that a new free-text surface gets its door
+// the same day; an image surface gets it on the only text it ever produces.
+function _recipeDraftGuard(recipe, crisisElId){
+  try{
+    if(typeof detectCrisis !== 'function') return false;
+    const words = [recipe && recipe.name].concat(((recipe && recipe.ingredients) || []).map(function(i){ return i && i.name; }))
+      .filter(Boolean).join('. ');
+    const c = detectCrisis(words);
+    if(!c) return false;
+    if(typeof showCrisisResponse === 'function') showCrisisResponse(crisisElId || 'paste-recipe-crisis', c);
+    return true;
+  }catch(_){ return false; }
+}
+
+function _recipeDraft(recipe){
+  document.querySelector('.modal-bg.open')?.remove();
+  editRecipe(-1, recipe);
+  if(typeof haptic === 'function') haptic('success');
+  if(typeof showToast === 'function') showToast('Recipe drafted', recipe.ingredients.length + ' ingredients \u2014 review, tweak anything, then save.');
+}
+
+// A RECIPE FROM A SCREENSHOT — the reel-to-real door that touches no platform.
+// This is how a recipe someone saw in a feed gets in without the app going near the feed: they
+// screenshot it themselves, the way they already do. docs/REELS-TO-PLAN.md §1 is why it is framed as
+// "a screenshot" and not as any platform's name.
+// Built on the vision call that already reads a workout summary and a plate of food, and it lands in
+// the SAME editable draft as the other two doors.
+async function handleRecipeScreenshot(event){
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if(event && event.target) event.target.value = '';
+  if(!file) return;
+  if(!String(file.type||'').startsWith('image/')){
+    if(typeof showToast==='function') showToast('Wrong file', 'Pick an image of the recipe.');
+    return;
+  }
+  const btn = document.querySelector('.modal-bg.open .btn.primary');
+  if(btn){ btn.textContent = 'Reading that screenshot\u2026'; btn.disabled = true; }
+  let dataUrl;
+  try{ dataUrl = await downscaleImage(file, 1280, 0.85); }
+  catch(_){
+    if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
+    if(typeof showToast==='function') showToast('That image did not get through', 'Try again, or paste the lines instead.');
+    return;
+  }
+  try{
+    const prompt = 'This image is a recipe \u2014 a screenshot, a photo of a page, or a card. Read its '
+      + 'ingredient list and serving count from the IMAGE; do not substitute a similar recipe you know. '
+      + 'If there is no recipe in this image, return exactly {"error":"unreadable"} and nothing else.\n\n'
+      + 'For each ingredient, respect the stated quantity EXACTLY and estimate accurate nutrition for it. '
+      + 'Macros are for the WHOLE recipe (every ingredient), not per serving.\nReturn ONLY JSON:\n'
+      + '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'
+      + 'servings = how many meals the whole recipe makes (estimate from the amounts if not stated; default 1). Numbers only.';
+    const { data, error } = await Promise.race([
+      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt,
+        image_base64: dataUrl.split(',')[1], image_mime:'image/jpeg', max_tokens:4000 } }),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('Timed out')); }, 30000); })
+    ]).catch(function(e){ return { error:e }; });
+    if(error || !data || !data.text) throw new Error('no answer');
+    const mm = String(data.text).match(/\{[\s\S]*\}/);
+    if(!mm) throw new Error('no json');
+    const recipe = _recipeFromParsed(JSON.parse(mm[0]));
+    if(_recipeDraftGuard(recipe)) return;
+    _recipeDraft(recipe);
+  }catch(e){
+    if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
+    if(typeof showToast==='function') showToast('No recipe in that image', 'I could not find an ingredient list. Paste the lines instead and I will take it from there.');
+  }
+}
+
 async function parsePastedRecipe(){
   const text=(document.getElementById('paste-recipe-text')?.value||'').trim();
   if(!text){ showToast('Paste something first','Add the ingredients and I’ll build it.'); return; }
@@ -32866,18 +32955,9 @@ async function parsePastedRecipe(){
     const raw=await api('You are a precise nutrition coach who converts recipe ingredient lists into accurate per-ingredient macros.',[],prompt,
       _url ? 2400 : 900, _url ? { web_search:true, timeout:45000 } : undefined);
     const mm=raw.match(/\{[\s\S]*\}/); if(!mm) throw new Error('no json');
-    const parsed=JSON.parse(mm[0]);
-    // THE MODEL SAYING IT COULD NOT READ THE PAGE IS AN ANSWER, NOT A FAILURE — and it is the one
-    // answer that must not become a recipe. Without this it would fall through to "no ingredients"
-    // and the person would be told the paste was unreadable, when what happened is that the SITE was.
-    if(parsed && parsed.error === 'unreadable') throw new Error('unreadable');
-    const recipe={ name:parsed.name||'New recipe', servings:Math.max(1, parseInt(parsed.servings)||1),
-      ingredients:(parsed.ingredients||[]).map(function(i){ return { name:String(i.name||'ingredient'), cal:Math.round(i.cal||0), pro:Math.round((i.pro||0)*10)/10, carb:Math.round((i.carb||0)*10)/10, fat:Math.round((i.fat||0)*10)/10 }; }) };
-    if(!recipe.ingredients.length) throw new Error('no ingredients');
-    document.querySelector('.modal-bg.open')?.remove();
-    editRecipe(-1, recipe);
-    if(typeof haptic==='function') haptic('success');
-    if(typeof showToast==='function') showToast('Recipe drafted', recipe.ingredients.length+' ingredients — review, tweak anything, then save.');
+    const recipe = _recipeFromParsed(JSON.parse(mm[0]));
+    if(_recipeDraftGuard(recipe)) return;
+    _recipeDraft(recipe);
   }catch(e){
     if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
     // Name the actual obstacle. "Try pasting the ingredient lines" is useless advice to someone who

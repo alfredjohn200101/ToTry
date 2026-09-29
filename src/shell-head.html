@@ -5470,6 +5470,10 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        handleMealPhoto(). Do not merge them back into one. -->
   <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
+  <!-- The recipe door's own input. Separate from the two above for the reason their comment gives:
+       one input cannot mean two things, and a shared one sends a recipe screenshot to the meal
+       estimator. No `capture` attribute — a recipe is something already on the phone. -->
+  <input type="file" id="recipe-shot-input" accept="image/*" style="display:none" onchange="handleRecipeScreenshot(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
