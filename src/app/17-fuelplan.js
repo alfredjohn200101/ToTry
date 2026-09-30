@@ -374,6 +374,52 @@ function _fuelArchivePlan(plan){
 // The bar: a meal has to have been planned at least THREE times before its record means anything,
 // and the whole thing stays quiet until there are at least two plans behind it. One abandoned week
 // is a bad week, not a pattern — and calling it one is the shame this app refuses.
+// A SWAP IS THE CLEAREST PREFERENCE SIGNAL IN THE APP, AND IT WAS BEING THROWN AWAY.
+// _fuelSwapMeal replaced the meal and the rejected one vanished — so the next plan could offer the
+// same thing again, and the one after that. "I do not want this" is worth more than "I ate this",
+// because it is deliberate: eating can be convenience, rejecting is a choice. Kept as names and
+// nothing else, capped, and it is the one list the planner is told to treat as final.
+function _fuelReject(name){
+  try{
+    const n = String(name || '').trim(); if(!n) return;
+    const list = ls('totry_food_rejects') || [];
+    const k = n.toLowerCase();
+    if(list.some(function(x){ return x && String(x.name || '').toLowerCase() === k; })) return;
+    list.unshift({ name: n, at: Date.now() });
+    ls('totry_food_rejects', list.slice(0, 40));
+  }catch(_){ }
+}
+
+function _fuelRejectLines(){
+  try{
+    const list = ls('totry_food_rejects') || [];
+    if(!Array.isArray(list) || !list.length) return '';
+    return "\n\nTHEY HAVE ALREADY SWAPPED THESE AWAY: " + list.slice(0, 12).map(function(x){ return x.name; }).join(', ')
+      + ". Never offer any of them, or anything that is obviously the same meal under another name. "
+      + "A person who has to reject the same suggestion twice stops trusting the whole plan.";
+  }catch(_){ return ''; }
+}
+
+// AND WHAT A COACH ACTUALLY DOES THAT THIS DID NOT.
+// Everything above narrows: use their recipes, use what they already eat, drop what they never make,
+// never repeat a rejection. Narrowing alone ends in the same four meals forever — which is its own
+// failure, because boredom is why people stop, and a diet of four things is a thin one whatever its
+// macros say. A good coach mostly gives you what you will actually eat and ONE new thing, close
+// enough to what you like that you will try it.
+//
+// Only once there is something to anchor to. For someone the app does not know yet, everything is
+// new and the instruction means nothing.
+function _fuelTryLines(anchored){
+  if(!anchored) return '';
+  return "\n\nAND EXACTLY ONE NEW THING. Everything above tells you what they already eat, and a plan "
+    + "made only of that goes stale \u2014 which is its own way of losing someone. Include ONE meal they "
+    + "have not had before, chosen to sit CLOSE to something they already like (a familiar protein "
+    + "cooked differently, a swap of one component, the same shape of meal from somewhere else) "
+    + "rather than something adventurous. One, not two. It must still fit the targets, the budget and "
+    + "every dietary rule, and it must not be anything on the swapped-away or never-made lists. Do "
+    + "not label it as the new one or draw attention to it.";
+}
+
 function _fuelAdherence(){
   try{
     const hist = ls('totry_plan_history') || [];
@@ -487,7 +533,11 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const _recipeBlock = _fuelRecipeLines() + _fuelHabitLines() + _fuelAdherenceLines();
+  // Narrowing first — their recipes, what they eat, what they keep, what they rejected — and then
+  // the one thing that widens, anchored to all of it.
+  const _habits = _fuelHabitLines();
+  const _recipeBlock = _fuelRecipeLines() + _habits + _fuelAdherenceLines() + _fuelRejectLines()
+    + _fuelTryLines(!!_habits || !!_fuelRecipeLines());
   const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says the science is general \u2014 do NOT write anything about prices being estimates, the app says that itself, with the button that fixes it.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
@@ -699,6 +749,7 @@ async function _fuelSwapMeal(i){
   if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t swap that one — try again shortly.'); return; }
   const _clean = _fuelSaneMeal(meal);
   if(!_clean){ if(typeof showToast==='function') showToast('Hmm','That swap came back unusable — try again shortly.'); return; }
+  try{ _fuelReject(old && old.name); }catch(_){ }   // what they turned down, before it is gone
   plan.meals[i] = _clean; // Re-read after the await: a second edit started while this one was in flight holds its own
   // stale copy of the whole plan, and whichever returns last silently reverts the other.
   const _fresh = ls('totry_meal_plan') || plan;

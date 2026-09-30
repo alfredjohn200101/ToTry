@@ -8415,6 +8415,57 @@ H.section('the fight and the food, which nothing else holds together');
   H.ok(/the ones they lost came after about/.test(person), 'in words a model can use without embroidering');
 }
 
+H.section('what you turned down, and the one new thing');
+{
+  // A SWAP IS THE CLEAREST PREFERENCE SIGNAL IN THE APP AND IT WAS THROWN AWAY. _fuelSwapMeal
+  // replaced the meal and the rejected one vanished, so the next plan could offer the same thing
+  // again, and the one after that. "I do not want this" is worth more than "I ate this" because it
+  // is deliberate: eating can be convenience, rejecting is a choice.
+  let store = {};
+  const f = H.load(['_fuelReject','_fuelRejectLines','_fuelTryLines'],
+    { ls: (k, v) => (v === undefined ? store[k] : (store[k] = v)), Date });
+  f._fuelReject('Salmon and greens');
+  f._fuelReject('Tofu stir fry');
+  f._fuelReject('salmon and GREENS');            // the same thing shouting
+  H.eq((store.totry_food_rejects || []).length, 2, 'the same rejection is not recorded twice');
+  f._fuelReject('   '); f._fuelReject(null);
+  H.eq((store.totry_food_rejects || []).length, 2, 'and an empty one is not recorded at all');
+  const line = f._fuelRejectLines();
+  H.ok(/Salmon and greens/.test(line) && /Tofu stir fry/.test(line), 'both reach the planner');
+  H.ok(/Never offer any of them/.test(line), 'as a rule, not a hint');
+  H.ok(/same meal under another name/.test(line), 'including the same meal renamed');
+  H.eq(H.load(['_fuelRejectLines'], { ls: () => null })._fuelRejectLines(), '',
+    'and someone who has rejected nothing adds nothing to the prompt');
+
+  // IT IS RECORDED AT THE MOMENT OF THE SWAP, WHICH IS THE ONLY MOMENT IT EXISTS.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  const swap = src.slice(src.indexOf('async function _fuelSwapMeal'));
+  H.ok(/_fuelReject\(old && old\.name\)/.test(swap), 'the swapped-away meal is kept');
+  H.ok(swap.indexOf('_fuelReject(old') < swap.indexOf('plan.meals[i] = _clean'),
+    'before the replacement erases it');
+  H.ok(/list\.slice\(0, 40\)/.test(src), 'capped — it syncs, so it does not get to grow');
+
+  // AND THE THING A COACH DOES THAT NARROWING ALONE NEVER WILL. Everything else in this prompt
+  // narrows: their recipes, what they eat, what they keep, what they rejected. Narrowing only ever
+  // ends in the same four meals forever, which is its own way of losing someone — boredom is why
+  // people stop, and a diet of four things is a thin one whatever its macros say.
+  const tryLine = f._fuelTryLines(true);
+  H.ok(/EXACTLY ONE NEW THING/.test(tryLine), 'one new meal, and only one');
+  H.ok(/CLOSE to something they already like/.test(tryLine),
+    'anchored to what they accept rather than adventurous — a coach widens from where you are');
+  H.ok(/not be anything on the swapped-away or never-made lists/.test(tryLine),
+    'and never something they already turned down');
+  H.ok(/Do not label it as the new one/.test(tryLine),
+    'and it is not announced, because a meal introduced as an experiment is one they can decline in advance');
+  // Meaningless for someone the app does not know yet: everything is new, so "one new thing" says
+  // nothing and would only crowd the rest of the brief.
+  H.eq(f._fuelTryLines(false), '', 'silent until there is something to anchor to');
+  const blockIdx = src.split('\n').findIndex(function(l){ return /const _recipeBlock =/.test(l); });
+  const block = src.split('\n').slice(blockIdx, blockIdx + 3).join(' ');
+  H.ok(/_fuelRejectLines\(\)/.test(block) && /_fuelTryLines\(/.test(block), 'both reach the prompt');
+}
+
 H.section('a planner that finds out what you actually keep');
 {
   // No meal planner improves by being used, because none of them ever find out what happened. This
@@ -8531,8 +8582,13 @@ H.section('the planner reads what they actually eat, not only what they saved');
   // WIRED, not merely defined — the shape this repo has shipped broken before.
   const src = require('fs').readFileSync(
     require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
-  H.ok(/_fuelRecipeLines\(\) \+ _fuelHabitLines\(\)/.test(src),
-    'and it reaches the prompt beside the saved recipes');
+  // Pinned on the FACT, not the concatenation: the prompt block grew (adherence, rejections, the one
+  // new thing) and this assertion failed on correct code for that reason alone. What has to hold is
+  // that the habits reach the block the prompt is built from.
+  const blockLine = (src.split('\n').find(function(l){ return /const _recipeBlock =/.test(l); }) || '')
+    + (src.split('\n')[src.split('\n').findIndex(function(l){ return /const _recipeBlock =/.test(l); }) + 1] || '');
+  H.ok(/_habits|_fuelHabitLines\(\)/.test(blockLine), 'and it reaches the block the prompt is built from');
+  H.ok(/_fuelRecipeLines\(\)/.test(blockLine), 'beside the saved recipes');
 }
 
 H.section('the meal planner has heard of the food you already chose');

@@ -1222,7 +1222,7 @@ const SYNC_KEYS = [
   // device's permission anyway.
   'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
-  'totry_meal_plan','totry_plan_history','totry_meal_prefs','totry_train_goal','totry_train_days',
+  'totry_meal_plan','totry_plan_history','totry_food_rejects','totry_meal_prefs','totry_train_goal','totry_train_days',
   'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_body_goal','totry_fight_log',
   // NOTE: totry_push_prefs is deliberately NOT synced — notification permission is granted per-device,
   // so a stale cloud value (from before you enabled it, or another device) was silently flipping your
