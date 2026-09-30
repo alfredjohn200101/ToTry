@@ -194,6 +194,176 @@ const DOORS = [
     }, phrase),
     also: async (page, phrase) => page.evaluate(p =>
       (document.body.innerText||'').includes(p) ? 'the disclosure is echoed back on screen as an instruction' : null, phrase) },
+  // ── FOUR MORE, FOUND 30 SEP 2026, AND ALL FOUR ARE THE SAME HALF-APPLIED SHAPE ───────────────
+  // The 5 Sep audit gated onboarding's "what are you fighting" (obPersistVices). The IN-APP version
+  // of that same field — addVice(), #v-name and #v-trigger — was never gated, so the identical
+  // sentence typed on the Fight tab still becomes a vice card with a clean-day counter. Three more
+  // sit beside it: openCantStart() (a DIFFERENT function from the _startSmallestThing door above,
+  // which IS gated), _letGoName() → createLetGo(), and the letter to your future self, which is
+  // the worst of the four — saveLetterFromWhy() stores the text verbatim and deliverLetter()
+  // replays it back with a celebration haptic up to 730 days later.
+  { name: 'what can\u2019t you start (Feeling Door)',
+    go: async page => page.evaluate(async () => { if(typeof openCantStart==='function') openCantStart(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-thing'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('button')].find(x => /Make it smaller/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      (document.body.innerText||'').includes(p) ? 'the disclosure is echoed back as the thing to make smaller' : null, phrase) },
+  { name: 'the letter to your future self',
+    go: async page => page.evaluate(async () => { go('soul'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('why-letter-text'); if(i) i.value = p;
+      if(typeof saveLetterFromWhy==='function') saveLetterFromWhy();
+    }, phrase),
+    // The letter is SEALED and re-delivered later, so storing it is the whole harm: nobody is on
+    // screen when it arrives.
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_letters')||[]).some(function(l){ return l && String(l.text||'').includes(p); }))
+        ? 'the disclosure was sealed as a letter and will be replayed back to them later' : null, phrase) },
+  { name: 'letting go of someone (name it)',
+    go: async page => page.evaluate(async () => { if(typeof _letGoName==='function') _letGoName(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-who'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('button')].find(x => /Add it to my Fight/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_v')||[]).some(function(v){ return v && String(v.n||'').includes(p); }))
+        ? 'the disclosure was stored as something they are letting go of, on a card in their Fight' : null, phrase) },
+  { name: 'what are you fighting (in-app, not onboarding)',
+    go: async page => page.evaluate(async () => { go('fight'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const n = document.getElementById('v-name'); if(n) n.value = p;
+      const t = document.getElementById('v-trigger'); if(t) t.value = p;
+      if(typeof addVice==='function') addVice();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_v')||[]).some(function(v){ return v && (String(v.n||'').includes(p) || String(v.t||'').includes(p)); }))
+        ? 'the disclosure was stored as a vice with a clean-day counter attached' : null, phrase) },
+  // ── AND FOUR MORE FROM THE SAME SWEEP, 30 SEP 2026 ───────────────────────────────────────────
+  // A census of every openFormModal call carrying a text/textarea field found fifteen doors, two of
+  // them gated. These four all STORE what is typed and REPLAY it later, which is the shape that
+  // matters: nobody is on screen when it comes back. editIdentity() is the in-app twin of
+  // 'onboarding · the identity sentence' above — gated on 5 Sep, while the field a person actually
+  // uses to CHANGE it was left open, and it prefixes "I am becoming a person who " onto whatever it
+  // is given. _tkMyLine's own copy promises "I'll keep it and say it back when it turns up."
+  { name: 'who you\u2019re becoming (in-app, not onboarding)',
+    go: async page => page.evaluate(async () => { if(typeof editIdentity==='function') editIdentity(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-identity'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('.modal-bg.open button')].find(x => /^Save$/i.test((x.innerText||'').trim()));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      String(ls('totry_identity')||'').includes(p)
+        ? 'the disclosure was stored as who they are becoming, behind "I am becoming a person who"' : null, phrase) },
+  { name: 'the sentence it uses on you (toolkit)',
+    go: async page => page.evaluate(async () => { if(typeof _tkMyLine==='function') _tkMyLine(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-line'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('.modal-bg.open button')].find(x => /Keep it/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      String(((ls('totry_toolkit')||{}).myLine)||'').includes(p)
+        ? 'the disclosure was kept as the line to say back to them at the next urge' : null, phrase) },
+  { name: 'how did you get there (walk it back)',
+    go: async page => { await page.evaluate(() => localStorage.setItem('totry_v', JSON.stringify(
+        [{n:'Scrolling',kind:'scrolling',mode:'quit',startDate:new Date(Date.now()-9*864e5).toISOString(),total:0,urgelog:[],relapseHistory:[]}]))); await page.evaluate(async () => {
+      if(typeof loadV==='function') loadV(); if(typeof openWalkBack==='function') openWalkBack(0); }); },
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-chain'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('.modal-bg.open button')].find(x => /Save this/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      JSON.stringify(ls('totry_v')||[]).includes(p)
+        ? 'the disclosure was stored on the vice and is replayed as "last time you traced it"' : null, phrase) },
+  { name: 'the honest ledger (what it gives me)',
+    go: async page => { await page.evaluate(() => localStorage.setItem('totry_v', JSON.stringify(
+        [{n:'Scrolling',kind:'scrolling',mode:'quit',startDate:new Date(Date.now()-9*864e5).toISOString(),total:0,urgelog:[],relapseHistory:[]}]))); await page.evaluate(async () => {
+      if(typeof loadV==='function') loadV(); if(typeof openCBA==='function') openCBA(0); }); },
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-gain'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('.modal-bg.open button')].find(x => /Keep this/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      JSON.stringify(ls('totry_v')||[]).includes(p)
+        ? 'the disclosure was stored in their own ledger and shown back to them in it' : null, phrase) },
+  // ── AND FIVE MORE, SAME DAY, FROM A SECOND CENSUS ────────────────────────────────────────────
+  // The first census only walked openFormModal. A census of the static shell found 94 free-text
+  // elements, so the door list had been measuring one SHAPE of door and calling it "every entry
+  // point that accepts free text". Two of these five write `totry_why` — the SAME store as
+  // 'onboarding · why it matters', gated on 5 Sep — from the two places a person actually edits it.
+  { name: 'your why (in-app edit, not onboarding)',
+    go: async page => page.evaluate(async () => { go('soul'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('why-edit'); if(i) i.value = p;
+      if(typeof saveWhyEdit==='function') saveWhyEdit();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      String(ls('totry_why')||'').includes(p) ? 'the disclosure was stored as their why' : null, phrase) },
+  { name: 'your why (mid-feeling)',
+    // OPEN THE REAL FLOW. The first version of this door set #feelingnow-why-input directly and
+    // reported "NO crisis card" — but the element does not exist until _feelingNowSetWhy() builds
+    // it, so nothing was ever typed and the finding was about the DOOR. It came from a census that
+    // grepped index.html for <textarea id="…">, which matches tags inside JS STRING LITERALS,
+    // because index.html carries the whole app as inline script.
+    go: async page => page.evaluate(async () => { go('fight');
+      // BOTH calls. _feelingNowSetWhy() writes into #feelingnow-body, which only openFeelingNow()
+      // creates — so on its own it returns early, no textarea is built, nothing is typed, and the
+      // door reported "NO crisis card" about a gate that was working. Driven separately, the card
+      // renders and nothing is stored.
+      if(typeof openFeelingNow==='function') openFeelingNow();
+      if(typeof _feelingNowSetWhy==='function') _feelingNowSetWhy(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('feelingnow-why-input'); if(i) i.value = p;
+      if(typeof _feelingNowSaveWhy==='function') _feelingNowSaveWhy();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      String(ls('totry_why')||'').includes(p) ? 'the disclosure was stored as their why, from inside a hard moment' : null, phrase) },
+  { name: 'a prayer intention',
+    go: async page => page.evaluate(async () => { go('soul'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('prayer-text'); if(i) i.value = p;
+      if(typeof addPrayer==='function') addPrayer();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_prayers')||[]).some(function(x){ return x && String(x.text||'').includes(p); }))
+        ? 'the disclosure was stored as something they are praying for' : null, phrase) },
+  { name: 'the weekly review (what you are proud of)',
+    go: async page => page.evaluate(async () => { go('reflect'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('review-proud'); if(i) i.value = p;
+      if(typeof saveWeeklyReview==='function') saveWeeklyReview();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_reviews')||[]).some(function(x){ return x && String(x.proud||'').includes(p); }))
+        ? 'the disclosure was stored in the weekly review, kept for 52 weeks' : null, phrase) },
+  { name: 'your values (why these)',
+    // Same correction: #vs-why is built by _vsRender() at phase 2, not by the shell.
+    go: async page => page.evaluate(async () => {
+      if(typeof openValuesSort==='function') openValuesSort();
+      // PHASE 3, not 2. #vs-why lives in the fallthrough after the phase-2 block returns, so phase 2
+      // renders the ordering step and builds no textarea at all.
+      try{ _vsS = { phase:3, picked:['Honesty'], why:'' }; if(typeof _vsRender==='function') _vsRender(); }catch(e){}
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('vs-why'); if(i) i.value = p;
+      if(typeof _vsSave==='function') _vsSave();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      String(((ls('totry_values')||{}).why)||'').includes(p)
+        ? 'the disclosure was stored as why those values matter, and read back to them as their own words' : null, phrase) },
   { name: 'food search online (Nourish)',
     go: async page => page.evaluate(async () => { go('nourish'); }),
     fire: async (page, phrase) => page.evaluate(async p => {

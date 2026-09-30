@@ -432,6 +432,15 @@ function _letGoName(){
 }
 function createLetGo(who){
   try{
+    // GATED AT THE SINK, 30 Sep 2026 — not at _letGoName's callback, because a shared sink escapes
+    // once and then every caller is safe. This stored the typed name verbatim as a card in the
+    // person's Fight, which is exactly the defect the 5 Sep onboarding audit found and fixed one
+    // surface away. createLetGo('') from the no-name path is unaffected.
+    const _cc = who ? ((typeof journalCrisisOf==='function') ? journalCrisisOf(who) : null) : null;
+    if(_cc){
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      return;
+    }
     if(typeof loadV==='function') loadV();
     const label = who ? ('Letting go of '+who) : 'Letting go';
     vices.push({ n:label, type:'letgo', kind:'letgo', mode:'watch', t:'When the missing hits', w:0, total:0, lastWin:null, lastLoss:null, urgelog:[], startDate:new Date().toISOString(), cleanDaysTotal:0, relapseCount:0, relapseHistory:[], plan:{ why:'To let them go and come home to myself.', move:'Ride the urge \u00b7 don\u2019t look them up \u00b7 one real thing', updatedAt:Date.now() } });
@@ -837,6 +846,12 @@ function _tkMyLine(){
     'Keep it',
     function(vals){
       const t=(vals.line||'').trim(); if(!t) return 'Just write the sentence \u2014 however it actually sounds.';
+      // GATED, 30 Sep 2026. This door's own copy says "I'll keep it and say it back when it turns up" — so an ungated disclosure here is replayed to the person at the exact moment of an urge.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       try{ const o=_tkStore(); o.myLine=t.slice(0,180); ls('totry_toolkit',o); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
       setTimeout(function(){ _tkDone('reframe'); },200);
       return true;
@@ -917,6 +932,15 @@ function openCantStart(){
       [{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the washing, the call'}],'Make it smaller',
       function(vals){
         const t=(vals.thing||'').trim(); if(!t) return 'Just name it — messy is fine.';
+        // GATED, 30 Sep 2026. A DIFFERENT function from _startSmallestThing, which was gated on
+        // 5 Sep and sits forty lines away doing the same job — the fix reached one and not the
+        // other, which is this codebase's most repeated shape. _shrinkIt echoes the text straight
+        // back as the thing to make smaller, so a disclosure came back as an instruction.
+        const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
+        if(_cc){
+          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+          return true;
+        }
         setTimeout(function(){ _shrinkIt(t, 0); }, 220);
         return true;
       });
@@ -1301,6 +1325,17 @@ function _vsPhase(n){
 function _vsSave(){
   const s=_vsS; if(!s||!s.picked.length) return;
   const w=document.getElementById('vs-why');
+  // GATED, 30 Sep 2026. The values card prints this line back as the person's own words — “I'll hold you to your own words, not mine.”
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(w ? w.value : (s.why||''))) : null;
+  if(_cc){
+  // CLOSE THE SHEET FIRST. The normal path closes it on the way out; the crisis branch returns
+  // early, so without this the card renders UNDERNEATH the open sheet — in the document and
+  // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
+  // the suite's own elementFromPoint probe, not by reading the code.
+    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   try{ ls('totry_values', { v:s.picked.slice(0,5), why:String(w?w.value:(s.why||'')).trim().slice(0,160), ts:new Date().toISOString() }); }catch(_){}
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   try{ showToast('Held','I\u2019ll hold you to your own words, not mine.'); }catch(_){}
@@ -1703,6 +1738,12 @@ function openWalkBack(i){
     'Save this',
     function(vals){
       const chain=(vals.chain||'').trim(); if(!chain) return 'Even a rough chain is worth more than none.';
+      // GATED, 30 Sep 2026. Both fields. What is typed here is stored on the vice and read back the next time the form opens, as “last time you traced it…”.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(chain) || journalCrisisOf((vals.catch||''))) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       try{
         const _name=v.n;
         if(typeof loadV==='function') loadV();
@@ -1737,6 +1778,12 @@ function openCBA(i){
      {id:'free',label:'',type:'textarea',placeholder:'What being free of it would look like', value:c.free||''}],
     'Keep this',
     function(vals){
+      // GATED, 30 Sep 2026. All three columns. Every one is stored on the vice and shown straight back in the ledger the next time it opens.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf((vals.gain||'')) || journalCrisisOf((vals.cost||'')) || journalCrisisOf((vals.free||''))) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       // Re-resolve by NAME inside the callback. `v` was captured before the form opened, and any
       // loadV() in between REPLACES the vices array with fresh objects — mutating the stale one and
       // calling saveV() then writes an array that never contained the edit, silently discarding

@@ -1329,6 +1329,15 @@ function addVice(){
     try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
     return;
   }
+  // GATED, 30 Sep 2026. The 5 Sep audit gated onboarding's "what are you fighting" (obPersistVices)
+  // and left the IN-APP field beside it open, so the identical sentence typed on the Fight tab still
+  // became a vice card with a clean-day counter attached to it. Both fields are checked: a person
+  // can put the disclosure in the trigger box as easily as in the name.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(n) || journalCrisisOf(t)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   // ONE NAME, ONE FIGHT. The cloud merge keys vices by the lowercased name — 01-sync.js says so in
   // its own comment, "Identity in this branch is the NAME, so that is what the tombstone holds" — so
   // two vices called the same thing are folded into one on the next pull, and the second one's mode,

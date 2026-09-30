@@ -19508,6 +19508,17 @@ function _feelingNowSetWhy(){
 }
 function _feelingNowSaveWhy(){
   const v=((document.getElementById('feelingnow-why-input')||{}).value||'').trim();
+  // GATED, 30 Sep 2026. An IN-APP twin of onboarding's "why it matters", which was gated on 5 Sep — and it writes the SAME store, totry_why. This one is reached mid-feeling, which is when a disclosure is most likely.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(v)) : null;
+  if(_cc){
+  // CLOSE THE SHEET FIRST. The normal path closes it on the way out; the crisis branch returns
+  // early, so without this the card renders UNDERNEATH the open sheet — in the document and
+  // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
+  // the suite's own elementFromPoint probe, not by reading the code.
+    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   if(v){ ls('totry_why', v); if(typeof syncToCloud==='function') syncToCloud(); haptic('success'); }
   _feelingNowStillHard();
 }
@@ -20420,6 +20431,15 @@ function _letGoName(){
 }
 function createLetGo(who){
   try{
+    // GATED AT THE SINK, 30 Sep 2026 — not at _letGoName's callback, because a shared sink escapes
+    // once and then every caller is safe. This stored the typed name verbatim as a card in the
+    // person's Fight, which is exactly the defect the 5 Sep onboarding audit found and fixed one
+    // surface away. createLetGo('') from the no-name path is unaffected.
+    const _cc = who ? ((typeof journalCrisisOf==='function') ? journalCrisisOf(who) : null) : null;
+    if(_cc){
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      return;
+    }
     if(typeof loadV==='function') loadV();
     const label = who ? ('Letting go of '+who) : 'Letting go';
     vices.push({ n:label, type:'letgo', kind:'letgo', mode:'watch', t:'When the missing hits', w:0, total:0, lastWin:null, lastLoss:null, urgelog:[], startDate:new Date().toISOString(), cleanDaysTotal:0, relapseCount:0, relapseHistory:[], plan:{ why:'To let them go and come home to myself.', move:'Ride the urge \u00b7 don\u2019t look them up \u00b7 one real thing', updatedAt:Date.now() } });
@@ -20825,6 +20845,12 @@ function _tkMyLine(){
     'Keep it',
     function(vals){
       const t=(vals.line||'').trim(); if(!t) return 'Just write the sentence \u2014 however it actually sounds.';
+      // GATED, 30 Sep 2026. This door's own copy says "I'll keep it and say it back when it turns up" — so an ungated disclosure here is replayed to the person at the exact moment of an urge.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       try{ const o=_tkStore(); o.myLine=t.slice(0,180); ls('totry_toolkit',o); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
       setTimeout(function(){ _tkDone('reframe'); },200);
       return true;
@@ -20905,6 +20931,15 @@ function openCantStart(){
       [{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the washing, the call'}],'Make it smaller',
       function(vals){
         const t=(vals.thing||'').trim(); if(!t) return 'Just name it — messy is fine.';
+        // GATED, 30 Sep 2026. A DIFFERENT function from _startSmallestThing, which was gated on
+        // 5 Sep and sits forty lines away doing the same job — the fix reached one and not the
+        // other, which is this codebase's most repeated shape. _shrinkIt echoes the text straight
+        // back as the thing to make smaller, so a disclosure came back as an instruction.
+        const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
+        if(_cc){
+          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+          return true;
+        }
         setTimeout(function(){ _shrinkIt(t, 0); }, 220);
         return true;
       });
@@ -21289,6 +21324,17 @@ function _vsPhase(n){
 function _vsSave(){
   const s=_vsS; if(!s||!s.picked.length) return;
   const w=document.getElementById('vs-why');
+  // GATED, 30 Sep 2026. The values card prints this line back as the person's own words — “I'll hold you to your own words, not mine.”
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(w ? w.value : (s.why||''))) : null;
+  if(_cc){
+  // CLOSE THE SHEET FIRST. The normal path closes it on the way out; the crisis branch returns
+  // early, so without this the card renders UNDERNEATH the open sheet — in the document and
+  // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
+  // the suite's own elementFromPoint probe, not by reading the code.
+    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   try{ ls('totry_values', { v:s.picked.slice(0,5), why:String(w?w.value:(s.why||'')).trim().slice(0,160), ts:new Date().toISOString() }); }catch(_){}
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   try{ showToast('Held','I\u2019ll hold you to your own words, not mine.'); }catch(_){}
@@ -21691,6 +21737,12 @@ function openWalkBack(i){
     'Save this',
     function(vals){
       const chain=(vals.chain||'').trim(); if(!chain) return 'Even a rough chain is worth more than none.';
+      // GATED, 30 Sep 2026. Both fields. What is typed here is stored on the vice and read back the next time the form opens, as “last time you traced it…”.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(chain) || journalCrisisOf((vals.catch||''))) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       try{
         const _name=v.n;
         if(typeof loadV==='function') loadV();
@@ -21725,6 +21777,12 @@ function openCBA(i){
      {id:'free',label:'',type:'textarea',placeholder:'What being free of it would look like', value:c.free||''}],
     'Keep this',
     function(vals){
+      // GATED, 30 Sep 2026. All three columns. Every one is stored on the vice and shown straight back in the ledger the next time it opens.
+      const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf((vals.gain||'')) || journalCrisisOf((vals.cost||'')) || journalCrisisOf((vals.free||''))) : null;
+      if(_cc){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        return true;
+      }
       // Re-resolve by NAME inside the callback. `v` was captured before the form opened, and any
       // loadV() in between REPLACES the vices array with fresh objects — mutating the stale one and
       // calling saveV() then writes an array that never contained the edit, silently discarding
@@ -24390,6 +24448,15 @@ function addVice(){
     // and the one they missed is the first one. addDebt already answers this properly.
     if(typeof showToast==='function') showToast('What are you fighting?','Name it first \u2014 one word is enough.');
     try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
+    return;
+  }
+  // GATED, 30 Sep 2026. The 5 Sep audit gated onboarding's "what are you fighting" (obPersistVices)
+  // and left the IN-APP field beside it open, so the identical sentence typed on the Fight tab still
+  // became a vice card with a clean-day counter attached to it. Both fields are checked: a person
+  // can put the disclosure in the trigger box as easily as in the name.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(n) || journalCrisisOf(t)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
     return;
   }
   // ONE NAME, ONE FIGHT. The cloud merge keys vices by the lowercased name — 01-sync.js says so in
@@ -48117,6 +48184,12 @@ function initReviewTab(){
 function saveWeeklyReview(){
   const proud=document.getElementById('review-proud')?.value.trim()||'';
   const focus=document.getElementById('review-focus')?.value.trim()||'';
+  // GATED, 30 Sep 2026. Both boxes. The weekly review is stored for 52 weeks and replayed in renderReviewHistory().
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(proud) || journalCrisisOf(focus)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   const reviews=ls('totry_reviews')||[];
   reviews.unshift({week:'Week of '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),day:getDayCount(),proud,focus,ts:new Date().toISOString()});
   ls('totry_reviews',reviews.slice(0,52));
@@ -49412,6 +49485,12 @@ function toggleWhyEdit(){
 }
 function saveWhyEdit(){
   const ta = document.getElementById('why-edit');
+  // GATED, 30 Sep 2026. An IN-APP twin of onboarding's "why it matters", which was gated on 5 Sep — and it writes the SAME store, totry_why.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(ta ? ta.value : '')) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   if(ta){ const v = ta.value.trim(); ls('totry_why', v); }
   const disp = document.getElementById('why-display'); const eb = document.getElementById('why-edit-btn'); const sb = document.getElementById('why-save-btn');
   if(ta) ta.style.display='none'; if(disp) disp.style.display='block';
@@ -49480,6 +49559,14 @@ function saveLetterFromWhy(){
   const text = document.getElementById('why-letter-text')?.value.trim();
   const days = parseInt(document.getElementById('why-letter-when')?.value||30);
   if(!text){ showToast('Empty','Write something to your future self first.'); return; }
+  // GATED, 30 Sep 2026, and this was the worst of the four. The letter is SEALED and delivered back
+  // up to 730 days later by deliverLetter() (24-review.js) with haptic('celebrate') — so nobody is
+  // on screen when a disclosure typed here comes back, and the app celebrates its arrival.
+  const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   const deliverAt = new Date(); deliverAt.setDate(deliverAt.getDate()+days);
   const letters = ls('totry_letters')||[];
   // writtenDay, because THREE places print it — the sealed list, the read list, and the moment it
@@ -53551,6 +53638,12 @@ function addPrayer(){
   const text = document.getElementById('prayer-text')?.value.trim();
   const category = document.getElementById('prayer-category')?.value.trim();
   if(!text){ showToast('Empty', 'What are you praying for?'); return; }
+  // GATED, 30 Sep 2026. A prayer intention is exactly where someone says the thing they cannot say anywhere else, and it is stored and shown back in the list.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(text)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   
   const prayers = ls('totry_prayers') || [];
   prayers.unshift({
@@ -57866,6 +57959,12 @@ function editIdentity(){
   if(typeof openFormModal!=='function'){ if(typeof go==='function') go('settings'); return; }
   openFormModal('Who you’re becoming','Finish the sentence. This is the person today is for — you can change it anytime.',[{id:'identity',label:'I am becoming a person who…',type:'text',placeholder:'keeps their promises, even to themselves',value:cur}],'Save',(vals)=>{
     const t=(vals.identity||'').trim(); if(!t) return 'Just name one thing.';
+    // GATED, 30 Sep 2026. The IN-APP twin of onboarding's identity sentence, which was gated on 5 Sep. This is the field a person actually uses to CHANGE it, and it prefixes "I am becoming a person who " onto whatever it is handed, then shows it as the morning focus.
+    const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
+    if(_cc){
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      return true;
+    }
     const lower=t.toLowerCase();
     const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));
     ls('totry_identity',full);

@@ -113,6 +113,12 @@ function editIdentity(){
   if(typeof openFormModal!=='function'){ if(typeof go==='function') go('settings'); return; }
   openFormModal('Who you’re becoming','Finish the sentence. This is the person today is for — you can change it anytime.',[{id:'identity',label:'I am becoming a person who…',type:'text',placeholder:'keeps their promises, even to themselves',value:cur}],'Save',(vals)=>{
     const t=(vals.identity||'').trim(); if(!t) return 'Just name one thing.';
+    // GATED, 30 Sep 2026. The IN-APP twin of onboarding's identity sentence, which was gated on 5 Sep. This is the field a person actually uses to CHANGE it, and it prefixes "I am becoming a person who " onto whatever it is handed, then shows it as the morning focus.
+    const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
+    if(_cc){
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      return true;
+    }
     const lower=t.toLowerCase();
     const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));
     ls('totry_identity',full);

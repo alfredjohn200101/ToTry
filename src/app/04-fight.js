@@ -1963,6 +1963,17 @@ function _feelingNowSetWhy(){
 }
 function _feelingNowSaveWhy(){
   const v=((document.getElementById('feelingnow-why-input')||{}).value||'').trim();
+  // GATED, 30 Sep 2026. An IN-APP twin of onboarding's "why it matters", which was gated on 5 Sep — and it writes the SAME store, totry_why. This one is reached mid-feeling, which is when a disclosure is most likely.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(v)) : null;
+  if(_cc){
+  // CLOSE THE SHEET FIRST. The normal path closes it on the way out; the crisis branch returns
+  // early, so without this the card renders UNDERNEATH the open sheet — in the document and
+  // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
+  // the suite's own elementFromPoint probe, not by reading the code.
+    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   if(v){ ls('totry_why', v); if(typeof syncToCloud==='function') syncToCloud(); haptic('success'); }
   _feelingNowStillHard();
 }

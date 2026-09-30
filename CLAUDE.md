@@ -330,9 +330,32 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
      than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
      (n) again.
-   - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
+   - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
+     THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
+     replaying what was typed. Eight came out of an adversarial review that was judging feature
+     ideas and kept tripping over them; five more came from then censusing the app properly. Almost
+     all are the HALF-APPLIED shape this file names over and over: the 5 Sep audit gated onboarding's
+     identity sentence, its "why it matters" and its "what are you fighting" — and left the in-app
+     twin of all three open. `editIdentity()` prefixes "I am becoming a person who " onto whatever it
+     is handed. `saveWhyEdit()` and `_feelingNowSaveWhy()` write the SAME store, `totry_why`, from
+     the two places a person actually edits it. `addVice()` still made a vice card with a clean-day
+     counter. Worst of the set: `saveLetterFromWhy()` SEALS the text and `deliverLetter()` replays it
+     up to 730 days later with `haptic('celebrate')` — nobody is on screen when it arrives. Also
+     `openCantStart()` (forty lines from the `_startSmallestThing` that WAS gated), `createLetGo()`,
+     `_tkMyLine()` (whose own copy promises "I'll keep it and say it back when it turns up"),
+     `openWalkBack()`, `openCBA()`, `addPrayer()`, `saveWeeklyReview()` and `_vsSave()`.
+     **The first census only found eight because it walked `openFormModal` — one SHAPE of door —
+     and I called the result "every free-text entry point".** The second census was worse in a more
+     instructive way: it grepped `index.html` for `<textarea id="…">`, which matches tags inside
+     **JS string literals**, because index.html carries the whole app as inline script. Two of the
+     five doors it produced then reported "NO crisis card" against gates that were working perfectly
+     — `#feelingnow-why-input` does not exist until `openFeelingNow()` builds the sheet, and
+     `#vs-why` lives in `_vsRender`'s phase-3 fallthrough, not phase 2. Both findings were about the
+     DOOR. Gate the sink, census every shape, and when a new door says the app is broken, drive it
+     by hand before believing it.
+     It types the worst sentence into all 35 free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
-     had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
+     had the text in the document and off the screen). The doors, plus the
      safety net with its container deleted, the guest door, and the breath ending where a person has
      just said that a minute of breathing did NOT move their distress.
      Two of them are the Feeling Door's own free-text surfaces, added 5 Sep 2026 after a sweep found

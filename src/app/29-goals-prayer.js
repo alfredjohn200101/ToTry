@@ -316,6 +316,12 @@ function addPrayer(){
   const text = document.getElementById('prayer-text')?.value.trim();
   const category = document.getElementById('prayer-category')?.value.trim();
   if(!text){ showToast('Empty', 'What are you praying for?'); return; }
+  // GATED, 30 Sep 2026. A prayer intention is exactly where someone says the thing they cannot say anywhere else, and it is stored and shown back in the list.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(text)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   
   const prayers = ls('totry_prayers') || [];
   prayers.unshift({

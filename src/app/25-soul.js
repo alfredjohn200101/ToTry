@@ -376,6 +376,12 @@ function toggleWhyEdit(){
 }
 function saveWhyEdit(){
   const ta = document.getElementById('why-edit');
+  // GATED, 30 Sep 2026. An IN-APP twin of onboarding's "why it matters", which was gated on 5 Sep — and it writes the SAME store, totry_why.
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(ta ? ta.value : '')) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   if(ta){ const v = ta.value.trim(); ls('totry_why', v); }
   const disp = document.getElementById('why-display'); const eb = document.getElementById('why-edit-btn'); const sb = document.getElementById('why-save-btn');
   if(ta) ta.style.display='none'; if(disp) disp.style.display='block';
@@ -444,6 +450,14 @@ function saveLetterFromWhy(){
   const text = document.getElementById('why-letter-text')?.value.trim();
   const days = parseInt(document.getElementById('why-letter-when')?.value||30);
   if(!text){ showToast('Empty','Write something to your future self first.'); return; }
+  // GATED, 30 Sep 2026, and this was the worst of the four. The letter is SEALED and delivered back
+  // up to 730 days later by deliverLetter() (24-review.js) with haptic('celebrate') — so nobody is
+  // on screen when a disclosure typed here comes back, and the app celebrates its arrival.
+  const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   const deliverAt = new Date(); deliverAt.setDate(deliverAt.getDate()+days);
   const letters = ls('totry_letters')||[];
   // writtenDay, because THREE places print it — the sealed list, the read list, and the moment it

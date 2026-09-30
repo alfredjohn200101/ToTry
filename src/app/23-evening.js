@@ -1381,6 +1381,12 @@ function initReviewTab(){
 function saveWeeklyReview(){
   const proud=document.getElementById('review-proud')?.value.trim()||'';
   const focus=document.getElementById('review-focus')?.value.trim()||'';
+  // GATED, 30 Sep 2026. Both boxes. The weekly review is stored for 52 weeks and replayed in renderReviewHistory().
+  const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(proud) || journalCrisisOf(focus)) : null;
+  if(_cc){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    return;
+  }
   const reviews=ls('totry_reviews')||[];
   reviews.unshift({week:'Week of '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),day:getDayCount(),proud,focus,ts:new Date().toISOString()});
   ls('totry_reviews',reviews.slice(0,52));
