@@ -8154,59 +8154,114 @@ H.section('an ingredient carries every nutrient its source knew, not four of the
   H.ok(!/ingredients\.push\(\{ name: food\.name/.test(lb), 'and no longer hand-builds four macros');
 }
 
-H.section('logging the plan records the recipe you cooked, not a guess about it');
+H.section('a plan is an intention; only what actually happened reaches the diary');
 {
-  // The last step of the loop, and it was throwing away the best numbers in it. A recipe's
-  // ingredients now carry the full nutrient set their source knew — USDA's 28 keys through the food
-  // search, Open Food Facts' through the barcode — and the planner builds the week around those
-  // recipes. Then this logged the MODEL's four estimated numbers for them. The person cooked the
-  // recipe they built, and the diary recorded a guess about it: no micronutrients, and macros that
-  // disagree with the recipe's own screen.
+  // THE CORRECTION THAT PROMPTED THIS: "meal planner and grocery list maker is a tool to assist the
+  // user for the start but can't make it automatic into daily entries as what person ends logging as
+  // what they make end up being different." Exactly right, and _fuelLogPlan wrote the WHOLE planned
+  // day into the diary on one tap — an intention recorded as fact. This app's counsel is only as
+  // true as what it counsels from: a fictional diary poisons the calorie target, the weight
+  // correlation and the brief every AI surface reads.
+  //
+  // So the day is not one event. Each meal is confirmed on its own, with the amount actually eaten —
+  // the single biggest real discrepancy for a home-cooked recipe, because "one serving" is what the
+  // plan assumed and almost never what the pot produced.
   const MICRO = ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12',
                  'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
   const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol'].concat(MICRO);
-  const RECIPES = [
-    { name:'Chicken pesto pasta', servings:4, ingredients:[
-      { name:'Chicken 500g', cal:550, pro:110, carb:0, fat:12, sodium:220, potassium:1670, b6:3 },
-      { name:'Pasta 400g', cal:1480, pro:52, carb:300, fat:6, magnesium:200, iron:6 } ] },
-    { name:'Numberless', servings:1, ingredients:[{ name:'a pinch of salt' }] },
-  ];
-  const plan = { meals:[
+  const RECIPES = [{ name:'Chicken pesto pasta', servings:4, ingredients:[
+    { name:'Chicken 500g', cal:550, pro:110, carb:0, fat:12, sodium:220, potassium:1670, b6:3 },
+    { name:'Pasta 400g', cal:1480, pro:52, carb:300, fat:6, magnesium:200, iron:6 } ] }];
+  const mkPlan = () => ({ generatedAt: 111, meals:[
     { name:'Chicken pesto pasta', cal:999, pro:9, carbs:9, fat:9, items:'model guess' },
-    { name:'Scrambled eggs', cal:400, pro:30, carbs:2, fat:28, items:'3 eggs' },
-    { name:'Numberless', cal:300, pro:10, carbs:5, fat:5, items:'model guess' },
-  ] };
-  let wrote = null;
-  const fns = H.load(['_fuelLogPlan','nutPick','_fuelMealSlot'], { NUTRIENTS,
-    ls: (k, v) => { if(k === 'totry_meal_plan') return plan; if(k === 'totry_recipes') return RECIPES;
-                    if(k === 'totry_nutlog' && v === undefined) return {};
-                    if(k === 'totry_nutlog'){ wrote = v; } return v; },
-    dayKeyOf: () => '30/09/2026', _pruneNutLog: () => {}, syncToCloud: () => {},
-    renderNutritionLog: () => {}, autoTickHabits: () => {}, haptic: () => {},
-    closeModal: () => {}, showToast: () => {}, document: {} });
-  fns._fuelLogPlan();
-  const rows = wrote['30/09/2026'];
-  const by = {}; rows.forEach(function(r){ by[r.name] = r; });
+    { name:'Scrambled eggs', cal:400, pro:30, carbs:2, fat:28, items:'3 eggs' } ] });
 
-  const mine = by['Chicken pesto pasta'];
-  H.eq(mine.source, 'Your recipe', 'a planned meal that IS their recipe is logged as theirs');
-  H.eq(mine.cal, 508, 'with the recipe\'s own total at one serving, not the model\'s 999');
-  H.eq(mine.pro, 40.5, 'and its protein');
-  H.ok(mine.potassium > 0 && mine.b6 > 0 && mine.magnesium > 0,
-    'carrying the micronutrients the ingredients knew');
-  H.eq(mine.serving, '1 serving', 'and says what a serving is rather than repeating the model\'s items line');
+  const build = (plan, opts) => {
+    const state = { log:{}, plan: plan };
+    const fns = H.load(['_fuelLogPlan','_fuelAteMeal','_fuelPlanRows','nutPick','_fuelMealSlot'], {
+      NUTRIENTS,
+      ls: (k, v) => {
+        if(k === 'totry_meal_plan') return v === undefined ? state.plan : (state.plan = v);
+        if(k === 'totry_recipes') return RECIPES;
+        if(k === 'totry_nutlog') return v === undefined ? state.log : (state.log = v);
+        return v;
+      },
+      dayKeyOf: () => '30/09/2026', _pruneNutLog: () => {}, syncToCloud: () => {},
+      renderNutritionLog: () => {}, autoTickHabits: () => {}, haptic: () => {},
+      closeModal: () => {}, showToast: () => {}, _fuelRenderPlan: () => {},
+      document: { getElementById: () => null },
+      askConfirm: async () => (opts && opts.confirm !== undefined) ? opts.confirm : true,
+      askText: async () => (opts && opts.amount !== undefined) ? opts.amount : '1',
+      plural: (n, w) => n + ' ' + w + (n === 1 ? '' : 's'),
+    });
+    return { fns, state };
+  };
+  const rowsOf = (st) => st.log['30/09/2026'] || [];
 
-  // A meal the model invented is untouched — this must not widen into every row.
-  H.eq(by['Scrambled eggs'].source, 'Fuel plan', 'a meal that is not one of their recipes is unchanged');
-  H.eq(by['Scrambled eggs'].cal, 400, 'keeping the model\'s estimate, which is all there is');
+  H.defer((async function(){
+    // THE BULK PATH IS A CLAIM THEY MAKE, NOT ONE THE APP MAKES FOR THEM.
+    const no = build(mkPlan(), { confirm:false });
+    await no.fns._fuelLogPlan();
+    H.eq(rowsOf(no.state).length, 0, 'declining the whole-day claim records nothing');
 
-  // UNKNOWN NEVER BECOMES NONE. A recipe whose ingredients carry no numbers must not replace a
-  // usable estimate with zeros — the same rule nutPick keeps about an absent nutrient.
-  H.eq(by['Numberless'].cal, 300, 'a recipe with no numbers in it does not zero the plan\'s estimate');
-  H.eq(by['Numberless'].source, 'Fuel plan', 'and is not claimed as a recipe-backed row');
+    const yes = build(mkPlan(), { confirm:true });
+    await yes.fns._fuelLogPlan();
+    H.eq(rowsOf(yes.state).length, 2, 'confirming it records the meals');
+    H.ok(yes.state.plan.meals.every(function(m){ return m.ateOn === '30/09/2026'; }),
+      'and marks them, so a second tap cannot record the same dinner twice');
+    const again = yes.fns._fuelLogPlan();
+    await again;
+    H.eq(rowsOf(yes.state).length, 2, 'a second tap adds nothing');
 
-  // Every row still carries its meal slot — the defect this function was fixed for once before.
-  H.ok(rows.every(function(r){ return !!r.meal; }), 'and every row still lands in a meal, not Snacks');
+    // ONE MEAL, WITH THE AMOUNT ACTUALLY EATEN.
+    const one = build(mkPlan(), { amount:'1.5' });
+    await one.fns._fuelAteMeal(0);
+    const r = rowsOf(one.state);
+    H.eq(r.length, 1, 'confirming one meal logs one meal');
+    H.eq(r[0].name, 'Chicken pesto pasta', 'the one they said they ate');
+    H.eq(one.state.plan.meals[1].ateOn, undefined, 'and leaves the one they did not alone');
+    // The meal they DID eat must be marked, or the row keeps offering "I ate this" and the same
+    // dinner goes down twice. Checking only the unmarked one left this injectable.
+    H.eq(one.state.plan.meals[0].ateOn, '30/09/2026', 'the meal they ate is marked done');
+    H.eq(one.state.plan.meals[0].ateServings, 1.5, 'with how much of it, so the row can say so');
+    // The recipe's own figures, scaled by what they had: 508 for a serving, 762 for one and a half.
+    // 2030 kcal over four servings is 507.5, and 1.5 of those is 761.25 — rounded ONCE at the end
+    // by nutPick, not twice. 508 x 1.5 = 762 is the wrong arithmetic and was my first expectation.
+    H.eq(r[0].cal, 761, 'at the amount they actually had, from the recipe not the model');
+    H.eq(r[0].serving, '1.5 servings', 'and says so');
+    H.ok(r[0].potassium > 0, 'still carrying the micronutrients the ingredients knew');
+
+    // BACKING OUT CLAIMS NOTHING.
+    // TWO GUARDS, AND THE TEST HAS TO SEE BOTH. Dismissed returns null, which the empty check stops;
+    // a junk answer becomes NaN, which the isFinite check stops. Injecting either alone left the
+    // suite green because the other caught it, so both shapes are asserted.
+    const cancel = build(mkPlan(), { amount:null });
+    await cancel.fns._fuelAteMeal(0);
+    H.eq(rowsOf(cancel.state).length, 0, 'dismissing the amount records nothing');
+    const junk = build(mkPlan(), { amount:'not a number' });
+    await junk.fns._fuelAteMeal(0);
+    H.eq(rowsOf(junk.state).length, 0, 'and neither does an answer that is not one');
+    H.eq(junk.state.plan.meals[0].ateOn, undefined, 'nor is the meal marked on a refusal');
+    const zero = build(mkPlan(), { amount:'0' });
+    await zero.fns._fuelAteMeal(0);
+    H.eq(rowsOf(zero.state).length, 0, 'and neither does an amount of none');
+
+    // THE GAP IS KEPT. What the plan said sits beside what they had — the only record of the
+    // distance between intention and act, and it cannot be recovered after the fact. Nothing reads
+    // it yet; that is the point of writing it now.
+    H.eq(r[0].fromPlan.cal, 999, 'the planned figure is kept beside the eaten one');
+    H.eq(r[0].fromPlan.servings, 1.5, 'with how much of it they actually had');
+    H.ok(r[0].cal !== r[0].fromPlan.cal, 'and the two genuinely differ, which is the whole point');
+  })());
+
+  // Both paths build their rows the same way, or the same dinner is recorded two different ways.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  H.eq((src.match(/_fuelPlanRows\(plan, \[i\], servings\)/g) || []).length, 1, 'the per-meal path builds its row through the shared builder');
+  H.eq((src.match(/_fuelPlanRows\(plan, idxs, 1\)/g) || []).length, 1, 'and so does the whole-day one');
+  H.eq((src.match(/function _fuelPlanRows/g) || []).length, 1, 'and there is only one of it');
+  H.ok(/askConfirm\(/.test(src.slice(src.indexOf('async function _fuelLogPlan'))),
+    'and the whole-day path asks before it claims anything');
 }
 
 H.section('where you shop is a setting, and a plan you are set up for is one tap');
@@ -8878,20 +8933,27 @@ H.section('a logged plan lands in the meals it was built for, not all in Snacks'
       { name: 'Chicken and rice', cal: 700, pro: 55, carbs: 80, fat: 15 },
       { name: 'Salmon and greens', cal: 600, pro: 45, carbs: 30, fat: 28 }
     ] } };
-    const { _fuelLogPlan } = H.load(['_fuelMealSlot', '_fuelLogPlan'], {
+    // ASYNC AND CONFIRMED NOW: the whole-day path asks before it claims anything, because a plan is
+    // an intention and the diary has to be what actually happened. The slot mapping this section
+    // exists for is unchanged, so the stub says yes and the assertions stand.
+    const { _fuelLogPlan } = H.load(['_fuelMealSlot', '_fuelLogPlan', '_fuelPlanRows', 'nutPick'], {
       ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; return v; },
       showToast: () => {}, haptic: () => {}, syncToCloud: () => {},
       renderNutritionLog: () => {}, renderNutrition: () => {}, updateTrackerDisplay: () => {},
-      recomputeAdaptiveTDEE: () => {}, dayKeyOf: undefined
+      recomputeAdaptiveTDEE: () => {}, autoTickHabits: () => {}, closeModal: () => {},
+      _fuelRenderPlan: () => {}, document: { getElementById: () => null },
+      askConfirm: async () => true, plural: (n, w) => n + ' ' + w, NUTRIENTS: ['cal','pro','carb','fat'],
+      dayKeyOf: () => '30/09/2026'
     });
-    _fuelLogPlan(null);
-    const days = Object.keys(store.totry_nutlog || {});
-    H.eq(days.length, 1, 'logging the plan writes exactly one day');
-    const rows = (store.totry_nutlog || {})[days[0]] || [];
-    H.eq(rows.length, 3, 'and one row per planned meal');
-    H.eq(rows.map(r => r.meal).join(','), 'breakfast,lunch,dinner',
-      'each row lands in the meal it was built for — not all three in Snacks');
-    H.eq(rows.filter(r => !r.meal).length, 0, 'and no row falls through to the diary default');
+    H.defer(_fuelLogPlan(null).then(function(){
+      const days = Object.keys(store.totry_nutlog || {});
+      H.eq(days.length, 1, 'logging the plan writes exactly one day');
+      const rows = (store.totry_nutlog || {})[days[0]] || [];
+      H.eq(rows.length, 3, 'and one row per planned meal');
+      H.eq(rows.map(function(r){ return r.meal; }).join(','), 'breakfast,lunch,dinner',
+        'each row lands in the meal it was built for — not all three in Snacks');
+      H.eq(rows.filter(function(r){ return !r.meal; }).length, 0, 'and no row falls through to the diary default');
+    }));
   }
 }
 

@@ -38031,12 +38031,18 @@ function _fuelRenderPlan(plan){
   const R = Math.round;
   const money = function(v){ return curSym()+(R((v||0)*100)/100).toFixed(2); };
   const _gentle = (typeof nutGentle==='function' && nutGentle());   // numbers off means numbers off
+  const _todayKey = (typeof dayKeyOf==='function') ? dayKeyOf() : '';
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
       '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_esc(mm.name||'Meal')+(mm.mine?'<span style="font-size:var(--t-cap);color:var(--go);font-weight:400;margin-left:6px">one of yours</span>':'')+'</div><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em">↻ swap this meal</button>'+
+      // The meal's own confirmation, because the day is not one event. Shown as done once it is
+      // down, so a second tap cannot record the same dinner twice.
+      ((mm.ateOn === _todayKey)
+        ? '<span style="margin-top:6px;margin-left:10px;color:var(--gr);font-size:var(--t-cap);font-family:var(--font-text)">\u2713 logged'+(mm.ateServings && mm.ateServings !== 1 ? ' \u00d7 '+mm.ateServings : '')+'</span>'
+        : '<button onclick="_fuelAteMeal('+i+')" style="margin-top:6px;margin-left:10px;background:none;border:none;color:var(--go);font-size:var(--t-cap);cursor:pointer;font-family:var(--font-text);letter-spacing:0.03em">I ate this</button>')+
     '</div>';
   }).join('');
   // Number() so an already-stored string cannot turn addition into concatenation.
@@ -38256,39 +38262,64 @@ function _fuelMealSlot(name, i, n){
   if(i === n - 1) return 'dinner';
   return (i % 2) ? 'snack' : 'lunch';
 }
-function _fuelLogPlan(btn){
-  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
+// A PLAN IS AN INTENTION. A DIARY IS A RECORD. Writing one into the other makes the record a claim
+// about the future, and this app's counsel is only ever as true as what it is counselling from — a
+// fictional diary poisons the calorie target, the weight correlation, and the brief every AI surface
+// reads. What a person actually cooks and eats is reliably NOT what the plan said: they eat one and
+// a half servings, they leave the parmesan out, they skip lunch, they eat out, they make Thursday's
+// dinner on Tuesday. So the plan does not become the day. The person says what happened, per meal.
+//
+// The amount is asked because it is the single biggest real discrepancy for a home-cooked recipe:
+// "one serving" is what the plan assumed and almost never what the pot produced.
+async function _fuelAteMeal(i){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
+  const mm = plan.meals[i];
   const today = dayKeyOf();
-  const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
-  // THE LAST STEP OF THE LOOP, AND IT WAS THROWING AWAY THE BEST NUMBERS IN IT.
-  // A recipe's ingredients now carry the full nutrient set their source knew — USDA's 28 keys via
-  // the food search, Open Food Facts' via the barcode. The planner builds the week around those
-  // recipes. Then this logged the MODEL's four estimated numbers for them: the person cooked the
-  // recipe they built, and the diary recorded a guess about it — no micronutrients, and macros that
-  // disagree with the recipe's own screen. Summed exactly the way logRecipeAsMeal sums them, at one
-  // serving, so the two paths cannot drift apart.
+  let servings = 1;
+  try{
+    const a = await askText('How much of it did you have?', mm.name || 'This meal',
+      { value:'1', type:'number', confirmLabel:'Log it' });
+    if(a === null || a === undefined || a === '') return;          // they backed out; nothing is claimed
+    servings = parseFloat(a); if(!isFinite(servings) || servings <= 0) return;
+  }catch(_){ return; }
+  const rows = _fuelPlanRows(plan, [i], servings);
+  if(!rows.length) return;
+  const log = ls('totry_nutlog') || {}; if(!log[today]) log[today] = [];
+  rows.forEach(function(r){ log[today].push(r); });
+  if(typeof _pruneNutLog === 'function') _pruneNutLog(log);
+  ls('totry_nutlog', log); if(typeof syncToCloud === 'function') syncToCloud();
+  // WHAT THEY PLANNED AND WHAT THEY ATE, BOTH KEPT. The row carries the planned figure beside the
+  // eaten one, which is the only way the gap between the two is ever measurable — and that gap is
+  // the thing no other app has, because no other app holds both.
+  mm.ateOn = today; mm.ateServings = servings;
+  ls('totry_meal_plan', plan);
+  if(typeof renderNutritionLog === 'function') renderNutritionLog();
+  if(typeof autoTickHabits === 'function') autoTickHabits();
+  if(typeof haptic === 'function') haptic('success');
+  const mdl = document.getElementById('fuel-plan-modal'); if(mdl) mdl.remove();
+  _fuelRenderPlan(plan);
+  if(typeof showToast === 'function') showToast('Logged', (mm.name || 'Meal') + (servings === 1 ? '' : ' \u00d7 ' + servings));
+}
+
+// The rows a set of planned meals becomes. One implementation, so the per-meal path and the
+// whole-day one cannot record the same meal two different ways.
+function _fuelPlanRows(plan, idxs, servings){
+  const today = dayKeyOf();
+  const mult = (servings == null) ? 1 : servings;
   const _recipes = (typeof ls === 'function' ? ls('totry_recipes') : null) || [];
   const _byName = {};
   _recipes.forEach(function(r){ if(r && r.name) _byName[String(r.name).trim().toLowerCase()] = r; });
-  plan.meals.forEach(function(mm, i){
-    const row = { id: Date.now()+i,  id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
-      // WITHOUT THIS THE WHOLE PLANNED DAY FILED UNDER SNACKS. The diary groups on
-      // `(e.meal||'snack')` (14-nourish.js:3314), and every row this function wrote carried no
-      // `meal` at all — so a person tapped "log the plan", got breakfast, lunch and dinner stacked
-      // under Snacks, and found the three sections the plan was built around empty. logRecipeAsMeal
-      // has always set it; this path never did.
-      meal: _fuelMealSlot(mm.name, i, plan.meals.length),
-      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10,
-      // Every 7-day nutrition figure resolves a day from entries[0].ts. A day whose first entry came
-      // from the fuel plan had no ts at all, so the WHOLE DAY dropped out of the weekly digest and the
-      // adaptive TDEE — and logging a full day of planned meals is exactly when that first entry is
-      // one of these. Two other writers were fixed for this in v483; this one was missed.
-      // The bucket above is TODAY (this function's whole job is "push the plan into today's log"),
-      // so the stamp must be today too. nutStampFor() returns a time inside the day the diary is
-      // VIEWING — my v506 fix used it here, so someone reviewing last Tuesday and logging their plan
-      // filed today's meals under today's key with Tuesday's timestamp, and every ts-based reader
-      // then disagreed with the key it was stored under.
+  const out = [];
+  idxs.forEach(function(i, n){
+    const mm = plan.meals[i]; if(!mm) return;
+    const row = { id: Date.now()+n, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving',
+      qty: 1, meal: _fuelMealSlot(mm.name, i, plan.meals.length),
+      cal: Math.round((mm.cal||0)*mult), pro: Math.round((mm.pro||0)*mult*10)/10,
+      carb: Math.round((mm.carbs||0)*mult*10)/10, fat: Math.round((mm.fat||0)*mult*10)/10,
       ts: new Date().toISOString(), date: today,
+      // THE GAP, KEPT. What the plan said, beside what they had. Nothing reads this yet; it is the
+      // only record of the distance between intention and act, and it cannot be recovered later.
+      fromPlan: { cal: Math.round(mm.cal||0), servings: mult, at: plan.generatedAt || null },
       source: 'Fuel plan' };
     const r = _byName[String(mm.name||'').trim().toLowerCase()];
     if(r && Array.isArray(r.ingredients) && r.ingredients.length && typeof nutPick === 'function' && typeof NUTRIENTS !== 'undefined'){
@@ -38296,24 +38327,50 @@ function _fuelLogPlan(btn){
       r.ingredients.forEach(function(ing){
         NUTRIENTS.forEach(function(k){ const v = Number(ing && ing[k]); if(isFinite(v)) tot[k] = (tot[k]||0) + v; });
       });
-      const one = nutPick(tot, 1 / Math.max(1, parseInt(r.servings) || 1));
-      // Only where the recipe actually knows something. An ingredient list with no numbers in it
-      // must not replace the model's estimate with zeros — "unknown" never becomes "none".
+      const one = nutPick(tot, mult / Math.max(1, parseInt(r.servings) || 1));
       if(one && isFinite(one.cal) && one.cal > 0){
         NUTRIENTS.forEach(function(k){ if(typeof one[k] === 'number' && isFinite(one[k])) row[k] = one[k]; });
-        row.serving = '1 serving';
+        row.serving = (mult === 1) ? '1 serving' : (mult + ' servings');
         row.source = 'Your recipe';
       }
     }
-    log[today].push(row);
+    out.push(row);
   });
-  if(typeof _pruneNutLog==='function') _pruneNutLog(log);
-  ls('totry_nutlog', log); if(typeof syncToCloud==='function') syncToCloud();
-  if(typeof renderNutritionLog==='function') renderNutritionLog();
-  if(typeof autoTickHabits==='function') autoTickHabits();
-  if(typeof haptic==='function') haptic('success');
-  if(btn && typeof closeModal==='function') closeModal(btn);
-  if(typeof showToast==='function') showToast('Logged', plan.meals.length+' meals added to today.');
+  return out;
+}
+
+async function _fuelLogPlan(btn){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
+  const today = dayKeyOf();
+  // ONLY WHAT IS NOT ALREADY DOWN. Tapping this after logging two meals by hand must not record
+  // them a second time.
+  const idxs = plan.meals.map(function(_, i){ return i; })
+    .filter(function(i){ return plan.meals[i] && plan.meals[i].ateOn !== today; });
+  if(!idxs.length){
+    if(typeof showToast === 'function') showToast('Already down', 'Every meal in this plan is logged for today.');
+    return;
+  }
+  // AND IT IS A CLAIM THEY MAKE, NOT ONE THE APP MAKES FOR THEM. This used to write the whole
+  // planned day into the diary on one tap — an intention recorded as a fact. Whatever else it is,
+  // the diary has to be the thing that actually happened, or nothing built on top of it is worth
+  // reading. Asked plainly, with the count, so "yes" means yes.
+  const names = idxs.map(function(i){ return plan.meals[i].name || 'a meal'; }).join(', ');
+  const ok = (typeof askConfirm === 'function')
+    ? await askConfirm('Did you eat ' + (idxs.length === plan.meals.length ? 'the whole plan' : 'the rest of it') + ' today?\n\n' + names + '\n\nOnly say yes if that is what actually happened \u2014 anything else and it is better to log the meals one at a time.')
+    : true;
+  if(!ok) return;
+  const rows = _fuelPlanRows(plan, idxs, 1);
+  const log = ls('totry_nutlog') || {}; if(!log[today]) log[today] = [];
+  rows.forEach(function(r){ log[today].push(r); });
+  if(typeof _pruneNutLog === 'function') _pruneNutLog(log);
+  ls('totry_nutlog', log); if(typeof syncToCloud === 'function') syncToCloud();
+  idxs.forEach(function(i){ plan.meals[i].ateOn = today; plan.meals[i].ateServings = 1; });
+  ls('totry_meal_plan', plan);
+  if(typeof renderNutritionLog === 'function') renderNutritionLog();
+  if(typeof autoTickHabits === 'function') autoTickHabits();
+  if(typeof haptic === 'function') haptic('success');
+  if(btn && typeof closeModal === 'function') closeModal(btn);
+  if(typeof showToast === 'function') showToast('Logged', plural(rows.length, 'meal') + ' added to today.');
 }
 
 // A focused web-search pass to replace estimated prices with real, cited ones (per store).
