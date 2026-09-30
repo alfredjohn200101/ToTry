@@ -9106,7 +9106,7 @@ const SYNC_KEYS = [
   // device's permission anyway.
   'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
-  'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',
+  'totry_meal_plan','totry_plan_history','totry_meal_prefs','totry_train_goal','totry_train_days',
   'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_body_goal','totry_fight_log',
   // NOTE: totry_push_prefs is deliberately NOT synced — notification permission is granted per-device,
   // so a stale cloud value (from before you enabled it, or another device) was silently flipping your
@@ -38011,6 +38011,74 @@ function _fuelRecipeLines(){
 // It also reports what it does NOT know. An un-priced row is food they will still be buying, so a
 // total that quietly omits it is worse than one that says it is incomplete — and "under budget" must
 // never be claimed on a figure with holes in it.
+// A PLANNER THAT LEARNS NEEDS A DENOMINATOR, AND THERE ISN'T ONE.
+// Every logged row already carries what the plan SAID (`fromPlan`) — that is the numerator. But
+// totry_meal_plan holds only the CURRENT plan, and regenerating overwrites it, so "you have never
+// once made the Thursday dinner" is unanswerable: the app has no record that Thursday's dinner was
+// ever planned. The outgoing plan is archived here, with which of its meals were actually eaten,
+// because like `fromPlan` it cannot be recovered afterwards and everything downstream needs it to
+// have started today. Names and outcomes only — no macros, no shopping list, no prices.
+function _fuelArchivePlan(plan){
+  try{
+    if(!plan || !Array.isArray(plan.meals) || !plan.meals.length) return;
+    const hist = ls('totry_plan_history') || [];
+    hist.unshift({
+      at: plan.generatedAt || Date.now(),
+      meals: plan.meals.map(function(m){
+        return { name: String((m && m.name) || 'Meal'), ate: !!(m && m.ateOn), servings: (m && m.ateServings) || null };
+      })
+    });
+    // Twenty plans is months of history and a few kilobytes. This store syncs; it does not get to grow.
+    ls('totry_plan_history', hist.slice(0, 20));
+  }catch(_){ }
+}
+
+// WHAT THEY ACTUALLY KEEP, PER MEAL. Not "78% adherence" — that number is a scold and tells nobody
+// what to do. The useful shape is which meals survive contact with their life and which never do,
+// because the planner can then stop proposing the ones that never do. That is a meal planner that
+// improves by being used, which no meal planner does, because none of them ever find out.
+//
+// The bar: a meal has to have been planned at least THREE times before its record means anything,
+// and the whole thing stays quiet until there are at least two plans behind it. One abandoned week
+// is a bad week, not a pattern — and calling it one is the shame this app refuses.
+function _fuelAdherence(){
+  try{
+    const hist = ls('totry_plan_history') || [];
+    if(!Array.isArray(hist) || hist.length < 2) return null;
+    const by = {};
+    hist.forEach(function(h){
+      ((h && h.meals) || []).forEach(function(m){
+        if(!m || !m.name) return;
+        const k = String(m.name).trim().toLowerCase(); if(!k) return;
+        const e = (by[k] = by[k] || { name: String(m.name).trim(), planned: 0, kept: 0 });
+        e.planned++; if(m.ate) e.kept++;
+      });
+    });
+    const rows = Object.keys(by).map(function(k){ return by[k]; }).filter(function(e){ return e.planned >= 3; });
+    if(!rows.length) return null;
+    const kept = rows.filter(function(e){ return e.kept / e.planned >= 0.8; })
+                     .sort(function(a, b){ return b.planned - a.planned; }).slice(0, 4);
+    const never = rows.filter(function(e){ return e.kept === 0; })
+                      .sort(function(a, b){ return b.planned - a.planned; }).slice(0, 4);
+    if(!kept.length && !never.length) return null;
+    return { kept: kept, never: never, plans: hist.length };
+  }catch(_){ return null; }
+}
+
+// Told to the planner as a fact about the person, not as a verdict on them.
+function _fuelAdherenceLines(){
+  const a = _fuelAdherence();
+  if(!a) return '';
+  const bits = [];
+  if(a.kept.length) bits.push('They reliably make: ' + a.kept.map(function(e){ return e.name; }).join(', ') + '.');
+  if(a.never.length) bits.push('They have never once made: ' + a.never.map(function(e){
+    return e.name + ' (planned ' + e.planned + ' times)'; }).join(', ') + '.');
+  return "\n\nWHAT THEY ACTUALLY KEEP, from " + a.plans + " of their own past plans. " + bits.join(' ')
+    + " Build around the first list. Do NOT propose anything on the second one again \u2014 something they "
+    + "have never made is not a plan, whatever its macros say, and offering it a fourth time is how a "
+    + "person decides the whole thing is not for them. Say nothing to them about either list.";
+}
+
 function _fuelTotals(plan){
   const rows = (plan && Array.isArray(plan.shopping)) ? plan.shopping : [];
   let sum = 0, unpriced = 0;
@@ -38086,7 +38154,7 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const _recipeBlock = _fuelRecipeLines() + _fuelHabitLines();
+  const _recipeBlock = _fuelRecipeLines() + _fuelHabitLines() + _fuelAdherenceLines();
   const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says the science is general \u2014 do NOT write anything about prices being estimates, the app says that itself, with the button that fixes it.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
@@ -38104,6 +38172,9 @@ async function _fuelGenerate(){
   // A model returning {"meals":"see below"} passed `!plan.meals`, was persisted AND synced, and then
   // every consumer does plan.meals.map(...) — so "View my plan" threw and did nothing, on every device.
   if(!plan || !Array.isArray(plan.meals) || !plan.meals.length){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
+  // Before the new plan replaces the old one, keep what became of the old one. This is the only
+  // moment that record exists.
+  try{ _fuelArchivePlan(ls('totry_meal_plan')); }catch(_){ }
   plan = _fuelMergeRecipeShopping(plan);
   // AFTER the merge, so the ingredients it just added are counted rather than silently dropped.
   plan.total = _fuelTotals(plan).sum;

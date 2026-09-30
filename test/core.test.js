@@ -8415,6 +8415,69 @@ H.section('the fight and the food, which nothing else holds together');
   H.ok(/the ones they lost came after about/.test(person), 'in words a model can use without embroidering');
 }
 
+H.section('a planner that finds out what you actually keep');
+{
+  // No meal planner improves by being used, because none of them ever find out what happened. This
+  // one now can — but it needed a DENOMINATOR that did not exist: every logged row already carried
+  // what the plan said (fromPlan), while totry_meal_plan held only the CURRENT plan and
+  // regenerating overwrote it. "You have never once made the Thursday dinner" was unanswerable,
+  // because nothing recorded that Thursday's dinner had ever been planned.
+  const P = function(){ return { at: 1, meals: Array.prototype.slice.call(arguments) }; };
+  const M = (n, ate) => ({ name: n, ate: ate });
+  const run = (hist) => H.load(['_fuelAdherence','_fuelAdherenceLines'],
+    { ls: (k) => (k === 'totry_plan_history' ? hist : null) });
+
+  const four = [
+    P(M('Overnight oats', true),  M('Salmon and greens', false), M('Chicken and rice', true)),
+    P(M('Overnight oats', true),  M('Salmon and greens', false), M('Chicken and rice', true)),
+    P(M('Overnight oats', true),  M('Salmon and greens', false), M('Chicken and rice', false)),
+    P(M('Overnight oats', true),  M('Salmon and greens', false), M('Chicken and rice', true)),
+  ];
+  const a = run(four)._fuelAdherence();
+  H.eq(a.kept.map(function(e){ return e.name; }).join(','), 'Overnight oats', 'what survives contact with their life');
+  H.eq(a.never.map(function(e){ return e.name; }).join(','), 'Salmon and greens', 'and what never once has');
+  // 3 of 4 is ambiguous and belongs in NEITHER list. A planner that treats 75% as "reliable" starts
+  // building around something they drop one week in four; treating it as "never" is a lie.
+  H.ok(!a.kept.concat(a.never).some(function(e){ return /Chicken/.test(e.name); }),
+    'and a meal they keep three times in four is left out of both, because it is neither');
+
+  const line = run(four)._fuelAdherenceLines();
+  H.ok(/never once made: Salmon and greens \(planned 4 times\)/.test(line), 'the model is told what not to propose again');
+  H.ok(/Do NOT propose anything on the second one again/.test(line), 'in an instruction, not a hint');
+  H.ok(/Say nothing to them about either list/.test(line),
+    'and it is a fact about the person, never a verdict read back to them');
+
+  // SILENCE UNTIL IT MEANS SOMETHING. One abandoned week is a bad week, not a pattern, and calling
+  // it one is exactly the shame this app refuses.
+  H.eq(run([P(M('Oats', true), M('Salmon', false))])._fuelAdherenceLines(), '', 'one plan says nothing');
+  // ISOLATING THE two-plan GUARD. The line above cannot do it: each meal appears once, so the
+  // "planned at least three times" filter stops it regardless. This one is a SINGLE plan in which
+  // the same meal is planned three times — eggs at breakfast, lunch and dinner is an ordinary week
+  // for somebody — so only the two-plan minimum stands between it and a verdict.
+  H.eq(run([P(M('Eggs', false), M('Eggs', false), M('Eggs', false))])._fuelAdherenceLines(), '',
+    'and one plan is still one plan even when a meal repeats inside it \u2014 a bad week is not a pattern');
+  H.eq(run([P(M('A', true)), P(M('B', false))])._fuelAdherenceLines(), '', 'nor two plans with nothing planned three times');
+  H.eq(run(null)._fuelAdherenceLines(), '', 'nor no history at all');
+  H.eq(run([])._fuelAdherenceLines(), '', 'nor an empty one');
+
+  // THE ARCHIVE IS THE POINT, AND IT ONLY EXISTS AT ONE MOMENT.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  const gen = src.slice(src.indexOf('async function _fuelGenerate'));
+  H.ok(/_fuelArchivePlan\(ls\('totry_meal_plan'\)\)/.test(gen),
+    'the OUTGOING plan is kept before the new one replaces it');
+  H.ok(gen.indexOf('_fuelArchivePlan') < gen.indexOf("ls('totry_meal_plan', plan)"),
+    'and archived BEFORE the overwrite, which is the only moment that record exists');
+  H.ok(/hist\.slice\(0, 20\)/.test(src), 'capped — a synced store does not get to grow');
+  H.ok(/_fuelAdherenceLines\(\)/.test(gen), 'and what it learns reaches the prompt');
+  // Names and outcomes only: no macros, no shopping list, no prices in a store that syncs forever.
+  const arch = H.code(H.extractFn('_fuelArchivePlan'));
+  H.ok(!/cal|shopping|price/.test(arch), 'the archive keeps names and outcomes, nothing else');
+  H.ok(/'totry_plan_history'/.test(H.html) && /totry_plan_history/.test(
+    require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'app', '00-boot.js'), 'utf8')),
+    'and the store is registered for sync, so a second device knows it too');
+}
+
 H.section('the planner reads what they actually eat, not only what they saved');
 {
   // _fuelRecipeLines tells the model what they SAVED. This tells it what they REPEATEDLY EAT, which
