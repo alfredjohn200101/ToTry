@@ -4095,6 +4095,12 @@ function _gentleCounsel(eaten, goal){
   if(!(goal>0))  return 'Logged. That’s all this needs to be.';
   const p = eaten/goal;
   const hr = new Date().getHours();
+  // BOTH LINES BELOW TELL A FASTING PERSON TO EAT. Uposatha is no solid food after midday and
+  // Navratri is nine light days, so at 17:00 and 20:00 this app was arguing with an observance the
+  // person had told it they were keeping — while the AI, three modules away, had been explicitly
+  // instructed not to. Same half-applied shape as the units: the voice knew and the screen did not.
+  let _fsn = null; try{ _fsn = (typeof fastSeasonNow==='function') ? fastSeasonNow() : null; }catch(_){ }
+  if(_fsn && p<0.7 && hr>=17) return 'A fasting day reads light, and that is the point — I am not going to nudge you to eat. What matters is that it lands when the fast opens: protein and water first.';
   if(p<0.5 && hr>=17) return 'That’s a light day so far. Not a rule to obey — just worth asking whether your body’s actually been fed.';
   if(p<0.7 && hr>=20) return 'Lighter day. If you’re hungry, eat — under-fuelling costs you tomorrow more than it saves you today.';
   if(p>=1.10) return 'You’ve eaten well today. That’s a body being fed, not a budget being broken. Nothing to make up for.';
@@ -4110,9 +4116,10 @@ function _nourishConcern(){
     const sx = (typeof userSex==='function') ? userSex() : null;
     const floor = (sx === 'male') ? 1500 : 1200;
     const log = ls('totry_nutlog') || {};
-    let low=0, counted=0;
+    let low=0, counted=0, fasted=0, season=null;
     for(let i=1;i<=7;i++){
-      const k = dayKeyOf(Date.now()-i*86400000);
+      const ts = Date.now()-i*86400000;
+      const k = dayKeyOf(ts);
       const items = log[k];
       // A day only counts if they actually TRACKED it. One lonely entry is almost always someone who
       // started logging and stopped — reading that as under-eating would be the app inventing a
@@ -4120,9 +4127,32 @@ function _nourishConcern(){
       if(!items || items.length < 2) continue;
       counted++;
       const cal = items.reduce(function(a,x){ return a + (parseFloat(x.cal)||0); }, 0);
-      if(cal>0 && cal<floor) low++;
+      if(cal>0 && cal<floor){
+        low++;
+        // ASK OF THE DAY THE FOOD WAS LOGGED, NOT OF TODAY. Navratri is nine days of fruit, milk and
+        // nuts; Uposatha is no solid food after midday; Ramadan logged honestly is suhoor and iftar.
+        // Each of those produces exactly the pattern this function looks for, so a person keeping
+        // their own tradition's fast — logging honestly, which is the behaviour we want — was being
+        // told that counting may have become something they cannot put down. Asking "is a season
+        // live NOW" would not fix it either: the seven-day window outlives the season, so Ramadan's
+        // own low days would trip the clinical card the morning after Eid.
+        const fs = (typeof fastSeasonNow==='function') ? fastSeasonNow(ts) : null;
+        if(fs){ fasted++; if(!season) season = fs; }
+      }
     }
-    return (counted>=3 && low>=3) ? { low:low, floor:floor } : null;
+    if(!(counted>=3 && low>=3)) return null;
+    // THE CHECK IS NEVER SILENCED, ONLY REFRAMED. A fast is a documented cover for a restricting
+    // eating disorder, so suppressing the card during one would weaken the exact path rule 6 says
+    // may never be weakened. What a fast does change is what the evidence MEANS: when most of the
+    // low days were days the person's own tradition asked them to fast, the clinical reading is
+    // confounded, and saying it anyway is the app arguing with a sacred discipline. So the card
+    // still appears and still carries the bridge to real help — it just speaks in the tradition's
+    // own voice about who that tradition has never bound.
+    // `live` is the tense. The low days can sit INSIDE a season that has since ended — which is the
+    // exact case the past-day lookup above exists for — and "you're keeping Ramadan" is wrong the
+    // morning after Eid.
+    let live = false; try{ live = !!((typeof fastSeasonNow==='function') && fastSeasonNow()); }catch(_){ }
+    return { low:low, floor:floor, fasting:(season && fasted*2 >= low) ? season : null, fastedLow:fasted, live:live };
   }catch(_){ return null; }
 }
 function _renderNourishCare(){
@@ -4132,10 +4162,19 @@ function _renderNourishCare(){
   let shown=null; try{ shown = ls('totry_nourish_care_shown'); }catch(_){}
   if(!c || shown===weekKey){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='block';
+  // The season's NAME is typed by the person — pickSeason() stores whatever they call their own
+  // fast — so it is escaped on the way back out. mercy and ask are the app's own constants.
+  const _fs = c.fasting;
+  const eyebrow = _fs ? 'About the fast' : 'Just checking in';
+  const body = _fs
+    ? ('A few days this week came in low. '+(c.live ? 'You’re keeping ' : 'You were keeping ')+_escFew(_fs.name||'a fast')+', so that is most of the explanation — and I am not going to read it as anything else. '+
+       'Worth saying once, though, because a fast can quietly cost more than it is meant to. '+_fs.mercy+
+       (_fs.ask ? (' If it is taking more out of you than it is giving, '+_fs.ask+' is the person to ask — that is what they are for.') : ''))
+    : 'A few days this week came in low on what you logged. That might just be an unfinished diary — I can’t see what I don’t get told. But if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.';
   el.innerHTML =
     '<div style="background:var(--bg3);border-radius:var(--rm);padding:13px 15px;text-align:left">'+
-      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:6px">Just checking in</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in low on what you logged. That might just be an unfinished diary — I can’t see what I don’t get told. But if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:6px">'+eyebrow+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">'+body+'</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
         // Route to the FOOD-specific support that already exists (Butterfly Foundation, GP, Lifeline)

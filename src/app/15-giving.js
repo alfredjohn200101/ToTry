@@ -8,37 +8,43 @@ const FAST_SEASONS = {
     why:'The month the Qur’an was sent down. The fast isn’t about the food; it’s taqwa — God-consciousness trained by restraint from first light to sunset.',
     nourish:'Your calories and protein still have to land — they just land at night. Put most of the protein at iftar and suhoor, and spread the water across the evening rather than all at once.',
     train:'Train near iftar, or an hour or two after it — not deep in the afternoon. Keep the volume honest; this isn’t the month for a PR.',
-    fight:'Every hour you wanted something and didn’t take it is the same muscle the fight uses. That’s the point of the month — you learn you can want, and not take.' },
+    fight:'Every hour you wanted something and didn’t take it is the same muscle the fight uses. That’s the point of the month — you learn you can want, and not take.',
+    mercy:'The Qur’an names the exemptions in the same breath as the command — the ill and the traveller, with the days made up later or a person fed instead. The pregnant, the nursing, those menstruating and the elderly are held in the same mercy.', ask:'your imam' },
   lent:{ id:'lent', name:'Lent', icon:'✝', days:46, timeMode:'none',
     how:'Ash Wednesday to Holy Saturday, from the Western date of Easter. Orthodox Great Lent runs on a different reckoning — set it yourself if that’s yours.',
     why:'Forty days in the desert. The fast makes a small emptiness on purpose, so there’s room for something else.',
     nourish:'The old shape is one full meal and two smaller on fast days, meat set aside on Fridays. Eat properly — a fast is not a diet, and dropping protein just makes you brittle.',
     train:'Keep training. Lent isn’t a reason to go soft — but if you’ve genuinely dropped food, drop the volume with it instead of grinding through empty.',
-    fight:'Fasting, prayer and almsgiving hold each other up — that’s why the Church never separates them. Give something away this week too.' },
+    fight:'Fasting, prayer and almsgiving hold each other up — that’s why the Church never separates them. Give something away this week too.',
+    mercy:'The Church has never bound the sick, the pregnant or the nursing, and the obligation runs only from eighteen to fifty‑nine. A fast that damages health was never what was being asked for.', ask:'a priest' },
   uposatha:{ id:'uposatha', name:'Uposatha', icon:'☸', days:1, timeMode:'noon',
     how:'Worked out from the moon, so it can be a day out. Your temple’s calendar is the authority, not this.',
     why:'An observance day. The traditional form is no solid food after midday — not to punish the body, but to see clearly how much of eating is wanting.',
     nourish:'Eat properly in the morning — that’s the whole day’s food. Protein and water early, not squeezed in at the last minute.',
     train:'Train in the morning if you train at all today. Nothing heavy on an afternoon with no fuel behind it.',
-    fight:'Watching hunger arrive and pass without acting is exactly the skill an urge needs. Same practice, different object.' },
+    fight:'Watching hunger arrive and pass without acting is exactly the skill an urge needs. Same practice, different object.',
+    mercy:'The precepts are undertaken, not imposed — taken up freely for a day and freely set down. The tradition has always made allowance for the ill.', ask:'a monastic, or whoever teaches at your temple' },
   navratri:{ id:'navratri', name:'Navratri', icon:'🕉', days:9, timeMode:'none',
     how:'You set the start date — the lunar calendar and the local panchang vary, and I won’t guess at yours.',
     why:'Nine nights. The fast is sattvic — lightening the body so the mind can hold something steadier than appetite.',
     nourish:'Fruit, dairy, nuts and the permitted grains still have to add up. Keep protein in — paneer, curd, nuts — or you’ll be running on sugar by day three.',
     train:'Lighter work, and keep it early. This isn’t the week to chase load.',
-    fight:'Nine days of choosing what you take in. That’s the same choice, made over and over, that the fight is made of.' },
+    fight:'Nine days of choosing what you take in. That’s the same choice, made over and over, that the fight is made of.',
+    mercy:'The vrat permits fruit, milk, nuts and the allowed grains precisely so the body is carried through it. It does not bind the unwell, the pregnant or the nursing.', ask:'someone at your temple' },
   window:{ id:'window', name:'Eating window', icon:'○', days:0, timeMode:'clock',
     how:'Your own window — you set when it opens.',
     why:'No belief required. A fixed window is mostly a way of deciding once instead of deciding all day.',
     nourish:'Same calories, same protein — a narrower door. If you’re under-eating rather than time-shifting, that’s worth being honest about.',
     train:'Train inside the window, or close enough to it that you can eat after.',
-    fight:'A window you set and keep is a small promise kept. They add up.' },
+    fight:'A window you set and keep is a small promise kept. They add up.',
+    mercy:'This one has no authority behind it but yours — which means you can move it, shorten it, or put it down today.', ask:'' },
   own:{ id:'own', name:'My fast', icon:'·', days:0, timeMode:'none',
     how:'Yours — you set the dates.',
     why:'Whatever you’re keeping, and why, is yours to hold.',
     nourish:'Whatever you’ve set aside, the rest of the day still has to feed you honestly.',
     train:'Match the effort to the fuel that’s actually in you.',
-    fight:'Wanting something and not taking it is one skill, wherever you practise it.' }
+    fight:'Wanting something and not taking it is one skill, wherever you practise it.',
+    mercy:'You set this one, so you can change it. A discipline you chose is still yours to re‑choose.', ask:'' }
 };
 const SEASON_AUTO = { islam:'ramadan', christianity:'lent', buddhism:'uposatha' };
 // Mean-phase moon. Accurate to about a day — which is exactly how it's labelled to the user.
@@ -52,12 +58,17 @@ function hijriParts(d){
 }
 function _ramadanLeft(){ for(let i=1;i<=31;i++){ const d=new Date(); d.setDate(d.getDate()+i); const h=hijriParts(d); if(!h||h.m!==9) return i-1; } return null; }
 // The one source of truth: which season is live today, or null. Never throws.
-function fastSeasonNow(){
+// whenTs asks the question of a PAST day instead of today. It exists because the eating-disorder
+// check in Nourish reads the last seven days: without it the only question askable is "is a season
+// live right now", which says nothing about the day the food was logged — so Ramadan's own low days
+// would trip the clinical card the morning after Eid, on evidence the fast had already explained.
+// Every existing caller passes nothing and is bit-for-bit unchanged.
+function fastSeasonNow(whenTs){
   try{
     const cfg = ls('totry_fast_season') || {choice:'auto'};
     if(cfg.choice === 'off') return null;
     const D = 86400000, shift = parseInt(cfg.shift||0,10) || 0;
-    const today = new Date(); today.setHours(0,0,0,0);
+    const today = whenTs ? new Date(whenTs) : new Date(); if(isNaN(today.getTime())) return null; today.setHours(0,0,0,0);
     if(cfg.choice && cfg.choice !== 'auto'){
       const p = FAST_SEASONS[cfg.choice]; if(!p) return null;
       const st = cfg.start ? new Date(cfg.start+'T00:00:00') : today;

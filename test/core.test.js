@@ -10203,4 +10203,214 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.ok(!/toLocaleDateString\('en-AU'\)/.test(swt), 'and no raw formatter decides identity beside it');
 }
 
+// ══ A FAST IS NOT A SYMPTOM ═══════════════════════════════════════════════════
+// _nourishConcern() flags 3+ days under 1200/1500 kcal in seven as possible disordered eating and
+// offers the Butterfly Foundation. Navratri is nine days of fruit, milk and nuts; Uposatha is no
+// solid food after midday; Ramadan logged honestly is suhoor and iftar. Each produces exactly that
+// pattern, so a person keeping their own tradition's fast — logging honestly, which is the
+// behaviour the app wants — was told that counting may have become something they cannot put down.
+// The fix may NEVER be to silence the check: a fast is a documented cover for a restricting eating
+// disorder, and rule 6 says the bridge to real help is not weakened. So these assertions hold BOTH
+// halves — the framing changes, the door to a human does not.
+{
+  H.section('a fast is not a symptom');
+
+  // The registry, read by BRACKET-MATCHING rather than a fixed slice — this file has been wrong
+  // four times by scanning for a bracket that opens forwards or by outgrowing a slice window.
+  const src = H.code();
+  const at = src.indexOf('const FAST_SEASONS = {');
+  H.ok(at > 0, 'the season registry is in the bundle');
+  let depth = 0, end = -1;
+  for (let i = src.indexOf('{', at); i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  H.ok(end > at, 'and its object literal closes');
+  const SEASONS = new Function('return ' + src.slice(src.indexOf('{', at), end + 1))();
+
+  const ids = Object.keys(SEASONS);
+  H.eq(ids.length, 6, 'six seasons');
+  ids.forEach(id => {
+    H.ok(typeof SEASONS[id].mercy === 'string' && SEASONS[id].mercy.length > 40,
+      id + ' says who its own tradition has never bound');
+  });
+  // The four with a religious authority behind them name a real human to ask. The two a person sets
+  // for themselves deliberately do NOT — there is nobody to appeal to, and inventing one would be
+  // the app pretending an authority exists.
+  ['ramadan', 'lent', 'uposatha', 'navratri'].forEach(id => {
+    H.ok(!!SEASONS[id].ask, id + ' names a real person to ask');
+  });
+  H.eq(SEASONS.window.ask, '', 'a self-set window names nobody, because there is nobody');
+  H.eq(SEASONS.own.ask, '', 'and neither does a fast someone set themselves');
+  // The app must not issue rulings. Every mercy line reports what the tradition holds.
+  ids.forEach(id => {
+    H.ok(!/\byou are not obliged\b|\byou do not have to fast\b|\bI say\b/i.test(SEASONS[id].mercy),
+      id + ' reports what the tradition holds rather than ruling on it');
+  });
+
+  // ── fastSeasonNow() can be asked about a PAST day ──
+  // Without this the only question askable is "is a season live right now", which says nothing
+  // about the day the food was logged — Ramadan's own low days would trip the card after Eid.
+  {
+    const fixed = new Date('2026-03-10T09:00:00').getTime();   // inside a hand-set 30-day season
+    const cfg = { choice: 'own', start: '2026-03-01', days: 30, name: 'My fast', shift: 0 };
+    const { fastSeasonNow } = H.load(['fastSeasonNow'], {
+      ls: k => (k === 'totry_fast_season' ? cfg : null),
+      FAST_SEASONS: { own: { id: 'own', name: 'My fast', days: 0, mercy: 'x', ask: '' } },
+      faithTradition: () => 'secular',
+      hijriParts: () => null, easterDate: () => new Date('2026-04-05'), _moonAge: () => 5,
+      _ramadanLeft: () => null
+    });
+    const on = fastSeasonNow(fixed);
+    H.ok(!!on, 'a day inside a hand-set season is answered as fasting');
+    // `on &&` is not defensive noise. Fault-injecting this block by making fastSeasonNow ignore its
+    // argument returns null here, and a bare `on.dayN` then THREW — ending the whole run at exit 0
+    // with no summary instead of reporting one failure. See rule 2(n).
+    H.eq(on && on.dayN, 10, 'and it knows which day of it');
+    H.eq(fastSeasonNow(new Date('2026-02-20T09:00:00').getTime()), null, 'a day before it is not');
+    H.eq(fastSeasonNow(new Date('2026-05-01T09:00:00').getTime()), null, 'and a day after it is not');
+    H.eq(fastSeasonNow(NaN), null, 'a bad timestamp answers null rather than throwing');
+  }
+
+  // ── the concern itself ──
+  const DAY = 86400000;
+  const mkLog = () => {
+    const log = {};
+    const { dayKeyOf } = H.load(['dayKeyOf']);
+    for (let i = 1; i <= 5; i++) log[dayKeyOf(Date.now() - i * DAY)] = [{ cal: 300 }, { cal: 300 }];
+    return log;
+  };
+  const loadConcern = (seasonFor) => H.load(['_nourishConcern'], {
+    userSex: () => 'male',
+    ls: k => (k === 'totry_nutlog' ? mkLog() : null),
+    fastSeasonNow: seasonFor
+  });
+
+  {
+    // Nobody fasting: unchanged behaviour, and `fasting` is null so the clinical copy still runs.
+    const { _nourishConcern } = loadConcern(() => null);
+    const c = _nourishConcern();
+    H.ok(!!c, 'five low days still raise the concern');
+    H.eq(c.low, 5, 'and count them');
+    H.eq(c.fasting, null, 'with no fast to explain it');
+  }
+  {
+    // Keeping a fast across all five: the concern still exists, and now carries the season.
+    const season = { id: 'navratri', name: 'Navratri', mercy: 'The vrat permits fruit…', ask: 'someone at your temple' };
+    const { _nourishConcern } = loadConcern(() => season);
+    const c = _nourishConcern();
+    H.ok(!!c, 'the check is NOT silenced by a fast');
+    H.eq(c.fasting && c.fasting.id, 'navratri', 'and it knows which fast');
+    H.eq(c.fastedLow, 5, 'and how many of the low days it covered');
+  }
+  {
+    // A MINORITY covered by the fast leaves the clinical reading standing — one Uposatha day does
+    // not explain four other low days, and treating it as if it did would hide the real thing.
+    let n = 0;
+    const { _nourishConcern } = loadConcern(() => (++n <= 1 ? { id: 'uposatha', name: 'Uposatha' } : null));
+    const c = _nourishConcern();
+    H.eq(c.fastedLow, 1, 'one low day fell inside a fast');
+    H.eq(c.fasting, null, 'and a minority does not reframe the rest');
+  }
+
+  // ── the card: the framing changes, the door to a human does not ──
+  {
+    const els = {};
+    ['nut-care'].forEach(id => { els[id] = { style: {}, innerHTML: '' }; });
+    const season = {
+      id: 'own', name: 'Lent" onload="BAD()" x="', mercy: 'The Church has never bound the sick.', ask: 'a priest'
+    };
+    const { _renderNourishCare } = H.load(['_renderNourishCare'], {
+      document: { getElementById: id => els[id] || null },
+      ls: () => null,
+      _escFew: t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
+      _nourishConcern: () => ({ low: 5, floor: 1500, fasting: season, fastedLow: 5 })
+    });
+    _renderNourishCare();
+    const html = els['nut-care'].innerHTML;
+    H.ok(/never bound the sick/.test(html), 'the card speaks in the tradition\u2019s own voice');
+    H.ok(/You were keeping/.test(html), 'and uses the PAST tense for a season that has since ended');
+    H.ok(/a priest is the person to ask/.test(html), 'and names a real human to ask');
+    H.ok(!/counting has started to feel like something you can/.test(html),
+      'and does not tell someone keeping a fast that counting may have taken them over');
+    // THE ASSERTION THAT MATTERS: the bridge to real help survives the reframing.
+    H.ok(/showEDSupport/.test(html), 'and the door to real help is still on the card');
+    H.ok(/Talk to someone/.test(html), 'with its own button');
+    // The person NAMES their own fast, so the name is user-typed text reaching innerHTML. Ask the
+    // PARSE, not whether the characters are present — the payload survives inside an escaped value.
+    H.ok(!/ onload="BAD\(\)"/.test(html), 'a fast the person named cannot become an attribute');
+  }
+  {
+    // A season still running takes the present tense. The low days can sit inside a season that has
+    // ENDED — the case the past-day lookup exists for — and "you're keeping Ramadan" is wrong the
+    // morning after Eid.
+    const els = { 'nut-care': { style: {}, innerHTML: '' } };
+    const { _renderNourishCare } = H.load(['_renderNourishCare'], {
+      document: { getElementById: id => els[id] || null },
+      ls: () => null, _escFew: t => String(t),
+      _nourishConcern: () => ({ low: 5, floor: 1500, fastedLow: 5, live: true,
+        fasting: { id: 'ramadan', name: 'Ramadan', mercy: 'The Qur\u2019an names the exemptions.', ask: 'your imam' } })
+    });
+    _renderNourishCare();
+    H.ok(/You\u2019re keeping Ramadan/.test(els['nut-care'].innerHTML), 'a season still running takes the present tense');
+  }
+  {
+    // And with no fast, the original clinical card is untouched.
+    const els = { 'nut-care': { style: {}, innerHTML: '' } };
+    const { _renderNourishCare } = H.load(['_renderNourishCare'], {
+      document: { getElementById: id => els[id] || null },
+      ls: () => null,
+      _escFew: t => String(t),
+      _nourishConcern: () => ({ low: 5, floor: 1500, fasting: null, fastedLow: 0 })
+    });
+    _renderNourishCare();
+    H.ok(/counting has started to feel like something you can/.test(els['nut-care'].innerHTML),
+      'someone not fasting still gets the honest clinical check');
+    H.ok(/showEDSupport/.test(els['nut-care'].innerHTML), 'and its bridge to real help');
+  }
+}
+
+// ── and the two other surfaces that were arguing with it ──
+{
+  H.section('the screens stop arguing with the fast too');
+
+  // _gentleCounsel EXECUTES here rather than being grepped — the hour is the whole condition, so a
+  // Date stub is the only way to stand at 18:00 on purpose.
+  const at18 = function(){ return { getHours: function(){ return 18; } }; };
+  const counsel = (fasting) => H.load(['_gentleCounsel'], {
+    Date: at18,
+    nutIsToday: () => true,
+    fastSeasonNow: () => (fasting ? { id: 'uposatha', name: 'Uposatha' } : null)
+  })._gentleCounsel;
+
+  const fasting18 = counsel(true)(800, 2000);
+  H.ok(/A fasting day reads light/.test(fasting18), 'at 18:00 on a fast day it does not read as under-eating');
+  H.ok(!/worth asking whether your body/.test(fasting18), 'and drops the "have you actually been fed" nudge');
+  H.ok(/protein and water first/.test(fasting18), 'saying instead when the food should land');
+
+  const ordinary18 = counsel(false)(800, 2000);
+  H.ok(/light day so far/.test(ordinary18), 'someone NOT fasting still gets the honest light-day line');
+  H.ok(!/A fasting day reads light/.test(ordinary18), 'and never the fasting one');
+
+  // A fast only reframes a LIGHT day. Eating well on a fast day is not reinterpreted.
+  H.ok(/eaten well today/.test(counsel(true)(2400, 2000)), 'a full day on a fast still reads as fed');
+
+  // The over-target voice: a fast is the most specific explanation, so it must be asked BEFORE the
+  // luteal and hard-training branches that already make exactly this room. H.code() strips comments
+  // first — two ordering assertions in this file have matched their own explanatory comment.
+  const bs = H.code(H.extractFn('brotherSpeaks'));
+  // ANCHOR ON THE BRANCH, NOT THE CALL. The first cut compared indexOf('fastSeasonNow') — which
+  // finds the `let _fsn = …` declaration, and that stays above both branches whichever order they
+  // run in. Swapping the branches for real left the test green: the assertion could not fail.
+  H.ok(bs.indexOf('fastSeasonNow') > 0, 'the over-target voice asks whether a fast is live');
+  const iFast = bs.indexOf('if(_fsn) ctx'), iLut = bs.indexOf("_cp.key === 'luteal'");
+  H.ok(iFast > 0 && iLut > 0, 'both branches are present');
+  H.ok(iFast < iLut, 'and the fast is asked before the cycle branch, because it is the more specific reason');
+  H.ok(/the shape of it, not a lapse/.test(bs), 'and says a big meal opening a fast is the shape of it');
+  // The season's name is user-typed. Not interpolating it at all is structurally immune, which is
+  // the point of this assertion: it fails if someone later "improves" the line by adding the name.
+  H.ok(!/fastSeasonNow\(\)[\s\S]{0,400}?_fsn\.name/.test(bs),
+    'and never interpolates the name the person typed for their own fast');
+}
+
 H.report();

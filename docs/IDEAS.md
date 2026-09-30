@@ -5,7 +5,7 @@
 
 Six lenses, blind to each other — **anti-app**, **longitudinal**, **moment**, **professional**,
 **threads**, **underserved**. Each produced 4–5 ideas; my harness took only the top 3 per lens to
-refutation, so **eight were never judged at all**. That cap is recorded here rather than hidden,
+refutation, so **nine were never judged at all**. That cap is recorded here rather than hidden,
 because two of the eight are among the strongest on the page.
 
 Every judged idea met refuters told to **default to refuted**. One survived. That is the harness
@@ -25,7 +25,7 @@ know, I've just felt off for a while."*
 
 ## Never judged — 8
 
-Dropped by the `slice(0,3)` cap before any refuter saw them.
+Dropped by the `slice(0,3)` cap before any refuter saw them. (Nine, not eight — my first write-up miscounted.)
 
 | Idea | Cost | What it is |
 |---|---|---|
@@ -103,6 +103,65 @@ Worth reading before building any of them, because every one of these is a real 
 3. **It can shame.** "You have stopped praying" is true, cheap to compute, and against the soul of
    the app.
 4. **It duplicates something already built.** Several were versions of surfaces that exist.
+
+## BUILT, 30 Sep 2026 — and it was a defect, not a feature
+
+I ranked the fast first and went to build it. It was already about 90% there: `FAST_SEASONS` holds
+six seasons (Ramadan, Lent, Uposatha, Navratri, a self-set eating window, and a fast someone sets
+themselves), each with its own `why`, `nourish`, `train` and `fight` counsel; `fastSeasonNow()`
+auto-detects Ramadan from Umm al-Qura, Lent from computus and Uposatha from the moon, each labelled
+with its own honest margin of error; and `lifeStateBrief()` already tells the model **"This is a
+sacred/chosen discipline, NOT a diet — do not nag about an empty daytime food diary."**
+
+That instruction is the whole finding. **The AI was told. The screens never were.**
+`fastSeasonNow()` had exactly two consumers: the brief, and its own card in another tab.
+
+What that cost, in the most sensitive surface the nutrition side has:
+
+- **`_nourishConcern()`** flags three or more days under 1,200/1,500 kcal in seven as possible
+  disordered eating and offers the Butterfly Foundation. **Navratri is nine days of fruit, milk and
+  nuts. Uposatha is no solid food after midday. Ramadan logged honestly is suhoor plus iftar** — a
+  500 kcal suhoor and a 900 kcal iftar is 1,400, under the floor, on a completely ordinary day. A
+  person keeping their own tradition's fast, logging honestly, was being told that counting may have
+  become something they cannot put down.
+- **`brotherSpeaks('calorieOver')`** said *"the day getting away from you"* to someone breaking a
+  fast with a large iftar — in a branch that already makes exactly this room for the luteal phase
+  and for a hard training week.
+- **`_gentleCounsel()`** said *"if you're hungry, eat"* at 20:00 to someone keeping Uposatha.
+
+### The fix is NOT to silence the check
+
+A fast is a documented cover for a restricting eating disorder, so suppressing the card during one
+would weaken the exact path rule 6 says may never be weakened. What a fast changes is what the
+evidence **means**: when most of the low days fall inside a declared season, the clinical reading is
+confounded. So the card still appears and still carries both doors to a human — it just speaks in
+the tradition's own voice, through a new `mercy` field on each season, about who that tradition has
+never bound. Four traditions name a real person to ask (an imam, a priest, a monastic, someone at
+your temple); the two a person sets for themselves name nobody, because there is nobody, and
+inventing one would be the app pretending an authority exists. **Every line reports what the
+tradition holds. None of them rules.**
+
+A minority of fasted days does not reframe the rest (`fasted*2 >= low`), because one Uposatha day
+does not explain four other low days and treating it as if it did would hide the real thing.
+
+### Two things this cost that are worth writing down
+
+**`fastSeasonNow()` could only answer about today.** Asking "is a season live now" says nothing
+about the day the food was logged, so Ramadan's own low days would have tripped the clinical card
+the morning after Eid. It takes an optional timestamp now; every existing caller passes nothing.
+
+**My own ordering test could not fail.** It compared `indexOf('fastSeasonNow')` to decide whether the
+fast branch was asked before the cycle branch — but that finds the `let _fsn = …` declaration, which
+sits above both branches whichever order they run in. Swapping the branches for real left the suite
+green. Anchor on the BRANCH, not on the call. (Seven fault injections in all; two others first came
+back as a CRASH rather than a failure — one was an invalid injection, one was a test dereferencing a
+null instead of reporting, which is rule 2(n) again.)
+
+Reach, measured rather than assumed: the concern card renders for **everyone**, the counsel line only
+in numbers-off mode, and `calorieOver` only when numbers are on — so the latter two cover opposite
+populations rather than the same one twice.
+
+---
 
 ## Where the interest actually is
 

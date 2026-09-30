@@ -304,6 +304,32 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Factors)". Micro coverage by data type, measured over five foods: Foundation 17.6/28, SR Legacy
      23.2, Survey (FNDDS) 27.0 — Survey is tempting and its names are prepared dishes ("Fried
      broccoli", "Lomi salmon"), so that is a real trade-off, left un-made on purpose.
+     **(p) THE AI WAS TOLD AND THE SCREENS WERE NOT, added 30 Sep 2026.** `lifeStateBrief()` has long
+     instructed the model that a fasting season is **"a sacred/chosen discipline, NOT a diet — do
+     not nag about an empty daytime food diary"**. `fastSeasonNow()` had exactly TWO consumers: that
+     brief, and its own card in another tab. So `_nourishConcern()` — which flags 3+ days under
+     1200/1500 kcal in seven as possible disordered eating and offers the Butterfly Foundation —
+     never asked. **Navratri is nine days of fruit, milk and nuts; Uposatha is no solid food after
+     midday; Ramadan logged honestly is a ~500 kcal suhoor and a ~900 kcal iftar.** Each produces
+     exactly that pattern, so a person keeping their own tradition's fast, logging honestly, was told
+     that counting may have become something they cannot put down. Same half-applied shape as the
+     units in (b), inverted: there the screens converted and the voice did not.
+     **The fix may never be to silence it** — a fast is a documented cover for a restricting eating
+     disorder, and rule 6 holds. What a fast changes is what the evidence MEANS: when most of the low
+     days fall inside a declared season the clinical reading is confounded, so the card still appears
+     and still carries both doors to a human, and speaks through a new `mercy` field in the
+     tradition's own voice about who that tradition has never bound. Four seasons name a real person
+     to ask; the two a person sets themselves name nobody, because there is nobody. Every line
+     REPORTS what a tradition holds; none of them rules. A minority of fasted days does not reframe
+     the rest (`fasted*2 >= low`). `fastSeasonNow(whenTs)` now answers about a PAST day — asking
+     only "is a season live now" would have tripped the card the morning after Eid, on evidence the
+     fast had already explained.
+     **And the ordering test could not fail.** It compared `indexOf('fastSeasonNow')` to prove the
+     fast branch is asked before the cycle branch, but that finds the `let _fsn = …` DECLARATION,
+     which sits above both branches in either order; swapping them for real left the suite green.
+     Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
+     than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
+     (n) again.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the

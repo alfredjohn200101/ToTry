@@ -5125,6 +5125,70 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── A FAST IS NOT A SYMPTOM ────────────────────────────────────────────────────────────────────
+  // _nourishConcern() flags 3+ days under 1200/1500 kcal in seven as possible disordered eating and
+  // offers the Butterfly Foundation. A Ramadan day logged honestly is a ~520 kcal suhoor and an
+  // ~880 kcal iftar — 1,400, under the male floor, on a completely ordinary day. lifeStateBrief()
+  // had told the MODEL for versions not to nag a fasting person; fastSeasonNow() had two consumers
+  // and the screens never asked. Driven rather than grepped, both ways, because the whole finding is
+  // what a person READS — and the assertion that matters is that the door to a human survives the
+  // reframing, since a fast is a documented cover for a restricting eating disorder.
+  {
+    // A CONTEXT EACH, and this one is worth the cost. localStorage is per-ORIGIN, not per-page, so
+    // sharing a context let the second person inherit the first's totry_fast_season and the
+    // "nobody is fasting" control was not fast-free. The obvious patch — localStorage.clear() in
+    // the init script — is WORSE: addInitScript re-runs on every navigation, so it fired on the
+    // reload below and wiped the diary that had just been seeded, leaving BOTH people with no data.
+    // The calibration caught both attempts and said THE MEASUREMENT IS WRONG rather than passing
+    // quietly, which is the only reason this is a comment instead of a shipped defect.
+    const read = async (withFast) => {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript((f) => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_guest',true); s('totry_onboarded',true); s('totry_name','Yusuf'); s('totry_sex','male');
+        s('totry_faith_tradition','islam');
+        if (f) { const d=new Date(Date.now()-10*864e5);
+          s('totry_fast_season',{ choice:'ramadan',
+            start:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
+            days:30, shift:0 }); }
+      }, withFast);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2400);
+      // Seed the diary through the APP'S OWN dayKeyOf and ls — a seed built from the reader's idea
+      // of the key format is the one failure mode that goes GREEN while measuring nothing.
+      await page.evaluate(() => { const log={};
+        for (let i=1;i<=5;i++) log[dayKeyOf(Date.now()-i*86400000)] =
+          [{n:'Suhoor',cal:520,p:30,c:60,f:15},{n:'Iftar',cal:880,p:55,c:90,f:28}];
+        ls('totry_nutlog', log); });
+      await page.reload({ waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2400);
+      const out = await page.evaluate(() => new Promise(r => {
+        try { go('nourish'); } catch(e){}
+        setTimeout(() => { try { _renderNourishCare(); } catch(e){}
+          const el = document.getElementById('nut-care');
+          r({ shown: !!(el && el.style.display === 'block'),
+              text: el ? (el.innerText||'').replace(/\s+/g,' ') : '',
+              buttons: el ? [...el.querySelectorAll('button')].map(x=>(x.innerText||'').trim()) : [] });
+        }, 1200); }));
+      await ctx.close();
+      return out;
+    };
+    const fast = await read(true), plain = await read(false);
+    // CALIBRATION: the check is worthless unless the undeclared-fast person still trips the clinical
+    // card on the identical diary. A probe that returns nothing against the broken case is blind.
+    if (!plain.shown || !/counting has started to feel/.test(plain.text))
+      findings.push('fast: THE MEASUREMENT IS WRONG, NOT THE APP — the same diary with no fast declared did not raise the clinical card, so this check proves nothing');
+    else if (!fast.shown)
+      findings.push('fast: the concern card vanished for a fasting person — it must be reframed, never silenced');
+    else if (/counting has started to feel/.test(fast.text))
+      findings.push('fast: a person keeping Ramadan is still told counting may have taken them over');
+    else if (!/your imam is the person to ask/.test(fast.text))
+      findings.push('fast: the card does not name a real person from their own tradition to ask');
+    else if (!fast.buttons.some(b => /Talk to someone/i.test(b)))
+      findings.push('fast: the bridge to real help did not survive the reframing');
+    else console.log('fast: a Ramadan diary reads as the fast, not as a symptom — and the door to a human is still on the card');
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

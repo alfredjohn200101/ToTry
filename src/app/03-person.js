@@ -413,7 +413,14 @@ function brotherSpeaks(moment){
       title = 'Heads up on the food.';
       let ctx = '';
       let _cp = null; try{ _cp = (typeof cyclePhase==='function') ? cyclePhase() : null; }catch(_){ }
-      if(_cp && _cp.key === 'luteal') ctx = ' Your body genuinely wants a bit more in the back half of your cycle \u2014 that is hormones, not willpower \u2014 ';
+      let _fsn = null; try{ _fsn = (typeof fastSeasonNow==='function') ? fastSeasonNow() : null; }catch(_){ }
+      // A fast is the most specific of the three, so it is asked first. Breaking a day's fast with a
+      // big meal is the SHAPE of the fast, not the day getting away from someone — and this chain
+      // already makes exactly this room for the luteal phase and for a hard training week.
+      // The season's name is deliberately NOT interpolated: it is user-typed, and leaving it out is
+      // structurally immune rather than dependent on getting an escape right in a new position.
+      if(_fsn) ctx = ' You\u2019re in a fasting season, and a bigger meal when the fast opens is the shape of it, not a lapse \u2014 ';
+      else if(_cp && _cp.key === 'luteal') ctx = ' Your body genuinely wants a bit more in the back half of your cycle \u2014 that is hormones, not willpower \u2014 ';
       else if(life && life.training && life.training.sessions7 >= 4) ctx = ' You\u2019ve trained hard this week, so your body can use more than usual \u2014 ';
       else ctx = ' ';
       body = 'You\u2019re over today\u2019s target.'+ctx+'I\u2019m not here to police a number. If it\u2019s a real meal you needed, good. If it\u2019s the day getting away from you, maybe the next one\u2019s water and a walk. Your call.';
