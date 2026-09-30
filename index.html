@@ -37847,6 +37847,58 @@ function _fuelShopGenerate(){ _fuelShopSave(true); }
 // a shelf of their own food opened the plan and met a stranger's week. Both ends were already in
 // this app, plus the store routing, the prices, the diary and the whole-person brief; nothing joined
 // them. This is that join, and it needs no third-party service (docs/REELS-TO-PLAN.md, phase 1).
+// WHAT THEY ACTUALLY EAT, WHICH THE PLANNER HAS NEVER ONCE LOOKED AT.
+// _fuelRecipeLines tells the model what they SAVED. This tells it what they REPEATEDLY EAT, which is
+// a different and better thing: a saved recipe is an intention, a meal eaten forty mornings running
+// is a fact about a person. A plan built from food they already reach for is a plan they will keep,
+// and keeping it is the entire problem — docs/THE-GAP.md.
+//
+// Grouped by MEAL SLOT, because "eats oats" is useless and "eats oats at breakfast" is a plan. The
+// threshold is deliberate: a meal eaten three times in two months is noise, and noise in a prompt
+// costs the rest of the brief its attention.
+function _fuelHabitLines(){
+  try{
+    const log = (typeof ls === 'function' ? ls('totry_nutlog') : null);
+    if(!log || typeof log !== 'object') return '';
+    const cutoff = Date.now() - 60 * 86400000;
+    const bySlot = {};                                  // slot -> name -> {n, days:Set}
+    Object.keys(log).forEach(function(day){
+      (log[day] || []).forEach(function(r){
+        if(!r || !r.name) return;
+        const t = r.ts ? new Date(r.ts).getTime() : NaN;
+        if(isFinite(t) && t < cutoff) return;           // a row with no ts is kept; the map is capped anyway
+        const slot = String(r.meal || 'snack');
+        const key = String(r.name).trim().toLowerCase();
+        if(!key) return;
+        const m = (bySlot[slot] = bySlot[slot] || {});
+        const e = (m[key] = m[key] || { n: 0, name: String(r.name).trim(), days: {} });
+        e.n++; e.days[day] = 1;
+      });
+    });
+    const order = ['breakfast','lunch','dinner','snack'];
+    const lines = [];
+    order.forEach(function(slot){
+      const m = bySlot[slot]; if(!m) return;
+      const top = Object.keys(m).map(function(k){ return m[k]; })
+        .map(function(e){ e.dayCount = Object.keys(e.days).length; return e; })
+        .filter(function(e){ return e.dayCount >= 4; })   // four separate days, not four rows in one
+        .sort(function(a, b){ return b.dayCount - a.dayCount; })
+        .slice(0, 3);
+      if(!top.length) return;
+      lines.push('\u00b7 ' + slot + ': ' + top.map(function(e){
+        return e.name + ' (' + e.dayCount + ' days)';
+      }).join(', '));
+    });
+    if(!lines.length) return '';
+    return "\n\nWHAT THEY ACTUALLY EAT, from their own diary over the last two months. This is not a "
+      + "preference list they wrote down \u2014 it is what they have really reached for, repeatedly. Where "
+      + "one of these fits the targets and the dietary rules, USE IT rather than inventing something "
+      + "new: a plan made of food someone already eats is a plan they will still be following in three "
+      + "weeks, and that matters more than a better-optimised one they abandon. Do not force them in, "
+      + "and do not comment on the habit itself:\n" + lines.join('\n');
+  }catch(_){ return ''; }
+}
+
 function _fuelRecipeLines(){
   try{
     const rs = (typeof ls === 'function' ? ls('totry_recipes') : null) || [];
@@ -37969,7 +38021,7 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const _recipeBlock = _fuelRecipeLines();
+  const _recipeBlock = _fuelRecipeLines() + _fuelHabitLines();
   const prompt = _gentleRule + _recipeBlock + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says the science is general \u2014 do NOT write anything about prices being estimates, the app says that itself, with the button that fixes it.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();

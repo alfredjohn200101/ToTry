@@ -8357,6 +8357,63 @@ H.section('the cost of the week is what the list adds up to, and it says what it
     'the prompt stops the note duplicating the app\'s own price caveat');
 }
 
+H.section('the planner reads what they actually eat, not only what they saved');
+{
+  // _fuelRecipeLines tells the model what they SAVED. This tells it what they REPEATEDLY EAT, which
+  // is a different and better thing: a saved recipe is an intention, a meal eaten forty mornings
+  // running is a fact about a person. A plan built from food they already reach for is a plan they
+  // will still be following in three weeks — and keeping it is the entire problem (docs/THE-GAP.md).
+  const DAY = 86400000, now = Date.now();
+  const mk = () => {
+    const log = {};
+    const put = (d, name, meal) => { const k = 'd' + d;
+      (log[k] = log[k] || []).push({ name, meal, ts: new Date(now - d * DAY).toISOString() }); };
+    for(let d = 0; d < 40; d++) put(d, 'Overnight oats', 'breakfast');
+    for(let d = 0; d < 12; d++) put(d, 'Chicken and rice', 'lunch');
+    for(let d = 0; d < 3;  d++) put(d, 'Sushi', 'lunch');            // below the threshold
+    for(let d = 70; d < 80; d++) put(d, 'Old habit', 'dinner');      // outside the window
+    // Four rows on ONE day is not four days — the thing that makes a threshold mean anything.
+    for(let i = 0; i < 6; i++) put(1, 'Protein shake', 'snack');
+    // FIVE qualifying breakfasts, so the cap of three is a cap and not a coincidence. The first cut
+    // of this fixture had two per slot, so slicing at 3 or at 30 gave an identical answer and the
+    // injection passed — the third time in two days a fixture was too small to exercise the limit
+    // it was testing.
+    ['Eggs on toast','Greek yoghurt','Protein pancakes','Smoothie'].forEach(function(n, k){
+      for(let d = 0; d < 30 - k * 5; d++) put(d, n, 'breakfast');
+    });
+    return log;
+  };
+  const lines = H.load(['_fuelHabitLines'], { ls: (k) => (k === 'totry_nutlog' ? mk() : null), Date })._fuelHabitLines();
+
+  H.ok(/breakfast: Overnight oats \(40 days\)/.test(lines), 'what they eat most often leads its slot');
+  H.ok(/lunch: Chicken and rice \(12 days\)/.test(lines), 'and the same for lunch');
+  H.ok(!/Sushi/.test(lines), 'three days is noise, and noise in a prompt costs the rest of the brief its attention');
+  H.ok(!/Old habit/.test(lines), 'and a habit from two months ago is not a habit now');
+  H.ok(!/Protein shake/.test(lines), 'six rows on ONE day is one day, not six');
+  H.ok(/by slot|breakfast:|lunch:/.test(lines), 'grouped by meal, because "eats oats" is useless and "eats oats at breakfast" is a plan');
+  // Capped at three per slot: five breakfasts qualify, three are sent, and the two least-eaten are
+  // the ones left out. A prompt is not a data dump.
+  H.eq((lines.match(/\(\d+ days\)/g) || []).filter(function(x){ return true; }).length <= 7, true,
+    'the block stays small enough to sit beside the rest of the brief');
+  const bfast = (lines.split('\n').find(function(l){ return /breakfast:/.test(l); }) || '');
+  H.eq((bfast.match(/\(\d+ days\)/g) || []).length, 3, 'three per slot, not everything they have ever eaten');
+  H.ok(/Overnight oats/.test(bfast) && /Eggs on toast/.test(bfast), 'and it is the most-eaten that survive');
+  H.ok(!/Smoothie/.test(bfast), 'not the least');
+  H.ok(/do not comment on the habit itself/i.test(lines),
+    'and the model is told not to remark on it — this is a person\'s eating, not a subject for notes');
+
+  H.eq(H.load(['_fuelHabitLines'], { ls: () => null, Date })._fuelHabitLines(), '',
+    'someone with no diary adds nothing to the prompt');
+  H.eq(H.load(['_fuelHabitLines'], { ls: () => ({}), Date })._fuelHabitLines(), '',
+    'and neither does an empty one');
+
+  // WIRED, not merely defined — the shape this repo has shipped broken before.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '17-fuelplan.js'), 'utf8');
+  H.ok(/_fuelRecipeLines\(\) \+ _fuelHabitLines\(\)/.test(src),
+    'and it reaches the prompt beside the saved recipes');
+}
+
 H.section('the meal planner has heard of the food you already chose');
 {
   // `grep -ci recipe src/app/17-fuelplan.js` returned 1 — a passing mention in a dislikes string.
