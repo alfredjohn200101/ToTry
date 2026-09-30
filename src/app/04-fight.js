@@ -1369,6 +1369,61 @@ function _viceBlockLabel(h){
   if(h<6) return 'late night (12-6am)'; if(h<12) return 'morning (6am-12pm)';
   if(h<17) return 'afternoon (12-5pm)'; if(h<21) return 'evening (5-9pm)'; return 'night (9pm-12am)';
 }
+// THE THREAD NO FOOD APP AND NO RECOVERY APP CAN REACH.
+// This app holds the fight log and the food diary in one place, so it can ask a question neither
+// half can: when this person lost, had they eaten? A nutrition app sees a late dinner. A recovery
+// app sees a slip at 9pm. Only something holding both can say "you lose the ones you go into
+// hungry" — and "eat before your hard hour" is counsel, not a platitude.
+//
+// THE HONESTY BAR IS THE WHOLE FEATURE. This is exactly the shape of a claim this repo has already
+// had to kill: "eleven of your fourteen slips came after a night under six hours" was 14 slips,
+// sleep known for 6, ONE under six hours — a base rate of 1/14 wearing a perfect sentence. So this
+// refuses to speak unless the gap is KNOWABLE on enough fights, on BOTH sides, and the difference
+// is big enough that a person could act on it. Silence is the correct answer most of the time.
+function _fightFuelLink(viceName){
+  try{
+    const log = (ls('totry_fight_log') || []).filter(function(e){ return e && e.vice === viceName && e.ts; });
+    if(log.length < 6) return null;
+    const diary = ls('totry_nutlog') || {};
+    // Hours between the last meal LOGGED BEFORE a fight and the fight itself. Unknowable when the
+    // person logged no food that day or the day before — and unknowable is not zero, so those
+    // fights are left out of the comparison entirely rather than counted as "hadn't eaten".
+    const gapFor = function(e){
+      const t = new Date(e.ts).getTime();
+      if(!isFinite(t)) return null;
+      const prev = new Date(t - 86400000);
+      const days = [e.date, (typeof dayKeyOf === 'function') ? dayKeyOf(prev) : null].filter(Boolean);
+      let latest = 0;
+      days.forEach(function(d){
+        (diary[d] || []).forEach(function(r){
+          const rt = r && r.ts ? new Date(r.ts).getTime() : NaN;
+          if(isFinite(rt) && rt < t && rt > latest) latest = rt;
+        });
+      });
+      if(!latest) return null;                       // no meal on record before it: we do not know
+      const hrs = (t - latest) / 3600000;
+      return (hrs >= 0 && hrs <= 24) ? hrs : null;   // beyond a day it is not a meal-to-urge gap
+    };
+    const lost = [], won = [];
+    log.forEach(function(e){ const g = gapFor(e); if(g == null) return; (e.won ? won : lost).push(g); });
+    // Three of each, minimum. Two points is an anecdote with a slope.
+    if(lost.length < 3 || won.length < 3) return null;
+    const med = function(a){ const b = a.slice().sort(function(x, y){ return x - y; });
+      const m = Math.floor(b.length / 2);
+      return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+    const gLost = med(lost), gWon = med(won);
+    // Two hours. Below that it is not something a person can plan around, and saying it would be
+    // dressing noise as insight.
+    if(!(gLost - gWon >= 2)) return null;
+    return { lostHours: Math.round(gLost * 10) / 10, wonHours: Math.round(gWon * 10) / 10,
+             lostN: lost.length, wonN: won.length,
+             line: 'The ones you lost, you went into on an empty stomach \u2014 about '
+                 + Math.round(gLost) + ' hours since you had eaten, against '
+                 + Math.round(gWon) + ' on the ones you won. Eating before your hard hour is not a '
+                 + 'small thing.' };
+  }catch(_){ return null; }
+}
+
 function analyzeUrgePatterns(viceName){
   const log = (ls('totry_fight_log') || []).filter(e => e && e.vice === viceName && e.ts);
   if(log.length < 4) return null; // not enough to be honest about

@@ -8357,6 +8357,64 @@ H.section('the cost of the week is what the list adds up to, and it says what it
     'the prompt stops the note duplicating the app\'s own price caveat');
 }
 
+H.section('the fight and the food, which nothing else holds together');
+{
+  // A nutrition app sees a late dinner. A recovery app sees a slip at 9pm. Only something holding
+  // BOTH can ask whether this person lost the ones they went into hungry — and "eat before your
+  // hard hour" is then counsel rather than a platitude. docs/THE-GAP.md ranks this first because
+  // both datasets are already local and it is true the first week it has data.
+  //
+  // THE HONESTY BAR IS THE WHOLE FEATURE. This is the exact shape of a claim this repo has already
+  // had to kill: "eleven of your fourteen slips came after a night under six hours" was 14 slips,
+  // sleep known for SIX, one under six hours — a base rate of 1/14 wearing a perfect sentence. So
+  // most of these cases assert SILENCE, and that is the point of them.
+  const DAY = 86400000, HR = 3600000, now = Date.now();
+  const run = (spec) => {
+    const fl = [], diary = {};
+    spec.forEach(function(x, i){
+      const t = now - (i + 1) * DAY, day = 'd' + i;
+      fl.push({ vice:'Scrolling', won: x.won, ts: new Date(t).toISOString(), date: day });
+      if(x.ate != null) diary[day] = [{ name:'meal', ts: new Date(t - x.ate * HR).toISOString() }];
+    });
+    return H.load(['_fightFuelLink'], {
+      ls: (k) => (k === 'totry_fight_log' ? fl : k === 'totry_nutlog' ? diary : null),
+      dayKeyOf: () => 'x', Date })._fightFuelLink('Scrolling');
+  };
+  const L = (h) => ({ won:false, ate:h }), W = (h) => ({ won:true, ate:h });
+
+  const real = run([L(7), L(8), L(6), W(2), W(1), W(3)]);
+  H.ok(!!real, 'a real difference is worth saying');
+  H.eq(real.lostHours, 7, 'the median gap on the ones they lost');
+  H.eq(real.wonHours, 2, 'and on the ones they won');
+  H.ok(/empty stomach/.test(real.line) && /hard hour/.test(real.line), 'said as counsel, not as a statistic');
+
+  // EVERY ONE OF THESE MUST BE SILENT.
+  H.eq(run([L(3), L(3), L(4), W(3), W(3), W(2)]), null, 'a gap of under two hours is not something to plan around');
+  H.eq(run([L(7), L(8), W(1)]), null, 'three fights is not a pattern');
+  // The \`log.length < 6\` line is an early-out, not a separate guard: three losses and three wins
+  // already imply six, so nothing can reach the comparison that it alone would have stopped.
+  // Removing it leaves the suite green, and that is correct rather than a gap — noted so nobody
+  // later adds a fake assertion to "cover" it.
+  H.eq(run([L(7), L(8), L(6), { won:true }, { won:true }, { won:true }]), null,
+    'and neither is one where only the losses have food on record');
+  H.eq(run([{won:false},{won:false},{won:false},{won:true},{won:true},{won:true}]), null,
+    'somebody who logs no food at all is told nothing');
+  H.eq(run([L(7), L(8), L(6), L(7), W(2), W(1)]), null, 'two wins is an anecdote with a slope');
+  // UNKNOWABLE IS NOT ZERO. A fight with no meal on record must be LEFT OUT, not counted as "had
+  // not eaten" — counting it would manufacture the very finding this is supposed to earn.
+  const mixed = run([L(7), L(8), L(6), { won:false }, { won:false }, W(2), W(1), W(3)]);
+  H.eq(mixed.lostN, 3, 'fights with no meal on record are excluded, not treated as hungry');
+
+  // AND IT REACHES THE PERSON. Put in the state rather than on a card, so it is in the brief the
+  // brother, the companion and the coach all read — the surfaces met in the moment.
+  const person = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'app', '03-person.js'), 'utf8');
+  H.ok(/fuelLink: \(function\(\)\{ try\{ return \(typeof _fightFuelLink/.test(person),
+    'getLifeState().fight carries it');
+  H.ok(/if\(v\.fuelLink\) bits\.push/.test(person), 'and lifeStateBrief says it');
+  H.ok(/the ones they lost came after about/.test(person), 'in words a model can use without embroidering');
+}
+
 H.section('the planner reads what they actually eat, not only what they saved');
 {
   // _fuelRecipeLines tells the model what they SAVED. This tells it what they REPEATEDLY EAT, which

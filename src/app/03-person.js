@@ -617,6 +617,12 @@ function getLifeState(){
       nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
       topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
+      // THE FIGHT AND THE FOOD, WHICH ONLY THIS APP HOLDS TOGETHER. Put in the STATE rather than on
+      // a card, so it reaches lifeStateBrief() and therefore the brother, the companion and the
+      // coach — the surfaces a person actually meets in the moment. It is null almost always, by
+      // design: it refuses to speak unless the gap is knowable on enough fights, on both sides, and
+      // wide enough to plan around.
+      fuelLink: (function(){ try{ return (typeof _fightFuelLink === 'function') ? _fightFuelLink(v.n) : null; }catch(_){ return null; } })(),
       plan: (v.plan && (v.plan.why||v.plan.move)) ? { why:v.plan.why||null, move:v.plan.move||null } : null
     };
   });
@@ -891,6 +897,10 @@ function lifeStateBrief(s){
       }
       if(v.turnedAway7) bits.push('turned away '+v.turnedAway7+'x this week');
       if(v.hardHour) bits.push('hardest around '+v.hardHour+(v.topTrigger?(', often '+v.topTrigger):''));
+      // The one thing here that no single-front app could ever tell them. Only present when the
+      // evidence cleared its own bar, so the model is never handed a correlation to embroider.
+      if(v.fuelLink) bits.push('and the ones they lost came after about '+Math.round(v.fuelLink.lostHours)
+        +'h without eating, against '+Math.round(v.fuelLink.wonHours)+'h on the ones they won');
       if(v.plan){ if(v.plan.why) bits.push('their WHY (say it back to them): "'+v.plan.why+'"'); if(v.plan.move) bits.push('the move THEY chose: '+v.plan.move); }
       lines.push('· '+v.name+': '+bits.join('; '));
     });
