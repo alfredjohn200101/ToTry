@@ -10581,4 +10581,78 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     'and the helper escapes & at all');
 }
 
+// ══ THE OBJECT DECIDES, AND THIS APP INVITES ONE OF THE SENTENCES ═════════════════════════════
+// Two false positives, both WITNESSED on screen at the Can't-start door on 1 Oct 2026, not merely
+// measured at the function:
+//  · "my quads are going to hurt" returned harmothers and rendered a card reading "If you're
+//    thinking about hurting someone, please step away from the situation right now", with 000, 911
+//    and 999 on it — in an app whose whole job is reporting soreness.
+//  · "i want to die to my old self" raised the full suicide card with six helplines. The Soul tab
+//    TEACHES that idiom. The app invites the words and then treats them as a disclosure.
+// At that door a non-null is a TAKEOVER — the two-minute help-me-start flow is replaced, with no
+// route back — so "false positives are acceptable on an additive surface" does not cover it.
+// Fixed with the detector's own innocent-completion mechanism, not by deleting phrases, and the
+// object-less harmothers entries were replaced by object-ful ones, so COVERAGE WENT UP.
+{
+  H.section('the object decides, and the app invites one of the sentences');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const CASES = [
+    // ORDINARY TRAINING VOCABULARY. These are the sentences the removal of the object-less
+    // 'going to hurt' buys — with it present, three of these returned harmothers.
+    ['my quads are going to hurt', null],
+    ['i am going to hurt after leg day', null],
+    ['leg day is going to hurt', null],
+    ['my legs are going to hurt like hell', null],
+    ["it's going to hurt", null],
+    ['the dentist is going to hurt my tooth', null],
+    ['the rate rise is going to hurt our budget', null],
+    ['missing a week is going to hurt my progress', null],
+    ['this is going to hurt my chances', null],
+    // 'plan to hurt' was object-less too, and these are what it cost. Removing it lost NOTHING:
+    // "i have a plan to hurt myself" is still selfharm via 'hurt myself', "...hurt her" is still
+    // harmothers via 'hurt her', and "...hurt someone" is caught by the entry added below.
+    ['a plan to hurt less tomorrow', null],
+    ['my plan is to hurt less', null],
+    // A POSSESSIVE IS NOT A PERSON. Adding 'hurt someone'/'hurt somebody' closed a real gap and
+    // opened these; one suppression closes them again.
+    ["it could hurt somebody's chances", null],
+    ["this is going to hurt someone's feelings", null],
+    // THE IDIOM THIS APP TEACHES. The Soul tab asks for this sentence.
+    ['i want to die to my old self', null],
+    ['i need to die to my old self', null],
+    ['dying to self', null],
+    ['die to self', null],
+    ['dead to sin', null],
+    ['i want to be dead to sin', null],
+    // MUST STILL FIRE — the point is that removing the object-less entries lost nothing.
+    ['i want to die', 'suicide'],
+    ['i want to kill myself', 'suicide'],
+    ["i don't want to live", 'suicide'],
+    ["i'm going to hurt her", 'harmothers'],
+    ['i want to hurt him', 'harmothers'],
+    // These three were caught by NOTHING before: the bare 'going to hurt' had no object, and
+    // 'hurt them' does not match "someone". Coverage up, false positives down.
+    ["i'm going to hurt someone", 'harmothers'],
+    ["i'm scared i'll hurt someone", 'harmothers'],
+    ['i might hurt somebody', 'harmothers'],
+    ["i'm going to kill her", 'harmothers'],
+    ['i have a plan to hurt myself', 'selfharm'],
+    ['i have a plan to hurt her', 'harmothers'],
+    ['i have a plan to hurt someone', 'harmothers'],
+    // Every suppression that was already there must be untouched by the new ones.
+    ['ending things with my ex', null],
+    ['killing it at work', null],
+    ['go on this cut', null],
+    ['ending things with myself', 'suicide'],
+    ['ending things with my ex and i want to die', 'suicide'],
+    // The \b lesson: "planet" must not be suppressed as "plan".
+    ["i can't go on this planet anymore", 'suicide'],
+    // And the whitespace fix must survive all of this.
+    ['i want to kill  myself', 'suicide'],
+    ["i can't\ngo on", 'suicide'],
+  ];
+  CASES.forEach(([input, want]) => H.eq(detectCrisis(input) || null, want,
+    JSON.stringify(input) + ' → ' + String(want)));
+}
+
 H.report();

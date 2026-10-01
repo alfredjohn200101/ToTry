@@ -330,6 +330,39 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
      than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
      (n) again.
+   - **AND THE GATE CRIED WOLF AT THE ONE DOOR WHERE THAT IS A TAKEOVER (1 Oct 2026).** Two false
+     positives, WITNESSED on screen and not merely measured: `"my quads are going to hurt"` returned
+     **harmothers** and rendered a card reading *"If you're thinking about hurting someone, please
+     step away from the situation right now"* with 000, 911 and 999 on it — in an app whose entire
+     job is reporting soreness. `"i want to die to my old self"` raised the full suicide card with
+     six helplines; **the Soul tab teaches that idiom**, so the app invites the words and then treats
+     them as a disclosure. At the Can't-start door a non-null REPLACES the two-minute help-me-start
+     flow with no route back, so "false positives are acceptable on an additive surface" does not
+     cover it. Cause: `'going to hurt'` and `'plan to hurt'` were in HARMOTHERS_PHRASES with **no
+     object**, and `'want to die'` is a substring of the devotional phrase.
+     Fixed with the detector's own innocent-completion mechanism plus an object-ful phrase list, and
+     **coverage went UP**: `"i'm scared i'll hurt someone"` was previously caught by nothing, because
+     the bare entry had no object and `'hurt them'` does not match "someone". Removing `'plan to
+     hurt'` cost nothing — `"i have a plan to hurt myself"` is still selfharm via `'hurt myself'`.
+     **TWO OF MY OWN SUPPRESSION REGEXES WERE MEASURED AND DELETED.** An earlier draft added
+     body-part and time-of-day suppressions; with the object-less phrase gone they could never
+     match, and the suite stayed green without them. A regex that cannot fire, under a comment
+     claiming it does, is worse than no regex. The possessive one is kept because it IS reachable:
+     it is the only thing between `'hurt somebody'` and *"it could hurt somebody's chances"*.
+     Six fault injections, each caught — and the one that first PASSED is why `'plan to hurt'` has
+     its own benign case (*"a plan to hurt less tomorrow"*) rather than a claim in a comment.
+     **Still open, and named rather than quietly left:** the register this app's population actually
+     types is thin. Measured — plan/means/timing scores **0 of 6** ("i've written a note", "i've got
+     the pills ready", "tonight is the night"), burdensomeness 0 of 3, and ~15 hopelessness and
+     passive-ideation phrasings return null, with near-miss pairs one synonym apart ("i don't want
+     to wake up" fires, "i'd rather not wake up" does not). Negation also inverts the gate ("i am not
+     suicidal" fires) and bereavement reads as crisis. That is a bucket-at-a-time job with a
+     false-positive panel per bucket, NOT a bulk list append — the blanket-sweep lesson applies
+     directly, and bare substrings are exactly how `'going to hurt'` got in.
+     **And `npm run crisis` types ONE phrase** — "i want to kill myself", the single most explicit
+     sentence in the list, at all 35 doors — so 35 green doors prove the WIRING, never the detector.
+     It should drive one sentence per register, and it asserts nothing in the negative direction at
+     all, which is how a police-and-ambulance card for DOMS survived every check in the gate.
    - **`_jsAttr` DID NOT ESCAPE `&`, SO A CHARACTER REFERENCE REACHED COMPILED CODE (1 Oct 2026).**
      It escaped `\`, `'`, `"`→`&quot;` and newline. The HTML parser decodes character references
      BEFORE the JavaScript is compiled, so a typed `&#39;` / `&apos;` / `&#x27;` survived every

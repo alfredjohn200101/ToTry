@@ -1889,7 +1889,19 @@ function detectCrisis(text){
   [/ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
    /keep going to (?!be |feel |live)(?:that |the |my )?[a-z']{1,14}/g,
    /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
-   /killing (?:it|this|the) [a-z]{0,14}/g].forEach(function(re){ _x = _x.replace(re, ' '); });
+   /killing (?:it|this|the) [a-z]{0,14}/g,
+   // DYING TO SELF IS A SENTENCE THIS APP ASKS FOR. Witnessed on screen 1 Oct 2026: "i want to die
+   // to my old self" raised the full suicide card with six helplines, because 'want to die' is a
+   // substring of it. The Soul tab teaches this idiom — the app invites the words and then treats
+   // them as a disclosure. Suppressed as a completion, like the breakup and the gym above, so a real
+   // "i want to die" is untouched.
+   /\bdy?i(?:e|ng) (?:to|unto) (?:my |the |his |her |your )?(?:old |former )?self\b/g,
+   /\bdead to sin\b/g,
+   // "HURT SOMEONE'S <THING>" IS A POSSESSIVE, NOT A PERSON. Adding 'hurt someone' and
+   // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
+   // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.
+   // The object decides here too.
+   /hurt (?:someone|somebody|anyone|anybody)'s [a-z']{1,16}/g].forEach(function(re){ _x = _x.replace(re, ' '); });
     return _x;
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
@@ -1961,9 +1973,23 @@ function detectCrisis(text){
   ];
   
   // Harm to others
+  // THE OBJECT DECIDES, AND REMOVING THE OBJECT-LESS ENTRIES IS THE WHOLE FIX. 'going to hurt' and
+  // 'plan to hurt' carried NO object, so in an app whose entire job is reporting soreness they fired
+  // on "my quads are going to hurt" and "i am going to hurt after leg day" — witnessed on screen at
+  // the Can't-start door rendering a step-away-from-them card with 000, 911 and 999 on it, and
+  // REPLACING the help-me-start flow. They also fired on "the dentist is going to hurt my tooth",
+  // "the rate rise is going to hurt our budget" and "missing a week is going to hurt my progress".
+  // Nothing true is lost: every person-directed form is already here by its object, and the two
+  // genuinely uncovered ones — someone and somebody — are added, so COVERAGE GOES UP while the
+  // false positives go away. ("i'm scared i'll hurt someone" was previously caught by nothing.)
+  // An earlier draft of this fix also added two suppression regexes for the body-part and
+  // time-of-day completions. They were measured and DELETED: with the object-less phrase gone they
+  // could never match, and a regex that cannot fire alongside a comment claiming it does is worse
+  // than no regex. The possessive one above is kept because it IS reachable — it is the only thing
+  // standing between 'hurt somebody' and "it could hurt somebody's chances".
   const HARMOTHERS_PHRASES = [
     'kill her', 'kill him', 'kill them', 'hurt her', 'hurt him', 'hurt them',
-    'shoot up', 'going to hurt', 'plan to hurt'
+    'hurt someone', 'hurt somebody', 'shoot up'
   ];
   
   // Medical emergency. NOTE: bare 'stroke' fired on every swim/row/rep question in a training app
