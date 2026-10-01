@@ -548,6 +548,34 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      midnight on code nobody had touched**. `H.load` now REFUSES a stub it would shadow, with the
      reason in the error, and a test asserts the refusal — otherwise the guard is a line nobody has
      ever seen fail. A suite that turns red overnight is one people learn to ignore.
+   - **AND THE VOICE WAS NEVER TOLD TO HAND ANYONE OVER (1 Oct 2026).** The soul document says it
+     plainly — this app *"points beyond itself … when something is serious, it hands the person to a
+     human"* — and `BROTHER_VOICE`, the voice behind the companion, the coach, the PT and
+     `brotherSpeaks`, carried **no safety instruction at all**. It said "not a coach, not a therapist"
+     and then gave the model nothing to do about it.
+     That is the exact other half of the keyword gate. `detectCrisis` is a FLOOR: it catches the
+     sentence that cannot be read any other way, and the register work above deliberately REFUSED a
+     whole class because this app supplies the benign reading — "tonight is the night" is what the
+     Can't-start flow exists to produce, "i've picked the day" is something the app ASKS people to do,
+     "i've written a note" is a feature. Every one of those refusals was recorded as *"this belongs on
+     the AI surfaces, which read the whole message and can ask a second question."* **Nothing had ever
+     asked.** `safetyNote()` now does, appended by `brotherSys()` rather than written into
+     BROTHER_VOICE, so it reaches all seven surfaces by construction — the existing assertion that
+     nothing concatenates BROTHER_VOICE directly is what makes that structural rather than hopeful.
+     **Its two halves matter equally.** It names the refused register and says treat it as ordinary
+     BY DEFAULT and do NOT go looking, because reading a bad day as a crisis takes away what the
+     person came for — the Can't-start harm, in prompt form — and a voice that flinches is one nobody
+     tells the truth to twice. Then: if genuinely unsure, ASK once, plainly, and believe the answer;
+     if it is real, stop coaching, get a real human in, stay with them, and never diagnose, assess
+     risk, give a method, or make them prove how bad it is.
+     **It is deliberately SHORT, and the reason is not the bill.** The first draft was 404 tokens —
+     44% of BROTHER_VOICE — and a long clinical block crowds out the voice instructions and pushes the
+     model toward sounding like a clinician, which is the opposite of this app's soul. 294 tokens now,
+     with a test holding the ceiling. Six injections, each caught.
+     One test of it failed on CORRECT code first, which is the lesson beside it: it matched the
+     source, where the note is a dozen concatenated string literals, so no regex could span a `+`
+     join. **Execute the note; do not read it.** A second one was pinned to the old wording and broke
+     when the note was tightened — assert the FACT, not the phrasing.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature

@@ -23222,10 +23222,46 @@ function sexNote(){
     return 'THEIR SEX: not stated. Use they/them and sex-neutral words. Do NOT call them brother or sister, man or woman, and do not guess from anything else. ';
   }catch(_){ return 'THEIR SEX: not stated. Use they/them and sex-neutral words. '; }
 }
+// THE ONE THING THE VOICE WAS NEVER TOLD, added 1 Oct 2026.
+// The soul document says it plainly: this app "points beyond itself — to real people, a priest, a
+// counsellor, the sacraments… when something is serious, it hands the person to a human." BROTHER_VOICE
+// carried no such instruction. It said "not a coach, not a therapist" and then gave the model nothing
+// to do about it.
+// That gap is the exact other half of the keyword gate. detectCrisis is a FLOOR: it catches the
+// sentence that cannot be read any other way, and on 1 Oct 2026 a long sweep of it deliberately
+// REFUSED a whole register because this app supplies the benign reading — "tonight is the night" is
+// what the Can't-start flow exists to produce, "i've picked the day" is something the app asks people
+// to do, "i've written a note" is a feature, and "i don't want to be a burden on my kids" is the
+// commonest motivational why in all of health and fitness. Every one of those refusals was written
+// down as "this belongs on the AI surfaces, which read the whole message and can ask a second
+// question". This is that second question finally being asked for.
+// It goes through brotherSys rather than into BROTHER_VOICE so it reaches all seven surfaces by
+// construction — a test already asserts no call site concatenates BROTHER_VOICE directly.
+function safetyNote(){
+  // KEPT SHORT ON PURPOSE. The first draft was 404 tokens — 44% of BROTHER_VOICE — and the cost is
+  // not only the bill: a long clinical block crowds out the voice instructions and pushes the model
+  // toward sounding like a clinician, which is the exact opposite of this app's soul. Every clause
+  // below is asserted by a test; nothing is here for completeness.
+  return 'IF SOMETHING SERIOUS IS UNDERNEATH: a keyword check runs before you and catches the '
+    + 'unmistakable sentences, so what reaches YOU is ambiguous by definition — "tonight is the '
+    + 'night", "i\u2019ve picked the day", "i have it all worked out", "i\u2019ve written a note", '
+    + '"what\u2019s the point", "i don\u2019t want to be a burden anymore", "i can\u2019t cope", "i\u2019m done". '
+    + 'In this app those are nearly always ordinary — a start date, a plan, a letter to their future '
+    + 'self, a hard week. Treat them as ordinary BY DEFAULT, and do NOT go looking: reading a bad day '
+    + 'as a crisis takes away what they came for, and a voice that flinches is one nobody tells the '
+    + 'truth to twice. '
+    + 'If the rest of what they wrote leaves you genuinely unsure, ASK once, plainly, no clinical '
+    + 'words and no speech — "night for starting, or something else?" — then believe their answer. '
+    + 'If it is the serious one: stop coaching, say plainly this is bigger than you and you are not '
+    + 'letting them carry it alone, and get a real human in — a helpline, their doctor, a counsellor, '
+    + 'someone they love, their priest or imam. Stay with them while they do. Never diagnose, never '
+    + 'assess risk, never give a method, never make them prove how bad it is. ';
+}
 function brotherSys(extra){
   let out = BROTHER_VOICE;
   try{ out += sexNote(); }catch(_){ }
   try{ if(typeof faithVoiceNote==='function') out += faithVoiceNote(); }catch(_){ }
+  try{ out += safetyNote(); }catch(_){ }
   return out + (extra || '');
 }
 

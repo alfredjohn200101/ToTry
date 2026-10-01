@@ -11488,4 +11488,78 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     'and with the anymore tail the register entries carry — a clause end alone would have lost it');
 }
 
+// ══ THE VOICE WAS NEVER TOLD TO HAND ANYONE OVER ══════════════════════════════════════════════
+// The soul document says it plainly: this app "points beyond itself — to real people, a priest, a
+// counsellor, the sacraments… when something is serious, it hands the person to a human."
+// BROTHER_VOICE — the voice behind the companion, the coach, the PT and brotherSpeaks — carried no
+// such instruction. It said "not a coach, not a therapist" and then gave the model nothing to do
+// about it.
+// That is the exact other half of the keyword gate. detectCrisis is a FLOOR: it catches the sentence
+// that cannot be read any other way, and the register work of 1 Oct 2026 deliberately REFUSED a whole
+// class because this app supplies the benign reading — "tonight is the night" is what the Can't-start
+// flow exists to produce, "i've picked the day" is something the app ASKS people to do, "i've written
+// a note" is a feature, and "i don't want to be a burden on my kids" is the commonest motivational
+// why in all of health and fitness. Every one of those refusals was recorded as "this belongs on the
+// AI surfaces, which read the whole message and can ask a second question". Nothing had ever asked.
+// It is appended by brotherSys(), not written into BROTHER_VOICE, so it reaches all seven surfaces by
+// construction — the assertion below that nothing concatenates BROTHER_VOICE directly is what makes
+// that structural rather than hopeful.
+{
+  H.section('the voice hands someone over');
+  const code = H.code();
+
+  // ── it exists, and the assembler carries it ──
+  H.ok(/function safetyNote\(\)/.test(code), 'there is a safety note');
+  const sys = H.code(H.extractFn('brotherSys'));
+  H.ok(/safetyNote\(\)/.test(sys), 'and brotherSys appends it, so every surface inherits it');
+  H.ok(/sexNote\(\)/.test(sys) && /faithVoiceNote/.test(sys),
+    'alongside the sex and faith notes it already carried');
+  // THE STRUCTURAL GUARANTEE. If a call site ever hand-rolls the prompt again it bypasses all three.
+  H.eq((code.match(/(?<!function )BROTHER_VOICE\s*\+/g) || []).length, 0,
+    'and nothing concatenates BROTHER_VOICE directly, which is what makes the guarantee structural');
+
+  // EXECUTE IT, do not read it. The note is built from a dozen concatenated string literals, so a
+  // regex over the SOURCE cannot span a `+` join — two assertions here failed on correct code for
+  // exactly that reason before this line read the returned string instead.
+  const note = H.load(['safetyNote']).safetyNote();
+  H.ok(note.length > 600, 'calibration: the note is actually built and returned, not empty');
+  // ── it names the register the keyword floor deliberately refuses ──
+  // Without these the model is told to be careful in the abstract, which is the same as not being
+  // told: the whole point is the specific sentences detectCrisis will never raise.
+  ['tonight', 'picked the day', 'worked out', 'written a', 'what', 'burden', 'cope', 'done']
+    .forEach(w => H.ok(note.toLowerCase().includes(w.toLowerCase()),
+      'the note names the refused register: ' + JSON.stringify(w)));
+
+  // ── it defaults to ORDINARY, which is the half that protects the person ──
+  // A voice that reads a hard day as a crisis takes away the thing they came for. That is the
+  // witnessed harm at the Can't-start door, in prompt form.
+  H.ok(/ordinary BY DEFAULT|as ordinary/i.test(note), 'it treats the register as ordinary by default');
+  H.ok(/do NOT go looking/i.test(note), 'and is told not to go looking for a crisis');
+  H.ok(/nobody\s+tells the truth to twice|flinches/i.test(note),
+    'with the reason, so it is a principle and not a rule to be optimised around');
+
+  // ── it ASKS rather than assumes, which is the only honest move on an ambiguous sentence ──
+  H.ok(/\bASK\b/.test(note), 'it asks instead of assuming');
+  H.ok(/believe their answer/i.test(note), 'and believes the answer');
+  // Asserts the FACT, not the phrasing — this failed once on correct code when the note was
+  // tightened from 404 tokens to 294 and the wording changed from "without clinical language" to
+  // "no clinical words".
+  H.ok(/clinical/i.test(note) && /speech/i.test(note), 'without turning into a clinician');
+  // And the note must stay SHORT: a long clinical block crowds out the voice instructions and
+  // pushes the model toward sounding like a clinician, which is the opposite of the app's soul.
+  H.ok(note.length < 1400, 'and stays short enough not to crowd out the voice (' + note.length + ' chars)');
+
+  // ── and when it IS real, it hands over, which is the soul document's own promise ──
+  H.ok(/helpline/i.test(note) && /counsellor/i.test(note) && /doctor/i.test(note),
+    'it names real humans to hand to');
+  H.ok(/priest|imam/i.test(note), 'including the ones a person of faith would want');
+  H.ok(/not letting\s+them carry it alone|Stay with them/i.test(note),
+    'and stays with them while they do it');
+  H.ok(/never diagnose/i.test(note) && /never assess risk/i.test(note),
+    'while refusing to diagnose or assess risk');
+  H.ok(/never give a method/i.test(note), 'and refusing to give a method');
+  H.ok(/never make them\s+prove how bad/i.test(note), 'and never making them prove how bad it is');
+  H.ok(/stop coaching/i.test(note), 'and stops coaching, which is the whole hand-off');
+}
+
 H.report();
