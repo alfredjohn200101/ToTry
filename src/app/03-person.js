@@ -1854,7 +1854,25 @@ function detectCrisis(text){
   // use: "i don’t want to live anymore" would not match and the gate would never fire. We normalise
   // every curly/typographic apostrophe to ASCII, and also match an apostrophe-STRIPPED pass so
   // "dont want to live" lands too. This makes the phrase lists below work as written on any keyboard.
-  let t = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  // TWO NORMALISED FORMS, AND BOTH ARE LOAD-BEARING. The phrase lists are matched with
+  // String.includes, so one extra space, a newline or a non-breaking space ANYWHERE INSIDE a matched
+  // phrase made it miss: measured 30 Sep 2026 over five real disclosures × nine spacings, 21 of 35
+  // variants MISSED. "i can't\ngo on" missed — somebody pressing Enter mid-sentence in a textarea.
+  // "i want to kill  myself" missed on one doubled space while "i want to  kill myself" matched,
+  // because that space fell OUTSIDE the matched substring: the same sentence, caught or not
+  // depending on which word the thumb stuttered after.
+  // BUT COLLAPSING ALONE MOVES THE BUG, which the existing suite caught within a minute: SUICIDE_RE
+  // below reads a NEWLINE AS A CLAUSE END (`can'?t go on\s*(?:[.!?,\n\r]|$)`) precisely so it does
+  // not fire on "can't go on this cut" — so turning that newline into a space made
+  // "I can't go on\nI don't know what else to say" stop matching. One form cannot serve both: a
+  // newline is a sentence boundary in one sentence and a line wrap in the next. So we keep both and
+  // a hit in EITHER fires. `t` preserves the newline for the clause-end regexes; `tc` collapses it
+  // for the phrase lists.
+  // \s covers tab, newline, U+00A0, U+202F, U+3000, U+2028 and U+FEFF — measured, not assumed — but
+  // NOT the zero-width family U+200B–U+200D, which arrives by paste, so those are named explicitly.
+  // They collapse TO A SPACE rather than being removed, because a zero-width character typed in
+  // place of a space ("kill\u200bmyself") must still read as two words.
+  const _base = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
   // INNOCENT COMPLETIONS. A few phrases below are serious on their own and ordinary when finished a
   // particular way: "ending things WITH MY EX", "no reason to keep going TO THAT GYM", "can't go on
   // THIS CUT". Dropping those phrases would reopen real misses, so instead the benign span is removed
@@ -1867,12 +1885,20 @@ function detectCrisis(text){
   // this gate exists for — and v444's span matched both, because "myself" is under fourteen characters.
   // The negative lookahead is the whole safety of this mechanism: suppress only when the object is
   // plainly another person or a place, never when it is the person, their life, or it all.
+  const _suppress = function(_x){
   [/ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
    /keep going to (?!be |feel |live)(?:that |the |my )?[a-z']{1,14}/g,
    /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
-   /killing (?:it|this|the) [a-z]{0,14}/g].forEach(function(re){ t = t.replace(re, ' '); });
-  const tNo = t.replace(/'/g, '');
-  const _hit = function(list){ for(const p of list){ if(t.includes(p) || tNo.includes(p.replace(/'/g,''))) return true; } return false; };
+   /killing (?:it|this|the) [a-z]{0,14}/g].forEach(function(re){ _x = _x.replace(re, ' '); });
+    return _x;
+  };
+  // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
+  // cut" is suppressed in the collapsed form exactly as "i can't go on this cut" already was.
+  const t = _suppress(_base);
+  const tc = _suppress(_base.replace(/[\s​-‍﻿]+/g, ' ').trim());
+  const tNo = t.replace(/'/g, ''), tcNo = tc.replace(/'/g, '');
+  const _hit = function(list){ for(const p of list){ const q = p.replace(/'/g,'');
+    if(t.includes(p) || tNo.includes(q) || tc.includes(p) || tcNo.includes(q)) return true; } return false; };
 
   // Direct self-harm / suicide indicators
   const SUICIDE_PHRASES = [
@@ -1977,7 +2003,8 @@ function detectCrisis(text){
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/
   ];
-  const _hitRe = function(list){ for(const re of list){ if(re.test(t) || re.test(tNo)) return true; } return false; };
+  const _hitRe = function(list){ for(const re of list){
+    if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
 
   if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE))    return 'suicide';
   if(_hit(SELFHARM_PHRASES))   return 'selfharm';

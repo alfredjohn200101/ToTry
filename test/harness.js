@@ -46,6 +46,16 @@ function extractFn(name){
 const DAY_PRIMITIVES = ['dayKeyNorm', 'dayKeyOf', '_dayKeyEnginePads'];
 // Define the named functions (+ any provided globals/stubs) in one scope and return them.
 function load(names, globals){
+  // A STUB FOR A DAY PRIMITIVE IS SILENTLY IGNORED, SO REFUSE IT. The primitives are prepended as
+  // real `function` DECLARATIONS, and a declaration shadows the same-named parameter — so
+  // `H.load([...], { dayKeyOf: () => '30/09/2026' })` passes a stub that never once runs. Three
+  // call sites in core.test.js did exactly that. Two were harmless; the third asserted against the
+  // hardcoded string, so it passed all day on 30 Sep 2026 and went RED at midnight on correct
+  // code. A suite that turns red overnight is one people learn to ignore.
+  const _shadowed = Object.keys(globals || {}).filter(k => DAY_PRIMITIVES.indexOf(k) >= 0);
+  if(_shadowed.length) throw new Error('H.load: cannot stub ' + _shadowed.join(', ') +
+    ' — the real source is prepended as a function declaration and shadows the parameter, so the ' +
+    'stub never runs. Name it in `names` to get the REAL one back and derive expectations from it.');
   const src = DAY_PRIMITIVES.concat(names).map(extractFn).join('\n\n');
   const provided = Object.assign({
     Math, Date, JSON, Array, Object, isNaN, parseFloat, parseInt, String, Number, RegExp, console

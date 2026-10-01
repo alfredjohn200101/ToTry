@@ -8186,7 +8186,7 @@ H.section('a plan is an intention; only what actually happened reaches the diary
         if(k === 'totry_nutlog') return v === undefined ? state.log : (state.log = v);
         return v;
       },
-      dayKeyOf: () => '30/09/2026', _pruneNutLog: () => {}, syncToCloud: () => {},
+      _pruneNutLog: () => {}, syncToCloud: () => {},
       renderNutritionLog: () => {}, autoTickHabits: () => {}, haptic: () => {},
       closeModal: () => {}, showToast: () => {}, _fuelRenderPlan: () => {},
       document: { getElementById: () => null },
@@ -8196,7 +8196,12 @@ H.section('a plan is an intention; only what actually happened reaches the diary
     });
     return { fns, state };
   };
-  const rowsOf = (st) => st.log['30/09/2026'] || [];
+  // ASK THE APP WHICH DAY IT IS. This read st.log['30/09/2026'] against a dayKeyOf stub that never
+  // ran (H.load prepends the real one as a declaration, which shadows the parameter — the harness
+  // now refuses that stub outright). So it asserted a literal that happened to be correct on the day
+  // it was written, and went RED at midnight on code nobody had touched.
+  const TODAY = H.load(['dayKeyOf']).dayKeyOf();
+  const rowsOf = (st) => st.log[TODAY] || [];
 
   H.defer((async function(){
     // THE BULK PATH IS A CLAIM THEY MAKE, NOT ONE THE APP MAKES FOR THEM.
@@ -8207,7 +8212,7 @@ H.section('a plan is an intention; only what actually happened reaches the diary
     const yes = build(mkPlan(), { confirm:true });
     await yes.fns._fuelLogPlan();
     H.eq(rowsOf(yes.state).length, 2, 'confirming it records the meals');
-    H.ok(yes.state.plan.meals.every(function(m){ return m.ateOn === '30/09/2026'; }),
+    H.ok(yes.state.plan.meals.every(function(m){ return m.ateOn === TODAY; }),
       'and marks them, so a second tap cannot record the same dinner twice');
     const again = yes.fns._fuelLogPlan();
     await again;
@@ -8222,7 +8227,7 @@ H.section('a plan is an intention; only what actually happened reaches the diary
     H.eq(one.state.plan.meals[1].ateOn, undefined, 'and leaves the one they did not alone');
     // The meal they DID eat must be marked, or the row keeps offering "I ate this" and the same
     // dinner goes down twice. Checking only the unmarked one left this injectable.
-    H.eq(one.state.plan.meals[0].ateOn, '30/09/2026', 'the meal they ate is marked done');
+    H.eq(one.state.plan.meals[0].ateOn, TODAY, 'the meal they ate is marked done');
     H.eq(one.state.plan.meals[0].ateServings, 1.5, 'with how much of it, so the row can say so');
     // The recipe's own figures, scaled by what they had: 508 for a serving, 762 for one and a half.
     // 2030 kcal over four servings is 507.5, and 1.5 of those is 761.25 — rounded ONCE at the end
@@ -8378,7 +8383,9 @@ H.section('the fight and the food, which nothing else holds together');
     });
     return H.load(['_fightFuelLink'], {
       ls: (k) => (k === 'totry_fight_log' ? fl : k === 'totry_nutlog' ? diary : null),
-      dayKeyOf: () => 'x', Date })._fightFuelLink('Scrolling');
+      // No dayKeyOf stub — it never ran. This fixture carries its own `date` fields and the
+      // function reads `ts`, so the real day key is irrelevant here.
+      Date })._fightFuelLink('Scrolling');
   };
   const L = (h) => ({ won:false, ate:h }), W = (h) => ({ won:true, ate:h });
 
@@ -9176,8 +9183,9 @@ H.section('a logged plan lands in the meals it was built for, not all in Snacks'
       renderNutritionLog: () => {}, renderNutrition: () => {}, updateTrackerDisplay: () => {},
       recomputeAdaptiveTDEE: () => {}, autoTickHabits: () => {}, closeModal: () => {},
       _fuelRenderPlan: () => {}, document: { getElementById: () => null },
-      askConfirm: async () => true, plural: (n, w) => n + ' ' + w, NUTRIENTS: ['cal','pro','carb','fat'],
-      dayKeyOf: () => '30/09/2026'
+      askConfirm: async () => true, plural: (n, w) => n + ' ' + w, NUTRIENTS: ['cal','pro','carb','fat']
+      // No dayKeyOf stub: it could never run, and this block does not need one — it asserts that
+      // exactly ONE day is written and reads that key back, whatever it is.
     });
     H.defer(_fuelLogPlan(null).then(function(){
       const days = Object.keys(store.totry_nutlog || {});
@@ -10411,6 +10419,96 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // the point of this assertion: it fails if someone later "improves" the line by adding the name.
   H.ok(!/fastSeasonNow\(\)[\s\S]{0,400}?_fsn\.name/.test(bs),
     'and never interpolates the name the person typed for their own fast');
+}
+
+// ══ A DISCLOSURE SPACED DIFFERENTLY IS THE SAME DISCLOSURE ════════════════════════════════════
+// detectCrisis() is what all 35 crisis doors stand on, and it matches its phrase lists with
+// String.includes — so a single extra space, a newline or a non-breaking space ANYWHERE INSIDE a
+// matched phrase made it miss. Measured 30 Sep 2026 over five real disclosures × seven spacings:
+// 21 of 35 variants MISSED, 0 after the fix. Found while adversarially attacking ONE door's gate,
+// which is the argument for attacking a region rather than ticking off a list — the door was fine
+// and the detector under every door was not.
+// This EXECUTES the shipped function. A grep of the normalisation line would pass on a wrong
+// character class, which is the whole defect being guarded here.
+{
+  H.section('a disclosure spaced differently is the same disclosure');
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // CALIBRATION FIRST. If the plain forms do not fire, this check is measuring nothing and every
+  // assertion below would pass for the wrong reason.
+  const PLAIN = ['i want to kill myself', "i can't go on", 'i want to die', 'end my life', "i don't want to live"];
+  PLAIN.forEach(p => H.ok(!!detectCrisis(p), 'calibration: "' + p + '" is detected at all'));
+
+  // \s covers tab, newline, U+00A0, U+202F, U+3000, U+2028 and U+FEFF — measured, not assumed.
+  // It does NOT cover U+200B–U+200D, which is why they are named explicitly in the fix.
+  const SPACINGS = [
+    ['a doubled space', s => s.replace(/ /g, '  ')],
+    ['a newline', s => s.replace(/ /g, '\n')],
+    ['a tab', s => s.replace(/ /g, '\t')],
+    ['one doubled space only', s => s.replace(' ', '  ')],
+    ['a non-breaking space', s => s.replace(/ /g, '\u00a0')],
+    ['a narrow no-break space', s => s.replace(/ /g, '\u202f')],
+    ['an ideographic space', s => s.replace(/ /g, '\u3000')],
+    ['a zero-width space', s => s.replace(/ /g, '\u200b')],
+    ['a zero-width joiner', s => s.replace(/ /g, '\u200d')],
+  ];
+  let missed = 0;
+  PLAIN.forEach(base => SPACINGS.forEach(([name, f]) => { if (!detectCrisis(f(base))) missed++; }));
+  H.eq(missed, 0, 'every one of the ' + (PLAIN.length * SPACINGS.length) + ' spacing variants is still detected');
+
+  // The two shapes a real person actually produces, named so a regression says which one broke.
+  H.ok(!!detectCrisis("i can't\ngo on"),
+    'pressing Enter mid-sentence in a textarea does not hide a disclosure');
+  H.ok(!!detectCrisis('i want to kill  myself'),
+    'double-tapping the spacebar before the last word does not hide one either');
+  // This one matched BEFORE the fix, because the extra space fell outside the matched substring.
+  // Keeping both is the point: the same sentence used to be caught or not depending on WHICH word
+  // the thumb stuttered after.
+  H.ok(!!detectCrisis('i want to  kill myself'), 'nor after an earlier word');
+  H.ok(!!detectCrisis('today was hard.\ni don\u2019t want to live\nanymore.'),
+    'a multi-line journal entry with a curly apostrophe still fires');
+
+  // AND THE FIX MUST NOT HAVE MADE IT TRIGGER-HAPPY. A false positive on these is its own harm:
+  // someone stuck on their tax return handed a suicide helpline. The last four are the detector's
+  // own innocent-completion suppressions, which the new collapse runs BEFORE.
+  ['the assignment', 'the washing up', 'call the dentist', 'my tax return',
+   "mum's birthday present", "i can't start my car", 'ending things with my ex',
+   'this workout is going to kill me', 'killing it at work', 'go on this cut'
+  ].forEach(p => H.eq(detectCrisis(p), null, 'ordinary text stays ordinary: "' + p + '"'));
+  // The suppressions must survive the collapse in their SPACED forms too — the collapse feeds them.
+  H.eq(detectCrisis('ending  things  with  my  ex'), null, 'and a benign span still suppresses when spaced oddly');
+  // ...but a real disclosure in the same sentence as a benign span still fires.
+  H.ok(!!detectCrisis('ending things with my ex and i want to die'),
+    'while a disclosure beside a benign span is not suppressed with it');
+
+  // The apostrophe normalisation this sits beside must still work — it was the LAST fix to this
+  // function and the obvious thing for a new .replace() chain to break.
+  H.ok(!!detectCrisis('i don\u2019t want to live'), 'the iOS curly apostrophe still normalises');
+  H.ok(!!detectCrisis('i dont want to live'), 'and the apostrophe-stripped pass still lands');
+
+  // AND THE HARNESS MUST REFUSE A STUB IT WOULD SHADOW. This is how the date bomb got written:
+  // three call sites passed `dayKeyOf: () => '30/09/2026'`, H.load prepends the real dayKeyOf as a
+  // function DECLARATION, a declaration shadows the same-named parameter, and the stub never ran.
+  // One of the three asserted against that literal, so it passed all day on 30 Sep and went red at
+  // midnight on code nobody had touched. The guard exists so a fourth cannot be written; without
+  // this assertion the guard itself is a line nobody has ever seen fail.
+  let _threw = null;
+  try{ H.load(['detectCrisis'], { dayKeyOf: () => '30/09/2026' }); }catch(e){ _threw = e.message; }
+  H.ok(!!_threw && /cannot stub dayKeyOf/.test(_threw),
+    'H.load refuses a stub for a day primitive instead of ignoring it silently');
+  H.ok(!!_threw && /never runs/.test(_threw), 'and says why, so the next person does not re-learn it');
+  // The other two primitives are covered by the same list, so check one of them too.
+  let _threw2 = null;
+  try{ H.load(['detectCrisis'], { dayKeyNorm: () => 'x' }); }catch(e){ _threw2 = e.message; }
+  H.ok(!!_threw2, 'and refuses one for dayKeyNorm as well');
+  // An ORDINARY stub must still work, or the guard is too wide.
+  H.eq(typeof H.load(['detectCrisis'], { showToast: () => {} }).detectCrisis, 'function',
+    'while an ordinary stub is still accepted');
+
+  // Non-strings and empties must answer null rather than throw: every door calls this on whatever
+  // a field happens to hold.
+  [null, undefined, 123, {}, [], '', '   ', '\n\n'].forEach(bad =>
+    H.eq(detectCrisis(bad), null, 'answers null for ' + JSON.stringify(bad) + ' rather than throwing'));
 }
 
 H.report();

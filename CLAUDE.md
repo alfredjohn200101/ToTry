@@ -330,6 +330,31 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
      than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
      (n) again.
+   - **AND THE DETECTOR UNDER ALL 35 DOORS DID NOT COLLAPSE WHITESPACE (1 Oct 2026).**
+     `detectCrisis()` matches its phrase lists with `String.includes`, so ONE extra space, a newline
+     or a non-breaking space anywhere INSIDE a matched phrase made it miss. Measured over five real
+     disclosures × nine spacings: **21 of 35 variants MISSED**, 0 after the fix. `"i can't\ngo on"`
+     missed — somebody pressing Enter mid-sentence in a textarea. `"i want to kill  myself"` missed
+     on one doubled space while `"i want to  kill myself"` matched, because that space fell OUTSIDE
+     the matched substring: the same sentence, caught or not depending on which word the thumb
+     stuttered after. `\s` covers tab, newline, U+00A0, U+202F, U+3000, U+2028 and U+FEFF — measured,
+     not assumed — but NOT the zero-width family U+200B–U+200D, which arrives by paste.
+     **COLLAPSING ALONE MOVES THE BUG, and the existing suite caught it in one run.** `SUICIDE_RE`
+     reads a NEWLINE AS A CLAUSE END (`can'?t go on\s*(?:[.!?,\n\r]|$)`) precisely so it does not
+     fire on "can't go on this cut" — so turning that newline into a space stopped
+     "I can't go on\nI don't know what else to say" matching. One form cannot serve both: a newline
+     is a sentence boundary in one sentence and a line wrap in the next. So BOTH are kept (`t`
+     preserves it, `tc` collapses it) and a hit in either fires. Fault-injected five ways, including
+     one that deletes the clause-end form, so the test proves the old behaviour was preserved rather
+     than replaced.
+     **A STUB FOR A DAY PRIMITIVE WAS SILENTLY IGNORED, AND IT SET A DATE BOMB.** `H.load` prepends
+     `dayKeyNorm`, `dayKeyOf` and `_dayKeyEnginePads` as real `function` DECLARATIONS, and a
+     declaration shadows the same-named parameter — so three call sites passing
+     `dayKeyOf: () => '30/09/2026'` passed a stub that never ran once. Two were harmless; the third
+     asserted against that literal, so the whole gate was green all day on 30 Sep and **went red at
+     midnight on code nobody had touched**. `H.load` now REFUSES a stub it would shadow, with the
+     reason in the error, and a test asserts the refusal — otherwise the guard is a line nobody has
+     ever seen fail. A suite that turns red overnight is one people learn to ignore.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature
