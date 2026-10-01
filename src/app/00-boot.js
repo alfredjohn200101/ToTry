@@ -774,6 +774,23 @@ function _jsCode(code){
 
 function _jsAttr(s){
   return String(s == null ? '' : s)
+    // `&` FIRST, AND THAT ORDER IS THE WHOLE FIX. This value lands in a JS string inside an HTML
+    // attribute, and the HTML parser decodes character references BEFORE the JavaScript is
+    // compiled — the same mechanism that makes _escFew useless one level deeper. So a typed
+    // `&#39;`, `&apos;` or `&#x27;` survived every replacement below, was decoded to a bare
+    // apostrophe by the parser, terminated the string literal, and the remainder of the attribute
+    // compiled as statements. Escaping `&` here means no reference can survive to that step.
+    // The `&quot;` introduced two lines down is OURS and must stay a reference, which is exactly
+    // why this replacement has to run before it and not after. The sibling helper directly above
+    // already escaped `&` first, for this reason, on a value that only ever reaches a text
+    // position — the one that reaches COMPILED CODE did not.
+    // Found 1 Oct 2026. Three call sites: both of _shrinkIt's buttons (05-moment.js), the impulse
+    // sheet (05-moment.js) and an exercise name in the set row (22-train-deep.js). The first two
+    // carry text the person typed about themselves, so they are self-XSS. The third does not: an
+    // exercise name arrives from the Hevy integration and from AI-parsed routine text, and it is
+    // PERSISTED — so it re-fires on every later render, as script in the app's own origin, with
+    // the whole journal readable from localStorage. Fixed in the helper, not at the call sites.
+    .replace(/&/g, '&amp;')
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
     .replace(/"/g, '&quot;')

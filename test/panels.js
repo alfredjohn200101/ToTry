@@ -5189,6 +5189,68 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else console.log('fast: a Ramadan diary reads as the fast, not as a symptom — and the door to a human is still on the card');
   }
 
+  // ── A CHARACTER REFERENCE IN AN EXERCISE NAME ────────────────────────────────────────────────
+  // _jsAttr() guards a JS string inside an HTML attribute — onclick="showExerciseForm('NAME')" — and
+  // until 1 Oct 2026 it escaped \\ ' " and newline but NOT `&`. The HTML parser decodes character
+  // references BEFORE the JS compiles, so a typed &#39; became a bare apostrophe, closed the string
+  // and the remainder ran as statements. This site is the one that matters: an exercise name arrives
+  // from the Hevy integration and from AI-parsed routine text, and it is PERSISTED, so it re-fires
+  // on every later render as script in the app's own origin.
+  // DRIVEN, because the parse is the question. The payload's first statement is a VALID call to
+  // showExerciseForm — an earlier attempt used a malformed one, threw before the injected statement
+  // and read as a clean pass against genuinely broken code.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_guest',true); s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(async () => {
+      const out = { pwn:0, calib:0 };
+      window.__pwn = 0; window.__calib = 0;
+      out.hasTarget = typeof showExerciseForm === 'function';
+      // CALIBRATION: an attribute written the broken way, clicked the same way. If this does not
+      // fire, the probe cannot detect firing and any pass below is meaningless.
+      const c = document.createElement('div');
+      c.innerHTML = '<button id="__calib" onclick="window.__calib=1">x</button>';
+      document.body.appendChild(c);
+      document.getElementById('__calib').click();
+      out.calib = window.__calib; c.remove();
+      try{
+        go('train'); await new Promise(r => setTimeout(r, 600));
+        if(typeof setPTTab === 'function') setPTTab('session');
+        const evil = 'Bench&#39;);window.__pwn=1;//';
+        addExerciseToSession({ name: evil, bodyPart:'chest', equipment:'barbell', tracking:'weight_reps' });
+        await new Promise(r => setTimeout(r, 700));
+        if(typeof renderWorkoutSession === 'function') renderWorkoutSession();
+        await new Promise(r => setTimeout(r, 500));
+        const btn = [...document.querySelectorAll('button.se-form')]
+          .find(b => /Form/i.test(b.innerText||''));
+        out.foundButton = !!btn;
+        out.attr = btn ? String(btn.getAttribute('onclick')||'').slice(0,140) : '';
+        if(btn) btn.click();
+        await new Promise(r => setTimeout(r, 400));
+        document.querySelectorAll('.modal-bg.open').forEach(m => m.remove());
+        // And the NAME must still read back as the person typed it, not as a decoded apostrophe.
+        out.shownLiterally = (document.getElementById('pt-session-exercises')||{}).innerText
+          ? (document.getElementById('pt-session-exercises').innerText).indexOf('&#39;') >= 0 : null;
+      }catch(e){ out.err = String(e && e.message).slice(0,80); }
+      out.pwn = window.__pwn;
+      return out;
+    });
+    if(!r.calib)
+      findings.push('jsattr: THE MEASUREMENT IS WRONG, NOT THE APP — a deliberately unescaped onclick did not fire when clicked, so this check cannot detect an injection at all');
+    else if(!r.hasTarget)
+      findings.push('jsattr: showExerciseForm does not exist, so the payload would throw before firing — the check proves nothing');
+    else if(r.err) findings.push('jsattr: the check itself threw — ' + r.err);
+    else if(!r.foundButton) findings.push('jsattr: no Form button rendered, so nothing was driven');
+    else if(r.pwn > 0)
+      findings.push('jsattr: an exercise name EXECUTED — a character reference closed the JS string and the payload fired ' + r.pwn + ' time(s); this value comes from Hevy and from AI-parsed text and is PERSISTED');
+    else console.log('jsattr: a character reference in an exercise name stays text and executes nothing (calibrated: a raw onclick does fire)');
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

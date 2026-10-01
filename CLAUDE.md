@@ -330,6 +330,25 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
      than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
      (n) again.
+   - **`_jsAttr` DID NOT ESCAPE `&`, SO A CHARACTER REFERENCE REACHED COMPILED CODE (1 Oct 2026).**
+     It escaped `\`, `'`, `"`→`&quot;` and newline. The HTML parser decodes character references
+     BEFORE the JavaScript is compiled, so a typed `&#39;` / `&apos;` / `&#x27;` survived every
+     replacement, became a bare apostrophe, terminated the string literal and the remainder of the
+     attribute ran as statements. The sibling helper immediately above it escapes `&` FIRST, for
+     exactly this reason, on a value that only ever reaches a text position — the one that reaches
+     COMPILED CODE did not. Fixed in the helper; three call sites inherit it.
+     **Two of the three are self-XSS. The third is not:** an exercise name arrives from the Hevy
+     integration and from AI-parsed routine text, and it is PERSISTED, so it re-fires on every later
+     render as script in the app's own origin, with the whole journal readable from localStorage.
+     Driven, not grepped — the button is clicked and the side effect counted, the payload's first
+     statement is a VALID call (an earlier one was malformed, threw before the injected statement,
+     and read as a clean pass against broken code), and a literal-apostrophe control stays inert.
+     `npm run panels` now carries that drive with its own calibration: a deliberately unescaped
+     `onclick` must fire when clicked, or the check reports "THE MEASUREMENT IS WRONG, NOT THE APP".
+     **`&` MUST BE FIRST, and the reason is fidelity, not security.** Escaping it last behind a
+     `(?!quot;)` lookahead is security-equivalent for every payload — fault-injected, suite stayed
+     green, correctly — but a person who types the six characters `&quot;` should read them back,
+     and with `&`-last they decode to a bare `"`. One assertion pins the order.
    - **AND THE DETECTOR UNDER ALL 35 DOORS DID NOT COLLAPSE WHITESPACE (1 Oct 2026).**
      `detectCrisis()` matches its phrase lists with `String.includes`, so ONE extra space, a newline
      or a non-breaking space anywhere INSIDE a matched phrase made it miss. Measured over five real

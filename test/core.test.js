@@ -10511,4 +10511,74 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     H.eq(detectCrisis(bad), null, 'answers null for ' + JSON.stringify(bad) + ' rather than throwing'));
 }
 
+// ══ A CHARACTER REFERENCE SURVIVES AN ESCAPE THAT DOES NOT ESCAPE `&` ═════════════════════════
+// _jsAttr() guards a JS string INSIDE an HTML attribute — onclick="_shrinkIt('VALUE',0)". The HTML
+// parser decodes character references BEFORE the JavaScript is compiled, so escaping the quote is
+// not enough: a typed `&#39;` / `&apos;` / `&#x27;` sailed through every replacement, was decoded to
+// a bare apostrophe by the parser, terminated the string literal, and the rest compiled as
+// statements. The sibling helper directly above it already escaped `&` first — the one that reaches
+// COMPILED CODE did not. Same family as the _escFew lesson, one level deeper again.
+// Three call sites. Two carry what the person typed about themselves (self-XSS). The third does not:
+// an exercise name comes from the Hevy integration and from AI-parsed routine text and is PERSISTED,
+// so it re-fires on every later render, as script in the app's own origin.
+// THIS ASKS THE PARSE, NOT THE CHARACTERS. Three assertions in this repo have already failed on
+// correct code by matching a payload that survives harmlessly inside an escaped value.
+{
+  H.section('a character reference does not survive _jsAttr');
+  const { _jsAttr } = H.load(['_jsAttr']);
+
+  // ONE PASS, like the parser: &amp;#39; decodes to the TEXT &#39;, not to an apostrophe.
+  const ENT = /&(?:amp|quot|apos|lt|gt|#x?[0-9a-f]+);/gi;
+  const NAMED = { '&amp;':'&', '&quot;':'"', '&apos;':"'", '&lt;':'<', '&gt;':'>' };
+  const decode = str => String(str).replace(ENT, m => {
+    const l = m.toLowerCase();
+    if(NAMED[l]) return NAMED[l];
+    const n = l[2] === 'x' ? parseInt(l.slice(3), 16) : parseInt(l.slice(2), 10);
+    return String.fromCodePoint(n);
+  });
+  // An unescaped apostrophe in what the compiler sees ends the string literal.
+  const terminates = str => /(^|[^\\])'/.test(str);
+
+  // CALIBRATION: the check must be able to say UNSAFE. Raw interpolation is the broken baseline,
+  // and without this row every assertion below would pass for a check that can only say "safe".
+  H.ok(terminates(decode("x',0);a=1;//")), 'calibration: a raw value does terminate the string');
+  H.ok(terminates(decode('x&#39;,0);a=1;//')), 'calibration: so does a raw character reference');
+
+  // All three spellings of an apostrophe, which is the whole point — a sweep for one of them misses.
+  ['x&#39;,0);window.__fired=1;//', 'x&apos;,0);a=1;//', 'x&#x27;,0);a=1;//',
+   'x&#X27;,0);a=1;//', 'x&amp;#39;,0);a=1;//'
+  ].forEach(p => H.ok(!terminates(decode(_jsAttr(p))),
+    'an entity-escaped payload cannot close the string: ' + JSON.stringify(p)));
+  // And the literal form, which was ALREADY safe — kept so a regression says which half broke.
+  H.ok(!terminates(decode(_jsAttr("x',0);a=1;//"))), 'nor can a literal apostrophe');
+  H.ok(!terminates(decode(_jsAttr('x\\\'' + ',0);a=1;//'))), 'nor a backslash-escaped one');
+
+  // THE ORDINARY VALUES MUST SURVIVE INTACT, or the fix has broken every exercise name in the app.
+  // "5\" deficit deadlift" is the real name the double-quote handling was written for.
+  H.eq(decode(_jsAttr('5" deficit deadlift')), '5" deficit deadlift',
+    'a double quote still round-trips to itself');
+  H.eq(decode(_jsAttr('a&b')), 'a&b', 'and an ampersand stays one ampersand, not &amp;');
+  // THIS ONE PINS THE ORDER. Escaping `&` LAST with a `(?!quot;)` lookahead is security-equivalent
+  // for every payload above — I fault-injected exactly that and the suite stayed green, correctly.
+  // It is not equivalent for FIDELITY: a person who types the six characters &quot; should read
+  // them back, and with &-last they decode to a bare double quote instead. `&` first is the only
+  // order where what the person typed is what the compiler receives.
+  H.eq(decode(_jsAttr('&quot;')), '&quot;', 'a typed &quot; stays those six characters');
+  H.eq(decode(_jsAttr('&amp;')), '&amp;', 'and a typed &amp; stays those five');
+  H.eq(decode(_jsAttr('Bench Press')), 'Bench Press', 'and a plain name is untouched');
+  H.eq(decode(_jsAttr("mum's roast")), "mum\\'s roast", "while an apostrophe stays escaped for the compiler");
+  H.eq(_jsAttr(null), '', 'null is the empty string, not "null"');
+  H.eq(_jsAttr(undefined), '', 'and so is undefined');
+  // A newline would break the attribute outright.
+  H.ok(!/[\r\n]/.test(_jsAttr('two\nlines')), 'a newline never reaches the attribute');
+
+  // THE CALL SITES USE THE HELPER. The fix is in the sink; a site that hand-rolls its own escape
+  // would not inherit it. 22-train-deep.js is the one that is not self-authored.
+  const code = H.code();
+  H.ok(/const safe=_jsAttr\(thing\)/.test(code), '_shrinkIt escapes through the helper');
+  H.ok(/_jsAttr\(ex\.name\)/.test(code), 'and the exercise name does too — the one that is persisted');
+  H.ok(/\.replace\(\/&\/g, '&amp;'\)[\s\S]{0,400}?function _jsAttr|_jsAttr\(s\)\{[\s\S]{0,1800}?replace\(\/&\/g, '&amp;'\)/.test(code),
+    'and the helper escapes & at all');
+}
+
 H.report();
