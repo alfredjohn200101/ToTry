@@ -369,8 +369,56 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      it is the only thing between `'hurt somebody'` and *"it could hurt somebody's chances"*.
      Six fault injections, each caught — and the one that first PASSED is why `'plan to hurt'` has
      its own benign case (*"a plan to hurt less tomorrow"*) rather than a claim in a comment.
-     **Still open, and named rather than quietly left:** the register this app's population actually
-     types is thin. Measured — plan/means/timing scores **0 of 6** ("i've written a note", "i've got
+     **PLAN, MEANS AND TIMING IS NOW BUILT (1 Oct 2026): 4 of 58 disclosures → 58 of 58.** The
+     highest-acuity register in the gate scored almost nothing, and a person who has moved from
+     ideation to a plan is the one this detector most needs to catch. 16 entries: 15 bounded regexes
+     plus `'noose'`, the one phrase with no ordinary completion in any front. Specified by a
+     ten-agent pass (grounder + adversary + assembler per register, plus an audit of the existing
+     lists) and recorded in full, panels and refusals, in **`docs/CRISIS-REGISTERS.md`**.
+     Every bound was chosen against a MEASURED ordinary sentence from one of this app's own fronts,
+     and that list is the reason to read the doc: a gun SAFE/CABINET/LICENCE, a dead hang off the
+     bar, an Orthodox PRAYER rope, "enough painkillers to kill the pain in my quads", "die of
+     boredom in this meeting", caffeine LD50, a carbon monoxide DETECTOR.
+     **NINE OF THE ELEVEN SEED PHRASINGS ARE DELIBERATELY NOT MATCHED**, and that is the honest half:
+     "i've written a note", "tonight is the night", "i've picked the day", "i have it all worked
+     out", "i bought a rope" — the app has a letters-to-your-future-self feature, it TELLS people to
+     pick a start day, and battle ropes are equipment. Their benign and their disclosing form are
+     the same string, so no bound separates them. They belong on the AI surfaces, which read the
+     whole message and can ask a second question; the keyword floor's job is the sentence that
+     cannot be read any other way. `shotgun|rifle` was dropped from the firearm entry for the same
+     reason — an Australian hunting family's Saturday — and the doc says plainly that this is a
+     named cost on the most lethal means in the house, not safety.
+     **Two false positives were found while landing it**, both the shape the burden register named:
+     A SUFFIX BOUND CANNOT SEE A PREFIX. "i read about carbon monoxide poisoning after the news
+     story" fired, and the first suppression I wrote for it immediately cost a real disclosure —
+     "i've been reading about carbon monoxide in the car" — because reading ABOUT something is what
+     the bystander and the planner both do; only the bystander names a SOURCE. And the hyperbolic
+     frame takes a comma as readily as a preposition ("i'd blow my brains out, this meeting is
+     endless"). One residual is named and kept: "this meeting makes me want to blow my brains out"
+     still fires, because there the intent marker and the hyperbole marker are the same words.
+     **One guard, both inflections.** Bare `'hang myself'` had no guard at all and fired on "i hang
+     myself out to dry every week". It moved INTO the regex rather than gaining a suppression,
+     because a suppression would have made the lookahead's own `out to dry` branch unreachable —
+     the dead-guard shape this file fails builds over.
+     Six bounds fault-injected by DELETION, each producing a real false positive unbounded.
+     **Still open, and named rather than quietly left:** two of the three registers.
+     `docs/CRISIS-REGISTERS.md` carries both specs, measured and ready — burdensomeness (13 bounded
+     entries, 0 new false positives over 120 of the app's own sentences, and NO bare phrase at all,
+     because `'burden'` is taught by the faith layer five ways over and its commonest English
+     completion is "has been lifted") and hopelessness/passive ideation (22 entries, where **the
+     comma decision is the whole change and it is the owner's call**: the clause end `[.!?,\n\r]`
+     produces 42 false positives over a 146-sentence benign corpus, the sentence end `[.!?\n\r]`
+     produces 0 but misses 10 of 10 comma-continued genuine disclosures including "i can't cope
+     anymore, i don't know what to do", and the doc carries a third bound that asks what FOLLOWS the
+     comma, measured at 2 false positives and 0 lost). The assembler says out loud that it chose the
+     wrong way round for a high-acuity disclosure. Read that before landing it.
+     The register work also surfaced FIVE more pre-existing false positives not yet fixed, all
+     measured: `'took all my pills'` → 'medical' for "i took all my pills this morning"; the
+     object-less `"i'm going to end"` → "i'm going to end this cut tonight"; `'want to end it'` →
+     "i'm on a deficit and i want to end it"; and bare `'can't keep going'` → "i can't keep going on
+     this deficit". They need the clause-bound treatment the other ten got.
+     The ORIGINAL note, kept because it is still true of the two remaining registers: the register
+     this app's population actually types is thin. Measured — plan/means/timing scores **0 of 6** ("i've written a note", "i've got
      the pills ready", "tonight is the night"), burdensomeness 0 of 3, and ~15 hopelessness and
      passive-ideation phrasings return null, with near-miss pairs one synonym apart ("i don't want
      to wake up" fires, "i'd rather not wake up" does not). Negation also inverts the gate ("i am not

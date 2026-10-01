@@ -13518,7 +13518,19 @@ function detectCrisis(text){
    // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
    // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.
    // The object decides here too.
-   /hurt (?:someone|somebody|anyone|anybody)'s [a-z']{1,16}/g].forEach(function(re){ _x = _x.replace(re, ' '); });
+   /hurt (?:someone|somebody|anyone|anybody)'s [a-z']{1,16}/g,
+   // READING ABOUT A MEANS IS NOT HAVING ONE, and the reportage frame sits in FRONT of the
+   // match where no suffix lookahead can reach it. Measured: "i read about carbon monoxide
+   // poisoning after the news story" returned suicide. The disclosures carry no reportage word
+   // — "carbon monoxide poisoning is how i'd do it" still fires — so this cannot be done by
+   // excluding `poisoning`, which is present in both.
+   // A NEWS SOURCE, NOT A READING VERB. The first cut suppressed on read|reading|heard|saw and
+   // immediately cost a real disclosure: "i've been reading about carbon monoxide in the car" is
+   // somebody researching a means, and it went null. Reading ABOUT something is what both the
+   // bystander and the person planning do; only the bystander names a SOURCE. So the source noun
+   // is required, in either order, and "in the car" / "in the garage" survive untouched.
+   /\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b[^.!?]{0,40}\bcarbon monoxide\b/g,
+   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(re, ' '); });
     return _x;
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
@@ -13548,6 +13560,9 @@ function detectCrisis(text){
     // bare 'stroke' and bare 'jump off' entries were already narrowed for: a gate that cries wolf
     // trains people to dismiss it, and this one has to be believed the one time it matters.
     'suicide', 'suicidal', 'i\'m going to end', 'gonna end it',
+    // 'noose' is the one entry in this register that earns a bare substring: it has no ordinary
+    // completion in any of the app's fronts.
+    'noose',
     // ADDED v444, after testing the detector against real phrasings rather than invented ones: it
     // missed 5 of 12 genuine disclosures while producing 0 false positives in 10 training-context
     // sentences. So the list was too NARROW, not too broad — the opposite of what was reported. Each
@@ -13568,7 +13583,7 @@ function detectCrisis(text){
     "can't keep going",
     'no reason to keep going', 'nothing to live for',
     'have a plan to die', 'have a plan to end',
-    'hang myself', 'overdose on', 'shoot myself',
+    'overdose on', 'shoot myself',
     // "jump off" alone false-fires constantly in a training app ("jump off the box"), and a gate that
     // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.
     'jump off a bridge', 'jump off the bridge', 'jump off a building', 'jump off the roof',
@@ -13689,7 +13704,61 @@ function detectCrisis(text){
     /\bstop existing\s*(?:[.!?,\n\r]|$)/,
     /\bnothing left to live for\b/,
     /\bdon'?t belong here anymore\b/,
-    /\bwon'?t be around (?:much longer|for long|tomorrow)\b/
+    /\bwon'?t be around (?:much longer|for long|tomorrow)\b/,
+    // ── PLAN, MEANS AND TIMING, added 1 Oct 2026 ─────────────────────────────────────────────
+    // The highest-acuity register in the whole gate and it scored 0 of 11. A person who has moved
+    // from ideation to a plan is the one this detector most needs to catch, and the lists had
+    // nothing for them. Every bound below was chosen against a MEASURED benign sentence from one of
+    // this app's own fronts, and every one was fault-injected by deleting the bound and requiring
+    // its benign panel to fail. docs/CRISIS-REGISTERS.md carries the panels and the refusals.
+    // Nine of the eleven seed phrasings are deliberately NOT here: "i've written a note", "tonight
+    // is the night", "i've picked the day", "i have it all worked out", "i bought a rope" and the
+    // rest are sentences THIS APP ASKS FOR — it has a letters-to-your-future-self feature, it tells
+    // people to pick a start day, and battle ropes are equipment. Their benign and their disclosing
+    // form are the same string. They belong on the AI surfaces, which read the whole message and
+    // can ask a second question; the keyword floor's job is the sentence that cannot be read any
+    // other way.
+    // Means — medication. `stash` is not a verb here (hiding meds from children is responsible) and
+    // `meds|medication` are not nouns here (that is where travel and shortage talk lives).
+    /\b(?:sav(?:ed|ing) up|stockpil(?:ed|ing)|hoard(?:ed|ing)) (?:the|enough|a pile of|(?:all )?my) (?:pills|tablets|paracetamol|panadol|painkillers)\s*(?:[.!?,\n\r]|$)/,
+    // "enough painkillers to kill the pain in my quads" is the most ordinary DOMS sentence there is,
+    // which is why bare `kill`, `end` and `finish` are all excluded and the object is required.
+    /\benough (?:pills|tablets|paracetamol|panadol|painkillers|insulin) to (?:die|kill myself|kill me|end it|end my life|not wake)\b/,
+    // `to die(?!\s*of)` because "die of boredom in this meeting" and "die of laughter" are live
+    // idioms; `would kill me` requires `me`, so "kill the doms" clears.
+    /\bhow many (?:pills|tablets|paracetamol|panadol|painkillers|insulin)\b[^.!?]{0,24}\b(?:to die(?!\s*of)|would i die|to kill me|to kill myself|would kill me|to od|to overdose)\b/,
+    // Means — firearm ACCESS, not acquisition. A gun SAFE, CABINET and LICEN[CS]E are the
+    // responsible-owner nouns. `shotgun|rifle` are deliberately dropped: "i know where dad keeps his
+    // rifle, we're going shooting saturday" is an ordinary Australian Saturday. That is a named
+    // cost, not an oversight — see the refusals in the doc.
+    /\bwhere (?:dad|mum|mom|my (?:dad|mum|mom|father|mother|brother|husband)) keeps? (?:his|her|their|the) (?:gun|pistol|handgun|revolver|firearm)\b(?!\s*(?:safe|cabinet|case|club|range|shop|store|licen[cs]e|dog))/,
+    // Means — ligature. BOTH inflections, because the bare phrase 'hang myself' used to live in
+    // SUICIDE_PHRASES with no guard at all and returned suicide for "i hang myself out to dry every
+    // week". One lookahead, both forms, reachable from both — a suppression would have made the
+    // `out to dry` branch dead. Dead hangs off the bar and the rings are real exercises.
+    /\bhang(?:s|ing)? myself\b(?!\s*(?:out to dry|off|up|on|from (?:the |a |my )?(?:bar|bars|rings?|rig|pull-?up|frame))\b)/,
+    // A determiner is required IMMEDIATELY before the object, which is what clears an Orthodox
+    // PRAYER rope, a scapular cord and a seat belt — in each the preceding token is a modifier.
+    /(?:^|[^a-z])(?:the|a|my|that) (?:rope|belt) (?:a)?round my neck\b/,
+    // The drug class must be named: caffeine and water LD50 are ordinary supplement talk.
+    /\blethal dose (?:of (?:paracetamol|panadol|painkillers|pills|tablets|insulin|ibuprofen|aspirin|my meds|medication)|for me)\b/,
+    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))/,
+    // The hyperbolic frame takes a comma continuation as often as a preposition — measured:
+    // "i'd blow my brains out, this meeting is endless" returned suicide. KNOWN RESIDUAL, named
+    // rather than hidden: "this meeting makes me want to blow my brains out" still fires. The
+    // intent marker and the hyperbole marker are the same words there, and narrowing further
+    // would cost "i want to blow my brains out tonight".
+    /\bblow(?:ing)? my brains out\b(?!\s*(?:if|over|about|every|when|rather|,))/,
+    /\bslit (?:my )?wrists?\b/,
+    /\bgas myself\b(?!\s*up\b)/,
+    /\b(?:want|wants|wanted|wanna|need|needed|going to|gonna|about to|put|putting|puts|wish|i'?d like|would like)\b[^.!?]{0,24}\bbullet in (?:my|the back of my) (?:head|brain|skull)\b/,
+    /\b(?:jump(?:ing|ed|s)?|step(?:ping|ped|s)?) in front of (?:a |the )?(?:train|truck|bus|lorry)\b(?!\s*(?:queue|doors?|for\b|to (?!die|end|kill)))/,
+    // Timing. The leading guard is a memento-mori exclusion: "if tomorrow were my last day alive"
+    // is a devotional reflection this app invites, and a suffix bound cannot see a prefix.
+    /(?:^|[.!?])(?:(?!\bif\b|\bimagine\b|\bpretend\b|\bsuppose\b|\bwere\b|\blike\b|\btreat\b|\bas though\b|\bcould be\b|\bmight be\b)[^.!?])*\bmy last (?:day|night|morning) (?:alive|on earth|on this earth)\b(?!\s+as\b)/,
+    // `end it` is deliberately NOT in this completion set: setting a quit date is a core act this
+    // app asks for, and "i've picked the day i end it" is what somebody writes about a vice.
+    /\b(?:picked|chosen|chose|set|decided on) (?:the |a |my )?(?:day|date|night) (?:i|that i|to) (?:die|end my life|kill myself)\b/
   ];
   const _hitRe = function(list){ for(const re of list){
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };

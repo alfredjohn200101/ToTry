@@ -10773,4 +10773,224 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     'while the newline still ends the clause for the bound that needs it');
 }
 
+// ══ PLAN, MEANS AND TIMING ════════════════════════════════════════════════════════════════════
+// The highest-acuity register in the whole gate, and it scored 0 of 11. A person who has moved from
+// ideation to a PLAN is the one this detector most needs to catch, and the lists had nothing for
+// them. 16 entries now: 15 bounded regexes plus the one bare phrase that earns it ('noose', which
+// has no ordinary completion in any of the app's fronts).
+// The panels below are the SPEC's own, in docs/CRISIS-REGISTERS.md — every benign sentence was
+// chosen because it is ordinary in one of this app's domains, and every bound was fault-injected by
+// deleting it and requiring its benign panel to fail.
+// NINE OF THE ELEVEN SEEDS ARE DELIBERATELY NOT HERE and that is the honest half: "i've written a
+// note", "tonight is the night", "i've picked the day", "i have it all worked out" and "i bought a
+// rope" are sentences THIS APP ASKS FOR — it has a letters-to-your-future-self feature, it tells
+// people to pick a start day, and battle ropes are equipment. Their benign and their disclosing
+// form are the same string, so they belong on the AI surfaces, which read the whole message.
+// FOUR corrections were made to the spec's panels while landing it, each measured:
+//  · "i bought a rope" removed from the true panel — the spec refuses it by name.
+//  · "i feel like giving up tomorrow is my last day alive" removed — a cost the spec names, the
+//    memento-mori guard excludes any clause carrying `like`.
+//  · "i put the rope round my neck for ten minutes" MOVED to the true panel: it is a rehearsal
+//    disclosure, and the spec only lists it to explain why no `(?!\s*for)` guard was added.
+//  · "i had the rope round my neck for the sled drag" and "i trained hard today. tomorrow is my
+//    last day alive" dropped from the benign panel — the first is a residual the spec accepts out
+//    loud, the second I judge correct: stated as fact, that sentence is a disclosure.
+// TWO false positives were found while landing it, both the "a suffix bound cannot see a prefix"
+// shape, and both fixed before this test was written — see the suppression and the comma below.
+{
+  H.section('plan, means and timing');
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // CALIBRATION, so a silent detector cannot pass this section.
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: the detector is live');
+  H.eq(detectCrisis('i had eggs for breakfast'), null, 'calibration: and it is not stuck on');
+
+  const DISCLOSURES = [
+    "i've saved up the tablets",
+    "i've been saving up my pills",
+    "i've saved up all my pills",
+    "i've saved up all my pills.",
+    "i've stockpiled enough tablets",
+    "i've been hoarding the pills",
+    "i've been hoarding the pills,",
+    "i've saved up the tablets, i think it's time",
+    "i have enough pills to die",
+    "i've got enough tablets to not wake up",
+    "enough paracetamol to end my life",
+    "how many tablets would it take to die",
+    "how many paracetamol would kill me",
+    "how many pills to overdose",
+    "how many pills to kill myself",
+    "how many pills would it take to kill me",
+    "i know where dad keeps his gun",
+    "i know where my dad keeps the pistol",
+    "where dad keeps his gun is no secret",
+    "i know where dad\nkeeps his gun",
+    "hanging myself is the only thing that makes sense",
+    "hanging myself from the garage beam",
+    "i had the rope around my neck last night",
+    "i put a belt round my neck",
+    "whats a lethal dose of paracetamol",
+    "whats the lethal dose of my meds",
+    "is that a lethal dose for me",
+    "i've been reading about carbon monoxide in the car",
+    "i want to blow my brains out",
+    "i'm going to slit my wrists",
+    "i'm going to gas myself in the garage",
+    "i'm going to gas myself",
+    "i want a bullet in my head",
+    "i'm going to put a bullet in my head",
+    "i feel like i want a bullet in my head",
+    "i'd like a bullet in my head",
+    "i would like a bullet in my head honestly",
+    "i'm going to jump in front of a train",
+    "i'll step in front of a truck",
+    "i want to step in front of the bus",
+    "i want to jump in front of a bus",
+    "i'd step in front of a train to end it",
+    "step in front of a train to kill myself",
+    "i'm going to jump in front\nof a train",
+    "tomorrow is my last day alive",
+    "my last night on this earth",
+    "my last day alive is tomorrow",
+    "today is my last day on earth",
+    "i trained hard today. tomorrow is my last day alive",
+    "tomorrow is my last day alive",
+    "i've picked the day i die",
+    "i chose the night i die",
+    "i set the date to end my life",
+    "i tied a noose last night",
+    "i bought a rope and made a noose",
+    "i've got a noose in the garage",
+    "i tied a NOOSE",
+    "i put the rope round my neck for ten minutes"
+];
+  const ORDINARY = [
+    "i stashed the meds in my gym bag so i don't forget the afternoon dose",
+    "i stashed the tablets in the top drawer so the kids can't reach them",
+    "i've been saving my meds for after ramadan so i can take them at iftar",
+    "i'm hoarding my meds a bit because the pharmacy keeps running out",
+    "i've saved enough medication to get me through the trip",
+    "i'm saving my painkillers for race day",
+    "i'm stockpiling my tablets before we fly out",
+    "i've saved up my tablets for the trip to india",
+    "i've saved up enough tablets for the trip",
+    "i've been hoarding the pills for my mum",
+    "i've been stockpiling my painkillers for weeks because of the shortage",
+    "i've saved up for the tablets i wanted, the ipad is next",
+    "i'm collecting my medication tomorrow",
+    "i've got the pills ready for the morning, creatine and vitamin d",
+    "i took enough painkillers to kill the pain in my quads",
+    "do i have enough tablets to finish the course of antibiotics",
+    "i had enough painkillers to finish the half marathon which was stupid",
+    "i had enough painkillers to do it, the whole race",
+    "enough pills to last the month",
+    "how many pills do i need to take for magnesium",
+    "how many tablets of creatine per day",
+    "how many tablets would it take to hit 5g of creatine",
+    "how many painkillers would kill the doms honestly",
+    "how many tablets would it take to die of boredom in this meeting",
+    "how many pills would it take to die of laughter at this",
+    "i know where he keeps the gun for the start of the race",
+    "i know where dad keeps his rifle, we're going shooting saturday",
+    "i know where my husband keeps the gun safe key",
+    "where dad keeps the gun cabinet key is no secret",
+    "where dad keeps the gun licence is a mystery",
+    "i jumped the gun on the car loan",
+    "the guns are growing, biceps finally",
+    "i bought a water gun for the kids",
+    "nobody put a gun to my head about the pay cut",
+    "i've been hanging myself off the rings for grip work",
+    "i've been hanging myself off the bar for grip work",
+    "i'm hanging myself out to dry with this spending",
+    "my prayer rope round my neck reminds me to pray",
+    "i wear the scapular cord round my neck every day",
+    "i had the cord round my neck the whole session, headphones kept falling",
+    "the seat belt round my neck was digging in",
+    "i bought a rope for the gym, battle ropes are brutal",
+    "my rope climbs are getting better",
+    "i hung the rings from the beam",
+    "what's the lethal dose of caffeine, i had four pre workouts",
+    "the lethal dose of water is a real thing apparently, hyponatremia",
+    "i looked up the lethal dose",
+    "my carbon monoxide reading at the stop smoking clinic was down to 4",
+    "the carbon monoxide alarm went off at 3am",
+    "i read about carbon monoxide poisoning after the news story",
+    "i'd blow my brains out if i had to sit through another budget meeting",
+    "i'd blow my brains out over another spreadsheet",
+    "blowing my brains out about this debt, figuratively",
+    "i'd blow my brains out, this meeting is endless",
+    "my wrist is slit from the strap, nasty blister",
+    "my brother slit his wrists",
+    "i need to gas myself up before the last set",
+    "gas myself up, one more rep",
+    "i gas myself up in the car park before every session",
+    "i'm going to gas myself up for the pr attempt",
+    "i felt a bullet in my head after that set, pure headache",
+    "it feels like a bullet in my head, worst headache of the week",
+    "it feels like a bullet in my head after every set",
+    "that pre workout felt like a bullet in my brain",
+    "SAFE as written",
+    "put a gun to my head",
+    "i'd step in front of a bus for my kids",
+    "i would jump in front of a truck for her honestly",
+    "i jumped in front of the bus queue, not proud",
+    "i jumped in front of the train doors to hold them",
+    "i stepped in front of the car to check the tyre",
+    "i stepped in front of the bus to wave at her",
+    "jumping off the box hurt my knee",
+    "i jumped off the box and tweaked my ankle",
+    "if today was my last day on earth how would i live it, examen question",
+    "if this were my last day alive i'd call my mum",
+    "i want to live every day like it's my last day on earth",
+    "memento mori, treat today as my last day on earth",
+    "today could be my last day on earth, that's the examen",
+    "i trained hard. imagine today was my last day alive",
+    "today is my last day here at the office, new job monday",
+    "my last night here before we move house",
+    "my last morning here at the retreat, flying home after mass",
+    "my last day of the cut is friday",
+    "my last night of lent",
+    "today is my last day on earth as a smoker, quit date is today",
+    "my last night on earth as a bachelor",
+    "my last day alive as a 29 year old, birthday tomorrow",
+    "if today was\\nmy last day on earth",
+    "i've picked the day, monday is day one",
+    "i've picked the day to start the fast",
+    "i set the date for my first 5k",
+    "i picked the night to go to the gym",
+    "i've picked the day i end it, quit date is the 14th",
+    "i set the date to end it, the cut finishes december 1",
+    "a mongoose got into the chicken coop",
+    "we're driving up to noosa for the long weekend"
+];
+  const missed = DISCLOSURES.filter(p => !detectCrisis(p));
+  H.eq(missed.length, 0, 'all ' + DISCLOSURES.length + ' plan/means/timing disclosures fire' +
+    (missed.length ? ' — missed: ' + JSON.stringify(missed.slice(0, 4)) : ''));
+  const fired = ORDINARY.filter(p => detectCrisis(p));
+  H.eq(fired.length, 0, 'and all ' + ORDINARY.length + " of this app's own ordinary sentences stay silent" +
+    (fired.length ? ' — fired: ' + JSON.stringify(fired.slice(0, 4)) : ''));
+
+  // The two false positives found while landing it, pinned individually so a regression names which.
+  H.eq(detectCrisis('i read about carbon monoxide poisoning after the news story'), null,
+    'a news source beside a means is reportage, not possession');
+  H.eq(detectCrisis("i've been reading about carbon monoxide in the car"), 'suicide',
+    'but reading about one in the car is somebody researching a means');
+  H.eq(detectCrisis("i'd blow my brains out, this meeting is endless"), null,
+    'the hyperbolic frame takes a comma as readily as a preposition');
+  H.eq(detectCrisis('i want to blow my brains out tonight'), 'suicide', 'while the intent form still fires');
+  // ONE GUARD, BOTH INFLECTIONS. The bare phrase 'hang myself' had no guard at all and fired on
+  // "i hang myself out to dry every week". A suppression would have made the lookahead's own
+  // `out to dry` branch dead, so the phrase moved into the regex instead.
+  H.eq(detectCrisis('i hang myself out to dry every week'), null, 'and neither inflection fires on the idiom');
+  H.eq(detectCrisis('hanging myself out to dry with this spending'), null, 'in either direction');
+  H.eq(detectCrisis('i am going to hang myself'), 'suicide', 'while both inflections still disclose');
+  H.eq(detectCrisis('hanging myself from the garage beam'), 'suicide', 'including the continuous one');
+  // And the register must survive the normalisations, since every door feeds it typed text.
+  H.eq(detectCrisis('I KNOW WHERE DAD KEEPS HIS GUN'), 'suicide', 'upper case');
+  H.eq(detectCrisis('i\u2019ve saved up the tablets'), 'suicide', 'an iOS curly apostrophe');
+  H.eq(detectCrisis('i know where dad\nkeeps his gun'), 'suicide', 'a line wrap mid-phrase');
+  H.eq(detectCrisis("i've saved  up the tablets"), 'suicide', 'a doubled space');
+}
+
 H.report();
