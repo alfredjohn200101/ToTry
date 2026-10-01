@@ -10710,4 +10710,67 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     JSON.stringify(input) + ' → ' + String(want)));
 }
 
+// ══ FOUR MORE, AND A HOLE IN THIS MORNING'S OWN FIX ═══════════════════════════════════════════
+// Found by an adversarial pass over the three MISSING registers, which measured the shipped tree as
+// a side effect and reported four entries still firing on this app's own vocabulary:
+//   'no point in going on'  → "no point in going on this program"
+//   "can't do this anymore" → "i can't do this anymore with this split" — and that phrasing is the
+//                             FIGHT's own vocabulary about a vice
+//   "stop existing"         → "i want to stop existing on my phone at night" — which is this app's
+//                             own dopamine-detox thesis, written down in CLAUDE.md
+//   /don'?t want to be here/→ "i don't want to be here at the 6am", "…on a rest day"
+// All four KEPT as disclosures, clause-bounded like the six this morning.
+//
+// AND A HOLE IN THIS MORNING'S OWN FIX, which is why the fixes get reviewed and not just the code.
+// `t` was `_base` raw, so a disclosure terminated by a NEWLINE that also carried a doubled or exotic
+// space INSIDE the matched phrase matched NEITHER form: `t` kept the newline the bound needs but not
+// the spacing, `tc` fixed the spacing and ate the newline. `t` now collapses the non-newline class.
+{
+  H.section('four more, and a hole in this morning\u2019s own fix');
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // ── the four, both directions ──
+  [['no point in going on this program', null],
+   ['no point in going on with that accessory', null],
+   ["i can't do this anymore with this split", null],
+   ['i cant do this anymore with this cut', null],
+   ['i want to stop existing in that cycle', null],
+   ['i want to stop existing on my phone at night', null],
+   ["i don't want to be here at the 6am", null],
+   ["i don't want to be here on a rest day", null],
+   ["i don't want to be here for the weigh-in", null],
+   // the disclosures each one carries must survive the bound
+   ["there's no point in going on", 'suicide'],
+   ['no point in going on.', 'suicide'],
+   ["i can't do this anymore", 'suicide'],
+   ['i cant do this anymore', 'suicide'],
+   ['i just want to stop existing', 'suicide'],
+   ["i don't want to be here", 'suicide'],
+   ["i don't want to be here anymore", 'suicide'],
+   ['nothing left to live for', 'suicide'],
+   // untouched neighbours, so a regression says which entry moved
+   ["i can't go on like this", 'suicide'],
+   ["i can't keep going", 'suicide'],
+   ["don't want to be alive", 'suicide'],
+  ].forEach(([input, want]) => H.eq(detectCrisis(input) || null, want,
+    JSON.stringify(input) + ' \u2192 ' + String(want)));
+
+  // ── the t/tc hole: a newline terminator AND an odd space inside the phrase ──
+  // CALIBRATION first: the clean form must fire, or this measures nothing.
+  H.eq(detectCrisis('nothing left\nand i mean it'), 'suicide',
+    'calibration: a newline-terminated disclosure fires at all');
+  [['a doubled space inside it', 'nothing  left\nand i mean it'],
+   ['a non-breaking space inside it', 'nothing\u00a0left\nand i mean it'],
+   ['a doubled space, tired of living', 'i am tired  of living\nreally'],
+   ['a non-breaking space, tired of living', 'i am tired\u00a0of living\nreally'],
+   ["a non-breaking space, can't go on", 'i can\u2019t\u00a0go on\ni mean it'],
+   ['a tab inside it', 'nothing\tleft\nand i mean it'],
+   ['a zero-width space inside it', 'nothing\u200bleft\nand i mean it'],
+  ].forEach(([name, input]) => H.eq(detectCrisis(input), 'suicide',
+    'a newline-terminated disclosure still fires with ' + name));
+  // And the newline must still work as a CLAUSE END, which is what `t` preserves it for.
+  H.eq(detectCrisis("i can't go on\ni don't know what else to say"), 'suicide',
+    'while the newline still ends the clause for the bound that needs it');
+}
+
 H.report();

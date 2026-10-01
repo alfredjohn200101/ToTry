@@ -1906,7 +1906,14 @@ function detectCrisis(text){
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
   // cut" is suppressed in the collapsed form exactly as "i can't go on this cut" already was.
-  const t = _suppress(_base);
+  // `t` NORMALISES EVERY SPACE EXCEPT THE LINE BREAKS. Shipped this morning it was _base raw,
+  // which left one hole in the two-form design: a disclosure terminated by a NEWLINE that also
+  // carried a doubled or exotic space INSIDE the matched phrase matched neither form — `t` kept
+  // the newline the bound needs but not the spacing, and `tc` fixed the spacing and ate the
+  // newline. Measured: "nothing left\\nand i mean it" fired, "nothing  left\\nand i mean it" and
+  // "nothing\\u00a0left\\n…" both returned null. Collapsing the non-newline class closes it while
+  // leaving \\n and \\r for the clause-end bounds to bite on.
+  const t = _suppress(_base.replace(/[ \t\f\v\u00a0\u1680\u2000-\u200d\u202f\u205f\u3000\ufeff\u2028\u2029]+/g, ' '));
   const tc = _suppress(_base.replace(/[\s​-‍﻿]+/g, ' ').trim());
   const tNo = t.replace(/'/g, ''), tcNo = tc.replace(/'/g, '');
   const _hit = function(list){ for(const p of list){ const q = p.replace(/'/g,'');
@@ -1936,10 +1943,14 @@ function detectCrisis(text){
     // simply never present. Found by probing with phrasings people actually use rather than the
     // ones already in the list, which is the only way this kind of gap ever surfaces.
     "go on this earth", "go on in this world", "go on this planet", "be on this earth",
-    "don't want to be alive", "stop existing", "not wake up tomorrow", "never wake up again",
-    "can't do this anymore", "can't keep going",
-    'no reason to keep going', 'no point in going on', 'nothing to live for',
-    'nothing left to live for', 'have a plan to die', 'have a plan to end',
+    "don't want to be alive", "not wake up tomorrow", "never wake up again",
+    // "stop existing" and "can't do this anymore" moved to SUICIDE_RE, clause-bounded: the first
+    // fired on "i want to stop existing on my phone at night" — this app's own dopamine-detox
+    // thesis — and the second on "i can't do this anymore with this split", which is the Fight's
+    // own vocabulary about a vice. Both are KEPT as disclosures; they just have to end the clause.
+    "can't keep going",
+    'no reason to keep going', 'nothing to live for',
+    'have a plan to die', 'have a plan to end',
     'hang myself', 'overdose on', 'shoot myself',
     // "jump off" alone false-fires constantly in a training app ("jump off the box"), and a gate that
     // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.
@@ -1947,7 +1958,11 @@ function detectCrisis(text){
     'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
     'take my own life', 'taking my own life', "don't want to wake up",
     // Added after the pre-release audit flagged these as common first-disclosure phrasings.
-    'cant do this anymore', "can't do this anymore",
+    // FOUR MORE MOVED TO SUICIDE_RE, 1 Oct 2026, found by the register audit and measured on the
+    // shipped tree. 'no point in going on' fired on "no point in going on this program";
+    // "can't do this anymore" on "i can't do this anymore with this split" — and that phrasing is
+    // the FIGHT's own vocabulary about a vice; 'stop existing' on "i want to stop existing on my
+    // phone at night", which is this app's own dopamine-detox thesis sentence.
     // SIX BARE ENTRIES MOVED TO SUICIDE_RE, CLAUSE-BOUNDED, 1 Oct 2026 — measured, each against
     // a real sentence from one of this app's own fronts. 'nothing left' fired on "nothing left in
     // the tank" (training), "nothing left on the report" (work) and "i have nothing left this
@@ -1959,7 +1974,7 @@ function detectCrisis(text){
     // disclosures — they just have to end the clause now, which is the bound /can'?t go on/ has
     // carried since v568 for exactly this reason.
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
-    'end the pain', 'stop existing', 'disappear forever',
+    'end the pain', 'disappear forever',
     'dont want to wake up', 'better off without me',
     'everyone would be better without me', 'no reason to be here',
     // "unalive" is now the most common euphemism, precisely because it evades keyword filters. Matched
@@ -2048,7 +2063,14 @@ function detectCrisis(text){
     /\b(?:tired|sick) of being alive\s*(?:[.!?,\n\r]|$)/,
     /\bgiv(?:e|en|ing) up on life\s*(?:[.!?,\n\r]|$)/,
     /\bnothing left\s*(?:[.!?,\n\r]|$)/,
-    /\bdon'?t want to be here\b/,
+    // BOUNDED. Unbounded this fired on "i don't want to be here at the 6am", "…on a rest day"
+    // and "…for the weigh-in". The specific form 'don't want to be here anymore' stays a bare
+    // phrase above, because nothing ordinary completes it.
+    /\bdon'?t want to be here\s*(?:[.!?,\n\r]|$)/,
+    /\bno point in going on\s*(?:[.!?,\n\r]|$)/,
+    /\bcan'?t do this anymore\s*(?:[.!?,\n\r]|$)/,
+    /\bstop existing\s*(?:[.!?,\n\r]|$)/,
+    /\bnothing left to live for\b/,
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/
   ];
