@@ -13551,7 +13551,7 @@ function detectCrisis(text){
   // Direct self-harm / suicide indicators
   const SUICIDE_PHRASES = [
     'kill myself', 'killing myself', 'end my life', 'end it all', 'want to die',
-    'wanna die', 'want to be dead', 'better off dead', 'better if i was dead',
+    'wanna die', 'want to be dead', 'better if i was dead',
     'no reason to live', 'no point living', "don't want to be here anymore",
     "don't want to live", 'plan to die', 'planning to die',
     // 'going to kill' (bare) was here and fired on "this workout is going to kill me" — the single
@@ -13607,8 +13607,12 @@ function detectCrisis(text){
     // carried since v568 for exactly this reason.
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
     'end the pain', 'disappear forever',
-    'dont want to wake up', 'better off without me',
-    'everyone would be better without me', 'no reason to be here',
+    'dont want to wake up',
+    // 'better off without me' and 'everyone would be better without me' moved to SUICIDE_RE for a
+    // word boundary: as bare substrings they matched inside "better off without ME-dication" and
+    // "better off without ME-ds". A WORD-PREFIX collision, not a benign completion — the same shape
+    // this file already records for "plan" inside "planet". Measured 1 Oct 2026.
+    'no reason to be here',
     // "unalive" is now the most common euphemism, precisely because it evades keyword filters. Matched
     // on the STEM: "unaliving" contains no 'e' after the v, so the full word would have missed the
     // continuous form entirely. No English word contains "unaliv", so no qualifier is needed.
@@ -13758,7 +13762,49 @@ function detectCrisis(text){
     /(?:^|[.!?])(?:(?!\bif\b|\bimagine\b|\bpretend\b|\bsuppose\b|\bwere\b|\blike\b|\btreat\b|\bas though\b|\bcould be\b|\bmight be\b)[^.!?])*\bmy last (?:day|night|morning) (?:alive|on earth|on this earth)\b(?!\s+as\b)/,
     // `end it` is deliberately NOT in this completion set: setting a quit date is a core act this
     // app asks for, and "i've picked the day i end it" is what somebody writes about a vice.
-    /\b(?:picked|chosen|chose|set|decided on) (?:the |a |my )?(?:day|date|night) (?:i|that i|to) (?:die|end my life|kill myself)\b/
+    /\b(?:picked|chosen|chose|set|decided on) (?:the |a |my )?(?:day|date|night) (?:i|that i|to) (?:die|end my life|kill myself)\b/,
+    // ── PERCEIVED BURDENSOMENESS, added 1 Oct 2026 ────────────────────────────────
+    // The strongest single predictor in the literature, and the lists held nothing for it.
+    // NOT ONE BARE PHRASE IN THE WHOLE REGISTER, and that is the finding rather than an
+    // implementation detail: 'burden' is taught by this app's own faith layer five ways over and
+    // its commonest English completion is "has been lifted"; 'relieved' is what somebody writes
+    // the day they tell their wife; 'better off' is how the app's own coaching speaks; 'dead
+    // weight' is gym slang; 'drained' is what a leg day does to you. 0 new false positives over
+    // 120 of the app's own sentences, including its scripture — "cast your burden on the lord",
+    // "my yoke is easy and my burden is light", "allah does not burden a soul beyond what it can
+    // bear". Panels and refusals in docs/CRISIS-REGISTERS.md.
+    // EVERY APOSTROPHE IS WRITTEN `'?` ON PURPOSE: _hitRe tests t, tNo, tc and tcNo, and the
+    // stripped pass turns "they'd" into "theyd", so a literal apostrophe matches in only two of
+    // the four passes. No lookbehind anywhere — it would be the first in the bundle and a new
+    // engine-divergence surface.
+    // A SUFFIX BOUND CANNOT SEE A PREFIX, so entry 8 anchors to a sentence start instead: three
+    // earlier drafts were defeated by a leading conditional ("if i finally clear this debt…").
+    // AND NEGATION POLARITY DIFFERS BY OBJECT — for gone|dead the disclosure is UNnegated, for
+    // here|around|alive it is negated, so entries 5 and 7 carry opposite polarity by design.
+    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))/,
+    /\b(?:i'?m|i am|im)\s+(?:just |such |only |nothing but )*a drain on (?:them|everyone|everybody|the people|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my friends|my mates)\b/,
+    /\bi (?:just )?drain (?:everyone|everybody|the people|my family|them)\b(?!\s+(?:of|the)\b)/,
+    /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:[.!?,;\n\r]|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
+    /\bbetter off (?:if|when|once) (?:i'?m|i was|i were|i am) (?:gone|dead)\b(?!\s*(?:for (?:a |an |one |two |three |four |five |six |ten |the |next |this |that |\d)|so much|so long|so often|less|from home|until|till))/,
+    /\bbetter off with me (?:gone|dead)\b/,
+    /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;\n\r]|$)/,
+    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;\n\r]|$)/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;\n\r]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;\n\r]|$))/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b|(?:here|around|alive)\s*(?:[.!?,;\n\r]|$|or not\b|at all\b))/,
+    /\b(?:they|everyone|everybody|my family|my wife|my husband|my kids|my parents|people)(?:'?d| would| will)?\s*(?:all |just |probably |honestly )*be relieved\s+(?:if i (?:was |were |'?m |am )?(?:gone|dead|not here)|when i'?m (?:gone|dead)|without me\b)/,
+    /\b(?:my death|me dying|my dying) would be a relief\b/,
+    /\b(?:i'?m|i am|im|i'?d be|i would be)\s+(?:probably |honestly |just )*worth more (?:to (?:them|everyone|everybody|my family) )*dead\b/,
+    // AND THE PRE-EXISTING ONE THIS REGISTER TRIPPED OVER. Bare 'better off dead' fired on
+    // "better off deadlifting twice a week" — in a training app, and the same closed-compound
+    // trap this file already records for bare 'jump off'. Only the CLOSED compound collides:
+    // "better off with dead lifts in the split" never matched.
+    /\bbetter off dead\b(?!\s*(?:lift|lifts|lifting|hang|hangs|bug))/,
+    /\bbetter off without me\b/,
+    /\beveryone would be better without me\b/,
+    // A GAP, not a false positive: "i am going to end it tonight" returned null. The list
+    // carries 'i'm going to end' and 'gonna end it', and the apostrophe-strip pass turns "i'm"
+    // into "im" — never into "i am". The unabbreviated form reached nothing.
+    /\b(?:i'?m|i am|im) (?:going to|gonna) end (?:it|this|things)\b/
   ];
   const _hitRe = function(list){ for(const re of list){
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };

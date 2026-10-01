@@ -10993,4 +10993,205 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.eq(detectCrisis("i've saved  up the tablets"), 'suicide', 'a doubled space');
 }
 
+// ══ PERCEIVED BURDENSOMENESS ══════════════════════════════════════════════════════════════════
+// The strongest single predictor in the literature, and the lists held nothing for it: measured on
+// HEAD, 4 of these 43 disclosures fired. 13 entries now, and NOT ONE BARE PHRASE IN THE WHOLE
+// REGISTER — which is the finding, not an implementation detail. 'burden' is taught by this app's
+// own faith layer five ways over and its commonest English completion is "has been lifted";
+// 'relieved' is what somebody writes the day they tell their wife; 'better off' is how the app's own
+// coaching speaks; 'dead weight' is gym slang; 'drained' is what a leg day does to you.
+// The benign panel below is the spec's own and includes the app's SCRIPTURE — "cast your burden on
+// the lord", "my yoke is easy and my burden is light", "allah does not burden a soul beyond what it
+// can bear" — because that is the vocabulary this app teaches and then runs a detector over.
+// FOUR REFUSALS are recorded in docs/CRISIS-REGISTERS.md and two are worth repeating here:
+// "i don't want to be a burden" is refused ENTIRELY, including the `anymore` form, because it is the
+// commonest motivational WHY in all of health and fitness ("…on my kids when i'm older") typed into
+// onboarding's "why does this matter?" — crisis door #18, where a non-null REPLACES the help. And
+// "they'd all be relieved." is refused with the assembler saying out loud that the trade-off is
+// arguably the wrong way round, because relief-at-my-recovery and relief-at-my-absence are the same
+// eleven characters in an app with a Fight front.
+// TWO PRE-EXISTING defects fell out of landing it, both word-level rather than semantic:
+//  · bare 'better off dead' fired on "better off deadlifting twice a week" — in a training app.
+//  · bare 'better off without me' matched inside "better off without ME-dication" and "…ME-ds". A
+//    WORD-PREFIX collision, the shape this file already records for "plan" inside "planet".
+// And one GAP: "i am going to end it tonight" returned null, because the list carries
+// 'i\u2019m going to end' and the apostrophe-strip pass turns "i'm" into "im", never into "i am".
+{
+  H.section('perceived burdensomeness');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: the detector is live');
+  H.eq(detectCrisis('i had eggs for breakfast'), null, 'calibration: and not stuck on');
+
+  const DISCLOSURES = [
+    "i'm a burden to everyone",
+    "i am a burden",
+    "im just a burden",
+    "i feel like a burden",
+    "i feel like i'm a burden to my wife",
+    "i'm such a burden on my family",
+    "i've become a burden",
+    "i'm nothing but a burden",
+    "i felt like a burden all day",
+    "i'm a drain on everyone",
+    "i'm just a drain on my family",
+    "i drain everyone",
+    "i just drain my family",
+    "i'm a waste of space",
+    "i feel like i'm a waste of oxygen",
+    "i'm a waste of space to them",
+    "they'd be better off if i was gone",
+    "my family would be better off once i'm dead",
+    "everyone would be better off when i'm gone",
+    "they're better off with me gone",
+    "they'd be better off if i wasn't here",
+    "better off if i was never born",
+    "my family would be better off.",
+    "everyone would be better off.",
+    "i think my family would be better off",
+    "nobody would miss me",
+    "no one would miss me if i was gone",
+    "nobody would miss me.",
+    "no one would notice if i was gone",
+    "nobody would care if i died",
+    "no one would realise if i was gone",
+    "my wife would be relieved if i was gone",
+    "they'd be relieved when i'm dead",
+    "everyone would be relieved without me",
+    "my death would be a relief",
+    "me dying would be a relief",
+    "i'm worth more dead",
+    "i'd be worth more to them dead",
+    "better off dead",
+    "i'd be better off dead",
+    "better off without me",
+    "they are better off without me",
+    "i am going to end it tonight"
+];
+  const ORDINARY = [
+    "i feel like a burden has been lifted after confession",
+    "after confession i felt like a burden lifted off my shoulders",
+    "telling my wife felt like a burden lifted",
+    "praying the rosary feels like a burden lately, not a gift",
+    "fasting feels like a burden this ramadan",
+    "lent feels like a burden more than a gift this year",
+    "tithing feels like a burden on the budget right now",
+    "the debt feels like a burden on us",
+    "tracking every macro feels like a burden",
+    "the 5am alarm feels like a burden i put on myself",
+    "cast your burden on the lord and he will sustain you",
+    "come to me all who are weary and burdened",
+    "bear one another's burdens",
+    "my yoke is easy and my burden is light",
+    "allah does not burden a soul beyond what it can bear",
+    "i'm a burden bearer for my family",
+    "the tax burden is brutal this year",
+    "i'm a drain on the household budget with these subscriptions",
+    "i'm a drain on our savings every month",
+    "i'm a drain on the team's pace at the 6am class",
+    "i'm drained after that session",
+    "that leg day drained me",
+    "the subscriptions are a drain on my account",
+    "i drain them of energy when i spot for them",
+    "i drain my shaker then refill it",
+    "i just drain the pasta and weigh it",
+    "the long runs drain everyone in the group",
+    "work is draining me",
+    "i drain the tank every session",
+    "i am a waste of space in this relay team",
+    "i'm a waste of space on the leaderboard",
+    "i'm a waste of space at the back of the pack",
+    "the app is a waste of space on my phone",
+    "that session was a waste of time",
+    "what a waste of money",
+    "the kids would be better off if i wasn't gone so much for work",
+    "my wife would be better off if i wasn't gone every weekend",
+    "i'd be better off if i was gone for two weeks and came back fresh",
+    "the weight is better off once gone",
+    "better off when the cravings are gone",
+    "better off once the weight is gone",
+    "i'd be better off with dead lifts in the split",
+    "i'm better off with me-time on sundays",
+    "i'm better off with me first for once",
+    "better off without medication",
+    "my kids would be better off if i was around, but my job won't allow it",
+    "we'd be better off if i was around, honestly",
+    "the kids are better off with me here, i just need to be present",
+    "i'd be better off if i was here more for the 6am class",
+    "better off if i wasn't here for the next six weeks on nights",
+    "if i stop gambling my family would be better off.",
+    "if i quit the vape my kids would be better off.",
+    "once the debt is gone my family would be better off",
+    "if i was earning more my parents would be better off.",
+    "i'd be better off doing cardio",
+    "my budget would be better off without netflix",
+    "we'd all be better off going to bed earlier",
+    "honestly they'd be better off doing 5x5",
+    "my mates would be better off, they train harder than me",
+    "my parents would be better off financially if i moved out",
+    "my kids would be better off at a different school",
+    "i'd be better off if i ate more protein",
+    "nobody would miss me if i skipped tonight's session",
+    "no one would miss me if i left the group chat",
+    "nobody would miss me if i dropped parkrun",
+    "nobody would miss me at parkrun",
+    "no one would miss me at the 6am class honestly",
+    "no one would miss me if i went to the 6am instead",
+    "no one would notice if i wasn't here for the 6am class",
+    "nobody would care if i wasn't around for the challenge week",
+    "no one would notice if i skipped tonight",
+    "nobody would notice the difference in my weight yet",
+    "if i was gone for two weeks my streak would reset",
+    "no one would care if i was late",
+    "my wife would be relieved if i stopped gambling",
+    "my family would be relieved when i tell them i'm 90 days clean",
+    "everyone would be relieved, the session got cancelled",
+    "my wife would be relieved.",
+    "my kids would be relieved.",
+    "they'd all be relieved.",
+    "my dying plant needs water",
+    "the deload would be a relief",
+    "my death metal playlist is a relief",
+    "finishing this cut would be a relief",
+    "me dying of laughter would be a relief",
+    "the old bike is worth more dead than alive as scrap",
+    "that car is worth more dead than alive",
+    "the insurance is worth more than the car",
+    "not worth the session",
+    "worth the money"
+];
+  const missed = DISCLOSURES.filter(p => !detectCrisis(p));
+  H.eq(missed.length, 0, 'all ' + DISCLOSURES.length + ' burdensomeness disclosures fire' +
+    (missed.length ? ' — missed: ' + JSON.stringify(missed.slice(0, 4)) : ''));
+  const fired = ORDINARY.filter(p => detectCrisis(p));
+  H.eq(fired.length, 0, 'and all ' + ORDINARY.length + " of the app's own ordinary sentences stay silent" +
+    (fired.length ? ' — fired: ' + JSON.stringify(fired.slice(0, 4)) : ''));
+
+  // The three found while landing it, pinned individually so a regression names which.
+  H.eq(detectCrisis('better off deadlifting twice a week'), null, 'a closed compound is not a disclosure');
+  // AND THE SPACED SPELLING, which is the half \b cannot reach — "dead lift" is a common way to
+  // write the exercise. Measured: with the lookahead deleted, all three of these return suicide
+  // while the compound stays null, so \b alone is NOT enough and the lookahead is load-bearing.
+  H.eq(detectCrisis('better off dead lifts in the split'), null, 'nor is the spaced spelling of the lift');
+  H.eq(detectCrisis("you're better off dead lifting heavy"), null, 'in its participle form either');
+  H.eq(detectCrisis('better off dead hanging from the bar'), null, 'nor a dead hang');
+  H.eq(detectCrisis('better off dead'), 'suicide', 'while the phrase itself still is');
+  H.eq(detectCrisis('better off without medication'), null, 'nor is a word that merely starts with "me"');
+  H.eq(detectCrisis('better off without meds'), null, 'in either spelling');
+  H.eq(detectCrisis('better off without me'), 'suicide', 'while the phrase itself still fires');
+  H.eq(detectCrisis('i am going to end it tonight'), 'suicide', 'and the unabbreviated "i am" reaches the list');
+  H.eq(detectCrisis("i'm going to end it tonight"), 'suicide', 'as does the contraction it was written for');
+  // The refusals must STAY refused — if a later widening breaks these, it was not measured.
+  H.eq(detectCrisis("i don't want to be a burden on my kids when i'm older"), null,
+    'the commonest motivational why in health and fitness is not a disclosure');
+  H.eq(detectCrisis("i don't want to be a burden to my family anymore so i'm getting help"), null,
+    'and "anymore" does not separate resolve from withdrawal');
+  // Scripture the app itself teaches.
+  H.eq(detectCrisis('cast your burden on the lord and he will sustain you'), null, 'nor is scripture');
+  H.eq(detectCrisis('allah does not burden a soul beyond what it can bear'), null, 'in any tradition');
+  // And the normalisations, since every door feeds this typed text.
+  H.eq(detectCrisis('I\u2019M A BURDEN TO EVERYONE'), 'suicide', 'upper case with a curly apostrophe');
+  H.eq(detectCrisis("i'm a\nburden to everyone"), 'suicide', 'a line wrap mid-phrase');
+  H.eq(detectCrisis("i'm a  burden to everyone"), 'suicide', 'a doubled space');
+}
+
 H.report();

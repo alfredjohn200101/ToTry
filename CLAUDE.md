@@ -401,7 +401,33 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      because a suppression would have made the lookahead's own `out to dry` branch unreachable —
      the dead-guard shape this file fails builds over.
      Six bounds fault-injected by DELETION, each producing a real false positive unbounded.
-     **Still open, and named rather than quietly left:** two of the three registers.
+     **BURDENSOMENESS IS BUILT TOO (1 Oct 2026): 4 of 43 disclosures → 43 of 43.** The strongest
+     single predictor in the literature, and the lists held nothing for it. 13 entries, and **NOT ONE
+     BARE PHRASE IN THE WHOLE REGISTER** — which is the finding rather than an implementation detail:
+     `burden` is taught by this app's faith layer five ways over and its commonest English completion
+     is "has been lifted"; `relieved` is what somebody writes the day they tell their wife; `better
+     off` is how the app's own coaching speaks; `dead weight` is gym slang; `drained` is what a leg
+     day does to you. 0 false positives over 90 of the app's own sentences, scripture included.
+     **"I don't want to be a burden" is REFUSED ENTIRELY**, including the `anymore` form, and that is
+     the most important line in the register: it is the commonest motivational WHY in all of health
+     and fitness — "…on my kids when i'm older" — typed into onboarding's "why does this matter?",
+     which is crisis door #18, where a non-null REPLACES the help. "Anymore" does not separate
+     resolve from withdrawal, because the difference is not in the string.
+     Three more PRE-EXISTING defects fell out of landing it, all word-level rather than semantic:
+     bare `'better off dead'` fired on **"better off deadlifting twice a week"**; bare `'better off
+     without me'` matched inside **"better off without ME-dication"** and "…ME-ds", a WORD-PREFIX
+     collision of the same shape this file records for "plan" inside "planet"; and
+     **"i am going to end it tonight" returned null** — a GAP, because the list carries
+     `'i'm going to end'` and the apostrophe-strip pass turns "i'm" into "im", never into "i am".
+     Seven bounds fault-injected. One of them first stayed GREEN and that is worth keeping: deleting
+     the deadlift lookahead changes nothing for the CLOSED compound, because `\b` already handles
+     "deadlifting" — it is load-bearing only for the SPACED spelling, "better off dead lifts in the
+     split", which is how half the world writes the exercise. The test now pins all four forms.
+     **EVERY APOSTROPHE IN THESE REGISTERS IS WRITTEN `'?`** on purpose: `_hitRe` tests t, tNo, tc and
+     tcNo, and the stripped pass turns "they'd" into "theyd", so a literal apostrophe matches in only
+     two of the four passes. And no pattern uses a lookbehind — it would be the first in the bundle
+     and a new engine-divergence surface.
+     **Still open, and named rather than quietly left:** one of the three registers.
      `docs/CRISIS-REGISTERS.md` carries both specs, measured and ready — burdensomeness (13 bounded
      entries, 0 new false positives over 120 of the app's own sentences, and NO bare phrase at all,
      because `'burden'` is taught by the faith layer five ways over and its commonest English
