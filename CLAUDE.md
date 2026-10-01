@@ -330,6 +330,24 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      Anchor on the BRANCH, not the call. Of seven injections two first came back as a CRASH rather
      than a failure — one invalid, one a test dereferencing a null instead of reporting, which is
      (n) again.
+   - **AND SEVEN MORE BARE SUBSTRINGS MET THEIR WORST COMPLETION (1 Oct 2026).** Measured, each
+     against a real sentence from a NAMED front of this app — which is what makes a false positive
+     here different from anywhere else. `'nothing left'` fired on *"nothing left in the tank"*
+     (training), *"nothing left on the report"* (work) and *"i have nothing left this month"*
+     (money), and it was REDUNDANT: `'nothing left to live for'` sits four lines above it.
+     `'tired of living'` fired on *"i'm tired of living paycheck to paycheck"* — in an app with a
+     money front. `'sick of living'` on *"i'm sick of living with my parents"*. `'give up on life'`
+     on *"i had to give up on life drawing"*. `'want it to stop'` on *"i want it to stop raining"*.
+     `'make it stop'` on *"make it stop itching"*. And `/take my life/`, whose lookahead excluded
+     only "back", fired on **"take my life and let it be"** — a HYMN, in an app with a prayer
+     surface across five traditions. That is the third time the app's own devotional vocabulary has
+     tripped its own suicide detector; assume there is a fourth.
+     All six phrases are KEPT as disclosures — they moved to `SUICIDE_RE` and must now end the
+     clause, the bound `/can'?t go on/` has carried since v568 for exactly this reason. The hymn is
+     excluded by completion, the way `take my life BACK` already was. **One phrasing was closed as
+     a side effect:** *"i want it all to stop"* used to return null.
+     Six fault injections, each caught, and the panel asserts BOTH directions — thirteen disclosures
+     that must survive the bounds and fourteen ordinary sentences, one per front.
    - **AND THE GATE CRIED WOLF AT THE ONE DOOR WHERE THAT IS A TAKEOVER (1 Oct 2026).** Two false
      positives, WITNESSED on screen and not merely measured: `"my quads are going to hurt"` returned
      **harmothers** and rendered a card reading *"If you're thinking about hurting someone, please

@@ -13564,8 +13564,17 @@ function detectCrisis(text){
     'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
     'take my own life', 'taking my own life', "don't want to wake up",
     // Added after the pre-release audit flagged these as common first-disclosure phrasings.
-    'want it to stop', 'make it stop', 'cant do this anymore', "can't do this anymore",
-    'tired of living', 'sick of living', 'nothing left', 'give up on life',
+    'cant do this anymore', "can't do this anymore",
+    // SIX BARE ENTRIES MOVED TO SUICIDE_RE, CLAUSE-BOUNDED, 1 Oct 2026 — measured, each against
+    // a real sentence from one of this app's own fronts. 'nothing left' fired on "nothing left in
+    // the tank" (training), "nothing left on the report" (work) and "i have nothing left this
+    // month" (money) — and it was redundant, because 'nothing left to live for' sits four lines
+    // above. 'tired of living' fired on "i'm tired of living paycheck to paycheck" IN AN APP WITH
+    // A MONEY FRONT, and 'sick of living' on "i'm sick of living with my parents". 'give up on
+    // life' fired on "i had to give up on life drawing". 'want it to stop' fired on "i want it to
+    // stop raining" and 'make it stop' on "make it stop itching". All six are KEPT as
+    // disclosures — they just have to end the clause now, which is the bound /can'?t go on/ has
+    // carried since v568 for exactly this reason.
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
     'end the pain', 'stop existing', 'disappear forever',
     'dont want to wake up', 'better off without me',
@@ -13634,7 +13643,12 @@ function detectCrisis(text){
   // sentences still return null. A gate that cries wolf gets dismissed the once it matters.
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
-    /\btak(?:e|ing) my (?:own )?life\b(?!\s*back)/,
+    // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead
+    // excluded only "back". Measured 1 Oct 2026: "take my life and let it be" and "take my life
+    // lord" both returned suicide — the app teaches the surrender idiom and then reads it as a
+    // disclosure, the same defect as "die to my old self". The intent forms are untouched:
+    // "i want to take my life" and "i'm going to take my life" still fire.
+    /\btak(?:e|ing) my (?:own )?life\b(?!\s*(?:back|and (?:let|use|make)|lord|jesus|god|in (?:your|thy)|for (?:your|thy)|o lord))/,
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
@@ -13642,6 +13656,15 @@ function detectCrisis(text){
     // protects is a multi-line textarea. "I can't go on" fired; "I can't go on\\nI don't know what else
     // to say" did not. The person who keeps typing is the one still reaching for help.
     /\bcan'?t go on\s*(?:[.!?,\n\r]|$)/,
+    // THE SIX THAT USED TO BE BARE. The clause end is what separates the disclosure from the
+    // completion: "i want it to stop" fires, "i want it to stop raining" does not.
+    /\b(?:want it|wants it|need it) to stop\s*(?:[.!?,\n\r]|$)/,
+    /\bwant it all to stop\s*(?:[.!?,\n\r]|$)/,
+    /\bmake it stop\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:tired|sick) of living\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:tired|sick) of being alive\s*(?:[.!?,\n\r]|$)/,
+    /\bgiv(?:e|en|ing) up on life\s*(?:[.!?,\n\r]|$)/,
+    /\bnothing left\s*(?:[.!?,\n\r]|$)/,
     /\bdon'?t want to be here\b/,
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/

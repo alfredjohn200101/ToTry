@@ -10655,4 +10655,59 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     JSON.stringify(input) + ' → ' + String(want)));
 }
 
+// ══ A BARE SUBSTRING MEETS ITS WORST COMPLETION ═══════════════════════════════════════════════
+// Seven more over-broad entries, each measured against a real sentence from a named front of THIS
+// app — which is what makes a false positive here different from anywhere else:
+//   'nothing left'      → "nothing left in the tank" (training), "on the report" (work),
+//                          "i have nothing left this month" (money). REDUNDANT too: the entry
+//                          'nothing left to live for' sits four lines above it.
+//   'tired of living'   → "i'm tired of living paycheck to paycheck", in an app with a MONEY front
+//   'sick of living'    → "i'm sick of living with my parents"
+//   'give up on life'   → "i had to give up on life drawing"
+//   'want it to stop'   → "i want it to stop raining"
+//   'make it stop'      → "make it stop itching"
+//   /take my life/      → "take my life and let it be" — A HYMN, in an app with a prayer surface
+//                          across five traditions. Same defect as "die to my old self".
+// All six phrases are KEPT as disclosures; they moved to SUICIDE_RE and now have to end the clause,
+// which is the bound /can'?t go on/ has carried since v568 for exactly this reason. The hymn is
+// excluded by completion, the way 'take my life BACK' already was.
+// One phrasing was CLOSED as a side effect: "i want it all to stop" used to return null.
+{
+  H.section('a bare substring meets its worst completion');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const CASES = [
+    // ── must still FIRE: the clause bounds must not have cost a single disclosure ──
+    ["i'm tired of living", 'suicide'],
+    ['i am sick of living.', 'suicide'],
+    ["i'm tired of being alive", 'suicide'],
+    ['i want it to stop', 'suicide'],
+    ["i want it to stop, i'm done", 'suicide'],
+    ['make it stop', 'suicide'],
+    ['i have given up on life', 'suicide'],
+    ["i've nothing left", 'suicide'],
+    ["there's nothing left", 'suicide'],
+    ['nothing left to live for', 'suicide'],
+    // Previously a MISS — closed by giving the specific form its own bounded entry.
+    ['i want it all to stop', 'suicide'],
+    ['i want to take my life', 'suicide'],
+    ["i'm going to take my life tonight", 'suicide'],
+    // ── must stay SILENT: one sentence per front of the app ──
+    ['nothing left in the tank', null],            // training
+    ['nothing left on the report', null],          // work
+    ['i have nothing left this month', null],      // money
+    ['i want it to stop raining', null],
+    ['make it stop itching', null],
+    ["i'm tired of living paycheck to paycheck", null],   // money
+    ["i'm sick of living with my parents", null],
+    ['i had to give up on life drawing', null],
+    ['take my life and let it be', null],          // hymn
+    ['take my life lord', null],                   // prayer
+    ['take my life back', null],                   // the exclusion that was already there
+    ['this workout is going to kill me', null],    // training
+    ["i'm dying of hunger", null],                 // nutrition
+  ];
+  CASES.forEach(([input, want]) => H.eq(detectCrisis(input) || null, want,
+    JSON.stringify(input) + ' → ' + String(want)));
+}
+
 H.report();
