@@ -11194,4 +11194,246 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.eq(detectCrisis("i'm a  burden to everyone"), 'suicide', 'a doubled space');
 }
 
+// ══ HOPELESSNESS AND PASSIVE IDEATION ═════════════════════════════════════════════════════════
+// The register a frozen, exhausted person actually types — the population of the Can't-start door,
+// whose chip reads "frozen, staring at it". 22 entries.
+// THE COMMA BOUND WAS THE OWNER'S CALL, taken on measured numbers over a 146-sentence benign corpus
+// drawn from the app's own fronts:
+//   clause end   [.!?,\n\r]  — 42 false positives, 0 disclosures lost
+//   sentence end [.!?\n\r]   —  0 false positives, 10 of 10 comma-continued disclosures LOST,
+//                               including "i can't cope anymore, i don't know what to do"
+//   the one chosen           —  2 false positives, 0 disclosures lost
+// It asks what FOLLOWS the comma: a new first-person clause is continued disclosure, an explanatory
+// noun phrase ("the cramps", "my knee") is not. Both residuals are asserted BELOW by name rather
+// than quietly dropped from the corpus — a known cost on the record beats a clean-looking panel.
+// THREE CROSS-REGISTER COLLISIONS were found landing this, and none was visible to the agents that
+// specified it, because each measured against its own panel only:
+//  · my own morning entries for `want it all to stop` and `tired|sick of being alive` carried a
+//    CLAUSE end and kept firing straight through the register's tighter versions. A superseded
+//    pattern does not stop mattering because a better one sits beside it — the looser one wins.
+//  · the burdensomeness entry's `gone|dead|died|disappeared` branch had no terminator while its
+//    own sibling branch did, so "nobody would notice if i was gone from that group chat" fired.
+{
+  H.section('hopelessness and passive ideation');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: the detector is live');
+  H.eq(detectCrisis('i had eggs for breakfast'), null, 'calibration: and not stuck on');
+
+  const DISCLOSURES = [
+    "i'd rather not wake up",
+    "i can't cope anymore",
+    "what's the point of any of this",
+    "there's no point in me being here",
+    "i don't want to do life anymore",
+    "i'm so tired of being alive",
+    "nobody would miss me",
+    "i just want it all to stop",
+    "i wish i could just disappear",
+    "i think about not being around",
+    "i don't see the point in carrying on",
+    "i can't cope anymore, i don't know what to do",
+    "nothing matters anymore, i am so tired",
+    "no hope left, i am done",
+    "i can't keep living like this, i need help",
+    "i don't want to exist anymore, i am sorry",
+    "nobody would miss me, i mean it",
+    "i just want it all to stop, please",
+    "i'd rather not wake up, i mean that",
+    "i don't see a future for myself, none at all",
+    "i wish i never wake up",
+    "i'm done with life",
+    "nothing matters anymore",
+    "no hope left",
+    "i can't keep living like this",
+    "i wish i was never born",
+    "no one would notice if i was gone",
+    "i don't want to exist",
+    "nothing matters anymore. only christ. and i want to kill myself"
+];
+  const ORDINARY = [
+    "i'd rather not wake up at 5am for this session",
+    "i'd rather not wake up before the gym opens",
+    "i'd rather not wake up the baby",
+    "id rather not wake up early on a rest day",
+    "i'd rather not wake up, but the alarm is already set",
+    "i'd rather not wake up, the 5am is brutal",
+    "i hope i don't wake up my wife at 5",
+    "i hope i don't wake up the kids",
+    "i hope i don't wake up sore tomorrow",
+    "i hope i don't wake up at 3am again",
+    "i wish i would not wake up to a flat tyre again",
+    "i hope i don't wake up tomorrow, that's how wrecked my legs are",
+    "i don't care if i wake up sore",
+    "i don't care if i wake up early as long as i train",
+    "i don't care if i wake up late on sunday",
+    "i don't care if i wake up at 4 for this",
+    "i don't care if i wake up tomorrow, the session is happening either way",
+    "i can't cope anymore with these 5am sessions",
+    "i can't cope anymore with the repayments",
+    "i can't cope with the cramps any more",
+    "i can't cope",
+    "i can't cope anymore, these 5am sessions are wrecking me",
+    "i can't cope anymore, the cramps are too much",
+    "i can't cope any longer, my knee is done",
+    "what's the point of creatine",
+    "of a deload week",
+    "of tracking rpe anymore",
+    "of lent if i cheat on day three",
+    "of budgeting if i keep gambling",
+    "of the weekly review",
+    "of carrying on with this split",
+    "what's the point of living on 1200 calories",
+    "of living like a monk",
+    "if i eat it all back at night, what's the point.",
+    "tracking macros then eyeballing portions, what's the point?",
+    "two hundred a month for a gym i never go to, what's the point?",
+    "i broke my fast on day two, what's the point",
+    "i keep gambling after payday, what's the point?",
+    "a deload week where i still feel smashed, what's the point.",
+    "the scale went up again, what's the point",
+    "benching the same weight for six weeks, what's the point.",
+    "if i'm going to miss the 6am anyway, what's the point?",
+    "what's the point?",
+    "what's the point.",
+    "what's the point anymore?",
+    "no point in me being here at the 6am class",
+    "no point in me being here if i'm not going to lift",
+    "no point in me being here on a rest day",
+    "no point in me being here, i'll do the home workout instead",
+    "no point in me being here, every rack is taken",
+    "no point me being here anymore, the class is full",
+    "i don't want to do life anymore the way i was doing it",
+    "i can't do life anymore on 1400 calories",
+    "i don't want to do life anymore, not the way i was doing it",
+    "i'm done with the old me, i don't want to do life anymore, not like that",
+    "i'm tired of being alive to sin",
+    "sick of being alive unto the flesh",
+    "i'm tired of being alive in christ and still falling",
+    "sick of being alive for everyone else's expectations",
+    "tired of being alive and well while he is in hospital",
+    "i'm tired of being alive, dead to sin, and still falling",
+    "nobody would miss me at that 6am class",
+    "nobody would miss me at the work party",
+    "nobody would miss me on the group ride",
+    "no one would miss me in that class",
+    "nobody would miss me if i skipped it",
+    "nobody would miss me, not at that class",
+    "no one would miss me, the gym is empty at 6",
+    "i just want it all to stop hurting",
+    "i want it all to stop aching",
+    "i need it all to stop being so hard",
+    "i want it all to stop controlling me",
+    "i want it all to stop, the noise i mean",
+    "i need everything to stop, the bills the gym all of it",
+    "i wish i could just disappear for a week and sleep",
+    "i wish i could disappear into the gym and not talk to anyone",
+    "i wish i could disappear from that group chat",
+    "i want to disappear off social media",
+    "i want to disappear, at least from the group chat",
+    "i wish i could just disappear, this gym is so crowded",
+    "i need to disappear, off instagram for a month",
+    "i think about not being around alcohol anymore",
+    "i think about not being around people who use",
+    "i think about not being around the house when the urge hits",
+    "i think about not being on my phone at night",
+    "i think about not being around, when the urge hits i leave the house",
+    "i keep thinking about not being here, at the 6am i mean",
+    "no point in carrying on this program",
+    "no point carrying on with that accessory",
+    "no point in carrying on with that subscription",
+    "no point in carrying on, i'll deload next week",
+    "no point carrying on, the program is finished anyway",
+    "i don't see the point in carrying on with this split",
+    "...with the deficit",
+    "...with therapy homework",
+    "i don't see the point anymore in this program",
+    "i don't see the point.",
+    "i don't see the point anymore, this split is not working",
+    "i don't see any point anymore, the scale won't move",
+    "i can't see the point anymore, the debt just grows",
+    "i don't want to exist for myself anymore, only for him",
+    "i don't want to exist on 1200 calories",
+    "i don't want to exist in that cycle anymore",
+    "die to my old self",
+    "i don't want to exist anymore, only in him",
+    "i wish i wasn't born with bad knees",
+    "i wish i wasn't born with my dad's metabolism",
+    "i wish i was never born into this much debt",
+    "i wish i'd never been born with this frame",
+    "i'm done",
+    "i'm done living in that cycle",
+    "i'm done living like that",
+    "i'm done with life as it was before recovery",
+    "i'm done with living for approval",
+    "i'm done living, done with the old me",
+    "i'm done with life, the one i had before anyway",
+    "i am done living, that version of me is dead",
+    "nothing matters anymore except following him",
+    "nothing matters at all except his will",
+    "nothing matters anymore in that job",
+    "nothing matters anymore, only his will",
+    "nothing matters at all, only him",
+    "i want to empty myself so nothing matters anymore, only christ",
+    "nothing matters anymore, only the next right thing",
+    "there is no hope left for my bench",
+    "there is no hope left for my credit score",
+    "there is no hope left for that goal",
+    "there is no hope left in me, only in him",
+    "there's no hope left, my bench has not moved in months",
+    "there is no hope left, the credit score is shot",
+    "no hope left, only grace",
+    "i can't keep living like this on a cut",
+    "i can't keep living on chicken and rice",
+    "i can't keep living beyond my means",
+    "i can't keep living paycheck to paycheck",
+    "i can't keep living like this, the repayments are eating everything",
+    "i can't keep living like this, on 1400 calories",
+    "i don't see a future for myself in that career",
+    "i don't see a future for me in that gym",
+    "i don't see a future for myself, not in that career",
+    "i can't see a future for me, in that gym anyway",
+    "nobody would notice if i was gone from that group chat",
+    "no one would notice if i wasn't here at the 6am",
+    "nobody would notice if i was gone for a week",
+    "nobody would notice if i wasn't around on a rest day"
+];
+  const missed = DISCLOSURES.filter(p => !detectCrisis(p));
+  H.eq(missed.length, 0, 'all ' + DISCLOSURES.length + ' hopelessness disclosures fire' +
+    (missed.length ? ' — missed: ' + JSON.stringify(missed.slice(0, 4)) : ''));
+  const fired = ORDINARY.filter(p => detectCrisis(p));
+  H.eq(fired.length, 0, 'and all ' + ORDINARY.length + " of the app's own ordinary sentences stay silent" +
+    (fired.length ? ' — fired: ' + JSON.stringify(fired.slice(0, 4)) : ''));
+
+  // THE COMMA CLASS THE CHOSEN BOUND BUYS BACK — 10 of 10 of these are LOST under a sentence end.
+  [["i can't cope anymore, i don't know what to do"], ['nothing matters anymore, i am so tired'],
+   ['no hope left, i am done'], ["i can't keep living like this, i need help"],
+   ["i don't want to exist anymore, i am sorry"], ['nobody would miss me, i mean it'],
+   ['i just want it all to stop, please'], ["i'd rather not wake up, i mean that"],
+   ["i don't see a future for myself, none at all"],
+  ].forEach(([p]) => H.eq(detectCrisis(p), 'suicide', 'a comma-continued disclosure still fires: ' + JSON.stringify(p)));
+  // ...while an explanatory noun phrase after the comma does not.
+  [["i can't cope anymore, the cramps are brutal"], ["nothing matters anymore, i'll train tomorrow"],
+   ["i can't cope anymore, these 5am sessions"], ['nothing matters anymore, my knee is wrecked'],
+  ].forEach(([p]) => H.eq(detectCrisis(p), null, 'an explanation after the comma does not: ' + JSON.stringify(p)));
+
+  // THE TWO MEASURED RESIDUALS OF THE CHOSEN BOUND. Asserted so they are a decision on the record
+  // rather than a gap. If either is ever fixed, this assertion should fail and be deleted on purpose.
+  H.eq(detectCrisis("i'd rather not wake up, i am so sore"), 'suicide',
+    'KNOWN COST of the chosen bound: "i am" after the comma reads as a continued clause');
+  H.eq(detectCrisis('no one would notice if i was gone, the class is packed anyway'), 'suicide',
+    'KNOWN COST: the comma terminator cannot tell this from a disclosure');
+
+  // THE SURRENDER IDIOM ACROSS A FULL STOP, which no bound can reach — a full stop IS a sentence
+  // end, so the first clause is a complete disclosure by every test the mechanism has.
+  ['nothing matters anymore. only christ.', 'no hope left. only grace.',
+   "what's the point of it all. only god.", 'nothing matters at all. only his will.',
+   'no hope left. but for his mercy.', 'nothing matters anymore. except him.',
+  ].forEach(p => H.eq(detectCrisis(p), null, 'the app teaches this and must not read it as a disclosure: ' + JSON.stringify(p)));
+  H.eq(detectCrisis('nothing matters anymore. only christ. and i want to kill myself'), 'suicide',
+    'while a real disclosure after the faith span still fires');
+  // The suppression must not swallow the register's own vocabulary elsewhere.
+  H.eq(detectCrisis('i wish i was born with better genetics'), null, 'and ordinary wishes stay ordinary');
+  H.eq(detectCrisis('i was never born for cardio'), null, 'in the app\u2019s own voice');
+}
+
 H.report();

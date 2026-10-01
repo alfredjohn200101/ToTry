@@ -427,7 +427,37 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      tcNo, and the stripped pass turns "they'd" into "theyd", so a literal apostrophe matches in only
      two of the four passes. And no pattern uses a lookbehind — it would be the first in the bundle
      and a new engine-divergence surface.
-     **Still open, and named rather than quietly left:** one of the three registers.
+     **ALL THREE REGISTERS ARE NOW BUILT (1 Oct 2026). The seed phrasings went 0 of 27 → 16 of 27**,
+     and the eleven still null are exactly the ones named as unmatchable by a substring gate.
+     Hopelessness/passive ideation is 22 entries, and **the comma bound was the owner's call**, taken
+     on measured numbers over a 146-sentence benign corpus: clause end `[.!?,\n\r]` = 42 false
+     positives / 0 lost; sentence end `[.!?\n\r]` = 0 false positives / **10 of 10 comma-continued
+     disclosures lost**, including "i can't cope anymore, i don't know what to do"; the one chosen
+     asks what FOLLOWS the comma — a new first-person clause is continued disclosure, an explanatory
+     noun phrase ("the cramps", "my knee") is not — and measures 2 false positives / 0 lost. **Both
+     residuals are ASSERTED BY NAME in the test** rather than dropped from the corpus: a known cost
+     on the record beats a clean-looking panel.
+     One suppression came with it and neither review agent could have found it: **the surrender idiom
+     written as TWO SENTENCES.** A full stop is a genuine sentence end, so no bound on an entry can
+     reach "nothing matters anymore. only christ." — both agents only ever tested continuations
+     WITHIN a sentence. Six such sentences returned suicide before it; 0 after, while a real
+     disclosure later in the same entry still fires.
+     **THREE CROSS-REGISTER COLLISIONS were found landing it, and none was visible to the agents**,
+     because each measured against its own panel only. Two were MY OWN morning entries —
+     `want it all to stop` and `tired|sick of being alive` carried a CLAUSE end and kept firing
+     straight through the register's tighter versions. **A superseded pattern does not stop mattering
+     because a better one sits beside it: the looser one wins.** The third was the burdensomeness
+     entry's `gone|dead|died|disappeared` branch, which had no terminator while its own sibling
+     branch did, so "nobody would notice if i was gone from that group chat" fired. Run every
+     register's corpus against the WHOLE tree, not just its own.
+     **Still open, and named rather than quietly left:** three pre-existing false positives the audit
+     measured and nothing has fixed — `'took all my pills'` → 'medical' for "i took all my pills
+     this morning" (a call-an-ambulance card for somebody on prescribed medication), object-less
+     `'want to end it'` → "i'm on a deficit and i want to end it", and bare `'can't keep going'` →
+     "i can't keep going on this deficit". They need the clause-bound treatment the other fourteen
+     got. And `npm run crisis` still types ONE phrase at all 35 doors, so it proves the wiring and
+     never the detector; it should drive one sentence per register, and it asserts nothing in the
+     negative direction at all.
      `docs/CRISIS-REGISTERS.md` carries both specs, measured and ready — burdensomeness (13 bounded
      entries, 0 new false positives over 120 of the app's own sentences, and NO bare phrase at all,
      because `'burden'` is taught by the faith layer five ways over and its commonest English

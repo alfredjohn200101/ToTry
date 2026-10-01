@@ -13514,6 +13514,14 @@ function detectCrisis(text){
    // "i want to die" is untouched.
    /\bdy?i(?:e|ng) (?:to|unto) (?:my |the |his |her |your )?(?:old |former )?self\b/g,
    /\bdead to sin\b/g,
+   // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
+   // bound on the entry can reach this — both review agents only ever tested continuations
+   // WITHIN a sentence, which is why neither found it. Measured before this suppression, all six
+   // returned suicide: "nothing matters anymore. only christ." / "…only his will." / "there is
+   // no hope left. only grace." / "what's the point of it all. only god." / "…except him." /
+   // "no hope left. but for his mercy." The span stops at the faith object and never runs on
+   // through a conjunction, so a real disclosure later in the same entry still fires.
+   /\b(?:nothing matters (?:any ?more|at all)|no hope left|what'?s the point of it all)[.!?]+\s*(?:only|except|but|save)\s+(?:in |for )?(?:his |thy |your |the )?(?:him|christ|jesus|god|allah|grace|mercy|lord|will|krishna|dharma)\b/g,
    // "HURT SOMEONE'S <THING>" IS A POSSESSIVE, NOT A PERSON. Adding 'hurt someone' and
    // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
    // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.
@@ -13693,10 +13701,13 @@ function detectCrisis(text){
     // THE SIX THAT USED TO BE BARE. The clause end is what separates the disclosure from the
     // completion: "i want it to stop" fires, "i want it to stop raining" does not.
     /\b(?:want it|wants it|need it) to stop\s*(?:[.!?,\n\r]|$)/,
-    /\bwant it all to stop\s*(?:[.!?,\n\r]|$)/,
     /\bmake it stop\s*(?:[.!?,\n\r]|$)/,
     /\b(?:tired|sick) of living\s*(?:[.!?,\n\r]|$)/,
-    /\b(?:tired|sick) of being alive\s*(?:[.!?,\n\r]|$)/,
+    // `want it all to stop` and `tired|sick of being alive` were here with a CLAUSE end from the
+    // morning of 1 Oct and are gone: the hopelessness register below carries both with a tighter
+    // bound, and the loose ones kept firing through it — "i want it all to stop, the noise i
+    // mean" and "i'm tired of being alive, dead to sin, and still falling". A superseded pattern
+    // does not stop mattering just because a better one exists beside it; the looser one wins.
     /\bgiv(?:e|en|ing) up on life\s*(?:[.!?,\n\r]|$)/,
     /\bnothing left\s*(?:[.!?,\n\r]|$)/,
     // BOUNDED. Unbounded this fired on "i don't want to be here at the 6am", "…on a rest day"
@@ -13790,7 +13801,12 @@ function detectCrisis(text){
     /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;\n\r]|$)/,
     /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;\n\r]|$)/,
     /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;\n\r]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;\n\r]|$))/,
-    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b|(?:here|around|alive)\s*(?:[.!?,;\n\r]|$|or not\b|at all\b))/,
+    // THE `gone` BRANCH NEEDS A TERMINATOR TOO. Its sibling `here|around|alive` branch had one
+    // and this one did not, so "nobody would notice if i was gone from that group chat" and
+    // "…gone for a week" both fired. Found only by running the HOPELESSNESS corpus against a
+    // tree that already carried this register — each agent measured against its own panel, so a
+    // cross-register collision was invisible to both.
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b\s*(?:[.!?,;\n\r]|$|any ?more\b)|(?:here|around|alive)\s*(?:[.!?,;\n\r]|$|or not\b|at all\b))/,
     /\b(?:they|everyone|everybody|my family|my wife|my husband|my kids|my parents|people)(?:'?d| would| will)?\s*(?:all |just |probably |honestly )*be relieved\s+(?:if i (?:was |were |'?m |am )?(?:gone|dead|not here)|when i'?m (?:gone|dead)|without me\b)/,
     /\b(?:my death|me dying|my dying) would be a relief\b/,
     /\b(?:i'?m|i am|im|i'?d be|i would be)\s+(?:probably |honestly |just )*worth more (?:to (?:them|everyone|everybody|my family) )*dead\b/,
@@ -13804,7 +13820,44 @@ function detectCrisis(text){
     // A GAP, not a false positive: "i am going to end it tonight" returned null. The list
     // carries 'i'm going to end' and 'gonna end it', and the apostrophe-strip pass turns "i'm"
     // into "im" — never into "i am". The unabbreviated form reached nothing.
-    /\b(?:i'?m|i am|im) (?:going to|gonna) end (?:it|this|things)\b/
+    /\b(?:i'?m|i am|im) (?:going to|gonna) end (?:it|this|things)\b/,
+    // ── HOPELESSNESS AND PASSIVE IDEATION, added 1 Oct 2026 ──────────────────────────
+    // The register a frozen, exhausted person actually types — the population of the Can't-start
+    // door, whose chip reads "frozen, staring at it".
+    // THE COMMA BOUND IS THE WHOLE CHANGE AND IT WAS THE OWNER'S CALL, taken on measured numbers
+    // over a 146-sentence benign corpus drawn from the app's own fronts:
+    //   clause end   [.!?,\n\r]  — 42 false positives, 0 disclosures lost
+    //   sentence end [.!?\n\r]   —  0 false positives, but 10 of 10 comma-continued disclosures
+    //                               lost, including "i can't cope anymore, i don't know what to
+    //                               do", which is C-SSRS-tier
+    //   THIS ONE                  —  2 false positives, 0 disclosures lost
+    // It asks what FOLLOWS the comma: a new first-person clause is continued disclosure, an
+    // explanatory noun phrase ("the cramps", "my knee", "these 5am sessions") is not. The
+    // `i(?!'?ll|\s+will)` guard is why "nothing matters anymore, i'll train tomorrow" stays
+    // silent. It is the only pattern shape in this file that looks PAST its terminator, so if it
+    // ever needs changing, change it in all 21 places — they are deliberately identical.
+    /\brather not wake up\s*(?:again|at all|ever|tomorrow|any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:hope|wish) i (?:do ?n'?t|dont|do not|wo ?n'?t|wont|would not|will not|never) wake up\s*(?:again|tomorrow|at all|in the morning)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bdo(?:n'?t| not) care if i (?:do(?:n'?t| not) |never )?wake up\s*(?:again|tomorrow)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bcan(?:'?t| ?not) cope (?:any ?more|any longer)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bwhat'?s the point (?:of it all|(?:in|of) any of (?:it|this)|(?:in|of) (?:me )?being here|(?:in|of) (?:going|carrying) on|(?:in|of) living)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bno point (?:in |to )?(?:me|my) (?:being|bein) here\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:can(?:'?t| ?not)|do(?:n'?t| not) want to) do life\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:tired|sick|exhausted) of being alive\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?miss me\s*(?:if i was gone|if i wasn'?t here)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:want|need) (?:it all|everything|all of it) to stop\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:wish i could|want to|wanna|need to) (?:just )?disappear\s*(?:forever|for good|completely)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:think|thought|thinking|thinks) about not (?:being (?:around|here|alive)|waking up|existing)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bno point (?:in |to )?(?:carrying|going) on\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)|no longer) see (?:the|any) point (?:in (?:carrying|going) on|in living|in being here|in any of (?:it|this)|any ?more)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bdo(?:n'?t| not) want to exist\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bwish i(?: had| ?'?d|) (?:never been|was never|wasn'?t) born\b(?!\s+(?:with|into)\b)/,
+    /\b(?:i'?m|im|i am) done (?:with )?(?:life|living)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bnothing matters (?:any ?more|at all)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bno hope left\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\bcan(?:'?t| ?not) keep living\s*(?:like this)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
   ];
   const _hitRe = function(list){ for(const re of list){
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
