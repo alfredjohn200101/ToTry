@@ -11436,4 +11436,56 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.eq(detectCrisis('i was never born for cardio'), null, 'in the app\u2019s own voice');
 }
 
+// ══ THE LAST THREE, AND WHICH CARD A PERSON GETS ══════════════════════════════════════════════
+// Named in CLAUDE.md as measured-and-unfixed since the register audit. All three are the
+// object-less-substring shape, and the first one is the sharpest thing in the whole sweep:
+//   'took all my pills'   → 'medical' for "i took all my pills this morning". A CALL-AN-AMBULANCE
+//                           card, every morning, for anybody with a pill organiser. Its three
+//                           siblings ('took a bunch of', 'took a bottle of', 'swallowed a bunch
+//                           of') are unambiguous; this one is a daily sentence.
+//   'want to end it'      → "i'm on a deficit and i want to end it". Ending a cut, a streak, a
+//                           vice or a fast is a core act this app ASKS for.
+//   "can't keep going"    → "i can't keep going on this deficit", "…with this split".
+// TWO DIFFERENT MECHANISMS, because a suffix bound cannot see a prefix: the first and third take a
+// clause end, but 'want to end it' has its disqualifying context in FRONT of the match, so it needs
+// a span removal naming the app's own objects.
+// AND THE FIRST ONE IS ABOUT WHICH CARD, NOT WHETHER. Bounding it is not enough on its own: put the
+// bounded version in SUICIDE_RE and "i took all my pills to end it" returns 'suicide', whose card
+// lists helplines — when an acute overdose needs the ambulance the MEDICAL card carries. So it stays
+// medical and gains a bound, which is why MEDICAL_RE now exists for exactly one entry.
+{
+  H.section('the last three, and which card a person gets');
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // ── ordinary medication, in an app that tracks supplements ──
+  H.eq(detectCrisis('i took all my pills this morning'), null,
+    'a pill organiser is not an overdose');
+  H.eq(detectCrisis('i took all my tablets at 7am with breakfast'), null, 'nor is a routine');
+  H.eq(detectCrisis("i've taken all my pills today"), null, 'in any tense');
+  // ...and the overdose keeps the card that calls an ambulance.
+  H.eq(detectCrisis('i took all my pills to end it'), 'medical',
+    'while the overdose keeps MEDICAL — the card with the ambulance on it, not the one with helplines');
+  H.eq(detectCrisis('i took all my pills at once'), 'medical', 'and the manner completion too');
+  H.eq(detectCrisis('i took all my pills.'), 'medical', 'and the bare admission at a clause end');
+  // The unambiguous siblings must be untouched by any of this.
+  H.eq(detectCrisis('i took a bunch of pills'), 'medical', 'the unambiguous siblings still fire');
+  H.eq(detectCrisis('i swallowed a bunch of pills'), 'medical', 'all of them');
+
+  // ── ending a thing this app asks you to end ──
+  H.eq(detectCrisis("i'm on a deficit and i want to end it"), null,
+    'ending a deficit is a core act this app asks for');
+  H.eq(detectCrisis('i want to end it, the vice i mean'), null, 'and so is ending a vice');
+  H.eq(detectCrisis('i am ready to end it, the streak of giving in'), null, 'or a streak');
+  H.eq(detectCrisis('i want to end it'), 'suicide', 'while the bare disclosure still fires');
+  H.eq(detectCrisis('i want to end it all'), 'suicide', 'and so does "all"');
+
+  // ── can't keep going ──
+  H.eq(detectCrisis("i can't keep going on this deficit"), null, 'nor is a deficit a life');
+  H.eq(detectCrisis("i can't keep going with this split"), null, 'nor a split');
+  H.eq(detectCrisis("i can't keep going"), 'suicide', 'while the disclosure still fires');
+  H.eq(detectCrisis("i can't keep going."), 'suicide', 'punctuated');
+  H.eq(detectCrisis('i cant keep going anymore'), 'suicide',
+    'and with the anymore tail the register entries carry — a clause end alone would have lost it');
+}
+
 H.report();

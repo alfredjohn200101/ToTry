@@ -450,14 +450,33 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      entry's `gone|dead|died|disappeared` branch, which had no terminator while its own sibling
      branch did, so "nobody would notice if i was gone from that group chat" fired. Run every
      register's corpus against the WHOLE tree, not just its own.
-     **Still open, and named rather than quietly left:** three pre-existing false positives the audit
-     measured and nothing has fixed — `'took all my pills'` → 'medical' for "i took all my pills
-     this morning" (a call-an-ambulance card for somebody on prescribed medication), object-less
-     `'want to end it'` → "i'm on a deficit and i want to end it", and bare `'can't keep going'` →
-     "i can't keep going on this deficit". They need the clause-bound treatment the other fourteen
-     got. And `npm run crisis` still types ONE phrase at all 35 doors, so it proves the wiring and
-     never the detector; it should drive one sentence per register, and it asserts nothing in the
-     negative direction at all.
+     **THE LAST THREE ARE FIXED, AND ONE WAS ABOUT WHICH CARD RATHER THAN WHETHER (1 Oct 2026).**
+     `'took all my pills'` returned **'medical' — a call-an-ambulance card — for "i took all my pills
+     this morning"**, every morning, for anybody with a pill organiser; its three siblings
+     ('took a bunch of', 'took a bottle of', 'swallowed a bunch of') are unambiguous and this one is
+     a daily sentence. **Bounding it was not enough on its own:** put the bounded version in
+     SUICIDE_RE and "i took all my pills to end it" comes back 'suicide', whose card lists helplines,
+     when an acute overdose needs the ambulance the MEDICAL card carries. So it stays medical and
+     gains a bound — which is why `MEDICAL_RE` now exists for exactly one entry. Both shapes kept:
+     a clause end for the bare admission, the intent completion beside it.
+     `'want to end it'` fired on "i'm on a deficit and i want to end it" and needed a SPAN REMOVAL
+     rather than a bound, because the disqualifying context sits in FRONT of the match — ending a
+     cut, a streak, a vice or a fast is a core act this app asks for. Bare `'can't keep going'` took
+     the clause end, with the `any ?more` tail the register entries carry (a clause end alone would
+     have lost "i cant keep going anymore"). Six injections, each caught.
+     **AND `npm run crisis` NOW ASSERTS THE NEGATIVE DIRECTION, which it never had.** Every check in
+     it asked whether a disclosure REACHES a helpline; nothing anywhere asked whether an ORDINARY
+     sentence is left alone — and that is exactly how "my quads are going to hurt" rendered a
+     step-away-from-them card with 000, 911 and 999 on it, for months, with 35 green doors and three
+     thousand assertions. It drives 18 real sentences from the app's own fronts, rotating across the
+     doors, and every one of them returned a crisis kind at some point on 1 Oct 2026 before being
+     fixed: the DOMS one, "nothing left in the tank", a hymn, the devotional idiom, a pill organiser,
+     "tired of living paycheck to paycheck", "better off deadlifting", the onboarding why, the
+     dopamine-detox thesis, scripture. **Its calibration is structural** — the positive pass has
+     already shown a card at every one of those doors, so a door that shows none here cannot be a
+     door that shows none ever. Fault-injected by restoring the DOMS false positive: two doors
+     reported CRIED WOLF. The summary prints the two numbers separately on purpose, because the first
+     version conflated them into "66 crisis doors".
      `docs/CRISIS-REGISTERS.md` carries both specs, measured and ready — burdensomeness (13 bounded
      entries, 0 new false positives over 120 of the app's own sentences, and NO bare phrase at all,
      because `'burden'` is taught by the faith layer five ways over and its commonest English

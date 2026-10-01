@@ -1897,6 +1897,13 @@ function detectCrisis(text){
    // "i want to die" is untouched.
    /\bdy?i(?:e|ng) (?:to|unto) (?:my |the |his |her |your )?(?:old |former )?self\b/g,
    /\bdead to sin\b/g,
+   // WHEN THE SENTENCE NAMES WHAT IT IS ENDING, IT IS NOT ENDING A LIFE. Measured: "i'm on a
+   // deficit and i want to end it" and "i want to end it, the vice i mean" both returned
+   // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
+   // see, so it has to be a span removal. Ending a cut, a streak, a vice or a fast is a core
+   // act this app asks for; bare "i want to end it" still fires.
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:want|wanna|ready|about|going|need) to end it\b/g,
+   /\b(?:want|wanna|ready|about|going|need) to end it\b[^.!?]{0,20}\b(?:the |my |this )(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|binge|cycle|lease|contract|subscription)\b/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
    // bound on the entry can reach this — both review agents only ever tested continuations
    // WITHIN a sentence, which is why neither found it. Measured before this suppression, all six
@@ -1971,7 +1978,8 @@ function detectCrisis(text){
     // fired on "i want to stop existing on my phone at night" — this app's own dopamine-detox
     // thesis — and the second on "i can't do this anymore with this split", which is the Fight's
     // own vocabulary about a vice. Both are KEPT as disclosures; they just have to end the clause.
-    "can't keep going",
+    // "can't keep going" moved to SUICIDE_RE, clause-bounded: it fired on "i can't keep going on
+    // this deficit" and "…with this split".
     'no reason to keep going', 'nothing to live for',
     'have a plan to die', 'have a plan to end',
     'overdose on', 'shoot myself',
@@ -2049,7 +2057,10 @@ function detectCrisis(text){
     'chest pain', 'heart attack', 'can\'t breathe', 'cant breathe',
     'having a stroke', 'im having a stroke', 'signs of a stroke', 'think it\'s a stroke',
     'overdosed', 'took too many pills', 'bleeding badly', 'unconscious',
-    'took a bunch of pills', 'took a bottle of pills', 'swallowed a bunch of pills', 'took all my pills'
+    'took a bunch of pills', 'took a bottle of pills', 'swallowed a bunch of pills'
+    // 'took all my pills' moved to MEDICAL_RE below. Its three siblings above are unambiguous; this
+    // one is what somebody with a pill organiser says every single morning, and it was returning
+    // 'medical' — a call-an-ambulance card — for "i took all my pills this morning".
   ];
   
   // REGEX PASS — for phrasings a flat substring list structurally CANNOT express, because each needs
@@ -2099,6 +2110,7 @@ function detectCrisis(text){
     /\bdon'?t want to be here\s*(?:[.!?,\n\r]|$)/,
     /\bno point in going on\s*(?:[.!?,\n\r]|$)/,
     /\bcan'?t do this anymore\s*(?:[.!?,\n\r]|$)/,
+    /\bcan'?t keep going\s*(?:any ?more|any longer)?\s*(?:[.!?,\n\r]|$)/,
     /\bstop existing\s*(?:[.!?,\n\r]|$)/,
     /\bnothing left to live for\b/,
     /\bdon'?t belong here anymore\b/,
@@ -2242,13 +2254,24 @@ function detectCrisis(text){
     /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
     /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
   ];
+  // MEDICAL_RE exists for one entry, and the reason is which CARD a person gets. 'took all my
+  // pills' was a bare MEDICAL_PHRASE and returned 'medical' for "i took all my pills this
+  // morning" — a call-an-ambulance card for somebody with a pill organiser. Bounding it is not
+  // enough on its own: put the bounded version in SUICIDE_RE and "i took all my pills to end
+  // it" comes back as 'suicide', whose card lists helplines, when an acute overdose needs the
+  // ambulance the medical card carries. So it stays MEDICAL and gains a bound, and BOTH shapes
+  // are kept: a clause end for the bare admission, and the intent completion beside it.
+  const MEDICAL_RE = [
+    /\btook all my (?:pills|tablets|meds|medication)\b\s*(?:[.!?,\n\r]|$|to (?:die|end it|end my life|kill myself)\b|at once\b)/
+  ];
+
   const _hitRe = function(list){ for(const re of list){
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
 
   if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE))    return 'suicide';
   if(_hit(SELFHARM_PHRASES))   return 'selfharm';
   if(_hit(HARMOTHERS_PHRASES)) return 'harmothers';
-  if(_hit(MEDICAL_PHRASES))    return 'medical';
+  if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) return 'medical';
   
   return null;
 }

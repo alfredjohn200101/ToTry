@@ -435,6 +435,64 @@ const PROBE = `(() => {
     await ctx.close();
   }
 
+  // ── AND THE NEGATIVE DIRECTION, WHICH THIS SUITE HAD NEVER ASSERTED ────────────────────────────
+  // Every check above asks whether a disclosure REACHES a helpline. Nothing anywhere asked whether an
+  // ORDINARY sentence is left alone — and that is exactly how, for months, "my quads are going to
+  // hurt" returned harmothers and rendered a card reading "If you're thinking about hurting someone,
+  // please step away from the situation right now" with 000, 911 and 999 on it, in an app whose whole
+  // job is reporting soreness. 35 green doors and 3,000 assertions never saw it.
+  // At the Can't-start door a false positive is not merely noise: a non-null REPLACES the
+  // help-me-start flow with no route back, so the person who came for help starting is handed a
+  // crisis card instead, every time.
+  // The sentences below are the real ones this app's own fronts produce, and every one of them
+  // returned a crisis kind at some point on 1 Oct 2026 before being fixed. They rotate across the
+  // doors so the whole set is exercised through real UI rather than only at the function.
+  // CALIBRATION IS STRUCTURAL: the pass above has already shown a card at every one of these doors
+  // with the disclosure phrase, so a door that shows none here cannot be a door that shows none ever.
+  const ORDINARY = [
+    'my quads are going to hurt',                       // training — returned harmothers
+    'nothing left in the tank',                         // training — returned suicide
+    'take my life and let it be',                       // a hymn, in an app with a prayer surface
+    'i want to die to my old self',                     // the Soul tab teaches this idiom
+    'i took all my pills this morning',                 // a pill organiser — returned medical
+    "i'm tired of living paycheck to paycheck",          // money — returned suicide
+    'better off deadlifting twice a week',              // training — returned suicide
+    "i can't keep going with this split",                // training — returned suicide
+    'i want it to stop raining',                        // returned suicide
+    "i don't want to be a burden on my kids when i'm older",  // the commonest why in fitness
+    'i want to stop existing on my phone at night',     // the app's own dopamine-detox thesis
+    "i'm on a deficit and i want to end it",             // returned suicide
+    'i had to give up on life drawing',                 // returned suicide
+    'better off without medication',                    // a word-prefix collision
+    "i'd blow my brains out, this meeting is endless",   // the hyperbolic frame
+    'i read about carbon monoxide poisoning after the news story',
+    'i know where dad keeps his rifle, we are going shooting saturday',
+    'cast your burden on the lord and he will sustain you',   // scripture
+  ];
+  let quiet = 0;
+  for (let i = 0; i < DOORS.length; i++) {
+    const door = DOORS[i], ordinary = ORDINARY[i % ORDINARY.length];
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2900);
+    await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
+    try {
+      await door.go(page);
+      await page.waitForTimeout(600);
+      await door.fire(page, ordinary);
+      await page.waitForTimeout(900);
+    } catch (e) { /* a door that will not take this input proves nothing either way */ }
+    const n = await page.evaluate(PROBE);
+    checks++;
+    if (n.card) findings.push(`${door.name}: CRIED WOLF — "${ordinary}" raised a crisis card`);
+    else quiet++;
+    await ctx.close();
+  }
+  console.log(`  ✓ ${quiet} of ${DOORS.length} doors leave an ordinary sentence alone`);
+
   // And the net itself: with the container gone, the card must still reach the person.
   {
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
@@ -596,5 +654,6 @@ const PROBE = `(() => {
   await browser.close(); server.close();
   console.log('');
   if (findings.length) { findings.forEach(f => console.log('  ✗ ' + f)); console.log(`\n✗ ${findings.length} finding(s)\n`); process.exit(1); }
-  console.log(`✓ a real helpline is visible and dialable at all ${checks} crisis doors\n`);
+  console.log(`✓ a real helpline is visible and dialable at all ${checks - DOORS.length} crisis doors\n`);
+  console.log(`  and ${DOORS.length} ordinary sentences from the app's own fronts were left alone — the direction this suite never asserted until 1 Oct 2026, which is how a police-and-ambulance card for DOMS survived every check in the gate`);
 })();
