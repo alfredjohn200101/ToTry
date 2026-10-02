@@ -11521,7 +11521,15 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // EXECUTE IT, do not read it. The note is built from a dozen concatenated string literals, so a
   // regex over the SOURCE cannot span a `+` join — two assertions here failed on correct code for
   // exactly that reason before this line read the returned string instead.
-  const note = H.load(['safetyNote']).safetyNote();
+  // NAME EVERY FUNCTION IT CALLS, and give it CRISIS_LINES. safetyNote() now reads the verified
+  // lines through _crisisLinesForPrompt(), and omitting that from the load list made this section
+  // THROW rather than fail — which ends the whole run with no summary, lesson 2(n) again. The
+  // try/catch turns any future version of that into a reported failure instead of a dead run.
+  const ci0 = H.html.indexOf('const CRISIS_LINES = ['), cj0 = H.html.indexOf('];', ci0);
+  const CRISIS_LINES = new Function(H.html.slice(ci0, cj0 + 2) + '\nreturn CRISIS_LINES;')();
+  let note = '';
+  try { note = H.load(['safetyNote', '_crisisLinesForPrompt'], { CRISIS_LINES }).safetyNote(); }
+  catch (e) { H.ok(false, 'safetyNote() must EXECUTE — threw: ' + String(e.message).slice(0, 90)); }
   H.ok(note.length > 600, 'calibration: the note is actually built and returned, not empty');
   // ── it names the register the keyword floor deliberately refuses ──
   // Without these the model is told to be careful in the abstract, which is the same as not being
@@ -11547,7 +11555,13 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.ok(/clinical/i.test(note) && /speech/i.test(note), 'without turning into a clinician');
   // And the note must stay SHORT: a long clinical block crowds out the voice instructions and
   // pushes the model toward sounding like a clinician, which is the opposite of the app's soul.
-  H.ok(note.length < 1400, 'and stays short enough not to crowd out the voice (' + note.length + ' chars)');
+  // THE CEILING MOVED, AND ONLY BECAUSE IT WAS RE-MEASURED. It was 1400 when the note carried no
+  // numbers. The verified lines are load-bearing — without them the model supplied "988 in the US
+  // and Canada, or calling 111 in the UK" to an Australian app's user — so the note nearly
+  // doubled. The dilution risk was then DRIVEN, not assumed: `node scripts/voice-probe.mjs` put
+  // the same seven ordinary sentences through the live model with the longer prompt and 0 of 7
+  // flinched, exactly as with the short one. Raise this again only with that measurement.
+  H.ok(note.length < 2600, 'and stays short enough not to crowd out the voice (' + note.length + ' chars)');
 
   // ── and when it IS real, it hands over, which is the soul document's own promise ──
   H.ok(/helpline/i.test(note) && /counsellor/i.test(note) && /doctor/i.test(note),
@@ -11560,6 +11574,42 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.ok(/never give a method/i.test(note), 'and refusing to give a method');
   H.ok(/never make them\s+prove how bad/i.test(note), 'and never making them prove how bad it is');
   H.ok(/stop coaching/i.test(note), 'and stops coaching, which is the whole hand-off');
+
+  // ── THE TWO CLAUSES A LIVE DRIVE BOUGHT, 2 Oct 2026 ──────────────────────────────────────
+  // Both defects below were invisible to every assertion above, which is the point of them:
+  // the prompt CONTAINED "helpline", "counsellor" and "doctor" all along.
+  // (1) The hand-off was conditioned on the person telling you first, so the model correctly
+  //     asked and waited — and NOT ONE of fourteen live replies named a real human, including
+  //     three that stacked a reason, a chosen day and written letters. Somebody at that point
+  //     may not answer you at all.
+  H.ok(/ASKING AND OFFERING ARE NOT EXCLUSIVE/.test(note),
+    'asking and offering are not exclusive — the clause that made the hand-off reachable');
+  H.ok(/stack in ONE message/.test(note), 'it names the stacking condition');
+  H.ok(/do not ask and wait/i.test(note), 'and says not to ask and wait when they stack');
+  H.ok(/SAME message/.test(note), 'putting the human in the same message');
+  H.ok(/may not answer you at all/i.test(note), 'with the reason, so it is a principle not a rule');
+  // (2) Once it DID hand over it supplied "988 in the US and Canada, or calling 111 in the UK"
+  //     — to an AUSTRALIAN app's user. 111 is the NHS non-emergency line, not a suicide line.
+  //     A hallucinated helpline handed to somebody who has written letters is the worst thing
+  //     this prompt could cause.
+  H.ok(/never one you remember/i.test(note), 'it forbids a number from memory');
+  H.ok(/wrong helpline is worse than none/i.test(note), 'with the reason stated');
+  // ONE SOURCE. The numbers reach the prompt from the same CRISIS_LINES the card renders, so
+  // the two can never drift — the half-applied shape this repo keeps paying for.
+  H.ok(/13 11 14/.test(note), 'and carries the verified Australian primary line');
+  H.ok(/116 123/.test(note), 'and the verified UK one — Samaritans, not 111');
+  H.ok(!/\b111\b/.test(note) && !/741741/.test(note),
+    'and none of the numbers the model reached for on its own');
+  const ci = code.indexOf('const CRISIS_LINES = [');
+  H.ok(ci > 0, 'CRISIS_LINES exists as one list');
+  H.ok(/resources = CRISIS_LINES\.slice\(\)/.test(code),
+    'the crisis CARD reads it rather than holding its own copy');
+  H.ok(/_crisisLinesForPrompt\(\)/.test(code), 'and the PROMPT reads it too, through one helper');
+  // 03-person.js declares it and 08-voice.js reads it, which is only safe because safetyNote()
+  // is CALLED at runtime — a const is not hoisted, so a load-time read from a later module
+  // would be a temporal-dead-zone throw. The typeof guard is what makes that explicit.
+  H.ok(/typeof CRISIS_LINES === 'undefined'/.test(code),
+    'guarded with typeof, because a const does not hoist across modules');
 }
 
 H.report();

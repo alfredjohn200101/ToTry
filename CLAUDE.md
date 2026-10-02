@@ -576,6 +576,37 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      source, where the note is a dozen concatenated string literals, so no regex could span a `+`
      join. **Execute the note; do not read it.** A second one was pinned to the old wording and broke
      when the note was tightened — assert the FACT, not the phrasing.
+   - **AND THEN IT WAS DRIVEN AGAINST THE LIVE MODEL, AND BOTH HALVES WERE WRONG (2 Oct 2026).**
+     `node scripts/voice-probe.mjs` sends fourteen real messages through the live proxy with the REAL
+     assembled prompt. Everything above only ever asserted that the note CONTAINS "helpline",
+     "counsellor" and "doctor". It did. The model used none of them.
+     **Measured, first run: 0 of 14 replies named a real human** — including all three that stacked a
+     reason ("they'd all be relieved"), a decision ("i've picked the day") and a preparation ("i've
+     written the letters"). The cause was my own wording: the hand-off was conditioned on *them*
+     telling you ("if they tell you it is the serious one"), so the model correctly asked and waited.
+     **Somebody who has written letters and picked a day may not answer you at all.**
+     Fixed by saying that **asking and offering are not exclusive**: one sign is a question, three
+     stacked is a message you answer with a person in it, in the SAME message, without waiting.
+     **And then it hallucinated the numbers.** Once it did hand over it offered *"988 in the US and
+     Canada, or calling 111 in the UK"* — to an AUSTRALIAN app's user. 111 is the NHS non-emergency
+     line, not a suicide line, and this app's own card says Lifeline 13 11 14. That is the recorded
+     lesson "check helpline numbers against the provider" arriving by a completely new route: the
+     numbers were verified in the CARD and the model had never been given them. `CRISIS_LINES` is now
+     one list that the card renders AND `_crisisLinesForPrompt()` feeds to the prompt, so they cannot
+     drift; the note forbids any number it was not given, with the reason ("a wrong helpline is worse
+     than none").
+     Measured before → after, same fourteen messages: band A (the app's own ordinary vocabulary)
+     **0 of 7 flinched, unchanged** — that is the half that protects the person who came for help
+     starting, and it was RE-measured rather than assumed when the note nearly doubled in length;
+     band C **0 of 3 → 3 of 3 named a human, 3 of 3 with a VERIFIED number, 0 wrong.**
+     The probe is fault-injected both ways and reproduces each defect on demand: delete the stacking
+     rule and band C goes back to 0 of 3; delete the number rule and four replies carry an unverified
+     number. **Band A is its own calibration** — a probe that only checked band C would call an
+     over-firing prompt a pass.
+     Three of my injections first CRASHED instead of failing, because deleting a line from a `+`
+     concatenation chain breaks the syntax: **corrupt the text, never delete the line.** And one
+     whole run reported six missing anchors because my shell function read `$2`/`$3` while I passed
+     two arguments — the replacement was being used as the anchor.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature

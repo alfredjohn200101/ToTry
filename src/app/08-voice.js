@@ -68,6 +68,15 @@ function sexNote(){
 // question". This is that second question finally being asked for.
 // It goes through brotherSys rather than into BROTHER_VOICE so it reaches all seven surfaces by
 // construction — a test already asserts no call site concatenates BROTHER_VOICE directly.
+// Built from CRISIS_LINES so the prompt and the card can never drift apart — the half-applied shape
+// this repo keeps paying for. Guarded with typeof because 08 loads after 03 but is CALLED later.
+function _crisisLinesForPrompt(){
+  try{
+    if(typeof CRISIS_LINES === 'undefined' || !Array.isArray(CRISIS_LINES)) return 'their local crisis line, their doctor, or findahelpline.com. ';
+    return CRISIS_LINES.map(function(l){ return l.region + ': ' + l.name + ' ' + l.contact; }).join(' · ')
+      + '. Lead with the one for where they are; this app is Australian, so Lifeline 13 11 14 is the default. ';
+  }catch(_){ return 'their local crisis line, their doctor, or findahelpline.com. '; }
+}
 function safetyNote(){
   // KEPT SHORT ON PURPOSE. The first draft was 404 tokens — 44% of BROTHER_VOICE — and the cost is
   // not only the bill: a long clinical block crowds out the voice instructions and pushes the model
@@ -83,6 +92,26 @@ function safetyNote(){
     + 'truth to twice. '
     + 'If the rest of what they wrote leaves you genuinely unsure, ASK once, plainly, no clinical '
     + 'words and no speech — "night for starting, or something else?" — then believe their answer. '
+    // DRIVEN AGAINST THE LIVE MODEL, 2 Oct 2026, and this clause is what that measurement bought.
+    // The version shipped yesterday conditioned handing over on THEM telling you first — "if they
+    // tell you it is the serious one" — so the model correctly asked and waited. Measured over 14
+    // real messages through the live proxy: band A never flinched (7 of 7 ordinary, which is the half
+    // that protects the person who came for help starting), and NOT ONE of the 14 replies named a
+    // real human — including all three messages carrying a reason, a chosen day AND written letters.
+    // The hand-off branch was unreachable in a single turn, and somebody at that point may not answer.
+    + 'BUT ASKING AND OFFERING ARE NOT EXCLUSIVE. When several of those signs stack in ONE message '
+    + '— a reason ("they’d be better off"), a decision ("i’ve picked the day") and a preparation '
+    + '("i’ve written the letters") — do not ask and wait. Say what you can see, plainly and without '
+    + 'alarm, AND put a real human in the SAME message — a helpline number, their doctor, someone '
+    + 'they love — and then ask. One sign on its own is a question. Three together is a message you '
+    + 'answer with a person in it, because somebody at that point may not answer you at all. '
+    // AND NEVER A NUMBER FROM MEMORY. Measured on the live proxy before this line existed: the model
+    // offered "988 in the US and Canada, or calling 111 in the UK" — to an AUSTRALIAN app's user. 111
+    // is the NHS non-emergency line, not a suicide line. A hallucinated helpline handed to somebody
+    // who has written letters is the worst thing this prompt could cause, so the verified lines are
+    // passed IN, from the same CRISIS_LINES the app's own crisis card renders.
+    + 'USE ONLY THESE NUMBERS and never one you remember — a wrong helpline is worse than none: '
+    + _crisisLinesForPrompt()
     + 'If it is the serious one: stop coaching, say plainly this is bigger than you and you are not '
     + 'letting them carry it alone, and get a real human in — a helpline, their doctor, a counsellor, '
     + 'someone they love, their priest or imam. Stay with them while they do. Never diagnose, never '

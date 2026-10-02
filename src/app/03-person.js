@@ -2276,6 +2276,18 @@ function detectCrisis(text){
   return null;
 }
 
+// The verified lines, in one place, read by the card AND by safetyNote() so the model never has to
+// remember a number. 03-person.js loads before 08-voice.js and safetyNote() runs at call time, so
+// the const is visible there — but never read this at LOAD time from a later module.
+const CRISIS_LINES = [
+  {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
+  {region: 'Australia', name: 'Beyond Blue', contact: '1300 22 4636', detail: '24/7 phone'},
+  {region: 'Australia', name: 'Suicide Call Back Service', contact: '1300 659 467', detail: '24/7 phone & online chat'},
+  {region: 'Australia', name: '13YARN', contact: '13 92 76', detail: '24/7 · Aboriginal & Torres Strait Islander'},
+  {region: 'USA / Canada', name: '988 Suicide & Crisis Lifeline', contact: '988', detail: 'Call or text'},
+  {region: 'UK', name: 'Samaritans', contact: '116 123', detail: '24/7 phone'},
+  {region: 'International', name: 'findahelpline.com', contact: 'findahelpline.com', detail: 'Helplines in 130+ countries'}
+];
 function showCrisisResponse(containerId, type){
   const container = document.getElementById(containerId);
   if(!container) return;
@@ -2287,15 +2299,14 @@ function showCrisisResponse(containerId, type){
     body = "What you're carrying right now is real, and it's heavier than this app is built for. " +
            "Please don't do this alone. Speak to a real human who is trained for exactly this moment. " +
            "They've helped people through this before — they'll help you too.";
-    resources = [
-      {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
-      {region: 'Australia', name: 'Beyond Blue', contact: '1300 22 4636', detail: '24/7 phone'},
-      {region: 'Australia', name: 'Suicide Call Back Service', contact: '1300 659 467', detail: '24/7 phone & online chat'},
-      {region: 'Australia', name: '13YARN', contact: '13 92 76', detail: '24/7 · Aboriginal & Torres Strait Islander'},
-      {region: 'USA / Canada', name: '988 Suicide & Crisis Lifeline', contact: '988', detail: 'Call or text'},
-      {region: 'UK', name: 'Samaritans', contact: '116 123', detail: '24/7 phone'},
-      {region: 'International', name: 'findahelpline.com', contact: 'findahelpline.com', detail: 'Helplines in 130+ countries'}
-    ];
+    // ONE SOURCE FOR THE NUMBERS, 2 Oct 2026. These used to live only here, and the AI voice — which
+    // is now told to put a real human in the message — had nothing to read, so it supplied numbers
+    // from its own memory. Driven against the live proxy: it offered "988 in the US and Canada, or
+    // calling 111 in the UK" to an AUSTRALIAN app's user. 111 is the NHS non-emergency line, not a
+    // suicide line, and the app's own verified card says Lifeline 13 11 14. A hallucinated helpline
+    // handed to somebody who has written letters is the worst defect this file could carry, and it is
+    // the recorded lesson "check helpline numbers against the provider" arriving by a new route.
+    resources = CRISIS_LINES.slice();
   } else if(type === 'harmothers'){
     title = "I can't help with this, and I need you to stop and breathe.";
     body = "If you're thinking about hurting someone, please step away from the situation right now and call a crisis line or someone you trust. " +
