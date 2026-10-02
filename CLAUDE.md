@@ -607,6 +607,34 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      concatenation chain breaks the syntax: **corrupt the text, never delete the line.** And one
      whole run reported six missing anchors because my shell function read `$2`/`$3` while I passed
      two arguments — the replacement was being used as the anchor.
+   - **AND THE PROMPT IS NOT OBEYED EQUALLY ACROSS THE FALLBACK CHAIN (2 Oct 2026).**
+     `node scripts/voice-probe.mjs chain` runs the same prompt against each provider via `prefer`,
+     nine samples each. Gemini hands over **9 of 9**. **Cloudflare — the last free link — hands over
+     8 of 9**, and which provider answers is decided silently by whose key is live and who is
+     rate-limited that minute. Four of the five could not be judged at all: `prefer` only REORDERS
+     the chain, so an unset key or a 429 serves the next one, and the probe refuses to attribute a
+     mixed sample rather than invent a number.
+     **A SINGLE SAMPLE OF AN LLM IS NOT A MEASUREMENT.** The first version of that mode asked once
+     per message and reported "cloudflare FLINCHED on 2 of 3 of the app's own ordinary sentences".
+     Repeated three times it was **1 of 9**, and the two replies I had called flinches, read in full,
+     contained no helpline at all. The rate was real; the headline was not. It samples `REPS` times
+     now and every finding carries its denominator, so a lone sample cannot raise one — except a
+     WRONG NUMBER or a missed hand-off, which no sample size excuses.
+     **So the fix is not more prompt.** Cloudflare already over-fires on 11% of this app's ordinary
+     sentences; pushing harder buys the hand-off by taking away the help somebody came for. There is
+     a DETERMINISTIC, provider-independent net instead: `_needsHumanNet(userText, reply)` asks
+     whether the PERSON named a REASON ("they'd all be relieved", "i'm a burden", "nobody needs me")
+     **and** a PLAN ("picked the day", "written the letters", "got the pills ready"), and whether the
+     reply came back with no human in it — and if so the app appends its OWN verified line, never a
+     model's. **The reason requirement is what keeps it off the app's own vocabulary:** "i've picked
+     the day, monday. 12 weeks." is a plan with no reason, and "i don't want to be a burden on my
+     kids when i'm older, that's my why" is a reason with no plan. Neither nets.
+     All three free-text AI surfaces carry it — the companion, the coach and the PT — because which
+     one somebody reaches at 2am is not something this code gets to choose. It is tested with NO
+     network (the probe tests the model; the net is deterministic), and fault-injected six ways. One
+     injection first stayed green: corrupting the fallback literal `'Lifeline 13 11 14'` changes
+     nothing while `CRISIS_LINES` is present to overwrite it, so **the fallback path is now asserted
+     on its own** — an unreachable default is an unasserted default.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature

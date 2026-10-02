@@ -13440,8 +13440,17 @@ async function sendCoach(){
   const r=await api(buildCtx(),cH.slice(0,-1),t,2600);
   rmMsg(lid);
   if(r){
-    addMsg('coach-msgs',r,'coach');
-    cH.push({role:'assistant',content:r});
+    // THE SAME NET THE COMPANION CARRIES. The keyword gate above stops the unmistakable sentence;
+    // this catches the one it deliberately refuses — a reason plus a plan — when the model's reply
+    // came back with no human in it. Measured across the fallback chain: gemini hands over 9 of 9,
+    // cloudflare 8 of 9, and which one answers is decided silently by whose key is live.
+    // _needsHumanNet is a function declaration in 08-voice.js, so it hoists across the bundle and
+    // is safe to call from here even though that module loads later.
+    let _r = r;
+    try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, _r))
+      _r = _r + '\n\n' + _humanNetLine(); }catch(_){ }
+    addMsg('coach-msgs',_r,'coach');
+    cH.push({role:'assistant',content:_r});
     if(cH.length>20)cH=cH.slice(-20);
     persistCoachHistory();
     maybeUpdateCoachMemory();
@@ -14190,7 +14199,10 @@ async function sendPT(){
     r=null;
   }
   rmMsg(lid);   // always clear the "..." bubble, even if the call threw
-  if(r){addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
+  // The same net, at the third free-text AI surface. All three — companion, coach, PT — now carry
+  // it, because which of them a person reaches at 2am is not something this code gets to choose.
+  if(r){ try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, r)) r = r + '\n\n' + _humanNetLine(); }catch(_){ }
+    addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
   else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'I couldn\u2019t reach the coach just now \u2014 check your connection and try again. What you wrote is safe.';
     addMsg('pt-msgs', errMsg, 'coach');
@@ -23250,6 +23262,69 @@ function sexNote(){
 // construction — a test already asserts no call site concatenates BROTHER_VOICE directly.
 // Built from CRISIS_LINES so the prompt and the card can never drift apart — the half-applied shape
 // this repo keeps paying for. Guarded with typeof because 08 loads after 03 but is CALLED later.
+// ── THE NET UNDER THE MODEL ─────────────────────────────────────────────────────────
+// `node scripts/voice-probe.mjs chain` measured the SAME prompt across the fallback chain, nine
+// samples each. Gemini handed over 9 of 9. **Cloudflare — the last free link — handed over 8 of
+// 9.** One person in nine who has written letters and picked a day gets no human, and which
+// provider answers is decided silently by whose key is live and who is rate-limited that minute.
+// Strengthening the prompt further is the wrong lever: cloudflare already over-fires on 11% of
+// this app's ordinary sentences, so pushing harder buys the hand-off by taking away the help
+// somebody came for. So the net is DETERMINISTIC and provider-independent instead.
+//
+// A REASON IS REQUIRED, and that is what keeps it off the app's own vocabulary. "i've picked the
+// day, monday. 12 weeks." is a decision with no reason — one marker, no net. "i don't want to be
+// a burden on my kids when i'm older, that's my why" is the commonest motivational why in
+// fitness — a reason with no plan, one marker, no net. It takes a reason AND a plan, which is
+// the shape the live probe showed the model missing.
+const _RISK_REASON = [
+  /\bbetter off without me\b/, /\bbetter off with me (?:gone|dead)\b/,
+  /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\b/,
+  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b/, /\bdon'?t want to be a burden any ?more\b/,
+  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\b/, /\bnobody needs me\b/,
+  /\bno point in (?:me )?being here\b/, /\bworth more dead\b/
+];
+const _RISK_PLAN = [
+  /\bpicked (?:the|a|my) (?:day|date|night)\b/, /\bit all worked out\b/, /\ball worked out\b/,
+  /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\b/, /\bwritten a note for each\b/,
+  /\bwrote (?:the|my) (?:note|notes|letter|letters)\b/,
+  /\b(?:got|have) the (?:pills|tablets) ready\b/, /\bsaved up (?:the|my) (?:pills|tablets)\b/,
+  /\btonight is the night\b/, /\btonight'?s the night\b/
+];
+// Does the model's own reply already put a real human in it? Built from CRISIS_LINES so a new
+// line added to the card is recognised here too, plus the kinds of person the note names.
+function _replyNamesAHuman(reply){
+  const t = String(reply || '').toLowerCase();
+  if(/helpline|crisis line|counsellor|counselor|therapist|\bdoctor\b|\bgp\b|priest|imam|emergency/.test(t)) return true;
+  try{
+    if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES))
+      return CRISIS_LINES.some(function(l){
+        return t.indexOf(String(l.name).toLowerCase()) >= 0
+            || t.replace(/\s+/g,'').indexOf(String(l.contact).toLowerCase().replace(/\s+/g,'')) >= 0; });
+  }catch(_){ }
+  return false;
+}
+// Returns true when the app must add the human the model did not. Deliberately narrow: a reason
+// AND a plan in what the PERSON wrote, and nothing resembling a human in what came back.
+function _needsHumanNet(userText, reply){
+  try{
+    const t = String(userText || '').toLowerCase().replace(/[\u2018\u2019\u02bc\u02bb\u00b4`]/g, "'").replace(/\s+/g, ' ');
+    if(!t) return false;
+    const reason = _RISK_REASON.some(function(re){ return re.test(t); });
+    if(!reason) return false;
+    const plan = _RISK_PLAN.some(function(re){ return re.test(t); });
+    if(!plan) return false;
+    return !_replyNamesAHuman(reply);
+  }catch(_){ return false; }
+}
+// The line the app adds itself. Short, the app's own voice, and the one verified number it
+// leads with — never a number from a model.
+function _humanNetLine(){
+  let line = 'Lifeline 13 11 14';
+  try{ if(typeof CRISIS_LINES !== 'undefined' && CRISIS_LINES[0])
+    line = CRISIS_LINES[0].name + ' ' + CRISIS_LINES[0].contact; }catch(_){ }
+  return 'And I\u2019m not leaving this with just me. Please talk to someone tonight \u2014 ' + line
+    + ', or your doctor, or someone who loves you. I\u2019ll still be here after.';
+}
 function _crisisLinesForPrompt(){
   try{
     if(typeof CRISIS_LINES === 'undefined' || !Array.isArray(CRISIS_LINES)) return 'their local crisis line, their doctor, or findahelpline.com. ';
@@ -23420,6 +23495,13 @@ async function _companionSay(userText, opening){
     // AI unreachable → the clinical mechanism carries them step by step, never one repeated line.
     reply = _compNextLocalStep();
   }
+  // THE NET. Measured across the fallback chain: cloudflare handed over on 8 of 9 stacked messages,
+  // and which provider answers is decided silently by whose key is live that minute. If the person
+  // named a reason AND a plan and the reply came back without a human in it, the app adds one —
+  // with its OWN verified number, never a model's. Appended to the reply rather than replacing it,
+  // because what the model said may be the only thing holding them in the conversation.
+  try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply))
+    reply = reply + '\n\n' + _humanNetLine(); }catch(_){ }
   _compHistory.push({ role:'assistant', content:reply });
   if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=reply; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
 }

@@ -1823,8 +1823,17 @@ async function sendCoach(){
   const r=await api(buildCtx(),cH.slice(0,-1),t,2600);
   rmMsg(lid);
   if(r){
-    addMsg('coach-msgs',r,'coach');
-    cH.push({role:'assistant',content:r});
+    // THE SAME NET THE COMPANION CARRIES. The keyword gate above stops the unmistakable sentence;
+    // this catches the one it deliberately refuses — a reason plus a plan — when the model's reply
+    // came back with no human in it. Measured across the fallback chain: gemini hands over 9 of 9,
+    // cloudflare 8 of 9, and which one answers is decided silently by whose key is live.
+    // _needsHumanNet is a function declaration in 08-voice.js, so it hoists across the bundle and
+    // is safe to call from here even though that module loads later.
+    let _r = r;
+    try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, _r))
+      _r = _r + '\n\n' + _humanNetLine(); }catch(_){ }
+    addMsg('coach-msgs',_r,'coach');
+    cH.push({role:'assistant',content:_r});
     if(cH.length>20)cH=cH.slice(-20);
     persistCoachHistory();
     maybeUpdateCoachMemory();
@@ -2573,7 +2582,10 @@ async function sendPT(){
     r=null;
   }
   rmMsg(lid);   // always clear the "..." bubble, even if the call threw
-  if(r){addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
+  // The same net, at the third free-text AI surface. All three — companion, coach, PT — now carry
+  // it, because which of them a person reaches at 2am is not something this code gets to choose.
+  if(r){ try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, r)) r = r + '\n\n' + _humanNetLine(); }catch(_){ }
+    addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
   else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'I couldn\u2019t reach the coach just now \u2014 check your connection and try again. What you wrote is safe.';
     addMsg('pt-msgs', errMsg, 'coach');
