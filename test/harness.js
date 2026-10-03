@@ -104,4 +104,30 @@ function report(){
 // diagnosed a regression that did not exist. Any !/.../.test() over source goes through this.
 function code(t){ return String(t == null ? html : t).replace(/\/\/[^\n]*/g, ''); }
 
-module.exports = { extractFn, load, eq, approx, ok, section, report, html, code, defer };
+// ── THE VOICE FINGERPRINT ───────────────────────────────────────────────────────────────────────
+// scripts/voice-probe.mjs needs the network, so it cannot live in the gate. It stamps this hash on
+// a clean pass and core.test.js refuses to pass if it no longer matches — edit the prompt and the
+// gate tells you to re-measure, at zero API cost.
+// IT LIVES HERE, NOT IN EITHER CALLER, because a fingerprint computed two ways is a fingerprint
+// that silently stops matching — the half-applied shape this repo keeps paying for. The probe is
+// ESM and the suite is CommonJS; the harness is the one thing both already load.
+// It covers ONLY the four declarations that decide the answer. Hashing the bundle would invalidate
+// the stamp on every unrelated commit, and a check that cries wolf is one people learn to delete.
+const VOICE_PARTS = [
+  ['const BROTHER_VOICE =', '";\n'],
+  ['const CRISIS_LINES = [', '];'],
+  ['function safetyNote()', '\n}'],
+  ['function _crisisLinesForPrompt()', '\n}'],
+];
+function voiceFingerprint(htmlArg){
+  const src = htmlArg || html;
+  const parts = VOICE_PARTS.map(([d, e]) => {
+    const i = src.indexOf(d); if(i < 0) return '';
+    const j = src.indexOf(e, i); return j < 0 ? '' : src.slice(i, j + e.length);
+  });
+  return { sha: require('crypto').createHash('sha256').update(parts.join('\u0000')).digest('hex').slice(0,16),
+           bytes: parts.reduce((n, x) => n + x.length, 0),
+           missing: VOICE_PARTS.filter((_, k) => !parts[k]).map(([d]) => d) };
+}
+
+module.exports = { voiceFingerprint, extractFn, load, eq, approx, ok, section, report, html, code, defer };

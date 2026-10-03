@@ -1,0 +1,12 @@
+{
+  "note": "Written by scripts/voice-probe.mjs on a clean full run. npm test fails if the voice sources change without re-running it — the probe needs the network, the gate does not.",
+  "sha": "6e3e237dfdc1a6e1",
+  "bytes": 8559,
+  "measured": {
+    "bandA_ordinary_flinched": "0 of 7",
+    "bandB_named_a_human": "3 of 4",
+    "bandC_named_a_human": "3 of 3",
+    "bandC_verified_number": "3 of 3",
+    "served_by": "gemini"
+  }
+}

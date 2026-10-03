@@ -635,6 +635,24 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      injection first stayed green: corrupting the fallback literal `'Lifeline 13 11 14'` changes
      nothing while `CRISIS_LINES` is present to overwrite it, so **the fallback path is now asserted
      on its own** — an unreachable default is an unasserted default.
+     **AND THE GATE NOW REFUSES A PROMPT NOBODY RE-MEASURED, AT ZERO API COST (2 Oct 2026).** The
+     probe needs the network, so it cannot run in the gate — which meant it only ran when somebody
+     remembered, and both defects it found were invisible to every assertion over the source. On a
+     clean full run it stamps `test/voice-probe.stamp.json`: a sha of the four declarations that
+     decide the answer (`BROTHER_VOICE`, `CRISIS_LINES`, `safetyNote`, `_crisisLinesForPrompt`) plus
+     the measured bands. `npm test` recomputes that sha and FAILS if it has moved — edit the prompt
+     or change a helpline number and the gate tells you to re-measure. It also asserts the stamp's own
+     evidence: the stamped run must have had **zero** band-A flinches and a verified number on every
+     stacked message, so the hash can never be a green light with nothing behind it.
+     **The fingerprint lives in `test/harness.js`,** called by both the probe (ESM) and the suite
+     (CommonJS) — computing it two ways is how it would silently stop matching. It covers only those
+     four declarations, never the bundle: hashing index.html would invalidate the stamp on every
+     unrelated commit, and a check that cries wolf is one people learn to delete. A band-filtered run
+     (`voice-probe.mjs A`) deliberately does NOT stamp, because it has not measured the hand-off.
+     Four injections, each caught — and one of them cost a real bug first: **a local `const URL` for
+     the proxy endpoint shadowed the global `URL` constructor** for the whole module, so `new URL(...)`
+     for the stamp path threw "URL is not a constructor". Same family as the two-letter global this
+     file already records.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature
