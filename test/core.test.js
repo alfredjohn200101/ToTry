@@ -11698,7 +11698,11 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   {
     const fp = H.voiceFingerprint();
     H.eq(fp.missing.length, 0,
-      'the fingerprint finds all four voice declarations' +
+    // FIVE, not four. brotherSys was added on 7 Oct after a review of this very fix found that
+    // editing the assembler left the sha UNCHANGED — the stamp stayed valid while the behaviour
+    // moved. The fingerprint must cover the thing that DECIDES whether the note reaches a prompt,
+    // not only the note.
+      'the fingerprint finds all five voice declarations' +
       (fp.missing.length ? ' — missing: ' + fp.missing.join(', ') : ''));
     let stamp = null;
     try { stamp = JSON.parse(require('fs').readFileSync(
@@ -11706,8 +11710,9 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     H.ok(!!stamp, 'test/voice-probe.stamp.json exists — run `node scripts/voice-probe.mjs` if not');
     if (stamp) {
       H.eq(fp.sha, stamp.sha,
-        'the voice sources still hash to what the live probe last measured — if this fails, ' +
-        'safetyNote / BROTHER_VOICE / CRISIS_LINES changed and nobody re-ran ' +
+        'the voice sources still hash to what the live probe last measured — if this fails, one of ' +
+        'BROTHER_VOICE / CRISIS_LINES / safetyNote / _crisisLinesForPrompt / brotherSys ' +
+        'changed and nobody re-ran ' +
         '`node scripts/voice-probe.mjs`. The prompt containing an instruction is not the model ' +
         'obeying it.');
       // The stamp must carry what it measured, or it is a hash with no evidence behind it.

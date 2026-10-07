@@ -653,6 +653,17 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      the proxy endpoint shadowed the global `URL` constructor** for the whole module, so `new URL(...)`
      for the stamp path threw "URL is not a constructor". Same family as the two-letter global this
      file already records.
+     **AND THE FINGERPRINT DID NOT COVER THE ASSEMBLER (7 Oct 2026, reviewing that very fix).**
+     It hashed four declarations and not `brotherSys()` — the function that DECIDES whether
+     `safetyNote()` reaches a prompt at all. Measured: editing it to stop appending the note left the
+     sha **unchanged**, so the stamp stayed valid while the behaviour moved. A separate assertion
+     catches the call being deleted outright, but reordering the notes, adding one that dilutes, or
+     changing how `extra` is handled moved nothing. Five parts now. **A fingerprint has to cover the
+     thing that decides, not only the thing decided about** — and adding it invalidated the stamp and
+     made the gate demand a re-measure, which is the mechanism working on its own author.
+     The trade-off is stated in the harness: this is a fingerprint, not a behaviour diff. A textual
+     edit that changes nothing still demands a probe run, because nothing there can know whether an
+     edit moved behaviour. Cheap to satisfy, impossible to satisfy by accident.
    - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature

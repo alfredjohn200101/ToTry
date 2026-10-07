@@ -118,6 +118,18 @@ const VOICE_PARTS = [
   ['const CRISIS_LINES = [', '];'],
   ['function safetyNote()', '\n}'],
   ['function _crisisLinesForPrompt()', '\n}'],
+  // brotherSys IS THE ASSEMBLER, so it belongs here. Measured 7 Oct 2026, reviewing my own fix:
+  // editing it to stop appending safetyNote left this sha UNCHANGED, so the stamp stayed valid
+  // while the behaviour moved. A separate assertion catches the call being deleted outright, but
+  // reordering the notes, or adding one that dilutes, or changing how `extra` is handled, moved
+  // nothing. The fingerprint has to cover the thing that DECIDES whether the note reaches a
+  // prompt, not only the note.
+  // The trade-off, stated: this is a FINGERPRINT, not a behaviour diff. A textual edit that changes
+  // nothing — reformatting, a comment, `1 ? safetyNote() : 0` — still invalidates the stamp and
+  // demands a re-measure, because nothing here can know whether an edit moved behaviour. That is
+  // the right way round for a safety prompt: cheap to satisfy (one probe run), and it cannot be
+  // satisfied by accident.
+  ['function brotherSys(extra)', '\n}'],
 ];
 function voiceFingerprint(htmlArg){
   const src = htmlArg || html;
