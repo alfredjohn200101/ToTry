@@ -23,3 +23,8 @@ build/
 # (~80MB a run). One stray webm was committed by accident in v371; see the note in that script.
 recordings/
 .ios-shots/
+
+# Agent and probe scratch files. These are written into test/ by concurrent review agents, and
+# a `git add -A` during a live run swept eight of them into a commit on 7 Oct 2026.
+test/_*.tmp.js
+test/_*.tmp.mjs
