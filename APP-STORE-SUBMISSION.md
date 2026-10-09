@@ -5,7 +5,13 @@
 > (they can't be done from here). Android/Play is a separate pass (the `android/` project is tracked).
 
 ## ✅ Verified ready (already done — no action needed)
-- **Bundle id** `app.totry`, **display name** "To Try", **version 1.0 (build 1)**.
+- **Bundle id** `app.totry`, **display name** "To Try". **Do not read the build number from this
+  line** — it said `build 1` until 10 Oct 2026, by which point the project was at **build 9**, and
+  App Store Connect rejects a build number it has already seen. The number lives in exactly one
+  place, `CURRENT_PROJECT_VERSION` in `ios/App/App.xcodeproj/project.pbxproj`, and
+  `npm run preflight` prints it back to you on every run ("iOS version 1.0 (build 9)"). Increment it
+  there, never here — a doc that restates a mutable fact is a doc that will mislead you at the worst
+  moment.
 - **Privacy usage strings** — Camera, Health (share + update), Photo Library (use + add). All present, specific, honest.
 - **1024 App Store icon** present; **launch screen** present; **`ITSAppUsesNonExemptEncryption = false`** (skips the export-compliance prompt on every upload).
 - **In-app account deletion** (`deleteAccount()` → deletes server-side `user_data`) — an Apple hard requirement, met.

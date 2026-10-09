@@ -105,6 +105,41 @@ if (plist) {
   // A missing usage string does not warn — iOS TERMINATES the app the moment the API is touched.
   if (absent.length) bad(`Info.plist is missing ${absent.join(', ')} — iOS terminates the app when that API is touched`);
   else good(`all ${NEEDED.length} usage descriptions present`);
+  // ── THE PRIVACY MANIFEST AND THE ANSWER SHEET MUST AGREE ──────────────────────────────────
+  // PrivacyInfo.xcprivacy ships inside the binary and Apple cross-checks the App Privacy form
+  // against it. APP-PRIVACY.md is what a human fills the form FROM. On 10 Oct 2026 they diverged
+  // in the direction that matters: the manifest declared eleven collected types and the answer
+  // sheet listed ten. The missing one was Photos or Videos, which the food camera really does
+  // transmit — so anyone filling the form from the doc would have UNDER-declared. The doc even
+  // claimed the two matched exactly, which is how it went unnoticed for ~100 versions.
+  // Checked here because this is the script that runs immediately before an archive.
+  {
+    const man = read('ios/App/App/PrivacyInfo.xcprivacy');
+    const doc = read('APP-PRIVACY.md');
+    if (!man) bad('ios/App/App/PrivacyInfo.xcprivacy is missing — Apple requires a privacy manifest');
+    else if (!doc) soft('APP-PRIVACY.md is missing, so the manifest cannot be cross-checked');
+    else {
+      const types = [...man.matchAll(/NSPrivacyCollectedDataType<\/key>\s*<string>NSPrivacyCollectedDataType(\w+)<\/string>/g)]
+        .map(m => m[1]);
+      if (!types.length) bad('no collected data types parsed out of PrivacyInfo.xcprivacy — the check cannot run, so treat it as failing');
+      else {
+        // the doc writes Apple's human labels; map each manifest type to the words that must appear
+        const LABEL = {
+          EmailAddress: 'Email Address', Name: 'Name', UserID: 'User ID',
+          CoarseLocation: 'Location', HealthAndFitness: 'Health', SensitiveInfo: 'Sensitive Info',
+          PhotosorVideos: 'Photos or Videos', OtherUserContent: 'Other User Content',
+          OtherFinancialInfo: 'Other Financial Info', ProductInteraction: 'Product Interaction',
+          CrashData: 'Crash Data',
+        };
+        const unlabelled = types.filter(t => !LABEL[t]);
+        const undeclared = types.filter(t => LABEL[t] && !doc.includes(LABEL[t]));
+        if (unlabelled.length) soft(`PrivacyInfo.xcprivacy declares ${unlabelled.join(', ')}, which this check has no label for — add it to LABEL in preflight.js and to APP-PRIVACY.md`);
+        if (undeclared.length) bad(`APP-PRIVACY.md does not mention ${undeclared.map(t => LABEL[t]).join(', ')}, which the shipped privacy manifest DOES declare — the form would be filled from the doc and under-declare`);
+        else good(`the privacy manifest's ${types.length} collected types all appear in APP-PRIVACY.md`);
+      }
+    }
+  }
+
   if (!plist.includes('ITSAppUsesNonExemptEncryption')) soft('ITSAppUsesNonExemptEncryption not set — Apple will ask about export compliance on every upload');
   if (!plist.includes('UILaunchStoryboardName')) bad('no launch storyboard — the app will letterbox instead of filling the screen');
 }

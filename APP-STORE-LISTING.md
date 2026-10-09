@@ -142,8 +142,14 @@ To Try is multi-faith: at onboarding the user picks a path (Christianity, Islam,
 ```
 
 ## Build to attach
-**1.0 (4)** — current as of 19 Aug 2026, web assets **v513**. `CURRENT_PROJECT_VERSION = 4` is already
-set in `project.pbxproj`. App Store Connect holds build 2; build 3 was never uploaded; 4 is safe either
+**Read the build number from `npm run preflight`, not from here.** This line read "**1.0 (4)** —
+current as of 19 Aug 2026, web assets **v513**" until 10 Oct 2026, when the project was at
+**1.0 (build 9)** with web assets at **v610**. The marketing version is
+set in `project.pbxproj`, and that file is the only place it is true. **This line used to name which
+builds App Store Connect holds, and by 10 Oct 2026 it was stale by six** — it said ASC held build 2
+and that 4 was safe, while the project sat at build 9. A doc cannot track what has been uploaded;
+only App Store Connect knows that. So: read the current number from `npm run preflight`, check the
+uploaded list in ASC itself, and increment `CURRENT_PROJECT_VERSION` past the highest one there.
 way (a higher number is always accepted, a repeated one is rejected before review). Re-archive from the
 current tree — do not reuse anything in `build/`; the stale build-2 `.ipa` there has been deleted, and
 any `.xcarchive` still on disk is build 2 as well. Verified: `xcodebuild -configuration Release` →

@@ -17,7 +17,26 @@ manifest Apple cross-checks your form answers against:**
 Ten rows now, matching `ios/App/App/PrivacyInfo.xcprivacy` exactly. If the two ever disagree again,
 the manifest is the one to trust — it ships inside the binary.
 
-Every claim below was checked against `index.html`, re-verified at v512.
+**Re-audited 10 Oct 2026 at v610, and they DID disagree again — in the direction that matters.**
+The manifest declares **eleven** collected types and this table listed ten of them. The missing one is
+**Photos or Videos**, and it is genuinely collected: the food camera base64s a downscaled JPEG and
+sends it to the `ai-proxy` edge function, which forwards it to a third-party vision model
+(`src/app/14-nourish.js:1158` builds the base64, `:1168` invokes
+`sb.functions.invoke('ai-proxy', { body:{ action:'vision', image_base64:base64, … } })`). Both
+`NSPhotoLibraryUsageDescription` and `NSPhotoLibraryAddUsageDescription` ship in `Info.plist`.
+**Anyone filling the form from the old table would have under-declared.** The row is added below.
+
+Two smaller corrections from the same audit:
+- **`SYNC_KEYS` is 184 keys, not 178.** Six were added between v512 and v610. None of them opens a new
+  Apple category — the new keys are more of what is already declared.
+- **"Contacts → No" is correct, and the reason was never written down, which made it look like an
+  assumption.** It is defensible on evidence: there is **no `NSContactsUsageDescription`** in
+  `Info.plist` and **no address-book API anywhere** in the bundle or the Swift. The app does hold a
+  short list of other people — `totry_your_few`, which syncs — but every entry is
+  `{name, note}` with the name **typed by the person** and capped at 40 characters
+  (`src/app/23-evening.js:1345`), never read from the device. Say that if review asks.
+
+Every claim below was checked against `index.html`, re-verified at v610.
 
 ---
 
@@ -32,6 +51,7 @@ Every claim below was checked against `index.html`, re-verified at v512.
 | Financial Info → Other Financial Info | **Yes** | Yes | No |
 | Sensitive Info | **Yes** | Yes | No |
 | User Content → Other User Content | **Yes** | Yes | No |
+| User Content → Photos or Videos | **Yes** | Yes | No |
 | Identifiers → User ID | **Yes** | Yes | No |
 | Usage Data → Product Interaction | **Yes** | **No** | No |
 | Location | **Yes** (coarse) | No | No |
@@ -58,6 +78,21 @@ Purpose: **App Functionality**.
 > Note for the HealthKit review question: HealthKit data is used only to show the person their own
 > figures and to inform in-app coaching. It is not used for advertising, and it is not sold or shared
 > with third parties. Be ready to say that in the review notes.
+
+### User Content → Photos or Videos — collected, linked
+**Added 10 Oct 2026.** The food camera is the only photo path, and it does transmit. `downscaleImage`
+re-encodes the picture at 1280px / quality 0.8 (`src/app/14-nourish.js:1125`), the data URL is split to
+base64 (`:1158`), and that base64 goes to the `ai-proxy` edge function with `action:'vision'`, which
+forwards it to a third-party vision model for a meal estimate. The photo is not stored in Supabase —
+only the resulting food entry is — but it **leaves the device**, which is what the question asks.
+`NSPhotoLibraryUsageDescription` and `NSPhotoLibraryAddUsageDescription` are both in `Info.plist`, and
+`NSCameraUsageDescription` covers the live capture and the barcode scanner.
+Purpose: **App Functionality**.
+
+### Financial Info → Payment Info — NOT collected, and the one thing that looks like it isn't
+Worth recording because a text search suggests otherwise: grepping for `stripe` matches
+`src/app/14-nourish.js:2211`, which is **UI copy about a barcode's stripes**. There is no card field,
+no payment SDK and no checkout anywhere in the app. The claim below is correct.
 
 ### Financial Info → Other Financial Info — collected, linked
 Debts, logged payments, spending, budgets, subscriptions, assets and giving all sync. **Payment Info is
