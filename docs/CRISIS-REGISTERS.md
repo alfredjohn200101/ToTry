@@ -68,6 +68,23 @@ They need the clause-bound treatment the hopelessness work is already applying t
 - *must fire:* "whats a lethal dose of paracetamol"; "whats the lethal dose of my meds"; "is that a lethal dose for me".
 - *must stay silent:* "what's the lethal dose of caffeine, i had four pre workouts" (caffeine LD50 is ordinary supplement talk and the AI coach box is where it gets typed); "the lethal dose of water is a real thing apparently, hyponatremia" — both null. The drug class must be named, which is what separates a nutrition question from a means question. COST, named: bare "i looked up the lethal dose" no longer matches.
 
+**8. REVISED 9 Oct 2026 — this entry was a BARE PHRASE in all but name.** As specified it excluded
+six equipment nouns and fired on every other mention, so `detectCrisis("carbon monoxide")` ALONE
+returned `'suicide'`, and so did "is carbon monoxide dangerous in a closed garage", "we had a carbon
+monoxide scare at work today", "carbon monoxide safety week at the school" and "the landlord never
+checked for carbon monoxide". A tenant, a parent, a tradesperson and a school newsletter. It now
+requires a **DEFINITE enclosure** or a **stated intent**, because the article is the signal: the
+enclosure somebody HAS is "the car", a generic one is "a closed garage", and that is what separates
+a safety question from a disclosure. The intent branch exists because the recorded must-fire
+"carbon monoxide poisoning is how i would do it" has no enclosure at all — the first cut of the
+enclosure rule lost it.
+
+```
+/\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))[^.!?]{0,34}(?:\b(?:in|inside|into|from|with)\s+(?:the|my|our)\s+(?:car|garage|van|ute|truck|shed|vehicle|exhaust|engine|boot|cabin)\b|\b(?:how i'?(?:d|ll)|how i (?:would|will|could)|that'?s how i|this is how i)\b|\b(?:kill myself|end my life|end it all|take myself out)\b)/
+```
+
+*The original spec, kept because its reasoning about the news-source frame still holds:*
+
 **8. `/\bcarbon monoxide\b(?!\s*(?:alarm\|detector\|monitor\|reading\|readings\|test\|level\|levels))/`** → `SUICIDE_RE`
 
 - *must fire:* "i've been reading about carbon monoxide in the car".

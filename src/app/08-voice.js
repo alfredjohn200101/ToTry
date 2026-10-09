@@ -84,35 +84,115 @@ function sexNote(){
 // a burden on my kids when i'm older, that's my why" is the commonest motivational why in
 // fitness — a reason with no plan, one marker, no net. It takes a reason AND a plan, which is
 // the shape the live probe showed the model missing.
+// THE NET RE-IMPLEMENTED THE REGISTERS AND LEFT EVERY BOUND BEHIND.
+// These two lists were written as bare phrases, which is the exact shape docs/CRISIS-REGISTERS.md
+// exists to refuse — and nothing ever ran the gate's own benign corpus through them, because the
+// net's panel is seven hand-written rows. Measured 9 Oct 2026 over the 357 ORDINARY sentences this
+// gate already owns: 24 matched a REASON pattern and 6 matched a PLAN pattern, and since the net
+// reads a whole MESSAGE rather than a sentence, ALL 144 pairings of them appended a crisis line to
+// an ordinary reply. "nobody would miss me if i skipped tonight's session. i've picked the day,
+// monday is day one." is two Train sentences and it netted.
+// So each entry now carries the clause bound the registers were measured into, plus the
+// innocent-completion guards the corpus actually shows. `worth more dead` gained a first-person
+// subject because the corpus has "the old bike is worth more dead than alive as scrap", and
+// `a burden` gained the register's own `bearer` lookahead because the corpus has "i'm a burden
+// bearer for my family" — the register HAD that guard and this copy of it did not.
 const _RISK_REASON = [
   /\bbetter off without me\b/, /\bbetter off with me (?:gone|dead)\b/,
-  /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\b/,
-  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b/, /\bdon'?t want to be a burden any ?more\b/,
-  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\b/, /\bnobody needs me\b/,
-  /\bno point in (?:me )?being here\b/, /\bworth more dead\b/
+  // "my family would be relieved when i tell them i'm 90 days clean" is the sentence this app is FOR
+  /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\s*(?:if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive)\b|when i'?m gone\b|without me\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bdon'?t want to be a burden any ?more\b/,
+  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\s*(?:if i (?:was |were |wasn'?t |weren'?t )?(?:gone|dead|not here|around)\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bnobody needs me\b(?:\s*(?:here|at all|any ?more)\b|\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bno point in (?:me )?being here\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\b(?:i'?m|i am|im|i'?d be|i am worth|i'?m worth)\b[^.!?]{0,12}\bworth more dead\b|\bworth more dead\b[^.!?]{0,20}\b(?:than alive to (?:them|her|him|my)|to my (?:family|wife|kids))\b/
 ];
 const _RISK_PLAN = [
-  /\bpicked (?:the|a|my) (?:day|date|night)\b/, /\bit all worked out\b/, /\ball worked out\b/,
-  /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\b/, /\bwritten a note for each\b/,
-  /\bwrote (?:the|my) (?:note|notes|letter|letters)\b/,
-  /\b(?:got|have) the (?:pills|tablets) ready\b/, /\bsaved up (?:the|my) (?:pills|tablets)\b/,
-  /\btonight is the night\b/, /\btonight'?s the night\b/
+  // "i've picked the day, monday is day one" and "i've picked the day to start the fast" are both
+  // things this app ASKS people to do — picking a start day is a feature.
+  /\bpicked (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bit all worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/, /\ball worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/,
+  /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bwritten a note for each\b/,
+  /\bwrote (?:the|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // "i've got the pills ready for the morning, creatine and vitamin d"
+  /\b(?:got|have) the (?:pills|tablets) ready\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bsaved up (?:the|my) (?:pills|tablets)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\btonight is the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/, /\btonight'?s the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/
 ];
 // Does the model's own reply already put a real human in it? Built from CRISIS_LINES so a new
 // line added to the card is recognised here too, plus the kinds of person the note names.
+// CONTAINING THE WORD IS NOT OFFERING THE PERSON, and this function decides whether the net stays
+// SILENT — so a false positive here is a false NEGATIVE on the safety path. It used to be one
+// unanchored substring test, which meant the app added nothing after a reply that said
+// "i'm not your doctor", "there's no emergency here", "this isn't a crisis line and i'm not a
+// therapist", "no need for a doctor" or "the gym is my lifeline right now". Measured 9 Oct 2026
+// over 18 replies: 8 wrong, every one of them in the direction of staying quiet. 0 after.
+// A human is OFFERED when a real verified NUMBER is present, or when a named kind of person sits
+// next to an offer or a recommendation and NOT inside a negation. The negation window is the 40
+// characters in front, because that is where English puts it.
+// The three patterns live INSIDE the function on purpose. As module-level consts they were
+// invisible to H.load, which extracts FUNCTIONS — so the extracted copy threw, _needsHumanNet's
+// own try/catch swallowed it, and the suite reported the net staying silent on a real disclosure.
+// Self-contained also means the /g pattern can never carry lastIndex between calls.
 function _replyNamesAHuman(reply){
+  const _HUMAN_KIND = /\b(?:helpline|crisis line|counsellor|counselor|therapist|doctor|gp|priest|imam|rabbi|chaplain|emergency services|emergency room)\b/g;
+  const _HUMAN_NEG = /\b(?:not|no|never|isn'?t|ain'?t|aren'?t|wasn'?t|cannot|can'?t|don'?t|doesn'?t|without)\b[^.!?;]{0,28}$/;
+  const _HUMAN_OFFER = /\b(?:talk|speak|call|ring|phone|see|contact|reach out|tell|get|visit|book|text|message)\b|\b(?:would|can|could|might|will) (?:really )?help\b|\b(?:i'?d recommend|worth (?:a|talking|seeing)|please)\b/;
   const t = String(reply || '').toLowerCase();
-  if(/helpline|crisis line|counsellor|counselor|therapist|\bdoctor\b|\bgp\b|priest|imam|emergency/.test(t)) return true;
+  // a verified number is unambiguous — nobody writes 13 11 14 to mean anything else
+  try{
+    if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES)){
+      const flat = t.replace(/\s+/g, '');
+      if(CRISIS_LINES.some(function(l){
+        const c = String(l.contact || '');
+        return /\d/.test(c) && flat.indexOf(c.toLowerCase().replace(/\s+/g, '')) >= 0; })) return true;
+    }
+  }catch(_){ }
+  const near = function(i, len){
+    const before = t.slice(Math.max(0, i - 40), i);
+    if(_HUMAN_NEG.test(before)) return false;
+    return _HUMAN_OFFER.test(before) || _HUMAN_OFFER.test(t.slice(i, i + len + 40));
+  };
+  let m;
+  _HUMAN_KIND.lastIndex = 0;
+  while((m = _HUMAN_KIND.exec(t))){ if(near(m.index, m[0].length)) return true; }
+  // a provider offered BY NAME, e.g. "ring Lifeline tonight" with no number
   try{
     if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES))
       return CRISIS_LINES.some(function(l){
-        return t.indexOf(String(l.name).toLowerCase()) >= 0
-            || t.replace(/\s+/g,'').indexOf(String(l.contact).toLowerCase().replace(/\s+/g,'')) >= 0; });
+        const n = String(l.name || '').toLowerCase();
+        if(!n) return false;
+        const i = t.indexOf(n);
+        return i >= 0 && near(i, n.length);
+      });
   }catch(_){ }
   return false;
 }
 // Returns true when the app must add the human the model did not. Deliberately narrow: a reason
 // AND a plan in what the PERSON wrote, and nothing resembling a human in what came back.
+// ONE MECHANISM FOR THE NET, BECAUSE IT WAS WIRED AT THREE SITES AND NEEDED NINE.
+// The net was appended inline at the companion, the coach and the PT — and every one of those is
+// the SUCCESS path. Three more paths at the coach reply to the person without ever reaching api():
+// offline, Supabase not ready, and the model failing. Each answers with a canned string that names
+// no human, so somebody who stacked a reason and a plan got "You're offline right now. Your coach
+// needs a connection to think" and nothing else. And _feelingNowGo — the app's MOST-invited
+// disclosure surface, the one whose own comment calls its prompt "deliberately fierce" — was a
+// fourth free-text AI surface with no net at all, on its success path, its empty-reply fallback and
+// its catch.
+// `html:true` escapes the line for a text position inside innerHTML, which is what _feelingNowGo
+// needs; the chat surfaces take it as plain text.
+function _netted(userText, reply, html){
+  try{
+    if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply)){
+      const line = _humanNetLine();
+      return reply + (html ? '<br><br>' + (typeof _escFew === 'function' ? _escFew(line) : line)
+                           : '\n\n' + line);
+    }
+  }catch(_){ }
+  return reply;
+}
 function _needsHumanNet(userText, reply){
   try{
     const t = String(userText || '').toLowerCase().replace(/[\u2018\u2019\u02bc\u02bb\u00b4`]/g, "'").replace(/\s+/g, ' ');
@@ -308,8 +388,7 @@ async function _companionSay(userText, opening){
   // named a reason AND a plan and the reply came back without a human in it, the app adds one —
   // with its OWN verified number, never a model's. Appended to the reply rather than replacing it,
   // because what the model said may be the only thing holding them in the conversation.
-  try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply))
-    reply = reply + '\n\n' + _humanNetLine(); }catch(_){ }
+  try{ reply = _netted(userText, reply); }catch(_){ }
   _compHistory.push({ role:'assistant', content:reply });
   if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=reply; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
 }

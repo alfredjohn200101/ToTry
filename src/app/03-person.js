@@ -1802,12 +1802,14 @@ async function sendCoach(){
   // Diagnostic: check state before calling
   if(!navigator.onLine){
     rmMsg(lid);
-    addMsg('coach-msgs','You\'re offline right now. Your coach needs a connection to think — I\'ll be here when you\'re back online.','coach');
+    // THE NET BELONGS ON THE PATHS THAT NEVER REACH THE MODEL TOO. Somebody who stacked a reason
+    // and a plan used to get this sentence and nothing else.
+    addMsg('coach-msgs',_netted(t,'You\'re offline right now. Your coach needs a connection to think — I\'ll be here when you\'re back online.'),'coach');
     return;
   }
   if(!sb){
     rmMsg(lid);
-    addMsg('coach-msgs','Setting up... please try again in a few seconds.','coach');
+    addMsg('coach-msgs',_netted(t,'Setting up... please try again in a few seconds.'),'coach');
     return;
   }
   // THE GUEST DOOR IS THE APP'S OWN FRONT DOOR, AND THIS WAS A WALL BEHIND IT.
@@ -1830,8 +1832,7 @@ async function sendCoach(){
     // _needsHumanNet is a function declaration in 08-voice.js, so it hoists across the bundle and
     // is safe to call from here even though that module loads later.
     let _r = r;
-    try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, _r))
-      _r = _r + '\n\n' + _humanNetLine(); }catch(_){ }
+    try{ _r = _netted(t, _r); }catch(_){ }
     addMsg('coach-msgs',_r,'coach');
     cH.push({role:'assistant',content:_r});
     if(cH.length>20)cH=cH.slice(-20);
@@ -1839,7 +1840,7 @@ async function sendCoach(){
     maybeUpdateCoachMemory();
   } else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'The coach is unavailable for a moment.';
-    addMsg('coach-msgs', errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.', 'coach');
+    addMsg('coach-msgs', _netted(t, errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
     const msgs = document.getElementById('coach-msgs');
     if(msgs){
       const btn = document.createElement('button');
@@ -1894,8 +1895,30 @@ function detectCrisis(text){
   // this gate exists for — and v444's span matched both, because "myself" is under fourteen characters.
   // The negative lookahead is the whole safety of this mechanism: suppress only when the object is
   // plainly another person or a place, never when it is the person, their life, or it all.
+  // AN INNOCENT COMPLETION MUST SURVIVE AN ENTER. Every exclusion this detector owns is written
+  // with literal spaces — the suppression spans below, and the lookaheads inside the patterns
+  // themselves — so ONE line break inside the span stopped it being removed and the bare phrase
+  // under it fired. Measured over the 357 benign sentences this gate already owns, one newline at
+  // each word boundary: 118 of 357 returned a crisis card. "i've been hoarding the pills\nfor my
+  // mum" and "i'm a waste of space\non the leaderboard" raised six helplines; "i took all my
+  // pills\nthis morning" called an ambulance. "i want to die\nto my old self" and "take my life
+  // and\nlet it be" are the third and fourth time this app's own devotional vocabulary has tripped
+  // its own suicide detector, and both had already been fixed once — for a single line of text.
+  // `tc` collapses whitespace and already computed the right answer for all 118; the `||` in
+  // _hit/_hitRe discarded it. So the space in an exclusion means "whitespace", not "a space".
+  const _wsTol = function(r){ return r.source.indexOf(' ') < 0 ? r
+    : new RegExp(r.source.replace(/ /g, '[ \\n\\r]'), r.flags); };
   const _suppress = function(_x){
-  [/ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
+  [// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
+   // anchors on `[\n\r]\s*` as a sentence start, on purpose — somebody types a line, presses
+   // Enter and says it. But four of the gate's own benign sentences are a SUBORDINATING clause,
+   // an Enter, then the statement: "if i stop gambling\nmy family would be better off",
+   // "once the debt is gone\nmy family would be better off". The frame that makes them benign is
+   // in FRONT of the anchor, which no anchor can reach, so it is a span removal — the same shape
+   // as the end-it fix. The explicit "...without me" form is a different entry and is excluded
+   // from this span by the lookahead, so it still fires inside a conditional frame.
+   /\b(?:if|once|when|unless|after|until|while)\b[^.!?]{0,48}[\n\r]\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)\s+(?:would|'?d|will) be better off(?!\s*with ?out )/g,
+   /ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
    /keep going to (?!be |feel |live)(?:that |the |my )?[a-z']{1,14}/g,
    /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
    /killing (?:it|this|the) [a-z]{0,14}/g,
@@ -1911,8 +1934,21 @@ function detectCrisis(text){
    // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
    // see, so it has to be a span removal. Ending a cut, a streak, a vice or a fast is a core
    // act this app asks for; bare "i want to end it" still fires.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:want|wanna|ready|about|going|need) to end it\b/g,
-   /\b(?:want|wanna|ready|about|going|need) to end it\b[^.!?]{0,20}\b(?:the |my |this )(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|binge|cycle|lease|contract|subscription)\b/g,
+   // THE OBJECT LISTS COVER `end this` AND `end things` TOO, and `gonna` as well as `going`.
+   // Found 7 Oct 2026 reviewing this thread: the entry added for the unabbreviated "i am going to
+   // end it" matched the bare verb with no object bound, so it walked straight past both of these
+   // spans — they only ever said `to end it` and only ever said `going`. Measured: 7 of 7 of the
+   // `gonna end` carries no "to", so a span requiring `to end` missed it — "i am gonna end this
+   // deficit on friday" was the one survivor of the first cut of this fix.
+   // app's own sentences fired ("i am going to end this cut tonight", "…end this fast at sunset",
+   // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
+   // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
+   // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b[^.!?]{0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b/g,
+   // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
+   // `ending things with` span beside it already excludes, in the other inflection.
+   /\bend things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them |that )?[a-z']{1,16}/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
    // bound on the entry can reach this — both review agents only ever tested continuations
    // WITHIN a sentence, which is why neither found it. Measured before this suppression, all six
@@ -1925,7 +1961,7 @@ function detectCrisis(text){
    // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
    // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.
    // The object decides here too.
-   /hurt (?:someone|somebody|anyone|anybody)'s [a-z']{1,16}/g,
+   /hurt (?:someone|somebody|anyone|anybody)'?s [a-z']{1,16}/g,
    // READING ABOUT A MEANS IS NOT HAVING ONE, and the reportage frame sits in FRONT of the
    // match where no suffix lookahead can reach it. Measured: "i read about carbon monoxide
    // poisoning after the news story" returned suicide. The disclosures carry no reportage word
@@ -1937,7 +1973,7 @@ function detectCrisis(text){
    // bystander and the person planning do; only the bystander names a SOURCE. So the source noun
    // is required, in either order, and "in the car" / "in the garage" survive untouched.
    /\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b[^.!?]{0,40}\bcarbon monoxide\b/g,
-   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(re, ' '); });
+   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(_wsTol(re), ' '); });
     return _x;
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
@@ -1996,7 +2032,7 @@ function detectCrisis(text){
     // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.
     'jump off a bridge', 'jump off the bridge', 'jump off a building', 'jump off the roof',
     'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
-    'take my own life', 'taking my own life', "don't want to wake up",
+    'take my own life', 'taking my own life',
     // Added after the pre-release audit flagged these as common first-disclosure phrasings.
     // FOUR MORE MOVED TO SUICIDE_RE, 1 Oct 2026, found by the register audit and measured on the
     // shipped tree. 'no point in going on' fired on "no point in going on this program";
@@ -2015,7 +2051,6 @@ function detectCrisis(text){
     // carried since v568 for exactly this reason.
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
     'end the pain', 'disappear forever',
-    'dont want to wake up',
     // 'better off without me' and 'everyone would be better without me' moved to SUICIDE_RE for a
     // word boundary: as bare substrings they matched inside "better off without ME-dication" and
     // "better off without ME-ds". A WORD-PREFIX collision, not a benign completion — the same shape
@@ -2100,27 +2135,27 @@ function detectCrisis(text){
     // the newline and then found neither punctuation nor end-of-input — and every field this gate
     // protects is a multi-line textarea. "I can't go on" fired; "I can't go on\\nI don't know what else
     // to say" did not. The person who keeps typing is the one still reaching for help.
-    /\bcan'?t go on\s*(?:[.!?,\n\r]|$)/,
+    /\bcan'?t go on\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // THE SIX THAT USED TO BE BARE. The clause end is what separates the disclosure from the
     // completion: "i want it to stop" fires, "i want it to stop raining" does not.
-    /\b(?:want it|wants it|need it) to stop\s*(?:[.!?,\n\r]|$)/,
-    /\bmake it stop\s*(?:[.!?,\n\r]|$)/,
-    /\b(?:tired|sick) of living\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:want it|wants it|need it) to stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bmake it stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:tired|sick) of living\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // `want it all to stop` and `tired|sick of being alive` were here with a CLAUSE end from the
     // morning of 1 Oct and are gone: the hopelessness register below carries both with a tighter
     // bound, and the loose ones kept firing through it — "i want it all to stop, the noise i
     // mean" and "i'm tired of being alive, dead to sin, and still falling". A superseded pattern
     // does not stop mattering just because a better one exists beside it; the looser one wins.
-    /\bgiv(?:e|en|ing) up on life\s*(?:[.!?,\n\r]|$)/,
-    /\bnothing left\s*(?:[.!?,\n\r]|$)/,
+    /\bgiv(?:e|en|ing) up on life\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bnothing left\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // BOUNDED. Unbounded this fired on "i don't want to be here at the 6am", "…on a rest day"
     // and "…for the weigh-in". The specific form 'don't want to be here anymore' stays a bare
     // phrase above, because nothing ordinary completes it.
-    /\bdon'?t want to be here\s*(?:[.!?,\n\r]|$)/,
-    /\bno point in going on\s*(?:[.!?,\n\r]|$)/,
-    /\bcan'?t do this anymore\s*(?:[.!?,\n\r]|$)/,
-    /\bcan'?t keep going\s*(?:any ?more|any longer)?\s*(?:[.!?,\n\r]|$)/,
-    /\bstop existing\s*(?:[.!?,\n\r]|$)/,
+    /\bdon'?t want to be here\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point in going on\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan'?t do this anymore\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan'?t keep going\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bstop existing\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\bnothing left to live for\b/,
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/,
@@ -2139,7 +2174,7 @@ function detectCrisis(text){
     // other way.
     // Means — medication. `stash` is not a verb here (hiding meds from children is responsible) and
     // `meds|medication` are not nouns here (that is where travel and shortage talk lives).
-    /\b(?:sav(?:ed|ing) up|stockpil(?:ed|ing)|hoard(?:ed|ing)) (?:the|enough|a pile of|(?:all )?my) (?:pills|tablets|paracetamol|panadol|painkillers)\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:sav(?:ed|ing) up|stockpil(?:ed|ing)|hoard(?:ed|ing)) (?:the|enough|a pile of|(?:all )?my) (?:pills|tablets|paracetamol|panadol|painkillers)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // "enough painkillers to kill the pain in my quads" is the most ordinary DOMS sentence there is,
     // which is why bare `kill`, `end` and `finish` are all excluded and the object is required.
     /\benough (?:pills|tablets|paracetamol|panadol|painkillers|insulin) to (?:die|kill myself|kill me|end it|end my life|not wake)\b/,
@@ -2161,7 +2196,7 @@ function detectCrisis(text){
     /(?:^|[^a-z])(?:the|a|my|that) (?:rope|belt) (?:a)?round my neck\b/,
     // The drug class must be named: caffeine and water LD50 are ordinary supplement talk.
     /\blethal dose (?:of (?:paracetamol|panadol|painkillers|pills|tablets|insulin|ibuprofen|aspirin|my meds|medication)|for me)\b/,
-    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))/,
+    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))[^.!?]{0,34}(?:\b(?:in|inside|into|from|with)\s+(?:the|my|our)\s+(?:car|garage|van|ute|truck|shed|vehicle|exhaust|engine|boot|cabin)\b|\b(?:how i'?(?:d|ll)|how i (?:would|will|could)|that'?s how i|this is how i)\b|\b(?:kill myself|end my life|end it all|take myself out)\b)/,
     // The hyperbolic frame takes a comma continuation as often as a preposition — measured:
     // "i'd blow my brains out, this meeting is endless" returned suicide. KNOWN RESIDUAL, named
     // rather than hidden: "this meeting makes me want to blow my brains out" still fires. The
@@ -2196,21 +2231,21 @@ function detectCrisis(text){
     // earlier drafts were defeated by a leading conditional ("if i finally clear this debt…").
     // AND NEGATION POLARITY DIFFERS BY OBJECT — for gone|dead the disclosure is UNnegated, for
     // here|around|alive it is negated, so entries 5 and 7 carry opposite polarity by design.
-    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))/,
+    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:[.!?,;]|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
     /\b(?:i'?m|i am|im)\s+(?:just |such |only |nothing but )*a drain on (?:them|everyone|everybody|the people|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my friends|my mates)\b/,
     /\bi (?:just )?drain (?:everyone|everybody|the people|my family|them)\b(?!\s+(?:of|the)\b)/,
-    /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:[.!?,;\n\r]|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
+    /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:[.!?,;]|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
     /\bbetter off (?:if|when|once) (?:i'?m|i was|i were|i am) (?:gone|dead)\b(?!\s*(?:for (?:a |an |one |two |three |four |five |six |ten |the |next |this |that |\d)|so much|so long|so often|less|from home|until|till))/,
     /\bbetter off with me (?:gone|dead)\b/,
-    /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;\n\r]|$)/,
-    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;\n\r]|$)/,
-    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;\n\r]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;\n\r]|$))/,
+    /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;]|$)/,
+    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;]|$)/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;]|$))/,
     // THE `gone` BRANCH NEEDS A TERMINATOR TOO. Its sibling `here|around|alive` branch had one
     // and this one did not, so "nobody would notice if i was gone from that group chat" and
     // "…gone for a week" both fired. Found only by running the HOPELESSNESS corpus against a
     // tree that already carried this register — each agent measured against its own panel, so a
     // cross-register collision was invisible to both.
-    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b\s*(?:[.!?,;\n\r]|$|any ?more\b)|(?:here|around|alive)\s*(?:[.!?,;\n\r]|$|or not\b|at all\b))/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b\s*(?:[.!?,;]|$|any ?more\b)|(?:here|around|alive)\s*(?:[.!?,;]|$|or not\b|at all\b))/,
     /\b(?:they|everyone|everybody|my family|my wife|my husband|my kids|my parents|people)(?:'?d| would| will)?\s*(?:all |just |probably |honestly )*be relieved\s+(?:if i (?:was |were |'?m |am )?(?:gone|dead|not here)|when i'?m (?:gone|dead)|without me\b)/,
     /\b(?:my death|me dying|my dying) would be a relief\b/,
     /\b(?:i'?m|i am|im|i'?d be|i would be)\s+(?:probably |honestly |just )*worth more (?:to (?:them|everyone|everybody|my family) )*dead\b/,
@@ -2240,28 +2275,31 @@ function detectCrisis(text){
     // `i(?!'?ll|\s+will)` guard is why "nothing matters anymore, i'll train tomorrow" stays
     // silent. It is the only pattern shape in this file that looks PAST its terminator, so if it
     // ever needs changing, change it in all 21 places — they are deliberately identical.
-    /\brather not wake up\s*(?:again|at all|ever|tomorrow|any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:hope|wish) i (?:do ?n'?t|dont|do not|wo ?n'?t|wont|would not|will not|never) wake up\s*(?:again|tomorrow|at all|in the morning)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bdo(?:n'?t| not) care if i (?:do(?:n'?t| not) |never )?wake up\s*(?:again|tomorrow)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bcan(?:'?t| ?not) cope (?:any ?more|any longer)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bwhat'?s the point (?:of it all|(?:in|of) any of (?:it|this)|(?:in|of) (?:me )?being here|(?:in|of) (?:going|carrying) on|(?:in|of) living)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno point (?:in |to )?(?:me|my) (?:being|bein) here\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:can(?:'?t| ?not)|do(?:n'?t| not) want to) do life\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:tired|sick|exhausted) of being alive\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:nobody|no ?one) would (?:even |really )?miss me\s*(?:if i was gone|if i wasn'?t here)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:want|need) (?:it all|everything|all of it) to stop\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:wish i could|want to|wanna|need to) (?:just )?disappear\s*(?:forever|for good|completely)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:think|thought|thinking|thinks) about not (?:being (?:around|here|alive)|waking up|existing)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno point (?:in |to )?(?:carrying|going) on\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)|no longer) see (?:the|any) point (?:in (?:carrying|going) on|in living|in being here|in any of (?:it|this)|any ?more)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bdo(?:n'?t| not) want to exist\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    // BOUNDED 9 Oct 2026, beside the three siblings that already were. Bare, it fired on every
+    // early alarm and every sore morning this app exists to talk about.
+    /\bdo(?:n'?t| not) want to wake up\s*(?:again|at all|ever|tomorrow|in the morning|any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\brather not wake up\s*(?:again|at all|ever|tomorrow|any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:hope|wish) i (?:do ?n'?t|dont|do not|wo ?n'?t|wont|would not|will not|never) wake up\s*(?:again|tomorrow|at all|in the morning)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bdo(?:n'?t| not) care if i (?:do(?:n'?t| not) |never )?wake up\s*(?:again|tomorrow)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan(?:'?t| ?not) cope (?:any ?more|any longer)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bwhat'?s the point (?:of it all|(?:in|of) any of (?:it|this)|(?:in|of) (?:me )?being here|(?:in|of) (?:going|carrying) on|(?:in|of) living)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point (?:in |to )?(?:me|my) (?:being|bein) here\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:can(?:'?t| ?not)|do(?:n'?t| not) want to) do life\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:tired|sick|exhausted) of being alive\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?miss me\s*(?:if i was gone|if i wasn'?t here)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:want|need) (?:it all|everything|all of it) to stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:wish i could|want to|wanna|need to) (?:just )?disappear\s*(?:forever|for good|completely)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:think|thought|thinking|thinks) about not (?:being (?:around|here|alive)|waking up|existing)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point (?:in |to )?(?:carrying|going) on\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)|no longer) see (?:the|any) point (?:in (?:carrying|going) on|in living|in being here|in any of (?:it|this)|any ?more)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bdo(?:n'?t| not) want to exist\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\bwish i(?: had| ?'?d|) (?:never been|was never|wasn'?t) born\b(?!\s+(?:with|into)\b)/,
-    /\b(?:i'?m|im|i am) done (?:with )?(?:life|living)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bnothing matters (?:any ?more|at all)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno hope left\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bcan(?:'?t| ?not) keep living\s*(?:like this)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:i'?m|im|i am) done (?:with )?(?:life|living)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bnothing matters (?:any ?more|at all)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno hope left\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan(?:'?t| ?not) keep living\s*(?:like this)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   ];
   // MEDICAL_RE exists for one entry, and the reason is which CARD a person gets. 'took all my
   // pills' was a bare MEDICAL_PHRASE and returned 'medical' for "i took all my pills this
@@ -2271,18 +2309,33 @@ function detectCrisis(text){
   // ambulance the medical card carries. So it stays MEDICAL and gains a bound, and BOTH shapes
   // are kept: a clause end for the bare admission, and the intent completion beside it.
   const MEDICAL_RE = [
-    /\btook all my (?:pills|tablets|meds|medication)\b\s*(?:[.!?,\n\r]|$|to (?:die|end it|end my life|kill myself)\b|at once\b)/
+    /\btook all my (?:pills|tablets|meds|medication)\b\s*(?:[.!?,]|$|to (?:die|end it|end my life|kill myself)\b|at once\b)/
   ];
 
-  const _hitRe = function(list){ for(const re of list){
+  const _hitRe = function(list){ for(const re0 of list){ const re = _wsTol(re0);
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
 
-  if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE))    return 'suicide';
-  if(_hit(SELFHARM_PHRASES))   return 'selfharm';
-  if(_hit(HARMOTHERS_PHRASES)) return 'harmothers';
-  if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) return 'medical';
-  
-  return null;
+  // ONE CHAIN COULD ONLY EVER NAME ONE NEED, AND THE ONE IT DROPPED WAS THE AMBULANCE.
+  // The four kinds were a precedence chain returning the FIRST hit, so a second need was invisible.
+  // Measured over 3317 sentences from this gate's own panels, only EIGHT co-occur — but they are the
+  // eight that matter most. "i took all my pills. nothing matters anymore." returned 'suicide', whose
+  // card is seven helplines with NO 000, no 911, no 999 and no "get to a hospital" anywhere on it.
+  // That is what somebody types in the minutes after an overdose, and "nothing matters anymore" is
+  // exactly what they type next to it. "i overdosed and i want to kill myself" did the same, and had
+  // done since v479 — the hopelessness register did not open this hole, it widened it from "needs an
+  // explicit suicide statement" to "needs any of 22 ordinary hopelessness clauses".
+  // So the return is a '+'-joined SET in acuity order, and the card renders every route in it.
+  // Physical acuity leads: minutes matter for an overdose in a way they do not for the rest, and the
+  // helplines are still on the same card. The documented "i took all my pills to end it" -> medical
+  // decision is untouched, because that sentence hits MEDICAL_RE only.
+  // Only four places in the whole bundle ever compared this value to a kind, and all four are the
+  // if/else chain in showCrisisResponse; every other call site asks whether it is truthy.
+  const _kinds = [];
+  if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) _kinds.push('medical');
+  if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE)) _kinds.push('suicide');
+  else if(_hit(SELFHARM_PHRASES)) _kinds.push('selfharm');
+  if(_hit(HARMOTHERS_PHRASES)) _kinds.push('harmothers');
+  return _kinds.length ? _kinds.join('+') : null;
 }
 
 // The verified lines, in one place, read by the card AND by safetyNote() so the model never has to
@@ -2297,13 +2350,33 @@ const CRISIS_LINES = [
   {region: 'UK', name: 'Samaritans', contact: '116 123', detail: '24/7 phone'},
   {region: 'International', name: 'findahelpline.com', contact: 'findahelpline.com', detail: 'Helplines in 130+ countries'}
 ];
+// The other two sets of numbers, hoisted beside CRISIS_LINES for the same reason: a card may need
+// more than one of them at once, so no list can stay inline in the branch that used to own it.
+const MEDICAL_LINES = [
+  {region: 'Australia', name: 'Emergency', contact: '000', detail: 'Ambulance'},
+  {region: 'Australia', name: 'healthdirect', contact: '1800 022 222', detail: '24/7 nurse advice'},
+  {region: 'USA', name: 'Emergency', contact: '911', detail: 'Ambulance'},
+  {region: 'UK', name: 'Emergency', contact: '999', detail: 'Ambulance'},
+  {region: 'UK', name: 'NHS 111', contact: '111', detail: '24/7 health advice'}
+];
+const HARM_LINES = [
+  {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
+  {region: 'Emergency', name: 'Police / Ambulance', contact: '000 (AU) \u00b7 911 (US) \u00b7 999 (UK)', detail: 'If imminent'}
+];
 function showCrisisResponse(containerId, type){
   const container = document.getElementById(containerId);
   if(!container) return;
   
   let title, body, resources;
-  
-  if(type === 'suicide' || type === 'selfharm'){
+
+  // THE CARD CARRIES EVERY ROUTE THE SENTENCE NEEDS. `type` may now name more than one kind,
+  // '+'-joined in acuity order by detectCrisis — the first is what the card LEADS with, and the
+  // rest add their numbers below it. A plain single kind behaves exactly as it always did.
+  const _set = String(type || '').split('+');
+  const _has = function(k){ return _set.indexOf(k) >= 0; };
+  const _primary = _set[0];
+
+  if(_primary === 'suicide' || _primary === 'selfharm'){
     title = "I hear you — and this is more than I should hold alone.";
     body = "What you're carrying right now is real, and it's heavier than this app is built for. " +
            "Please don't do this alone. Speak to a real human who is trained for exactly this moment. " +
@@ -2316,25 +2389,39 @@ function showCrisisResponse(containerId, type){
     // handed to somebody who has written letters is the worst defect this file could carry, and it is
     // the recorded lesson "check helpline numbers against the provider" arriving by a new route.
     resources = CRISIS_LINES.slice();
-  } else if(type === 'harmothers'){
+  } else if(_primary === 'harmothers'){
     title = "I can't help with this, and I need you to stop and breathe.";
     body = "If you're thinking about hurting someone, please step away from the situation right now and call a crisis line or someone you trust. " +
            "What you feel can be talked through with a real person before it becomes something you can't take back.";
-    resources = [
-      {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
-      {region: 'Emergency', name: 'Police / Ambulance', contact: '000 (AU) · 911 (US) · 999 (UK)', detail: 'If imminent'}
-    ];
-  } else if(type === 'medical'){
+    resources = HARM_LINES.slice();
+  } else if(_primary === 'medical'){
     title = "This sounds like it needs real medical help right now.";
     body = "I'm an app — I can't help with medical emergencies. Please call emergency services or get to a hospital immediately. " +
            "If you're unsure, call your country's health advice line.";
-    resources = [
-      {region: 'Australia', name: 'Emergency', contact: '000', detail: 'Ambulance'},
-      {region: 'Australia', name: 'healthdirect', contact: '1800 022 222', detail: '24/7 nurse advice'},
-      {region: 'USA', name: 'Emergency', contact: '911', detail: 'Ambulance'},
-      {region: 'UK', name: 'Emergency', contact: '999', detail: 'Ambulance'},
-      {region: 'UK', name: 'NHS 111', contact: '111', detail: '24/7 health advice'}
-    ];
+    resources = MEDICAL_LINES.slice();
+  }
+
+  // ── THE OTHER NEEDS IN THE SET, ADDED TO WHATEVER THE CARD LEADS WITH ───────────────────────
+  // Each addition says in one line why a second number is on the card, because a person reading six
+  // helplines under "call an ambulance" should not have to guess which one is for them.
+  if(resources){
+    if(_has('medical') && _primary !== 'medical') resources = MEDICAL_LINES.concat(resources);
+    if((_has('suicide') || _has('selfharm')) && _primary !== 'suicide' && _primary !== 'selfharm'){
+      body += " And what is underneath this matters too \u2014 once you are safe, the people below have " +
+              "sat with exactly this before. You do not have to carry it on your own.";
+      resources = resources.concat(CRISIS_LINES);
+    }
+    if(_has('harmothers') && _primary !== 'harmothers'){
+      body += " If you are also frightened of what you might do to someone else, step away from them " +
+              "right now and tell one of these people that part too.";
+      resources = resources.concat(HARM_LINES);
+    }
+    // Lifeline is in two of the three lists, so the union has to dedupe or the card repeats a number.
+    const _seen = {};
+    resources = resources.filter(function(r){
+      const k = (r.name || '') + '|' + (r.contact || '');
+      if(_seen[k]) return false; _seen[k] = 1; return true;
+    });
   }
   
   // ONE TAP, NOT TRANSCRIBE IT. These contacts were rendered as plain text, so the crisis response the
@@ -2584,11 +2671,11 @@ async function sendPT(){
   rmMsg(lid);   // always clear the "..." bubble, even if the call threw
   // The same net, at the third free-text AI surface. All three — companion, coach, PT — now carry
   // it, because which of them a person reaches at 2am is not something this code gets to choose.
-  if(r){ try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, r)) r = r + '\n\n' + _humanNetLine(); }catch(_){ }
+  if(r){ try{ r = _netted(t, r); }catch(_){ }
     addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
   else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'I couldn\u2019t reach the coach just now \u2014 check your connection and try again. What you wrote is safe.';
-    addMsg('pt-msgs', errMsg, 'coach');
+    addMsg('pt-msgs', _netted(t, errMsg), 'coach');
   }
 }
 function goPTCoach(t){setPTTab('ptcoach');document.getElementById('pt-in').value=t;sendPT();}

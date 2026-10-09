@@ -938,7 +938,16 @@ function openCantStart(){
         // back as the thing to make smaller, so a disclosure came back as an instruction.
         const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
         if(_cc){
-          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+          // THE CARD, AND A ROUTE BACK. This door is the one place a non-null REPLACED the help
+          // somebody came for, with nothing to tap. The helpline still takes the screen; the
+          // quiet second button is for the person whose sentence was read wrong — "there's
+          // nothing left, i don't know where to begin" is one word from a real disclosure and no
+          // bound separates them, so the door stops being all-or-nothing.
+          // _jsAttr, not _escFew: this is a JS string inside an attribute, and an HTML escape
+          // does not close that — the parser decodes it back before the JS compiles.
+          const _bk = { label: 'Still help me start this',
+            onclick: '_shrinkIt(\'' + ((typeof _jsAttr==='function') ? _jsAttr(t) : String(t).replace(/[\\'"]/g,'')) + '\',0)' };
+          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, _bk); }catch(_){ } }, 250);
           return true;
         }
         setTimeout(function(){ _shrinkIt(t, 0); }, 220);
@@ -1888,7 +1897,19 @@ function openVicePlan(i){
     const vv=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!vv){ m.remove(); return; }
     vv.mode=mode;
     if(mode==='moderate'){ const ln=parseInt(m.querySelector('.vp-line').value,10); if(ln>0) vv.modThreshold=ln; }
-    vv.plan=Object.assign({}, vv.plan, { why:(m.querySelector('.vp-why').value||'').trim(), move:[...chosen].join(' · '), updatedAt:Date.now() });
+    const _why=(m.querySelector('.vp-why').value||'').trim();
+    // GATED, 9 Oct 2026. THE GATED FUNCTION OPENS THE UNGATED DOOR ITSELF. addVice() checks its own
+    // two fields (09-fight-deep.js) and then, 64 lines later in the same function body, auto-opens
+    // this sheet on a 220ms timer with every other modal removed — so the ungated "why this matters
+    // to you" box is the VERY NEXT thing a new person sees after the gated one. That is the
+    // half-applied shape this project keeps finding, inside one function.
+    // The replay is what makes it matter: this text is said back in the urge sheet
+    // (_planCardHTML, inside "You came here first"), on the SOS screen (#sos-why-reminder), and is
+    // handed to the model as 'their WHY (say it back to them)'. Its own placeholder promises
+    // exactly that — "I'll say it back to you when it's hard."
+    const _wc=(typeof journalCrisisOf==='function') ? journalCrisisOf(_why) : null;
+    if(_wc){ m.remove(); setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_wc); }catch(_){ } }, 250); return; }
+    vv.plan=Object.assign({}, vv.plan, { why:_why, move:[...chosen].join(' · '), updatedAt:Date.now() });
     try{ if(typeof saveV==='function') saveV(); }catch(_){}
     try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
     try{ if(typeof logEvent==='function') logEvent('vice_plan'); }catch(_){}

@@ -8723,7 +8723,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v607';
+const APP_VERSION = 'v608';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13419,12 +13419,14 @@ async function sendCoach(){
   // Diagnostic: check state before calling
   if(!navigator.onLine){
     rmMsg(lid);
-    addMsg('coach-msgs','You\'re offline right now. Your coach needs a connection to think — I\'ll be here when you\'re back online.','coach');
+    // THE NET BELONGS ON THE PATHS THAT NEVER REACH THE MODEL TOO. Somebody who stacked a reason
+    // and a plan used to get this sentence and nothing else.
+    addMsg('coach-msgs',_netted(t,'You\'re offline right now. Your coach needs a connection to think — I\'ll be here when you\'re back online.'),'coach');
     return;
   }
   if(!sb){
     rmMsg(lid);
-    addMsg('coach-msgs','Setting up... please try again in a few seconds.','coach');
+    addMsg('coach-msgs',_netted(t,'Setting up... please try again in a few seconds.'),'coach');
     return;
   }
   // THE GUEST DOOR IS THE APP'S OWN FRONT DOOR, AND THIS WAS A WALL BEHIND IT.
@@ -13447,8 +13449,7 @@ async function sendCoach(){
     // _needsHumanNet is a function declaration in 08-voice.js, so it hoists across the bundle and
     // is safe to call from here even though that module loads later.
     let _r = r;
-    try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, _r))
-      _r = _r + '\n\n' + _humanNetLine(); }catch(_){ }
+    try{ _r = _netted(t, _r); }catch(_){ }
     addMsg('coach-msgs',_r,'coach');
     cH.push({role:'assistant',content:_r});
     if(cH.length>20)cH=cH.slice(-20);
@@ -13456,7 +13457,7 @@ async function sendCoach(){
     maybeUpdateCoachMemory();
   } else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'The coach is unavailable for a moment.';
-    addMsg('coach-msgs', errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.', 'coach');
+    addMsg('coach-msgs', _netted(t, errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
     const msgs = document.getElementById('coach-msgs');
     if(msgs){
       const btn = document.createElement('button');
@@ -13511,8 +13512,30 @@ function detectCrisis(text){
   // this gate exists for — and v444's span matched both, because "myself" is under fourteen characters.
   // The negative lookahead is the whole safety of this mechanism: suppress only when the object is
   // plainly another person or a place, never when it is the person, their life, or it all.
+  // AN INNOCENT COMPLETION MUST SURVIVE AN ENTER. Every exclusion this detector owns is written
+  // with literal spaces — the suppression spans below, and the lookaheads inside the patterns
+  // themselves — so ONE line break inside the span stopped it being removed and the bare phrase
+  // under it fired. Measured over the 357 benign sentences this gate already owns, one newline at
+  // each word boundary: 118 of 357 returned a crisis card. "i've been hoarding the pills\nfor my
+  // mum" and "i'm a waste of space\non the leaderboard" raised six helplines; "i took all my
+  // pills\nthis morning" called an ambulance. "i want to die\nto my old self" and "take my life
+  // and\nlet it be" are the third and fourth time this app's own devotional vocabulary has tripped
+  // its own suicide detector, and both had already been fixed once — for a single line of text.
+  // `tc` collapses whitespace and already computed the right answer for all 118; the `||` in
+  // _hit/_hitRe discarded it. So the space in an exclusion means "whitespace", not "a space".
+  const _wsTol = function(r){ return r.source.indexOf(' ') < 0 ? r
+    : new RegExp(r.source.replace(/ /g, '[ \\n\\r]'), r.flags); };
   const _suppress = function(_x){
-  [/ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
+  [// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
+   // anchors on `[\n\r]\s*` as a sentence start, on purpose — somebody types a line, presses
+   // Enter and says it. But four of the gate's own benign sentences are a SUBORDINATING clause,
+   // an Enter, then the statement: "if i stop gambling\nmy family would be better off",
+   // "once the debt is gone\nmy family would be better off". The frame that makes them benign is
+   // in FRONT of the anchor, which no anchor can reach, so it is a span removal — the same shape
+   // as the end-it fix. The explicit "...without me" form is a different entry and is excluded
+   // from this span by the lookahead, so it still fires inside a conditional frame.
+   /\b(?:if|once|when|unless|after|until|while)\b[^.!?]{0,48}[\n\r]\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)\s+(?:would|'?d|will) be better off(?!\s*with ?out )/g,
+   /ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
    /keep going to (?!be |feel |live)(?:that |the |my )?[a-z']{1,14}/g,
    /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
    /killing (?:it|this|the) [a-z]{0,14}/g,
@@ -13528,8 +13551,21 @@ function detectCrisis(text){
    // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
    // see, so it has to be a span removal. Ending a cut, a streak, a vice or a fast is a core
    // act this app asks for; bare "i want to end it" still fires.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:want|wanna|ready|about|going|need) to end it\b/g,
-   /\b(?:want|wanna|ready|about|going|need) to end it\b[^.!?]{0,20}\b(?:the |my |this )(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|binge|cycle|lease|contract|subscription)\b/g,
+   // THE OBJECT LISTS COVER `end this` AND `end things` TOO, and `gonna` as well as `going`.
+   // Found 7 Oct 2026 reviewing this thread: the entry added for the unabbreviated "i am going to
+   // end it" matched the bare verb with no object bound, so it walked straight past both of these
+   // spans — they only ever said `to end it` and only ever said `going`. Measured: 7 of 7 of the
+   // `gonna end` carries no "to", so a span requiring `to end` missed it — "i am gonna end this
+   // deficit on friday" was the one survivor of the first cut of this fix.
+   // app's own sentences fired ("i am going to end this cut tonight", "…end this fast at sunset",
+   // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
+   // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
+   // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b[^.!?]{0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b/g,
+   // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
+   // `ending things with` span beside it already excludes, in the other inflection.
+   /\bend things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them |that )?[a-z']{1,16}/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
    // bound on the entry can reach this — both review agents only ever tested continuations
    // WITHIN a sentence, which is why neither found it. Measured before this suppression, all six
@@ -13542,7 +13578,7 @@ function detectCrisis(text){
    // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
    // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.
    // The object decides here too.
-   /hurt (?:someone|somebody|anyone|anybody)'s [a-z']{1,16}/g,
+   /hurt (?:someone|somebody|anyone|anybody)'?s [a-z']{1,16}/g,
    // READING ABOUT A MEANS IS NOT HAVING ONE, and the reportage frame sits in FRONT of the
    // match where no suffix lookahead can reach it. Measured: "i read about carbon monoxide
    // poisoning after the news story" returned suicide. The disclosures carry no reportage word
@@ -13554,7 +13590,7 @@ function detectCrisis(text){
    // bystander and the person planning do; only the bystander names a SOURCE. So the source noun
    // is required, in either order, and "in the car" / "in the garage" survive untouched.
    /\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b[^.!?]{0,40}\bcarbon monoxide\b/g,
-   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(re, ' '); });
+   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(_wsTol(re), ' '); });
     return _x;
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
@@ -13613,7 +13649,7 @@ function detectCrisis(text){
     // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.
     'jump off a bridge', 'jump off the bridge', 'jump off a building', 'jump off the roof',
     'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
-    'take my own life', 'taking my own life', "don't want to wake up",
+    'take my own life', 'taking my own life',
     // Added after the pre-release audit flagged these as common first-disclosure phrasings.
     // FOUR MORE MOVED TO SUICIDE_RE, 1 Oct 2026, found by the register audit and measured on the
     // shipped tree. 'no point in going on' fired on "no point in going on this program";
@@ -13632,7 +13668,6 @@ function detectCrisis(text){
     // carried since v568 for exactly this reason.
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
     'end the pain', 'disappear forever',
-    'dont want to wake up',
     // 'better off without me' and 'everyone would be better without me' moved to SUICIDE_RE for a
     // word boundary: as bare substrings they matched inside "better off without ME-dication" and
     // "better off without ME-ds". A WORD-PREFIX collision, not a benign completion — the same shape
@@ -13717,27 +13752,27 @@ function detectCrisis(text){
     // the newline and then found neither punctuation nor end-of-input — and every field this gate
     // protects is a multi-line textarea. "I can't go on" fired; "I can't go on\\nI don't know what else
     // to say" did not. The person who keeps typing is the one still reaching for help.
-    /\bcan'?t go on\s*(?:[.!?,\n\r]|$)/,
+    /\bcan'?t go on\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // THE SIX THAT USED TO BE BARE. The clause end is what separates the disclosure from the
     // completion: "i want it to stop" fires, "i want it to stop raining" does not.
-    /\b(?:want it|wants it|need it) to stop\s*(?:[.!?,\n\r]|$)/,
-    /\bmake it stop\s*(?:[.!?,\n\r]|$)/,
-    /\b(?:tired|sick) of living\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:want it|wants it|need it) to stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bmake it stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:tired|sick) of living\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // `want it all to stop` and `tired|sick of being alive` were here with a CLAUSE end from the
     // morning of 1 Oct and are gone: the hopelessness register below carries both with a tighter
     // bound, and the loose ones kept firing through it — "i want it all to stop, the noise i
     // mean" and "i'm tired of being alive, dead to sin, and still falling". A superseded pattern
     // does not stop mattering just because a better one exists beside it; the looser one wins.
-    /\bgiv(?:e|en|ing) up on life\s*(?:[.!?,\n\r]|$)/,
-    /\bnothing left\s*(?:[.!?,\n\r]|$)/,
+    /\bgiv(?:e|en|ing) up on life\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bnothing left\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // BOUNDED. Unbounded this fired on "i don't want to be here at the 6am", "…on a rest day"
     // and "…for the weigh-in". The specific form 'don't want to be here anymore' stays a bare
     // phrase above, because nothing ordinary completes it.
-    /\bdon'?t want to be here\s*(?:[.!?,\n\r]|$)/,
-    /\bno point in going on\s*(?:[.!?,\n\r]|$)/,
-    /\bcan'?t do this anymore\s*(?:[.!?,\n\r]|$)/,
-    /\bcan'?t keep going\s*(?:any ?more|any longer)?\s*(?:[.!?,\n\r]|$)/,
-    /\bstop existing\s*(?:[.!?,\n\r]|$)/,
+    /\bdon'?t want to be here\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point in going on\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan'?t do this anymore\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan'?t keep going\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bstop existing\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\bnothing left to live for\b/,
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/,
@@ -13756,7 +13791,7 @@ function detectCrisis(text){
     // other way.
     // Means — medication. `stash` is not a verb here (hiding meds from children is responsible) and
     // `meds|medication` are not nouns here (that is where travel and shortage talk lives).
-    /\b(?:sav(?:ed|ing) up|stockpil(?:ed|ing)|hoard(?:ed|ing)) (?:the|enough|a pile of|(?:all )?my) (?:pills|tablets|paracetamol|panadol|painkillers)\s*(?:[.!?,\n\r]|$)/,
+    /\b(?:sav(?:ed|ing) up|stockpil(?:ed|ing)|hoard(?:ed|ing)) (?:the|enough|a pile of|(?:all )?my) (?:pills|tablets|paracetamol|panadol|painkillers)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // "enough painkillers to kill the pain in my quads" is the most ordinary DOMS sentence there is,
     // which is why bare `kill`, `end` and `finish` are all excluded and the object is required.
     /\benough (?:pills|tablets|paracetamol|panadol|painkillers|insulin) to (?:die|kill myself|kill me|end it|end my life|not wake)\b/,
@@ -13778,7 +13813,7 @@ function detectCrisis(text){
     /(?:^|[^a-z])(?:the|a|my|that) (?:rope|belt) (?:a)?round my neck\b/,
     // The drug class must be named: caffeine and water LD50 are ordinary supplement talk.
     /\blethal dose (?:of (?:paracetamol|panadol|painkillers|pills|tablets|insulin|ibuprofen|aspirin|my meds|medication)|for me)\b/,
-    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))/,
+    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))[^.!?]{0,34}(?:\b(?:in|inside|into|from|with)\s+(?:the|my|our)\s+(?:car|garage|van|ute|truck|shed|vehicle|exhaust|engine|boot|cabin)\b|\b(?:how i'?(?:d|ll)|how i (?:would|will|could)|that'?s how i|this is how i)\b|\b(?:kill myself|end my life|end it all|take myself out)\b)/,
     // The hyperbolic frame takes a comma continuation as often as a preposition — measured:
     // "i'd blow my brains out, this meeting is endless" returned suicide. KNOWN RESIDUAL, named
     // rather than hidden: "this meeting makes me want to blow my brains out" still fires. The
@@ -13813,21 +13848,21 @@ function detectCrisis(text){
     // earlier drafts were defeated by a leading conditional ("if i finally clear this debt…").
     // AND NEGATION POLARITY DIFFERS BY OBJECT — for gone|dead the disclosure is UNnegated, for
     // here|around|alive it is negated, so entries 5 and 7 carry opposite polarity by design.
-    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))/,
+    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:[.!?,;]|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
     /\b(?:i'?m|i am|im)\s+(?:just |such |only |nothing but )*a drain on (?:them|everyone|everybody|the people|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my friends|my mates)\b/,
     /\bi (?:just )?drain (?:everyone|everybody|the people|my family|them)\b(?!\s+(?:of|the)\b)/,
-    /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:[.!?,;\n\r]|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
+    /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:[.!?,;]|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
     /\bbetter off (?:if|when|once) (?:i'?m|i was|i were|i am) (?:gone|dead)\b(?!\s*(?:for (?:a |an |one |two |three |four |five |six |ten |the |next |this |that |\d)|so much|so long|so often|less|from home|until|till))/,
     /\bbetter off with me (?:gone|dead)\b/,
-    /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;\n\r]|$)/,
-    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;\n\r]|$)/,
-    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;\n\r]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;\n\r]|$))/,
+    /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:[.!?,;]|$)/,
+    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:[.!?;]|$)/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:[.!?;]|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:[.!?;]|$))/,
     // THE `gone` BRANCH NEEDS A TERMINATOR TOO. Its sibling `here|around|alive` branch had one
     // and this one did not, so "nobody would notice if i was gone from that group chat" and
     // "…gone for a week" both fired. Found only by running the HOPELESSNESS corpus against a
     // tree that already carried this register — each agent measured against its own panel, so a
     // cross-register collision was invisible to both.
-    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b\s*(?:[.!?,;\n\r]|$|any ?more\b)|(?:here|around|alive)\s*(?:[.!?,;\n\r]|$|or not\b|at all\b))/,
+    /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,28}\b(?:notice|care|realise|realize)[sd]?\b[^.!?\n]{0,14}\bif i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not )?(?:(?:gone|dead|died|disappeared)\b\s*(?:[.!?,;]|$|any ?more\b)|(?:here|around|alive)\s*(?:[.!?,;]|$|or not\b|at all\b))/,
     /\b(?:they|everyone|everybody|my family|my wife|my husband|my kids|my parents|people)(?:'?d| would| will)?\s*(?:all |just |probably |honestly )*be relieved\s+(?:if i (?:was |were |'?m |am )?(?:gone|dead|not here)|when i'?m (?:gone|dead)|without me\b)/,
     /\b(?:my death|me dying|my dying) would be a relief\b/,
     /\b(?:i'?m|i am|im|i'?d be|i would be)\s+(?:probably |honestly |just )*worth more (?:to (?:them|everyone|everybody|my family) )*dead\b/,
@@ -13857,28 +13892,31 @@ function detectCrisis(text){
     // `i(?!'?ll|\s+will)` guard is why "nothing matters anymore, i'll train tomorrow" stays
     // silent. It is the only pattern shape in this file that looks PAST its terminator, so if it
     // ever needs changing, change it in all 21 places — they are deliberately identical.
-    /\brather not wake up\s*(?:again|at all|ever|tomorrow|any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:hope|wish) i (?:do ?n'?t|dont|do not|wo ?n'?t|wont|would not|will not|never) wake up\s*(?:again|tomorrow|at all|in the morning)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bdo(?:n'?t| not) care if i (?:do(?:n'?t| not) |never )?wake up\s*(?:again|tomorrow)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bcan(?:'?t| ?not) cope (?:any ?more|any longer)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bwhat'?s the point (?:of it all|(?:in|of) any of (?:it|this)|(?:in|of) (?:me )?being here|(?:in|of) (?:going|carrying) on|(?:in|of) living)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno point (?:in |to )?(?:me|my) (?:being|bein) here\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:can(?:'?t| ?not)|do(?:n'?t| not) want to) do life\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:tired|sick|exhausted) of being alive\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:nobody|no ?one) would (?:even |really )?miss me\s*(?:if i was gone|if i wasn'?t here)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:want|need) (?:it all|everything|all of it) to stop\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:wish i could|want to|wanna|need to) (?:just )?disappear\s*(?:forever|for good|completely)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:think|thought|thinking|thinks) about not (?:being (?:around|here|alive)|waking up|existing)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno point (?:in |to )?(?:carrying|going) on\s*(?:any ?more|any longer)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)|no longer) see (?:the|any) point (?:in (?:carrying|going) on|in living|in being here|in any of (?:it|this)|any ?more)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bdo(?:n'?t| not) want to exist\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    // BOUNDED 9 Oct 2026, beside the three siblings that already were. Bare, it fired on every
+    // early alarm and every sore morning this app exists to talk about.
+    /\bdo(?:n'?t| not) want to wake up\s*(?:again|at all|ever|tomorrow|in the morning|any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\brather not wake up\s*(?:again|at all|ever|tomorrow|any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:hope|wish) i (?:do ?n'?t|dont|do not|wo ?n'?t|wont|would not|will not|never) wake up\s*(?:again|tomorrow|at all|in the morning)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bdo(?:n'?t| not) care if i (?:do(?:n'?t| not) |never )?wake up\s*(?:again|tomorrow)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan(?:'?t| ?not) cope (?:any ?more|any longer)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bwhat'?s the point (?:of it all|(?:in|of) any of (?:it|this)|(?:in|of) (?:me )?being here|(?:in|of) (?:going|carrying) on|(?:in|of) living)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point (?:in |to )?(?:me|my) (?:being|bein) here\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:can(?:'?t| ?not)|do(?:n'?t| not) want to) do life\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:tired|sick|exhausted) of being alive\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?miss me\s*(?:if i was gone|if i wasn'?t here)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:want|need) (?:it all|everything|all of it) to stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:wish i could|want to|wanna|need to) (?:just )?disappear\s*(?:forever|for good|completely)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:think|thought|thinking|thinks) about not (?:being (?:around|here|alive)|waking up|existing)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno point (?:in |to )?(?:carrying|going) on\s*(?:any ?more|any longer)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)|no longer) see (?:the|any) point (?:in (?:carrying|going) on|in living|in being here|in any of (?:it|this)|any ?more)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bdo(?:n'?t| not) want to exist\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\bwish i(?: had| ?'?d|) (?:never been|was never|wasn'?t) born\b(?!\s+(?:with|into)\b)/,
-    /\b(?:i'?m|im|i am) done (?:with )?(?:life|living)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bnothing matters (?:any ?more|at all)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bno hope left\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\bcan(?:'?t| ?not) keep living\s*(?:like this)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
-    /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?\n\r]|,\s*(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b|$)/,
+    /\b(?:i'?m|im|i am) done (?:with )?(?:life|living)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bnothing matters (?:any ?more|at all)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bno hope left\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\bcan(?:'?t| ?not) keep living\s*(?:like this)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:do(?:n'?t| not)|can(?:'?t| ?not)) see a future for (?:myself|me)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    /\b(?:nobody|no ?one) would (?:even |really )?notice if i (?:was|were|wasn'?t|am not) (?:gone|here|around)\s*(?:any ?more)?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   ];
   // MEDICAL_RE exists for one entry, and the reason is which CARD a person gets. 'took all my
   // pills' was a bare MEDICAL_PHRASE and returned 'medical' for "i took all my pills this
@@ -13888,18 +13926,33 @@ function detectCrisis(text){
   // ambulance the medical card carries. So it stays MEDICAL and gains a bound, and BOTH shapes
   // are kept: a clause end for the bare admission, and the intent completion beside it.
   const MEDICAL_RE = [
-    /\btook all my (?:pills|tablets|meds|medication)\b\s*(?:[.!?,\n\r]|$|to (?:die|end it|end my life|kill myself)\b|at once\b)/
+    /\btook all my (?:pills|tablets|meds|medication)\b\s*(?:[.!?,]|$|to (?:die|end it|end my life|kill myself)\b|at once\b)/
   ];
 
-  const _hitRe = function(list){ for(const re of list){
+  const _hitRe = function(list){ for(const re0 of list){ const re = _wsTol(re0);
     if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
 
-  if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE))    return 'suicide';
-  if(_hit(SELFHARM_PHRASES))   return 'selfharm';
-  if(_hit(HARMOTHERS_PHRASES)) return 'harmothers';
-  if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) return 'medical';
-  
-  return null;
+  // ONE CHAIN COULD ONLY EVER NAME ONE NEED, AND THE ONE IT DROPPED WAS THE AMBULANCE.
+  // The four kinds were a precedence chain returning the FIRST hit, so a second need was invisible.
+  // Measured over 3317 sentences from this gate's own panels, only EIGHT co-occur — but they are the
+  // eight that matter most. "i took all my pills. nothing matters anymore." returned 'suicide', whose
+  // card is seven helplines with NO 000, no 911, no 999 and no "get to a hospital" anywhere on it.
+  // That is what somebody types in the minutes after an overdose, and "nothing matters anymore" is
+  // exactly what they type next to it. "i overdosed and i want to kill myself" did the same, and had
+  // done since v479 — the hopelessness register did not open this hole, it widened it from "needs an
+  // explicit suicide statement" to "needs any of 22 ordinary hopelessness clauses".
+  // So the return is a '+'-joined SET in acuity order, and the card renders every route in it.
+  // Physical acuity leads: minutes matter for an overdose in a way they do not for the rest, and the
+  // helplines are still on the same card. The documented "i took all my pills to end it" -> medical
+  // decision is untouched, because that sentence hits MEDICAL_RE only.
+  // Only four places in the whole bundle ever compared this value to a kind, and all four are the
+  // if/else chain in showCrisisResponse; every other call site asks whether it is truthy.
+  const _kinds = [];
+  if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) _kinds.push('medical');
+  if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE)) _kinds.push('suicide');
+  else if(_hit(SELFHARM_PHRASES)) _kinds.push('selfharm');
+  if(_hit(HARMOTHERS_PHRASES)) _kinds.push('harmothers');
+  return _kinds.length ? _kinds.join('+') : null;
 }
 
 // The verified lines, in one place, read by the card AND by safetyNote() so the model never has to
@@ -13914,13 +13967,33 @@ const CRISIS_LINES = [
   {region: 'UK', name: 'Samaritans', contact: '116 123', detail: '24/7 phone'},
   {region: 'International', name: 'findahelpline.com', contact: 'findahelpline.com', detail: 'Helplines in 130+ countries'}
 ];
+// The other two sets of numbers, hoisted beside CRISIS_LINES for the same reason: a card may need
+// more than one of them at once, so no list can stay inline in the branch that used to own it.
+const MEDICAL_LINES = [
+  {region: 'Australia', name: 'Emergency', contact: '000', detail: 'Ambulance'},
+  {region: 'Australia', name: 'healthdirect', contact: '1800 022 222', detail: '24/7 nurse advice'},
+  {region: 'USA', name: 'Emergency', contact: '911', detail: 'Ambulance'},
+  {region: 'UK', name: 'Emergency', contact: '999', detail: 'Ambulance'},
+  {region: 'UK', name: 'NHS 111', contact: '111', detail: '24/7 health advice'}
+];
+const HARM_LINES = [
+  {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
+  {region: 'Emergency', name: 'Police / Ambulance', contact: '000 (AU) \u00b7 911 (US) \u00b7 999 (UK)', detail: 'If imminent'}
+];
 function showCrisisResponse(containerId, type){
   const container = document.getElementById(containerId);
   if(!container) return;
   
   let title, body, resources;
-  
-  if(type === 'suicide' || type === 'selfharm'){
+
+  // THE CARD CARRIES EVERY ROUTE THE SENTENCE NEEDS. `type` may now name more than one kind,
+  // '+'-joined in acuity order by detectCrisis — the first is what the card LEADS with, and the
+  // rest add their numbers below it. A plain single kind behaves exactly as it always did.
+  const _set = String(type || '').split('+');
+  const _has = function(k){ return _set.indexOf(k) >= 0; };
+  const _primary = _set[0];
+
+  if(_primary === 'suicide' || _primary === 'selfharm'){
     title = "I hear you — and this is more than I should hold alone.";
     body = "What you're carrying right now is real, and it's heavier than this app is built for. " +
            "Please don't do this alone. Speak to a real human who is trained for exactly this moment. " +
@@ -13933,25 +14006,39 @@ function showCrisisResponse(containerId, type){
     // handed to somebody who has written letters is the worst defect this file could carry, and it is
     // the recorded lesson "check helpline numbers against the provider" arriving by a new route.
     resources = CRISIS_LINES.slice();
-  } else if(type === 'harmothers'){
+  } else if(_primary === 'harmothers'){
     title = "I can't help with this, and I need you to stop and breathe.";
     body = "If you're thinking about hurting someone, please step away from the situation right now and call a crisis line or someone you trust. " +
            "What you feel can be talked through with a real person before it becomes something you can't take back.";
-    resources = [
-      {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
-      {region: 'Emergency', name: 'Police / Ambulance', contact: '000 (AU) · 911 (US) · 999 (UK)', detail: 'If imminent'}
-    ];
-  } else if(type === 'medical'){
+    resources = HARM_LINES.slice();
+  } else if(_primary === 'medical'){
     title = "This sounds like it needs real medical help right now.";
     body = "I'm an app — I can't help with medical emergencies. Please call emergency services or get to a hospital immediately. " +
            "If you're unsure, call your country's health advice line.";
-    resources = [
-      {region: 'Australia', name: 'Emergency', contact: '000', detail: 'Ambulance'},
-      {region: 'Australia', name: 'healthdirect', contact: '1800 022 222', detail: '24/7 nurse advice'},
-      {region: 'USA', name: 'Emergency', contact: '911', detail: 'Ambulance'},
-      {region: 'UK', name: 'Emergency', contact: '999', detail: 'Ambulance'},
-      {region: 'UK', name: 'NHS 111', contact: '111', detail: '24/7 health advice'}
-    ];
+    resources = MEDICAL_LINES.slice();
+  }
+
+  // ── THE OTHER NEEDS IN THE SET, ADDED TO WHATEVER THE CARD LEADS WITH ───────────────────────
+  // Each addition says in one line why a second number is on the card, because a person reading six
+  // helplines under "call an ambulance" should not have to guess which one is for them.
+  if(resources){
+    if(_has('medical') && _primary !== 'medical') resources = MEDICAL_LINES.concat(resources);
+    if((_has('suicide') || _has('selfharm')) && _primary !== 'suicide' && _primary !== 'selfharm'){
+      body += " And what is underneath this matters too \u2014 once you are safe, the people below have " +
+              "sat with exactly this before. You do not have to carry it on your own.";
+      resources = resources.concat(CRISIS_LINES);
+    }
+    if(_has('harmothers') && _primary !== 'harmothers'){
+      body += " If you are also frightened of what you might do to someone else, step away from them " +
+              "right now and tell one of these people that part too.";
+      resources = resources.concat(HARM_LINES);
+    }
+    // Lifeline is in two of the three lists, so the union has to dedupe or the card repeats a number.
+    const _seen = {};
+    resources = resources.filter(function(r){
+      const k = (r.name || '') + '|' + (r.contact || '');
+      if(_seen[k]) return false; _seen[k] = 1; return true;
+    });
   }
   
   // ONE TAP, NOT TRANSCRIBE IT. These contacts were rendered as plain text, so the crisis response the
@@ -14201,11 +14288,11 @@ async function sendPT(){
   rmMsg(lid);   // always clear the "..." bubble, even if the call threw
   // The same net, at the third free-text AI surface. All three — companion, coach, PT — now carry
   // it, because which of them a person reaches at 2am is not something this code gets to choose.
-  if(r){ try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(t, r)) r = r + '\n\n' + _humanNetLine(); }catch(_){ }
+  if(r){ try{ r = _netted(t, r); }catch(_){ }
     addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);persistPTHistory();}
   else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'I couldn\u2019t reach the coach just now \u2014 check your connection and try again. What you wrote is safe.';
-    addMsg('pt-msgs', errMsg, 'coach');
+    addMsg('pt-msgs', _netted(t, errMsg), 'coach');
   }
 }
 function goPTCoach(t){setPTTab('ptcoach');document.getElementById('pt-in').value=t;sendPT();}
@@ -19353,7 +19440,7 @@ function _overridePlan(p){
   }
   // Trigger → name the if-then. "If [trigger], then [pre-decided response]."
   if(p.topTrigger){
-    bits.push('When <b style="color:var(--tx)">'+p.topTrigger+'</b> shows up, that\u2019s the cue. Decide your one move ahead of time \u2014 the instant it hits, you DO that (step outside, cold water, text someone, open this app) before the thinking starts. Pre-deciding is how you win when willpower\u2019s thin.');
+    bits.push('When <b style="color:var(--tx)">'+_escFew(p.topTrigger)+'</b> shows up, that\u2019s the cue. Decide your one move ahead of time \u2014 the instant it hits, you DO that (step outside, cold water, text someone, open this app) before the thinking starts. Pre-deciding is how you win when willpower\u2019s thin.');
   }
   if(!bits.length){
     bits.push('Keep logging the moments \u2014 the more I see, the more exactly I can help you get ahead of it. And remember the pattern isn\u2019t a verdict, it\u2019s a map.');
@@ -19595,7 +19682,7 @@ function renderUrgeInsights(){
       '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
-        (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
+        (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+_escFew(p.topTrigger)+'</b>.<br>':'')+
         // NOT A BARE WIN RATE AT ZERO. viceFrequencyRead and the vice card both removed this
         // percentage, for a reason written down twice in 09-fight-deep.js: it told a person who had
         // been honest fifteen days running that they had won 0%. It was removed from the card and
@@ -19797,13 +19884,18 @@ async function _feelingNowGo(){
     const msg=await api(sys,[],prompt,500);
     const box=document.getElementById('feelingnow-redirect');
     if(box && msg && msg.trim()){
-      box.innerHTML='<div style="font-size:var(--t-base);color:var(--tx);line-height:1.7">'+msg.trim().replace(/</g,'&lt;')+'</div>'+(typeof aiTag==='function'?aiTag():'');
+      // THE NET, 9 Oct 2026. This is the app's MOST-invited disclosure surface and it was the one
+      // free-text AI path with no net at all — on all three of its branches. The prompt here is
+      // deliberately fierce ("you refuse to let them lose"), which is the worst voice to answer
+      // somebody who has stacked a reason and a plan. The third argument escapes the line for a
+      // text position inside innerHTML, which is what this surface needs and the chats do not.
+      box.innerHTML='<div style="font-size:var(--t-base);color:var(--tx);line-height:1.7">'+_netted(feeling,msg.trim().replace(/</g,'&lt;'),true)+'</div>'+(typeof aiTag==='function'?aiTag():'');
     } else if(box){
-      box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.</div>';
+      box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+_netted(feeling,'This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.',true)+'</div>';
     }
   }catch(e){
     const box=document.getElementById('feelingnow-redirect');
-    if(box) box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.</div>';
+    if(box) box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+_netted(feeling,'This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.',true)+'</div>';
   }
 }
 // Still hard → escalate gently: remember what they're fighting for (their real "why") + the coach.
@@ -21266,7 +21358,16 @@ function openCantStart(){
         // back as the thing to make smaller, so a disclosure came back as an instruction.
         const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
         if(_cc){
-          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+          // THE CARD, AND A ROUTE BACK. This door is the one place a non-null REPLACED the help
+          // somebody came for, with nothing to tap. The helpline still takes the screen; the
+          // quiet second button is for the person whose sentence was read wrong — "there's
+          // nothing left, i don't know where to begin" is one word from a real disclosure and no
+          // bound separates them, so the door stops being all-or-nothing.
+          // _jsAttr, not _escFew: this is a JS string inside an attribute, and an HTML escape
+          // does not close that — the parser decodes it back before the JS compiles.
+          const _bk = { label: 'Still help me start this',
+            onclick: '_shrinkIt(\'' + ((typeof _jsAttr==='function') ? _jsAttr(t) : String(t).replace(/[\\'"]/g,'')) + '\',0)' };
+          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, _bk); }catch(_){ } }, 250);
           return true;
         }
         setTimeout(function(){ _shrinkIt(t, 0); }, 220);
@@ -22216,7 +22317,19 @@ function openVicePlan(i){
     const vv=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!vv){ m.remove(); return; }
     vv.mode=mode;
     if(mode==='moderate'){ const ln=parseInt(m.querySelector('.vp-line').value,10); if(ln>0) vv.modThreshold=ln; }
-    vv.plan=Object.assign({}, vv.plan, { why:(m.querySelector('.vp-why').value||'').trim(), move:[...chosen].join(' · '), updatedAt:Date.now() });
+    const _why=(m.querySelector('.vp-why').value||'').trim();
+    // GATED, 9 Oct 2026. THE GATED FUNCTION OPENS THE UNGATED DOOR ITSELF. addVice() checks its own
+    // two fields (09-fight-deep.js) and then, 64 lines later in the same function body, auto-opens
+    // this sheet on a 220ms timer with every other modal removed — so the ungated "why this matters
+    // to you" box is the VERY NEXT thing a new person sees after the gated one. That is the
+    // half-applied shape this project keeps finding, inside one function.
+    // The replay is what makes it matter: this text is said back in the urge sheet
+    // (_planCardHTML, inside "You came here first"), on the SOS screen (#sos-why-reminder), and is
+    // handed to the model as 'their WHY (say it back to them)'. Its own placeholder promises
+    // exactly that — "I'll say it back to you when it's hard."
+    const _wc=(typeof journalCrisisOf==='function') ? journalCrisisOf(_why) : null;
+    if(_wc){ m.remove(); setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_wc); }catch(_){ } }, 250); return; }
+    vv.plan=Object.assign({}, vv.plan, { why:_why, move:[...chosen].join(' · '), updatedAt:Date.now() });
     try{ if(typeof saveV==='function') saveV(); }catch(_){}
     try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
     try{ if(typeof logEvent==='function') logEvent('vice_plan'); }catch(_){}
@@ -23276,35 +23389,115 @@ function sexNote(){
 // a burden on my kids when i'm older, that's my why" is the commonest motivational why in
 // fitness — a reason with no plan, one marker, no net. It takes a reason AND a plan, which is
 // the shape the live probe showed the model missing.
+// THE NET RE-IMPLEMENTED THE REGISTERS AND LEFT EVERY BOUND BEHIND.
+// These two lists were written as bare phrases, which is the exact shape docs/CRISIS-REGISTERS.md
+// exists to refuse — and nothing ever ran the gate's own benign corpus through them, because the
+// net's panel is seven hand-written rows. Measured 9 Oct 2026 over the 357 ORDINARY sentences this
+// gate already owns: 24 matched a REASON pattern and 6 matched a PLAN pattern, and since the net
+// reads a whole MESSAGE rather than a sentence, ALL 144 pairings of them appended a crisis line to
+// an ordinary reply. "nobody would miss me if i skipped tonight's session. i've picked the day,
+// monday is day one." is two Train sentences and it netted.
+// So each entry now carries the clause bound the registers were measured into, plus the
+// innocent-completion guards the corpus actually shows. `worth more dead` gained a first-person
+// subject because the corpus has "the old bike is worth more dead than alive as scrap", and
+// `a burden` gained the register's own `bearer` lookahead because the corpus has "i'm a burden
+// bearer for my family" — the register HAD that guard and this copy of it did not.
 const _RISK_REASON = [
   /\bbetter off without me\b/, /\bbetter off with me (?:gone|dead)\b/,
-  /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\b/,
-  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b/, /\bdon'?t want to be a burden any ?more\b/,
-  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\b/, /\bnobody needs me\b/,
-  /\bno point in (?:me )?being here\b/, /\bworth more dead\b/
+  // "my family would be relieved when i tell them i'm 90 days clean" is the sentence this app is FOR
+  /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\s*(?:if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive)\b|when i'?m gone\b|without me\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bdon'?t want to be a burden any ?more\b/,
+  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\s*(?:if i (?:was |were |wasn'?t |weren'?t )?(?:gone|dead|not here|around)\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bnobody needs me\b(?:\s*(?:here|at all|any ?more)\b|\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  /\bno point in (?:me )?being here\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\b(?:i'?m|i am|im|i'?d be|i am worth|i'?m worth)\b[^.!?]{0,12}\bworth more dead\b|\bworth more dead\b[^.!?]{0,20}\b(?:than alive to (?:them|her|him|my)|to my (?:family|wife|kids))\b/
 ];
 const _RISK_PLAN = [
-  /\bpicked (?:the|a|my) (?:day|date|night)\b/, /\bit all worked out\b/, /\ball worked out\b/,
-  /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\b/, /\bwritten a note for each\b/,
-  /\bwrote (?:the|my) (?:note|notes|letter|letters)\b/,
-  /\b(?:got|have) the (?:pills|tablets) ready\b/, /\bsaved up (?:the|my) (?:pills|tablets)\b/,
-  /\btonight is the night\b/, /\btonight'?s the night\b/
+  // "i've picked the day, monday is day one" and "i've picked the day to start the fast" are both
+  // things this app ASKS people to do — picking a start day is a feature.
+  /\bpicked (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bit all worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/, /\ball worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/,
+  /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bwritten a note for each\b/,
+  /\bwrote (?:the|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // "i've got the pills ready for the morning, creatine and vitamin d"
+  /\b(?:got|have) the (?:pills|tablets) ready\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\bsaved up (?:the|my) (?:pills|tablets)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\btonight is the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/, /\btonight'?s the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/
 ];
 // Does the model's own reply already put a real human in it? Built from CRISIS_LINES so a new
 // line added to the card is recognised here too, plus the kinds of person the note names.
+// CONTAINING THE WORD IS NOT OFFERING THE PERSON, and this function decides whether the net stays
+// SILENT — so a false positive here is a false NEGATIVE on the safety path. It used to be one
+// unanchored substring test, which meant the app added nothing after a reply that said
+// "i'm not your doctor", "there's no emergency here", "this isn't a crisis line and i'm not a
+// therapist", "no need for a doctor" or "the gym is my lifeline right now". Measured 9 Oct 2026
+// over 18 replies: 8 wrong, every one of them in the direction of staying quiet. 0 after.
+// A human is OFFERED when a real verified NUMBER is present, or when a named kind of person sits
+// next to an offer or a recommendation and NOT inside a negation. The negation window is the 40
+// characters in front, because that is where English puts it.
+// The three patterns live INSIDE the function on purpose. As module-level consts they were
+// invisible to H.load, which extracts FUNCTIONS — so the extracted copy threw, _needsHumanNet's
+// own try/catch swallowed it, and the suite reported the net staying silent on a real disclosure.
+// Self-contained also means the /g pattern can never carry lastIndex between calls.
 function _replyNamesAHuman(reply){
+  const _HUMAN_KIND = /\b(?:helpline|crisis line|counsellor|counselor|therapist|doctor|gp|priest|imam|rabbi|chaplain|emergency services|emergency room)\b/g;
+  const _HUMAN_NEG = /\b(?:not|no|never|isn'?t|ain'?t|aren'?t|wasn'?t|cannot|can'?t|don'?t|doesn'?t|without)\b[^.!?;]{0,28}$/;
+  const _HUMAN_OFFER = /\b(?:talk|speak|call|ring|phone|see|contact|reach out|tell|get|visit|book|text|message)\b|\b(?:would|can|could|might|will) (?:really )?help\b|\b(?:i'?d recommend|worth (?:a|talking|seeing)|please)\b/;
   const t = String(reply || '').toLowerCase();
-  if(/helpline|crisis line|counsellor|counselor|therapist|\bdoctor\b|\bgp\b|priest|imam|emergency/.test(t)) return true;
+  // a verified number is unambiguous — nobody writes 13 11 14 to mean anything else
+  try{
+    if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES)){
+      const flat = t.replace(/\s+/g, '');
+      if(CRISIS_LINES.some(function(l){
+        const c = String(l.contact || '');
+        return /\d/.test(c) && flat.indexOf(c.toLowerCase().replace(/\s+/g, '')) >= 0; })) return true;
+    }
+  }catch(_){ }
+  const near = function(i, len){
+    const before = t.slice(Math.max(0, i - 40), i);
+    if(_HUMAN_NEG.test(before)) return false;
+    return _HUMAN_OFFER.test(before) || _HUMAN_OFFER.test(t.slice(i, i + len + 40));
+  };
+  let m;
+  _HUMAN_KIND.lastIndex = 0;
+  while((m = _HUMAN_KIND.exec(t))){ if(near(m.index, m[0].length)) return true; }
+  // a provider offered BY NAME, e.g. "ring Lifeline tonight" with no number
   try{
     if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES))
       return CRISIS_LINES.some(function(l){
-        return t.indexOf(String(l.name).toLowerCase()) >= 0
-            || t.replace(/\s+/g,'').indexOf(String(l.contact).toLowerCase().replace(/\s+/g,'')) >= 0; });
+        const n = String(l.name || '').toLowerCase();
+        if(!n) return false;
+        const i = t.indexOf(n);
+        return i >= 0 && near(i, n.length);
+      });
   }catch(_){ }
   return false;
 }
 // Returns true when the app must add the human the model did not. Deliberately narrow: a reason
 // AND a plan in what the PERSON wrote, and nothing resembling a human in what came back.
+// ONE MECHANISM FOR THE NET, BECAUSE IT WAS WIRED AT THREE SITES AND NEEDED NINE.
+// The net was appended inline at the companion, the coach and the PT — and every one of those is
+// the SUCCESS path. Three more paths at the coach reply to the person without ever reaching api():
+// offline, Supabase not ready, and the model failing. Each answers with a canned string that names
+// no human, so somebody who stacked a reason and a plan got "You're offline right now. Your coach
+// needs a connection to think" and nothing else. And _feelingNowGo — the app's MOST-invited
+// disclosure surface, the one whose own comment calls its prompt "deliberately fierce" — was a
+// fourth free-text AI surface with no net at all, on its success path, its empty-reply fallback and
+// its catch.
+// `html:true` escapes the line for a text position inside innerHTML, which is what _feelingNowGo
+// needs; the chat surfaces take it as plain text.
+function _netted(userText, reply, html){
+  try{
+    if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply)){
+      const line = _humanNetLine();
+      return reply + (html ? '<br><br>' + (typeof _escFew === 'function' ? _escFew(line) : line)
+                           : '\n\n' + line);
+    }
+  }catch(_){ }
+  return reply;
+}
 function _needsHumanNet(userText, reply){
   try{
     const t = String(userText || '').toLowerCase().replace(/[\u2018\u2019\u02bc\u02bb\u00b4`]/g, "'").replace(/\s+/g, ' ');
@@ -23500,8 +23693,7 @@ async function _companionSay(userText, opening){
   // named a reason AND a plan and the reply came back without a human in it, the app adds one —
   // with its OWN verified number, never a model's. Appended to the reply rather than replacing it,
   // because what the model said may be the only thing holding them in the conversation.
-  try{ if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply))
-    reply = reply + '\n\n' + _humanNetLine(); }catch(_){ }
+  try{ reply = _netted(userText, reply); }catch(_){ }
   _compHistory.push({ role:'assistant', content:reply });
   if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=reply; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
 }
@@ -24133,6 +24325,17 @@ function postUrgeReflection(viceName){
 function savePostUrge(viceName){
   const trig = document.getElementById('pur-trigger')?.value.trim();
   const helped = document.getElementById('pur-helped')?.value.trim();
+  // GATED, 9 Oct 2026. This is the box that opens straight after somebody has just WON an urge,
+  // which is one of the two moments they are most likely to say the true thing. What is typed here
+  // is stored as the battle's `trigger`, aggregated by analyzeUrgePatterns into `topTrigger`, and
+  // replayed by _overridePlan as "Most common trigger: ..." — so a disclosure came back as the
+  // person's own named cue. Both fields are checked: the trigger box and "what helped".
+  const _pc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(trig) || journalCrisisOf(helped)) : null;
+  if(_pc){
+    document.getElementById('post-urge-modal')?.remove();
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250);
+    return;
+  }
   const fl = ls('totry_fight_log') || [];
   const idx = fl.findIndex(e => e.vice === viceName && e.won);
   if(idx > -1){
@@ -29095,7 +29298,16 @@ function journalCrisisOf(text){
 }
 // Call AFTER the entry is persisted. Returns true when it met the person, so the caller skips its
 // ordinary success toast and any celebratory UI.
-function journalMeetCrisis(kind){
+// `back` is an optional ROUTE BACK, and it exists because of one measured harm. At the Can't-start
+// door a non-null from detectCrisis REPLACES the two-minute help-me-start flow with this card and
+// no way to the thing the person came for — CLAUDE.md names that as the one door where a false
+// positive is a takeover rather than noise. The bound was tightened on 7 Oct (15 of 15 ordinary
+// sentences down to 4) and the four that remain are the measured cost of a bound that cannot tell
+// "i cant cope anymore, i dont know what to do" from "there's nothing left, i don't know where to
+// begin" — one word apart. So the door stops being all-or-nothing instead.
+// IT DOES NOT WEAKEN THE CARD: the helpline keeps the screen and the primary position, the route
+// back is a quiet secondary below Close, and every other caller passes nothing and is unchanged.
+function journalMeetCrisis(kind, back){
   if(!kind) return false;
   try{
     // :not([id]) is load-bearing — #journal-modal, #payday-modal and #rest-timer-overlay are STATIC
@@ -29106,7 +29318,10 @@ function journalMeetCrisis(kind){
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
       '<div id="jgate-crisis-slot"></div>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button>' +
+      ((back && back.label && back.onclick)
+        ? '<button class="btn quiet" onclick="closeModal(this);' + back.onclick + '" style="margin-top:6px">' + _escFew(back.label) + '</button>'
+        : '') + '</div>';
     document.body.appendChild(m);
     if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
   }catch(_){ }
@@ -50001,6 +50216,13 @@ function removeWhyAffirmation(i){
 function addPromiseFromWhy(){
   const inp = document.getElementById('why-new-promise'); if(!inp) return;
   const text = inp.value.trim(); if(!text) return;
+  // GATED, 9 Oct 2026. THE ONLY DIFFERENCE BETWEEN THIS DOOR AND THE GATED ONE IS THE TAG.
+  // #why-new-promise and #why-letter-text sit in the SAME static card, 39 lines apart in
+  // shell-head.html. saveLetterFromWhy was gated on 30 Sep; this one was not, because the census
+  // that found it grepped index.html for `<textarea id="...">` and this field is an `<input>`.
+  // A promise is stored with a due date and replayed when it comes round.
+  const _pc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_pc){ inp.value=''; setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250); return; }
   const days = parseInt(document.getElementById('why-promise-when').value||7);
   const promises = ls('totry_promises')||[];
   const due = new Date(); due.setDate(due.getDate()+days);

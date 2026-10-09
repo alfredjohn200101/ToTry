@@ -369,6 +369,62 @@ const DOORS = [
     fire: async (page, phrase) => page.evaluate(async p => {
       if(typeof searchFoodOnline === 'function') await searchFoodOnline(p);
     }, phrase) },
+
+  // ── THREE MORE, 9 Oct 2026, AND EACH WAS INVISIBLE TO A DIFFERENT CENSUS ─────────────────────
+  // Found by an adversarial review of the 30 Sep sweep that took this list from 22 doors to 35.
+  // That sweep ran two censuses and both of them structurally could not see these:
+  //   · openVicePlan's "why this matters to you" — the GATED function opens it. addVice() checks
+  //     its own two fields and then, 64 lines later in the same body, auto-opens this sheet on a
+  //     220ms timer. The ungated box is the very next thing a new person sees after the gated one.
+  //     Replayed in the urge sheet, on the SOS screen, and handed to the model as "their WHY".
+  //   · savePostUrge — opens right after somebody WINS an urge, one of the two moments they are
+  //     most likely to say the true thing. Stored as the battle's trigger, aggregated into
+  //     topTrigger, replayed as "Most common trigger: ...". It was also an injection sink.
+  //   · addPromiseFromWhy — in the SAME static card as the gated #why-letter-text, 39 lines apart.
+  //     The only difference between the gated door and this one is the TAG: the census grepped for
+  //     `<textarea id="...">` and this field is an `<input>`.
+  { name: 'why this matters (the vice plan)',
+    go: async page => page.evaluate(async () => {
+      ls('totry_v', [{ n:'porn', t:'late night', startDate:new Date().toISOString() }]);
+      if(typeof loadV === 'function') loadV();
+      if(typeof openVicePlan === 'function') openVicePlan(0);
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const t = document.querySelector('.vp-why'); if(t) t.value = p;
+      const b = document.querySelector('.vp-save'); if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const v = ls('totry_v') || [];
+      return (v[0] && v[0].plan && v[0].plan.why === p)
+        ? 'the disclosure was stored as their why, to be said back to them when it is hard' : null;
+    }, phrase) },
+  { name: 'what set it off (after a win)',
+    go: async page => page.evaluate(async () => {
+      ls('totry_v', [{ n:'porn', t:'late night', startDate:new Date().toISOString() }]);
+      ls('totry_fight_log', [{ vice:'porn', won:true, ts:Date.now() }]);
+      if(typeof loadV === 'function') loadV();
+      if(typeof postUrgeReflection === 'function') postUrgeReflection('porn');
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('pur-trigger'); if(i) i.value = p;
+      if(typeof savePostUrge === 'function') savePostUrge('porn');
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const fl = ls('totry_fight_log') || [];
+      return fl.some(e => e.trigger === p)
+        ? 'the disclosure was stored as the trigger that set off their urge' : null;
+    }, phrase) },
+  { name: 'a promise to yourself (your why)',
+    go: async page => page.evaluate(async () => { if(typeof go === 'function') go('why'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('why-new-promise'); if(i) i.value = p;
+      if(typeof addPromiseFromWhy === 'function') addPromiseFromWhy();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const pr = ls('totry_promises') || [];
+      return pr.some(x => x.text === p)
+        ? 'the disclosure was stored as a promise with a due date, to be replayed when it comes round' : null;
+    }, phrase) },
 ];
 
 // A crisis card a person can actually use: on screen, on top, and dialable.
@@ -468,6 +524,21 @@ const PROBE = `(() => {
     'i read about carbon monoxide poisoning after the news story',
     'i know where dad keeps his rifle, we are going shooting saturday',
     'cast your burden on the lord and he will sustain you',   // scripture
+    // ── THE SHAPE THIS PANEL COULD NOT FAIL ON ───────────────────────────────────
+    // Every sentence above is a PREPOSITIONAL or WORD-PREFIX completion — "nothing left in the
+    // tank", "i can't keep going with this split", "i want it to stop raining" — which is exactly
+    // the shape the clause bound already cleared. The panel was built from the completions the bound
+    // was written against, so 31 green doors in the negative direction said nothing at all about a
+    // COMMA. Twelve patterns read a comma as a sentence end for six days behind this panel.
+    // These are comma-continued, from named fronts, and they are the shape that shipped.
+    'i gave it everything, nothing left, best session in weeks',       // Train
+    'rent went out and there is nothing left, payday is friday',       // Money
+    "i'm done, i can't do this anymore, the porn has to go",          // the Fight's own words
+    'the doms in my hamstrings, i want it to stop, so sore',           // Train
+    "i can't keep going, the debt is crushing, need a plan",           // Money
+    "my quads are cramping, make it stop, i'll stretch after",         // Train
+    // And the one the Can't-start door exists for, which used to get six helplines instead.
+    "i can't do this anymore, just help me start something small",
   ];
   let quiet = 0;
   for (let i = 0; i < DOORS.length; i++) {
@@ -479,6 +550,18 @@ const PROBE = `(() => {
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
+    // DID THE SENTENCE EVEN REACH THE DETECTOR? Nothing here asked, so a door that silently failed
+    // to deliver — a changed id, a renamed handler, a `go` that lands on the wrong screen — counted
+    // as "left an ordinary sentence alone". A quiet door and a broken door look identical from the
+    // outside, and this whole pass exists because an absence can pass for a pass.
+    // detectCrisis is a top-level function declaration, so the binding IS a property of the global
+    // object and reassigning it reaches the app's own internal callers.
+    await page.evaluate(() => {
+      window.__dcSeen = [];
+      const orig = window.detectCrisis;
+      if(typeof orig !== 'function') return;
+      window.detectCrisis = function(t){ window.__dcSeen.push(String(t == null ? '' : t)); return orig.apply(this, arguments); };
+    });
     try {
       await door.go(page);
       await page.waitForTimeout(600);
@@ -486,8 +569,15 @@ const PROBE = `(() => {
       await page.waitForTimeout(900);
     } catch (e) { /* a door that will not take this input proves nothing either way */ }
     const n = await page.evaluate(PROBE);
+    // SUBSTRING, NOT EQUALITY, AND THE REASON IS ON THE RECORD: two doors legitimately transform
+    // what they deliver — the identity path prefixes "I am becoming a person who ", and the morning
+    // check-in joins several fields into one string before asking. Measured: 29 of 31 verbatim,
+    // 31 of 31 by substring.
+    const delivered = await page.evaluate(o =>
+      (window.__dcSeen || []).some(x => x.indexOf(o) >= 0), ordinary);
     checks++;
     if (n.card) findings.push(`${door.name}: CRIED WOLF — "${ordinary}" raised a crisis card`);
+    else if (!delivered) findings.push(`${door.name}: the ordinary sentence never reached detectCrisis — this door is QUIET because it is BROKEN, not because it is calm`);
     else quiet++;
     await ctx.close();
   }
@@ -651,9 +741,69 @@ const PROBE = `(() => {
     await ctx.close();
   }
 
+  // ── EVERY ROUTE THE SENTENCE NEEDS IS ON THE CARD ───────────────────────────────────────────
+  // detectCrisis returns a '+'-joined SET now, because the precedence chain could only name one
+  // need and the one it dropped was the ambulance: "i took all my pills. nothing matters anymore."
+  // returned 'suicide', a card of seven helplines with no 000, no 911, no 999 and no "get to a
+  // hospital" on it. The kinds themselves are asserted in core.test.js; this is the half only a
+  // browser can answer — what the CARD actually renders for each set.
+  // It asserts BOTH directions. A missing 000 on the overdose card is the defect that prompted it;
+  // a 000 on the plain suicide card is the takeover this file keeps having to undo, and an
+  // emergency number shown to somebody who typed "i can't cope anymore" is that takeover.
+  let cardChecks = 0;
+  {
+    const KINDS = [
+      ['suicide',            { needs:['131114','988','116123'], forbid:['000','911','999'], hospital:false }],
+      ['selfharm',           { needs:['131114'],                forbid:['000','911','999'] }],
+      ['harmothers',         { needs:['131114','000'],          stepaway:true }],
+      ['medical',            { needs:['000','911','999','1800022222','111'], hospital:true }],
+      ['medical+suicide',    { needs:['000','911','999','131114','988','116123'], hospital:true, notalone:true }],
+      ['suicide+harmothers', { needs:['131114','000','911','999'], stepaway:true }],
+    ];
+    for (const [kind, want] of KINDS) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForFunction(() => typeof journalMeetCrisis === 'function', { timeout:20000 });
+      const got = await page.evaluate(k => {
+        journalMeetCrisis(k);
+        // SCOPE TO THE CARD. Asking document.body reported the medical copy present on the plain
+        // suicide card, because "emergency services" appears elsewhere in the shell.
+        const card = document.querySelector('[role="alert"][aria-label^="Urgent"]');
+        if (!card) return { missing:true };
+        const tel = [...card.querySelectorAll('a[href^="tel:"]')].filter(a => {
+          const r = a.getBoundingClientRect(), st = getComputedStyle(a);
+          return r.width >= 24 && r.height >= 20 && st.visibility !== 'hidden'
+            && st.display !== 'none' && st.pointerEvents !== 'none' && a.offsetParent !== null;
+        }).map(a => a.getAttribute('href').replace('tel:', ''));
+        const txt = card.textContent;
+        return { tel, dup: tel.length !== new Set(tel).size,
+                 rows: card.querySelectorAll('.crisis-row').length,
+                 hospital: /hospital|emergency services/i.test(txt),
+                 stepaway: /step away/i.test(txt),
+                 notalone: /do not have to carry it on your own/i.test(txt) };
+      }, kind);
+      cardChecks++;
+      const bad = [];
+      if (got.missing) bad.push('no card element at all — THE MEASUREMENT IS WRONG, NOT THE APP');
+      else {
+        if (!got.tel.length) bad.push('the card carries no dialable number at all');
+        (want.needs  || []).forEach(n => { if (!got.tel.includes(n)) bad.push('missing ' + n); });
+        (want.forbid || []).forEach(n => { if (got.tel.includes(n))  bad.push('carries ' + n + ' — that is the takeover, not help'); });
+        ['hospital','stepaway','notalone'].forEach(f => {
+          if (want[f] !== undefined && got[f] !== want[f]) bad.push(f + '=' + got[f] + ' wanted ' + want[f]); });
+        if (got.dup) bad.push('a number is repeated on the card');
+      }
+      if (bad.length) findings.push(`the card for "${kind}": ` + bad.join('; '));
+      else console.log(`  ✓ card ${kind.padEnd(29)} ${got.rows} rows · ${got.tel.join(' · ')}`);
+      await ctx.close();
+    }
+  }
+
   await browser.close(); server.close();
   console.log('');
   if (findings.length) { findings.forEach(f => console.log('  ✗ ' + f)); console.log(`\n✗ ${findings.length} finding(s)\n`); process.exit(1); }
   console.log(`✓ a real helpline is visible and dialable at all ${checks - DOORS.length} crisis doors\n`);
+  console.log(`  and the card renders every route in the kind set at ${cardChecks} kinds \u2014 an overdose beside a hopelessness clause used to return seven helplines and no ambulance`);
   console.log(`  and ${DOORS.length} ordinary sentences from the app's own fronts were left alone — the direction this suite never asserted until 1 Oct 2026, which is how a police-and-ambulance card for DOMS survived every check in the gate`);
 })();

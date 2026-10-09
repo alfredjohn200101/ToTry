@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v607**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v608**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -548,6 +548,121 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      midnight on code nobody had touched**. `H.load` now REFUSES a stub it would shadow, with the
      reason in the error, and a test asserts the refusal — otherwise the guard is a line nobody has
      ever seen fail. A suite that turns red overnight is one people learn to ignore.
+   - **AND THEN ONE ENTER UNDID ALL OF IT (9 Oct 2026). 118 of 357 → 0.** The whitespace fix above
+     kept two matched forms for a real reason, and then nobody asked what `t` does to a sentence that
+     is NOT a disclosure. The bounds read `\n` as an unconditional sentence end, and every innocent
+     completion in the detector — the `_suppress` spans AND the lookaheads inside the patterns — is
+     written with literal spaces, which a line break breaks. Measured with one newline at each word
+     boundary over the 357 benign sentences this gate already owns: **118 returned a crisis card.**
+     "i've been hoarding the pills\nfor my mum" and "i'm a waste of space\non the leaderboard" raised
+     six helplines; "i took all my pills\nthis morning" called an ambulance. **"i want to die\nto my
+     old self" and "take my life and\nlet it be" are the third and fourth time this app's own
+     devotional vocabulary has tripped its own suicide detector — and both had already been fixed
+     once, for a single line of text.** The doors that invite Enter are real textareas, and
+     `openCBA` and `openWalkBack` both `return true` out of the save callback on a crisis hit, so the
+     ledger or the chain the person just typed is DISCARDED, not merely accompanied by a card.
+     **`tc` already computed the right answer for all 118 and the `||` in `_hit`/`_hitRe` threw it
+     away** — an opportunity created and not taken, not a regression.
+     Four candidate fixes were measured before one was chosen, and the cheap one is wrong: stripping
+     `\n` from every bound gets 118 → 10 but **loses "i can't go on\ni don't know what else to say"**,
+     the one shape the two-form design exists for. What shipped gives the newline **the comma's own
+     what-follows test** (118 → 10, 0 lost), then makes every exclusion whitespace-tolerant through
+     one `_wsTol` helper used by BOTH mechanisms (→ 4), then closes the last shape — a subordinating
+     clause, an Enter, then the statement ("if i stop gambling\nmy family would be better off"), which
+     hits the `[\n\r]\s*` PREFIX anchor and so needed a span removal, because **a sentence start
+     cannot see what precedes it** (→ 0).
+     **A newline is stronger evidence than a comma, so it has its own extra branch.** The first draft
+     reused the comma's list exactly and lost "nothing left\nand i mean it" and "i am tired of
+     living\nreally" — the suite caught both. `and i` and `really` were added on measurement: `i`
+     after a newline has ZERO false positives over the 357, `really` none, and the single benign
+     `and` is the idiom "alive\nand well", which `and i` cannot reach.
+     The gate now sweeps **every** benign sentence any ORDINARY array owns, read out of
+     `core.test.js` itself, so coverage grows with the panels instead of going stale beside them.
+     Fault-injected per mechanism, and proven on the real source as well as in memory.
+   - **AND THE CARD COULD ONLY EVER NAME ONE NEED (9 Oct 2026).** `detectCrisis` was a precedence
+     chain returning the FIRST of four kinds. Over 3317 sentences from this gate's own panels only
+     **eight** co-occur — and they are the eight that matter most.
+     **"i took all my pills. nothing matters anymore." returned 'suicide', a card of seven helplines
+     with no 000, no 911, no 999 and no "get to a hospital" anywhere on it.** That is what somebody
+     types in the minutes after an overdose, and "nothing matters anymore" is what they type beside
+     it. "i overdosed and i want to kill myself" did the same, and had since v479 — the hopelessness
+     register did not open this hole, it widened it from "needs an explicit suicide statement" to
+     "needs any of 22 ordinary hopelessness clauses".
+     The return is a `'+'`-joined SET in acuity order now and the card renders every route in it.
+     **Only FOUR places in the whole bundle ever compared this value to a kind, and all four are the
+     one if/else chain in `showCrisisResponse`** — every other call site asks whether it is truthy,
+     which is what made the change small. Physical acuity leads, because minutes matter for an
+     overdose in a way they do not for the rest, and the helplines are on the same card. Driven in a
+     real browser, six kinds, one fresh page each: `medical+suicide` renders 12 rows carrying 000 ·
+     healthdirect · 911 · 999 · 111 · Lifeline · Beyond Blue · Suicide Call Back · 13YARN · 988 ·
+     Samaritans, deduped, and **plain 'suicide' still carries NO emergency number**, because 000 for
+     somebody who typed "i can't cope anymore" is the takeover this file keeps having to undo. The
+     documented "i took all my pills to end it → medical" decision is untouched.
+     That probe lied twice before it worked, both times in the direction of "the app is broken":
+     it rendered into a slot one viewport down and `_crisisMustBeSeen` correctly LIFTED the card out
+     of it; then it read `document.body.textContent` and reported the medical copy present on the
+     plain suicide card, because "emergency services" appears elsewhere in the shell. **Plain
+     'suicide' is the calibration** — 35 doors already prove that card renders, so an empty result
+     there is the instrument, not the app.
+   - **FOUR REGISTER ENTRIES WERE BARE IN ALL BUT NAME (9 Oct 2026). 15 ordinary sentences → 0.**
+     `detectCrisis("carbon monoxide")` alone returned 'suicide': the entry excluded six equipment
+     nouns and fired on every other mention, so "is carbon monoxide dangerous in a closed garage",
+     "we had a carbon monoxide scare at work today", "carbon monoxide safety week at the school" and
+     "the landlord never checked for carbon monoxide" all raised six helplines. A tenant, a parent, a
+     tradesperson and a school newsletter. It takes a DEFINITE enclosure now or a stated intent, and
+     **the article is the signal** — the enclosure somebody HAS is "the car", a generic one is "a
+     closed garage", which is how a safety question separates from a disclosure.
+     `a burden` took ANY object while both of its siblings in the same register are object-bounded,
+     so the app's own benign panel and the entry disagreed ("i'm just a burden on the roster at
+     church"). The POSSESSIVE suppression was written with a literal apostrophe while `_hitRe` tests
+     an apostrophe-STRIPPED pass, so "it could hurt somebody's chances" was suppressed and **"it
+     could hurt somebodys chances" was 'harmothers'** — the same sentence, and the difference is
+     whether the person bothered with the key. And the hopelessness register bounded THREE wake-up
+     phrasings and left the fourth and commonest one bare, so one family was gated two ways and the
+     loose member decided every sentence: **a superseded pattern does not stop mattering.**
+     Two fixes cost a documented disclosure first and the suite caught both: the burden bound lost
+     "i felt like a burden all day" (a self-ascription can end in an adverbial) and the CO enclosure
+     lost "carbon monoxide poisoning is how i would do it" (which has no enclosure at all).
+     **My first four fault injections pointed the WRONG WAY.** Neutering each bound in place with
+     `(?!)` and `(?:)` made three of the four patterns MORE restrictive, so they stopped firing on
+     everything and the injections reported "0 of 2 fire again". A fault injection has to reproduce
+     the DEFECT, and here the defect is the bare entry — so it replaces the whole LINE with the bare
+     form, and refuses rather than guesses when the marker is not on exactly one line.
+   - **AND THE NET RE-IMPLEMENTED THE REGISTERS AND LEFT EVERY BOUND BEHIND (9 Oct 2026). 144 → 0.**
+     `_RISK_REASON` and `_RISK_PLAN` were written as bare phrases — the exact shape
+     `docs/CRISIS-REGISTERS.md` exists to refuse — and nothing had ever run the gate's own benign
+     corpus through them, because the net's panel is seven hand-written rows. **The net reads a whole
+     MESSAGE, not a sentence**, and a journal entry or a coach message is several clauses. Measured
+     over the 357: 24 matched a REASON pattern, 6 matched a PLAN pattern, and **all 144 pairings
+     appended a crisis line to an ordinary reply.** "nobody would miss me if i skipped tonight's
+     session. i've picked the day, monday is day one." is two Train sentences.
+     Two guards the registers already HAD were missing from this copy of them — `a burden` needs the
+     `bearer` lookahead ("i'm a burden bearer for my family") and `worth more dead` needs a
+     first-person subject ("the old bike is worth more dead than alive as scrap").
+     **The disclosing completion is not a clause end.** Bounding alone broke the thing the net exists
+     for: "they'd all be relieved IF I WAS GONE" has no clause end, and the probe's own calibration
+     caught it in one run. `nobody needs me here` likewise needed `here` as a disclosing completion
+     rather than a bound, and `all worked out` kept a loose form with a named TRAINING-plan guard,
+     because a clause end there bought nothing (0 benign matches) and cost a real must-net row.
+   - **AND THE NET WAS WIRED AT THREE SITES AND NEEDED NINE (9 Oct 2026).** All three were the
+     SUCCESS path. The coach replies to the person on three paths that never reach `api()` — offline,
+     Supabase not ready, and the model failing — each with a canned string naming no human, so
+     somebody who stacked a reason and a plan got "You're offline right now. Your coach needs a
+     connection to think" and nothing else. And **`_feelingNowGo` was a fourth free-text AI surface
+     with no net at all**, on all three of its branches — the app's MOST-invited disclosure surface,
+     whose own comment calls its prompt "deliberately fierce (you refuse to let them lose)", which is
+     the worst voice to answer somebody who has stacked a reason and a plan. One `_netted()` helper
+     now, nine call sites, and an `html` variant for the one surface that writes into `innerHTML`.
+     **The check that was supposed to hold this could not.** It was three greps for a call SHAPE plus
+     a global count: the companion one stays green when the companion's call is DELETED outright,
+     because the same text sits in the comment above it and in the helper's declaration; a count
+     cannot say WHICH surface went missing; and it only ever knew about three surfaces. It asserts
+     PER SURFACE by name now, executes the helper, and fault-injects each surface in turn.
+   - **AND A "CRISIS SUITE CRASH" WAS A STALE SERVER (9 Oct 2026).** Twice, `npm run crisis` ended in
+     `}` then `Node.js v24.18.0` and was read as a syntax error in a file that had just passed
+     `node --check`. It was **EADDRINUSE on 8859** from a previous run whose server outlived its
+     process. The suite takes `PORT=…` for exactly this; use it, and read the HEAD of the output, not
+     the tail, when a run dies early.
    - **AND THE VOICE WAS NEVER TOLD TO HAND ANYONE OVER (1 Oct 2026).** The soul document says it
      plainly — this app *"points beyond itself … when something is serious, it hands the person to a
      human"* — and `BROTHER_VOICE`, the voice behind the companion, the coach, the PT and
@@ -570,8 +685,15 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      risk, give a method, or make them prove how bad it is.
      **It is deliberately SHORT, and the reason is not the bill.** The first draft was 404 tokens —
      44% of BROTHER_VOICE — and a long clinical block crowds out the voice instructions and pushes the
-     model toward sounding like a clinician, which is the opposite of this app's soul. 294 tokens now,
-     with a test holding the ceiling. Six injections, each caught.
+     model toward sounding like a clinician, which is the opposite of this app's soul. 294 tokens when
+     it shipped. Six injections, each caught.
+     **CORRECTED 9 Oct 2026: it is 2186 characters, about 547 tokens, and nothing was holding a
+     ceiling at all.** It nearly doubled on 2 Oct when the stacking rule and the verified-number
+     rule went in — which was justified and measured (band C 0 of 3 → 3 of 3, and band A RE-measured
+     at 0 of 7 flinches rather than assumed), so the growth is not the defect. The record was: this
+     file claimed a test that did not exist. There is one now, as a RATCHET at 2400 characters with
+     the headroom asserted, and raising it requires a fresh band-A run — that number is the only
+     evidence the voice still meets somebody who came for help starting.
      One test of it failed on CORRECT code first, which is the lesson beside it: it matched the
      source, where the note is a dozen concatenated string literals, so no regex could span a `+`
      join. **Execute the note; do not read it.** A second one was pinned to the old wording and broke
@@ -664,7 +786,25 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      The trade-off is stated in the harness: this is a fingerprint, not a behaviour diff. A textual
      edit that changes nothing still demands a probe run, because nothing there can know whether an
      edit moved behaviour. Cheap to satisfy, impossible to satisfy by accident.
-   - `npm run crisis` — **35 doors as of 30 Sep 2026, up from 22, and the jump is the lesson.**
+   - `npm run crisis` — **38 doors as of 9 Oct 2026, and it now also asserts WHICH CARD.** The three
+     added on 9 Oct each hid from a different census, and the first of them is the sharpest:
+     **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
+     then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every
+     other sheet removed — so the ungated "why this matters to you" box is the VERY NEXT thing a new
+     person sees after the gated one, and its text is said back in the urge sheet, on the SOS screen
+     and to the model as "their WHY". `savePostUrge` opens right after somebody WINS an urge, one of
+     the two moments they are most likely to say the true thing, and stored it as the battle's
+     trigger to be replayed as "Most common trigger: …" (it was an injection sink too — `topTrigger`
+     reached `innerHTML` raw at two sites). `addPromiseFromWhy` sits in the SAME static card as the
+     gated `#why-letter-text`, 39 lines apart, and **the only difference between the gated door and
+     the ungated one is the TAG** — the census grepped for `<textarea id="…">` and this field is an
+     `<input>`.
+     Landing them cost one more instance of the lesson this file already carries: the new door's seed
+     wrote `totry_vices` while `loadV()` reads **`totry_v`**, so `openVicePlan(0)` returned early on a
+     missing vice and the suite reported "NO crisis card at all" against a gate that was working.
+     **A seed matching your own reader rather than the app's writer reports the door broken.**
+     The original entry, still true: **35 doors as of 30 Sep 2026, up from 22, and the jump is the
+     lesson.**
      THIRTEEN ungated free-text doors were found in one afternoon, every one of them storing or
      replaying what was typed. Eight came out of an adversarial review that was judging feature
      ideas and kept tripping over them; five more came from then censusing the app properly. Almost

@@ -1479,7 +1479,7 @@ function _overridePlan(p){
   }
   // Trigger → name the if-then. "If [trigger], then [pre-decided response]."
   if(p.topTrigger){
-    bits.push('When <b style="color:var(--tx)">'+p.topTrigger+'</b> shows up, that\u2019s the cue. Decide your one move ahead of time \u2014 the instant it hits, you DO that (step outside, cold water, text someone, open this app) before the thinking starts. Pre-deciding is how you win when willpower\u2019s thin.');
+    bits.push('When <b style="color:var(--tx)">'+_escFew(p.topTrigger)+'</b> shows up, that\u2019s the cue. Decide your one move ahead of time \u2014 the instant it hits, you DO that (step outside, cold water, text someone, open this app) before the thinking starts. Pre-deciding is how you win when willpower\u2019s thin.');
   }
   if(!bits.length){
     bits.push('Keep logging the moments \u2014 the more I see, the more exactly I can help you get ahead of it. And remember the pattern isn\u2019t a verdict, it\u2019s a map.');
@@ -1721,7 +1721,7 @@ function renderUrgeInsights(){
       '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
-        (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
+        (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+_escFew(p.topTrigger)+'</b>.<br>':'')+
         // NOT A BARE WIN RATE AT ZERO. viceFrequencyRead and the vice card both removed this
         // percentage, for a reason written down twice in 09-fight-deep.js: it told a person who had
         // been honest fifteen days running that they had won 0%. It was removed from the card and
@@ -1923,13 +1923,18 @@ async function _feelingNowGo(){
     const msg=await api(sys,[],prompt,500);
     const box=document.getElementById('feelingnow-redirect');
     if(box && msg && msg.trim()){
-      box.innerHTML='<div style="font-size:var(--t-base);color:var(--tx);line-height:1.7">'+msg.trim().replace(/</g,'&lt;')+'</div>'+(typeof aiTag==='function'?aiTag():'');
+      // THE NET, 9 Oct 2026. This is the app's MOST-invited disclosure surface and it was the one
+      // free-text AI path with no net at all — on all three of its branches. The prompt here is
+      // deliberately fierce ("you refuse to let them lose"), which is the worst voice to answer
+      // somebody who has stacked a reason and a plan. The third argument escapes the line for a
+      // text position inside innerHTML, which is what this surface needs and the chats do not.
+      box.innerHTML='<div style="font-size:var(--t-base);color:var(--tx);line-height:1.7">'+_netted(feeling,msg.trim().replace(/</g,'&lt;'),true)+'</div>'+(typeof aiTag==='function'?aiTag():'');
     } else if(box){
-      box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.</div>';
+      box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+_netted(feeling,'This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.',true)+'</div>';
     }
   }catch(e){
     const box=document.getElementById('feelingnow-redirect');
-    if(box) box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.</div>';
+    if(box) box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+_netted(feeling,'This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.',true)+'</div>';
   }
 }
 // Still hard → escalate gently: remember what they're fighting for (their real "why") + the coach.

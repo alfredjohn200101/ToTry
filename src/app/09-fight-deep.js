@@ -548,6 +548,17 @@ function postUrgeReflection(viceName){
 function savePostUrge(viceName){
   const trig = document.getElementById('pur-trigger')?.value.trim();
   const helped = document.getElementById('pur-helped')?.value.trim();
+  // GATED, 9 Oct 2026. This is the box that opens straight after somebody has just WON an urge,
+  // which is one of the two moments they are most likely to say the true thing. What is typed here
+  // is stored as the battle's `trigger`, aggregated by analyzeUrgePatterns into `topTrigger`, and
+  // replayed by _overridePlan as "Most common trigger: ..." — so a disclosure came back as the
+  // person's own named cue. Both fields are checked: the trigger box and "what helped".
+  const _pc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(trig) || journalCrisisOf(helped)) : null;
+  if(_pc){
+    document.getElementById('post-urge-modal')?.remove();
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250);
+    return;
+  }
   const fl = ls('totry_fight_log') || [];
   const idx = fl.findIndex(e => e.vice === viceName && e.won);
   if(idx > -1){

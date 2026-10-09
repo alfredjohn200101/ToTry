@@ -205,7 +205,16 @@ function journalCrisisOf(text){
 }
 // Call AFTER the entry is persisted. Returns true when it met the person, so the caller skips its
 // ordinary success toast and any celebratory UI.
-function journalMeetCrisis(kind){
+// `back` is an optional ROUTE BACK, and it exists because of one measured harm. At the Can't-start
+// door a non-null from detectCrisis REPLACES the two-minute help-me-start flow with this card and
+// no way to the thing the person came for — CLAUDE.md names that as the one door where a false
+// positive is a takeover rather than noise. The bound was tightened on 7 Oct (15 of 15 ordinary
+// sentences down to 4) and the four that remain are the measured cost of a bound that cannot tell
+// "i cant cope anymore, i dont know what to do" from "there's nothing left, i don't know where to
+// begin" — one word apart. So the door stops being all-or-nothing instead.
+// IT DOES NOT WEAKEN THE CARD: the helpline keeps the screen and the primary position, the route
+// back is a quiet secondary below Close, and every other caller passes nothing and is unchanged.
+function journalMeetCrisis(kind, back){
   if(!kind) return false;
   try{
     // :not([id]) is load-bearing — #journal-modal, #payday-modal and #rest-timer-overlay are STATIC
@@ -216,7 +225,10 @@ function journalMeetCrisis(kind){
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
       '<div id="jgate-crisis-slot"></div>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button>' +
+      ((back && back.label && back.onclick)
+        ? '<button class="btn quiet" onclick="closeModal(this);' + back.onclick + '" style="margin-top:6px">' + _escFew(back.label) + '</button>'
+        : '') + '</div>';
     document.body.appendChild(m);
     if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
   }catch(_){ }

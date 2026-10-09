@@ -428,6 +428,13 @@ function removeWhyAffirmation(i){
 function addPromiseFromWhy(){
   const inp = document.getElementById('why-new-promise'); if(!inp) return;
   const text = inp.value.trim(); if(!text) return;
+  // GATED, 9 Oct 2026. THE ONLY DIFFERENCE BETWEEN THIS DOOR AND THE GATED ONE IS THE TAG.
+  // #why-new-promise and #why-letter-text sit in the SAME static card, 39 lines apart in
+  // shell-head.html. saveLetterFromWhy was gated on 30 Sep; this one was not, because the census
+  // that found it grepped index.html for `<textarea id="...">` and this field is an `<input>`.
+  // A promise is stored with a due date and replayed when it comes round.
+  const _pc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_pc){ inp.value=''; setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250); return; }
   const days = parseInt(document.getElementById('why-promise-when').value||7);
   const promises = ls('totry_promises')||[];
   const due = new Date(); due.setDate(due.getDate()+days);

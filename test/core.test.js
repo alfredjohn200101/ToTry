@@ -11726,14 +11726,759 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     }
   }
 
-  // ── ALL THREE FREE-TEXT AI SURFACES ARE WIRED ──
+  // ── EVERY FREE-TEXT AI SURFACE IS WIRED, AND THE OLD VERSION OF THIS CHECK COULD NOT SAY SO ──
+  // It was three greps for a call SHAPE — /_needsHumanNet\(userText, reply\)/ and friends — plus a
+  // global count. An adversarial review measured that the companion one stays green when the
+  // companion's call is DELETED OUTRIGHT, because the same text appears in the comment above it and
+  // in the helper's own declaration; only the count caught a removal, and a count cannot say WHICH
+  // surface went missing. Worse, it pinned the phrasing, so folding the three inline copies into one
+  // helper broke three assertions while the behaviour improved.
+  // It also only ever knew about THREE surfaces. There were four: _feelingNowGo, the app's
+  // most-invited disclosure surface, had no net on any of its three branches. And the coach replied
+  // to the person on three paths that never reach api() at all — offline, Supabase not ready, and
+  // the model failing — each with a canned string naming no human.
+  // So: one mechanism, asserted PER SURFACE by name, and the mechanism itself EXECUTED.
   const code = H.code();
-  H.eq((code.match(/_needsHumanNet\(/g) || []).length - 1, 3,
-    'the companion, the coach and the PT all call it — which of them someone reaches at 2am is not ' +
-    'something this code gets to choose');
-  H.ok(/_needsHumanNet\(userText, reply\)/.test(code), 'the companion passes what the person typed and what came back');
-  H.ok(/_needsHumanNet\(t, _r\)/.test(code), 'the coach does too');
-  H.ok(/_needsHumanNet\(t, r\)/.test(code), 'and the PT');
+  {
+    const { _netted } = H.load(['_netted','_needsHumanNet','_replyNamesAHuman','_humanNetLine','_escFew'],
+      { _RISK_REASON: _RISK_REASON, _RISK_PLAN: _RISK_PLAN, CRISIS_LINES: CRISIS_LINES });
+    const STACKED = "they'd all be relieved if i was gone. i've picked the day and written the letters.";
+    const BARE = 'that sounds heavy. one small thing today: go for a walk.';
+    const HUMAN = 'please ring Lifeline 13 11 14 tonight.';
+    H.ok(_netted(STACKED, BARE).length > BARE.length, 'the net appends a human to a reply that had none');
+    H.ok(/13 ?11 ?14/.test(_netted(STACKED, BARE)), '...and the number is the app’s own verified one');
+    H.eq(_netted(STACKED, HUMAN), HUMAN, 'and does not pile on when the model already named one');
+    H.eq(_netted('i had eggs for breakfast', BARE), BARE, 'and leaves an ordinary message alone');
+    // the html variant, for the one surface that writes into innerHTML
+    const asHtml = _netted(STACKED, 'ok', true);
+    H.ok(asHtml.indexOf('<br><br>') > 0, 'the html variant separates with a break, not a newline');
+    H.ok(asHtml.indexOf('\n\n') < 0, '...and not with a newline, which innerHTML would swallow');
+    // The escape is asserted at the SOURCE, not by probing the output: the line is generated from
+    // CRISIS_LINES and today contains no markup, so an output probe would pass whether _escFew is
+    // called or not. What matters is that a future helpline edit cannot inject.
+    H.ok(/_escFew\(line\)/.test(H.code(H.extractFn('_netted'))),
+      'and the line goes through _escFew, so a future CRISIS_LINES edit cannot inject markup');
+  }
+  // PER SURFACE, BY NAME. A new AI surface that forgets the net fails here rather than passing on a
+  // count somebody else's call site satisfied.
+  const SURFACES = ['_companionSay', 'sendCoach', 'sendPT', '_feelingNowGo'];
+  SURFACES.forEach(fn => {
+    const body = H.code(H.extractFn(fn));
+    H.ok(/_netted\(/.test(body), fn + ' routes its reply through the net');
+  });
+  // ONE MECHANISM: nothing calls the predicate directly any more, so a surface cannot half-wire it
+  // (append the line but skip the already-named-a-human check, or vice versa).
+  H.eq((code.match(/_needsHumanNet\(/g) || []).length, 2,
+    'only the helper and its own declaration name the predicate — every surface goes through _netted');
+  // and the coach's three non-api() paths are wired, which is where the gap was
+  {
+    const coach = H.code(H.extractFn('sendCoach'));
+    H.ok(/_netted\(t,\s*'You/.test(coach), 'the coach nets on the OFFLINE path, which never reaches the model');
+    H.ok(/_netted\(t,\s*'Setting up/.test(coach), 'and when Supabase is not ready yet');
+    H.ok(/_netted\(t, errMsg/.test(coach), 'and when the model itself failed');
+    H.eq((coach.match(/_netted\(/g) || []).length, 4, 'all four of the coach’s reply paths');
+  }
+  // FAULT INJECTION: the per-surface check must fail when ONE surface loses it, which is exactly
+  // what the global count could not see.
+  SURFACES.forEach(fn => {
+    const broken = H.code(H.extractFn(fn)).split('_netted(').join('_notNetted(');
+    H.ok(!/_netted\(/.test(broken),
+      'fault-injected ' + fn + ': rename its calls and the per-surface check goes red — which the ' +
+      'global count could not do, because another surface\u2019s call satisfied it');
+  });
+}
+
+// ══ MY OWN BOUND, FOUR LINES ABOVE MY OWN MEASUREMENT ═════════════════════════════════════════
+// Found 7 Oct 2026 by an adversarial review of this very thread — five lenses, every finding sent to
+// two refuters told to default to refuted. This was the one that survived both, and it is rule 4
+// failure mode 1 exactly: the fix covered only the completion shape I had tested.
+// Twelve patterns written on 1 Oct clause-bounded with `[.!?,\n\r]` — allowing a COMMA as a
+// terminator — while the hopelessness register's own comment, FOUR LINES BELOW them, records that
+// same bound measuring 42 false positives over a 146-sentence corpus and chooses a better one. The
+// register written after the measurement got the good bound; the twelve written before it did not,
+// and nobody went back.
+// Measured on the shipped function: 15 of 15 ordinary sentences from named fronts returned 'suicide'.
+// Replacing the bound at all twelve sites: 15 → 4, with 0 of 12 disclosures lost.
+// TWO REFUTER CORRECTIONS, both recorded because they change the write-up and not the fix:
+//  · THIS THREAD DID NOT INTRODUCE THESE. Against `git show b50882c:index.html` — before the whole
+//    series — 18 of 18 fired, versus 17 at HEAD. They were already firing as BARE substrings
+//    ('nothing left', 'make it stop', 'cant do this anymore'). A pre-existing defect left half
+//    closed, not a regression.
+//  · "the same author in the same commit" was wrong. 11 of the 12 bounds predate the measurement,
+//    which is ordinary sequencing; only the two in 3f89386 came after it.
+{
+  H.section('my own bound, four lines above my own measurement');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: the detector is live');
+
+  // ORDINARY SENTENCES, each from a named front. A comma is not a sentence end.
+  const ORDINARY = [
+    ["i'm done, i can't do this anymore, the porn has to go"],        // the Fight's own words
+    ["i can't do this anymore, so today is day one"],
+    ['i gave it everything, nothing left, best session in weeks'],     // Train
+    ['set five and there was nothing left, legs gone'],
+    ['rent went out and there is nothing left, payday is friday'],     // Money
+
+    ["my quads are cramping, make it stop, i'll stretch after"],
+    ['the doms in my hamstrings, i want it to stop, so sore'],
+    ["i can't go on, my legs are jelly after those squats"],
+    ["i can't keep going, the tank is empty, calling it here"],
+    ["i can't keep going, the debt is crushing, need a plan"],
+    // THE ONE THAT MATTERS MOST: at the Can't-start door a non-null REPLACES the help-me-start flow
+    // with no route back, so this sentence used to answer "help me start" with a suicide card.
+    ["i can't do this anymore, just help me start something small"],
+  ];
+  // THE RESIDUAL, NAMED. Four of the fifteen still fire, and all four are the same shape: a new
+  // first-person clause after the comma, which the chosen bound treats as continued disclosure.
+  // No bound separates them — "i cant cope anymore, i dont know what to do" (a disclosure the
+  // bound exists to KEEP) and "there's nothing left, i don't know where to begin" (somebody
+  // asking for help starting) are one word apart. Asserted as firing rather than dropped from
+  // the corpus, so the cost is on the record; the TAKEOVER it used to cause is fixed instead, by
+  // giving the Can't-start door a route back from the card.
+  [["the kids were up at five, nothing left, i'm shattered"],
+   ["there's nothing left, i don't know where to begin"],
+   ['make it stop, i just need one small thing to do'],
+  ].forEach(([m]) => H.ok(!!detectCrisis(m),
+    'KNOWN COST of the comma bound — a first-person clause after the comma reads as continued ' +
+    'disclosure: ' + JSON.stringify(m)));
+
+  // A TRAILING COMMA WITH NOTHING AFTER IT IS STILL A CLAUSE END. Tightening the bound first
+  // broke this — "i've been hoarding the pills," went null, which the plan register's own panel
+  // caught in one run. The bound carries `,\\s*$` for exactly that.
+  [["i've been hoarding the pills,"], ['nothing left,'], ["i can't go on,"], ['make it stop,'],
+  ].forEach(([m]) => H.ok(!!detectCrisis(m), 'a trailing comma still terminates: ' + JSON.stringify(m)));
+
+  const fired = ORDINARY.filter(([m]) => detectCrisis(m));
+  H.eq(fired.length, 0, 'a comma is not a sentence end' +
+    (fired.length ? ' — still firing: ' + JSON.stringify(fired.map(f => f[0]).slice(0, 3)) : ''));
+
+  // AND NOT ONE DISCLOSURE WAS TRADED FOR IT — including the comma-continued ones the chosen bound
+  // exists to keep, which a plain sentence end would have lost.
+  [['i cant go on, i dont know what else to say'], ['nothing left, i dont want to be here'],
+   ['i cant cope anymore, i dont know what to do'], ["i can't go on"], ['nothing left to live for'],
+   ['make it stop'], ['i want it to stop'], ["i can't keep going"], ["i can't do this anymore"],
+   ['i just want to stop existing'], ['i want to die'], ["i don't want to be here"],
+  ].forEach(([m]) => H.ok(!!detectCrisis(m), 'and the disclosure still fires: ' + JSON.stringify(m)));
+
+  // ONE BOUND, EVERYWHERE. The whole defect was twelve patterns carrying a bound that a thirteenth
+  // group had already measured and rejected, so the assertion is that no pattern still carries it.
+  const code = H.code();
+  const bare = (code.match(/\\s\*\(\?:\[\.!\?,\\n\\r\]\|\$\)/g) || []).length;
+  H.eq(bare, 0,
+    'no pattern still carries the comma-terminated bound that measured 42 false positives — if this ' +
+    'fails, a new entry copied the old precedent instead of the measured one');
+  // AND THE SAME FOR THE NEWLINE, which is the other half of the same precedent. A bare suffix
+  // clause-end class carrying \n is what turned 118 of this gate's own benign sentences into crisis
+  // cards: the newline must reach a bound through the what-follows branch `[,\n\r]`, never as a
+  // plain alternative beside `.` `!` `?`. The three shapes that legitimately keep a newline are the
+  // NEGATED span limiter `[^.!?\n]`, the PREFIX anchor `[\n\r]\s*` on the "better off" entry, and
+  // the what-follows branch itself — so the check names the bare suffix shape only.
+  {
+    const fn = H.code(H.extractFn('detectCrisis'));
+    const bareNewline = (fn.match(/\[\.!\?[,;]*\\n\\r\]/g) || []).length;
+    H.eq(bareNewline, 0,
+      'no clause-end class reads a newline as a plain sentence end (' + bareNewline + ' found) — if ' +
+      'this fails, a new entry put \\n back beside the full stop and one Enter is a crisis card again');
+    // CALIBRATION: the shape it looks for must actually be findable, or a zero means nothing.
+    H.eq((('x [.!?,\\n\\r] y').match(/\[\.!\?[,;]*\\n\\r\]/g) || []).length, 1,
+      'calibration: the check can find the shape it forbids');
+  }
+  // Anchored on `nobody)` — the last alternative of the bound — rather than its opening, which I
+  // had pinned to the pre-trailing-comma spelling and which therefore counted 0 on correct code.
+  const hybrid = (code.match(/no \?one\|nobody\)/g) || []).length;
+  H.ok(hybrid >= 30, 'and the measured bound is on every clause-bounded pattern (' + hybrid + ')');
+
+  // ── AND THE DOOR IS NO LONGER ALL-OR-NOTHING ──
+  // journalMeetCrisis took only a kind, so a non-null at the Can't-start door replaced the
+  // two-minute flow with the card and nothing to tap. It takes an optional route back now.
+  H.ok(/function journalMeetCrisis\(kind, back\)/.test(code), 'the crisis card can carry a route back');
+  H.ok(/Still help me start this/.test(code), "and the Can't-start door passes one");
+  // _jsAttr, NOT _escFew: the thing they typed goes into a JS string inside an attribute, and an
+  // HTML escape does not close that — the parser decodes it before the JS compiles. Driven: with
+  // the raw value two of three payloads FIRED, with _jsAttr all three are inert.
+  H.ok(/_jsAttr\(t\)[\s\S]{0,80}_shrinkIt|_shrinkIt[\s\S]{0,120}_jsAttr\(t\)/.test(code),
+    'and escapes it for a JS-string-in-attribute position, not a text one');
+  // The card must keep the screen — the route back is a QUIET secondary, below Close.
+  H.ok(/btn quiet"? onclick="closeModal\(this\);/.test(code) || /class="btn quiet"/.test(code),
+    'as a quiet secondary, so the helpline keeps the primary position');
+
+  // ── THE ONE PLACE THIS THREAD WIDENED A DEFECT ─────────────────────────────────────
+  // `/(i'?m|i am|im) (going to|gonna) end (it|this|things)/` was added to close a real gap — "i am
+  // going to end it tonight" returned null, because the apostrophe-strip pass turns "i'm" into
+  // "im", never into "i am". It does close it. But it matched the bare verb with no object bound,
+  // so it walked straight past both `_suppress` spans written for exactly these sentences: they
+  // only ever said `to end it`, and only ever said `going`.
+  // MEASURED: 7 of 7 of the app's own sentences fired, and the `i am` spelling was NEW — the
+  // pre-series bundle returns null for all three of "i am going to end things with my ex",
+  // "…end this fast at sunset", "…end this subscription". Rule 4 failure mode 2: the fix moved
+  // the bug to a spelling that had been safe. 0 of 7 now, 0 of 5 disclosures lost.
+  [['i am going to end things with my ex'], ['i am going to end this fast at sunset'],
+   ['i am going to end this subscription'], ["i'm going to end this cut tonight"],
+   ['im going to end things with that client'],
+   // `gonna end` carries no "to", so a span requiring `to end` missed it — this was the one
+   // survivor of the first cut of the fix.
+   ['i am gonna end this deficit on friday'], ["i'm going to end this streak of giving in"],
+  ].forEach(([m]) => H.eq(detectCrisis(m), null, 'ending a thing this app asks you to end: ' + JSON.stringify(m)));
+  [['i am going to end it tonight'], ["i'm going to end it"], ['im gonna end it all'],
+   ['i am going to end it'], ['i am going to end my life'],
+  ].forEach(([m]) => H.ok(!!detectCrisis(m), 'while the disclosure still fires: ' + JSON.stringify(m)));
+}
+
+// ── THE COMMA BOUND, FAULT-INJECTED AT EVERY SITE IT IS WRITTEN AT ─────────────────────────────
+// The bound the owner chose asks what FOLLOWS the comma, and it is carried at 33 regex sites. The
+// panel above asserts the seven comma-continued sentences come back null — but an assertion that a
+// sentence is SILENT passes just as well on a detector that has been deleted, which is the whole
+// reason this file keeps repeating that an assertion you have never seen fail is not yet a test.
+// Worse, the previous negative panel was built from the completions the bound was written against
+// ("nothing left in the tank", "i want it to stop raining") — PREPOSITIONAL completions the clause
+// end already cleared — so 35 green doors in the negative direction said nothing at all about a
+// comma, and twelve patterns read one as a sentence end for six days behind it.
+// So this restores the OLD clause end at ONE site at a time, in memory, and requires each panel
+// sentence to come back as a crisis card under the corruption aimed at it. It also requires the
+// corruption to leave every disclosure firing: if a mutation silenced a disclosure instead, it
+// changed the ENTRY rather than the bound and proves nothing about the bound.
+// My first version wrote the site anchors by hand and reported ANCHOR NOT FOUND on correct code,
+// because `can'?t keep going` carries an optional `any ?more` group between the phrase and its
+// bound. Corrupt by INDEX, never by a hand-written anchor.
+H.section('the comma bound — fault-injected at every site that carries it');
+{
+  const SRC = H.extractFn('detectCrisis');
+  // The bound as it now ships: the newline no longer sits in the bare clause class — it carries the
+  // comma's own what-follows test, PLUS its own `and i`/`really` branch, because an Enter is stronger
+  // evidence of a finished thought than a comma and the suite's own newline-terminated disclosures
+  // ("nothing left\nand i mean it", "i am tired of living\nreally") need it. Both additions are
+  // measured: `i` after a newline has ZERO false positives over the 357 benign sentences, `really`
+  // none, and the single benign `and` is the idiom "alive\nand well", which `and i` cannot reach.
+  const CHOSEN = String.raw`\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)`;
+  const OLD    = String.raw`\s*(?:[.!?,\n\r]|$)`;
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  const corruptNth = (src, n) => {
+    let i = -1, from = 0;
+    for(let k = 0; k <= n; k++){ i = src.indexOf(CHOSEN, from); if(i < 0) return null; from = i + 1; }
+    return src.slice(0, i) + OLD + src.slice(i + CHOSEN.length);
+  };
+  const SITES = SRC.split(CHOSEN).length - 1;
+  H.ok(SITES >= 30, 'the chosen bound is carried at ' + SITES + ' sites (>= 30)');
+
+  // Comma-continued, one per named front — the shape that shipped.
+  const ORDINARY = [
+    'i gave it everything, nothing left, best session in weeks',
+    'rent went out and there is nothing left, payday is friday',
+    "i'm done, i can't do this anymore, the porn has to go",
+    'the doms in my hamstrings, i want it to stop, so sore',
+    "i can't keep going, the debt is crushing, need a plan",
+    "my quads are cramping, make it stop, i'll stretch after",
+    "i can't do this anymore, just help me start something small",
+  ];
+  // These must fire under EVERY corruption, or the mutation moved the entry and not the bound.
+  const MUST_FIRE = [
+    "i can't go on", "i can't go on, i don't know what to do",
+    'nothing left, nothing matters', "i can't cope anymore, i don't know what to do",
+    "i've been hoarding the pills,", 'i want to kill myself',
+  ];
+
+  const pristine = build(SRC);
+  ORDINARY.forEach(m => H.eq(pristine(m), null, 'comma-continued, left alone: ' + JSON.stringify(m)));
+  MUST_FIRE.forEach(m => H.ok(!!pristine(m), 'and the disclosure still fires: ' + JSON.stringify(m)));
+
+  const caughtBy = ORDINARY.map(() => []);
+  let lostSomewhere = 0;
+  for(let n = 0; n < SITES; n++){
+    const fn = build(corruptNth(SRC, n));
+    ORDINARY.forEach((m, j) => { if(fn(m)) caughtBy[j].push(n); });
+    if(MUST_FIRE.some(m => !fn(m))) lostSomewhere++;
+  }
+  H.eq(lostSomewhere, 0, 'no single-site corruption silences a disclosure (it would be testing the entry, not the bound)');
+  ORDINARY.forEach((m, j) => H.ok(caughtBy[j].length > 0,
+    'fault-injected: restoring the old clause end makes it fire again — ' + JSON.stringify(m)));
+
+  // THE HONEST HALF, ON THE RECORD. Seven sentences reach five of the 33 sites. The other 28 carry
+  // the same bound and are asserted only by construction — a per-site ordinary sentence for each is
+  // a real job and is deliberately not claimed here. A named gap beats a panel that looks complete.
+  const exercised = new Set(); caughtBy.forEach(a => a.forEach(n => exercised.add(n)));
+  H.ok(exercised.size >= 5, 'the panel exercises ' + exercised.size + ' of ' + SITES +
+    ' sites (' + (SITES - exercised.size) + ' carry the bound untested by a sentence)');
+}
+
+// ── ONE ENTER, AND 118 OF THE GATE'S OWN BENIGN SENTENCES WERE A CRISIS CARD ───────────────────
+// The 30 Sep whitespace fix kept two matched forms on purpose: `t` preserves the newline so a
+// clause-end bound can read it, `tc` collapses it so a phrase list can. Both are still load-bearing.
+// What nobody asked is what `t` does to a SENTENCE THAT IS NOT A DISCLOSURE. The bounds read \n as an
+// unconditional sentence end, and every innocent completion in the detector — the _suppress spans and
+// the lookaheads inside the patterns — is written with literal spaces, which a line break breaks.
+// MEASURED, one newline at each word boundary over the 357 benign sentences the gate already owns:
+// 118 of 357 returned a crisis card. "i've been hoarding the pills\nfor my mum" and "i'm a waste of
+// space\non the leaderboard" raised six helplines. "i took all my pills\nthis morning" called an
+// ambulance. "i want to die\nto my old self" and "take my life and\nlet it be" are the third and
+// fourth time this app's own devotional vocabulary has tripped its own suicide detector, and both had
+// already been fixed once — for a single line of text. The doors that invite Enter are real
+// textareas: openCBA and openWalkBack both `return true` out of the save callback on a crisis hit,
+// so the ledger or the chain the person just typed is DISCARDED, not merely accompanied by a card.
+// `tc` already computed the right answer for all 118 and the `||` in _hit/_hitRe discarded it.
+//
+// THE PANEL IS READ OUT OF THIS FILE'S OWN ARRAYS, not copied. Every benign sentence anyone adds to
+// any ORDINARY array is swept for this shape from then on — the coverage grows with the panels
+// instead of going stale beside them. The review that found this named the cause exactly: nine
+// spacing mutations had been applied to five disclosures and to ZERO benign sentences.
+H.section('one Enter — every benign sentence the gate owns, with a newline at each word boundary');
+{
+  const fs = require('fs');
+  const own = fs.readFileSync(__filename, 'utf8');
+  const rows = [];
+  let at = 0;
+  while((at = own.indexOf('const ORDINARY = [', at)) >= 0){
+    let open = own.indexOf('[', at), depth = 0, end = open;
+    for(; end < own.length; end++){ const c = own[end]; if(c === '[') depth++; else if(c === ']'){ depth--; if(!depth) break; } }
+    try {
+      // eslint-disable-next-line no-new-func
+      const v = new Function('return ' + H.code(own.slice(open, end + 1)))();
+      for(const x of v){ if(typeof x === 'string') rows.push(x); else if(Array.isArray(x) && typeof x[0] === 'string') rows.push(x[0]); }
+    } catch(e){ /* an array this cannot evaluate is reported by the size assertion below */ }
+    at = end;
+  }
+  const BENIGN = [...new Set(rows)];
+  H.ok(BENIGN.length >= 300, 'the benign corpus read out of this file is ' + BENIGN.length + ' sentences (>= 300)');
+
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const SRC = H.extractFn('detectCrisis');
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  const variants = x => { const o = []; for(let i = 0; i < x.length; i++) if(x[i] === ' ') o.push(x.slice(0, i) + '\n' + x.slice(i + 1)); return o; };
+  const sweep = fn => BENIGN.filter(x => !fn(x) && variants(x).some(v => fn(v)));
+
+  // A newline-terminated disclosure is the ONLY reason `t` preserves newlines, so it is the first
+  // thing a fix to this could have broken — and the first draft of the fix did break it, which is
+  // what put `and i` and `really` in the bound.
+  const MUST = [
+    'i want to kill myself', "i can't go on", "i can't go on, i don't know what to do",
+    "i can't go on\ni don't know what else to say", 'nothing left\nand i mean it',
+    'i am tired of living\nreally', "i can't\ngo on", 'i want to kill  myself',
+    "i can't cope anymore, i don't know what to do", "i'm going to end it tonight",
+    "i've had enough\neveryone would be better off without me",
+    "if i stop gambling\nmy family would be better off without me",
+    'i took all my pills to die', "i'd rather not wake up",
+  ];
+
+  const now = build(SRC);
+  // CALIBRATION, three ways. Without all three a zero here means nothing: a detector that returned
+  // null for everything would sail through the sweep, and a corpus row that fires AS WRITTEN is not
+  // a benign sentence and would be counted as a newline defect it is not.
+  H.eq(now('i want to kill myself'), 'suicide', 'calibration: the detector is hot');
+  H.eq(now('i had eggs for breakfast'), null, 'calibration: the detector is cold on an ordinary sentence');
+  const asWritten = BENIGN.filter(x => now(x));
+  H.eq(asWritten, [], 'calibration: every row of the corpus is benign as written');
+
+  H.eq(sweep(now), [], 'no benign sentence becomes a crisis card when a newline lands at a word boundary');
+  MUST.forEach(m => H.ok(!!now(m), 'and the disclosure still fires: ' + JSON.stringify(m)));
+
+  // ── FAULT INJECTION, one per mechanism. Both reproduce on demand. ────────────────────────────
+  // (1) the bound: make the newline an unconditional sentence end again, as it shipped.
+  const BOUND_OK = String.raw`[.!?]|[,\n\r]\s*`;
+  H.ok(SRC.indexOf(BOUND_OK) > 0, 'the bound anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const broke1 = sweep(build(SRC.split(BOUND_OK).join(String.raw`[.!?\n\r]|[,\n\r]\s*`)));
+  H.ok(broke1.length >= 50, 'fault-injected: a newline back in the clause class returns ' + broke1.length + ' false positives (>= 50)');
+
+  // (2) the completions: take the whitespace tolerance off _suppress and _hitRe. This is the half
+  // that owns the devotional collisions, so the injection is asserted on THOSE sentences by name
+  // rather than on a count — a count would pass on the bound's half of the defect.
+  let two = SRC.split('_wsTol(re)').join('(re)');
+  two = two.split('_wsTol(re0)').join('(re0)');
+  H.ok(two !== SRC, 'the tolerance anchors are present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const noTol = build(two);
+  H.ok(!!noTol('i want to die\nto my old self'),
+    'fault-injected: without the tolerance the devotional idiom fires again');
+  H.ok(!!noTol('take my life and\nlet it be'),
+    'fault-injected: without the tolerance the hymn fires again');
+  // and it must be the TOLERANCE doing that work, not the bound — both still null as shipped.
+  H.eq(now('i want to die\nto my old self'), null, 'as shipped: the devotional idiom is left alone');
+  H.eq(now('take my life and\nlet it be'), null, 'as shipped: the hymn is left alone');
+}
+
+// ── THE CARD COULD ONLY EVER NAME ONE NEED, AND THE ONE IT DROPPED WAS THE AMBULANCE ──────────
+// detectCrisis was a precedence chain returning the FIRST of four kinds, so a second need was
+// invisible. Measured over 3317 sentences from this gate's own panels, only EIGHT co-occur — and
+// they are the eight that matter most. "i took all my pills. nothing matters anymore." returned
+// 'suicide', whose card is seven helplines with no 000, no 911, no 999 and no "get to a hospital"
+// anywhere on it. That is what somebody types in the minutes after an overdose, and "nothing matters
+// anymore" is what they type beside it. "i overdosed and i want to kill myself" did the same and had
+// since v479, so the hopelessness register did not open this hole — it widened it from "needs an
+// explicit suicide statement" to "needs any of 22 ordinary hopelessness clauses".
+// The return is a '+'-joined set in acuity order now, and showCrisisResponse renders every route in
+// it. Driven in a real browser (6 kinds, one fresh page each): medical+suicide renders 12 rows
+// carrying 000 · healthdirect · 911 · 999 · 111 · Lifeline · Beyond Blue · Suicide Call Back ·
+// 13YARN · 988 · Samaritans, and plain 'suicide' still carries NO emergency number, because 000 for
+// somebody who typed "i can't cope anymore" is the takeover this file keeps having to undo.
+H.section('every need on the card — the kind set, not the first of four');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  // the eight that co-occur
+  [["i took all my pills. nothing matters anymore.", 'medical+suicide'],
+   ['i overdosed and nothing matters anymore.',      'medical+suicide'],
+   ['i took a bottle of pills and nothing matters anymore.', 'medical+suicide'],
+   ['i overdosed and i want to kill myself',         'medical+suicide'],
+   ["i can't breathe and i want to kill myself",     'medical+suicide'],
+   ["i'm going to hurt her, nothing matters anymore.",      'suicide+harmothers'],
+   ["i'm scared i'll hurt someone, i can't cope anymore.",  'suicide+harmothers'],
+   // selfharm and suicide render the SAME card, so the set collapses rather than naming both
+   ['i cut myself and i want to die.',               'suicide'],
+  ].forEach(([m, want]) => H.eq(detectCrisis(m), want, 'co-occurring: ' + JSON.stringify(m)));
+
+  // AND EVERY SINGLE KIND IS BYTE-FOR-BYTE WHAT IT WAS. This is the half that matters: 3282
+  // assertions ride on these strings, and the documented "an acute overdose needs the ambulance the
+  // MEDICAL card carries" decision is one of them.
+  [['i want to kill myself', 'suicide'], ['i took all my pills to end it', 'medical'],
+   ['i overdosed', 'medical'], ["i can't breathe", 'medical'], ['i cut myself', 'selfharm'],
+   ["i'm going to hurt her", 'harmothers'], ["i'm scared i'll hurt someone", 'harmothers'],
+   ['nothing matters anymore.', 'suicide'], ["i can't cope anymore.", 'suicide'],
+   ['i took all my pills this morning', null], ['my quads are going to hurt', null],
+   ['i had eggs for breakfast', null],
+  ].forEach(([m, want]) => H.eq(detectCrisis(m) || null, want, 'unchanged: ' + JSON.stringify(m)));
+
+  // ── FAULT INJECTION: put the precedence chain back. ─────────────────────────────────────────
+  // Corrupted, not deleted — removing the lines breaks the syntax, and a crash is not a failure.
+  const SRC = H.extractFn('detectCrisis');
+  const ANCHOR = "if(_hit(MEDICAL_PHRASES) || _hitRe(MEDICAL_RE)) _kinds.push('medical');";
+  H.ok(SRC.indexOf(ANCHOR) > 0, 'the kind-set anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const chained = new Function(...KEYS,
+    SRC.split(ANCHOR).join("if(false) _kinds.push('medical');") + '\nreturn detectCrisis;')(...VALS);
+  H.eq(chained('i took all my pills. nothing matters anymore.'), 'suicide',
+    'fault-injected: with medical off the chain the overdose returns the helpline-only kind again');
+  H.eq(chained('i overdosed and i want to kill myself'), 'suicide',
+    'fault-injected: and so does the explicit one');
+  // ...and the live one does NOT, which is what makes the injection a differential and not a claim.
+  H.ok(detectCrisis('i took all my pills. nothing matters anymore.').indexOf('medical') === 0,
+    'as shipped: the overdose leads the card with the ambulance');
+}
+
+// ── FOUR REGISTER ENTRIES THAT WERE BARE IN ALL BUT NAME ───────────────────────────────────────
+// From an adversarial review of the 1 Oct register work. Each is the same shape the registers
+// themselves were built to avoid, and each was measured on the shipped detectCrisis: 15 ordinary
+// sentences from the app's own fronts, all returning a crisis card.
+//   · CARBON MONOXIDE excluded six equipment nouns and fired on every other mention, so
+//     detectCrisis("carbon monoxide") alone returned 'suicide'. A tenant, a parent, a tradesperson
+//     and a school newsletter all type one of these. It needs a DEFINITE enclosure now — "in the
+//     car", "in my garage" — or a stated intent. The article is the signal: the enclosure somebody
+//     HAS is "the car"; a generic one is "a closed garage", which is how a safety question
+//     separates from a disclosure. The intent branch exists because the recorded case "carbon
+//     monoxide poisoning is how i would do it" has no enclosure at all, and the first cut of this
+//     bound lost it.
+//   · `a burden` took ANY object while both of its siblings in the same register are
+//     object-bounded, so the app's own benign panel and this entry disagreed.
+//   · the POSSESSIVE suppression was written with a literal apostrophe, and _hitRe tests an
+//     apostrophe-STRIPPED pass — so "it could hurt somebody's chances" was suppressed and
+//     "it could hurt somebodys chances" was 'harmothers'. Same sentence; the difference is whether
+//     the person bothered with the key.
+//   · the hopelessness register bounded THREE wake-up phrasings on 1 Oct and left the fourth and
+//     commonest one bare, so one semantic family was gated two ways and the loose member decided
+//     every sentence. A superseded pattern does not stop mattering: the looser one wins.
+H.section('four entries that were bare in all but name');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const ORDINARY = [
+    // carbon monoxide, from four different people who are not in crisis
+    'carbon monoxide', 'is carbon monoxide dangerous in a closed garage',
+    'we had a carbon monoxide scare at work today', 'carbon monoxide safety week at the school',
+    'the heater is old, worried about carbon monoxide', 'the landlord never checked for carbon monoxide',
+    // a burden with a non-person object — each has a parallel asserted ORDINARY for a sibling entry
+    "i'm just a burden on the roster at church", "i'm a burden on the team's schedule",
+    'i feel like a burden on the group chat',
+    'i feel like such a burden asking the family to cook different',
+    // the apostrophe nobody typed
+    'it could hurt somebodys chances', 'it might hurt someones feelings',
+    // the alarm, the soreness and the rest day this app exists to talk about
+    "i don't want to wake up at 5am for this session", 'i dont want to wake up sore tomorrow',
+    "i don't want to wake up early on a rest day",
+  ];
+  const DISCLOSURES = [
+    // both recorded carbon-monoxide cases
+    "i've been reading about carbon monoxide in the car",
+    'carbon monoxide poisoning is how i would do it',
+    // all nine self-ascriptions the burdensomeness register documents as must-fire
+    "i'm a burden to everyone", 'i am a burden', 'im just a burden', 'i feel like a burden',
+    "i feel like i'm a burden to my wife", "i'm such a burden on my family",
+    "i've become a burden", "i'm nothing but a burden", 'i felt like a burden all day',
+    // the wake-up family, bare and with its own completions
+    "i don't want to wake up", 'i dont want to wake up', "i don't want to wake up tomorrow",
+    // and the sibling the possessive suppression must never swallow
+    'it could hurt somebody', "i'm scared i'll hurt someone",
+  ];
+  ORDINARY.forEach(m => H.eq(detectCrisis(m), null, 'left alone: ' + JSON.stringify(m)));
+  DISCLOSURES.forEach(m => H.ok(!!detectCrisis(m), 'still fires: ' + JSON.stringify(m)));
+
+  // ── FAULT INJECTION, one per entry: restore the bare form and require the panel to catch it. ──
+  // BY REPLACING THE WHOLE LINE, not by poking at the bound. The first version of this block tried
+  // to neuter each bound in place with `(?!)` and `(?:)` and made three of the four patterns MORE
+  // restrictive instead of bare — so they stopped firing on everything, the injections reported
+  // "0 of 2 fire again", and the honest reading is that the corruption pointed the wrong way.
+  // A fault injection has to reproduce the DEFECT, and here the defect is the bare entry.
+  const SRC = H.extractFn('detectCrisis');
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  const swapLine = (src, marker, line) => {
+    const rows = src.split('\n');
+    const hits = rows.map((r, i) => r.indexOf(marker) >= 0 ? i : -1).filter(i => i >= 0);
+    if(hits.length !== 1) return null;                 // not unique: refuse rather than guess
+    rows[hits[0]] = line;
+    return rows.join('\n');
+  };
+  [['carbon monoxide', String.raw`carbon monoxide\b(?!`,
+    String.raw`    /\bcarbon monoxide\b(?!\s*(?:alarm|detector|monitor|reading|readings|test|level|levels))/,`,
+    ['carbon monoxide', 'carbon monoxide safety week at the school', 'we had a carbon monoxide scare at work today']],
+   ['a burden', String.raw`a burden\b(?!`,
+    String.raw`    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b/,`,
+    ["i'm just a burden on the roster at church", 'i feel like a burden on the group chat']],
+   ['the bare wake-up', String.raw`want to wake up\s*(?:again|at all|ever`,
+    String.raw`    /\bdo(?:n'?t| not) want to wake up/,`,
+    ["i don't want to wake up at 5am for this session", "i don't want to wake up early on a rest day"]],
+  ].forEach(([name, marker, line, cases]) => {
+    const src = swapLine(SRC, marker, line);
+    if(!src){ H.ok(false, name + ': the marker is not on exactly one line — THE MEASUREMENT IS WRONG, NOT THE APP'); return; }
+    const broken = build(src);
+    H.eq(broken('i want to kill myself'), 'suicide', name + ': the corrupted build still detects');
+    const caught = cases.filter(c => broken(c));
+    H.eq(caught.length, cases.length,
+      'fault-injected ' + name + ': bare again, ' + caught.length + ' of ' + cases.length + ' ordinary sentences fire');
+  });
+  // the possessive one is a character, not a line
+  {
+    const src = SRC.split(String.raw`hurt (?:someone|somebody|anyone|anybody)'?s`)
+                   .join(String.raw`hurt (?:someone|somebody|anyone|anybody)'s`);
+    H.ok(src !== SRC, "the possessive anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)");
+    const broken = build(src);
+    H.eq(broken('it could hurt somebodys chances'), 'harmothers',
+      'fault-injected the possessive: with a literal apostrophe the stripped pass fires again');
+    H.eq(broken("it could hurt somebody's chances"), null,
+      '...and the apostrophe form was never the broken one, which is what made it hide');
+  }
+}
+
+// ── THE NET RE-IMPLEMENTED THE REGISTERS AND LEFT EVERY BOUND BEHIND ──────────────────────────
+// _RISK_REASON and _RISK_PLAN were written as bare phrases — the exact shape docs/CRISIS-REGISTERS.md
+// exists to refuse — and nothing had ever run the gate's own benign corpus through them, because the
+// net's panel is seven hand-written rows. The net also reads a whole MESSAGE, not a sentence, so a
+// journal entry or a coach message supplies several clauses.
+// MEASURED over the 357 ORDINARY sentences this gate already owns: 24 matched a REASON pattern, 6
+// matched a PLAN pattern, and ALL 144 pairings of them appended a crisis line to an ordinary reply.
+// "nobody would miss me if i skipped tonight's session. i've picked the day, monday is day one." is
+// two Train sentences. Bounded, that is 0.
+// Two of the guards the registers already HAD were missing from this copy of them: `a burden` needs
+// the `bearer` lookahead ("i'm a burden bearer for my family") and `worth more dead` needs a
+// first-person subject ("the old bike is worth more dead than alive as scrap").
+// THE CORPUS IS READ OUT OF THIS FILE, so every benign sentence anyone adds is swept from then on.
+H.section('the net, against the gate’s own benign corpus');
+{
+  const fs = require('fs');
+  const own = fs.readFileSync(__filename, 'utf8');
+  const rows = [];
+  let at = 0;
+  while((at = own.indexOf('const ORDINARY = [', at)) >= 0){
+    let open = own.indexOf('[', at), depth = 0, end = open;
+    for(; end < own.length; end++){ const c = own[end]; if(c === '[') depth++; else if(c === ']'){ depth--; if(!depth) break; } }
+    try {
+      const v = new Function('return ' + H.code(own.slice(open, end + 1)))();
+      for(const x of v){ if(typeof x === 'string') rows.push(x); else if(Array.isArray(x) && typeof x[0] === 'string') rows.push(x[0]); }
+    } catch(e){ /* reported by the size assertion */ }
+    at = end;
+  }
+  const BENIGN = [...new Set(rows)];
+  H.ok(BENIGN.length >= 300, 'the benign corpus is ' + BENIGN.length + ' sentences (>= 300)');
+
+  // the two lists are consts, so they are read out of the bundle rather than extracted as functions
+  const grab = name => {
+    const src = H.code(H.html); const i = src.indexOf('const ' + name + ' = [');
+    if(i < 0) return null;
+    let j = src.indexOf('[', i), d = 0, k = j;
+    for(; k < src.length; k++){ const c = src[k]; if(c === '[') d++; else if(c === ']'){ d--; if(!d) break; } }
+    return new Function('return ' + src.slice(j, k + 1))();
+  };
+  const REASON = grab('_RISK_REASON'), PLAN = grab('_RISK_PLAN');
+  H.ok(!!REASON && !!PLAN, 'both risk lists were found (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const { _needsHumanNet, detectCrisis } = H.load(
+    ['_needsHumanNet','_replyNamesAHuman','detectCrisis'], { _RISK_REASON: REASON, _RISK_PLAN: PLAN });
+  const BARE = 'that sounds heavy. one small thing today: go for a walk.';
+  // CALIBRATION both ways, or a zero below means nothing.
+  H.eq(_needsHumanNet("they'd all be relieved if i was gone. i've picked the day and written the letters.", BARE),
+    true, 'calibration: a stacked disclosure nets');
+  H.eq(_needsHumanNet('i had eggs for breakfast', BARE), false, 'calibration: an ordinary sentence does not');
+
+  const R = BENIGN.filter(x => REASON.some(re => re.test(x.toLowerCase())));
+  const P = BENIGN.filter(x => PLAN.some(re => re.test(x.toLowerCase())));
+  const netted = [];
+  R.forEach(r => P.forEach(pl => {
+    const msg = r + '. ' + pl + '.';
+    if(detectCrisis(msg)) return;             // the keyword floor owns this one, not the net
+    if(_needsHumanNet(msg, BARE)) netted.push(msg);
+  }));
+  H.eq(netted.length, 0, 'no pairing of two benign sentences appends a crisis line (' + R.length +
+    ' reason × ' + P.length + ' plan matches in the corpus)' + (netted.length ? ' — e.g. ' + JSON.stringify(netted[0]) : ''));
+
+  // BOUNDING A RE-IMPLEMENTATION MEANS COPYING EVERY BRANCH. The first cut gave the net's
+  // `a burden` entry the clause bound and NOT the person-object branch the detector's version has,
+  // so "i am a burden to my kids. i saved up the pills." — the commonest phrasing in the register —
+  // stopped netting. Caught by driving realistic stacked disclosures rather than by the panel, which
+  // is the argument for driving them.
+  [ 'i am a burden to my kids. i saved up the pills.',
+    'i am a burden to my wife. tonight is the night.',
+    "i'm a burden on my family. i've written the letters.",
+    "they'd all be relieved if i was gone. i've picked the day and written the letters.",
+    "nobody needs me here and i've got it all worked out for saturday.",
+    'everyone would be better off without me. tonight is the night.',
+  ].forEach(m => H.eq(_needsHumanNet(m, BARE), true, 'a stacked disclosure nets: ' + JSON.stringify(m).slice(0, 62)));
+  [ "i'm just a burden on the roster at church. i've picked the day, monday is day one.",
+    "nobody would miss me if i skipped tonight's session. i've picked the day to start the fast.",
+    "i'm a burden bearer for my family. i've got the pills ready for the morning, creatine and vitamin d.",
+  ].forEach(m => H.eq(_needsHumanNet(m, BARE), false, 'two ordinary clauses do not: ' + JSON.stringify(m).slice(0, 62)));
+
+  // ── FAULT INJECTION: unbound two entries and require the corpus to catch it. ─────────────────
+  // These are the two the review named, and they are restored to the bare form they shipped as.
+  const bare = (list, i, re) => { const c = list.slice(); c[i] = re; return c; };
+  const iReason = REASON.findIndex(re => /miss\|need\|want/.test(re.source));
+  const iPlan   = PLAN.findIndex(re => /all worked out/.test(re.source));
+  H.ok(iReason >= 0 && iPlan >= 0, 'both injection targets were located (else THE MEASUREMENT IS WRONG)');
+  const loose = H.load(['_needsHumanNet','_replyNamesAHuman'], {
+    _RISK_REASON: bare(REASON, iReason, /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\b/),
+    _RISK_PLAN:   bare(PLAN,   iPlan,   /\ball worked out\b/) })._needsHumanNet;
+  H.eq(loose("nobody would miss me if i skipped tonight's session. i've got it all worked out for the week.", BARE),
+    true, 'fault-injected: unbounded, two Train sentences net a crisis line');
+  H.eq(_needsHumanNet("nobody would miss me if i skipped tonight's session. i've got it all worked out for the week.", BARE),
+    false, '...and bounded, the same message does not');
+}
+
+// ── CONTAINING THE WORD IS NOT OFFERING THE PERSON ────────────────────────────────────────────
+// _replyNamesAHuman decides whether the net STAYS SILENT, so a false positive here is a false
+// NEGATIVE on the safety path — the app adds nothing because the model's reply happened to contain
+// a word. It was one unanchored substring test. Measured 9 Oct 2026 over 18 replies: 8 wrong, and
+// every single one of them in the direction of staying quiet.
+//   "i'm not your doctor, so i can't tell you what dose to take."  → named a human
+//   "there's no emergency here, just a hard week."                  → named a human
+//   "this isn't a crisis line and i'm not a therapist"              → named a human
+//   "the gym is my lifeline right now."                             → named a human
+// A human is OFFERED when a verified NUMBER is present, or when a named kind of person sits beside
+// an offer or a recommendation and NOT inside a negation. The negation window is the 40 characters
+// in front, because that is where English puts it. 0 wrong after.
+H.section('a reply that names a human — the polarity, not the substring');
+{
+  const grab = name => {
+    const src = H.code(H.html); const i = src.indexOf('const ' + name + ' = [');
+    if(i < 0) return null;
+    let j = src.indexOf('[', i), d = 0, k = j;
+    for(; k < src.length; k++){ const c = src[k]; if(c === '[') d++; else if(c === ']'){ d--; if(!d) break; } }
+    return new Function('return ' + src.slice(j, k + 1))();
+  };
+  const CRISIS_LINES = grab('CRISIS_LINES');
+  H.ok(!!CRISIS_LINES, 'CRISIS_LINES was found (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const { _replyNamesAHuman } = H.load(['_replyNamesAHuman'], { CRISIS_LINES: CRISIS_LINES });
+  // THE FIRST VERSION OF THIS PROBE PASSED `undefined` FOR CRISIS_LINES and duly reported "please
+  // ring Lifeline 13 11 14 tonight" as naming nobody. That was the probe.
+  [ 'please ring Lifeline 13 11 14 tonight.', 'talk to your doctor this week.',
+    'a counsellor would help with this.', 'call a crisis line — they have helped people through this.',
+    'see your GP and tell them what you told me.', 'speak to your priest about it.',
+    'phone 13 11 14 now.', 'reach out to a therapist.',
+  ].forEach(r => H.eq(_replyNamesAHuman(r), true, 'offers a human: ' + JSON.stringify(r)));
+  [ "i'm not your doctor, so i can't tell you what dose to take.",
+    "there's no emergency here, just a hard week.",
+    "this isn't a crisis line and i'm not a therapist — but let's get you moving.",
+    'you are my lifeline on the team, mate.', 'the gym is my lifeline right now.',
+    'no need for a doctor, just ice it and rest.',
+    "i'm not a counsellor but here's what i'd do.",
+    'that was an emergency stop on the bike, nothing more.',
+    'your mum is a legend for driving you.',
+    'that sounds heavy. one small thing today: go for a walk.',
+  ].forEach(r => H.eq(_replyNamesAHuman(r), false, 'names nobody: ' + JSON.stringify(r)));
+
+  // ── FAULT INJECTION: neuter each guard and require the measured partition ────────────────────
+  // The first version of this block neutered the negation window and expected all three negated
+  // replies to come back. Only one did — because the OFFER requirement, not the negation, is what
+  // stops "there's no emergency here" and "no need for a doctor". Two mechanisms, so the honest
+  // assertion is which one owns which reply, measured rather than assumed.
+  const SRC = H.extractFn('_replyNamesAHuman');
+  const rows = SRC.split('\n');
+  const iNeg = rows.findIndex(r => r.indexOf('const _HUMAN_NEG') >= 0);
+  const iOff = rows.findIndex(r => r.indexOf('const _HUMAN_OFFER') >= 0);
+  H.ok(iNeg > 0 && iOff > 0, 'both guard anchors are present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  // THERE ARE THREE GUARDS, NOT TWO. The kind list requires "emergency services" / "emergency
+  // room" and deliberately not bare `emergency`, which is what stops "there's no emergency here"
+  // and "that was an emergency stop on the bike" — the shipped version matched the bare word. The
+  // first draft of this partition had them under the conjunction and they did not come back.
+  const iKind = rows.findIndex(r => r.indexOf('const _HUMAN_KIND') >= 0);
+  const mk = (killNeg, killOff, loosenKind) => {
+    const r = rows.slice();
+    if(killNeg) r[iNeg] = '  const _HUMAN_NEG = /(?!)/;';     // can never match: no negation is ever seen
+    if(killOff) r[iOff] = '  const _HUMAN_OFFER = /(?:)/;';   // always matches: any mention counts
+    if(loosenKind) r[iKind] = '  const _HUMAN_KIND = /\\bemergency\\b/g;';   // the bare word, as it shipped
+    return new Function('CRISIS_LINES', r.join('\n') + '\nreturn _replyNamesAHuman;')(CRISIS_LINES);
+  };
+  H.ok(iKind > 0, 'the kind-list anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const noNeg = mk(true, false, false), noOff = mk(false, true, false), noneAtAll = mk(true, true, false);
+  H.eq(noNeg('a counsellor would help with this.'), true, 'calibration: the no-negation build still works');
+  H.eq(noOff('phone 13 11 14 now.'), true, 'calibration: the no-offer build still works');
+
+  // the two the NEGATION window owns
+  [ "i'm not your doctor, so i can't tell you what dose to take.",
+    "this isn't a crisis line and i'm not a therapist — but let's get you moving.",
+  ].forEach(r => H.eq(noNeg(r), true, 'fault-injected the negation window: ' + JSON.stringify(r).slice(0, 56)));
+  // the two the OFFER requirement owns
+  [ 'you are my lifeline on the team, mate.', 'the gym is my lifeline right now.',
+  ].forEach(r => H.eq(noOff(r), true, 'fault-injected the offer requirement: ' + JSON.stringify(r)));
+  // and the four that only the CONJUNCTION stops — neither guard alone reaches them, which is the
+  // argument for having both rather than picking one.
+  [ 'no need for a doctor, just ice it and rest.',
+    "i'm not a counsellor but here's what i'd do.",
+  ].forEach(r => {
+    H.eq(noNeg(r),  false, '...neither guard alone reaches it (negation off): ' + JSON.stringify(r).slice(0, 48));
+    H.eq(noneAtAll(r), true, 'fault-injected BOTH: ' + JSON.stringify(r).slice(0, 48));
+  });
+  // and the two the KIND LIST owns: bare `emergency` is not a person you can be handed to.
+  {
+    const bareWord = mk(true, true, true);
+    H.eq(bareWord('a counsellor would help with this.'), false,
+      'calibration: with the kind list narrowed to `emergency` the counsellor row stops matching, ' +
+      'which is how we know the injection replaced it rather than widened it');
+    [ "there's no emergency here, just a hard week.",
+      'that was an emergency stop on the bike, nothing more.',
+    ].forEach(r => H.eq(bareWord(r), true, 'fault-injected the kind list: ' + JSON.stringify(r).slice(0, 52)));
+  }
+}
+
+// ── THE CEILING CLAUDE.md SAID WAS HELD, AND WASN'T ───────────────────────────────────────────
+// The record read "294 tokens now, with a test holding the ceiling". Measured 9 Oct 2026: the note
+// is 2186 characters, about 547 tokens — it nearly doubled on 2 Oct when the stacking rule and the
+// verified-number rule went in — and no test anywhere held a ceiling. The growth itself was
+// justified and measured (band C went 0 of 3 to 3 of 3, and band A was RE-measured at 0 of 7
+// flinches rather than assumed), so this is not a regression. The claim was.
+// The reason for a ceiling is not the bill: a long clinical block crowds out the voice instructions
+// and pushes the model toward sounding like a clinician, which is the opposite of this app's soul.
+// So it is a RATCHET — raise it only with a fresh band-A measurement, because that number is the
+// only evidence that the voice still meets somebody who came for help starting.
+H.section('the safety note has a ceiling, and now something holds it');
+{
+  const grab = name => {
+    const src = H.code(H.html); const i = src.indexOf('const ' + name + ' = [');
+    if(i < 0) return null;
+    let j = src.indexOf('[', i), d = 0, k = j;
+    for(; k < src.length; k++){ const c = src[k]; if(c === '[') d++; else if(c === ']'){ d--; if(!d) break; } }
+    return new Function('return ' + src.slice(j, k + 1))();
+  };
+  const CRISIS_LINES = grab('CRISIS_LINES');
+  const { safetyNote } = H.load(['safetyNote','_crisisLinesForPrompt'], { CRISIS_LINES: CRISIS_LINES });
+  const note = safetyNote();
+  // EXECUTE IT, DO NOT READ IT. The note is a dozen concatenated string literals, so no regex over
+  // the source can measure what the model actually receives — a lesson this file already carries.
+  H.ok(note.length > 800, 'the note is substantive (' + note.length + ' chars) — a stub would pass a ceiling');
+  H.ok(note.length <= 2400,
+    'and under the 2400-character ceiling (' + note.length + ' now, ~' + Math.round(note.length / 4) +
+    ' tokens). RAISING THIS NEEDS A FRESH BAND-A MEASUREMENT from scripts/voice-probe.mjs: the limit ' +
+    'exists because a long clinical block makes the voice clinical, and band A is the only evidence ' +
+    'that it still meets somebody who came for help starting.');
+  // and the ratchet is honest about its own headroom, so nobody reads the pass as "plenty of room"
+  H.ok(2400 - note.length < 400,
+    'the ceiling sits close to the current size (' + (2400 - note.length) + ' chars of headroom) — a ' +
+    'ratchet with slack in it is not a ratchet');
 }
 
 H.report();
