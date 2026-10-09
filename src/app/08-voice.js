@@ -227,6 +227,32 @@ function _replyNamesAHuman(reply){
 // its catch.
 // `html:true` escapes the line for a text position inside innerHTML, which is what _feelingNowGo
 // needs; the chat surfaces take it as plain text.
+// THE SCRIPTURE AND PRAYER SURFACES COULD NOT USE _netted AT ALL, AND HAD NOTHING ELSE EITHER.
+// findVerse, searchBible and generateIntentionPrayer build their prompts from BIBLE_SYS, not
+// brotherSys — so the census of brotherSys call sites structurally could not see them, and
+// measured 9 Oct 2026, BIBLE_SYS carries NO safety instruction of any kind. Its only "counsellor"
+// is its own role line ("You are a Bible scholar and pastoral counsellor"), which is exactly why a
+// marker grep on that word reports a false pass there.
+// They cannot carry safetyNote either: BIBLE_SYS demands "Return ONLY a raw JSON array", and an
+// instruction to put a human in the message fights that contract and risks the parse on a working
+// feature. And the model's own output is verse DATA, so there is no prose reply for _netted to
+// append to.
+// So the net goes on the RENDERED surface instead: the person's typed text is asked the same
+// reason-AND-plan question, and the reply is '' by construction (verse JSON names no human), so
+// this reduces to the question the net already answers. Additive, never a takeover — the verses
+// they asked for still render, with a real person named underneath them.
+function _netNoteInto(el, userText){
+  try{
+    if(!el || typeof _needsHumanNet !== 'function' || !_needsHumanNet(userText, '')) return false;
+    const d = document.createElement('div');
+    d.className = 'card-foot';
+    d.setAttribute('role', 'alert');
+    d.style.cssText = 'margin-top:14px;padding:12px;border-radius:var(--rm);background:var(--bg3);color:var(--tx2);line-height:1.65';
+    d.textContent = _humanNetLine();
+    el.appendChild(d);
+    return true;
+  }catch(_){ return false; }
+}
 function _netted(userText, reply, html){
   try{
     if(typeof _needsHumanNet === 'function' && _needsHumanNet(userText, reply)){

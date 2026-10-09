@@ -201,6 +201,10 @@ function renderVerseResults(verses,feeling){
   footer.setAttribute('onclick',"findVerse(document.getElementById('bible-in').value)");
   footer.textContent='Find more verses';
   card.appendChild(footer);
+  // A REASON PLUS A PLAN REACHES HERE WITH NOTHING BUT VERSES. The keyword floor already gated
+  // this door; what it deliberately REFUSES is the stacked pair, and BIBLE_SYS has no hand-off
+  // instruction to fall back on. Additive: the verses stay, a real person is named underneath.
+  try{ if(typeof _netNoteInto === 'function') _netNoteInto(card, feeling); }catch(_){ }
 }
 
 function saveVerseResult(idx){
@@ -1321,6 +1325,9 @@ async function searchBible(query){
         pray.onclick=()=>generatePrayerFor(query, verses[0]);
         actions.appendChild(pray);
         res.appendChild(actions);
+        // THE SAME NET AS findVerse. BIBLE_SYS has no hand-off instruction and its output is verse
+        // JSON, so there is no prose reply to append to — it goes on the rendered surface.
+        try{ if(typeof _netNoteInto === 'function') _netNoteInto(res, query); }catch(_){ }
         return;
       }
     }
@@ -1415,6 +1422,10 @@ async function generateIntentionPrayer(pfx){
       out.innerHTML = '<div class="eyebrow">A '+_prayerNoun()+' for this</div>'+
         '<div class="passage prayer-words">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
         '<div class="prayer-acts"><button class="btn" onclick="savePrayerToList(window.__lastAIPrayer, window.__lastAIPrayerCat)">Save to my '+_prayerNoun()+'s</button><button class="btn quiet" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+      // THE SAME NET. A prayer intention is free text the person typed. The reply IS prose here,
+      // but it is a PRAYER — appending a helpline inside it would put it in their own words to
+      // God, so the line is a separate element underneath rather than part of what they pray.
+      try{ if(typeof _netNoteInto === 'function') _netNoteInto(out, intention); }catch(_){ }
     } else if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t write that just now. Try again in a moment.</p>'; }
   }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<p class="card-foot">Couldn\u2019t reach the coach right now.</p>'; } }
   // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write

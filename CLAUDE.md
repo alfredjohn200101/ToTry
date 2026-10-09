@@ -750,6 +750,42 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      controls pass — this app's own examen renders "Qur'an 6:60". And the guard builds its subject
      INSIDE itself: pointed at `safetyNote()` it reports a violation on correct code, because that
      note legitimately carries the verified helplines.
+   - **AND THE SCRIPTURE AND PRAYER SURFACES HAD NEITHER HALF (9 Oct 2026).** `findVerse`,
+     `searchBible` and `generateIntentionPrayer` build their prompts from **`BIBLE_SYS`, not
+     `brotherSys`** — so the census of brotherSys call sites structurally could not see them, and
+     measured, `BIBLE_SYS` carries **no safety instruction of any kind**. Its only "counsellor" is
+     its own role line, *"You are a Bible scholar and pastoral counsellor"*, which is precisely why
+     a marker grep on that word reports a false pass on this prompt.
+     They cannot take `safetyNote` either: `BIBLE_SYS` demands *"Return ONLY a raw JSON array"*, and
+     an instruction to put a human in the message fights that contract on a working feature. And the
+     model's output is verse DATA, so there is no prose reply for `_netted` to append to. So the net
+     goes on the **RENDERED surface** — `_netNoteInto(el, userText)` asks the same reason-AND-plan
+     question with an empty reply (verse JSON names no human by construction) and appends the line
+     UNDER the content. Additive: the verses they asked for are still there.
+     **I PASSED THE WRONG ARGUMENT AND ONLY DRIVING IT FOUND THAT.**
+     `generateIntentionPrayer(pfx)` takes an element-id PREFIX and reads the typed text out of
+     `pfx + '-intention'`; the first wiring passed `pfx`, so the net was asked about the string
+     "probe" and could never fire — and a grep for `_netNoteInto(` passed. The test now asserts the
+     ARGUMENT at each of the three sites, not the call.
+     **The prayer line goes UNDERNEATH, not inside.** The reply there IS prose, but it is a PRAYER:
+     appending a helpline inside it would put it in the person's own words to God.
+     **AND THREE OF MY OWN PROBES LIED FIRST, ALL TOWARDS "THE APP IS BROKEN."** One fell back to
+     `document.body`, which carries the sign-in screen's helplines (they sit outside the login on
+     purpose), and reported an ordinary query getting a card. One returned a bare array where
+     `searchBible` parses `{verses:[…]}`, so the surface took its error path. One created
+     `#ai-morning-text` but not `#ai-morning-card`, so the function returned on `!card||!textEl` and
+     the probe read the app's own boot text as a reply. **A probe that cannot reach the code path
+     reports the same thing as a missing fix.**
+   - **AND `_jsCode` IS NOT A DOOR, WHICH IS WORTH WRITING DOWN (9 Oct 2026).** It sits beside
+     `_jsAttr`, escapes `&` first, and looks like the same class. It is not: every one of its
+     arguments across the bundle is `JSON.stringify(…)` or an app-generated literal, never raw
+     typed text — and the thing standing between a typed quote and a closed string there is
+     JSON.stringify, not this helper. **With `_jsCode` replaced by the identity function the payload
+     still does not fire**, which is what the calibration was for; my first probe fed it RAW text,
+     got "3 of 3 terminate", and that was a shape the call sites never produce. Its `&` escape earns
+     its place on FIDELITY and on not corrupting the attribute (removing it makes a syntax error,
+     not an injection), and it is asserted as the ORDER fact rather than as a security guard.
+     Claiming a threat that is not there is how a real one gets lost in the noise.
    - **AND THE LAST ELEMENT OF AN ARRAY HAD NO TRAILING COMMA (9 Oct 2026).** Inserting a regex
      after it made the parser read `/` as division, and `npm test`'s parse check — rule 1, added
      at v483 for exactly this — caught it before anything else ran. `node --check` on the module

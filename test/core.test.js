@@ -10600,8 +10600,31 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   const code = H.code();
   H.ok(/const safe=_jsAttr\(thing\)/.test(code), '_shrinkIt escapes through the helper');
   H.ok(/_jsAttr\(ex\.name\)/.test(code), 'and the exercise name does too — the one that is persisted');
-  H.ok(/\.replace\(\/&\/g, '&amp;'\)[\s\S]{0,400}?function _jsAttr|_jsAttr\(s\)\{[\s\S]{0,1800}?replace\(\/&\/g, '&amp;'\)/.test(code),
-    'and the helper escapes & at all');
+  // ── _jsCode WAS CHECKED AND IS NOT A DOOR, WHICH IS WORTH RECORDING ────────────────────────
+  // `_jsCode` sits beside `_jsAttr` and also escapes `&` first, so it looks like the same class.
+  // Measured 9 Oct 2026: it is not. Every one of its arguments across the bundle is either
+  // JSON.stringify(...) or an app-generated literal (retryJs, primaryJs, a table cell) — never raw
+  // text a person typed. And the thing standing between a typed quote and a closed string at those
+  // sites is JSON.stringify, not this helper: with `_jsCode` replaced by the identity function the
+  // payload STILL does not fire, which is what a calibration is for. The `&` escape there earns its
+  // place on FIDELITY (a person who types the five characters `&amp;` should read them back) and on
+  // not corrupting the attribute — removing it makes the attribute a syntax error, not an
+  // injection. Asserted below as the ORDER fact, not as a security guard, because claiming a threat
+  // that is not there is how a real one gets lost in the noise.
+  H.ok(/_jsCode/.test(code), '_jsCode exists');
+  {
+    const body = H.code(H.extractFn('_jsCode'));
+    const amp = body.indexOf("replace(/&/g"), quot = body.indexOf("replace(/\"/g");
+    H.ok(amp > 0 && quot > 0, 'it escapes both & and " (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+    H.ok(amp < quot, 'and & FIRST, so the &quot; it introduces is not re-escaped into &amp;quot;');
+    const { _jsCode } = H.load(['_jsCode']);
+    H.eq(_jsCode('&amp;'), '&amp;amp;', 'a typed &amp; survives as those five characters once decoded');
+  }
+  // The `&` escaping of _jsAttr is NOT re-grepped here: it is already pinned by the EXECUTING assertion above
+  // (the one that decodes _jsAttr('&quot;') and requires the six characters back), and measured,
+  // a &-less _jsAttr makes the entity-payload rows fail. A source grep that duplicates an executing
+  // assertion adds weight without evidence — and the one that used to sit here was 1800 characters
+  // of lookahead whose failure message named the wrong fact.
 }
 
 // ══ THE OBJECT DECIDES, AND THIS APP INVITES ONE OF THE SENTENCES ═════════════════════════════
@@ -11628,11 +11651,27 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   H.ok(/resources = CRISIS_LINES\.slice\(\)/.test(code),
     'the crisis CARD reads it rather than holding its own copy');
   H.ok(/_crisisLinesForPrompt\(\)/.test(code), 'and the PROMPT reads it too, through one helper');
-  // 03-person.js declares it and 08-voice.js reads it, which is only safe because safetyNote()
-  // is CALLED at runtime — a const is not hoisted, so a load-time read from a later module
-  // would be a temporal-dead-zone throw. The typeof guard is what makes that explicit.
+  // 03-person.js declares CRISIS_LINES and 08-voice.js — the LATER module — reads it, so no
+  // temporal dead zone is reachable: the declaration has been evaluated before anything in
+  // 08-voice.js runs. And `typeof` would not save a TDZ read anyway; `typeof` on a binding in its
+  // dead zone THROWS, unlike on an undeclared name. The guard's real and only job is the name being
+  // ABSENT ENTIRELY — which is exactly what this harness produces, since H.load extracts the
+  // functions into a scope with no CRISIS_LINES unless one is passed in. That the verified lines
+  // actually reach the prompt is asserted separately, by executing the note and looking for the
+  // numbers.
   H.ok(/typeof CRISIS_LINES === 'undefined'/.test(code),
-    'guarded with typeof, because a const does not hoist across modules');
+    'guarded with typeof, for the case where the name is absent altogether — which is the harness');
+  // and the guard is load-bearing HERE, measured rather than asserted: with no CRISIS_LINES passed
+  // in, the note still names a human and does not throw.
+  {
+    const bare = H.load(['safetyNote','_crisisLinesForPrompt']).safetyNote();
+    H.ok(bare.length > 100, 'with CRISIS_LINES absent the note still assembles (' + bare.length + ' chars)');
+    H.ok(!/\d{3,}/.test(bare),
+      'and carries NO number at all — with nothing verified to read, none is the safe answer, ' +
+      'because a remembered helpline is worse than none');
+    H.ok(/counsel?lor|doctor|crisis line/i.test(bare), 'while still naming a human to go to');
+    H.ok(/findahelpline\.com/.test(bare), 'and a real route with no digits to get wrong');
+  }
 }
 
 // ══ THE NET UNDER THE MODEL ═══════════════════════════════════════════════════════════════════
@@ -11826,8 +11865,20 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   });
   // ONE MECHANISM: nothing calls the predicate directly any more, so a surface cannot half-wire it
   // (append the line but skip the already-named-a-human check, or vice versa).
-  H.eq((code.match(/_needsHumanNet\(/g) || []).length, 2,
-    'only the helper and its own declaration name the predicate — every surface goes through _netted');
+  // ONE MECHANISM, NAMED — NOT COUNTED. This was a count of 2, and it went red the moment a SECOND
+  // helper was added for the scripture and prayer surfaces (which cannot use _netted at all: their
+  // model output is verse JSON, so there is no prose reply to append to). A count cannot tell a new
+  // helper from a surface reaching past them, which is the thing worth forbidding.
+  {
+    const HELPERS = ['_needsHumanNet', '_netted', '_netNoteInto'];
+    const callers = HELPERS.filter(fn => /_needsHumanNet\(/.test(H.code(H.extractFn(fn))));
+    H.eq(callers.sort(), ['_needsHumanNet', '_netNoteInto', '_netted'].sort(),
+      'the predicate is named inside its own declaration and the two helpers');
+    const total = (code.match(/_needsHumanNet\(/g) || []).length;
+    H.eq(total, HELPERS.length,
+      'and nowhere else (' + total + ' mentions, ' + HELPERS.length + ' helpers) — a surface that ' +
+      'reached past them could append the line but skip the already-named-a-human check');
+  }
   // and the coach's three non-api() paths are wired, which is where the gap was
   {
     const coach = H.code(H.extractFn('sendCoach'));
@@ -12783,6 +12834,78 @@ H.section('the voice fingerprint — every piece it covers, injected');
   // the parts are joined before hashing, so the same bytes in a different order hash differently.
   H.ok(/ORDER IS LOAD-BEARING/.test(require('fs').readFileSync(require('path').join(__dirname, 'harness.js'), 'utf8')),
     'and harness.js records that the part ORDER decides the sha');
+}
+
+// ── AND THE SCRIPTURE AND PRAYER SURFACES HAD NEITHER HALF ────────────────────────────────────
+// `findVerse`, `searchBible` and `generateIntentionPrayer` build their prompts from BIBLE_SYS, not
+// brotherSys — so the census of brotherSys call sites structurally could not see them. Measured
+// 9 Oct 2026: BIBLE_SYS carries NO safety instruction of any kind. Its only "counsellor" is its own
+// role line, "You are a Bible scholar and pastoral counsellor", which is exactly why a marker grep
+// on that word reports a false pass there.
+// They cannot take safetyNote: BIBLE_SYS demands "Return ONLY a raw JSON array", and an instruction
+// to put a human in the message fights that contract on a working feature. And the model's output
+// is verse DATA, so there is no prose reply for _netted to append to. So the net goes on the
+// RENDERED surface: the typed text is asked the same reason-AND-plan question with an empty reply
+// (verse JSON names no human by construction), and the line is appended under the content.
+// DRIVEN in a browser on all three: each names a human underneath and leaves an ordinary query
+// alone, and the verses they asked for are still there — additive, never a takeover.
+H.section('the scripture and prayer surfaces — neither safetyNote nor the net');
+{
+  // BIBLE_SYS really does carry nothing, and the role-line trap is asserted so nobody "fixes" this
+  // by grepping for a word the prompt already contains.
+  const i = H.html.indexOf('const BIBLE_SYS=');
+  H.ok(i > 0, 'BIBLE_SYS was found (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const bible = H.html.slice(i, H.html.indexOf('`;', i));
+  H.ok(/pastoral counsel?lor/i.test(bible),
+    'BIBLE_SYS contains the word "counsellor" in its own ROLE line — which is why a marker grep for ' +
+    'that word reports a false pass on this prompt');
+  H.ok(!/helpline|lifeline|13 ?11 ?14|\b988\b|116 ?123/i.test(bible),
+    'and it carries no helpline, so the hand-off cannot come from the prompt here');
+
+  // the net is wired at all three, and reads the PERSON'S WORDS at each
+  const SITES = [
+    ['renderVerseResults', 'feeling'],        // findVerse renders through this
+    ['searchBible', 'query'],
+    ['generateIntentionPrayer', 'intention'], // NOT `pfx`, which is the element-id prefix
+  ];
+  SITES.forEach(([fn, arg]) => {
+    const body = H.code(H.extractFn(fn));
+    const call = (body.match(/_netNoteInto\([^)]*\)/) || [''])[0];
+    H.ok(!!call, fn + ' routes its rendered surface through the net');
+    H.ok(new RegExp('\\b' + arg + '\\b').test(call),
+      fn + ' asks the net about `' + arg + '` — the text the person typed');
+  });
+  // THE ARGUMENT BUG THIS EXISTS FOR. generateIntentionPrayer(pfx) takes an element-id PREFIX and
+  // reads the typed text out of pfx+'-intention'. The first wiring passed `pfx`, so the net was
+  // asked about the string "probe" and could never fire — and a grep for `_netNoteInto(` passed.
+  // Caught by driving the surface, which is the whole argument for driving it.
+  H.ok(!/_netNoteInto\(\s*out\s*,\s*pfx\s*\)/.test(H.code(H.extractFn('generateIntentionPrayer'))),
+    'and generateIntentionPrayer does NOT pass pfx, which is an id prefix and not a disclosure');
+
+  // the helper itself, executed
+  const grab = name => {
+    const src = H.code(H.html); const k = src.indexOf('const ' + name + ' = [');
+    if(k < 0) return null;
+    let j = src.indexOf('[', k), d = 0, m = j;
+    for(; m < src.length; m++){ const c = src[m]; if(c === '[') d++; else if(c === ']'){ d--; if(!d) break; } }
+    return new Function('return ' + src.slice(j, m + 1))();
+  };
+  const CRISIS_LINES = grab('CRISIS_LINES');
+  const appended = [];
+  const el = { appendChild: n => appended.push(n) };
+  const { _netNoteInto } = H.load(['_netNoteInto','_needsHumanNet','_replyNamesAHuman','_humanNetLine'], {
+    _RISK_REASON: grab('_RISK_REASON'), _RISK_PLAN: grab('_RISK_PLAN'), CRISIS_LINES: CRISIS_LINES,
+    document: { createElement: () => ({ style: {}, setAttribute(){}, set textContent(v){ this._t = v; }, get textContent(){ return this._t; } }) },
+  });
+  H.eq(_netNoteInto(el, "i'm a weight on my family. i've picked the day."), true,
+    'the helper appends on a stacked disclosure');
+  H.eq(_netNoteInto(el, 'i feel worthless at the gym lately'), false,
+    'and not on an ordinary query — which is what a person actually types into a verse search');
+  H.eq(_netNoteInto(null, "i'm a weight on my family. i've picked the day."), false,
+    'and a missing container is a false, not a throw');
+  H.eq(appended.length, 1, 'exactly one element was appended across those three calls');
+  H.ok(/13 ?11 ?14/.test(String(appended[0] && appended[0].textContent)),
+    'and it carries the app’s own verified number');
 }
 
 H.report();
