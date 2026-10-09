@@ -112,11 +112,11 @@ user's Hevy API key is stored in your Supabase. RLS protects it, but you are hol
 credential. Consider dropping it from the sync list.
 
 ## Age Rating
-Answer the questionnaire **honestly**. The app addresses recovery from habits (alcohol, gambling, pornography/lust, etc.) in a *quitting/recovery* framing with **no explicit content shown**. Expect the questions on:
-- Medical/Treatment info → the recovery timelines are encouragement, with a clear "not a replacement for real help" — answer per Apple's wording.
-- Alcohol, tobacco, or drug use/references → **Infrequent/Mild** (recovery-oriented).
-- Sexual content/nudity → references to quitting porn; **none shown** → answer accordingly.
-- Simulated gambling → **No** (it's a vice to quit, not a gambling game).
+The answers live in **`SUBMIT-CHECKLIST.md` § 3**, re-verified against the v610 bundle on
+10 Oct 2026 — measured counts, the native-layer check behind "Unrestricted Web Access → No", and the
+User-Generated Content answer, which is **not** a flat "No" and needs reading before you answer it.
+This section used to carry a second, thinner copy of four of those answers (with no UGC line at all);
+two copies of one answer set is how they drift apart, so there is now one.
 
 > **Do not pre-commit to a tier.** These docs previously predicted "12+", and Apple has since revised
 > its age bands and added capability questions. Whatever the questionnaire shows you when you open it

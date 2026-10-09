@@ -13383,4 +13383,69 @@ H.section('two disclosures joined by a comma');
     'anchor change could not have been landed on its own');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// THE APP STORE UGC ANSWER IS A CODE FACT, AND NOTHING ASKED IT (10 Oct 2026)
+// `SUBMIT-CHECKLIST.md` § 3 answers Apple's user-generated-content question, and the honesty of
+// that answer rests entirely on WHO WRITES TO `shared_library` — a table every signed-in person
+// reads. For 180-odd versions the doc said "nothing a user writes is visible to any other user",
+// which was true when written and had quietly stopped being true: a user-typed EXERCISE NAME and a
+// web-looked-up FOOD NAME both reach it. It stayed answerable only because the row is invisible
+// until the owner approves it.
+// The leak that is already on the record is the shape this guards: `_companionSay()` used to
+// publish `'__protocol__' + <the person's own words for what they are fighting>` into that table,
+// filed as an exercise (see the comment at the top of that function). Nothing in the gate noticed,
+// because publishing someone's sentence is not a crash, a contrast failure or a missing id.
+// So: a THIRD contributor, a new kind, a dropped `approved:false`, or a read that stops filtering
+// are each a change to what we tell Apple. Any of them should fail here and send you to § 3.
+H.section('what reaches the shared library decides the App Store UGC answer');
+{
+  const CODE = H.code();
+  // Only CALL sites: the declaration's first arg is the bare identifier `kind`, a call's is a
+  // string literal. Matching the bare name would count the declaration and the comments with it.
+  const CALL = /contributeToSharedLibrary\(\s*['"]/g;
+  const calls = CODE.match(CALL) || [];
+  H.eq(calls.length, 2,
+    'exactly two places contribute to shared_library (a typed exercise name, a web-looked-up food ' +
+    'name). A third changes what SUBMIT-CHECKLIST.md § 3 tells Apple — read it before adding one');
+
+  const kinds = (CODE.match(/contributeToSharedLibrary\(\s*['"]([a-z_]+)['"]/g) || [])
+    .map(s => s.replace(/.*['"]([a-z_]+)['"]/, '$1')).sort();
+  H.eq(kinds.join(','), 'exercise,food',
+    'and they contribute only the two kinds the answer describes — never a journal, a why, an ' +
+    'identity, a letter, a prayer or a vice name');
+
+  // The two halves that keep a contribution invisible until a human has looked at it. Both are
+  // also enforced by RLS on the live project (INSERT has WITH CHECK approved = false; SELECT is
+  // approved = true AND flagged = false), so this is the client agreeing with the database rather
+  // than the only thing standing between a submission and every other user.
+  H.ok(/approved:\s*false/.test(CODE),
+    'a contribution is inserted PENDING — approved:false, so it reaches nobody until reviewed');
+  H.ok(/\.eq\('approved',\s*true\)/.test(CODE) && /\.eq\('flagged',\s*false\)/.test(CODE),
+    'and the pull reads only approved, unflagged rows');
+
+  // The fixed leak stays fixed. Asserted on the FUNCTION, not the file: the explanation of the bug
+  // lives in a comment inside it, and H.code() strips comments, so a file-level absence check here
+  // would pass whether the call was there or not.
+  const say = H.extractFn('_companionSay') || '';
+  H.ok(say.length > 200, 'calibration: _companionSay was actually extracted');
+  H.ok(say.indexOf('contributeToSharedLibrary') === -1,
+    'and the companion still does NOT publish the words someone gave it at 2am');
+
+  // ── FAULT INJECTION ──────────────────────────────────────────────────────────────────────────
+  // A count assertion is worthless if nothing can move it, so add a contributor and a kind to a
+  // COPY and require both checks to break. Corrupting text rather than deleting a line, because a
+  // deletion inside a concatenation chain is how three injections in this file crashed instead of
+  // failing.
+  const withThird = CODE + "\nfunction _fakeNewCaller(){ contributeToSharedLibrary('journal', x, y); }\n";
+  // Relative to the live count, not pinned to 3 — otherwise adding a real contributor fails this
+  // mechanism check too, and a confusing second failure is noise beside the one that matters.
+  H.eq((withThird.match(CALL) || []).length, calls.length + 1,
+    'fault-injected: a third contributor moves the count, so the assertion above can fail');
+  const fakeKinds = (withThird.match(/contributeToSharedLibrary\(\s*['"]([a-z_]+)['"]/g) || [])
+    .map(s => s.replace(/.*['"]([a-z_]+)['"]/, '$1')).sort();
+  H.ok(fakeKinds.join(',') !== 'exercise,food',
+    'and a new kind moves the kind set — the worst case being exactly the one that already shipped');
+}
+
+
 H.report();

@@ -420,24 +420,70 @@ Privacy Policy URL: `https://alfredjohn200101.github.io/ToTry/privacy.html`
 
 ## 3 · Age rating
 
-Answer the questionnaire honestly. The ones that actually apply:
+Answer the questionnaire honestly. Every line below was **re-verified against the v610 bundle on
+10 Oct 2026**; the previous version of this list was written around v424, and one answer had gone
+stale in a way that matters (see User-Generated Content). Where a number appears, it is measured.
 
-- **Medical/Treatment Information → Infrequent/Mild.** It discusses habits, mental health and recovery,
-  and hands off to real help. It does not diagnose or prescribe.
-- **Alcohol, Tobacco, or Drug Use or References → Infrequent/Mild.** Vices can be named and tracked;
-  nothing is depicted or encouraged.
-- **Sexual Content or Nudity → None.** Lust can be *named* as a struggle; nothing is shown or described.
-- **Profanity, violence, gambling, horror, contests → None.** (Poker sessions are logged as *money*, not
-  played — no simulated gambling.)
-- **Unrestricted Web Access → No.** No general-purpose browser.
-- **User-Generated Content → No.** Nothing a user writes is visible to any other user.
+- **Medical/Treatment Information → declare it, and consider the HIGHER band.** Measured in the
+  shipped bundle, comments stripped: 162 calorie/protein-target references, 23 BMI, 34
+  menstrual/cycle-phase, 21 HealthKit reads, 23 named clinical mechanisms (CBT, ACT, urge-surfing,
+  cognitive restructuring), 54 helpline surfaces, and 7 places that say call emergency services or
+  get to a hospital. It does not diagnose or prescribe and it carries 4 explicit "not medical
+  advice" disclaimers — but health and mental-health guidance is on essentially every screen, so the
+  "Infrequent/Mild" this doc claimed from v424 is hard to defend. Answer what the app does and take
+  the band that follows.
+- **Alcohol, Tobacco, or Drug Use or References → Infrequent/Mild.** Confirmed. Vices can be named
+  and tracked (alcohol, nicotine/vaping, weed); nothing is depicted or encouraged.
+- **Sexual Content or Nudity → nothing is depicted or described, but "porn" IS in visible copy.**
+  The vice field's own placeholder reads *"Name it (e.g. weed, drinking, porn)…"*, and
+  `VICE_PLAYBOOK` has a `porn` entry with user-facing labels. The only explicit anatomical/act word
+  in the whole bundle is the matcher stem `'masturbat'` — 2 occurrences with comments stripped, both
+  inside keyword arrays that are tested *against* what a person types and never rendered. So "None"
+  is defensible for **depiction**; if the question asks about sexual references or themes, the honest
+  answer is Infrequent/Mild. Your call, but make it knowing the word is on screen.
+- **Profanity → None.** Verified: 1 match raw, **0** with comments stripped — the single hit is the
+  owner's own words quoted inside a bug comment. Nothing profane renders.
+- **Gambling → None, and no simulated gambling.** Gambling is a trackable vice and poker sessions
+  are logged as *money*, never played: there is no dice, wheel, slot, card-deal or jackpot mechanic
+  anywhere in the bundle (measured: 0). No contests.
+- **Violence, horror → None.**
+- **Unrestricted Web Access → No.** Verified at the **native** layer, not just the web layer: no
+  embedded browser (`Browser.open` / `InAppBrowser`: 0), all 9 `window.open` calls pass `_blank`,
+  `capacitor.config.json` declares **no `allowNavigation`**, and no Swift file overrides
+  `WKUIDelegate` or `decidePolicyFor`. So only the app's own origin loads in the webview and external
+  links hand off to Safari. None of the 9 targets is built from a typed value.
+- **User-Generated Content → ⚠️ NOT a flat "No" any more. Read this before you answer it.**
+  This doc used to say *"Nothing a user writes is visible to any other user."* As written, that is no
+  longer true. `shared_library` is a crowd-sourced exercise/food table: `contributeToSharedLibrary()`
+  is called from `22-train-deep.js:58` with a **user-typed exercise name** and from
+  `14-nourish.js:3524` with a web-looked-up food name, and `pullSharedLibrary()` reads other people's
+  rows into every user's app.
+
+  What makes it answerable without alarm is that it is **pre-moderated, and the moderation is
+  enforced by the database, not by the UI** — verified live against this project's RLS on 10 Oct 2026:
+  - **INSERT** (`authenticated`) carries `WITH CHECK (coalesce(approved,false) = false)` — Postgres
+    itself *refuses* a contribution that arrives pre-approved.
+  - **SELECT** (`anon,authenticated`) is `approved = true AND coalesce(flagged,false) = false`.
+  - **UPDATE** and **DELETE** are restricted to the three owner emails. Approving is not something a
+    user can do, even with a request aimed straight at the API past the `DEV_EMAILS` UI gate.
+
+  So a person can submit an exercise name and it reaches nobody until you approve it. There are no
+  profiles, no author attribution, no messages, no comments, no user-cast votes, and nothing else a
+  person writes — journals, letters, why, identity, vice names, prayers, check-ins — ever leaves
+  their own row. Answer the question with that shape in front of you rather than a bare yes or no,
+  and note there is **no user-facing "report content" control** (the `flagged` column is admin-only),
+  which is defensible precisely because nothing is visible until a human has already reviewed it.
+
+  One leak of exactly this kind has already happened and been fixed: `_companionSay()` used to
+  publish the person's own words for what they were fighting into `shared_library`, filed as an
+  exercise. The comment at `06-train.js:257` records it. **If you ever add a third contributor to
+  that table, re-read this section before you ship it.**
 
 > **Do not pre-commit to a tier.** These docs previously predicted "12+", and Apple has since revised
 > its age bands and added capability questions. Whatever the questionnaire shows you when you open it
 > is authoritative — answer it honestly, question by question, and take the tier it computes. Never
 > set a tier lower than the answers produce: being corrected costs a review cycle, and an
 > under-declared rating can get an app pulled later.
-
 ---
 
 ## 4 · Review notes — paste this in
