@@ -1315,11 +1315,28 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    a whole tracker day, demonstrated by executing the real functions). The doc holds the census of all
    433 call sites bucketed, the design that survived, and the three corrections. **This is the
    biggest known defect in the app.**
-1. **The App Store.** The wrapper builds, launches and runs (Xcode 26.6, Release, iPhone 17 sim:
-   ~2.8s to first paint, branded splash, crisis gate verified ON DEVICE with iOS smart quotes, `tel:`
-   links hand off correctly). What is left is yours and cannot be automated: archive → TestFlight,
-   the age rating, the App Privacy form, and testing barcode / Face ID / haptics / notifications on
-   real hardware. `npm run preflight` checks the rest before you archive.
+1. **The App Store. "Cannot be automated" was doing a lot of work in this line, and most of it was
+   wrong (10 Oct 2026).** It used to say the archive, the age rating, the App Privacy form and all
+   four hardware tests were yours. Four of those had parts that were not:
+   - **The archive is done and de-risked.** Build 9 (v610) archives AND exports to a
+     distribution-signed `.ipa` locally with **no Apple credentials** — both App Store provisioning
+     profiles are installed, so manual signing works offline. Verified out of the binary, never the
+     log: `Apple Distribution: Alfred John (L4BD53PLVF)`, `get-task-allow = false`, 1.0 build 9,
+     `PrivacyInfo.xcprivacy` present, web bundle v610 byte-identical to the repo. **There is no
+     `.xcworkspace`** (Capacitor SPM, not CocoaPods) — it is `-project`. The ARCHIVE is
+     Development-signed with `get-task-allow = true`, which is normal because the export re-signs:
+     **check the IPA, never the archive.** Only the upload click is left.
+   - **Face ID and notification delivery are NOT hardware-only**, and were driven end to end on the
+     real Capacitor build on a booted simulator — including the lock covering the journal on return
+     and the off-switch demanding the same proof. Only **barcode scanning** (no camera) and
+     **haptics** (no Taptic engine) genuinely need a phone. Two, not four.
+   - **The age rating and App Privacy answer sheets were stale**, and both docs claimed they needed
+     no re-audit "because they describe behaviour, which has not changed". Behaviour changes
+     underneath a doc that only describes it. Both are re-derived from the v610 code and now gated.
+   `SUBMIT-CHECKLIST.md` carries all of it, including the three ways the simulator test LIES (an
+   enrollment that does not survive a reboot against a capability read at launch; a 2.5s grace
+   window that makes a correct lock look broken; and `simctl push` showing nothing to a foreground
+   app). `npm run preflight` checks the rest before you archive.
 2. **DONE (31 Aug 2026) — both edge functions are deployed and verified live.** The food camera works:
    a meal estimate at `max_tokens: 700` now returns complete JSON in 2.75s, and the vision path in
    2.26s. FatSecret issues a token (the residual `invalid_client` was NOT our substring bug — this
