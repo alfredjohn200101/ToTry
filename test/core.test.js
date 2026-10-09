@@ -13193,4 +13193,83 @@ H.section('the conditional frame — its content decides, not its keyword');
     '...and as shipped it does not');
 }
 
+// ── THE LENS THAT DID NOT REPORT, RUN BY HAND ─────────────────────────────────────────────────
+// One of the six review lenses errored on a content filter and never delivered, so the
+// false-positive sweep was done directly: 77 sentences written FRESH from this app's named fronts,
+// none of them drawn from the corpus the fixes were measured against — because a corpus you tuned
+// against cannot tell you what you missed.
+// Result: 4 raised a crisis card, and ALL FOUR were identical at the pre-session bundle, so the
+// day's work introduced none of them. Three are fixed here; the fourth is kept deliberately.
+H.section('77 fresh sentences from the app’s own fronts');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: hot');
+  H.eq(detectCrisis('i had eggs for breakfast'), null, 'calibration: cold');
+
+  // (1) A TRAINING BLOCK IS A THING THIS APP ASKS PEOPLE TO END. The end-it span's object list
+  // already carried cut, bulk, split, deficit and programme; a mesocycle is the same kind of noun.
+  [ 'i am going to end this block on friday', 'i am going to end this phase on friday',
+    "i'm going to end this deload early", 'i am going to end this taper on sunday',
+    "i'm going to end this week on a high", 'i am going to end this season with a comp',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'ending a training unit: ' + JSON.stringify(m)));
+
+  // (2) "I WANT IT TO STOP" AFTER A SLIP IS THE FIGHT'S OWN VOCABULARY. The register keeps the
+  // clause-ended form as a disclosure on purpose, and the disqualifying context sits in FRONT of
+  // the match, so it is a span removal like the end-it fix.
+  [ 'i gave in last night and i want it to stop', 'i slipped again and i want it to stop',
+    'i caved and i need it to stop', 'i want it to stop, the porn i mean',
+    'i broke the streak and i want it to stop',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'a slip in front of it: ' + JSON.stringify(m)));
+  // and the bare form still fires, which is the whole reason the entry exists
+  ['i want it to stop', 'i want it to stop.', 'i just want it to stop'].forEach(m =>
+    H.ok(!!detectCrisis(m), 'while the bare form still fires: ' + JSON.stringify(m)));
+
+  // (3) THE RESOLVE CONTINUATION THIS APP ASKS FOR. docs/CRISIS-REGISTERS.md records the onboarding
+  // why as this register's own residual; the `deserve better than me` entry already carries a
+  // resolve lookahead, and `a burden` now carries the same one.
+  [ 'i am a burden to my family right now and that changes today',
+    'i am a burden to my kids and that is my why',
+    "i'm a burden to my wife, so i'm doing the work",
+    "i'm a burden on my family and i'm changing that",
+  ].forEach(m => H.eq(detectCrisis(m), null, 'a burden with a resolve continuation: ' + JSON.stringify(m)));
+  // ...and all nine of the register's documented must-fire rows are untouched
+  [ "i'm a burden to everyone", 'i am a burden', 'im just a burden', 'i feel like a burden',
+    "i feel like i'm a burden to my wife", "i'm such a burden on my family", "i've become a burden",
+    "i'm nothing but a burden", 'i felt like a burden all day',
+  ].forEach(m => H.ok(!!detectCrisis(m), 'and the register still fires: ' + JSON.stringify(m)));
+
+  // (4) THE ONE KEPT ON PURPOSE, NAMED RATHER THAN DROPPED FROM THE CORPUS.
+  // "chest pain after that curry, probably reflux" returns 'medical'. `chest pain` is a bare phrase
+  // and bounding it would mean writing a list of innocent completions for a symptom that can be a
+  // cardiac event — the one place in this detector where erring toward "get that checked" is the
+  // right error. It shows the medical card, which names 000 and healthdirect, not a suicide card.
+  // It is identical at the pre-session bundle. If this ever changes, it should be a decision.
+  H.eq(detectCrisis('chest pain after that curry, probably reflux'), 'medical',
+    'the kept residual: chest pain reaches the medical card even with a benign explanation, ' +
+    'because the alternative is writing innocent completions for a possible cardiac event');
+
+  // ── FAULT INJECTION on all three fixes ──────────────────────────────────────────────────────
+  const SRC = H.extractFn('detectCrisis');
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  [ ['the training-unit objects', '|block|phase|mesocycle|taper|deload|week|month|season', '',
+     ['i am going to end this block on friday', 'i am going to end this phase on friday']],
+    ['the slip span', '|caved|slipped|relapsed|lapsed|binged', '',
+     ['i slipped again and i want it to stop', 'i caved and i need it to stop']],
+    ['the burden resolve lookahead',
+     "(?![^.!?]{0,44}\\b(?:that changes|that'?s my why|that is my why|that'?s why i|that is why i|starting today|start today|which is why|so i'?m (?:doing|fixing|changing|starting|getting)|and i'?m (?:doing|fixing|changing|starting|owning))\\b)",
+     "(?:)",
+     ['i am a burden to my family right now and that changes today',
+      'i am a burden to my kids and that is my why']],
+  ].forEach(([name, from, to, cases]) => {
+    if(SRC.indexOf(from) < 0){ H.ok(false, name + ': ANCHOR MISSING — THE MEASUREMENT IS WRONG, NOT THE APP'); return; }
+    const broken = build(SRC.split(from).join(to));
+    H.eq(broken('i want to kill myself'), 'suicide', name + ': the corrupted build still detects');
+    const back = cases.filter(c => broken(c));
+    H.eq(back.length, cases.length,
+      'fault-injected ' + name + ': ' + back.length + ' of ' + cases.length + ' false positives return');
+  });
+}
+
 H.report();

@@ -839,6 +839,31 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      never sent to the model, never put in a URL. All 17 net call sites pass the text the person
      actually typed, with no second `pfx`-class bug. And over 11,515 normalisation variants of 906
      strings: **308 benign false positives removed, 0 added, 0 disclosures lost.**
+   - **AND THE LENS THAT ERRORED WAS RUN BY HAND (9 Oct 2026).** One of the six review lenses hit a
+     content filter generating crisis sentences at volume and never delivered, so the
+     false-positive sweep was done directly: **77 sentences written FRESH from this app's named
+     fronts**, none of them drawn from the corpus the fixes were measured against — because a
+     corpus you have tuned against cannot tell you what you missed.
+     **Four raised a crisis card, and all four were identical at the pre-session bundle**, so the
+     day's work introduced none of them. Three are fixed: the end-it span's object list had no
+     TRAINING BLOCK (*"i am going to end this block on friday"* — it already carried cut, bulk,
+     split and programme, and a mesocycle is the same kind of noun); *"i gave in last night and i
+     want it to stop"* needed a span removal because the disqualifying context sits in FRONT of the
+     match, exactly like the end-it fix, while the bare *"i want it to stop."* still fires; and the
+     `a burden` entry ignored the RESOLVE CONTINUATION this app asks for, so *"i am a burden to my
+     family right now and that changes today"* — onboarding's why, crisis door #18 — raised the
+     card. The `deserve better than me` entry already carried a resolve lookahead; `a burden` now
+     carries the same one, and all nine of the register's documented must-fire rows are untouched.
+     8 of 9 false positives → 0, 0 of 15 disclosures lost.
+     **THE FOURTH IS KEPT ON PURPOSE AND NAMED IN THE TEST.** *"chest pain after that curry,
+     probably reflux"* returns 'medical'. Bounding `chest pain` would mean writing a list of
+     innocent completions for a symptom that can be a cardiac event — the one place in this
+     detector where erring toward "get that checked" is the right error. It shows the medical card
+     with 000 and healthdirect, not a suicide card. If that ever changes it should be a decision.
+     And the first fault injection for the resolve lookahead **poked at the lookahead's head, left a
+     dangling tail, produced an invalid regex and CRASHED the suite instead of failing it** —
+     "corrupt the text, never delete the line", in the test this time. A negative lookahead is
+     neutered by replacing the WHOLE thing with `(?:)`.
    - **AND `_jsCode` IS NOT A DOOR, WHICH IS WORTH WRITING DOWN (9 Oct 2026).** It sits beside
      `_jsAttr`, escapes `&` first, and looks like the same class. It is not: every one of its
      arguments across the bundle is `JSON.stringify(…)` or an app-generated literal, never raw

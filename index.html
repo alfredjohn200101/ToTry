@@ -13579,10 +13579,17 @@ function detectCrisis(text){
    // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
    // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
    // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b[^.!?]{0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
-   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b[^.!?]{0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription)\b/g,
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b[^.!?]{0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b[^.!?]{0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b/g,
    // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
    // `ending things with` span beside it already excludes, in the other inflection.
+   // "I WANT IT TO STOP" AFTER A SLIP IS THE FIGHT'S OWN VOCABULARY. The register keeps the
+   // clause-ended form as a disclosure on purpose, and measured on a fresh sweep "i gave in last
+   // night and i want it to stop" returned 'suicide' — pre-session too, so it is old. The
+   // disqualifying context sits in FRONT of the match, which no suffix bound can see, so it is a
+   // span removal. Bare "i want it to stop." still fires.
+   /\b(?:gave in|caved|slipped|relapsed|lapsed|binged|gave up|broke the streak|lost the streak|went back to it)\b[^.!?]{0,40}\b(?:want|wants|need|needs) it to stop\b/g,
+   /\b(?:want|wants|need|needs) it to stop\b[^.!?]{0,40}\b(?:the (?:porn|vape|booze|drink|gambling|scrolling|bingeing)|this vice|this habit|the slip)\b/g,
    /\bend things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them |that )?(?!kill|die|dy(?:e|ing)|dead|suicide|myself|my life|my own life|end (?:it|my|this)|ending it|hurt (?:myself|me)|harm|overdos|noose|hang(?:ing)? myself|blow(?:ing)? my|slit|take my life|taking my life)[a-z']{1,16}/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
    // bound on the entry can reach this — both review agents only ever tested continuations
@@ -13904,7 +13911,7 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // earlier drafts were defeated by a leading conditional ("if i finally clear this debt…").
     // AND NEGATION POLARITY DIFFERS BY OBJECT — for gone|dead the disclosure is UNnegated, for
     // here|around|alive it is negated, so entries 5 and 7 carry opposite polarity by design.
-    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
+    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))(?![^.!?]{0,44}\b(?:that changes|that'?s my why|that is my why|that'?s why i|that is why i|starting today|start today|which is why|so i'?m (?:doing|fixing|changing|starting|getting)|and i'?m (?:doing|fixing|changing|starting|owning))\b)\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
     /\b(?:i'?m|i am|im)\s+(?:just |such |only |nothing but )*a drain on (?:them|everyone|everybody|the people|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my friends|my mates)\b/,
     /\bi (?:just )?drain (?:everyone|everybody|the people|my family|them)\b(?!\s+(?:of|the)\b)/,
     /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
