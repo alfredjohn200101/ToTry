@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v609**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v610**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -776,6 +776,69 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `#ai-morning-text` but not `#ai-morning-card`, so the function returned on `!card||!textEl` and
      the probe read the app's own boot text as a reply. **A probe that cannot reach the code path
      reports the same thing as a missing fix.**
+   - **AND THEN THE DAY'S OWN THREE COMMITS WERE REVIEWED, AND RULE 4 HELD AGAIN (9 Oct 2026).**
+     Sixty agents over 2616 insertions — six lenses, every finding sent to two refuters told to
+     default to refuted. **Eleven defects, five of them regressions introduced that same day**, and
+     the yield did not fall off. In order of how badly they would have hurt somebody:
+     **THE PANIC TRIAD OUTRANKED A SUICIDE DISCLOSURE.** `chest pain`, `heart attack` and
+     `can't breathe` are bare substrings in MEDICAL_PHRASES, and `medical` was pushed FIRST
+     unconditionally, so it always decided the card. Measured against the pre-session bundle, **7 of
+     7** panic+ideation sentences were demoted from *"I hear you — and this is more than I should
+     hold alone"* to *"I'm an app — I can't help with medical emergencies. Please call emergency
+     services or get to a hospital immediately"*, with Lifeline at row 6 of 12. In THIS app's
+     population those three are overwhelmingly panic — it ships guided breathing and grounding for
+     exactly them. The control named the cause: *"i'm having a panic attack and i want to die"* was
+     never demoted, because "panic attack" is not one of the substrings. Split into MEDICAL_ACUTE
+     (leads, because minutes matter for an overdose) and MEDICAL_AMBIGUOUS (adds the route, never
+     leads). **And the split made my own dead branch live:** `_has('medical') && _primary !==
+     'medical'` could not run while medical always led, and when it could it PREPENDED where its two
+     siblings append — so the empathic card offered 000 as its first number. The lead kind decides
+     the lead number.
+     **A SUPPRESSION WIDER THAN THE RISK SILENCED THE CANONICAL BURDENSOMENESS FRAME.** The
+     conditional-frame span added that morning refused a list of FRAME WORDS, and five of them —
+     once, when, after, until, while — are TIME words, which is how that disclosure is phrased.
+     7 of 7 silenced: *"when i'm gone\nmy family would be better off"*, *"once i'm dead\n…"*,
+     *"if i wasn't here\n…"*. The frame's CONTENT decides now, not its keyword — and the first
+     cut of THAT refused the token anywhere, which broke *"once the debt is gone"*, one of the four
+     sentences the span exists for. **A debt can be gone; the absence has to be the person's.**
+     **TWENTY SILENCED DISCLOSURES ACROSS FIVE SUPPRESSIONS.** Each ends in an OPEN WILDCARD for its
+     object — "keep going to <place>", "ending things with <person>" — and the wildcard eats the
+     first word of whatever follows: *"i can't keep going to kill myself"* returned **null**. The
+     space form fails at the pre-session bundle too, so the hole is older; `_wsTol` added the
+     newline form, which the old bundle caught. **A span that over-removes is a silenced disclosure,
+     and unlike a false positive nothing on screen shows it happened.**
+     **NINE PATTERNS LOST NEWLINE HANDLING WITH NOTHING IN ITS PLACE** — the morning's own fix,
+     half-applied: `\n\r` was stripped from every bare class and the what-follows branch added only
+     at the 33 shared-bound sites. *"i am a waste of space\nand i mean it"* and *"i took all my
+     pills\nand i mean it"* fired at baseline and returned null at HEAD. It hid because a newline at
+     the very END still worked (`$` matched) and a newline followed by its own disclosure still
+     fired via another entry.
+     **"YOU LOGGED 988 CALORIES TODAY" SILENCED THE NET.** The comment read *"a verified number is
+     unambiguous — nobody writes 13 11 14 to mean anything else"*, and that sentence WAS the
+     defect: 988 is the US crisis line and also a calorie count, a step count and a weight. A number
+     counts only when it is OFFERED now, by the same test the named kinds already had.
+     **THE SAME SENTENCE, CAUGHT OR NOT DEPENDING ON AN APOSTROPHE.** The follows-list needs a word
+     boundary after `i`; an apostrophe provides one and a bare `m` does not — so *"i can't go on,
+     i'm done"* fired and *"i cant go on, im done"* was silent, 5 of 5 lost. `im` and `ive` are
+     added bare, because the group's own trailing `\b` already makes them whole words: "impossible",
+     "important", "improve", "impulse" and "imagine" were all driven and none matches. **A lookahead
+     that cannot fire is worse than no lookahead**, so it is not written.
+     **AND TWO OF THE DEFECTS WERE IN MY OWN TESTS.** The benign-corpus reader searched for a
+     literal that appears in its OWN source, so from that line the bracket matcher started inside a
+     string and ran off the end — **15 of 358 sentences were never swept, and every "0 of 357" in
+     this file was over a partial corpus** (0 of 372 now, with the needle built rather than written).
+     And a per-surface fault injection was a TAUTOLOGY: `!hasNet('_notNetted(')` is true for any
+     string at all, including a surface that never had the net.
+     **WHAT THE REVIEW CLEARED IS WORTH AS MUCH AS WHAT IT FOUND**, because all three were my stated
+     uncertainties and all three were cleared by MEASUREMENT rather than reading. `_wsTol` is
+     structurally safe: all 88 patterns it rewrites walked class-aware with escape handling, 0
+     spaces inside a character class, 0 before a quantifier, every pattern recompiled, and the
+     checker calibrated on two planted defects first. The `'+'`-joined kind set has no mishandling
+     consumer: 24 call sites TRACED, not grepped — four compare a kind and all four are the one
+     if/else chain, the rest coerce with `!!` into a stored boolean; the string is never persisted,
+     never sent to the model, never put in a URL. All 17 net call sites pass the text the person
+     actually typed, with no second `pfx`-class bug. And over 11,515 normalisation variants of 906
+     strings: **308 benign false positives removed, 0 added, 0 disclosures lost.**
    - **AND `_jsCode` IS NOT A DOOR, WHICH IS WORTH WRITING DOWN (9 Oct 2026).** It sits beside
      `_jsAttr`, escapes `&` first, and looks like the same class. It is not: every one of its
      arguments across the bundle is `JSON.stringify(…)` or an app-generated literal, never raw

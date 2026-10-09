@@ -141,7 +141,11 @@ const _RISK_PLAN = [
   // relieved about something and that they have NOT picked a start day yet got a helpline line.
   // "we've set the date" and "my wife and i have set the date" are excluded by the same guard.
   /\bi(?:'?ve| have)? (?:already |finally |now )?picked (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
-  /\bit all worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/, /\ball worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/,
+  // A THING BEING WORKED OUT IS NOT A PLAN. These were the only PLAN entries with no first-person
+  // subject, and measured 9 Oct 2026 they fired on "the macros all worked out for saturday" and
+  // "the split is all worked out" — ordinary Nourish and Train sentences. An object guard cannot
+  // help when the SUBJECT is the macros; the five sibling entries all require "i've"/"i have".
+  /\bi(?:'?ve| have)?\s*(?:got\s+)?it all worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/,
   /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   /\bwritten a note for each\b/,
   /\bwrote (?:the|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
@@ -185,13 +189,31 @@ function _replyNamesAHuman(reply){
   const _HUMAN_NEG = /\b(?:not|no|never|isn'?t|ain'?t|aren'?t|wasn'?t|cannot|can'?t|don'?t|doesn'?t|without)\b[^.!?;]{0,28}$/;
   const _HUMAN_OFFER = /\b(?:talk|speak|call|ring|phone|see|contact|reach out|tell|get|visit|book|text|message)\b|\b(?:would|can|could|might|will) (?:really )?help\b|\b(?:i'?d recommend|worth (?:a|talking|seeing)|please)\b/;
   const t = String(reply || '').toLowerCase();
-  // a verified number is unambiguous — nobody writes 13 11 14 to mean anything else
+  // A NUMBER IS NOT A CONTACT JUST BECAUSE ITS DIGITS MATCH. "nobody writes 13 11 14 to mean
+  // anything else" was wrong, and the comment saying so was the whole defect: this app is full of
+  // numbers. Measured 9 Oct 2026 — every one of these SILENCED the net, because 988 is the US
+  // crisis line and also an ordinary figure here:
+  //   "you logged 988 calories today, nice work."   "that session burned 988 kcal."
+  //   "your total is 116 123 steps this month."     "you are at 988 of your 2200 target."
+  // So somebody who stacked a reason and a plan got no human, because the model happened to mention
+  // a calorie count. A verified number counts only when it is OFFERED — the same test the named
+  // kinds below already have, and the same negation window.
   try{
     if(typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES)){
       const flat = t.replace(/\s+/g, '');
       if(CRISIS_LINES.some(function(l){
         const c = String(l.contact || '');
-        return /\d/.test(c) && flat.indexOf(c.toLowerCase().replace(/\s+/g, '')) >= 0; })) return true;
+        if(!/\d/.test(c)) return false;
+        const k = c.toLowerCase().replace(/\s+/g, '');
+        const at = flat.indexOf(k);
+        if(at < 0) return false;
+        // map the stripped offset back to the original so the window is read in real text
+        let seen = 0, pos = 0;
+        for(; pos < t.length && seen < at; pos++) if(!/\s/.test(t[pos])) seen++;
+        const before = t.slice(Math.max(0, pos - 40), pos);
+        const after = t.slice(pos, pos + k.length + 40);
+        return !_HUMAN_NEG.test(before) && (_HUMAN_OFFER.test(before) || _HUMAN_OFFER.test(after));
+      })) return true;
     }
   }catch(_){ }
   const near = function(i, len){
