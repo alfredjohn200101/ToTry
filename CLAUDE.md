@@ -864,6 +864,43 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      dangling tail, produced an invalid regex and CRASHED the suite instead of failing it** —
      "corrupt the text, never delete the line", in the test this time. A negative lookahead is
      neutered by replacing the WHOLE thing with `(?:)`.
+   - **AND A SPAN'S MIDDLE WINDOW CROSSES CLAUSES, WHICH THE INVARIANT DID NOT ASK (10 Oct 2026).**
+     The over-removal invariant written the previous evening attacked spans ending in an OPEN
+     WILDCARD. A span with `[^.!?]{0,40}` in the MIDDLE has the same problem and worse, because
+     **`[^.!?]` includes the COMMA** — so a window written to reach from a slip word to "want it to
+     stop" reaches straight across whatever sits between them and removes it.
+     **Measured on spans added an hour earlier, by the fix written to satisfy that very invariant:
+     6 silenced disclosures.** *"i gave in last night, i want to kill myself, i want it to stop"* and
+     *"i am a burden to my kids, i cant go on, that is my why"* both returned null. Then the
+     STRUCTURAL half of the check found five more windows the sentence panel had not thought of —
+     the end-it pair, the two carbon-monoxide reportage spans and the conditional frame — and 5 of
+     10 attacks on those swallowed a disclosure too. **A sentence panel can only find the shapes
+     somebody thought of; the structural check finds the shape itself.**
+     Every middle window is TEMPERED now: each character position must not BEGIN a disclosure
+     phrase, so the window stops dead at one instead of swallowing it. 11 of 11 after, with all 8
+     suppressions intact, and the gate forbids a bare `[^.!?]{n,m}` in a suppression span outright.
+   - **AND TWO DISCLOSURES JOINED BY A COMMA LOST BOTH HALVES (10 Oct 2026).** Found while attacking
+     a span that **turned out not to be involved at all** — removing it changed nothing, so the
+     probe case was wrong and the measurement was still worth having. *"i cant go on, my family
+     would be better off"* and *"nothing left, my family would be better off"* each fire ALONE and
+     returned null together; both fired at the pre-session bundle, where a bare comma ended a
+     clause. Neither entry reached it: the first half's comma bound asks what FOLLOWS and "my
+     family" is not on that list, and the second half needs a SENTENCE START, which a comma is not.
+     **Recovered through the second entry's prefix anchor rather than by widening the owner's
+     measured bound** — that bound was chosen on numbers (clause end 42 false positives, this one
+     2) and its "0 disclosures lost" was measured over a corpus that did not contain this shape.
+     **The right fix for a gap outside somebody's corpus is not to overturn their measurement.**
+     The conditional-frame span learns the comma in the same change, or the four benign drivers come
+     back with it — fault-injected both ways, so neither half could have been landed alone.
+     6 of 8 disclosures missed → 0, benign drivers 0 of 6, corpus false positives 0 of 372.
+   - **AND THE CARD GREW FROM 7 ROWS TO 12, SO EVERY NUMBER WAS RE-MEASURED FOR REACH (10 Oct 2026).**
+     `npm run crisis` asserts a helpline is visible and dialable, but it checks the FIRST one. The
+     union card is 1073px on a 414x896 phone. Driven with `elementFromPoint` at each link's own
+     centre (never `el.click()`, which bypasses hit-testing): 8 of 11 own their centre without
+     scrolling, **11 of 11 after**, in a scroller that does scroll. `craft-audit` is clean on all
+     ten screens (0 text runs under 13px, 0 wrapping caps, 0 neighbours under 2px, 3 greys) and
+     `orb-audit` still reports **0 controls losing their own centre**, which is the number that
+     matters there.
    - **AND `_jsCode` IS NOT A DOOR, WHICH IS WORTH WRITING DOWN (9 Oct 2026).** It sits beside
      `_jsAttr`, escapes `&` first, and looks like the same class. It is not: every one of its
      arguments across the bundle is `JSON.stringify(…)` or an app-generated literal, never raw

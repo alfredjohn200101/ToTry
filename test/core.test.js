@@ -12974,6 +12974,53 @@ H.section('no suppression span swallows a disclosure');
   })));
   H.eq(silenced, [], 'no open-wildcard span swallows the disclosure on the other side of it');
 
+  // ── AND A MIDDLE WINDOW CROSSES CLAUSES TOO, WHICH IS HOW MY OWN FIX SLIPPED THROUGH THIS ────
+  // The block above only attacked spans ending in an OPEN WILDCARD. A span with `[^.!?]{0,40}` in
+  // the MIDDLE has the same problem and worse: `[^.!?]` includes the COMMA, so a window written to
+  // reach from a slip word to "want it to stop" reaches straight across whatever sits between them.
+  // Measured 10 Oct 2026 on spans added an hour earlier — by the fix written to satisfy this very
+  // invariant — 6 disclosures silenced:
+  //   "i gave in last night, i want to kill myself, i want it to stop"  -> null
+  //   "i am a burden to my kids, i cant go on, that is my why"          -> null
+  // Every middle window is TEMPERED now: each position must not BEGIN a disclosure phrase, so the
+  // window stops dead at one. This panel puts a disclosure INSIDE each span rather than after it.
+  {
+    const MIDDLE = [
+      ['the slip span',   'i gave in last night, ', ', i want it to stop'],
+      ['the slip span',   'i slipped and ',         ', i want it to stop'],
+      ['the slip span',   'i broke the streak, ',   ', i want it to stop'],
+      ['the vice tail',   'i want it to stop, ',    ', the porn i mean'],
+      ['the burden lookahead', 'i am a burden to my kids, ', ', that is my why'],
+      ['the burden lookahead', 'i am a burden to my family and ', ', that changes today'],
+    ];
+    const INSIDE = ['i want to kill myself', 'i cant go on', "i don't want to live anymore"];
+    const eaten = [];
+    MIDDLE.forEach(([name, pre, post]) => INSIDE.forEach(d => {
+      if(!detectCrisis(d)) return;                     // the control: it must fire alone
+      const m = pre + d + post;
+      if(!detectCrisis(m)) eaten.push(name + ': ' + JSON.stringify(m));
+    }));
+    H.eq(eaten, [], 'no span swallows a disclosure sitting INSIDE its window');
+
+    // ── AND THE STRUCTURAL HALF: no suppression may carry an untempered middle window. ─────────
+    // A sentence panel can only find the shapes somebody thought of; this finds the shape itself.
+    const fn = H.code(H.extractFn('detectCrisis'));
+    const i = fn.indexOf('const _suppress = function(_x){');
+    const j = fn.indexOf('.forEach(function(re){', i);
+    const spans = fn.slice(i, j);
+    // a bare `[^.!?]{n,m}` with nothing tempering it
+    const untempered = [...spans.matchAll(/\[\^\.!\?\]\{\d+,\d+\}/g)].map(m => m[0]);
+    H.eq(untempered, [],
+      'no suppression span carries a bare [^.!?]{n,m} window — it includes the comma, so it reaches ' +
+      'across a clause boundary and removes whatever is on the other side');
+    // calibration: the check can find the shape it forbids
+    H.eq(('x[^.!?]{0,40}y'.match(/\[\^\.!\?\]\{\d+,\d+\}/g) || []).length, 1,
+      'calibration: the structural check finds a bare window when there is one');
+    // and the tempered form is present, so this is not passing because the spans vanished
+    H.ok(/\(\?:\(\?!\\b\(\?:kill\(\?:ing\)\? myself/.test(spans),
+      'and the tempered form IS there (else the zero above would mean the spans are gone)');
+  }
+
   // AND EVERY SPAN STILL SUPPRESSES WHAT IT EXISTS FOR. Guarding a wildcard too hard turns a
   // suppression off, which is a false POSITIVE — the opposite failure, and just as real.
   [ 'i am ending things with my girlfriend', 'i am ending things with her',
@@ -13257,9 +13304,10 @@ H.section('77 fresh sentences from the app’s own fronts');
      ['i am going to end this block on friday', 'i am going to end this phase on friday']],
     ['the slip span', '|caved|slipped|relapsed|lapsed|binged', '',
      ['i slipped again and i want it to stop', 'i caved and i need it to stop']],
-    ['the burden resolve lookahead',
-     "(?![^.!?]{0,44}\\b(?:that changes|that'?s my why|that is my why|that'?s why i|that is why i|starting today|start today|which is why|so i'?m (?:doing|fixing|changing|starting|getting)|and i'?m (?:doing|fixing|changing|starting|owning))\\b)",
-     "(?:)",
+    // ANCHORED ON THE STABLE HEAD. The full lookahead text was the anchor until its window was
+    // tempered, and the probe then said "ANCHOR MISSING — THE MEASUREMENT IS WRONG, NOT THE APP"
+    // rather than passing silently, which is the guard doing its job.
+    ['the burden resolve lookahead', "\\b(?:that changes|that'?s my why|that is my why", "\\b(?:__never__",
      ['i am a burden to my family right now and that changes today',
       'i am a burden to my kids and that is my why']],
   ].forEach(([name, from, to, cases]) => {
@@ -13270,6 +13318,69 @@ H.section('77 fresh sentences from the app’s own fronts');
     H.eq(back.length, cases.length,
       'fault-injected ' + name + ': ' + back.length + ' of ' + cases.length + ' false positives return');
   });
+}
+
+// ── TWO DISCLOSURES JOINED BY A COMMA LOST BOTH HALVES ────────────────────────────────────────
+// Found 10 Oct 2026 while attacking a span that turned out not to be involved at all — the probe
+// case was wrong and the measurement was still worth having, which is the argument for looking at a
+// region rather than a list. "i cant go on, my family would be better off" and "nothing left, my
+// family would be better off" each fire ALONE and returned null together. Both fired at the
+// pre-session bundle, so they are regressions: a bare comma used to end a clause.
+// Neither entry reached it. The first half's comma bound asks what FOLLOWS the comma and "my
+// family" is not on that list; the second half needs a SENTENCE START and a comma is not one.
+// Recovered through the second entry's prefix anchor rather than by widening the owner's measured
+// bound — that bound was chosen on numbers (clause end = 42 false positives, this one = 2), and its
+// "0 disclosures lost" was measured over a corpus that did not contain this shape. The right fix
+// for a gap outside somebody's corpus is not to overturn their measurement.
+// The conditional-frame span learns the comma at the same time, or the four benign drivers come
+// back with it.
+H.section('two disclosures joined by a comma');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', 'calibration: hot');
+  H.eq(detectCrisis('i had eggs for breakfast'), null, 'calibration: cold');
+  // each half alone, so a pass below cannot be one entry carrying the other
+  ['i cant go on', 'nothing left', 'my family would be better off', 'everyone would be better off',
+  ].forEach(m => H.ok(!!detectCrisis(m), 'the half fires alone: ' + JSON.stringify(m)));
+  [ 'i cant go on, my family would be better off',
+    'nothing left, my family would be better off',
+    "i can't cope anymore, they would be better off",
+    "i can't go on, everyone would be better off",
+    "when i'm gone, my family would be better off",
+    "once i'm dead, everyone would be better off",
+  ].forEach(m => H.ok(!!detectCrisis(m), 'and joined by a comma it still fires: ' + JSON.stringify(m)));
+  // THE FOUR BENIGN DRIVERS, in their comma form, which is what the span had to learn
+  [ 'once the debt is gone, my family would be better off',
+    'if i stop gambling, my family would be better off',
+    'if i quit the vape, my kids would be better off',
+    'once the mortgage is gone, our family would be better off',
+    'if i was earning more, my parents would be better off',
+    'when the cut is done, my family would be better off',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'while a resolve frame stays silent: ' + JSON.stringify(m)));
+
+  // ── FAULT INJECTION, both halves of the change ──────────────────────────────────────────────
+  const SRC = H.extractFn('detectCrisis');
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  // (1) take the comma out of the prefix anchor and the disclosures go dark again
+  const A = "/(?:^|[.!?]\\s*|[,\\n\\r]\\s*|\\bi (?:think|know|feel|reckon|believe|guess)";
+  H.ok(SRC.indexOf(A) > 0, 'the prefix anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const noComma = build(SRC.split(A).join("/(?:^|[.!?]\\s*|[\\n\\r]\\s*|\\bi (?:think|know|feel|reckon|believe|guess)"));
+  H.eq(noComma('i want to kill myself'), 'suicide', 'calibration: the corrupted build still detects');
+  const dark = ['i cant go on, my family would be better off',
+                'nothing left, my family would be better off'].filter(m => !noComma(m));
+  H.eq(dark.length, 2, 'fault-injected: without the comma in the anchor both go dark again');
+  // (2) take the comma out of the SPAN and the benign drivers fire — the opposite direction, which
+  // is what makes this a pair of changes rather than one
+  const S = "}[,\\n\\r]\\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)";
+  H.ok(SRC.indexOf(S) > 0, 'the span separator is present (else THE MEASUREMENT IS WRONG)');
+  const spanNoComma = build(SRC.split(S).join("}[\\n\\r]\\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)"));
+  const fired = ['once the debt is gone, my family would be better off',
+                 'if i stop gambling, my family would be better off'].filter(m => spanNoComma(m));
+  H.eq(fired.length, 2,
+    'fault-injected the other way: without the comma in the span the resolve frames fire — so the ' +
+    'anchor change could not have been landed on its own');
 }
 
 H.report();

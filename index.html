@@ -13525,6 +13525,14 @@ function detectCrisis(text){
   // _hit/_hitRe discarded it. So the space in an exclusion means "whitespace", not "a space".
   const _wsTol = function(r){ return r.source.indexOf(' ') < 0 ? r
     : new RegExp(r.source.replace(/ /g, '[ \\n\\r]'), r.flags); };
+  // AND A SPAN'S MIDDLE WINDOW CROSSES CLAUSES TOO. `[^.!?]{0,40}` includes the COMMA, so a window
+  // written to reach from a slip word to "want it to stop" reaches straight across whatever sits
+  // between them — and removes it. Measured 10 Oct 2026 on spans added an hour earlier, 6 silenced:
+  //   "i gave in last night, i want to kill myself, i want it to stop"   -> null
+  //   "i am a burden to my kids, i cant go on, that is my why"           -> null
+  // This is the invariant two blocks down, violated by the fix written to satisfy it. Every middle
+  // window is TEMPERED now: each character position must not BEGIN a disclosure phrase, so the
+  // window stops dead at one instead of swallowing it. 0 of 6 after, with all 8 suppressions intact.
   // A SPAN THAT OVER-REMOVES IS A SILENCED DISCLOSURE, WHICH IS THE WORST DIRECTION THIS CAN FAIL.
   // Five of these spans end in an OPEN WILDCARD for their object — "ending things with <person>",
   // "keep going to <place>", "killing it <somewhere>" — and that wildcard happily consumes the
@@ -13552,7 +13560,7 @@ function detectCrisis(text){
    // A suppression has to be NARROWER than the risk, and this one was wider. The window now
    // refuses a first-person ABSENCE token, and is bounded to the frame's own line so it cannot
    // read the clause on the other side of the break.
-   /\b(?:if|once|when|unless|after|until|while)\b(?![^.!?\n\r]{0,48}\b(?:i'?m gone|i am gone|im gone|i'?m dead|i am dead|im dead|i'?ve gone|i'?m not here|i am not here|i was ?n'?t here|i'?m not around|i'?m not alive|i do it|i did it|i end it|i kill myself|i disappear)\b)[^.!?]{0,48}[\n\r]\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)\s+(?:would|'?d|will) be better off(?!\s*with ?out )/g,
+   /\b(?:if|once|when|unless|after|until|while)\b(?![^.!?\n\r]{0,48}\b(?:i'?m gone|i am gone|im gone|i'?m dead|i am dead|im dead|i'?ve gone|i'?m not here|i am not here|i was ?n'?t here|i'?m not around|i'?m not alive|i do it|i did it|i end it|i kill myself|i disappear)\b)(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,48}[,\n\r]\s*(?:(?:my|our|their|the) [a-z']{1,12}|everyone|everybody|they)\s+(?:would|'?d|will) be better off(?!\s*with ?out )/g,
    /ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?(?!kill|die|dy(?:e|ing)|dead|suicide|myself|my life|my own life|end (?:it|my|this)|ending it|hurt (?:myself|me)|harm|overdos|noose|hang(?:ing)? myself|blow(?:ing)? my|slit|take my life|taking my life)[a-z']{1,14}/g,
    /keep going to (?!be |feel |live)(?:that |the |my )?(?!kill|die|dy(?:e|ing)|dead|suicide|myself|my life|my own life|end (?:it|my|this)|ending it|hurt (?:myself|me)|harm|overdos|noose|hang(?:ing)? myself|blow(?:ing)? my|slit|take my life|taking my life)[a-z']{1,14}/g,
    /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
@@ -13579,8 +13587,8 @@ function detectCrisis(text){
    // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
    // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
    // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b[^.!?]{0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
-   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b[^.!?]{0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b/g,
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b/g,
    // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
    // `ending things with` span beside it already excludes, in the other inflection.
    // "I WANT IT TO STOP" AFTER A SLIP IS THE FIGHT'S OWN VOCABULARY. The register keeps the
@@ -13588,8 +13596,8 @@ function detectCrisis(text){
    // night and i want it to stop" returned 'suicide' — pre-session too, so it is old. The
    // disqualifying context sits in FRONT of the match, which no suffix bound can see, so it is a
    // span removal. Bare "i want it to stop." still fires.
-   /\b(?:gave in|caved|slipped|relapsed|lapsed|binged|gave up|broke the streak|lost the streak|went back to it)\b[^.!?]{0,40}\b(?:want|wants|need|needs) it to stop\b/g,
-   /\b(?:want|wants|need|needs) it to stop\b[^.!?]{0,40}\b(?:the (?:porn|vape|booze|drink|gambling|scrolling|bingeing)|this vice|this habit|the slip)\b/g,
+   /\b(?:gave in|caved|slipped|relapsed|lapsed|binged|gave up|broke the streak|lost the streak|went back to it)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:want|wants|need|needs) it to stop\b/g,
+   /\b(?:want|wants|need|needs) it to stop\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:the (?:porn|vape|booze|drink|gambling|scrolling|bingeing)|this vice|this habit|the slip)\b/g,
    /\bend things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them |that )?(?!kill|die|dy(?:e|ing)|dead|suicide|myself|my life|my own life|end (?:it|my|this)|ending it|hurt (?:myself|me)|harm|overdos|noose|hang(?:ing)? myself|blow(?:ing)? my|slit|take my life|taking my life)[a-z']{1,16}/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
    // bound on the entry can reach this — both review agents only ever tested continuations
@@ -13614,8 +13622,8 @@ function detectCrisis(text){
    // somebody researching a means, and it went null. Reading ABOUT something is what both the
    // bystander and the person planning do; only the bystander names a SOURCE. So the source noun
    // is required, in either order, and "in the car" / "in the garage" survive untouched.
-   /\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b[^.!?]{0,40}\bcarbon monoxide\b/g,
-   /\bcarbon monoxide\b[^.!?]{0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(_wsTol(re), ' '); });
+   /\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\bcarbon monoxide\b/g,
+   /\bcarbon monoxide\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:news|story|article|documentary|podcast|episode|headline|paper|bulletin)\b/g].forEach(function(re){ _x = _x.replace(_wsTol(re), ' '); });
     return _x;
   };
   // The suppressions run on EACH form, after its own whitespace handling — so "i can't go\non this
@@ -13801,6 +13809,17 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   // Cost, measured over the 372-sentence corpus and its apostrophe-stripped copy: 0 new false
   // positives either way. This is the normalisation principle the apostrophe section opens with —
   // a person who does not type apostrophes must not get a different detector.
+  // TWO DISCLOSURES JOINED BY A COMMA LOST BOTH HALVES. Measured 10 Oct 2026: "i cant go on, my
+  // family would be better off" and "nothing left, my family would be better off" each fire ALONE
+  // and returned null together — and both fired at the pre-session bundle, so they are regressions.
+  // The first half's comma bound asks what FOLLOWS the comma and "my family" is not on that list;
+  // the second half needs a SENTENCE START and a comma is not one. So neither entry reached it.
+  // Recovered through the second entry's prefix anchor rather than by widening the owner's measured
+  // bound — that bound was chosen on numbers (clause end 42 false positives, this one 2) and its
+  // "0 disclosures lost" was measured over a corpus that did not contain this shape.
+  // The conditional-frame span below learns the comma at the same time, or the four benign drivers
+  // come back with it: "once the debt is gone, my family would be better off" must stay silent.
+  // Measured: 6 of 8 disclosures missed → 0, benign drivers 0 of 6, corpus false positives 0 of 372.
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
     // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead
@@ -13911,14 +13930,14 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // earlier drafts were defeated by a leading conditional ("if i finally clear this debt…").
     // AND NEGATION POLARITY DIFFERS BY OBJECT — for gone|dead the disclosure is UNnegated, for
     // here|around|alive it is negated, so entries 5 and 7 carry opposite polarity by design.
-    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))(?![^.!?]{0,44}\b(?:that changes|that'?s my why|that is my why|that'?s why i|that is why i|starting today|start today|which is why|so i'?m (?:doing|fixing|changing|starting|getting)|and i'?m (?:doing|fixing|changing|starting|owning))\b)\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
+    /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |such |only |nothing but |like |a real )*a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))(?!(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,44}\b(?:that changes|that'?s my why|that is my why|that'?s why i|that is why i|starting today|start today|which is why|so i'?m (?:doing|fixing|changing|starting|getting)|and i'?m (?:doing|fixing|changing|starting|owning))\b)\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|(?:all day|all week|all the time|all of the time|lately|today|tonight|again|right now|now|every day|most days|constantly)\b|(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b)/,
     /\b(?:i'?m|i am|im)\s+(?:just |such |only |nothing but )*a drain on (?:them|everyone|everybody|the people|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my friends|my mates)\b/,
     /\bi (?:just )?drain (?:everyone|everybody|the people|my family|them)\b(?!\s+(?:of|the)\b)/,
     /\b(?:i'?m|i am|im|i feel like i'?m)\s+(?:just |such |only )*a waste of (?:space|oxygen|air|skin|a life|life)\b\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|to (?:them|everyone|everybody|my family)|in (?:this world|their lives))/,
     /\bbetter off (?:if|when|once) (?:i'?m|i was|i were|i am) (?:gone|dead)\b(?!\s*(?:for (?:a |an |one |two |three |four |five |six |ten |the |next |this |that |\d)|so much|so long|so often|less|from home|until|till))/,
     /\bbetter off with me (?:gone|dead)\b/,
     /\bbetter off (?:if|when|once) (?:i (?:was|were) (?:not|never)|i wasn'?t|i weren'?t|i'?m not|i am not)\s+(?:here|around|alive|born)\s*(?:(?:[.!?,;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$)/,
-    /(?:^|[.!?]\s*|[\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:(?:[.!?;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$)/,
+    /(?:^|[.!?]\s*|[,\n\r]\s*|\bi (?:think|know|feel|reckon|believe|guess)(?: that)?\s+)(?:everyone|everybody|they|my family|my wife|my husband|my kids|my children|my parents|my mum|my mom|my dad|my partner|my girlfriend|my boyfriend|my friends|my mates|the kids)(?:'?d| would| will)?\s*(?:all |probably |honestly |just )*be better off\s*(?:(?:[.!?;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$)/,
     /\b(?:no ?one|nobody|no-one)[^.!?\n]{0,16}\bmiss me\s*(?:(?:[.!?;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$|if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive|died|disappeared)\b|if i went\s*(?:(?:[.!?;]|[\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody|and i|really)\b))|$))/,
     // THE `gone` BRANCH NEEDS A TERMINATOR TOO. Its sibling `here|around|alive` branch had one
     // and this one did not, so "nobody would notice if i was gone from that group chat" and
