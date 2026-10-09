@@ -100,16 +100,56 @@ Feeling Door with no heading in the light theme.
 1. Wait for processing (usually a few minutes; ASC emails you if it fails export compliance or
    finds a missing icon).
 2. TestFlight → Internal Testing → add yourself → accept the invite on the phone.
-3. **The four things only real hardware can answer** — everything else is verified:
-   **barcode scanning · Face ID matching · haptics · notification delivery.**
+3. **TWO things only real hardware can answer — not four.** This said four for months.
+   **Face ID matching and notification delivery were both verified on the SIMULATOR on 10 Oct 2026**
+   (v610, the real Capacitor build, driven end to end — see § "What the simulator settled" below).
+   What genuinely still needs a phone: **barcode scanning** (no camera) and **haptics** (no Taptic
+   engine). Everything else is verified.
 4. Before SUBMITTING for review (not needed for TestFlight): the age rating and the App Privacy
-   form, both described further down this file — those sections are still accurate because they
-   describe behaviour, which has not changed.
+   form, both described further down this file. **This line used to say those sections were "still
+   accurate because they describe behaviour, which has not changed." That was wrong, twice.** The
+   App Privacy section under-declared Photos/Videos against the shipping manifest, and § 3's
+   User-Generated Content answer had stopped being true when `shared_library` gained its two
+   contributors. Behaviour DOES change underneath a doc that only describes it — both were found by
+   re-deriving every answer from the v610 code, and both are now gated (`npm run preflight`
+   cross-checks the manifest against `APP-PRIVACY.md`; `npm test` pins what reaches the shared
+   library). Re-derive, do not re-read.
 
 ### The artifacts, verified from their binaries
 
 Archive: `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597.xcarchive`
 IPA:     `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597-build8.ipa` (2.2 MB)
+
+**Build 9 (v610) was archived AND exported locally on 10 Oct 2026, and the whole chain is green**
+— so the archive step is no longer an unknown, and only the upload itself is left. There is no
+workspace in this project (Capacitor SPM, not CocoaPods), so it is `-project`, not `-workspace`:
+
+```
+xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath <path>/ToTry.xcarchive archive
+xcodebuild -exportArchive -archivePath <path>/ToTry.xcarchive \
+  -exportPath <path>/export -exportOptionsPlist <path>/ExportOptions.plist
+```
+
+`ExportOptions.plist` needs `method = app-store-connect`, `teamID = L4BD53PLVF`,
+`signingStyle = manual`, `signingCertificate = Apple Distribution`, and
+`provisioningProfiles = { app.totry: ToTryAppStore }`. Manual signing is what makes it work with no
+Apple credentials at all: both App Store profiles are already installed locally.
+
+Read out of the resulting binaries, never from the log:
+- `ToTry.ipa`, 2.7 MB — **Authority = Apple Distribution: Alfred John (L4BD53PLVF)** and
+  **`get-task-allow = false`**. Those two are what decide whether an upload is accepted; the
+  ARCHIVE is signed *Apple Development* with `get-task-allow = true`, which is normal and not a
+  defect — the export step re-signs. Check the IPA, not the archive.
+- `1.0` build `9`, `app.totry`, min iOS 15.0, `PrivacyInfo.xcprivacy` present at the app root.
+- The embedded web bundle is `APP_VERSION = 'v610'` and byte-identical to the repo's `index.html`
+  (sha256 `b14d3aca6b643f26…` on both sides) — preflight's parity claim, confirmed from inside the
+  artifact that would actually ship.
+
+One false alarm worth not repeating: `plutil -extract CFBundleIconName` reports ABSENT, which looks
+like `ERROR ITMS-90713`. It is nested at `CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName`, which
+is where actool writes it, and build 8 already uploaded with that exact layout. The flat extract was
+the thing that was wrong.
 
 Both verified by reading the files OUT OF the bundle, never from the build log — that is the
 check that caught build 6 shipping v593 while its log said success. Repeat it on every archive.
@@ -191,7 +231,8 @@ xcrun altool --upload-app \
    Upload. (`altool` cannot do this from the CLI here — the issuer ID is not on this machine.)
 2. App Store Connect → TestFlight → wait for processing → add yourself as an internal tester.
 3. Install TestFlight on the iPhone and accept the invite.
-4. **The four things only real hardware can answer**: barcode scanning, Face ID, haptics,
+4. **Two things only real hardware can answer** (Face ID and notifications were settled on the
+   simulator — see § "What the simulator settled"): barcode scanning, haptics,
    notifications. Everything else has been verified in the browser gate.
 
 Faster alternative if you only want it on your own phone TODAY, skipping App Store Connect:
@@ -484,6 +525,45 @@ stale in a way that matters (see User-Generated Content). Where a number appears
 > is authoritative — answer it honestly, question by question, and take the tier it computes. Never
 > set a tier lower than the answers produce: being corrected costs a review cycle, and an
 > under-declared rating can get an app pulled later.
+---
+
+## What the simulator settled (10 Oct 2026, v610, build 9)
+
+Driven on the REAL Capacitor build on a booted iPhone 17 Pro — `node scripts/app-shot.mjs install`
+then `launch`, taps through the iOS Simulator control tool. Not Safari, not Chromium: the app that
+ships.
+
+**FACE ID — the whole cycle, verified.** Capability detection resolved to "Face ID" with a live
+toggle; tapping it raised the system Face ID sheet carrying the app's OWN reason string ("Turn on the
+lock for ToTry"); a match committed the setting and toasted "Lock on"; backgrounding and returning
+after a real absence **covered the content and demanded Face ID**, with nothing of the journal
+visible behind it; a match unlocked it to exactly where it had been; and turning the lock back OFF
+demanded the same proof again, which is deliberate — so grabbing an open phone cannot quietly remove
+the protection.
+
+**NOTIFICATIONS — permission, scheduling and delivery, verified.** The toggle raised the real iOS
+permission alert; allowing it flipped the switch and the app confirmed "Morning 07:30 · Evening 21:00
+— even when the app is closed", which it only prints for a schedule the plugin actually CONFIRMED;
+iOS registered `app.totry` in its own BulletinBoard section list; and a delivered notification
+rendered as a banner with the ToTry icon and the right copy.
+
+**Three ways this test lies, each met while running it** — every one of them looks like an app defect:
+- **Face ID enrollment does not survive a simulator reboot.** It was enrolled, the simulator was
+  shut down to free memory for the archive, and on reboot `notifyutil -g
+  com.apple.BiometricKit.enrollmentChanged` read **0** again. Worse, the app reads capability at
+  LAUNCH, so enrolling after launch leaves it on the stale answer and the auth falls through to the
+  passcode screen. Enroll, THEN launch, and check the value rather than assuming the set worked.
+- **A fast HOME-and-back does NOT lock, and that is correct.** There is a documented 2500 ms grace
+  window, because the share sheet, the barcode scanner and permission prompts all hide the web view
+  too. The first return was inside it and the app opened straight up — which reads exactly like "the
+  lock does not work". Wait longer than 2.5 s or you will report a bug that is a feature.
+- **`simctl push` to a FOREGROUND app shows nothing.** iOS suppresses banners for the active app.
+  The first push looked like a dead notification path; backgrounding the app first produced the
+  banner immediately.
+
+`xcrun simctl spawn <udid> notifyutil -p com.apple.BiometricKit_Sim.pearl.match` is the match;
+`…enrollmentChanged` with `-s 1` then `-p` is the enrollment.
+
 ---
 
 ## 4 · Review notes — paste this in
