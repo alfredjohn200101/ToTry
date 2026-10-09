@@ -24,12 +24,37 @@ const pull = (decl, end) => { const i = H.html.indexOf(decl); if(i < 0) throw ne
   const j = H.html.indexOf(end, i); return H.html.slice(i, j + end.length); };
 const BROTHER_VOICE = new Function(pull('const BROTHER_VOICE =', '";\n') + '\nreturn BROTHER_VOICE;')();
 const CRISIS_LINES  = new Function(pull('const CRISIS_LINES = [', '];')  + '\nreturn CRISIS_LINES;')();
-const { brotherSys } = H.load(['brotherSys','safetyNote','sexNote','_crisisLinesForPrompt'], {
-  BROTHER_VOICE, CRISIS_LINES, userSex: () => 'male',
-  faithVoiceNote: () => 'FAITH CONTEXT: Christian (Catholic). Scripture and grace are real to them. ',
-});
+// THE PROBE STUBBED THE FAITH NOTE, SO A STAMP COVERING IT WOULD BE A SHA WITH NO EVIDENCE.
+// Measured 9 Oct 2026: the stub is 75 characters, the shipped faithVoiceNote() is 152, and
+// SYS.includes(faithVoiceNote()) was FALSE while SYS.includes(the stub) was TRUE. So planting a
+// wrong helpline into the faith note would not have appeared in the measured prompt at all, and the
+// fingerprint's whole promise — "edit the prompt and the gate makes you re-measure" — was hollow for
+// that note. It runs for real now. FAITHS carries `verses:` references, so those are stubbed empty:
+// they are verse LISTS for the readers, never part of a prompt.
+const VS_CHRISTIANITY = [], VS_ISLAM = [], VS_HINDU = [], VS_BUDDHIST = [], VS_SECULAR = [];
+const FAITHS = new Function('VS_CHRISTIANITY','VS_ISLAM','VS_HINDU','VS_BUDDHIST','VS_SECULAR',
+  pull('const FAITHS = {', '\n};') + '\nreturn FAITHS;')(VS_CHRISTIANITY, VS_ISLAM, VS_HINDU, VS_BUDDHIST, VS_SECULAR);
+// H.load REFUSES a stub it would shadow, so faithVoiceNote MOVES into the load list rather than
+// being duplicated as a stub.
+const { brotherSys, faithVoiceNote, sexNote } =
+  H.load(['brotherSys','safetyNote','sexNote','_crisisLinesForPrompt','faithVoiceNote','curFaith'], {
+    BROTHER_VOICE, CRISIS_LINES, FAITHS,
+    userSex: () => 'male',           // only 1 of sexNote's 3 branches is measured; the other two are
+                                     // fingerprinted but never driven, which the stamp comment says.
+    faithTradition: () => 'christianity',
+    faithLevel: () => 'full',
+  });
 const { detectCrisis } = H.load(['detectCrisis']);
 const SYS = brotherSys();
+// THE STAMP MUST NEVER AGAIN CERTIFY A STUBBED PROMPT.
+for(const [name, fn] of [['faithVoiceNote', faithVoiceNote], ['sexNote', sexNote]]){
+  const t = fn();
+  if(!t || SYS.indexOf(t) < 0){
+    console.error('\nTHE MEASUREMENT IS WRONG, NOT THE APP: ' + name + '() is not in the assembled prompt,');
+    console.error('so anything this run stamps about it would be a hash with no evidence behind it.');
+    process.exit(1);
+  }
+}
 
 // The fingerprint lives in test/harness.js so the probe and the gate cannot compute it two ways —
 // a fingerprint computed twice is one that silently stops matching. On a clean full run this writes
@@ -196,6 +221,11 @@ if (!only) {
           + 'sources change without re-running it — the probe needs the network, the gate does not.',
       sha: fp.sha, bytes: fp.bytes,
       measured: {
+        // RECORDED SO THE GATE CAN REFUSE A STAMP FROM THE OLD, STUBBED PROBE. Until 9 Oct 2026
+        // this script stubbed faithVoiceNote with a 75-character string, so a sha covering that
+        // declaration would have had no measurement behind it. The guard above exits non-zero if
+        // either note is missing from the assembled prompt, so reaching here means both ran.
+        notes_in_prompt: true,
         bandA_ordinary_flinched: `${by('A').filter(r=>r.human).length} of ${by('A').length}`,
         bandB_named_a_human:     `${by('B').filter(r=>r.human).length} of ${by('B').length}`,
         bandC_named_a_human:     `${by('C').filter(r=>r.human).length} of ${by('C').length}`,

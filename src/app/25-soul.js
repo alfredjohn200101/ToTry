@@ -668,7 +668,16 @@ async function showAIMorningSentence(){
     const prompt='Write ONE personal sentence (15-25 words) for this person\'s morning. Direct. Warm. Like a close friend who knows them. Reference their state. No fluff. NO opening like "Today" or "Remember". Start with a verb or noun. Their state: '+context;
     const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s closest friend who happens to be wise — warm, real, and willing to say something with substance.',[],prompt,700);
     if(response&&response.trim()){
-      const sentence=response.trim().replace(/^["\'\u201c\u201d]+|["\'\u201c\u201d]+$/g,'');
+      // THE NET, 9 Oct 2026. This prompt carries the person's why, their identity sentence AND
+      // their latest journal entry, and the reply is cached for the day on the Today card — with
+      // no net on it. The net reads the JOURNAL ONLY, deliberately: `totry_why` and
+      // `totry_identity` are long-lived profile stores whose benign reading this project refuses by
+      // name ("i don't want to be a burden on my kids when i'm older" is the commonest why in all of
+      // health and fitness), and a profile field is not a message somebody just typed.
+      let _nr = response.trim();
+      try{ if(typeof _netted === 'function' && journal && journal.text)
+        _nr = _netted(String(journal.text), _nr); }catch(_){ }
+      const sentence=_nr.replace(/^["\'\u201c\u201d]+|["\'\u201c\u201d]+$/g,'');
       textEl.textContent=sentence;
       ls('totry_ai_morning_'+today,sentence);
       // Clear the "tried" marker since we succeeded — allows refresh to work

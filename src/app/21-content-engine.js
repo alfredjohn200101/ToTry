@@ -76,9 +76,17 @@ async function generateWeeklyReflection(){
       // into the companion/coach — the weekly check-in becomes a short conversation, not a monologue.
       const raw = (resp||'');
       const qMatch = raw.match(/\bQ:\s*(.+)$/s);
-      const reflection = qMatch ? raw.slice(0, qMatch.index).trim() : raw.trim();
+      let reflection = qMatch ? raw.slice(0, qMatch.index).trim() : raw.trim();
+      // THE NET, 9 Oct 2026. The identity sentence is the one typed field in this prompt and the
+      // reflection is shown straight back to the person, so this is a reply and it carries the net.
+      // It goes into innerHTML at a text position, so the escaped variant.
+      try{ if(typeof _netted === 'function')
+        reflection = _netted(ls('totry_identity') || '', reflection.replace(/</g,'&lt;'), true); }catch(_){ reflection = reflection.replace(/</g,'&lt;'); }
+      // generateWeeklyContent above is deliberately NOT netted, and the reason is the output, not
+      // the input: it builds a storyboard and a CAPTION the person publishes. A line reading
+      // "please talk to someone tonight" belongs in a reply to them, never in content they post.
       const question = qMatch ? qMatch[1].trim() : '';
-      box.innerHTML = '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx);line-height:1.8;white-space:pre-wrap">'+reflection.replace(/</g,'&lt;')+'</div>'+
+      box.innerHTML = '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx);line-height:1.8;white-space:pre-wrap">'+reflection+'</div>'+
         (question ? '<div style="margin-top:14px;padding:13px 15px;background:var(--bg3);border-radius:var(--rm)"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">One honest question</div><div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:10px">'+question.replace(/</g,'&lt;')+'</div><button class="btn" onclick="(function(){var q='+JSON.stringify(question).replace(/"/g,'&quot;')+';try{goCoach? goCoach(q):go(\'coach\');}catch(e){go(\'coach\')}})()" style="width:auto;padding:8px 14px;font-size:var(--t-sm);background:none;color:var(--go);background:var(--fill2)">Answer with my coach</button></div>' : '');
     }
     ls('totry_weekly_reflection_at', Date.now());

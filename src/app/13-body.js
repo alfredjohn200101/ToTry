@@ -535,12 +535,23 @@ async function generateWeeklyCoachResponse(entry){
   try {
     const response = await api(brotherSys() + 'You’re giving them an honest weekly read here — what you see across the whole week and the one thing that matters most. Direct because you care.', [], prompt, 1000);
     if(response && response.trim()){
+    // THE NET, 9 Oct 2026. A census of all 12 brotherSys() call sites found FOUR surfaces that put
+    // the person's own words in the prompt and showed a reply back, with no net on any of them.
+    // The fields are chosen PER SURFACE, not joined generically: an adversarial pass measured that
+    // joining every free-text field manufactures false positives no single field produces —
+    // "i don't want to be a burden anymore" is a real motivational why and "i've picked the day."
+    // is something this app ASKS for; neither nets alone and joined they do.
+    // Here the three boxes ARE one message: win, struggle and focus are typed on one screen and
+    // submitted together, so a reason in one and a plan in another is one person's sentence.
+    let _resp = response.trim();
+    try{ if(typeof _netted === 'function')
+      _resp = _netted([entry.win, entry.struggle, entry.focus].filter(Boolean).join(' '), _resp); }catch(_){ }
       // Save and show
       const syntheses = ls('totry_syntheses')||[];
       syntheses.unshift({
         weekKey: getWeekKey(new Date()),
         date: dayKeyOf(),
-        text: response.trim(),
+        text: _resp,
         ts: new Date().toISOString(),
         type: 'weekly_checkin'
       });
@@ -554,7 +565,7 @@ async function generateWeeklyCoachResponse(entry){
         '<div class="modal-handle"></div>'+
         '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;text-align:center;margin-bottom:8px">Your coach response</div>'+
         '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;text-align:center;margin-bottom:16px">For this week.</div>'+
-        '<div style="font-size:var(--t-sm);line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(response.trim())+'</div>'+
+        '<div style="font-size:var(--t-sm);line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(_resp)+'</div>'+
         '<button class="btn primary" onclick="closeModal(this)">Got it</button>'+
         '</div>';
       document.body.appendChild(m);

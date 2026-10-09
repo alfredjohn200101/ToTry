@@ -286,10 +286,17 @@ async function generateWeeklySynthesis(){
   // speak Christian framing to a Muslim or secular person.
   const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
+      // THE NET, 9 Oct 2026. Three journal rows go into this prompt verbatim and the reply is
+      // persisted AND shown in a modal, with no net on it. The net reads the FULL j.text, not the
+      // 100-character slice the prompt uses — an adversarial pass measured a disclosure that the
+      // full text catches and the slice loses.
+      let _resp = response.trim();
+      try{ if(typeof _netted === 'function')
+        _resp = _netted(journal.slice(0,3).map(j=>String(j&&j.text||'')).filter(Boolean).join(' '), _resp); }catch(_){ }
       const synthesis = {
         weekKey:thisWeekKey,
         date:dayKeyOf(today),
-        text:response.trim(),
+        text:_resp,
         ts:new Date().toISOString(),
         stats: {
           workouts: workouts.length,
@@ -318,7 +325,7 @@ async function generateWeeklySynthesis(){
           ls(shownKey, true);
         }
       }
-      return response.trim();
+      return _resp;   // the caller gets the netted copy too, not the raw one
     }
   }catch(e){
     console.error('Synthesis failed:',e);

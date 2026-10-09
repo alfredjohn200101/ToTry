@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v608**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v609**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -658,6 +658,102 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      because the same text sits in the comment above it and in the helper's declaration; a count
      cannot say WHICH surface went missing; and it only ever knew about three surfaces. It asserts
      PER SURFACE by name now, executes the helper, and fault-injects each surface in turn.
+   - **AND THE NET WAS ONE SYNONYM WIDE, AND FIRED ON THE ABSENCE OF A PLAN (9 Oct 2026).**
+     Fifteen agents over the net's two lists — five grounders, ten adversaries told to default to
+     refuted — and the headline is not the coverage. **HEAD had SIX live false positives.** The
+     shipped `picked (?:the|a|my) (?:day|date|night)` entry had no subject guard, so
+     *"they'd all be relieved. i haven't picked the day."* NETTED, and so did the
+     apostrophe-stripped and unabbreviated forms. "they'd all be relieved." is in this gate's own
+     ORDINARY list, so the pair was reachable straight from the corpus. Measured over 395 benign
+     sentences: **6 firing pairs → 0, and must-net 7 of 14 → 14 of 14.**
+     **THREE REFUSALS ARE AS LOAD-BEARING AS THE ADDITIONS**, each because the benign and the
+     disclosing form are the same string. The obvious gap was the PASSIVE voice — "the letters are
+     written/done/sealed" — and **it fires on THE APP'S OWN PRINTED STRING**: `25-soul.js` shows the
+     toast "Letter sealed" and renders "N letters sealed, waiting for delivery", because the
+     letters-to-your-future-self feature SEALS what a person writes. 9 of 14 ordinary sentences.
+     "i've set the date" is the canonical engagement sentence and the app's own copy prints
+     *"Yours — you set the dates."* and *"Pick the day(s), set a time, done."* "it's happening
+     saturday" is a plumber, a party, a comp.
+     **THE LAYER CHOICE IS THE WHOLE JUDGEMENT, AND THE TWO LENSES DISAGREED.** One measured the
+     worthlessness family (`a weight on`, `worthless to`, `deserve better than me`, `millstone`)
+     clean in SUICIDE_RE — 0 corpus false positives, 0 verdicts changed — and it STILL fired on
+     *"i'm a weight on my family. that changes today."* and *"i'm a weight on my kids. that's my
+     why."* That is onboarding's "why does this matter?", crisis door #18, where a non-null REPLACES
+     the help. The repo's own `be relieved` entry already settles it: only the
+     disclosing-completion form sits in SUICIDE_RE, the bare clause-ended form is additive. So the
+     whole family is additive, one rule, no dead duplicate — and the layers are **mutually
+     exclusive**, because every AI surface calls `detectCrisis` and returns before `api()`, so an
+     entry in both is unreachable in the second.
+     **AND I CORRECTED A REFUTER WITH MEASUREMENT.** It recommended DROPPING
+     `/don'?t want to be a burden any ?more/` as "the sole cause of all three false positives".
+     Measured: every HEAD firing pair ends in *"i haven't picked the day"* — the PLAN negation was
+     the cause. Keeping the entry and fixing the guard gives 0 false positives AND 14 of 14;
+     dropping it costs the one real disclosure whose plan half ("written a note for each") has no
+     benign reading at all.
+     `millstone`'s one dangerous collision is **Matthew 18:6, live on this app's scripture surface**:
+     a bare `/\bmillstone\b/` fires on 11 of 11 benign sentences, the verse included.
+   - **AND TWELVE OF THE NINETEEN NET PATTERNS CARRIED A BRANCH THAT COULD NOT FIRE (9 Oct 2026).**
+     `_needsHumanNet` collapsed every whitespace run to a single space before testing, so the
+     `[,\n\r]` and `[\n\r]` branches in the bounds I had landed that morning were unreachable — a
+     dead guard under a comment claiming it works, which is the shape this file fails builds over.
+     Collapsing also LOST a real shape: a newline is not a clause end once it is a space, so
+     *"nobody needs me\ni've picked the day."* did not net. Non-newline whitespace is still
+     collapsed, exactly as `detectCrisis`'s own `t` form does it. Measured: cross-line disclosures
+     3 of 5 → 4 of 5, benign cross-line false positives 0 → 0. The residual is by design —
+     *"i'm a weight on my family\ntonight is the night."* still misses, because the bound asks what
+     FOLLOWS the break and `tonight` is not a new first-person clause.
+   - **AND NINE NET CALL SITES WAS STILL ONLY FOUR OF TEN SURFACES (9 Oct 2026).** A census of all
+     **12** `brotherSys()` call sites (not 14 — counted by script) found four more that put the
+     person's own words in the prompt and showed a reply back, ungated: the Sunday check-in's
+     win/struggle/focus boxes, the weekly synthesis (three journal rows verbatim, persisted and
+     modal-shown), the morning sentence (cached on the Today card), and the weekly reflection.
+     All four DRIVEN in a browser with a reply naming no human: each nets a disclosure and leaves an
+     ordinary field alone.
+     **THE OBVIOUS FIX HAD ITS OWN DEFECT: joining a prompt's free-text fields manufactures false
+     positives no single field produces.** *"i don't want to be a burden anymore"* is a real
+     motivational why and *"i've picked the day."* is something this app ASKS for; neither nets
+     alone and joined they do. So the fields are chosen PER SURFACE — the check-in's three boxes
+     ARE one message (one form, one submit), the morning sentence reads the JOURNAL only and must
+     not reach for `totry_why` or `totry_identity`, which are long-lived profile stores rather than
+     a message somebody just typed. `generateWeeklyContent` is refused on its OUTPUT, not its input:
+     it builds a CAPTION the person publishes, and "please talk to someone tonight" belongs in a
+     reply to them, never in content they post. The three `20-morning` explainers are refused
+     because their prompts carry no typed field at all.
+   - **AND THE VOICE FINGERPRINT WAS A SHA WITH NO EVIDENCE BEHIND PART OF IT (9 Oct 2026).**
+     It went 5 parts to 13. Corrupting `faithVoiceNote`'s prose, its LIGHT branch, `sexNote`'s
+     female branch, or **planting "tell them to call 111" into the faith note every prompt carries**
+     all left the sha unchanged. **And the decisive finding neither I nor the review had:
+     `scripts/voice-probe.mjs` STUBBED `faithVoiceNote`** with a 75-character string against the
+     shipped 152 — driven, `SYS.includes(the shipped note)` was FALSE and `SYS.includes(the stub)`
+     was TRUE. So stamping that declaration would have produced a hash whose supporting measurement
+     never executed the code. The probe runs it for real now and REFUSES to stamp unless both notes
+     are in the assembled prompt; the stamp records `notes_in_prompt` and the gate checks it.
+     **The faith words live in FAITHS, not in the function** — `faithVoiceNote()` only emits
+     `curFaith().voice`, so corrupting christianity's `voice:` moved nothing even with the function
+     stamped. Hashing FAITHS wholesale is REFUSED on measurement (~3kB of which only label+voice
+     reaches a prompt, so three quarters would be reading-plan titles invalidating the stamp on
+     ordinary content work); each tradition gets a narrow WINDOW from its own `prayTo`/`prayWord`
+     token to its `verses:` line. **And the biggest unstamped piece was not a `brotherSys` note at
+     all:** `sharedWisdomNote()` is appended after it by the companion and the coach, is ~12x the
+     faith note, carries its own *"If they are in acute distress, drop it entirely and just be
+     present"*, and takes the real unstamped share of the companion prompt from ~7% to **26%**.
+     **My reason for leaving this alone yesterday was wrong, and measured so.** I argued it would
+     cry wolf on faith-copy edits. Over the src-era commits that touched their files, none of these
+     declarations has changed once, while the already-stamped `safetyNote` changed twice. "Faith
+     copy changes more often than safety copy" is true of faith CONTENT and false of these
+     declarations. Re-measured live afterwards with the real note in the prompt for the first time:
+     band A **0 of 7 flinched, unchanged**, band C 3 of 3 with verified numbers.
+     A fingerprint still cannot cover PROSE, so the two notes are also EXECUTED across the whole
+     5x2x3 matrix and asked whether any of them carries a phone-shaped number (`safetyNote`'s whole
+     point is that the model uses only the lines it is GIVEN) or suppresses the hand-off vocabulary.
+     The chapter:verse strip runs BEFORE the phone test, which is the only reason the scripture
+     controls pass — this app's own examen renders "Qur'an 6:60". And the guard builds its subject
+     INSIDE itself: pointed at `safetyNote()` it reports a violation on correct code, because that
+     note legitimately carries the verified helplines.
+   - **AND THE LAST ELEMENT OF AN ARRAY HAD NO TRAILING COMMA (9 Oct 2026).** Inserting a regex
+     after it made the parser read `/` as division, and `npm test`'s parse check — rule 1, added
+     at v483 for exactly this — caught it before anything else ran. `node --check` on the module
+     cannot: a `src/app/*.js` file may legally begin mid-function, so it fails standalone either way.
    - **AND A "CRISIS SUITE CRASH" WAS A STALE SERVER (9 Oct 2026).** Twice, `npm run crisis` ended in
      `}` then `Node.js v24.18.0` and was read as a syntax error in a file that had just passed
      `node --check`. It was **EADDRINUSE on 8859** from a previous run whose server outlived its

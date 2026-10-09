@@ -130,6 +130,36 @@ const VOICE_PARTS = [
   // the right way round for a safety prompt: cheap to satisfy (one probe run), and it cannot be
   // satisfied by accident.
   ['function brotherSys(extra)', '\n}'],
+  // ── AND brotherSys APPENDS TWO MORE NOTES THAT WERE NOT COVERED (9 Oct 2026) ────────────────
+  // Measured on a scratch copy: corrupting faithVoiceNote's prose, rewriting its LIGHT branch,
+  // rewriting sexNote's female or not-stated branch, or planting "tell them to call 111" into the
+  // faith note ALL left this sha unchanged. Same class as the assembler gap above. The cost is
+  // measured at zero — over the src-era commits that touched their files neither declaration has
+  // changed once, while safetyNote (already stamped) changed twice.
+  // ORDER IS LOAD-BEARING: the parts are joined before hashing, so appending these in a different
+  // order produces a different sha. Append at the end, sexNote before faithVoiceNote.
+  ['function sexNote()', '\n}'],
+  ['function faithVoiceNote()', '\n}'],
+  // ── AND THE FAITH WORDS LIVE IN FAITHS, NOT IN THE FUNCTION ─────────────────────────────────
+  // faithVoiceNote() emits curFaith().voice, so corrupting christianity's `voice:` to "Keep
+  // everything between the two of you" moved NOTHING, even with the function itself stamped.
+  // Hashing FAITHS wholesale is refused on measurement: it is ~3kB of which only label+voice ever
+  // reaches a prompt, so three quarters of it is reading-plan titles and verse lists that would
+  // invalidate the stamp on ordinary content work — the cry-wolf shape this file exists to avoid.
+  // Each part is a WINDOW from the tradition's own prayTo/prayWord token to its `verses:` line,
+  // which is the voice line and nothing else. The anchors sit OUTSIDE the prose on purpose: a
+  // legitimate reword then changes this sha rather than making the window vanish.
+  ["prayTo:'God'", '\n    verses:'],
+  ["prayTo:'Allah'", '\n    verses:'],
+  ["prayTo:'the Divine'", '\n    verses:'],
+  ["prayWord:'sit'", '\n    verses:'],
+  ["prayWord:'reflect'", '\n    verses:'],
+  // ── AND THE BIGGEST UNSTAMPED PIECE WAS NOT A brotherSys NOTE AT ALL ────────────────────────
+  // sharedWisdomNote() is appended AFTER brotherSys() by the companion and the coach, measures
+  // ~1.8k characters — nearly twelve times faithVoiceNote — and carries its own
+  // "If they are in acute distress, drop it entirely and just be present." Measured, it takes the
+  // unstamped share of the real companion prompt from ~7% to 26%.
+  ['function sharedWisdomNote()', '\n}'],
 ];
 function voiceFingerprint(htmlArg){
   const src = htmlArg || html;

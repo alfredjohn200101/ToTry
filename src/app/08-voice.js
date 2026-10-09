@@ -103,15 +103,44 @@ const _RISK_REASON = [
   /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\s*(?:if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive)\b|when i'?m gone\b|without me\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
   /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
   /\bdon'?t want to be a burden any ?more\b/,
-  /\b(?:nobody|no ?one) (?:would )?(?:miss|need|want)s? me\s*(?:if i (?:was |were |wasn'?t |weren'?t )?(?:gone|dead|not here|around)\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+  // `will` and `'ll` beside `would`: "no one will need me." and "nobody will want me." were null in
+  // BOTH layers. ("will miss me" was already covered — SUICIDE_RE's own entry has a 16-char
+  // wildcard that swallows it — so the real gap was need/want.)
+  /\b(?:nobody|no ?one) (?:would |will |'?ll )?(?:miss|need|want)s? me\s*(?:if i (?:was |were |wasn'?t |weren'?t )?(?:gone|dead|not here|around)\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
   /\bnobody needs me\b(?:\s*(?:here|at all|any ?more)\b|\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
   /\bno point in (?:me )?being here\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
-  /\b(?:i'?m|i am|im|i'?d be|i am worth|i'?m worth)\b[^.!?]{0,12}\bworth more dead\b|\bworth more dead\b[^.!?]{0,20}\b(?:than alive to (?:them|her|him|my)|to my (?:family|wife|kids))\b/
+  /\b(?:i'?m|i am|im|i'?d be|i am worth|i'?m worth)\b[^.!?]{0,12}\bworth more dead\b|\bworth more dead\b[^.!?]{0,20}\b(?:than alive to (?:them|her|him|my)|to my (?:family|wife|kids))\b/,
+  // ── THE WORTHLESSNESS-TO-OTHERS FAMILY, 9 Oct 2026. ADDITIVE, AND THE LAYER IS THE WHOLE
+  // JUDGEMENT. An adversarial pass measured 6 of 7 of these synonyms falling through both layers,
+  // and one lens argued for putting them in SUICIDE_RE — where they measured 0 corpus false
+  // positives but STILL fired 3 of 3 on "i'm a weight on my family. that changes today.",
+  // "i'm a weight on my kids. that's my why." and "i'm worthless to my kids right now. starting
+  // today i fix it." That is onboarding's "why does this matter?", crisis door #18, where a
+  // non-null REPLACES the help. The repo's own `be relieved` entry already sets the precedent:
+  // only the disclosing-completion form sits in SUICIDE_RE, the bare clause-ended form sits here.
+  // So the whole family is additive — one rule, no dead duplicate (detectCrisis returns before the
+  // net at every site, so an entry in both layers is unreachable in the second).
+  /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become|i'?ve been|i'?m becoming)\s+(?:just |such |only |nothing but )*a weight (?:on|round|around) (?:them|everyone|everybody|the people|you|us|mum|mom|dad|my (?:family|whole family|wife|husband|girlfriend|boyfriend|missus|kids|children|son|daughter|parents|mum|mom|dad|sister|brother|mates|friends))\b(?:\s*(?:all|both))?(?:'?s (?:shoulders?|backs?|minds?|necks?|conscience))?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  /\b(?:i'?m|i am|im|i feel|i'?m feeling|i feel like(?: i'?m| im)?|i feel i'?m|i'?ve become)\s+(?:just |completely |totally |utterly )*worthless to (?:them|everyone|everybody|the people|you|us|mum|mom|dad|my (?:family|whole family|wife|husband|girlfriend|boyfriend|missus|kids|children|son|daughter|parents|mum|mom|dad|sister|brother|mates|friends))\b(?:\s*(?:all|both))?(?:\s*and (?:the )?kids)?(?:\s*(?:right now|now|any ?more|these days|today))?\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // `deserve better than me` carries the resolve-PRESENT inflection in its bound as well as
+  // resolve-future, because the Fight-front false positives use it: "my wife deserves better than
+  // me, i know that, so i'm doing the work" / "...i'm starting the 90 days today" / "...i'm owning
+  // it this time". "my kids deserve better than THIS" is one word away and is a motivational why.
+  /\b(?:they|everyone|everybody|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|son|daughter|whole family))\s+(?:all )?deserves?\s+(?:someone |somebody |so much |a lot |much |way |far |something )*(?:a better (?:dad|father|mum|mom|mother|husband|wife|partner|parent|man|woman|person|brother|sister|son|daughter) than me|better than me)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b|'?m (?:doing|starting|going|gonna|owning|working|sorting|fixing|changing|getting|on it|sorry|back)|\s+know\b|\s+am (?:doing|starting|going|owning|working|sorry))|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // MILLSTONE's one dangerous collision is Matthew 18:6, which is LIVE on this app's scripture
+  // surface. A bare /\bmillstone\b/ fires on 11 of 11 benign sentences, the verse included; the
+  // first-person self-ascription plus a scripture lookahead is what separates them.
+  /\b(?:i'?m|i am|im|i feel like(?: i'?m| im)?|i felt like(?: i'?m| im)?|i feel i'?m|i'?ve become|i'?ve been|i'?m becoming)\s+(?:just |such |only |nothing but |like |a real )*(?:a|the) millstone\b(?!\s*(?:in|from|of|at)\s*(?:matthew|mark|luke|the gospel|that (?:verse|passage)|scripture)|\s+(?:verse|passage|parable))/,
 ];
 const _RISK_PLAN = [
   // "i've picked the day, monday is day one" and "i've picked the day to start the fast" are both
   // things this app ASKS people to do — picking a start day is a feature.
-  /\bpicked (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // A FIRST-PERSON AFFIRMATIVE SUBJECT, BECAUSE THIS FIRED ON THE ABSENCE OF A PLAN.
+  // Measured 9 Oct 2026 on HEAD: "they'd all be relieved. i haven't picked the day." NETTED, and so
+  // did the apostrophe-stripped and unabbreviated forms — somebody saying their family would be
+  // relieved about something and that they have NOT picked a start day yet got a helpline line.
+  // "we've set the date" and "my wife and i have set the date" are excluded by the same guard.
+  /\bi(?:'?ve| have)? (?:already |finally |now )?picked (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   /\bit all worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/, /\ball worked out\b(?!\s*for (?:the (?:week|month|year|block|cut|bulk|session|macros|training|split|programme|program|comp|race|trip|holiday|move)|training|work|school|uni))/,
   /\bwritten (?:the|a|my) (?:note|notes|letter|letters)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   /\bwritten a note for each\b/,
@@ -119,7 +148,22 @@ const _RISK_PLAN = [
   // "i've got the pills ready for the morning, creatine and vitamin d"
   /\b(?:got|have) the (?:pills|tablets) ready\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
   /\bsaved up (?:the|my) (?:pills|tablets)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
-  /\btonight is the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/, /\btonight'?s the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/
+  /\btonight is the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/, /\btonight'?s the night\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // THE VERB SYNONYMS FOR `picked the day`, with the same first-person affirmative guard.
+  // `set` / `fixed` / `locked in` / `sorted out` are all REFUSED: "set the date" is the canonical
+  // engagement sentence, "my wife and i have set the date" survives any subject guard, and the
+  // app's own copy prints "Yours — you set the dates." (15-giving.js) and "Pick the day(s), set a
+  // time, done." (17-fuelplan.js), so a person echoing either writes exactly the refused string.
+  /\bi(?:'?ve| have)? (?:already |finally |now )?(?:chosen|settled on|decided on) (?:the|a|my) (?:day|date|night)\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+  // `decided when` takes the NARROW bound, measured: the standard bound's comma branch admits
+  // "i've decided when, i'm telling her on friday" — the i(?!'?ll|\s+will) exclusion stops "i'll"
+  // and "i will" but not "i'm".
+  /\bi(?:'?ve| have)? (?:already |finally |now )?decided when\s*(?:[.!?]|$)/,
+  // THE PASSIVE VOICE IS REFUSED ENTIRELY. "the letters are written/done/sealed" looks like the
+  // obvious gap and it fires on THE APP'S OWN PRINTED STRING: 25-soul.js shows the toast "Letter
+  // sealed", renders "N letters sealed, waiting for delivery" and the header "Sealed letters".
+  // The letters-to-your-future-self feature SEALS what a person writes, so the entry would fire on
+  // them reporting back in the app's own word. Measured: 9 of 14 ordinary letters/notes sentences.
 ];
 // Does the model's own reply already put a real human in it? Built from CRISIS_LINES so a new
 // line added to the card is recognised here too, plus the kinds of person the note names.
@@ -195,7 +239,19 @@ function _netted(userText, reply, html){
 }
 function _needsHumanNet(userText, reply){
   try{
-    const t = String(userText || '').toLowerCase().replace(/[\u2018\u2019\u02bc\u02bb\u00b4`]/g, "'").replace(/\s+/g, ' ');
+    // TWELVE OF THE NINETEEN PATTERNS CARRIED A BRANCH THAT COULD NOT FIRE. This collapsed every
+    // run of whitespace to a single space, so the `[,\n\r]` and `[\n\r]` branches in the bounds
+    // above were unreachable — a dead guard under a comment claiming it works, which is the shape
+    // this project fails builds over. Worse, collapsing LOST a real shape: a newline is not a
+    // clause end once it is a space, so "nobody needs me\ni've picked the day." did not net.
+    // Non-newline whitespace is still collapsed (the thumb-stutter and the NBSP cases), exactly as
+    // detectCrisis's own `t` form does it. Measured: cross-line disclosures 3 of 5 -> 4 of 5, benign
+    // cross-line false positives 0 -> 0, corpus newline-joined pairs 0 -> 0.
+    // The one residual is by design: "i'm a weight on my family\ntonight is the night." still
+    // misses, because the bound asks what FOLLOWS the break and `tonight` is not a new first-person
+    // clause. That is the owner's measured bound doing its job, not a hole.
+    const t = String(userText || '').toLowerCase().replace(/[\u2018\u2019\u02bc\u02bb\u00b4`]/g, "'")
+      .replace(/[ \t\f\v\u00a0\u1680\u2000-\u200d\u202f\u205f\u3000\ufeff\u2028\u2029]+/g, ' ');
     if(!t) return false;
     const reason = _RISK_REASON.some(function(re){ return re.test(t); });
     if(!reason) return false;

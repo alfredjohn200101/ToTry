@@ -3693,7 +3693,30 @@ H.section('dead code that was one caller away from confusing someone');
 
   // Model output straight into innerHTML: a reply containing "<" ("you went from <60kg") is parsed as
   // a tag and the rest of the sentence disappears, so the person reads a thought that stops halfway.
-  H.ok(/_escFew\(response\.trim\(\)\)/.test(H.html), 'the weekly coach reply is escaped before it is shown');
+  // ASSERT THE FACT, NOT THE SPELLING. This was /_escFew\(response\.trim\(\)\)/ — a grep for one
+  // call shape — and it went red on 9 Oct when the reply started going through the crisis net and
+  // the variable became `_resp`, while the escaping was untouched. A rename is not a regression.
+  // What matters is that NO copy of the model's reply reaches innerHTML unescaped.
+  {
+    const body = H.code(H.extractFn('generateWeeklyCoachResponse'));
+    // MY OWN CALIBRATION WAS BACKWARDS FIRST: it required a BARE interpolation to exist, which is
+    // the defect, so it reported THE MEASUREMENT IS WRONG against correct code. The instrument is
+    // calibrated on a synthetic defect instead, which is the only honest way to trust a zero.
+    const RAW = /['"]\s*\+\s*(?:_resp|response(?:\.trim\(\))?)\s*\+\s*['"]/g;
+    H.eq(("x'+_resp+'y".match(RAW) || []).length, 1,
+      'calibration: the check can find a raw interpolation when there is one');
+    H.eq(("x'+_escFew(_resp)+'y".match(RAW) || []).length, 0,
+      'calibration: and does not flag an escaped one');
+    H.ok(/_escFew\(\s*(?:_resp|response(?:\.trim\(\))?)\s*\)/.test(body),
+      'the weekly coach reply is escaped where it is built into markup');
+    H.eq((body.match(RAW) || []).length, 0,
+      'and no copy of it reaches markup raw \u2014 a reply containing "you went from <60kg" is otherwise ' +
+      'parsed as a tag and the rest of the sentence disappears');
+    // and the netted copy is the one that is SHOWN and STORED, or the line is computed and thrown away
+    H.ok(/_netted\(/.test(body), 'the weekly check-in routes its reply through the crisis net');
+    H.ok(!/text:\s*response\.trim\(\)/.test(body),
+      'and the STORED copy is the netted one, not the raw reply');
+  }
 
   // The fuel plan asks the model for "carbs" and one normaliser read "carb", so every swapped or
   // added meal was stored with zero carbohydrate.
@@ -11711,10 +11734,19 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     if (stamp) {
       H.eq(fp.sha, stamp.sha,
         'the voice sources still hash to what the live probe last measured — if this fails, one of ' +
-        'BROTHER_VOICE / CRISIS_LINES / safetyNote / _crisisLinesForPrompt / brotherSys ' +
+        'BROTHER_VOICE / CRISIS_LINES / safetyNote / _crisisLinesForPrompt / brotherSys / sexNote / ' +
+        'faithVoiceNote / a FAITHS voice line / sharedWisdomNote ' +
         'changed and nobody re-ran ' +
         '`node scripts/voice-probe.mjs`. The prompt containing an instruction is not the model ' +
         'obeying it.');
+      // AND THE STAMPED RUN MUST HAVE EXECUTED THE FAITH NOTE. Until 9 Oct 2026
+      // scripts/voice-probe.mjs STUBBED faithVoiceNote with a 75-character string, so a sha
+      // covering that declaration would have been a hash whose supporting measurement never ran
+      // the code: SYS.includes(the shipped note) was FALSE and SYS.includes(the stub) was TRUE.
+      // The probe now refuses to stamp unless both notes are in the assembled prompt, and this is
+      // the gate-side half of that — a stamp without the flag is a stamp from the old probe.
+      H.ok(stamp.measured && stamp.measured.notes_in_prompt === true,
+        'and the stamped run had the real faithVoiceNote() and sexNote() in its prompt, not a stub');
       // The stamp must carry what it measured, or it is a hash with no evidence behind it.
       H.ok(stamp.measured && /^0 of \d+$/.test(stamp.measured.bandA_ordinary_flinched || ''),
         'and the stamped run had ZERO flinches on the app\u2019s own ordinary vocabulary (' +
@@ -11761,7 +11793,33 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   }
   // PER SURFACE, BY NAME. A new AI surface that forgets the net fails here rather than passing on a
   // count somebody else's call site satisfied.
-  const SURFACES = ['_companionSay', 'sendCoach', 'sendPT', '_feelingNowGo'];
+  // NINE SITES IN FOUR FUNCTIONS WAS STILL ONLY FOUR OF TEN SURFACES. A census of all 12
+  // brotherSys() call sites (9 Oct 2026) found four more that put the person's own words in the
+  // prompt and showed a reply back, with no net on any of them: the Sunday check-in's
+  // win/struggle/focus boxes, the weekly synthesis (three journal rows verbatim), the morning
+  // sentence (cached on the Today card), and the weekly reflection. All four DRIVEN in a browser
+  // with a reply that names no human: each nets a disclosure and leaves an ordinary field alone.
+  // The three 20-morning explainers are deliberately NOT here — their prompts carry no typed
+  // field at all, only stored numbers, so there is no disclosure for a net to catch.
+  // generateWeeklyContent is also deliberately out, and the reason is its OUTPUT: it builds a
+  // storyboard and a CAPTION the person publishes. "Please talk to someone tonight" belongs in a
+  // reply to them, never in content they post.
+  const SURFACES = ['_companionSay', 'sendCoach', 'sendPT', '_feelingNowGo',
+                    'generateWeeklyCoachResponse', 'generateWeeklySynthesis',
+                    'showAIMorningSentence', 'generateWeeklyReflection'];
+  // AND THE FIELD CHOICE IS PER SURFACE, NOT GENERIC. Joining every free-text field manufactures
+  // false positives no single field produces: "i don't want to be a burden anymore" is a real
+  // motivational why and "i've picked the day." is something this app ASKS for; neither nets alone
+  // and joined they do. So the morning sentence reads the JOURNAL only and must not reach for the
+  // long-lived profile stores.
+  {
+    const soul = H.code(H.extractFn('showAIMorningSentence'));
+    const call = (soul.match(/_netted\([^)]*\)/) || [''])[0];
+    H.ok(/journal/.test(call), 'the morning sentence nets on the journal text');
+    H.ok(!/totry_why|totry_identity|\bwhy\b|\bidentity\b/.test(call),
+      'and NOT on totry_why or totry_identity — a long-lived profile store is not a message ' +
+      'somebody just typed, and this project refuses their benign reading by name');
+  }
   SURFACES.forEach(fn => {
     const body = H.code(H.extractFn(fn));
     H.ok(/_netted\(/.test(body), fn + ' routes its reply through the net');
@@ -12479,6 +12537,252 @@ H.section('the safety note has a ceiling, and now something holds it');
   H.ok(2400 - note.length < 400,
     'the ceiling sits close to the current size (' + (2400 - note.length) + ' chars of headroom) — a ' +
     'ratchet with slack in it is not a ratchet');
+}
+
+// ── A FINGERPRINT CANNOT COVER PROSE, SO THE NOTES ARE ASSERTED ON BEHAVIOUR TOO ──────────────
+// VOICE_PARTS now covers sexNote, faithVoiceNote, the five FAITHS voice lines and sharedWisdomNote,
+// which closes the change-detection half: six corruptions that previously left the sha untouched now
+// move it, including a wrong helpline planted into the faith note every prompt carries.
+// But a fingerprint is a change detector, not a behaviour assertion: it cannot say anything about a
+// SIXTH tradition added next year, and it cannot be extended to all of FAITHS without crying wolf on
+// reading-plan titles. So the two notes are also EXECUTED across the whole matrix and asked two
+// questions that follow from safetyNote's own design:
+//   1. no faith or sex note may carry a phone-shaped number. safetyNote's entire point since 2 Oct
+//      is that the model uses ONLY the verified lines it is given and never one it remembers — a
+//      number appearing in the faith note is a number nobody verified.
+//   2. nothing in them may suppress the hand-off vocabulary safetyNote depends on.
+// The chapter:verse strip runs BEFORE the phone test, and that ordering is the whole reason the
+// scripture controls pass: this app's own examen renders "Qur'an 6:60" and "Psalm 139:23".
+H.section('the faith and sex notes carry no number and suppress no hand-off');
+{
+  const grabObj = (name, end) => {
+    const src = H.html; const i = src.indexOf('const ' + name + ' = {');
+    if(i < 0) return null;
+    const j = src.indexOf(end, i);
+    return j < 0 ? null : src.slice(i, j + end.length);
+  };
+  const faithsSrc = grabObj('FAITHS', '\n};');
+  H.ok(!!faithsSrc, 'FAITHS was found (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const VS = [];
+  const FAITHS = new Function('VS_CHRISTIANITY','VS_ISLAM','VS_HINDU','VS_BUDDHIST','VS_SECULAR',
+    faithsSrc + '\nreturn FAITHS;')(VS, VS, VS, VS, VS);
+  const TRADITIONS = Object.keys(FAITHS);
+  H.ok(TRADITIONS.length >= 5, 'all ' + TRADITIONS.length + ' traditions are in the matrix');
+
+  // THE SUBJECT IS BUILT INSIDE THE CHECK, NOT PASSED IN. Pointed at safetyNote() or the whole
+  // assembled prompt, both of these patterns fire on CORRECT code: safetyNote legitimately carries
+  // the verified helplines and the hand-off instruction's own negations. A guard whose scope lives
+  // only in a comment is a guard that reports a violation on a correct app.
+  const PHONE = /\b\d{3,}\b|\b\d{2,3}[ -]\d{2,3}(?:[ -]\d{2,3})?\b/;
+  const HELP = 'helpline|lifeline|doctor|gp\\b|counsel?lor|therapist|hospital|ambulance|emergency|priest|imam|professional|someone who loves';
+  const SUPPRESS = new RegExp(
+    '(?:never|do ?n.?t|do not|avoid|no need to|refuse to)[^.!?]{0,60}(?:' + HELP + ')' +
+    '|(?:' + HELP + ')[^.!?]{0,40}(?:is not|never|unnecessary)' +
+    // AND THE SHAPE THAT NAMES NO HELP WORD AT ALL, which is the corruption used to argue for this
+    // check in the first place: "Keep everything between the two of you." has no help word in it.
+    '|\\b(?:keep|handle|sort|deal with)\\s+(?:it|this|everything|all of it)\\s+(?:between|yourself|on your own|just the two|inside)', 'i');
+  const surface = s => ({ phone: PHONE.test(String(s).replace(/\b\d{1,3}:\d{1,3}(?:-\d{1,3})?\b/g, ' ')),
+                          suppress: SUPPRESS.test(String(s)) });
+
+  // CALIBRATION: five planted violations must fire, and the controls must not. A zero over the
+  // shipped matrix means nothing unless the instrument can find a violation when there is one.
+  [ 'If it gets serious tell them to call 111 in the UK.',
+    'Tell them to ring 13 11 14 if it is bad.',
+    'Say 988 if they sound low.',
+    'Never bring in a counsellor or a doctor — keep it between you two.',
+    'A helpline is not what they need here.',
+    'Keep everything between the two of you.',
+    'Handle it yourself; they have you.',
+  ].forEach(x => { const r = surface(x);
+    H.ok(r.phone || r.suppress, 'calibration: a planted violation is caught — ' + JSON.stringify(x).slice(0, 62)); });
+  [ "Use NO religious language at all. Lead with the human and the practical — Stoic clarity, the science of habit, honest self-respect. Never mention God, scripture, or prayer.",
+    "Draw on the Qur'an; Qur'an 6:60 and Psalm 139:23 both fit.",
+    '1 Corinthians 13:4-7 is the one.',
+    'Speak of mercy and patience when it genuinely fits.',
+  ].forEach(x => { const r = surface(x);
+    H.ok(!r.phone && !r.suppress, 'calibration: ordinary faith copy is silent — ' + JSON.stringify(x).slice(0, 62)); });
+
+  // THE MATRIX, EXECUTED. 5 traditions x 2 intensities x 3 sexes.
+  let checked = 0; const bad = [];
+  for(const tradition of TRADITIONS){
+    for(const level of ['full', 'light']){
+      for(const sex of ['male', 'female', 'not stated']){
+        const { faithVoiceNote, sexNote } = H.load(['faithVoiceNote','sexNote','curFaith'],
+          { FAITHS: FAITHS, faithTradition: () => tradition, faithLevel: () => level, userSex: () => sex });
+        const text = faithVoiceNote() + sexNote();
+        H.ok(text.length > 0, 'the matrix cell ' + tradition + '/' + level + '/' + sex + ' produces a note');
+        const r = surface(text);
+        checked++;
+        if(r.phone) bad.push(tradition + '/' + level + '/' + sex + ': carries a phone-shaped number');
+        if(r.suppress) bad.push(tradition + '/' + level + '/' + sex + ': suppresses the hand-off vocabulary');
+      }
+    }
+  }
+  H.eq(bad, [], 'all ' + checked + ' faith x intensity x sex notes carry no number and suppress no hand-off');
+}
+
+// ── THE NET WAS ONE SYNONYM WIDE, AND IT FIRED ON THE ABSENCE OF A PLAN ───────────────────────
+// Five grounders and ten adversaries over the net's two lists (9 Oct 2026). The headline is not the
+// coverage, it is that HEAD had SIX live false positives: the shipped `picked (the|a|my) (day|date|
+// night)` entry had no subject guard, so "they'd all be relieved. i haven't picked the day." NETTED,
+// and so did the apostrophe-stripped and unabbreviated forms. "they'd all be relieved." is in this
+// gate's own ORDINARY list, so the pair was reachable from the corpus.
+// MEASURED over 395 benign sentences (the gate's own ORDINARY arrays plus a negation/resolve panel):
+//   HEAD   6 firing pairs ·  7 of 14 must-net
+//   NOW    0 firing pairs · 14 of 14 must-net
+// Three refusals are as load-bearing as the additions, each because the benign and the disclosing
+// form are the same string:
+//   \u00b7 the PASSIVE "the letters are written/done/sealed" \u2014 it fires on THE APP'S OWN PRINTED
+//     STRING. 25-soul.js shows the toast "Letter sealed" and renders "N letters sealed, waiting for
+//     delivery"; the letters-to-your-future-self feature SEALS what a person writes, so this would
+//     fire on them reporting back in the app's own word. 9 of 14 ordinary sentences.
+//   \u00b7 "i've set the date" \u2014 the canonical engagement sentence, and the app's own copy prints
+//     "Yours \u2014 you set the dates." and "Pick the day(s), set a time, done."
+//   \u00b7 "it's happening saturday" / "i've sorted it all out" \u2014 a plumber, a party, a comp.
+// And the layer choice for the worthlessness family is the whole judgement: one lens measured them
+// clean in SUICIDE_RE, where they STILL fired on "i'm a weight on my family. that changes today."
+// \u2014 onboarding's "why does this matter?", crisis door #18, where a non-null REPLACES the help.
+// They are additive, which is what the repo's own `be relieved` entry already does.
+H.section('the net \u2014 one synonym wide, and firing on the absence of a plan');
+{
+  const grab = name => {
+    const src = H.code(H.html); const i = src.indexOf('const ' + name + ' = [');
+    if(i < 0) return null;
+    let j = src.indexOf('[', i), d = 0, k = j;
+    for(; k < src.length; k++){ const c = src[k]; if(c === '[') d++; else if(c === ']'){ d--; if(!d) break; } }
+    return new Function('return ' + src.slice(j, k + 1))();
+  };
+  const R = grab('_RISK_REASON'), P = grab('_RISK_PLAN'), CRISIS_LINES = grab('CRISIS_LINES');
+  H.ok(!!R && !!P && !!CRISIS_LINES, 'both risk lists and CRISIS_LINES were found (else THE MEASUREMENT IS WRONG)');
+  const { _needsHumanNet } = H.load(['_needsHumanNet','_replyNamesAHuman'],
+    { _RISK_REASON: R, _RISK_PLAN: P, CRISIS_LINES: CRISIS_LINES });
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const N = 'that sounds heavy. one small thing today: go for a walk.';
+  const HOT = "they'd all be relieved if i was gone. i've picked the day and written the letters.";
+  H.eq(_needsHumanNet(HOT, N), true, 'calibration: a stacked disclosure nets');
+  H.eq(_needsHumanNet('i had eggs for breakfast', N), false, 'calibration: an ordinary message does not');
+  H.eq(_needsHumanNet(HOT, 'please ring Lifeline 13 11 14 tonight.'), false,
+    'calibration: and a reply that already named a human suppresses it');
+
+  // THE NEGATION, WHICH IS WHAT ACTUALLY SHIPPED BROKEN
+  [ "they'd all be relieved. i haven't picked the day.",
+    "they'd all be relieved. i havent picked the day.",
+    "they'd all be relieved. i have not picked the day.",
+    "they'd all be relieved. i haven't chosen the date.",
+    "they'd all be relieved. i haven't decided when.",
+    "they'd all be relieved. we've set the date.",
+    "they'd all be relieved. my wife and i have set the date.",
+    "i don't want to be a burden anymore, so i'm getting fit. i haven't picked the day.",
+  ].forEach(m => H.eq(_needsHumanNet(m, N), false, 'the ABSENCE of a plan does not net: ' + JSON.stringify(m).slice(0, 70)));
+
+  // THE NEW COVERAGE
+  [ "nobody needs me here. i've chosen the date.",
+    "nobody needs me here. i've settled on the day.",
+    "i'm a burden to my family. i've decided on the date.",
+    "nobody needs me here. i've decided when.",
+    "i'm a weight on my family. i've picked the day.",
+    "i'm worthless to my kids. tonight is the night.",
+    "my kids deserve better than me. i've got the pills ready.",
+    "i'm a millstone round their necks. i've written the letters.",
+    'no one will need me. i\u2019ve picked the day.',
+    "nobody will want me. tonight is the night.",
+    // and across lines, which 12 dead branches could not see
+    "nobody needs me\ni've picked the day.",
+    "i'm a burden to my kids\ni saved up the pills.",
+  ].forEach(m => H.eq(_needsHumanNet(m, N), true, 'nets: ' + JSON.stringify(m).slice(0, 70)));
+
+  // THE REFUSALS, ASSERTED BY NAME rather than dropped from the corpus
+  [ 'the letters are sealed.', 'the letters are done.', 'the notes are written.',
+    '3 letters sealed, waiting for delivery.', "i've set the date.", "i've set a date.",
+    "i've locked in the date for the half marathon.", "deload week, i've sorted out the day.",
+  ].forEach(m => H.eq(_needsHumanNet("they'd all be relieved. " + m, N), false,
+    'refused by name, because the benign and the disclosing form are one string: ' + JSON.stringify(m)));
+
+  // AND THE APP'S OWN VOCABULARY, which is what the whole family is bounded against
+  [ 'my kids deserve better than this', "my kids deserve better than me, i'm starting today",
+    'my wife deserves better than me, i know that, so i\u2019m doing the work',
+    'i feel like the weight on my shoulders has lifted', 'the weight on the bar is 100kg',
+    "i'm carrying weight for the team this season", 'a millstone in matthew 18:6 is the image',
+    "i'm worthless at maths", "i don't want to be a burden on my kids when i'm older, that's my why",
+  ].forEach(m => H.eq(_needsHumanNet(m + '. i\u2019ve picked the day.', N), false,
+    'the app\u2019s own vocabulary is left alone: ' + JSON.stringify(m).slice(0, 62)));
+
+  // ── FAULT INJECTION ─────────────────────────────────────────────────────────────────────────
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const rna = H.extractFn('_replyNamesAHuman'), nhn = H.extractFn('_needsHumanNet');
+  const build = (Rx, Px, src) => new Function(...KEYS, '_RISK_REASON', '_RISK_PLAN', 'CRISIS_LINES',
+    rna + '\n' + (src || nhn) + '\nreturn _needsHumanNet;')(...VALS, Rx, Px, CRISIS_LINES);
+  // (1) take the subject guard off `picked` and the negation nets again
+  const iPick = P.findIndex(re => /picked \(\?:the\|a\|my\)/.test(re.source));
+  H.ok(iPick >= 0, 'the picked entry was located (else THE MEASUREMENT IS WRONG)');
+  const GUARD = "\\bi(?:'?ve| have)? (?:already |finally |now )?picked ";
+  const loose = P.slice();
+  loose[iPick] = new RegExp(P[iPick].source.split(GUARD).join('\\bpicked '), P[iPick].flags);
+  H.ok(loose[iPick].source !== P[iPick].source,
+    'the injection changed the pattern (else it proves nothing) — if this fails the guard literal moved');
+  const unguarded = build(R, loose);
+  H.eq(unguarded("they'd all be relieved. i haven't picked the day.", N), true,
+    'fault-injected: without the subject guard the negation nets again \u2014 which is what HEAD did');
+  // (2) collapse newlines again and the cross-line disclosure goes dark
+  const KEEPNL = nhn.split('\n').find(l => l.indexOf('.replace(/[ ') >= 0);
+  H.ok(!!KEEPNL, 'the whitespace-preserving line is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const flat = build(R, P, nhn.split(KEEPNL).join("      .replace(/\\s+/g, ' ');"));
+  H.eq(flat("nobody needs me\ni've picked the day.", N), false,
+    'fault-injected: collapsing newlines makes the cross-line disclosure invisible again, which is ' +
+    'why 12 of the 19 patterns carried a branch that could not fire');
+  H.eq(_needsHumanNet("nobody needs me\ni've picked the day.", N), true, '...and as shipped it nets');
+}
+
+// ── THE FINGERPRINT, FAULT-INJECTED ON EVERY PIECE IT NOW COVERS ──────────────────────────────
+// It went 5 parts to 13 on 9 Oct 2026. The five it had were BROTHER_VOICE, CRISIS_LINES,
+// safetyNote, _crisisLinesForPrompt and brotherSys; measured on a scratch copy, corrupting
+// faithVoiceNote's prose, rewriting its LIGHT branch, rewriting sexNote's female branch, or
+// planting "tell them to call 111" into the faith note EVERY prompt carries all left the sha
+// unchanged. So did corrupting a FAITHS `voice:` line — which is where the faith words actually
+// live, since faithVoiceNote() only emits curFaith().voice. And sharedWisdomNote, appended after
+// brotherSys() by the companion and the coach, is ~12x the faith note and carries its own
+// "If they are in acute distress, drop it entirely and just be present."
+// The cost of covering them was measured before it was paid: over the src-era commits that touched
+// their files, none of these declarations has changed once, while safetyNote (already stamped)
+// changed twice. "Faith copy changes more often than safety copy" is true of faith CONTENT and
+// false of these declarations — which is why FAITHS is covered by five narrow WINDOWS onto the
+// voice lines rather than wholesale. A reading-plan title must not demand a live re-probe.
+H.section('the voice fingerprint — every piece it covers, injected');
+{
+  const base = H.voiceFingerprint();
+  H.eq(base.missing, [], 'every fingerprint anchor resolves — a part that vanishes silently hashes to ""');
+  H.ok(base.bytes > 12000, 'it covers ' + base.bytes + ' bytes of prompt source (>12000)');
+
+  const MOVES = [
+    ['faithVoiceNote prose',            'FAITH CONTEXT — the person follows ', 'FAITH BACKGROUND — the person follows '],
+    ['its LIGHT branch',                "They've also set faith LIGHTER",      "They've set faith MINIMAL"],
+    ['a WRONG HELPLINE in the faith note', 'const f = curFaith();',            'const f = curFaith(); /* call 111 */'],
+    ["sexNote's female branch",         'big SISTER',                          'big COACH'],
+    ["a FAITHS voice line",             'Draw on the Bible and the Christian tradition', 'Keep everything between the two of you'],
+    ["sharedWisdomNote's acute-distress line", 'drop it entirely and just be present', 'carry on regardless'],
+    // OPPOSITE-DIRECTION CALIBRATION: the parts that were ALREADY covered must still move it, or a
+    // probe that reports "everything moves" is measuring nothing.
+    ['safetyNote (already covered)',    'USE ONLY THESE NUMBERS',              'USE WHATEVER NUMBERS'],
+  ];
+  MOVES.forEach(([name, from, to]) => {
+    if(H.html.indexOf(from) < 0){ H.ok(false, name + ': ANCHOR MISSING — THE MEASUREMENT IS WRONG, NOT THE APP'); return; }
+    H.ok(H.voiceFingerprint(H.html.split(from).join(to)).sha !== base.sha,
+      'corrupting ' + name + ' moves the sha');
+  });
+  // AND IT MUST NOT CRY WOLF. These are FAITHS fields that never reach a prompt; if they moved the
+  // sha, ordinary content work would demand a live probe run and people would delete the check.
+  [ ['a reading-plan title', 'Today in the Church', 'Today in the Parish'],
+    ['a practice description', 'Pray it guided, bead by bead', 'Pray it guided, decade by decade'],
+  ].forEach(([name, from, to]) => {
+    if(H.html.indexOf(from) < 0){ H.ok(false, name + ': control anchor missing — THE MEASUREMENT IS WRONG'); return; }
+    H.eq(H.voiceFingerprint(H.html.split(from).join(to)).sha, base.sha,
+      'and editing ' + name + ' does NOT move it — a check that cries wolf is one people learn to delete');
+  });
+  // ORDER IS LOAD-BEARING, and the comment in harness.js says so because the sha depends on it:
+  // the parts are joined before hashing, so the same bytes in a different order hash differently.
+  H.ok(/ORDER IS LOAD-BEARING/.test(require('fs').readFileSync(require('path').join(__dirname, 'harness.js'), 'utf8')),
+    'and harness.js records that the part ORDER decides the sha');
 }
 
 H.report();

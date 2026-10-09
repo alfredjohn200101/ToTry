@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v608-one-enter-one-card'
+const CACHE = 'totry-v609-one-synonym-wide'
 
 const CORE = [
   './',
