@@ -13561,6 +13561,28 @@ H.section("the app's own devotional vocabulary does not trip its own detector");
   [ 'i want to be dead', 'i want to be dead, i mean it', 'i just want to be dead.',
   ].forEach(m => H.eq(detectCrisis(m), 'suicide', 'and the bare phrase still fires: ' + JSON.stringify(m)));
 
+  // (6) THE SURRENDER SPAN SERVED THREE TRADITIONS OUT OF FIVE. Its object list was Christian,
+  // Muslim and Hindu; Buddhism's FAITHS entry has divine:null and its book is the DHAMMAPADA, and
+  // the list carried the Hindu spelling 'dharma' and not the Pali 'dhamma'.
+  [ 'nothing matters anymore. only christ.', 'nothing matters anymore. only allah.',
+    'nothing matters anymore. only krishna.', 'nothing matters anymore. only dharma.',
+    'nothing matters anymore. only the dhamma.', 'nothing matters anymore. only the practice.',
+    'nothing matters anymore. only this breath.', 'nothing matters anymore. only impermanence.',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'surrender, in its own tradition: ' + JSON.stringify(m)));
+  // The span removes the whole phrase, so an object it does NOT know still discloses.
+  [ 'nothing matters anymore. only pain.', 'nothing matters anymore.',
+  ].forEach(m => H.ok(!!detectCrisis(m), 'while an unknown object still discloses: ' + JSON.stringify(m)));
+
+  // (7) THE SLIP WORDS KNEW VICES AND NOT FASTS, in an app with a FAST_SEASONS registry that
+  // auto-detects Lent, Ramadan, Uposatha and Navratri. Wanting a fast to stop is what a fast is.
+  [ 'i gave in last night and i want it to stop', 'i want it to stop, the porn i mean',
+    'i am fasting this lent and i want it to stop',
+    'i am fasting for ramadan and i want it to stop',
+    'the hunger during the fast is hard and i want it to stop',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'a thing being ended, not a life: ' + JSON.stringify(m)));
+  H.ok(!!detectCrisis('i want it to stop.'),
+    'while the bare "i want it to stop." still fires — the documented kept disclosure');
+
   // ── FAULT INJECTION: restore each defect by putting the PRE-FIX form back ──────────────────
   // Corrupting the text, never deleting the line — deleting inside these alternations produces an
   // invalid regex and crashes the suite instead of failing it, which this file records twice.
@@ -13595,6 +13617,18 @@ H.section("the app's own devotional vocabulary does not trip its own detector");
     "/\\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\\b/g",
     "/\\bzzzzz-never-matches-zzzzz/g",
     ['i am going to starve myself of dopamine tonight and read instead', 'i starve myself of screens after 9pm'], 'selfharm');
+
+  inject("the widened surrender objects",
+    "|krishna|dharma|dhamma|sangha|practice|path|way|breath|impermanence|present moment|stillness|silence)",
+    "|krishna|dharma)",
+    ['nothing matters anymore. only the dhamma.', 'nothing matters anymore. only this breath.',
+     'nothing matters anymore. only impermanence.'], 'suicide');
+
+  inject("the fast vocabulary in the slip words",
+    "|went back to it|fasting|on a fast|the fast|lent|ramadan|uposatha|navratri|yom kippur|ekadashi)",
+    "|went back to it)",
+    ['i am fasting this lent and i want it to stop',
+     'i am fasting for ramadan and i want it to stop'], 'suicide');
 
   inject("the widened dead-to family",
     "(?:sin|the world|the flesh|desire|desires|my old life|my old self|my former self|self|this world|temptation|the past)",

@@ -13623,7 +13623,13 @@ function detectCrisis(text){
    // night and i want it to stop" returned 'suicide' — pre-session too, so it is old. The
    // disqualifying context sits in FRONT of the match, which no suffix bound can see, so it is a
    // span removal. Bare "i want it to stop." still fires.
-   /\b(?:gave in|caved|slipped|relapsed|lapsed|binged|gave up|broke the streak|lost the streak|went back to it)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:want|wants|need|needs) it to stop\b/g,
+   // AND THE SLIP WORDS KNEW VICES AND NOT FASTS. This app has a FAST_SEASONS registry and
+   // auto-detects Lent, Ramadan, Uposatha and Navratri, and tells the model a fast is "a sacred/
+   // chosen discipline, NOT a diet" — then "i am fasting this lent and i want it to stop" returned
+   // suicide, as did the Ramadan form and "the hunger during the fast is hard and i want it to
+   // stop". Wanting a fast to stop is what a fast FEELS like. Same half-applied shape as the
+   // eating-disorder card that never asked fastSeasonNow(). Bare "i want it to stop." still fires.
+   /\b(?:gave in|caved|slipped|relapsed|lapsed|binged|gave up|broke the streak|lost the streak|went back to it|fasting|on a fast|the fast|lent|ramadan|uposatha|navratri|yom kippur|ekadashi)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:want|wants|need|needs) it to stop\b/g,
    /\b(?:want|wants|need|needs) it to stop\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,40}\b(?:the (?:porn|vape|booze|drink|gambling|scrolling|bingeing)|this vice|this habit|the slip)\b/g,
    /\bend things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them |that )?(?!kill|die|dy(?:e|ing)|dead|suicide|myself|my life|my own life|end (?:it|my|this)|ending it|hurt (?:myself|me)|harm|overdos|noose|hang(?:ing)? myself|blow(?:ing)? my|slit|take my life|taking my life)[a-z']{1,16}/g,
    // THE SURRENDER IDIOM WRITTEN AS TWO SENTENCES. A full stop is a genuine sentence end, so no
@@ -13633,7 +13639,15 @@ function detectCrisis(text){
    // no hope left. only grace." / "what's the point of it all. only god." / "…except him." /
    // "no hope left. but for his mercy." The span stops at the faith object and never runs on
    // through a conjunction, so a real disclosure later in the same entry still fires.
-   /\b(?:nothing matters (?:any ?more|at all)|no hope left|what'?s the point of it all)[.!?]+\s*(?:only|except|but|save)\s+(?:in |for )?(?:his |thy |your |the )?(?:him|christ|jesus|god|allah|grace|mercy|lord|will|krishna|dharma)\b/g,
+   // AND IT SERVED THREE TRADITIONS OUT OF FIVE. The object list was him|christ|jesus|god|allah|
+   // grace|mercy|lord|will|krishna|dharma — which is Christianity, Islam and Hinduism. Buddhism's
+   // FAITHS entry has divine:null and prayTo:null, and its book is the DHAMMAPADA, so a Buddhist
+   // writes "only the dhamma", "only this breath", "only the practice", "only impermanence" — and
+   // all four returned suicide. ('dharma' is in the list and 'dhamma' was not, which is the Hindu
+   // spelling standing in for the Pali one.) Secular had nothing at all. Measured 10 Oct 2026.
+   // Deliberately NOT added: a bare "now". "nothing matters anymore. only now i see it" would have
+   // the disclosure REMOVED by the span, which is the over-removal shape this file fails builds for.
+   /\b(?:nothing matters (?:any ?more|at all)|no hope left|what'?s the point of it all)[.!?]+\s*(?:only|except|but|save)\s+(?:in |for )?(?:his |thy |your |the |this |that )?(?:him|christ|jesus|god|allah|grace|mercy|lord|will|krishna|dharma|dhamma|sangha|practice|path|way|breath|impermanence|present moment|stillness|silence)\b/g,
    // "HURT SOMEONE'S <THING>" IS A POSSESSIVE, NOT A PERSON. Adding 'hurt someone' and
    // 'hurt somebody' below closed a real gap — "i'm scared i'll hurt someone" was caught by nothing
    // — but it opened "it could hurt somebody's chances", which is a sentence about an opportunity.

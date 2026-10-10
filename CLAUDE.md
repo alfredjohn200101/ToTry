@@ -1072,6 +1072,23 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      life all fired.
      22 benign silent, 17 disclosures still firing, 0 regressions either way, five fault injections
      each restoring the pre-fix form and each reproducing its defect.
+   - **AND TWO MORE OF THE SAME SHAPE, ONE PER REMAINING TRADITION (10 Oct 2026).**
+     **The surrender-as-two-sentences span served three traditions out of five.** Its object list was
+     `him|christ|jesus|god|allah|grace|mercy|lord|will|krishna|dharma` — Christianity, Islam and
+     Hinduism. Buddhism's FAITHS entry has `divine:null` and `prayTo:null`, and its book is the
+     **Dhammapada**, so the list carried the Hindu spelling `dharma` and not the Pali `dhamma`: a
+     Buddhist writing "nothing matters anymore. only the dhamma." — or "only the practice", "only
+     this breath", "only impermanence" — got six helplines. Secular had nothing at all. **A bare
+     `now` was deliberately REFUSED**, because "nothing matters anymore. only now i see it" would
+     have had the disclosure itself removed by the span, which is the over-removal shape this file
+     fails builds over.
+     **And the slip-word list knew vices and not FASTS.** `"i am fasting this lent and i want it to
+     stop"` returned suicide, as did the Ramadan form and "the hunger during the fast is hard and i
+     want it to stop" — in an app that carries a FAST_SEASONS registry, auto-detects Lent, Ramadan,
+     Uposatha and Navratri, and already tells the model a fast is "a sacred/chosen discipline, NOT a
+     diet". **Wanting a fast to stop is what a fast FEELS like.** Exactly the half-applied shape of
+     `_nourishConcern()` never asking `fastSeasonNow()`. Bare "i want it to stop." still fires.
+     Both fault-injected by restoring the pre-fix alternation, both reproducing.
    - **AND THE INSTRUMENT THAT POLICES THE SAFETY PROMPT RELOCATED INSTEAD OF FAILING (10 Oct 2026).**
      `voiceFingerprint` anchors each FAITHS window on a literal token and takes the FIRST `indexOf`.
      One of the comments above quoted the registry verbatim, so the islam window moved ~1600 lines

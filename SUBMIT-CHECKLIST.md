@@ -506,13 +506,18 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   the band that follows.
 - **Alcohol, Tobacco, or Drug Use or References → Infrequent/Mild.** Confirmed. Vices can be named
   and tracked (alcohol, nicotine/vaping, weed); nothing is depicted or encouraged.
-- **Sexual Content or Nudity → nothing is depicted or described, but "porn" IS in visible copy.**
-  The vice field's own placeholder reads *"Name it (e.g. weed, drinking, porn)…"*, and
-  `VICE_PLAYBOOK` has a `porn` entry with user-facing labels. The only explicit anatomical/act word
-  in the whole bundle is the matcher stem `'masturbat'` — 2 occurrences with comments stripped, both
-  inside keyword arrays that are tested *against* what a person types and never rendered. So "None"
-  is defensible for **depiction**; if the question asks about sexual references or themes, the honest
-  answer is Infrequent/Mild. Your call, but make it knowing the word is on screen.
+- **Sexual Content or Nudity → nothing is depicted or described, but the references are more
+  prominent than an earlier draft of this bullet said.** It named only the vice field's placeholder
+  (*"Name it (e.g. weed, drinking, porn)…"*). The stronger rendered strings it missed:
+  **`Lust / PMO` is a tappable chip in ONBOARDING step 5** ("What are you fighting?",
+  `shell-head.html:4237`) — one of the first screens anybody sees, not a setting buried in a tab —
+  and a Feeling Door option reads **"lust / feeling unbearably horny"**. `VICE_PLAYBOOK` has a
+  `porn` entry with user-facing labels.
+  The only explicit anatomical/act word in the whole bundle is still the matcher stem `'masturbat'`
+  — 2 occurrences with comments stripped, both inside keyword arrays tested *against* what a person
+  types and never rendered. So "None" remains defensible for **depiction**; for sexual references or
+  themes the honest answer is Infrequent/Mild. Your call — but make it knowing what is on screen in
+  the first two minutes, which is the part this bullet previously got wrong.
 - **Profanity → None.** Verified: 1 match raw, **0** with comments stripped — the single hit is the
   owner's own words quoted inside a bug comment. Nothing profane renders.
 - **Gambling → None, and no simulated gambling.** Gambling is a trackable vice and poker sessions
