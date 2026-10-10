@@ -13671,7 +13671,11 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
       journalMeetCrisis: () => { bridged = true; },
       bridgeToRealHelp: () => { bridged = true; },
       setTimeout: fn => { try{ fn(); }catch(_){ } },
-      getMealPrefs: () => ({}), saveMealPrefs: p => { prefsSaved = p; },
+      // A pre-existing restriction, so the assertion that it is CLEARED (not merely omitted from
+      // the merge) can actually fail. With getMealPrefs() returning {}, omitting and clearing are
+      // indistinguishable — a fixture with nothing for the rule to exclude passes either way.
+      getMealPrefs: () => ({ restrictions: 'an older sentence that must not survive' }),
+      saveMealPrefs: p => { prefsSaved = p; },
       _fuelCtx: () => ({ goalDir: 'maintain', cal: 2500, sex: 'male' }),
       _fuelSafetyModal: () => {}, _fuelFinishSave: () => { advanced = true; },
       window: {}, parseFloat, parseInt, Array, String, RegExp, Object,
@@ -13686,7 +13690,22 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
   H.ok(hit.bridged, 'a disclosure in `fuel-diet-free` — the form\'s only free-text field — reaches real help');
   H.ok(!hit.advanced, 'and does NOT carry on to the meal plan, so it never reaches a model');
   H.ok(!!hit.prefsSaved && hit.prefsSaved.budget === 137,
-    'and their budget survives it — completeMorning\'s contract: their words are always kept');
+    'and their budget survives it — losing their choices is the denial of service');
+
+  // AND THE SENTENCE IS NOT KEPT, WHICH IS THE OTHER HALF AND NEARLY GOT LOST.
+  // The first cut of this fix persisted `window._fuelPendingVals` whole, and that object carries
+  // `restrictions` — the free-text field the disclosure is typed into. `p.restrictions` is rendered
+  // straight back into the form's `value="…"` and is concatenated into THREE separate api() prompts
+  // (the day plan, the snack filler, the meal swap). So "keep their work" had quietly undone the
+  // gate's own stated purpose — crisis language must never reach a model — and re-created the
+  // 30 Sep harm of a disclosure stored and replayed with nobody on screen. Keep the choices; drop
+  // the sentence.
+  H.ok(!String((hit.prefsSaved || {}).restrictions || '').toLowerCase().includes('kill myself'),
+    'and the DISCLOSURE ITSELF is not persisted — it is rendered back into the form and built into ' +
+    'three api() prompts, so storing it is how it reaches a model later');
+  H.eq((hit.prefsSaved || {}).restrictions, '',
+    'and restrictions is CLEARED rather than merely omitted, so an earlier value cannot survive ' +
+    'underneath the merge');
 
   const ok = drive(SRC, { 'fuel-diet-free': 'no nuts, and i hate mushrooms', 'fuel-budget': '137' });
   H.ok(!ok.bridged, 'while an ordinary allergy note does not cry wolf');

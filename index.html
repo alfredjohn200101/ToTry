@@ -38897,10 +38897,22 @@ function _fuelElicitSave(){
     if(typeof detectCrisis === 'function'){
       const _c = restrictions ? detectCrisis(restrictions) : null;
       if(_c){
-        // Keep what they chose before meeting them — see the note at the top of this function.
+        // KEEP THEIR CHOICES, NOT THE SENTENCE. The first version of this persisted
+        // `window._fuelPendingVals` whole — which includes `restrictions`, the free-text field the
+        // disclosure was typed INTO. That stored it verbatim and handed it to a model: `p.restrictions`
+        // is rendered straight back into this form's `value="…"` on line ~110, and is concatenated
+        // into three separate `api()` prompts (the day plan, the snack filler, the meal swap). So
+        // "keep their work" had quietly undone the gate's own stated purpose — "crisis language in
+        // the free-text fields must never reach a model" — and re-created the 30 Sep harm where a
+        // disclosure is stored and replayed later with nobody on screen.
+        // Their budget, meals-per-day, diet, dislikes and supplement choice are kept, because losing
+        // those is the denial of service. The sentence is dropped, and `restrictions` is explicitly
+        // cleared rather than merely omitted, so an EARLIER value cannot survive underneath it.
         try{
           if(typeof saveMealPrefs === 'function' && typeof getMealPrefs === 'function'){
-            saveMealPrefs(Object.assign(getMealPrefs(), window._fuelPendingVals));
+            const _safe = Object.assign({}, window._fuelPendingVals);
+            delete _safe.restrictions;
+            saveMealPrefs(Object.assign(getMealPrefs(), _safe, { restrictions: '' }));
           }
         }catch(_){ }
         document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
