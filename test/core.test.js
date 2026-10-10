@@ -13431,8 +13431,9 @@ H.section('what reaches the shared library decides the App Store UGC answer');
   const decls = (CODE.match(/function contributeToSharedLibrary\(/g) || []).length;
   H.eq(decls, 1, 'calibration: exactly one declaration of contributeToSharedLibrary');
   H.eq(total - decls, 2,
-    'exactly two places contribute to shared_library (a typed exercise name, a web-looked-up food ' +
-    'name). A third changes what SUBMIT-CHECKLIST.md § 3 tells Apple — read it before adding one');
+    'exactly two places contribute to shared_library (a typed exercise name, and a food name that ' +
+    'falls back to the typed search query). A third changes what SUBMIT-CHECKLIST.md § 3 tells ' +
+    'Apple — read it before adding one');
 
   const CALL = /contributeToSharedLibrary\(\s*['"]/g;
   const literal = (CODE.match(CALL) || []).length;

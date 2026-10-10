@@ -104,7 +104,11 @@ Feeling Door with no heading in the light theme.
    **Face ID matching and notification delivery were both verified on the SIMULATOR on 10 Oct 2026**
    (v610, the real Capacitor build, driven end to end — see § "What the simulator settled" below).
    What genuinely still needs a phone: **barcode scanning** (no camera) and **haptics** (no Taptic
-   engine). Everything else is verified.
+   engine). "Everything else is verified" is too broad and used to be written here — the reach-out
+   nudge in particular is NOT covered: `app-shot.mjs` seeds no data (unlike `ios-shot`/`sim-shot`,
+   which both use `seed-person.mjs`), so on that install `scheduleReachOut()` correctly has nothing
+   to arm and the simulator run says nothing about it. Nor are quiet hours or the "at most 3 a week"
+   throttle.
 4. Before SUBMITTING for review (not needed for TestFlight): the age rating and the App Privacy
    form, both described further down this file. **This line used to say those sections were "still
    accurate because they describe behaviour, which has not changed." That was wrong, twice.** The
@@ -121,8 +125,9 @@ Archive: `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597.xcarchive`
 IPA:     `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597-build8.ipa` (2.2 MB)
 
 **Build 9 (v610) was archived AND exported locally on 10 Oct 2026, and the whole chain is green**
-— so the archive step is no longer an unknown, and only the upload itself is left. There is no
-workspace in this project (Capacitor SPM, not CocoaPods), so it is `-project`, not `-workspace`:
+— so the archive step is no longer an unknown, and only the upload itself is left. There is no workspace to OPEN in this project (Capacitor SPM, not CocoaPods — `find` does return
+`ios/App/App.xcodeproj/project.xcworkspace`, which is Xcode's own internal one inside the project
+bundle and is not what `-workspace` wants), so it is `-project`:
 
 ```
 xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
@@ -533,8 +538,13 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   This doc used to say *"Nothing a user writes is visible to any other user."* As written, that is no
   longer true. `shared_library` is a crowd-sourced exercise/food table: `contributeToSharedLibrary()`
   is called from `22-train-deep.js:58` with a **user-typed exercise name** and from
-  `14-nourish.js:3524` with a web-looked-up food name, and `pullSharedLibrary()` reads other people's
-  rows into every user's app.
+  `14-nourish.js:3524` with a food name, and `pullSharedLibrary()` reads other people's rows into
+  every user's app.
+  **Both of them can be the person's own typing, not one.** The food name is `wf.name`, which is
+  built as `p.name || query` (`14-nourish.js:1976`) — so when the web lookup returns no name, what
+  gets published is **the search text the person typed**. An earlier draft of this section called it
+  "a web-looked-up food name", which is true only when the lookup succeeds. The food one does at
+  least require an explicit tap on a "Share" button; the exercise one does not.
 
   What makes it answerable without alarm is that it is **pre-moderated, and the moderation is
   enforced by the database, not by the UI** — verified live against this project's RLS on 10 Oct 2026:

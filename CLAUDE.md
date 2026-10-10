@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v610**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v611**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -1043,6 +1043,80 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      The trade-off is stated in the harness: this is a fingerprint, not a behaviour diff. A textual
      edit that changes nothing still demands a probe run, because nothing there can know whether an
      edit moved behaviour. Cheap to satisfy, impossible to satisfy by accident.
+   - **AND THE FOURTH DEVOTIONAL FALSE POSITIVE WAS FIVE, AND ONE OF THEM THE APP PRINTS (10 Oct 2026).**
+     This file said "assume there is a fourth." A six-lens adversarial review of the day's OWN three
+     commits found five, every one reproduced by hand before being touched, and the yield again did
+     not fall off.
+     **"o allah take my life" and "o krishna take my life" returned suicide — and so did "o lord take
+     my life."** The hymn fix of 1 Oct was a SUFFIX bound listing `lord|jesus|god`, so it could not
+     see a name that comes FIRST, and it named only one tradition's. The app's own FAITHS registry
+     has islam praying to Allah and hinduism to the Divine. **A sentence start cannot see what
+     precedes it** and this bundle forbids lookbehind, so the address is removed as a SPAN. It
+     requires an explicit address — a vocative o/oh, or a comma — so bare "lord take my life" still
+     fires, a named cost rather than an oversight; and "i asked god to take my life" still fires,
+     because REPORTING a despairing prayer is a disclosure.
+     **`_EXAMEN_CLOSE.secular.q` is the literal string "The unexamined life is not worth living."**,
+     rendered on the closing screen of the nightly examen for every secular person, while
+     `'not worth living'` sat bare in SUICIDE_PHRASES. The first of these where the tripping sentence
+     is the APP'S OWN COPY rather than something a person might type.
+     **`'no longer want to live'` was added BARE one line below two siblings bounded that same day for
+     exactly this**, and fired on the same sentences they were bounded for — "paycheck to paycheck"
+     in an app with a money front, and "with my parents". The loose one was written AFTER the tight
+     ones, which is the "a superseded pattern does not stop mattering" lesson inverted: here the
+     looser pattern was the newer one.
+     **`'starve myself'` was bare, so the governing thesis of the whole app returned selfharm** —
+     "starve myself of dopamine tonight and read instead" is this product's own vocabulary. Only the
+     non-food object is suppressed; "starve myself of food" still fires.
+     **`'dead to sin'` had a dedicated suppression and its whole family did not**, which is the proof
+     the shape was recognised and then half-applied: dead to the world / the flesh / desire / my old
+     life all fired.
+     22 benign silent, 17 disclosures still firing, 0 regressions either way, five fault injections
+     each restoring the pre-fix form and each reproducing its defect.
+   - **AND THE INSTRUMENT THAT POLICES THE SAFETY PROMPT RELOCATED INSTEAD OF FAILING (10 Oct 2026).**
+     `voiceFingerprint` anchors each FAITHS window on a literal token and takes the FIRST `indexOf`.
+     One of the comments above quoted the registry verbatim, so the islam window moved ~1600 lines
+     from the real entry to that comment and hashed a slab of unrelated detector code. **The sha
+     changed, which LOOKED like the stamp doing its job.** The tell was its own two cry-wolf
+     calibrations failing in the same run — a reading-plan title cannot move the sha unless the
+     window has grown to contain it. Ambiguous anchors are REPORTED now, asserted, and fault-injected
+     by planting a duplicate. "Assert your anchor is unique", applied to the instrument rather than
+     to an analysis script.
+   - **AND THE PREVIOUS DAY'S OWN UGC GATE WAS WEAKER THAN ITS COMMIT MESSAGE (10 Oct 2026).** Rule 4
+     again, on a commit less than a day old. Each demonstrated at **3732/0**:
+     **The "fixed leak stays fixed" guard named the wrong function.** It asserted on `_companionSay`;
+     git puts the live `contributeToSharedLibrary('exercise', '__protocol__' + key)` inside
+     `_researchProtocol`. A guard aimed at a function that never had the bug cannot fail for the
+     right reason. And the corrected assertion **failed on CORRECT code** until it stripped comments,
+     because the fix's own explanation names the call it removed — this file's recorded trap arriving
+     inside the test written to avoid it.
+     **The contributor count matched only QUOTED first arguments**, so the third caller somebody would
+     actually write — `contributeToSharedLibrary(kind, txt, data)` — evaded both the count and the
+     kind set. It counts every call minus the declaration now, and pins literal == total so a
+     variable kind is itself a failure.
+     **All three moderation invariants were whole-bundle greps**, satisfied by the ADMIN-ONLY
+     moderation queue that legitimately uses the same calls: the public read could lose both filters
+     and the insert could go pre-approved, green. Anchored to `pullSharedLibrary` and
+     `contributeToSharedLibrary` by name. Injected for real afterwards: four named failures where
+     there had been none.
+   - **AND BOTH HALVES OF THE NOTIFICATION CLAIM WERE FALSE (10 Oct 2026).** The checklist said the
+     "even when the app is closed" toast "only prints for a schedule the plugin actually CONFIRMED".
+     It does not: `28-init.js:88` calls `_scheduleNativeReminders(prefs)` with **no `await`** and the
+     toast fires unconditionally two lines later — and that sentence was the entire load-bearing
+     evidence. And the delivery shown came from `xcrun simctl push`, an **APNs-shaped REMOTE**
+     payload, while `02-native.js` says in its own words that *"remote push is not something this app
+     does — every nudge it sends is scheduled on-device."* The test exercised a path the app does not
+     have.
+     Re-done against the local scheduler, and it passes: a reminder set six minutes out, saved, the
+     app backgrounded, and the literal body from `_scheduleNativeReminders` found in iOS's
+     `DeliveredNotifications.plist`. **A screenshot could not have shown this and would have said the
+     opposite** — a banner auto-dismisses in seconds, so the capture one minute after the trigger was
+     an empty home screen, which reads exactly like a notification that never fired. The store is the
+     evidence; the banner is not.
+   - **AND preflight GUARDED SIX OF THE SEVEN USAGE DESCRIPTIONS THAT SHIP (10 Oct 2026).** The one it
+     missed was `NSPhotoLibraryAddUsageDescription` — the string iOS demands before an app may SAVE
+     to the photo library, which is exactly the capability the App Privacy answer sheet had just been
+     corrected to declare. A hardcoded list cannot notice a key added later, so the plist is now asked
+     what it carries and the list is required to cover all of it.
    - `npm run crisis` — **38 doors as of 9 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
@@ -1322,14 +1396,24 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      distribution-signed `.ipa` locally with **no Apple credentials** — both App Store provisioning
      profiles are installed, so manual signing works offline. Verified out of the binary, never the
      log: `Apple Distribution: Alfred John (L4BD53PLVF)`, `get-task-allow = false`, 1.0 build 9,
-     `PrivacyInfo.xcprivacy` present, web bundle v610 byte-identical to the repo. **There is no
-     `.xcworkspace`** (Capacitor SPM, not CocoaPods) — it is `-project`. The ARCHIVE is
+     `PrivacyInfo.xcprivacy` present, web bundle v610 byte-identical to the repo. **There is no `.xcworkspace` to OPEN**
+     (Capacitor SPM, not CocoaPods; `find` does return Xcode's own internal
+     `App.xcodeproj/project.xcworkspace`, which is not what `-workspace` wants) — it is `-project`. The ARCHIVE is
      Development-signed with `get-task-allow = true`, which is normal because the export re-signs:
      **check the IPA, never the archive.** Only the upload click is left.
    - **Face ID and notification delivery are NOT hardware-only**, and were driven end to end on the
      real Capacitor build on a booted simulator — including the lock covering the journal on return
      and the off-switch demanding the same proof. Only **barcode scanning** (no camera) and
      **haptics** (no Taptic engine) genuinely need a phone. Two, not four.
+     **The first notification run proved the wrong thing and is worth not repeating:** it leaned on a
+     toast that is not gated on anything (`_scheduleNativeReminders` is called with no `await`) and on
+     `simctl push`, which is a REMOTE payload this app has no path for. The real proof is the app's
+     own scheduled LOCAL notification found in iOS's `DeliveredNotifications.plist` — a banner
+     auto-dismisses, so a screenshot taken a minute later shows an empty home screen and reads exactly
+     like a failure.
+   - ⚠️ **The build-9 archive in `~/Library/Developer/Xcode/Archives/2026-10-10/` predates the v611
+     crisis fixes. Rebuild before uploading** — `npm run preflight` refuses while the bundles are
+     stale, which is the only reason that is safe to write down.
    - **The age rating and App Privacy answer sheets were stale**, and both docs claimed they needed
      no re-audit "because they describe behaviour, which has not changed". Behaviour changes
      underneath a doc that only describes it. Both are re-derived from the v610 code and now gated.
