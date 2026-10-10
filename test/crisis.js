@@ -41,6 +41,32 @@ const DOORS = [
   // person is becoming, why it matters to them, and a vice on their card with a clean-day counter
   // attached. detectCrisis() already answered "suicide" for the sentence in that same page. The
   // doors simply never asked, and none of them were in this list.
+  // DOOR 39 — THE FUEL PLAN'S ONE FREE-TEXT FIELD. It HAD a gate and the gate was DEAD: it read
+  // `fuel-dislikes`, `fuel-notes` and `fuel-diet`, none of which exist (the diet and dislike
+  // controls are CHIP ROWS, `fuel-diet-row` / `fuel-dislike-row`, carrying no typed text). The one
+  // field a person types into is `fuel-diet-free`. So detectCrisis was never called with anything,
+  // for every version that gate existed — and this door was not in this list, which is how it
+  // survived. That is the pairing to remember: a gate nobody drives is a gate that may not run.
+  { name: 'the fuel plan · allergies / anything else',
+    go: async page => page.evaluate(async () => { if(typeof _fuelElicit==='function') _fuelElicit(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      // A budget they typed, so `also` below can ask whether their work survived the crisis branch.
+      const b = document.getElementById('fuel-budget');
+      if(b){ b.value = '137'; b.dispatchEvent(new Event('input',{bubbles:true})); }
+      const i = document.getElementById('fuel-diet-free');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof _fuelElicitSave === 'function') _fuelElicitSave();
+    }, phrase),
+    // The inverse of the usual `also`: here the risk is not that the disclosure was STORED but that
+    // their own choices were THROWN AWAY. completeMorning()'s contract — their words are always
+    // kept — now holds here too, so losing the budget they just typed is the failure.
+    also: async (page) => page.evaluate(() => {
+      try{
+        const p = (typeof getMealPrefs === 'function') ? getMealPrefs() : null;
+        if(!p) return null;
+        return (p.budget === 137) ? null : 'the fuel choices were discarded by the crisis branch (budget ' + p.budget + ')';
+      }catch(_){ return null; }
+    }) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
       document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));

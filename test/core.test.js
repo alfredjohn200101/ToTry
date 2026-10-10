@@ -13637,4 +13637,190 @@ H.section("the app's own devotional vocabulary does not trip its own detector");
 }
 
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// A CRISIS GATE THAT READ THREE ELEMENT IDS THAT DO NOT EXIST (10 Oct 2026)
+// `_fuelElicitSave` has carried a gate since it was written, with a comment saying "the gate every
+// other door has" — and it asked `document.getElementById` for `fuel-dislikes`, `fuel-notes` and
+// `fuel-diet`. None of the three is in the DOM: the diet and dislike controls are CHIP ROWS
+// (`fuel-diet-row` / `fuel-dislike-row`) carrying no typed text, and the one field a person types
+// into is `fuel-diet-free`. So the joined string was always '' and detectCrisis was never called
+// with anything. It parses, every id check passes, the suite was green, and it did nothing — this
+// app's signature failure mode, in the one place where doing nothing means a disclosure reaches a
+// model. It was also not in `npm run crisis`'s door list, which is why nothing ever drove it.
+// The second half is the `completeMorning()` contract: their words are always kept. The old branch
+// bare-returned BEFORE the budget, meals, diet, dislikes and supplement choice were collected, so
+// a person who typed something true lost all of it with no route back — the denial-of-service
+// shape `docs/CRISIS-REGISTERS.md` names as the one place a false positive stops being cheap.
+H.section('the fuel plan gate reads the field that exists, and keeps their work');
+{
+  const SRC = H.extractFn('_fuelElicitSave');
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // Drive the REAL function. A grep cannot see this defect: the call is present and correctly
+  // spelled, and only the ARGUMENT it reads is wrong — the shape this repo records as
+  // "a test that greps a call passes on a wrong argument".
+  const drive = (src, fields) => {
+    let bridged = false, prefsSaved = null, advanced = false;
+    const el = id => ({ value: fields[id] || '', getAttribute: () => null });
+    const sb = {
+      detectCrisis,
+      document: { getElementById: id => el(id), querySelector: () => null,
+                  querySelectorAll: () => ({ forEach: () => {}, length: 0 }) },
+      // The gate shows the standard card via journalMeetCrisis now — the same helper every door
+      // added since 30 Sep uses — and does it on a 250ms timer, so the sandbox has to run timers.
+      journalMeetCrisis: () => { bridged = true; },
+      bridgeToRealHelp: () => { bridged = true; },
+      setTimeout: fn => { try{ fn(); }catch(_){ } },
+      getMealPrefs: () => ({}), saveMealPrefs: p => { prefsSaved = p; },
+      _fuelCtx: () => ({ goalDir: 'maintain', cal: 2500, sex: 'male' }),
+      _fuelSafetyModal: () => {}, _fuelFinishSave: () => { advanced = true; },
+      window: {}, parseFloat, parseInt, Array, String, RegExp, Object,
+    };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    new Function(...k, src + '\n_fuelElicitSave();')(...v);
+    return { bridged, prefsSaved, advanced };
+  };
+
+  const DISCLOSURE = 'i want to kill myself';
+  const hit = drive(SRC, { 'fuel-diet-free': DISCLOSURE, 'fuel-budget': '137' });
+  H.ok(hit.bridged, 'a disclosure in `fuel-diet-free` — the form\'s only free-text field — reaches real help');
+  H.ok(!hit.advanced, 'and does NOT carry on to the meal plan, so it never reaches a model');
+  H.ok(!!hit.prefsSaved && hit.prefsSaved.budget === 137,
+    'and their budget survives it — completeMorning\'s contract: their words are always kept');
+
+  const ok = drive(SRC, { 'fuel-diet-free': 'no nuts, and i hate mushrooms', 'fuel-budget': '137' });
+  H.ok(!ok.bridged, 'while an ordinary allergy note does not cry wolf');
+  H.ok(ok.advanced, 'and goes on to build the plan');
+
+  // ── FAULT INJECTION: put the dead ids back ─────────────────────────────────────────────────
+  // Corrupting the argument, not deleting the call — deleting it is the one mutation a name-match
+  // is guaranteed to catch, and a name-match is exactly what failed to catch this for months.
+  H.ok(SRC.indexOf("detectCrisis(restrictions)") > 0,
+    'calibration: the gate reads `restrictions` (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+  const dead = SRC.split('restrictions ? detectCrisis(restrictions) : null')
+                  .join("(document.getElementById('fuel-notes')||{}).value ? detectCrisis((document.getElementById('fuel-notes')||{}).value) : null");
+  const broken = drive(dead, { 'fuel-diet-free': DISCLOSURE, 'fuel-budget': '137' });
+  H.ok(!broken.bridged,
+    'fault-injected: pointed back at an id the form does not have, the gate goes silent again — ' +
+    'which is what it did in every shipped version that carried it');
+  H.ok(broken.advanced, 'and the disclosure carries straight on to the model, as it used to');
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// EVERY ELEMENT ID A CRISIS GATE READS MUST EXIST (11 Oct 2026)
+// Closing the class, not the instance. `_fuelElicitSave` read three ids that are nowhere in the
+// bundle, so it read '' and waved every disclosure through. The existing shape-1 scan in the notes
+// is framed as "a renderer with no container" — and the asymmetry is the whole point: a RENDERER
+// with a missing container visibly renders nothing and somebody notices, while a GATE with a
+// missing container silently reads '', decides "no crisis", and opens the door.
+H.section('every element id a crisis gate reads actually exists');
+{
+  const fs = require('fs');
+  const html = H.html;
+  const present = new Set();
+  const add = re => { const r = new RegExp(re.source, 'g'); let m; while((m = r.exec(html))) present.add(m[1]); };
+  add(/id=\\?["']([a-zA-Z][\w-]*)\\?["']/);                        // static markup
+  // ASSIGNED IN JS, which the first version of this scan missed and so reported a false positive on
+  // `#post-urge-modal` (`m.id = 'post-urge-modal'`). Be as suspicious of a probe that RAISES a
+  // finding as of one that clears it.
+  add(/\.id\s*=\s*['"]([a-zA-Z][\w-]*)['"]/);
+  add(/setAttribute\(\s*['"]id['"]\s*,\s*['"]([a-zA-Z][\w-]*)['"]/);
+  add(/['"]([a-zA-Z][\w-]*)['"]\s*\+/);                             // built by concatenation
+
+  const scan = () => {
+    const dir = 'src/app', missing = [];
+    let checked = 0;
+    for(const f of fs.readdirSync(dir).filter(x => x.endsWith('.js'))){
+      const src = fs.readFileSync(dir + '/' + f, 'utf8');
+      for(const part of src.split(/\nfunction |\nasync function /)){
+        if(!/detectCrisis|journalCrisisOf/.test(part)) continue;
+        const name = (part.match(/^([a-zA-Z_$][\w$]*)/) || [])[1] || '?';
+        const ids = new Set(); let g;
+        const r = /getElementById\(\s*['"]([a-zA-Z][\w-]*)['"]/g;
+        while((g = r.exec(part))) ids.add(g[1]);
+        for(const id of ids){ checked++; if(!present.has(id)) missing.push(name + ' reads #' + id); }
+      }
+    }
+    return { checked, missing };
+  };
+
+  const res = scan();
+  H.ok(res.checked > 40, 'calibration: the scan found ' + res.checked + ' ids to check (>40) — a scan ' +
+    'that checks nothing passes whatever the code does');
+  H.eq(res.missing, [],
+    'every id a crisis-gating function reads exists in the shipped bundle — a gate pointed at a ' +
+    'missing element reads "" and decides there is no crisis');
+
+  // FAULT INJECTION: the three real ids that were dead must be seen as absent, or the scan proves
+  // nothing. This is the defect itself, re-asked.
+  ['fuel-dislikes', 'fuel-notes', 'fuel-diet'].forEach(id =>
+    H.ok(!present.has(id),
+      'fault-injection anchor: #' + id + ' really is absent from the bundle, so the scan above ' +
+      'would have caught the gate that read it'));
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// A THIRD COPY OF THE HELPLINE NUMBERS (11 Oct 2026)
+// `CRISIS_LINES` exists because the model once offered "988 in the US and Canada, or 111 in the UK"
+// to an Australian app's user — 111 being the NHS non-emergency line, not a suicide line. The fix
+// made ONE list serve both the card and the prompt, "so they cannot drift". `bridgeToRealHelp()` is
+// a third copy: it hardcodes tel:131114, tel:988 and tel:116123 in its own markup and never reads
+// CRISIS_LINES, and it has six callers. Today it happens to agree. Nothing was asking.
+// This does NOT require it to render from CRISIS_LINES — that is a refactor of a live crisis
+// surface with six callers, and it is noted in the handoff instead. It requires only that every
+// number it dials is one the app has verified somewhere else, so a correction to CRISIS_LINES that
+// leaves this behind fails the build rather than shipping two different answers.
+H.section('no crisis surface dials a number the app has not verified');
+{
+  const code = H.code();
+  const bridge = H.extractFn('bridgeToRealHelp');
+  H.ok(bridge.length > 500, 'calibration: bridgeToRealHelp was extracted');
+
+  // Every tel: it dials, digits only.
+  const dialled = [...new Set((bridge.match(/tel:\+?[0-9]{3,}/g) || []).map(s => s.replace(/[^0-9]/g, '')))];
+  H.ok(dialled.length >= 3, 'calibration: it dials ' + dialled.length + ' numbers (>=3) — a probe ' +
+    'that finds none passes whatever the markup says');
+
+  // The verified set: every number CRISIS_LINES carries, digits only.
+  const i = code.indexOf('const CRISIS_LINES');
+  H.ok(i > 0, 'calibration: CRISIS_LINES was located');
+  // BRACKET-MATCH, DO NOT SLICE A FIXED WINDOW. `code.slice(i, i + 2600)` ran straight past the end
+  // of CRISIS_LINES into MEDICAL_LINES, which legitimately carries 111 — the NHS NON-EMERGENCY line,
+  // correct on a medical card and exactly the wrong number on a suicide one. So the fault injection
+  // below, which plants 111, was absorbed as "verified" and reported a clean pass. The fixed-window
+  // trap this repo already records, landing on the one check whose whole subject is a wrong number.
+  const block = (() => {
+    const open = code.indexOf('[', i);
+    let depth = 0;
+    for(let k = open; k < code.length; k++){
+      if(code[k] === '[') depth++;
+      else if(code[k] === ']'){ depth--; if(!depth) return code.slice(i, k + 1); }
+    }
+    return code.slice(i, i + 2600);
+  })();
+  H.ok(block.length < 2600 && block.indexOf('MEDICAL_LINES') === -1,
+    'calibration: the block really stops at the end of CRISIS_LINES (' + block.length + ' chars)');
+  // Parse the `contact:` fields. The first cut matched a loose digit run of 7+ characters and so
+  // silently MISSED '988', which is three digits — and then reported the app inconsistent. The
+  // number that is hardest to see is the short one; the measurement was wrong, not the app.
+  const verified = new Set((block.match(/contact:\s*'([^']+)'/g) || [])
+    .map(s => s.replace(/.*'([^']+)'.*/, '$1').replace(/[^0-9]/g, ''))
+    .filter(Boolean));
+  H.ok(verified.size >= 5, 'calibration: CRISIS_LINES holds ' + verified.size + ' dialable numbers (>=5)');
+
+  const unverified = dialled.filter(n => !verified.has(n));
+  H.eq(unverified, [],
+    'every number bridgeToRealHelp dials also appears in CRISIS_LINES — a correction made in one ' +
+    'place and not the other is how a person gets a number nobody checked');
+
+  // FAULT INJECTION: a number that is in neither list must be caught, or the check is decoration.
+  const planted = [...dialled, '111'];
+  H.ok(planted.filter(n => !verified.has(n)).length === 1,
+    'fault-injected: a number outside CRISIS_LINES is reported — 111 is the NHS non-emergency ' +
+    'line, which is the exact wrong number the model once offered and the reason CRISIS_LINES exists');
+}
+
+
 H.report();

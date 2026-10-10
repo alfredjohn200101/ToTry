@@ -116,20 +116,12 @@ function _fuelElicit(){
 }
 
 function _fuelElicitSave(){
-  // Crisis language in the free-text fields must never reach a model — the gate every other door has.
-  try{
-    if(typeof detectCrisis === 'function'){
-      const _txt = ['fuel-dislikes','fuel-notes','fuel-diet'].map(function(id){
-        const el = document.getElementById(id); return el ? String(el.value || '') : '';
-      }).join(' ').trim();
-      const _c = _txt ? detectCrisis(_txt) : null;
-      if(_c){
-        document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-        if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
-        return;
-      }
-    }
-  }catch(_){ }
+  // COLLECT FIRST, ALWAYS. The crisis branch below used to run before any of this and bare-return,
+  // so a person who typed something true into the one free-text field lost their budget, meals,
+  // diet, dislikes and supplement choice as well. `docs/CRISIS-REGISTERS.md` names that shape as the
+  // one place a false positive stops being cheap: a denial of service for somebody who told the app
+  // the truth about their life. `completeMorning()` already carries the contract this now follows —
+  // their words are always kept, the app simply stops and meets them instead of carrying on.
   const budget = parseFloat((document.getElementById('fuel-budget')||{}).value) || 0;
   const mealsEl = document.querySelector('#fuel-meals-row .fuel-chip.on');
   const mealsPerDay = mealsEl ? parseInt(mealsEl.getAttribute('data-n'),10) : 4;
@@ -139,6 +131,43 @@ function _fuelElicitSave(){
   const suppEl = document.getElementById('fuel-supp-toggle');
   const includeSupps = suppEl ? suppEl.getAttribute('data-on')==='1' : true;
   window._fuelPendingVals = { budget:budget, mealsPerDay:mealsPerDay, diet:diet, dislikes:dislikes, restrictions:restrictions, includeSupps:includeSupps };
+  // THE GATE READ THREE ELEMENT IDS THAT DO NOT EXIST, so it never fired once (10 Oct 2026).
+  // It asked for `fuel-dislikes`, `fuel-notes` and `fuel-diet`; this form's only free-text field is
+  // `fuel-diet-free` (the others are CHIP ROWS — `fuel-diet-row`, `fuel-dislike-row` — which carry
+  // no typed text at all). So `_txt` was always '' and `detectCrisis` was never called with
+  // anything. Driven on the real function with the real detector: a disclosure typed into
+  // `fuel-diet-free` did NOT bridge and WAS saved on to the model, while the same string placed in
+  // `fuel-notes` DID bridge — which is the calibration proving the logic was fine and only the ids
+  // were wrong. The app's signature failure: it parses, the suite is green, and it does nothing.
+  try{
+    if(typeof detectCrisis === 'function'){
+      const _c = restrictions ? detectCrisis(restrictions) : null;
+      if(_c){
+        // Keep what they chose before meeting them — see the note at the top of this function.
+        try{
+          if(typeof saveMealPrefs === 'function' && typeof getMealPrefs === 'function'){
+            saveMealPrefs(Object.assign(getMealPrefs(), window._fuelPendingVals));
+          }
+        }catch(_){ }
+        document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+        // THE SAME CARD AS THE OTHER 38 DOORS. This used to call bridgeToRealHelp('heavy'), which
+        // does show three tappable helplines — but it is a DIFFERENT surface: it carries no
+        // `aria-label="Urgent: real people you can contact right now"`, so it sits outside the
+        // visible-and-tappable geometry guarantee `npm run crisis` holds every other door to, and
+        // its numbers are a THIRD hardcoded copy (tel:131114 / tel:988 / tel:116123) outside
+        // CRISIS_LINES — the drift this repo closed when it made one list serve both the card and
+        // the model's prompt. journalMeetCrisis renders the unified card, which is what every door
+        // added since 30 Sep uses. bridgeToRealHelp keeps its six other callers.
+        setTimeout(function(){
+          try{
+            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_c);
+            else if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
+          }catch(_){ }
+        }, 250);
+        return;
+      }
+    }
+  }catch(_){ }
   // ED / restriction off-ramp: gentle language flags or an aggressively low cut target.
   const ctx = _fuelCtx();
   const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast)/i;

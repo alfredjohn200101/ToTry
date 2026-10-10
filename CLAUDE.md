@@ -1134,7 +1134,50 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      to the photo library, which is exactly the capability the App Privacy answer sheet had just been
      corrected to declare. A hardcoded list cannot notice a key added later, so the plist is now asked
      what it carries and the list is required to cover all of it.
-   - `npm run crisis` — **38 doors as of 9 Oct 2026, and it now also asserts WHICH CARD.** The three
+   - **AND ONE GATE READ THREE ELEMENT IDS THAT DO NOT EXIST (11 Oct 2026). DOOR 39.**
+     `_fuelElicitSave` has carried a crisis gate since it was written, under a comment saying "the
+     gate every other door has" — and it asked `getElementById` for `fuel-dislikes`, `fuel-notes`
+     and `fuel-diet`. **None of the three is in the DOM.** The diet and dislike controls are CHIP
+     ROWS (`fuel-diet-row` / `fuel-dislike-row`) carrying no typed text, and the one field a person
+     types into is `fuel-diet-free`. So the joined string was always `''`, `detectCrisis` was never
+     called with anything, and a disclosure typed into "Allergies, foods you hate, anything else…"
+     went straight on to the model. **It parses, every id check passes, the suite was green, and it
+     did nothing** — the signature failure, in the one place where doing nothing means a disclosure
+     reaches a model.
+     **A grep could not see it and neither could any assertion over the source**: the call is present
+     and correctly spelled, and only the ARGUMENT is wrong. That is "a test that greps a call passes
+     on a wrong argument" arriving at a crisis gate. Driven on the real function with the real
+     detector, with the calibration built in — the same string placed in `fuel-notes` DID bridge,
+     which is what proves the logic was always fine and only the ids were wrong.
+     **And the door was not in `npm run crisis`'s list**, which is why nothing ever drove it. That
+     pairing is the lesson: a gate nobody drives is a gate that may not run. It is door 39 now.
+     The fix carries the second half too. The old branch bare-returned BEFORE the budget, meals,
+     diet, dislikes and supplement choice were collected, so a person who typed something true lost
+     all of it with no route back — the denial-of-service shape `docs/CRISIS-REGISTERS.md` names as
+     the one place a false positive stops being cheap. It now collects first and persists their
+     choices before meeting them, which is `completeMorning()`'s contract in its own words: **their
+     words are always kept, the app simply stops and meets them instead of carrying on.**
+     **AND THE DOOR THEN REPORTED THE APP BROKEN WHEN IT WAS NOT, WHICH IS WHY THAT RULE EXISTS.**
+     With the gate live, door 39 said "NO crisis card at all". Driven by hand in a browser, the
+     person got **seven tappable helplines on screen** — because the branch called
+     `bridgeToRealHelp('heavy')`, a DIFFERENT surface from the one the other 38 doors show. That
+     turned out to be the real finding: it carries no
+     `aria-label="Urgent: real people you can contact right now"`, so it sits outside the
+     visible-and-tappable geometry guarantee the whole suite is built on, and **its numbers are a
+     THIRD hardcoded copy** (`tel:131114` / `tel:988` / `tel:116123`) that never reads
+     `CRISIS_LINES` — the drift this repo closed when it made one list serve both the card and the
+     model's prompt, after the model offered an Australian user "111 in the UK". It has six other
+     callers, so it is not refactored here; the fuel gate now calls `journalMeetCrisis`, which is
+     what every door added since 30 Sep uses, and a test holds every number `bridgeToRealHelp`
+     dials to one `CRISIS_LINES` has verified.
+     **That test's first two versions both lied, in the same direction.** It missed `988` because
+     the digit-run regex demanded seven characters and that number is three — the hardest number to
+     see is the short one. Then its fixed 2600-character slice ran past the end of `CRISIS_LINES`
+     into `MEDICAL_LINES`, which legitimately carries **111** (the NHS non-emergency line, right on
+     a medical card and wrong on a suicide one), so the fault injection that plants 111 was absorbed
+     as verified and reported a clean pass. Bracket-match; never slice a fixed window — on the one
+     check whose entire subject is a wrong number.
+   - `npm run crisis` — **39 doors as of 11 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
      then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every
@@ -1409,11 +1452,11 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
 1. **The App Store. "Cannot be automated" was doing a lot of work in this line, and most of it was
    wrong (10 Oct 2026).** It used to say the archive, the age rating, the App Privacy form and all
    four hardware tests were yours. Four of those had parts that were not:
-   - **The archive is done and de-risked.** Build 9 (v610) archives AND exports to a
+   - **The archive is done and de-risked.** Build 9 (v611) archives AND exports to a
      distribution-signed `.ipa` locally with **no Apple credentials** — both App Store provisioning
      profiles are installed, so manual signing works offline. Verified out of the binary, never the
      log: `Apple Distribution: Alfred John (L4BD53PLVF)`, `get-task-allow = false`, 1.0 build 9,
-     `PrivacyInfo.xcprivacy` present, web bundle v610 byte-identical to the repo. **There is no `.xcworkspace` to OPEN**
+     `PrivacyInfo.xcprivacy` present, **arm64 only**, web bundle v611 byte-identical to the repo. **There is no `.xcworkspace` to OPEN**
      (Capacitor SPM, not CocoaPods; `find` does return Xcode's own internal
      `App.xcodeproj/project.xcworkspace`, which is not what `-workspace` wants) — it is `-project`. The ARCHIVE is
      Development-signed with `get-task-allow = true`, which is normal because the export re-signs:
@@ -1434,7 +1477,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      detector**, because nothing in Organizer tells you which build you are about to upload.
    - **The age rating and App Privacy answer sheets were stale**, and both docs claimed they needed
      no re-audit "because they describe behaviour, which has not changed". Behaviour changes
-     underneath a doc that only describes it. Both are re-derived from the v610 code and now gated.
+     underneath a doc that only describes it. Both are re-derived from the code and now gated.
    `SUBMIT-CHECKLIST.md` carries all of it, including the three ways the simulator test LIES (an
    enrollment that does not survive a reboot against a capability read at launch; a 2.5s grace
    window that makes a correct lock look broken; and `simctl push` showing nothing to a foreground
