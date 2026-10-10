@@ -1471,10 +1471,11 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      own scheduled LOCAL notification found in iOS's `DeliveredNotifications.plist` — a banner
      auto-dismisses, so a screenshot taken a minute later shows an empty home screen and reads exactly
      like a failure.
-   - The build-9 archive in `~/Library/Developer/Xcode/Archives/2026-10-10/` is cut at **v611**,
-     after the seven devotional false positives were closed. A v610 one briefly sat there and was
-     moved out: **an archive that is merely stale becomes a hazard when the staleness is a crisis
-     detector**, because nothing in Organizer tells you which build you are about to upload.
+   - The build-9 archive in `~/Library/Developer/Xcode/Archives/2026-10-11/` is cut at **v611**,
+     after the seven devotional false positives AND the fuel plan's dead crisis gate. Two earlier
+     archives were moved out of Organizer: **an archive that is merely stale becomes a hazard when
+     the staleness is a crisis path**, because nothing in Organizer tells you which build you are
+     about to upload. Moved, never deleted.
    - **The age rating and App Privacy answer sheets were stale**, and both docs claimed they needed
      no re-audit "because they describe behaviour, which has not changed". Behaviour changes
      underneath a doc that only describes it. Both are re-derived from the code and now gated.

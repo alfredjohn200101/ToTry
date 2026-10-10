@@ -143,14 +143,15 @@ Apple credentials at all: both App Store profiles are already installed locally.
 
 **The archive and IPA live where Xcode Organizer actually looks**, which is the difference between
 "only the upload click is left" and "only the upload click is left, once you find it":
-`~/Library/Developer/Xcode/Archives/2026-10-10/ToTry-v611-build9.{xcarchive,ipa}`. An earlier draft
+`~/Library/Developer/Xcode/Archives/2026-10-11/ToTry-v611-build9.{xcarchive,ipa}`. An earlier draft
 of this section asserted the artefacts existed while they sat in a per-session scratch directory
 that no tool and no future reader could reach.
 
-**It is cut at v611**, i.e. AFTER the seven devotional false positives were closed in
-`detectCrisis`. The v610 archive that briefly sat here was superseded and moved out, because an
-archive that is merely stale is a hazard when the staleness is a crisis detector: nothing in
-Organizer would have told you which one you were uploading.
+**It is cut at v611**, after the seven devotional false positives were closed in `detectCrisis`
+AND after the fuel plan's dead crisis gate was fixed. TWO earlier archives have been moved out of
+Organizer for the same reason — a v610 one, and a v611 one that predated the fuel gate. **An
+archive that is merely stale is a hazard when the staleness is a crisis path**, because nothing in
+Organizer tells you which of two builds you are about to upload. Moved, never deleted.
 
 Read out of the resulting binaries, never from the log:
 - `ToTry.ipa`, 2.7 MB — **Authority = Apple Distribution: Alfred John (L4BD53PLVF)**,
