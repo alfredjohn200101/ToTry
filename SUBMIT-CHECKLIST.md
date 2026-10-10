@@ -141,20 +141,20 @@ xcodebuild -exportArchive -archivePath <path>/ToTry.xcarchive \
 `provisioningProfiles = { app.totry: ToTryAppStore }`. Manual signing is what makes it work with no
 Apple credentials at all: both App Store profiles are already installed locally.
 
-**The archive and IPA now live where Xcode Organizer actually looks**, which is the difference
-between "only the upload click is left" and "only the upload click is left, once you find it":
-`~/Library/Developer/Xcode/Archives/2026-10-10/ToTry-v610-build9.{xcarchive,ipa}`. An earlier draft
+**The archive and IPA live where Xcode Organizer actually looks**, which is the difference between
+"only the upload click is left" and "only the upload click is left, once you find it":
+`~/Library/Developer/Xcode/Archives/2026-10-10/ToTry-v611-build9.{xcarchive,ipa}`. An earlier draft
 of this section asserted the artefacts existed while they sat in a per-session scratch directory
 that no tool and no future reader could reach.
 
-⚠️ **THAT BUILD-9 ARCHIVE PREDATES THE v611 CRISIS FIXES AND MUST BE REBUILT BEFORE UPLOAD.** It was
-cut at v610, before five devotional false positives were closed in `detectCrisis` — including the
-app's own examen quote and a prayer in three traditions. Re-run the archive and export commands
-above; `npm run preflight` will refuse while the bundles are stale.
+**It is cut at v611**, i.e. AFTER the seven devotional false positives were closed in
+`detectCrisis`. The v610 archive that briefly sat here was superseded and moved out, because an
+archive that is merely stale is a hazard when the staleness is a crisis detector: nothing in
+Organizer would have told you which one you were uploading.
 
 Read out of the resulting binaries, never from the log:
-- `ToTry.ipa`, 2.7 MB — **Authority = Apple Distribution: Alfred John (L4BD53PLVF)** and
-  **`get-task-allow = false`**. Those two are what decide whether an upload is accepted; the
+- `ToTry.ipa`, 2.7 MB — **Authority = Apple Distribution: Alfred John (L4BD53PLVF)**,
+  **`get-task-allow = false`**, and **arm64 only** (no simulator slice left in the binary). Those two are what decide whether an upload is accepted; the
   ARCHIVE is signed *Apple Development* with `get-task-allow = true`, which is normal and not a
   defect — the export step re-signs. Check the IPA, not the archive.
 - `1.0` build `9`, `app.totry`, min iOS 15.0, `PrivacyInfo.xcprivacy` present at the app root.
