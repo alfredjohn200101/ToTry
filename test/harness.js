@@ -161,15 +161,28 @@ const VOICE_PARTS = [
   // unstamped share of the real companion prompt from ~7% to 26%.
   ['function sharedWisdomNote()', '\n}'],
 ];
+// AN ANCHOR THAT IS NOT UNIQUE DOES NOT FAIL — IT RELOCATES, AND HASHES THE WRONG WINDOW.
+// Found 10 Oct 2026 by tripping it: a comment added to the crisis detector explained a fix by
+// quoting the app's own registry, and contained the literal text prayTo + :'Allah'. indexOf takes
+// the FIRST occurrence, so the islam window moved from the FAITHS entry at ~3600 to that comment
+// at ~1960 and ran forward to the next `verses:` — swallowing ~1600 lines of unrelated detector
+// code. The stamp went invalid, which looked right, but for completely the wrong reason: the two
+// calibration assertions (that editing a reading-plan title must NOT move the sha) failed at the
+// same time, which is the tell that the WINDOW grew rather than the prose changing.
+// So ambiguity is now reported rather than resolved silently. This is the house rule "assert your
+// anchor is unique" applied to the instrument that polices the safety prompt.
 function voiceFingerprint(htmlArg){
   const src = htmlArg || html;
+  const occurrences = (hay, needle) => { let n = 0, i = -1; while((i = hay.indexOf(needle, i + 1)) !== -1) n++; return n; };
+  const ambiguous = VOICE_PARTS.filter(([d]) => occurrences(src, d) > 1).map(([d]) => d);
   const parts = VOICE_PARTS.map(([d, e]) => {
     const i = src.indexOf(d); if(i < 0) return '';
     const j = src.indexOf(e, i); return j < 0 ? '' : src.slice(i, j + e.length);
   });
   return { sha: require('crypto').createHash('sha256').update(parts.join('\u0000')).digest('hex').slice(0,16),
            bytes: parts.reduce((n, x) => n + x.length, 0),
-           missing: VOICE_PARTS.filter((_, k) => !parts[k]).map(([d]) => d) };
+           missing: VOICE_PARTS.filter((_, k) => !parts[k]).map(([d]) => d),
+           ambiguous };
 }
 
 module.exports = { voiceFingerprint, extractFn, load, eq, approx, ok, section, report, html, code, defer };

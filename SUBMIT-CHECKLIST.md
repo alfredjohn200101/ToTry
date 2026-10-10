@@ -136,6 +136,17 @@ xcodebuild -exportArchive -archivePath <path>/ToTry.xcarchive \
 `provisioningProfiles = { app.totry: ToTryAppStore }`. Manual signing is what makes it work with no
 Apple credentials at all: both App Store profiles are already installed locally.
 
+**The archive and IPA now live where Xcode Organizer actually looks**, which is the difference
+between "only the upload click is left" and "only the upload click is left, once you find it":
+`~/Library/Developer/Xcode/Archives/2026-10-10/ToTry-v610-build9.{xcarchive,ipa}`. An earlier draft
+of this section asserted the artefacts existed while they sat in a per-session scratch directory
+that no tool and no future reader could reach.
+
+⚠️ **THAT BUILD-9 ARCHIVE PREDATES THE v611 CRISIS FIXES AND MUST BE REBUILT BEFORE UPLOAD.** It was
+cut at v610, before five devotional false positives were closed in `detectCrisis` — including the
+app's own examen quote and a prayer in three traditions. Re-run the archive and export commands
+above; `npm run preflight` will refuse while the bundles are stale.
+
 Read out of the resulting binaries, never from the log:
 - `ToTry.ipa`, 2.7 MB — **Authority = Apple Distribution: Alfred John (L4BD53PLVF)** and
   **`get-task-allow = false`**. Those two are what decide whether an upload is accepted; the
@@ -145,6 +156,15 @@ Read out of the resulting binaries, never from the log:
 - The embedded web bundle is `APP_VERSION = 'v610'` and byte-identical to the repo's `index.html`
   (sha256 `b14d3aca6b643f26…` on both sides) — preflight's parity claim, confirmed from inside the
   artifact that would actually ship.
+
+**ONE REAL DIFFERENCE BETWEEN BUILD 8 AND BUILD 9, FOUND BY COMPARING THE TWO IPAs.** Build 8's
+uploaded IPA carries `com.apple.developer.healthkit.background-delivery`; build 9's does not,
+because the manual-signing export takes entitlements from `ios/App/App/App.entitlements`, which
+declares only `com.apple.developer.healthkit`, whereas build 8 was signed with Xcode's automatic
+style against the managed team profile. **Measured: nothing breaks** — the Swift makes zero
+`enableBackgroundDelivery` / `HKObserverQuery` calls, so the entitlement was present and unused.
+But if background delivery is ever actually implemented, this export recipe will silently ship an
+app that cannot use it. Add the key to `App.entitlements` on that day, not after.
 
 One false alarm worth not repeating: `plutil -extract CFBundleIconName` reports ABSENT, which looks
 like `ERROR ITMS-90713`. It is nested at `CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName`, which
@@ -465,11 +485,17 @@ Answer the questionnaire honestly. Every line below was **re-verified against th
 10 Oct 2026**; the previous version of this list was written around v424, and one answer had gone
 stale in a way that matters (see User-Generated Content). Where a number appears, it is measured.
 
-- **Medical/Treatment Information → declare it, and consider the HIGHER band.** Measured in the
-  shipped bundle, comments stripped: 162 calorie/protein-target references, 23 BMI, 34
-  menstrual/cycle-phase, 21 HealthKit reads, 23 named clinical mechanisms (CBT, ACT, urge-surfing,
-  cognitive restructuring), 54 helpline surfaces, and 7 places that say call emergency services or
-  get to a hospital. It does not diagnose or prescribe and it carries 4 explicit "not medical
+- **Medical/Treatment Information → declare it, and consider the HIGHER band.** Measured on the
+  shipped bundle with comments stripped (`H.code()`), each count naming the exact tokens so you can
+  reproduce it rather than trust it — an earlier draft of this bullet gave four numbers whose labels
+  did not match what had been counted, which is the failure this whole section exists to avoid:
+  `calorieTarget|proteinTarget|tdee|bmr` **162**; `bmi` **23**; `menstrual|luteal|follicular|ovulat`
+  **34**; `HealthWrite|HKQuantity|healthkit` **21** (these are HealthKit *touch points*, not reads —
+  `HealthWrite` is a write, and the bare word "HealthKit" occurs once);
+  `CBT|ACT|urge-surf|cognitive restructur|defusion` **23** (the first four alone give 18 — the fifth
+  term is doing real work); `helpline|Lifeline|Samaritans|988` **54**; and
+  `emergency services|get to a hospital|Ambulance` **7**, of which at least one is `_HUMAN_KIND`,
+  the net's own detector regex rather than a place the app says it. It does not diagnose or prescribe and it carries 4 explicit "not medical
   advice" disclaimers — but health and mental-health guidance is on essentially every screen, so the
   "Infrequent/Mild" this doc claimed from v424 is hard to defend. Answer what the app does and take
   the band that follows.
@@ -489,10 +515,20 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   anywhere in the bundle (measured: 0). No contests.
 - **Violence, horror → None.**
 - **Unrestricted Web Access → No.** Verified at the **native** layer, not just the web layer: no
-  embedded browser (`Browser.open` / `InAppBrowser`: 0), all 9 `window.open` calls pass `_blank`,
-  `capacitor.config.json` declares **no `allowNavigation`**, and no Swift file overrides
-  `WKUIDelegate` or `decidePolicyFor`. So only the app's own origin loads in the webview and external
-  links hand off to Safari. None of the 9 targets is built from a typed value.
+  embedded browser (`Browser.open` / `InAppBrowser`: **0**), `capacitor.config.json` declares **no
+  `allowNavigation`**, and no Swift file overrides `WKUIDelegate` or `decidePolicyFor`. So only the
+  app's own origin loads in the webview and external links hand off to Safari.
+  The whole navigation surface, not just one third of it: **9** `window.open` (all `_blank`), **9**
+  `<a target="_blank">`, and **6** `location.href =` — the last going to `app.scheme` / `ca.scheme`,
+  i.e. deep links OUT to other apps, which is not in-app browsing. An earlier draft cited only the
+  nine `window.open` calls and concluded from them; the conclusion survives the other fifteen, but
+  the evidence had to.
+  **And it said "none of the 9 targets is built from a typed value", which is false.**
+  `showExerciseForm()` builds a YouTube search URL from the exercise name, and the app's own comment
+  two lines above says that name "comes from wger, from a Hevy import, or from a custom exercise
+  somebody typed". It is `encodeURIComponent`-escaped, so it is not an injection — but a typed
+  string does reach an external search engine in the system browser, and the honest answer to the
+  questionnaire should be given knowing that.
 - **User-Generated Content → ⚠️ NOT a flat "No" any more. Read this before you answer it.**
   This doc used to say *"Nothing a user writes is visible to any other user."* As written, that is no
   longer true. `shared_library` is a crowd-sourced exercise/food table: `contributeToSharedLibrary()`
@@ -530,8 +566,10 @@ stale in a way that matters (see User-Generated Content). Where a number appears
 ## What the simulator settled (10 Oct 2026, v610, build 9)
 
 Driven on the REAL Capacitor build on a booted iPhone 17 Pro — `node scripts/app-shot.mjs install`
-then `launch`, taps through the iOS Simulator control tool. Not Safari, not Chromium: the app that
-ships.
+then `launch`, taps through the iOS Simulator control tool. Not Safari, not Chromium.
+**One honest caveat: `app-shot.mjs` builds `-configuration Debug`** (`scripts/app-shot.mjs:39`),
+while the artefact verified further up this file is Release. Same web bundle, same plugins, same
+Swift; different optimisation and entitlements. It is the shipping *app*, not the shipping *build*.
 
 **FACE ID — the whole cycle, verified.** Capability detection resolved to "Face ID" with a live
 toggle; tapping it raised the system Face ID sheet carrying the app's OWN reason string ("Turn on the
@@ -541,18 +579,47 @@ visible behind it; a match unlocked it to exactly where it had been; and turning
 demanded the same proof again, which is deliberate — so grabbing an open phone cannot quietly remove
 the protection.
 
-**NOTIFICATIONS — permission, scheduling and delivery, verified.** The toggle raised the real iOS
-permission alert; allowing it flipped the switch and the app confirmed "Morning 07:30 · Evening 21:00
-— even when the app is closed", which it only prints for a schedule the plugin actually CONFIRMED;
-iOS registered `app.totry` in its own BulletinBoard section list; and a delivered notification
-rendered as a banner with the ToTry icon and the right copy.
+**NOTIFICATIONS — permission, scheduling and delivery, verified ON THE PATH THAT SHIPS.**
+An earlier draft of this section claimed two things that were false, and both were caught by
+review rather than by any check:
+- It said the "even when the app is closed" toast "only prints for a schedule the plugin actually
+  CONFIRMED". It does not. `28-init.js:88` calls `_scheduleNativeReminders(prefs)` with **no
+  `await`**, and the toast fires unconditionally two lines later. That sentence was the entire
+  load-bearing evidence for "scheduling verified", and it was wrong.
+- The delivery it showed came from `xcrun simctl push`, which injects an **APNs-shaped REMOTE**
+  payload. This app has no remote path at all — `@capacitor/local-notifications` only, and
+  `02-native.js` says so in its own words: *"remote push is not something this app does — every
+  nudge it sends is scheduled on-device."* So the test exercised a path the app does not use.
+
+Re-done properly on 10 Oct 2026, against the local scheduler: the morning reminder was set to a
+time **six minutes out**, saved, and the app backgrounded. What is now actually established is
+permission (the real iOS alert), scheduling (`PendingNotifications.plist` and `Schedule.plist`
+written in iOS's own store the moment Save was tapped), and **delivery of the app's own scheduled
+LOCAL notification at its trigger time** — `"A quiet minute to set your intention for today."`, the
+literal body from `_scheduleNativeReminders`, found in iOS's `DeliveredNotifications.plist`.
+
+**A screenshot could not have shown this and nearly said the opposite.** A banner auto-dismisses in
+a few seconds, so the capture one minute after the trigger was an empty home screen — which reads
+exactly like a notification that never fired. The store is the evidence; the banner is not:
+`~/Library/Developer/CoreSimulator/Devices/<udid>/data/Library/UserNotifications/*/DeliveredNotifications.plist`,
+read with `plutil -p`. It holds both this run's local notification AND the earlier remote push, and
+they are distinguishable by body — which is what makes the distinction above checkable rather than
+asserted.
+
+**Still NOT verified** and deliberately not claimed: the quiet-hours suppression, the reach-out
+nudge's "at most 3 a week" throttle, and anything that depends on the device being asleep.
 
 **Three ways this test lies, each met while running it** — every one of them looks like an app defect:
 - **Face ID enrollment does not survive a simulator reboot.** It was enrolled, the simulator was
   shut down to free memory for the archive, and on reboot `notifyutil -g
-  com.apple.BiometricKit.enrollmentChanged` read **0** again. Worse, the app reads capability at
-  LAUNCH, so enrolling after launch leaves it on the stale answer and the auth falls through to the
-  passcode screen. Enroll, THEN launch, and check the value rather than assuming the set worked.
+  com.apple.BiometricKit.enrollmentChanged` read **0** again. Re-enrolling while the app was already
+  running was not enough either — the toggle still fell through to the passcode screen, and only a
+  relaunch produced the Face ID sheet. **The mechanism is NOT "the app reads capability at launch":**
+  `renderLockRow()` awaits `Lock.capability()` on every render (`07-platform.js:202`), so that
+  explanation — which an earlier draft of this file asserted — is contradicted by the code. The
+  caching is somewhere below the web layer (an `LAContext` is documented to cache its evaluation
+  state) and was not pinned down. The INSTRUCTION is what was measured, so take it and not the
+  reason: enroll, THEN launch, and read the value back rather than assuming the set worked.
 - **A fast HOME-and-back does NOT lock, and that is correct.** There is a documented 2500 ms grace
   window, because the share sheet, the barcode scanner and permission prompts all hide the web view
   too. The first return was inside it and the app opened straight up — which reads exactly like "the

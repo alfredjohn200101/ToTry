@@ -99,12 +99,25 @@ for (const base of ['www', 'ios/App/App/public']) {
 // ── 4. iOS submission metadata ───────────────────────────────────────────────────────────────────
 const plist = read('ios/App/App/Info.plist');
 if (plist) {
-  const NEEDED = ['NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSHealthShareUsageDescription',
-                  'NSHealthUpdateUsageDescription', 'NSLocationWhenInUseUsageDescription', 'NSFaceIDUsageDescription'];
+  const NEEDED = ['NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSPhotoLibraryAddUsageDescription',
+                  'NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription',
+                  'NSLocationWhenInUseUsageDescription', 'NSFaceIDUsageDescription'];
   const absent = NEEDED.filter(k => !plist.includes(k));
   // A missing usage string does not warn — iOS TERMINATES the app the moment the API is touched.
   if (absent.length) bad(`Info.plist is missing ${absent.join(', ')} — iOS terminates the app when that API is touched`);
   else good(`all ${NEEDED.length} usage descriptions present`);
+  // AND THE LIST ITSELF HAS TO BE COMPLETE. This guarded SIX of the seven strings that actually
+  // ship, and the one it missed was NSPhotoLibraryAddUsageDescription — the string iOS demands
+  // before an app may SAVE to the photo library, which is exactly the capability the App Privacy
+  // answer sheet had just been corrected to declare. A hardcoded list cannot notice a key that is
+  // added later, so the plist is asked what it carries and the list is required to cover all of
+  // it. Found 10 Oct 2026 while reviewing the commit that added the manifest cross-check above.
+  {
+    const shipped = Array.from(new Set((plist.match(/NS[A-Za-z]*UsageDescription/g) || [])));
+    const unguarded = shipped.filter(k => NEEDED.indexOf(k) === -1);
+    if (unguarded.length) bad(`Info.plist ships ${unguarded.join(', ')} but preflight does not guard it — add it to NEEDED`);
+    else good(`and the guard list covers every usage description the plist ships (${shipped.length})`);
+  }
   // ── THE PRIVACY MANIFEST AND THE ANSWER SHEET MUST AGREE ──────────────────────────────────
   // PrivacyInfo.xcprivacy ships inside the binary and Apple cross-checks the App Privacy form
   // against it. APP-PRIVACY.md is what a human fills the form FROM. On 10 Oct 2026 they diverged

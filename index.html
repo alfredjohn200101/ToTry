@@ -8723,7 +8723,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v610';
+const APP_VERSION = 'v611';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13571,7 +13571,34 @@ function detectCrisis(text){
    // them as a disclosure. Suppressed as a completion, like the breakup and the gym above, so a real
    // "i want to die" is untouched.
    /\bdy?i(?:e|ng) (?:to|unto) (?:my |the |his |her |your )?(?:old |former )?self\b/g,
-   /\bdead to sin\b/g,
+   // "DEAD TO SIN" WAS SUPPRESSED AND ITS WHOLE FAMILY WAS NOT, which is the proof the shape was
+   // recognised and then half-applied. 'want to be dead' is a bare SUICIDE phrase, so every other
+   // member of the same stock devotional idiom fired: "i want to be dead to the world", "...to the
+   // flesh", "...to desire", "...to my old life" all returned suicide. Romans 6 is where the app's
+   // own tradition gets the phrase, and the Soul tab teaches the wider idiom. Measured 10 Oct 2026.
+   /\bdead to (?:sin|the world|the flesh|desire|desires|my old life|my old self|my former self|self|this world|temptation|the past)\b/g,
+   // THE APP PRINTS THIS ON ITS OWN SCREEN. _EXAMEN_CLOSE.secular.q is the literal string "The
+   // unexamined life is not worth living." (Socrates), rendered as the closing quote of the nightly
+   // examen for every secular person — and 'not worth living' is a bare SUICIDE phrase, so the app
+   // teaches the words and then reads them back as a disclosure. The fourth time this app's own
+   // vocabulary has tripped its own detector, and the first where the sentence is the app's.
+   /\bunexamined life (?:is not|isn'?t|isnt) worth living\b/g,
+   // A VOCATIVE DIVINE ADDRESS IS A PRAYER, AND IT CAN COME FIRST. The /take my life/ lookahead
+   // excluded only names that FOLLOW the phrase, and only Christian ones — so "o lord take my life"
+   // fired, and so did "o allah take my life" and "o krishna take my life", in an app whose own
+   // FAITHS registry has islam praying to Allah and hinduism to the Divine. (That sentence used to
+   // quote the registry keys verbatim, and the quoted key collided with the voice fingerprint's
+   // own window anchor in test/harness.js — see the note there.) A sentence
+   // start cannot see what precedes it, so the address is removed as a SPAN rather than bounded.
+   // It requires an explicit address — a vocative "o/oh", or a comma — so the bare "lord take my
+   // life" still fires; that is a named cost, not an oversight. The intent forms are untouched:
+   // "i want to take my life" and "i'm going to take my life" carry no address.
+   /\b(?:(?:o|oh)\s+(?:lord|god|allah|jesus|christ|krishna|rama|father|almighty)\b[,!]?|(?:lord|god|allah|jesus|christ|krishna|rama|father|almighty)\s*,)\s*tak(?:e|ing) my (?:own )?life\b/g,
+   // THE APP'S GOVERNING THESIS IS PHRASED IN THIS EXACT VOCABULARY. 'starve myself' is a bare
+   // SELFHARM phrase, and the dopamine-detox thesis this whole app is built on is "starve myself of
+   // dopamine / of screens" — depriving yourself of the hit, not of food. Only the non-food object
+   // is suppressed: "starve myself", "starve myself of food" and "of calories" all still fire.
+   /\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\b/g,
    // WHEN THE SENTENCE NAMES WHAT IT IS ENDING, IT IS NOT ENDING A LIFE. Measured: "i'm on a
    // deficit and i want to end it" and "i want to end it, the vice i mean" both returned
    // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
@@ -13716,7 +13743,7 @@ function detectCrisis(text){
     'wanna kms', 'want to kms', 'gonna kms', 'going to kms', 'about to kms', 'might kms',
     // 'not worth living' was already listed but misses the commonest phrasing, because stripping the
     // apostrophe turns "isn't" into "isnt", which does not contain "not".
-    'isnt worth living', 'is not worth living', 'no longer want to live'
+    'isnt worth living', 'is not worth living'
   ];
   
   // Self-harm
@@ -13827,7 +13854,7 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // lord" both returned suicide — the app teaches the surrender idiom and then reads it as a
     // disclosure, the same defect as "die to my old self". The intent forms are untouched:
     // "i want to take my life" and "i'm going to take my life" still fire.
-    /\btak(?:e|ing) my (?:own )?life\b(?!\s*(?:back|and (?:let|use|make)|lord|jesus|god|in (?:your|thy)|for (?:your|thy)|o lord))/,
+    /\btak(?:e|ing) my (?:own )?life\b(?!\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
@@ -13840,6 +13867,12 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     /\b(?:want it|wants it|need it) to stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|im|ive|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\bmake it stop\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|im|ive|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     /\b(?:tired|sick) of living\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|im|ive|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
+    // 'no longer want to live' WAS ADDED BARE beside two siblings that had just been bounded for
+    // exactly this, one line above. It fired on the same two sentences they were bounded for —
+    // "i no longer want to live paycheck to paycheck" (a money front) and "...with my parents" —
+    // plus "...in this city". A superseded pattern does not stop mattering because a better one
+    // sits beside it; here the loose one was written AFTER the tight ones. Measured 10 Oct 2026.
+    /\bno longer want to live\s*(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|im|ive|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$)/,
     // `want it all to stop` and `tired|sick of being alive` were here with a CLAUSE end from the
     // morning of 1 Oct and are gone: the hopelessness register below carries both with a tighter
     // bound, and the loose ones kept firing through it — "i want it all to stop, the noise i

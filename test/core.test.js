@@ -12838,6 +12838,27 @@ H.section('the voice fingerprint — every piece it covers, injected');
   H.eq(base.missing, [], 'every fingerprint anchor resolves — a part that vanishes silently hashes to ""');
   H.ok(base.bytes > 12000, 'it covers ' + base.bytes + ' bytes of prompt source (>12000)');
 
+  // AN ANCHOR THAT IS NOT UNIQUE RELOCATES INSTEAD OF FAILING. A comment added to the crisis
+  // detector on 10 Oct quoted the app's own registry and happened to contain one window's exact
+  // anchor text; indexOf takes the FIRST hit, so that window moved ~1600 lines and hashed a slab of
+  // unrelated detector code. The sha changed — which LOOKED like the stamp doing its job, and was
+  // not. The tell was the two cry-wolf calibrations below failing in the same run: a reading-plan
+  // title cannot move the sha unless the window has grown to contain it.
+  H.eq(base.ambiguous, [],
+    'every fingerprint anchor is UNIQUE in the bundle — an anchor that appears twice hashes the ' +
+    'wrong window and still produces a plausible sha');
+  // Fault-injected by planting a duplicate of one real anchor in a copy of the bundle, which is
+  // exactly what that comment did by accident.
+  {
+    const dup = "prayTo:'Allah'";
+    H.ok(H.html.indexOf(dup) > 0, 'calibration: the anchor under test is really in the bundle');
+    const planted = H.voiceFingerprint('// ' + dup + '\n' + H.html);
+    H.ok(planted.ambiguous.indexOf(dup) >= 0,
+      'fault-injected: one duplicated anchor is REPORTED rather than silently resolved to the first hit');
+    H.ok(planted.sha !== base.sha,
+      'and the relocated window really does hash differently — which is why reporting it matters');
+  }
+
   const MOVES = [
     ['faithVoiceNote prose',            'FAITH CONTEXT — the person follows ', 'FAITH BACKGROUND — the person follows '],
     ['its LIGHT branch',                "They've also set faith LIGHTER",      "They've set faith MINIMAL"],
@@ -13400,13 +13421,24 @@ H.section('two disclosures joined by a comma');
 H.section('what reaches the shared library decides the App Store UGC answer');
 {
   const CODE = H.code();
-  // Only CALL sites: the declaration's first arg is the bare identifier `kind`, a call's is a
-  // string literal. Matching the bare name would count the declaration and the comments with it.
-  const CALL = /contributeToSharedLibrary\(\s*['"]/g;
-  const calls = CODE.match(CALL) || [];
-  H.eq(calls.length, 2,
+  // COUNT EVERY CALL, NOT ONLY THE ONES WRITTEN WITH A QUOTED FIRST ARGUMENT. The first version of
+  // this matched /contributeToSharedLibrary\(\s*['"]/ so it would not count the declaration — and a
+  // real third contributor written the obvious way, `contributeToSharedLibrary(kind, txt, data)`,
+  // then evaded BOTH this count and the kind set below. Demonstrated: appending such a caller that
+  // publishes a person's journal sentence left the suite at 3732/0. Subtract the declaration
+  // instead, so the shape of the call site cannot buy an exemption.
+  const total = (CODE.match(/contributeToSharedLibrary\(/g) || []).length;
+  const decls = (CODE.match(/function contributeToSharedLibrary\(/g) || []).length;
+  H.eq(decls, 1, 'calibration: exactly one declaration of contributeToSharedLibrary');
+  H.eq(total - decls, 2,
     'exactly two places contribute to shared_library (a typed exercise name, a web-looked-up food ' +
     'name). A third changes what SUBMIT-CHECKLIST.md § 3 tells Apple — read it before adding one');
+
+  const CALL = /contributeToSharedLibrary\(\s*['"]/g;
+  const literal = (CODE.match(CALL) || []).length;
+  H.eq(literal, total - decls,
+    'and every one of them names its kind as a LITERAL — a variable kind would mean the set below ' +
+    'cannot see what is really being published');
 
   const kinds = (CODE.match(/contributeToSharedLibrary\(\s*['"]([a-z_]+)['"]/g) || [])
     .map(s => s.replace(/.*['"]([a-z_]+)['"]/, '$1')).sort();
@@ -13418,18 +13450,39 @@ H.section('what reaches the shared library decides the App Store UGC answer');
   // also enforced by RLS on the live project (INSERT has WITH CHECK approved = false; SELECT is
   // approved = true AND flagged = false), so this is the client agreeing with the database rather
   // than the only thing standing between a submission and every other user.
-  H.ok(/approved:\s*false/.test(CODE),
-    'a contribution is inserted PENDING — approved:false, so it reaches nobody until reviewed');
-  H.ok(/\.eq\('approved',\s*true\)/.test(CODE) && /\.eq\('flagged',\s*false\)/.test(CODE),
-    'and the pull reads only approved, unflagged rows');
+  // ANCHOR THE INVARIANTS TO THE FUNCTIONS THEY ARE ABOUT. These were whole-bundle greps, and the
+  // bundle contains an ADMIN-ONLY moderation queue that legitimately uses the same calls — so
+  // replacing the public read's own `.eq('flagged', false)` with a comment left the suite green,
+  // satisfied by `loadPendingSubmissions`. Measured 10 Oct 2026: the public read could lose both
+  // filters and the insert could go pre-approved, at 3732/0.
+  const contribute = H.extractFn('contributeToSharedLibrary');
+  const pull = H.extractFn('pullSharedLibrary');
+  H.ok(contribute.length > 300 && pull.length > 300, 'calibration: both shared-library functions extracted');
+  H.ok(/approved:\s*false/.test(contribute),
+    'the CONTRIBUTOR inserts PENDING — approved:false, so it reaches nobody until reviewed');
+  H.ok(/\.eq\('approved',\s*true\)/.test(pull),
+    "the PUBLIC pull reads only approved rows (not the admin queue's copy of that call)");
+  H.ok(/\.eq\('flagged',\s*false\)/.test(pull),
+    'and the PUBLIC pull excludes flagged rows');
 
-  // The fixed leak stays fixed. Asserted on the FUNCTION, not the file: the explanation of the bug
-  // lives in a comment inside it, and H.code() strips comments, so a file-level absence check here
-  // would pass whether the call was there or not.
-  const say = H.extractFn('_companionSay') || '';
-  H.ok(say.length > 200, 'calibration: _companionSay was actually extracted');
+  // THE FIXED LEAK STAYS FIXED — IN THE FUNCTION THAT ACTUALLY HAD IT. This guarded _companionSay,
+  // which never did: git puts the live `contributeToSharedLibrary('exercise', '__protocol__' + key)`
+  // inside `_researchProtocol`, and `key` is the person's own words for what they are fighting.
+  // A guard aimed at the wrong function is an assertion that can never fail for the right reason.
+  // COMMENTS STRIPPED, because the fix's own explanation names the call it removed — this
+  // assertion failed on CORRECT code until it did, which is this file's recorded trap arriving in
+  // the test written to avoid it. The comment stays: it is the record of what the leak was.
+  const research = H.code(H.extractFn('_researchProtocol'));
+  H.ok(research.length > 200, 'calibration: _researchProtocol was actually extracted');
+  H.ok(research.indexOf('contributeToSharedLibrary') === -1,
+    'and the research path still does NOT publish the words someone gave it at 2am');
+  // Calibration that the strip is not what is passing it: the RAW source does still mention the
+  // call, in the comment, so an un-stripped check here would report a leak that is not there.
+  H.ok(H.extractFn('_researchProtocol').indexOf('contributeToSharedLibrary') > 0,
+    'calibration: the raw source DOES name it (in the comment), so the strip is load-bearing');
+  const say = H.code(H.extractFn('_companionSay'));
   H.ok(say.indexOf('contributeToSharedLibrary') === -1,
-    'and the companion still does NOT publish the words someone gave it at 2am');
+    'nor does the companion that calls it');
 
   // ── FAULT INJECTION ──────────────────────────────────────────────────────────────────────────
   // A count assertion is worthless if nothing can move it, so add a contributor and a kind to a
@@ -13439,12 +13492,113 @@ H.section('what reaches the shared library decides the App Store UGC answer');
   const withThird = CODE + "\nfunction _fakeNewCaller(){ contributeToSharedLibrary('journal', x, y); }\n";
   // Relative to the live count, not pinned to 3 — otherwise adding a real contributor fails this
   // mechanism check too, and a confusing second failure is noise beside the one that matters.
-  H.eq((withThird.match(CALL) || []).length, calls.length + 1,
+  H.eq((withThird.match(/contributeToSharedLibrary\(/g) || []).length - decls, (total - decls) + 1,
     'fault-injected: a third contributor moves the count, so the assertion above can fail');
+  // AND THE SHAPE THAT USED TO EVADE IT: a variable first argument.
+  const withVar = CODE + "\nfunction _fakeVarCaller(k, t){ contributeToSharedLibrary(k, t, {}); }\n";
+  H.eq((withVar.match(/contributeToSharedLibrary\(/g) || []).length - decls, (total - decls) + 1,
+    'fault-injected: a contributor with a VARIABLE kind also moves the count — the old literal-only ' +
+    'regex could not see it, and that is the shape somebody would actually write');
+  H.eq((withVar.match(CALL) || []).length, literal,
+    'and it does NOT move the literal count, which is why the two are now compared to each other');
   const fakeKinds = (withThird.match(/contributeToSharedLibrary\(\s*['"]([a-z_]+)['"]/g) || [])
     .map(s => s.replace(/.*['"]([a-z_]+)['"]/, '$1')).sort();
   H.ok(fakeKinds.join(',') !== 'exercise,food',
     'and a new kind moves the kind set — the worst case being exactly the one that already shipped');
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// THE FOURTH TIME THE APP'S OWN DEVOTIONAL VOCABULARY TRIPPED ITS OWN DETECTOR — AND THE FIFTH,
+// SIXTH, SEVENTH AND EIGHTH (10 Oct 2026)
+// CLAUDE.md records three of these and ends: "assume there is a fourth." There were five, and one
+// of them is the app's OWN PRINTED STRING. Every fix below keeps the intent form firing; the panel
+// asserts BOTH directions, because a detector that stops crying wolf by going deaf is worse.
+H.section("the app's own devotional vocabulary does not trip its own detector");
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // (1) A VOCATIVE DIVINE ADDRESS IS A PRAYER, AND IT CAN COME FIRST — in five traditions.
+  // The lookahead excluded only names that FOLLOW, and only Christian ones.
+  [ 'take my life and let it be', 'take my life lord', 'o lord take my life',
+    'o allah take my life', 'take my life allah', 'o krishna take my life',
+    'take my life krishna', 'take my life o god and let it be', 'allah, take my life',
+    'lord, take my life', 'oh god take my life',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'a prayer, not a disclosure: ' + JSON.stringify(m)));
+  [ 'i want to take my life', 'i am going to take my life', 'im going to take my life tonight',
+    "ive decided to take my life",
+    // REPORTING a despairing prayer is still a disclosure — the address has to be immediate.
+    'i asked god to take my life',
+  ].forEach(m => H.eq(detectCrisis(m), 'suicide', 'and the intent form is untouched: ' + JSON.stringify(m)));
+
+  // (2) THE APP PRINTS THIS ON ITS OWN SCREEN. _EXAMEN_CLOSE.secular.q, rendered nightly.
+  [ 'The unexamined life is not worth living.', 'the unexamined life is not worth living',
+    'socrates said the unexamined life is not worth living',
+  ].forEach(m => H.eq(detectCrisis(m), null, "the app's own examen quote: " + JSON.stringify(m)));
+  [ 'my life is not worth living', 'life is not worth living anymore', 'this life isnt worth living',
+  ].forEach(m => H.eq(detectCrisis(m), 'suicide', 'while the disclosure still fires: ' + JSON.stringify(m)));
+
+  // (3) 'no longer want to live' was added BARE one line below two siblings that had just been
+  // bounded for exactly these sentences.
+  [ 'i no longer want to live paycheck to paycheck', 'i no longer want to live with my parents',
+    'i no longer want to live in this city', 'i no longer want to live like this with the debt',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'a completion, not a disclosure: ' + JSON.stringify(m)));
+  [ 'i no longer want to live.', 'i no longer want to live', 'i no longer want to live, i am done',
+  ].forEach(m => H.eq(detectCrisis(m), 'suicide', 'and bounded it still fires: ' + JSON.stringify(m)));
+
+  // (4) THE GOVERNING THESIS OF THE WHOLE APP IS PHRASED IN THIS VOCABULARY.
+  [ 'i am going to starve myself of dopamine tonight and read instead',
+    'i starve myself of screens after 9pm', 'i want to starve myself of social media',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'the detox thesis: ' + JSON.stringify(m)));
+  [ 'i am going to starve myself', 'i starve myself', 'i am going to starve myself of food',
+  ].forEach(m => H.eq(detectCrisis(m), 'selfharm', 'while the food object still fires: ' + JSON.stringify(m)));
+
+  // (5) 'dead to sin' had a dedicated suppression and its whole family did not.
+  [ 'i want to be dead to sin', 'i want to be dead to the world', 'i want to be dead to the flesh',
+    'i want to be dead to desire', 'i want to be dead to my old life',
+  ].forEach(m => H.eq(detectCrisis(m), null, 'the stock idiom: ' + JSON.stringify(m)));
+  [ 'i want to be dead', 'i want to be dead, i mean it', 'i just want to be dead.',
+  ].forEach(m => H.eq(detectCrisis(m), 'suicide', 'and the bare phrase still fires: ' + JSON.stringify(m)));
+
+  // ── FAULT INJECTION: restore each defect by putting the PRE-FIX form back ──────────────────
+  // Corrupting the text, never deleting the line — deleting inside these alternations produces an
+  // invalid regex and crashes the suite instead of failing it, which this file records twice.
+  const SRC = H.extractFn('detectCrisis');
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  const inject = (label, from, to, sentences, kind) => {
+    H.ok(SRC.indexOf(from) > 0, 'calibration: the ' + label + ' anchor is present (else THE MEASUREMENT IS WRONG, NOT THE APP)');
+    const broken = build(SRC.split(from).join(to));
+    H.eq(broken('i want to kill myself'), 'suicide', 'calibration: the corrupted ' + label + ' build still detects');
+    const fired = sentences.filter(m => broken(m) === kind);
+    H.eq(fired.length, sentences.length, 'fault-injected ' + label + ': all ' + sentences.length + ' fire again with the pre-fix form');
+  };
+
+  inject('the vocative-address span',
+    "/\\b(?:(?:o|oh)\\s+(?:lord|god|allah|jesus|christ|krishna|rama|father|almighty)\\b[,!]?|(?:lord|god|allah|jesus|christ|krishna|rama|father|almighty)\\s*,)\\s*tak(?:e|ing) my (?:own )?life\\b/g",
+    "/\\bzzzzz-never-matches-zzzzz/g",
+    ['o allah take my life', 'o krishna take my life', 'o lord take my life'], 'suicide');
+
+  inject('the widened suffix list',
+    "(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)",
+    "(?:lord|jesus|god)",
+    ['take my life allah', 'take my life krishna'], 'suicide');
+
+  inject("the examen-quote span",
+    "/\\bunexamined life (?:is not|isn'?t|isnt) worth living\\b/g",
+    "/\\bzzzzz-never-matches-zzzzz/g",
+    ['The unexamined life is not worth living.'], 'suicide');
+
+  inject("the detox-object span",
+    "/\\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\\b/g",
+    "/\\bzzzzz-never-matches-zzzzz/g",
+    ['i am going to starve myself of dopamine tonight and read instead', 'i starve myself of screens after 9pm'], 'selfharm');
+
+  inject("the widened dead-to family",
+    "(?:sin|the world|the flesh|desire|desires|my old life|my old self|my former self|self|this world|temptation|the past)",
+    "(?:sin)",
+    ['i want to be dead to the world', 'i want to be dead to the flesh', 'i want to be dead to desire'], 'suicide');
 }
 
 
