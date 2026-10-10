@@ -13671,10 +13671,10 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
       journalMeetCrisis: () => { bridged = true; },
       bridgeToRealHelp: () => { bridged = true; },
       setTimeout: fn => { try{ fn(); }catch(_){ } },
-      // A pre-existing restriction, so the assertion that it is CLEARED (not merely omitted from
-      // the merge) can actually fail. With getMealPrefs() returning {}, omitting and clearing are
-      // indistinguishable — a fixture with nothing for the rule to exclude passes either way.
-      getMealPrefs: () => ({ restrictions: 'an older sentence that must not survive' }),
+      // A pre-existing restriction, so the rules about the STORED value can actually fail. With
+      // getMealPrefs() returning {}, kept/scrubbed/omitted are indistinguishable — a fixture with
+      // nothing for the rule to exclude passes either way, which this repo records three times.
+      getMealPrefs: () => ({ restrictions: fields.__prev === undefined ? 'no nuts, severe allergy' : fields.__prev }),
       saveMealPrefs: p => { prefsSaved = p; },
       _fuelCtx: () => ({ goalDir: 'maintain', cal: 2500, sex: 'male' }),
       _fuelSafetyModal: () => {}, _fuelFinishSave: () => { advanced = true; },
@@ -13703,9 +13703,20 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
   H.ok(!String((hit.prefsSaved || {}).restrictions || '').toLowerCase().includes('kill myself'),
     'and the DISCLOSURE ITSELF is not persisted — it is rendered back into the form and built into ' +
     'three api() prompts, so storing it is how it reaches a model later');
-  H.eq((hit.prefsSaved || {}).restrictions, '',
-    'and restrictions is CLEARED rather than merely omitted, so an earlier value cannot survive ' +
-    'underneath the merge');
+  // THE STORED VALUE IS JUDGED, NOT BLANKED. Clearing it outright would wipe a saved ALLERGY in an
+  // app that builds meal plans — its own safety problem. Keeping it blindly is also wrong, because
+  // this gate was DEAD for every version it existed, so a stored value may itself be a disclosure
+  // nobody caught. Three cases, because only all three together pin the rule:
+  H.eq((hit.prefsSaved || {}).restrictions, 'no nuts, severe allergy',
+    'a previously saved ALLERGY survives a crisis hit — losing it is a food-safety problem, not a ' +
+    'privacy one');
+  const legacy = drive(SRC, { 'fuel-diet-free': DISCLOSURE, 'fuel-budget': '137',
+                              __prev: 'i want to end my life' });
+  H.eq((legacy.prefsSaved || {}).restrictions, '',
+    'while a stored value that is ITSELF a disclosure is scrubbed on the way past — the legacy the ' +
+    'dead gate left behind');
+  const none = drive(SRC, { 'fuel-diet-free': DISCLOSURE, 'fuel-budget': '137', __prev: '' });
+  H.eq((none.prefsSaved || {}).restrictions, '', 'and nothing stored before stays nothing');
 
   const ok = drive(SRC, { 'fuel-diet-free': 'no nuts, and i hate mushrooms', 'fuel-budget': '137' });
   H.ok(!ok.bridged, 'while an ordinary allergy note does not cry wolf');

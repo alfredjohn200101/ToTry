@@ -38908,11 +38908,20 @@ function _fuelElicitSave(){
         // Their budget, meals-per-day, diet, dislikes and supplement choice are kept, because losing
         // those is the denial of service. The sentence is dropped, and `restrictions` is explicitly
         // cleared rather than merely omitted, so an EARLIER value cannot survive underneath it.
+        // AND THE STORED VALUE IS JUDGED, NOT BLANKED. Clearing `restrictions` outright would wipe a
+        // previously saved ALLERGY — "no nuts" — in an app that builds meal plans, which is its own
+        // safety problem. Keeping it blindly is also wrong: this gate was DEAD for every version it
+        // existed, so a value already in storage may itself be a disclosure nobody ever caught. So
+        // the previous value is kept only if it is not one, which scrubs the legacy case on the way
+        // past. The new sentence is never written either way.
         try{
           if(typeof saveMealPrefs === 'function' && typeof getMealPrefs === 'function'){
             const _safe = Object.assign({}, window._fuelPendingVals);
             delete _safe.restrictions;
-            saveMealPrefs(Object.assign(getMealPrefs(), _safe, { restrictions: '' }));
+            const _prev = getMealPrefs() || {};
+            const _old = String(_prev.restrictions || '');
+            const _keep = (_old && !detectCrisis(_old)) ? _old : '';
+            saveMealPrefs(Object.assign(_prev, _safe, { restrictions: _keep }));
           }
         }catch(_){ }
         document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
