@@ -9,6 +9,7 @@
 // It also refuses to let a stale .ipa sit around unmentioned: build/export/ToTry.ipa held v462's
 // great-grandparent (v312, CFBundleVersion 2) and would upload perfectly happily.
 
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -170,6 +171,68 @@ if (fs.existsSync(R(ipa))) {
   const age = Math.round((Date.now() - fs.statSync(R(ipa)).mtimeMs) / 86400000);
   soft(`${ipa} exists and is ${age} day(s) old — it does NOT contain the current build. Delete it or archive fresh; Transporter will upload it without complaint`);
 }
+
+// AND THE ARCHIVES ORGANIZER ACTUALLY OFFERS YOU. Twice in two days an archive sat in
+// ~/Library/Developer/Xcode/Archives that built cleanly, would have uploaded cleanly, and carried a
+// CRISIS-PATH REGRESSION the repo had already fixed — once seven devotional false positives, once a
+// fuel-plan gate that let a disclosure through to the model. Organizer lists them by name and date
+// and tells you nothing about which bundle is inside, so the only thing standing between a correct
+// upload and a regression was a human remembering. This reads the web bundle out of each archive and
+// compares it to the repo, which is the same "hash the file, not the label" rule the iOS/Android
+// parity checks above are built on.
+try {
+  // ABSOLUTE paths, so preflight's own `read()` cannot be used — it resolves repo-relative and
+  // returned null for every one of these, which made `build` null for every archive, left
+  // `sameBuild` empty, and printed NOTHING. The fourth silent no-op of the day, in the check added
+  // because of silent no-ops.
+  const rdAbs = f => { try { return fs.readFileSync(f, 'utf8'); } catch (_) { return null; } };
+  const shaAbs = f => { const t = rdAbs(f); return t == null ? null : crypto.createHash('sha256').update(t).digest('hex'); };
+  const AR = path.join(os.homedir(), 'Library', 'Developer', 'Xcode', 'Archives');
+  if (fs.existsSync(AR) && hSrc) {
+    // ONLY the archives that could plausibly be uploaded AS THIS BUILD. Warning about every
+    // historical archive is cry-wolf — an August build SHOULD differ — and a check people learn to
+    // ignore is worse than no check. The hazard is two archives both stamped the current
+    // CFBundleVersion where only one carries the current bundle, which is exactly what sat in
+    // Organizer twice in two days.
+    const cur = (pbx || '').match(/CURRENT_PROJECT_VERSION = (\d+)/);
+    const curBuild = cur ? cur[1] : null;
+    const found = [];
+    for (const day of fs.readdirSync(AR)) {
+      const dd = path.join(AR, day);
+      if (!fs.statSync(dd).isDirectory()) continue;
+      for (const a of fs.readdirSync(dd)) {
+        if (!a.endsWith('.xcarchive')) continue;
+        const inner = path.join(dd, a, 'Products', 'Applications');
+        if (!fs.existsSync(inner)) continue;
+        // THE ARCHIVE'S OWN Info.plist, which is XML. The .app's is an Apple BINARY property list,
+        // so the first version of this regexed it for <key>CFBundleVersion</key>, matched nothing,
+        // and the whole check silently found zero archives and printed nothing at all — a no-op
+        // under a comment claiming it guards an upload, which is the defect class this very commit
+        // is about. The zero-found branch below exists so it can never fail that way quietly again.
+        const b = (rdAbs(path.join(dd, a, 'Info.plist')) || '')
+          .match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/);
+        for (const app of fs.readdirSync(inner)) {
+          const f = path.join(inner, app, 'public', 'index.html');
+          if (!fs.existsSync(f)) continue;
+          found.push({ label: day + '/' + a, h: shaAbs(f), build: b ? b[1] : null });
+        }
+      }
+    }
+    const sameBuild = curBuild ? found.filter(x => x.build === curBuild) : [];
+    const stale = sameBuild.filter(x => x.h !== hSrc);
+    if (stale.length)
+      soft(`${stale.length} archive(s) stamped build ${curBuild} do NOT carry the current bundle — ` +
+           stale.map(x => x.label).join(', ') + '. Organizer shows the name and the date, never which ' +
+           'bundle is inside; move it out before you open it.');
+    else if (sameBuild.length)
+      good(`the ${sameBuild.length} archive(s) stamped build ${curBuild} carry the current bundle`);
+    else if (!found.length)
+      soft('could not read any archive in Xcode Archives — THE CHECK IS WRONG, NOT THE ARCHIVES. ' +
+           'It found none to compare, so it is guarding nothing.');
+    else
+      good(`no archive in Xcode Archives is stamped build ${curBuild} yet (${found.length} older one(s) ignored)`);
+  }
+} catch (_) { /* the archives dir is the user's, never a build failure */ }
 
 console.log('');
 if (fail) console.log(`✗ ${fail} problem(s)${warn ? `, ${warn} warning(s)` : ''} — do not archive yet\n`);
