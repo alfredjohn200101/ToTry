@@ -191,7 +191,13 @@ function _fuelElicitSave(){
   }catch(_){ }
   // ED / restriction off-ramp: gentle language flags or an aggressively low cut target.
   const ctx = _fuelCtx();
-  const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast)/i;
+  // `not eat(ing)?` was here and `stop eating` was not, so "i am going to stop eating until i die"
+  // took NEITHER branch — no crisis card, no off-ramp — and went on to build a meal plan. Measured
+  // 11 Oct 2026. The completion list is what keeps it off ordinary food talk: stopping sugar,
+  // bread, late-night snacking or takeaway is the normal reason somebody opens this app, and this
+  // off-ramp is a gentle sheet rather than a takeover, so a slightly wider net is cheap here in a
+  // way it would not be at a crisis door.
+  const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast|(?:stop|quit|give up) eating(?!\s+(?:sugar|carbs|carbohydrates|bread|pasta|rice|meat|red meat|dairy|cheese|gluten|junk|sweets|lollies|chocolate|biscuits|snacks|takeaway|takeout|fast food|processed|crap|rubbish|late|after|before|out|so much|less|more|that|them|it)\b)|until i (?:die|disappear|vanish|am gone))/i;
   const tooLow = ctx.goalDir==='cut' && ctx.cal < (ctx.sex==='female' ? 1300 : 1500);
   if(redFlags.test(restrictions) || tooLow){ _fuelSafetyModal(); return; }
   _fuelFinishSave(window._fuelPendingVals);
@@ -280,6 +286,31 @@ function _fuelShopSave(andGenerate){
   const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
   const shops = Array.prototype.slice.call(document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on')).map(function(b){ return b.getAttribute('data-shop'); }).filter(Boolean);
   if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
+  // GATED, 11 Oct 2026 — AND THIS IS THE HALF THE FUEL FIX MISSED. `_fuelElicitSave` was fixed that
+  // morning to gate `#fuel-diet-free`, and its own HAPPY PATH then opens this modal, which carries
+  // two MORE free-text inputs nothing was asking about: `#fuel-country`, and `#fuel-shop-add`
+  // (whose typed value `_fuelAddShop` turns into a shop chip). Both are persisted on the next line,
+  // and both reach a model — `p.country` is concatenated into the meal-plan prompt and, with the
+  // shop names, into the price-lookup prompt. So gating one field of three left a disclosure able
+  // to be stored and sent anyway, which is this file's most repeated defect shape arriving inside
+  // the fix for it. Nothing is persisted on a hit: unlike the budget and the diet chips, the typed
+  // text IS the data here, so there is no choice to keep separately from the sentence.
+  try{
+    if(typeof detectCrisis === 'function'){
+      const _st = [country].concat(shops).filter(Boolean).join(' ').trim();
+      const _sc = _st ? detectCrisis(_st) : null;
+      if(_sc){
+        const _m = document.getElementById('fuel-shop-modal'); if(_m) _m.remove();
+        setTimeout(function(){
+          try{
+            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_sc);
+            else if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
+          }catch(_){ }
+        }, 250);
+        return;
+      }
+    }
+  }catch(_){ }
   saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chains:shops, chain:shops.join(', ') }));
   const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
   renderFuelPlanCard();

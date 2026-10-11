@@ -194,13 +194,38 @@ try {
     // ignore is worse than no check. The hazard is two archives both stamped the current
     // CFBundleVersion where only one carries the current bundle, which is exactly what sat in
     // Organizer twice in two days.
-    const cur = (pbx || '').match(/CURRENT_PROJECT_VERSION = (\d+)/);
-    const curBuild = cur ? cur[1] : null;
+    // EVERY CURRENT_PROJECT_VERSION, NOT THE FIRST. `.match(/…/)` takes the first hit, and in this
+    // pbxproj that line belongs to the DEBUG configuration (line ~344) while the archive is cut
+    // -configuration Release (~368). They agree today; a bump applied to one and not the other is
+    // exactly the drift worth catching, so a disagreement is reported rather than silently
+    // resolved to whichever came first. `([^;]+)` not `(\d+)`, because CFBundleVersion is legally
+    // dotted (9.1) and the digit form truncates it to "9" and then matches no archive at all.
+    const allV = [...String(pbx || '').matchAll(/CURRENT_PROJECT_VERSION = ([^;]+);/g)].map(m => m[1].trim());
+    const uniqV = [...new Set(allV)];
+    if (uniqV.length > 1)
+      soft(`project.pbxproj carries more than one CURRENT_PROJECT_VERSION (${uniqV.join(', ')}) — ` +
+           'Debug and Release disagree, and the archive is cut from Release');
+    const curBuild = uniqV.length ? uniqV[uniqV.length - 1] : null;
+    // The bundle id this project ships, so another app's archive at the same small integer build
+    // number is not reported as yours. ~/Library/Developer/Xcode/Archives is shared by every Xcode
+    // project on the machine.
+    const idm = String(pbx || '').match(/PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);/);
+    const ourId = idm ? idm[1].trim().replace(/^["']|["']$/g, '') : null;
     const found = [];
+    let unreadable = 0;
     for (const day of fs.readdirSync(AR)) {
-      const dd = path.join(AR, day);
-      if (!fs.statSync(dd).isDirectory()) continue;
-      for (const a of fs.readdirSync(dd)) {
+      // PER-ENTRY, so one bad entry cannot kill the whole check. A dangling symlink or a day folder
+      // without read permission made statSync/readdirSync throw, the outer catch swallowed it, and
+      // the check printed nothing — silently guarding nothing, which is the failure it exists for.
+      // Symlinking archives to an external drive is an ordinary thing to do.
+      let dd, entries;
+      try {
+        dd = path.join(AR, day);
+        if (!fs.statSync(dd).isDirectory()) continue;
+        entries = fs.readdirSync(dd);
+      } catch (_) { unreadable++; continue; }
+      for (const a of entries) {
+       try {
         if (!a.endsWith('.xcarchive')) continue;
         const inner = path.join(dd, a, 'Products', 'Applications');
         if (!fs.existsSync(inner)) continue;
@@ -211,13 +236,19 @@ try {
         // is about. The zero-found branch below exists so it can never fail that way quietly again.
         const b = (rdAbs(path.join(dd, a, 'Info.plist')) || '')
           .match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/);
+        const aid = (rdAbs(path.join(dd, a, 'Info.plist')) || '')
+          .match(/<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/);
+        if (ourId && aid && aid[1] !== ourId) continue;   // another project's archive
         for (const app of fs.readdirSync(inner)) {
           const f = path.join(inner, app, 'public', 'index.html');
           if (!fs.existsSync(f)) continue;
           found.push({ label: day + '/' + a, h: shaAbs(f), build: b ? b[1] : null });
         }
+       } catch (_) { unreadable++; }
       }
     }
+    if (unreadable) soft(`${unreadable} entr(y/ies) under Xcode Archives could not be read (dangling ` +
+                         'symlink or permissions) — they were skipped, not compared');
     const sameBuild = curBuild ? found.filter(x => x.build === curBuild) : [];
     const stale = sameBuild.filter(x => x.h !== hSrc);
     if (stale.length)
@@ -226,6 +257,8 @@ try {
            'bundle is inside; move it out before you open it.');
     else if (sameBuild.length)
       good(`the ${sameBuild.length} archive(s) stamped build ${curBuild} carry the current bundle`);
+    else if (!found.length && !unreadable)
+      good('no archive of this app in Xcode Archives yet — nothing to compare');
     else if (!found.length)
       soft('could not read any archive in Xcode Archives — THE CHECK IS WRONG, NOT THE ARCHIVES. ' +
            'It found none to compare, so it is guarding nothing.');

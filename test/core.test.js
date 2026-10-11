@@ -13744,6 +13744,110 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
 // is framed as "a renderer with no container" — and the asymmetry is the whole point: a RENDERER
 // with a missing container visibly renders nothing and somebody notices, while a GATE with a
 // missing container silently reads '', decides "no crisis", and opens the door.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// GATING ONE FIELD OF THREE (11 Oct 2026)
+// `_fuelElicitSave` was fixed this morning to gate `#fuel-diet-free`, and its own HAPPY PATH then
+// calls `_fuelFinishSave` -> `_fuelShopPicker()`, which renders two MORE free-text inputs nothing
+// was asking about: `#fuel-country`, and `#fuel-shop-add` (whose typed value `_fuelAddShop` turns
+// into a shop chip). Both are persisted by `_fuelShopSave`, and both reach a model — `p.country`
+// goes into the meal-plan prompt and, with the shop names, into the price-lookup prompt. So the
+// fix for an ungated door left two more ungated doors one tap further along: this file's most
+// repeated shape, arriving inside the fix for it.
+// THE ED OFF-RAMP HAD `not eat(ing)?` AND NOT `stop eating` (11 Oct 2026), so a stated intent to
+// starve took NEITHER branch — no crisis card, no safety sheet — and went on to build a meal plan.
+// Pre-existing, found while driving the door next to it. The completion list is what keeps it off
+// ordinary food talk: stopping sugar, bread, late-night snacking or takeaway is the normal reason
+// somebody opens this app. This off-ramp is a gentle sheet, not a takeover, so a wider net is cheap
+// here in a way it would not be at a crisis door.
+H.section('a stated intent to starve reaches the fuel safety off-ramp');
+{
+  const src = H.extractFn('_fuelElicitSave');
+  const m = src.match(/const redFlags = (\/[\s\S]*?\/i);/);
+  H.ok(!!m, 'calibration: the redFlags regex was extracted from the real function');
+  const red = eval(m[1]);
+  H.ok(red.test('i am going to starve myself'),
+    'calibration: a phrase the OLD regex already caught still fires, so this is not a rewrite');
+
+  [ 'i am going to stop eating until i die', 'i am going to stop eating',
+    'i plan to stop eating altogether', 'i want to quit eating', 'i am going to give up eating',
+  ].forEach(s => H.ok(red.test(s), 'reaches the off-ramp: ' + JSON.stringify(s)));
+
+  [ 'i want to stop eating sugar', 'i am going to stop eating bread',
+    'trying to stop eating late at night', 'i need to stop eating takeaway',
+    'stop eating so much chocolate', 'i want to quit eating junk',
+    'no nuts, and i hate mushrooms', 'i stop eating after 8pm',
+  ].forEach(s => H.ok(!red.test(s), 'while ordinary food talk stays clear: ' + JSON.stringify(s)));
+
+  // FAULT INJECTION: the completion list is the whole fix — without it the benign sentences fire.
+  // `m[1]` is the LITERAL TEXT of the regex, a string, so `.source` is undefined on it — the first
+  // version of this line CRASHED the suite instead of failing an assertion, which aborts every
+  // section after it. Use the compiled regex's own `.source`, and corrupt the text rather than
+  // reaching for a property that may not be there.
+  const stripped = red.source.replace(/\(\?:stop\|quit\|give up\) eating\(\?!(?:[^()]|\([^()]*\))*\)/, '(?:stop|quit|give up) eating');
+  H.ok(stripped !== red.source, 'calibration: the completion list was really removed for the injection');
+  const bare = new RegExp(stripped, 'i');
+  H.ok(bare.test('i want to stop eating sugar'),
+    'fault-injected: without the completion list, "stop eating sugar" trips the off-ramp — which is ' +
+    'why the fix is a list and not a phrase');
+}
+
+H.section('the shop picker gates its two free-text fields too');
+{
+  const SRC = H.extractFn('_fuelShopSave');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const run = (country, shops) => {
+    let saved = null, met = false, generated = false;
+    const chips = shops.map(s => ({ getAttribute: () => s }));
+    const sb = { detectCrisis,
+      document: { getElementById: id => (id === 'fuel-country' ? { value: country } : { remove(){} }),
+                  querySelectorAll: () => chips, querySelector: () => null },
+      Array, String, RegExp, Object,
+      saveMealPrefs: p => { saved = p; }, getMealPrefs: () => ({}),
+      journalMeetCrisis: () => { met = true; }, bridgeToRealHelp: () => { met = true; },
+      setTimeout: fn => { try{ fn(); }catch(_){ } },
+      renderFuelPlanCard: () => {}, syncShopsRow: () => {}, _fuelGenerate: () => { generated = true; },
+      showToast: () => {} };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    new Function(...k, SRC + '\n_fuelShopSave(true);')(...v);
+    return { saved, met, generated };
+  };
+
+  const a = run('i want to kill myself', ['Coles']);
+  H.ok(a.met, 'a disclosure typed as the COUNTRY reaches real help');
+  H.ok(!a.saved, 'and is not persisted — p.country is concatenated straight into two model prompts');
+  H.ok(!a.generated, 'and the plan is not generated from it');
+
+  const b = run('Australia', ['Coles', 'i want to end my life']);
+  H.ok(b.met, 'a disclosure typed as a SHOP NAME reaches real help too (via #fuel-shop-add)');
+  H.ok(!b.saved, 'and is not persisted');
+
+  const ok = run('Australia', ['Coles', 'Aldi']);
+  H.ok(!ok.met, 'while an ordinary country and shop list does not cry wolf');
+  H.ok(!!ok.saved && ok.generated, 'and goes on to save and generate');
+
+  // FAULT INJECTION: neuter the gate's input, exactly as the dead gate next door did.
+  H.ok(SRC.indexOf('[country].concat(shops)') > 0,
+    'calibration: the gate reads the country AND the shop names (else THE MEASUREMENT IS WRONG)');
+  const blind = SRC.split('[country].concat(shops).filter(Boolean).join(\' \').trim()').join("''");
+  let metB = false, savedB = null;
+  {
+    const chips = [{ getAttribute: () => 'Coles' }];
+    const sb = { detectCrisis,
+      document: { getElementById: id => (id === 'fuel-country' ? { value: 'i want to kill myself' } : { remove(){} }),
+                  querySelectorAll: () => chips, querySelector: () => null },
+      Array, String, RegExp, Object,
+      saveMealPrefs: p => { savedB = p; }, getMealPrefs: () => ({}),
+      journalMeetCrisis: () => { metB = true; }, bridgeToRealHelp: () => { metB = true; },
+      setTimeout: fn => { try{ fn(); }catch(_){ } },
+      renderFuelPlanCard: () => {}, syncShopsRow: () => {}, _fuelGenerate: () => {}, showToast: () => {} };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    new Function(...k, blind + '\n_fuelShopSave(true);')(...v);
+  }
+  H.ok(!metB && !!savedB,
+    'fault-injected: fed an empty string the gate goes silent and the disclosure is persisted — ' +
+    'which is what reading the wrong element did one function away');
+}
+
 H.section('every element id a crisis gate reads actually exists');
 {
   const fs = require('fs');
@@ -13756,7 +13860,17 @@ H.section('every element id a crisis gate reads actually exists');
   // finding as of one that clears it.
   add(/\.id\s*=\s*['"]([a-zA-Z][\w-]*)['"]/);
   add(/setAttribute\(\s*['"]id['"]\s*,\s*['"]([a-zA-Z][\w-]*)['"]/);
-  add(/['"]([a-zA-Z][\w-]*)['"]\s*\+/);                             // built by concatenation
+  // CONCATENATION PREFIXES ARE A SEPARATE SET, NOT MEMBERS OF `present`. The first version did
+  // `add(/['"]([a-zA-Z][\w-]*)['"]\s*\+/)`, which admits ANY quoted token followed by `+` — CSS class
+  // prefixes, localStorage keys, single words like 'time'. 112 names reached `present` only that
+  // way and not one of them is an element id, so the scan could have cleared a gate pointed at any
+  // of them: the exact defect it was written to close. A literal read like getElementById('x')
+  // needs `x` to exist literally, OR to begin with a prefix something is built from (`'pt-panel-'+t`).
+  // So prefixes are tested as PREFIXES.
+  const prefixes = [];
+  { const r = /['"]([a-zA-Z][\w-]*-)['"]\s*\+/g; let m;
+    while((m = r.exec(html))) prefixes.push(m[1]); }
+  const known = id => present.has(id) || prefixes.some(p => id.startsWith(p) && id.length > p.length);
 
   const scan = () => {
     const dir = 'src/app', missing = [];
@@ -13769,7 +13883,7 @@ H.section('every element id a crisis gate reads actually exists');
         const ids = new Set(); let g;
         const r = /getElementById\(\s*['"]([a-zA-Z][\w-]*)['"]/g;
         while((g = r.exec(part))) ids.add(g[1]);
-        for(const id of ids){ checked++; if(!present.has(id)) missing.push(name + ' reads #' + id); }
+        for(const id of ids){ checked++; if(!known(id)) missing.push(name + ' reads #' + id); }
       }
     }
     return { checked, missing };
@@ -13785,7 +13899,7 @@ H.section('every element id a crisis gate reads actually exists');
   // FAULT INJECTION: the three real ids that were dead must be seen as absent, or the scan proves
   // nothing. This is the defect itself, re-asked.
   ['fuel-dislikes', 'fuel-notes', 'fuel-diet'].forEach(id =>
-    H.ok(!present.has(id),
+    H.ok(!known(id),
       'fault-injection anchor: #' + id + ' really is absent from the bundle, so the scan above ' +
       'would have caught the gate that read it'));
 }

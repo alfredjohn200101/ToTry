@@ -920,6 +920,13 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `node --check`. It was **EADDRINUSE on 8859** from a previous run whose server outlived its
      process. The suite takes `PORT=…` for exactly this; use it, and read the HEAD of the output, not
      the tail, when a run dies early.
+     **AND `npm run panels` HAS THE SAME SHAPE ON 8802 (11 Oct 2026), REACHED A DIFFERENT WAY.**
+     Killing a browser suite mid-run — the right thing to do once you have rebuilt underneath it —
+     ORPHANS its server, so the clean re-run started immediately afterwards dies on the port the
+     killed one still holds. The tail showed `address: '127.0.0.1', port: 8802` and a bare
+     `Node.js v24.18.0`, which reads as a crash in the suite itself. `lsof -nP -iTCP:8802
+     -sTCP:LISTEN` named the orphan in one line. After killing a run, check the port before
+     restarting — or just pass a different `PORT=`.
    - **AND THE VOICE WAS NEVER TOLD TO HAND ANYONE OVER (1 Oct 2026).** The soul document says it
      plainly — this app *"points beyond itself … when something is serious, it hands the person to a
      human"* — and `BROTHER_VOICE`, the voice behind the companion, the coach, the PT and
@@ -1177,6 +1184,48 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      a medical card and wrong on a suicide one), so the fault injection that plants 111 was absorbed
      as verified and reported a clean pass. Bracket-match; never slice a fixed window — on the one
      check whose entire subject is a wrong number.
+   - **AND THE FIX FOR THE DEAD GATE GATED ONE FIELD OF THREE (11 Oct 2026).** Found by attacking
+     the day's own fixes, briefed to assume every new check was wrong until made to fail.
+     `_fuelElicitSave`'s own HAPPY PATH calls `_fuelFinishSave` → `_fuelShopPicker()`, which renders
+     two more free-text inputs: `#fuel-country`, and `#fuel-shop-add` (whose typed value
+     `_fuelAddShop` turns into a shop chip). **Neither was gated, both are persisted, and both reach
+     a model** — `p.country` is concatenated into the meal-plan prompt and, with the shop names,
+     into the price-lookup prompt. So the fix for an ungated door left two more ungated doors one
+     tap further along. Gated at `_fuelShopSave`; nothing is persisted on a hit, because unlike the
+     budget and the diet chips the typed text IS the data here and there is no choice to keep apart
+     from the sentence.
+   - **AND THE ID SCAN WAS LAUNDERING 112 NON-IDS INTO ITS OWN "EXISTS" SET (11 Oct 2026).** The
+     scan added yesterday had a fourth regex, `/['"]([a-zA-Z][\w-]*)['"]\s*\+/`, meant to admit ids
+     built by concatenation (`'pt-panel-'+t`). It admits ANY quoted token followed by `+` — CSS
+     class prefixes, localStorage keys, single words like `'time'`. 112 names reached the set only
+     that way and **not one of them is an element id**, so the scan could have cleared a gate
+     pointed at any of them: the exact defect it was written to close. A literal
+     `getElementById('x')` needs `x` to exist literally, or to BEGIN with a prefix something is
+     built from — so prefixes are tested as prefixes now, and the four named non-ids are rejected
+     while the three real dead ids are still caught.
+   - **AND A STATED INTENT TO STARVE TOOK NEITHER BRANCH (11 Oct 2026).** `_fuelElicitSave`'s ED
+     off-ramp carries `not eat(ing)?` and did not carry `stop eating`, so "i am going to stop eating
+     until i die" got **no crisis card and no safety sheet** and went on to build a meal plan.
+     Pre-existing; found while driving the door beside it. The fix is a COMPLETION LIST, not a
+     phrase: stopping sugar, bread, late-night snacking or takeaway is the ordinary reason somebody
+     opens this app. 6 must-flag and 8 must-stay-clear, both measured, and the injection removes the
+     list to show the benign sentences firing without it. This off-ramp is a gentle sheet rather
+     than a takeover, which is what makes a wider net cheap here and not at a crisis door.
+   - **AND THE ARCHIVE CHECK ADDED TWO HOURS EARLIER HAD FIVE DEFECTS OF ITS OWN (11 Oct 2026).**
+     It read `CURRENT_PROJECT_VERSION` with `.match()`, which takes the FIRST hit — and in this
+     pbxproj that line belongs to **Debug** while the archive is cut `-configuration Release`. It
+     used `(\d+)`, which truncates a legally dotted `9.1` to `9` and then matches no archive at all,
+     while the sibling check two blocks above gets it right with `([^;]+)`. Its whole body sat in
+     one `catch(_){}`, so a dangling symlink or an unreadable day folder — ordinary states, since
+     people symlink Archives to an external drive — made it silently guard nothing again. It had no
+     bundle-identifier filter, so another project's archive at the same small integer build number
+     was reported as yours. And its zero-found branch cried wolf on a machine that has simply never
+     archived. All five fixed; the per-entry try/catch counts what it skipped and says so.
+   - **AND `git add -A` COMMITTED A REVIEW AGENT'S SCRATCH FILE.** `test/_probe39.js`, 881 lines,
+     a fork of `test/crisis.js` with `DOORS.splice(2)` and a `FAULT` env hook, written by an agent
+     into `test/` during its investigation and swept into a commit whose subject was something else
+     entirely. Nothing references it and its own header calls it temporary. **After running agents
+     that write files, `git status` before `git add -A`** — they work in the repo, not a sandbox.
    - `npm run crisis` — **39 doors as of 11 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
