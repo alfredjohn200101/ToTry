@@ -13874,24 +13874,34 @@ H.section('every element id a crisis gate reads actually exists');
 
   const scan = () => {
     const dir = 'src/app', missing = [];
-    let checked = 0;
+    let checked = 0, viaSelector = 0;
     for(const f of fs.readdirSync(dir).filter(x => x.endsWith('.js'))){
       const src = fs.readFileSync(dir + '/' + f, 'utf8');
       for(const part of src.split(/\nfunction |\nasync function /)){
         if(!/detectCrisis|journalCrisisOf/.test(part)) continue;
         const name = (part.match(/^([a-zA-Z_$][\w$]*)/) || [])[1] || '?';
+        // BOTH WAYS OF NAMING AN ELEMENT. The first version matched only getElementById, while its
+        // own assertion claimed "every element id a crisis-gating function reads" — and
+        // `_fuelElicitSave` itself reads its chip rows with querySelector('#fuel-meals-row ...').
+        // The identical dead-gate defect written with a selector would have been invisible.
         const ids = new Set(); let g;
         const r = /getElementById\(\s*['"]([a-zA-Z][\w-]*)['"]/g;
         while((g = r.exec(part))) ids.add(g[1]);
+        const r2 = /querySelector(?:All)?\(\s*['"]#([a-zA-Z][\w-]*)/g;
+        while((g = r2.exec(part))) { if(!ids.has(g[1])) viaSelector++; ids.add(g[1]); }
         for(const id of ids){ checked++; if(!known(id)) missing.push(name + ' reads #' + id); }
       }
     }
-    return { checked, missing };
+    return { checked, missing, viaSelector };
   };
 
   const res = scan();
   H.ok(res.checked > 40, 'calibration: the scan found ' + res.checked + ' ids to check (>40) — a scan ' +
     'that checks nothing passes whatever the code does');
+  // And it really does see BOTH shapes, or the extension above is decoration.
+  H.ok(res.viaSelector > 0,
+    'calibration: ' + res.viaSelector + " of them come from querySelector('#id'), not just " +
+    'getElementById — so the selector shape is genuinely covered');
   H.eq(res.missing, [],
     'every id a crisis-gating function reads exists in the shipped bundle — a gate pointed at a ' +
     'missing element reads "" and decides there is no crisis');
