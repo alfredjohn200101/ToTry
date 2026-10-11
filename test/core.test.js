@@ -13800,6 +13800,46 @@ H.section('a stated intent to starve reaches the fuel safety off-ramp');
 // prompt, and the snack-filler, meal-swap and price-lookup prompts, with no card and nothing
 // asking. Found by the refuter on the shop-gate finding, which confirmed the gate and then named
 // what the gate could not reach.
+// detectCrisis MUST BE TOTAL, BECAUSE 14 OF ITS 63 CALL SITES SWALLOW A THROW (11 Oct 2026)
+// Measured, not assumed: 14 of the 63 crisis-gate call sites in src/app sit inside a `try` whose
+// `catch` is empty — the defensive style this codebase uses nearly everywhere, and the one its own
+// notes call the reason a failure here is silent. That is NOT a defect today, because the detector
+// does not throw: driven against null, undefined, numbers, booleans, arrays, functions, a Date, a
+// 200k string, lone surrogates and an object whose toString() throws, it returned a value every
+// time. It is recorded as an INVARIANT instead, because the day a pattern is added that can throw —
+// a catastrophic backtrack, a lookbehind on an engine that lacks it, a `.toLowerCase()` on
+// something exotic — fourteen gates would stop firing at once and every one of them would do it
+// silently. What a review CLEARS is worth as much as what it finds, provided the clearance is
+// turned into something that can fail later.
+H.section('detectCrisis is total — no input makes it throw');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const hostile = [
+    undefined, null, 0, 1, -1, NaN, true, false, '', '   ',
+    {}, [], ['i want to kill myself'], function(){}, new Date(),
+    { toString(){ throw new Error('hostile toString'); } },
+    'x'.repeat(200000),
+    '\u0000\uFFFF', '\uD800', '\uDC00',                 // lone surrogates
+    'i want to kill myself'.repeat(500),
+  ];
+  let threw = 0;
+  hostile.forEach((v, i) => {
+    try { detectCrisis(v); }
+    catch (e) { threw++; H.ok(false, 'detectCrisis threw on hostile input #' + i + ': ' + String(e && e.message).slice(0, 60)); }
+  });
+  H.eq(threw, 0, 'detectCrisis returns rather than throwing for all ' + hostile.length +
+    ' hostile inputs — 14 of its 63 call sites swallow a throw, so a throwing detector is a silent ' +
+    'gate at fourteen doors');
+  // CALIBRATION: the panel has to contain something that WOULD throw if it were not handled, or
+  // "0 threw" is a statement about the panel rather than about the detector.
+  let controlThrew = false;
+  try { String({ toString(){ throw new Error('x'); } }); } catch (_) { controlThrew = true; }
+  H.ok(controlThrew, 'calibration: the hostile-toString object really does throw under String(), ' +
+    'so the detector is surviving it rather than never touching it');
+  H.ok(!!detectCrisis('i want to kill myself'),
+    'calibration: the detector still detects, so this is not passing by being inert');
+}
+
 H.section('a legacy disclosure in stored meal prefs never reaches a prompt');
 {
   const SRC = H.extractFn('getMealPrefs');

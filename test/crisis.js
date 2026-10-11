@@ -57,16 +57,29 @@ const DOORS = [
       if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
       if(typeof _fuelElicitSave === 'function') _fuelElicitSave();
     }, phrase),
-    // The inverse of the usual `also`: here the risk is not that the disclosure was STORED but that
-    // their own choices were THROWN AWAY. completeMorning()'s contract — their words are always
-    // kept — now holds here too, so losing the budget they just typed is the failure.
-    also: async (page) => page.evaluate(() => {
-      try{
-        const p = (typeof getMealPrefs === 'function') ? getMealPrefs() : null;
-        if(!p) return null;
-        return (p.budget === 137) ? null : 'the fuel choices were discarded by the crisis branch (budget ' + p.budget + ')';
-      }catch(_){ return null; }
-    }) },
+    // BOTH QUESTIONS, because this door is the only one whose answer is not "was it stored?" alone.
+    // Two risks pull opposite ways on the same object: their CHOICES must survive (losing the
+    // budget is the denial of service), and the SENTENCE must not (restrictions is rendered back
+    // into the form and built into three api() prompts). An earlier version asked only the first,
+    // so it could not have seen the defect that actually shipped — a fix that kept their work by
+    // persisting the disclosure with it.
+    // And it REPORTS a missing reader instead of returning null: `typeof getMealPrefs === 'function'`
+    // falling through to `return null` means the same defect reports 1 finding or 0 depending on
+    // whether the reader loaded, which is a check that passes when it cannot see.
+    also: async (page, phrase) => page.evaluate(p => {
+      if(typeof getMealPrefs !== 'function')
+        return 'getMealPrefs is not loaded, so this door asserted nothing — THE CHECK IS WRONG, NOT THE APP';
+      let prefs;
+      try{ prefs = getMealPrefs(); }
+      catch(e){ return 'getMealPrefs threw: ' + String(e && e.message).slice(0, 60); }
+      if(!prefs) return 'getMealPrefs returned nothing, so this door asserted nothing';
+      const problems = [];
+      if(prefs.budget !== 137) problems.push('the fuel choices were discarded (budget ' + prefs.budget + ')');
+      const blob = JSON.stringify(prefs).toLowerCase();
+      if(blob.indexOf(String(p).toLowerCase()) >= 0)
+        problems.push('the disclosure was STORED in meal prefs, where it is rendered back into the form and built into three api() prompts');
+      return problems.length ? problems.join('; ') : null;
+    }, phrase) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
       document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
