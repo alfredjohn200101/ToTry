@@ -14,7 +14,43 @@ function _fuelCtx(){
          else if(gi==='gain'||gi==='build'){ goalDir='build'; goalLabel='building'; } }
   return { sex, cal: goals.cal||2100, pro: goals.pro||150, goalDir, goalLabel };
 }
-function getMealPrefs(){ return ls('totry_meal_prefs') || {}; }
+// A LEGACY DISCLOSURE IN STORAGE REACHES A MODEL WITHOUT PASSING ANY GATE (11 Oct 2026).
+// `_fuelElicitSave` scrubs an already-stored `restrictions` that is itself a disclosure, on the
+// reasoning that the gate there was DEAD for every version it existed. The shop fields deserved
+// that more, not less: `#fuel-country` and `#fuel-shop-add` were never gated in ANY shipped
+// version, and `openFuelPlan()` calls `_fuelGenerate()` DIRECTLY whenever prefs already exist —
+// so a sentence typed into them before today sits in `totry_meal_prefs` and is concatenated into
+// the meal-plan prompt, and into the snack-filler, meal-swap and price-lookup prompts on every
+// later use, with no card and nothing asking. Gating the WRITE does not reach what is already
+// written.
+// Scrubbed on READ, because every one of those sites does `const p = getMealPrefs()` — one
+// accessor, one place. And because `saveMealPrefs(Object.assign(getMealPrefs(), …))` is the save
+// idiom here, the next ordinary save persists the cleaned copy, so this also heals the store
+// rather than filtering it forever. Cached on the raw string: detectCrisis is not free and this is
+// read on most screens. The cache lives on the FUNCTION, not in a module-level `let`: with the
+// pair declared outside, an isolated extract of this function throws ReferenceError on them and the
+// try/catch below swallows it, so the scrub silently does nothing and the test reports a clean
+// pass over an unscrubbed object. That is the exact failure mode this whole scrub exists to undo,
+// and it cost one measurement before it was spotted.
+function getMealPrefs(){
+  const p = ls('totry_meal_prefs') || {};
+  try{
+    if(typeof detectCrisis !== 'function') return p;
+    const raw = JSON.stringify(p);
+    if(raw === getMealPrefs._raw && getMealPrefs._clean) return getMealPrefs._clean;
+    const out = Object.assign({}, p);
+    if(out.restrictions && detectCrisis(String(out.restrictions))) out.restrictions = '';
+    if(out.country && detectCrisis(String(out.country))) out.country = 'Australia';
+    if(Array.isArray(out.chains)){
+      const keep = out.chains.filter(function(c){ return !detectCrisis(String(c)); });
+      if(keep.length !== out.chains.length){ out.chains = keep; out.chain = keep.join(', '); }
+    }
+    if(out.chain && detectCrisis(String(out.chain)))
+      out.chain = Array.isArray(out.chains) ? out.chains.join(', ') : '';
+    getMealPrefs._raw = raw; getMealPrefs._clean = out;
+    return out;
+  }catch(_){ return p; }
+}
 function saveMealPrefs(p){ ls('totry_meal_prefs', p); if(typeof syncToCloud==='function') syncToCloud(); }
 function getPreworkoutLead(){ const v = ls('totry_preworkout_lead'); return (typeof v==='number' && v>0) ? v : 75; }
 

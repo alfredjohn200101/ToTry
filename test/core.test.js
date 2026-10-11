@@ -13791,6 +13791,58 @@ H.section('a stated intent to starve reaches the fuel safety off-ramp');
     'why the fix is a list and not a phrase');
 }
 
+// GATING THE WRITE DOES NOT REACH WHAT IS ALREADY WRITTEN (11 Oct 2026)
+// `_fuelElicitSave` scrubs an already-stored `restrictions` that is itself a disclosure, because
+// that gate was DEAD for every version it existed. The shop fields deserved it more, not less:
+// `#fuel-country` and `#fuel-shop-add` were never gated in ANY shipped version, and
+// `openFuelPlan()` calls `_fuelGenerate()` DIRECTLY whenever prefs already exist — so a sentence
+// typed into them before today sits in `totry_meal_prefs` and is concatenated into the meal-plan
+// prompt, and the snack-filler, meal-swap and price-lookup prompts, with no card and nothing
+// asking. Found by the refuter on the shop-gate finding, which confirmed the gate and then named
+// what the gate could not reach.
+H.section('a legacy disclosure in stored meal prefs never reaches a prompt');
+{
+  const SRC = H.extractFn('getMealPrefs');
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const run = stored => {
+    const sb = { detectCrisis, ls: () => stored, JSON, Object, Array, String };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    return new Function(...k, SRC + '\nreturn getMealPrefs();')(...v);
+  };
+
+  const dirty = run({ country: 'i want to kill myself',
+                      chains: ['Coles', 'i want to end my life'],
+                      chain: 'Coles, i want to end my life',
+                      restrictions: 'no nuts, severe allergy', mealsPerDay: 4 });
+  H.eq(dirty.country, 'Australia', 'a disclosure stored as the COUNTRY is replaced before any read');
+  H.eq(dirty.chains, ['Coles'], 'a disclosure stored as a SHOP is dropped');
+  H.eq(dirty.chain, 'Coles', 'and the joined string is rebuilt from what is left');
+  H.eq(dirty.restrictions, 'no nuts, severe allergy',
+    'while the ALLERGY survives — this scrubs disclosures, not data');
+
+  const clean = run({ country: 'Australia', chains: ['Coles', 'Aldi'], chain: 'Coles, Aldi',
+                      restrictions: 'no nuts', mealsPerDay: 4 });
+  H.eq(clean.country, 'Australia', 'an ordinary stored set is untouched');
+  H.eq(clean.chains, ['Coles', 'Aldi'], 'including its shops');
+
+  // THE CACHE LIVES ON THE FUNCTION, not in a module-level `let`. With the pair declared outside,
+  // this very extract throws ReferenceError on them, the try/catch swallows it, and the scrub
+  // silently does nothing while the test reports a clean pass over an unscrubbed object — which is
+  // what the first version of this did, and is the failure mode the scrub exists to undo.
+  H.ok(SRC.indexOf('getMealPrefs._raw') > 0,
+    'the cache is a property of the function, so an isolated extract still scrubs');
+
+  // FAULT INJECTION: take the country scrub out and the disclosure comes straight back.
+  const broken = SRC.split("if(out.country && detectCrisis(String(out.country))) out.country = 'Australia';").join('');
+  H.ok(broken !== SRC, 'calibration: the country scrub was really removed');
+  const sb2 = { detectCrisis, ls: () => ({ country: 'i want to kill myself', mealsPerDay: 4 }), JSON, Object, Array, String };
+  const k2 = Object.keys(sb2), v2 = k2.map(x => sb2[x]);
+  const out2 = new Function(...k2, broken + '\nreturn getMealPrefs();')(...v2);
+  H.eq(out2.country, 'i want to kill myself',
+    'fault-injected: without the scrub the stored disclosure is handed straight back, and every ' +
+    'fuel prompt reads p.country');
+}
+
 H.section('the shop picker gates its two free-text fields too');
 {
   const SRC = H.extractFn('_fuelShopSave');
