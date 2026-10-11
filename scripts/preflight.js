@@ -212,6 +212,7 @@ try {
     const idm = String(pbx || '').match(/PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);/);
     const ourId = idm ? idm[1].trim().replace(/^["']|["']$/g, '') : null;
     const found = [];
+    const ipas = [];
     let unreadable = 0;
     for (const day of fs.readdirSync(AR)) {
       // PER-ENTRY, so one bad entry cannot kill the whole check. A dangling symlink or a day folder
@@ -226,6 +227,12 @@ try {
       } catch (_) { unreadable++; continue; }
       for (const a of entries) {
        try {
+        // THE .ipa IN THE SAME FOLDER. The documented export writes ToTry-<v>-build<n>.ipa straight
+        // into this directory, and it is the artefact Transporter uploads — but the walk filtered
+        // on `.xcarchive` and never looked at it. An .ipa is a zip, so its bundle cannot be hashed
+        // here without unzipping; what IS knowable is whether its sibling archive was judged stale,
+        // which is the case that matters because they are exported together.
+        if (a.endsWith('.ipa')) { ipas.push({ label: day + '/' + a, stem: a.replace(/\.ipa$/, '') }); continue; }
         if (!a.endsWith('.xcarchive')) continue;
         const inner = path.join(dd, a, 'Products', 'Applications');
         if (!fs.existsSync(inner)) continue;
@@ -262,8 +269,23 @@ try {
     else if (!found.length)
       soft('could not read any archive in Xcode Archives — THE CHECK IS WRONG, NOT THE ARCHIVES. ' +
            'It found none to compare, so it is guarding nothing.');
+    else if (found.some(x => !x.build))
+      // THE ZERO-FOUND GUARD WATCHED THE BUNDLE READ, NOT THE BUILD READ. `found` is populated from
+      // the bundle; `sameBuild` from the build. If every archive's own Info.plist fails to parse,
+      // `found` is full, `sameBuild` is empty, and the branch below printed a GREEN TICK over a
+      // stale archive — the same silence the whole check exists to prevent, one field along.
+      soft(`${found.filter(x => !x.build).length} archive(s) have an unreadable CFBundleVersion — ` +
+           'THE CHECK IS WRONG, NOT THE ARCHIVES. They were not compared, so a stale one would not ' +
+           'have been named.');
     else
       good(`no archive in Xcode Archives is stamped build ${curBuild} yet (${found.length} older one(s) ignored)`);
+
+    // And the .ipa beside a stale archive is stale with it — they are exported together.
+    const staleStems = new Set(stale.map(x => x.label.replace(/\.xcarchive$/, '')));
+    const staleIpas = ipas.filter(i => staleStems.has(i.label.replace(/\.ipa$/, '')));
+    if (staleIpas.length)
+      soft(`and the .ipa exported beside ${staleIpas.length === 1 ? 'it' : 'them'} is stale too — ` +
+           staleIpas.map(i => i.label).join(', ') + '. That is the file Transporter uploads.');
   }
 } catch (_) { /* the archives dir is the user's, never a build failure */ }
 
