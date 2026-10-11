@@ -194,6 +194,14 @@ try {
     // ignore is worse than no check. The hazard is two archives both stamped the current
     // CFBundleVersion where only one carries the current bundle, which is exactly what sat in
     // Organizer twice in two days.
+    // A NAMED COST, NOT AN OVERSIGHT: the moment CURRENT_PROJECT_VERSION is bumped, a superseded
+    // archive stamped the OLD build stops being compared and this prints a green line. If that old
+    // build was never uploaded, App Store Connect would still accept it, so it remains uploadable
+    // and is no longer flagged. Keeping it flagged means warning about every historical archive,
+    // which is the cry-wolf shape above — and after a bump Organizer at least shows a DIFFERENT
+    // build number beside it, so the two are no longer confusable at a glance, which is the
+    // specific confusion this check exists for. A known cost on the record beats a clean-looking
+    // check nobody reads.
     // EVERY CURRENT_PROJECT_VERSION, NOT THE FIRST. `.match(/…/)` takes the first hit, and in this
     // pbxproj that line belongs to the DEBUG configuration (line ~344) while the archive is cut
     // -configuration Release (~368). They agree today; a bump applied to one and not the other is
