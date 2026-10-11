@@ -13916,16 +13916,19 @@ H.section('every element id a crisis gate reads actually exists');
 // surface with six callers, and it is noted in the handoff instead. It requires only that every
 // number it dials is one the app has verified somewhere else, so a correction to CRISIS_LINES that
 // leaves this behind fails the build rather than shipping two different answers.
-H.section('no crisis surface dials a number the app has not verified');
+H.section('no surface dials a number the app has not verified');
 {
   const code = H.code();
+  // THE TITLE SAID "no crisis surface" AND THE BODY INSPECTED ONE FUNCTION. Caught by attacking it:
+  // a universal claim tested against `bridgeToRealHelp` alone, while `showEDSupport()` dials the
+  // Butterfly Foundation on a number that appeared in no list anywhere. So it asks the WHOLE
+  // bundle now, which is the only version of this check whose title is true.
   const bridge = H.extractFn('bridgeToRealHelp');
   H.ok(bridge.length > 500, 'calibration: bridgeToRealHelp was extracted');
 
-  // Every tel: it dials, digits only.
-  const dialled = [...new Set((bridge.match(/tel:\+?[0-9]{3,}/g) || []).map(s => s.replace(/[^0-9]/g, '')))];
-  H.ok(dialled.length >= 3, 'calibration: it dials ' + dialled.length + ' numbers (>=3) — a probe ' +
-    'that finds none passes whatever the markup says');
+  const dialled = [...new Set((code.match(/tel:\+?[0-9]{3,}/g) || []).map(s => s.replace(/[^0-9]/g, '')))];
+  H.ok(dialled.length >= 5, 'calibration: the bundle dials ' + dialled.length + ' distinct numbers ' +
+    '(>=5) — a probe that finds none passes whatever the markup says');
 
   // The verified set: every number CRISIS_LINES carries, digits only.
   const i = code.indexOf('const CRISIS_LINES');
@@ -13949,21 +13952,48 @@ H.section('no crisis surface dials a number the app has not verified');
   // Parse the `contact:` fields. The first cut matched a loose digit run of 7+ characters and so
   // silently MISSED '988', which is three digits — and then reported the app inconsistent. The
   // number that is hardest to see is the short one; the measurement was wrong, not the app.
-  const verified = new Set((block.match(/contact:\s*'([^']+)'/g) || [])
-    .map(s => s.replace(/.*'([^']+)'.*/, '$1').replace(/[^0-9]/g, ''))
-    .filter(Boolean));
-  H.ok(verified.size >= 5, 'calibration: CRISIS_LINES holds ' + verified.size + ' dialable numbers (>=5)');
+  // DIGIT RUNS PER CONTACT, not one strip of the whole field. A contact that lists several numbers
+  // ("000 · 911 · 999") collapsed into one nonsense token under a blanket /[^0-9]/g strip, so a real
+  // number could be "verified" only as part of a string nobody dials.
+  const numsIn = s => (String(s).match(/[0-9][0-9 ]*[0-9]|[0-9]{3,}/g) || [])
+    .map(x => x.replace(/[^0-9]/g, '')).filter(x => x.length >= 3);
+  const collect = (src) => (src.match(/contact:\s*['"]([^'"]+)['"]/g) || [])
+    .flatMap(s => numsIn(s.replace(/.*['"]([^'"]+)['"].*/, '$1')));
+  const verified = new Set(collect(block));
+  // The OTHER verified lists, because a medical or harm number is no less checked than a crisis one.
+  ['MEDICAL_LINES', 'HARM_LINES'].forEach(n => {
+    const j = code.indexOf('const ' + n);
+    if (j < 0) return;
+    const o = code.indexOf('[', j); let dep = 0;
+    for (let k = o; k < code.length; k++) {
+      if (code[k] === '[') dep++;
+      else if (code[k] === ']') { dep--; if (!dep) { collect(code.slice(j, k + 1)).forEach(x => verified.add(x)); break; } }
+    }
+  });
+  // NAMED, WITH ITS REASON, the way this repo allowlists a hardcoded colour rather than guessing.
+  // 1800 33 4673 is the Butterfly Foundation's national helpline — "1800 ED HOPE" — dialled by
+  // showEDSupport(). It is not a crisis, medical or harm line, so it does not belong in those
+  // registries; it is verified here instead so that changing it still has to be deliberate.
+  const ALLOWED = { '1800334673': 'Butterfly Foundation national helpline (1800 ED HOPE)' };
+  Object.keys(ALLOWED).forEach(n => verified.add(n));
+  H.ok(verified.size >= 8, 'calibration: the verified set holds ' + verified.size + ' numbers (>=8)');
 
   const unverified = dialled.filter(n => !verified.has(n));
   H.eq(unverified, [],
-    'every number bridgeToRealHelp dials also appears in CRISIS_LINES — a correction made in one ' +
-    'place and not the other is how a person gets a number nobody checked');
+    'every number the app dials is one it has verified — in CRISIS_LINES, MEDICAL_LINES, HARM_LINES ' +
+    'or the named allowlist above. A correction made in one place and not the other is how a person ' +
+    'gets a number nobody checked');
 
-  // FAULT INJECTION: a number that is in neither list must be caught, or the check is decoration.
-  const planted = [...dialled, '111'];
-  H.ok(planted.filter(n => !verified.has(n)).length === 1,
-    'fault-injected: a number outside CRISIS_LINES is reported — 111 is the NHS non-emergency ' +
-    'line, which is the exact wrong number the model once offered and the reason CRISIS_LINES exists');
+  // FAULT INJECTION: a number in no list must be caught, or the check is decoration.
+  // It used to plant 111 — but once MEDICAL_LINES joined the verified set, 111 became legitimately
+  // verified there (it is the NHS non-emergency line, correct on a medical card and wrong on a
+  // suicide one), and the injection started failing on correct code. The planted number has to be
+  // one the app genuinely does not know.
+  H.ok(!verified.has('741741'), 'calibration: the planted number really is in none of the lists');
+  const planted = [...dialled, '741741'];
+  H.eq(planted.filter(n => !verified.has(n)), ['741741'],
+    'fault-injected: a number the app has not verified is reported — a plausible-looking helpline ' +
+    'nobody checked is exactly what the model once offered an Australian user');
 }
 
 
