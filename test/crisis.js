@@ -219,6 +219,28 @@ const DOORS = [
         return 'the disclosure was queued in totry_feedback_outbox, which a boot timer inserts into the Supabase feedback table four seconds after launch';
       return null;
     }, phrase) },
+  // DOOR 52 — THREE GOOD THINGS. The value reaches code only as an ARGUMENT
+  // (`onblur="_tgtSaveField('c',this.value)"`), so no id or selector sits on the path and five
+  // earlier censuses were blind to it. `totry_tgt` is in SYNC_KEYS, so the blur upserts to Supabase
+  // in the same tick — and `_tgtTellThem` composes field `c` into a message for a named person.
+  { name: 'three good things (the person field)',
+    go: async page => page.evaluate(async () => { try{ if(typeof go==='function') go('evening'); if(typeof renderTGT==='function') renderTGT(); }catch(_){ } }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const el = document.getElementById('tgt-c');
+      window.__d52 = { field: !!el };
+      if(el){ el.value = p; el.dispatchEvent(new Event('blur',{bubbles:true})); }
+      // the shipped path is the inline onblur, so call it the way the attribute does
+      if(typeof _tgtSaveField === 'function') _tgtSaveField('c', p);
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const d52 = window.__d52 || {};
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_tgt') || ''; }catch(_){ }
+      if(raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0)
+        return 'the disclosure was stored in totry_tgt, which is in SYNC_KEYS (so it upserts to Supabase user_data) and is what _tgtTellThem composes into "<name> — just so you know: …" for the clipboard';
+      if(!d52.field) return null;   // the field not being built is not a finding; the save path above still ran
+      return null;
+    }, phrase) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
       document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));

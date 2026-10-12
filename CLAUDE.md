@@ -159,7 +159,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 3940 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 3980 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -1366,7 +1366,45 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      fires. The prefix harm is gone, the detector genuinely cannot tell a lookup from a disclosure
      there, and the surface is now additive — nothing stored, nothing sent, one tap back. The same
      call as "chest pain after that curry": the error worth making, on the record.
-   - `npm run crisis` — **50 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
+   - **AND A SIXTH CENSUS FOUND A WHOLE CLASS: THE VALUE ARRIVES AS AN ARGUMENT (12 Oct 2026).**
+     Six axes, each briefed on what the previous five structurally could not see, and **every one of
+     the six found something** — which is the finding. The axis that mattered was BY HANDLER:
+     `onblur="_tgtSaveField('a',this.value)"` puts the typed value into code **as an argument**, so
+     NO id and NO selector sits on the path. The id census, the class census, the `<textarea>`
+     census and the sink census were all blind to it by construction.
+     **Door 52 — THREE GOOD THINGS — is the worst of the twelve found today**, on three routes:
+     `totry_tgt` is in SYNC_KEYS and `enableSyncMonitoring` overrides `localStorage.setItem`, so the
+     blur that ends the sentence **upserts it into Supabase `user_data` in the same tick** and writes
+     it into the plaintext backup; the heatmap's day detail replays all three fields; and
+     **`_tgtTellThem` COMPOSES field `c` into "<name> — just so you know: <their sentence>. Thought
+     you should hear it."**, pre-fills it and copies it to the clipboard under *"Now go send it."*
+     So a disclosure typed into a gratitude box became a cheerful note addressed to their mother.
+     **I had looked at `_tgtCopyAndDone` EARLIER THE SAME DAY and recorded it as deliberately not a
+     door**, reasoning that somebody writing a message to a real person is already doing what this
+     app exists for. The message is not theirs — the app writes it from that field. The lesson is the
+     shape of the reasoning: I asked what the surface DOES with text and never asked where the text
+     it displays COMES FROM. **A cleared candidate is more dangerous than a confirmed one, because
+     nothing revisits it.** Gated per field (so the two ordinary good things survive), with a
+     reader-side scrub in `getTGT` for what earlier versions already wrote, and both directions
+     fault-injected.
+     **TWENTY-ONE MORE FUNCTIONS HAVE NO GATE, AND THEY ARE NOT ALL DOORS.** Measured by asking each
+     for a gate rather than trusting the report — which also cleared four the review had flagged
+     (`logBody`, `completeEvening`, `addVice` and `_tgtSaveField` are gated). Five share the
+     argument shape above and are the priority, because nothing in any census can see them:
+     `_impulseSaveHold` (a person mid-urge), `markPrayerAnswered`, `_yfNote` → `saveYourFew`,
+     `saveExerciseNote`, `_promptCity`. Then the ones whose sink is new: `saveBill`/`addDebt` reach
+     **`scheduleBillReminders`, a NOTIFICATION BODY** — text arriving when nobody is on screen, the
+     sealed-letter shape over push. Then `_saveEventFromModal`, `saveSplitDay`, `searchFood` and
+     `searchExercises` (both hand the query to a THIRD-PARTY API), `saveCustomFood`,
+     `saveCustomExercise`, `_pmSave`, `saveMealGroup`, `addRecipeIngredient`, `saveCurrentRecipe`,
+     `swapExercise`.
+     **This is deliberately NOT being done in one sweep.** Several are LABELS rather than
+     invitations — a food name, a recipe name, an exercise name — and this file already records that
+     a true finding plus a global edit equals destruction, and that the register work had to be
+     bucket-at-a-time with a false-positive panel per bucket. Each needs the same treatment door 52
+     got: the function read in FULL (not as a hunk), the gate above every validation, a decision
+     about what of their work survives, a drive, and a door in `npm run crisis` the same day.
+   - `npm run crisis` — **52 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
      then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every

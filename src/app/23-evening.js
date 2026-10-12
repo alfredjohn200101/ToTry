@@ -845,7 +845,22 @@ function showDayActivityDetail(dateKey){
 // person, and offers to carry it. No streak, no daily obligation, no scoring — three lines on the
 // days you feel like it, and nothing at all on the days you don't.
 function _tgtKey(){ return dayKeyOf(); }
-function getTGT(d){ try{ const all=ls('totry_tgt')||{}; return all[d||_tgtKey()]||null; }catch(_){ return null; } }
+function getTGT(d){
+  try{
+    const all=ls('totry_tgt')||{}; const e=all[d||_tgtKey()]||null;
+    if(!e || typeof crisisInAny!=='function') return e;
+    // GATING THE WRITE DOES NOT REACH WHAT WAS ALREADY WRITTEN. Anything typed here by a version
+    // predating the gate above is still in the store, still rendered by the heatmap's day detail,
+    // and still what `_tgtTellThem` composes into a message for a named person. Scrubbed at the
+    // READER, the same fix as the stored meal prefs and the feedback outbox. Per FIELD, so the two
+    // ordinary good things survive alongside.
+    const out=Object.assign({}, e); let moved=false;
+    ['a','b','c'].forEach(function(k){
+      if(out[k] && crisisInAny([out[k]])){ out[k]=''; moved=true; }
+    });
+    return moved ? out : e;
+  }catch(_){ return null; }
+}
 function saveTGT(patch){
   try{
     const all=ls('totry_tgt')||{}; const k=_tgtKey();
@@ -862,6 +877,32 @@ function saveTGT(patch){
 }
 function _tgtSaveField(which, val){
   const v=String(val||'').trim().slice(0,160);
+  // GATED, 12 Oct 2026 — THE TWELFTH UNGATED DOOR, AND THE SIXTH DISTINCT WAY ONE HAS HIDDEN.
+  // These three fields are addressed by NEITHER id nor selector on the path: the typed value
+  // reaches code only as an ARGUMENT, `onblur="_tgtSaveField('a',this.value)"`. So the id census,
+  // the class census and the `<textarea>` census were all structurally blind to it, and so was the
+  // sink census, because the sink is a plain `ls()` three functions away in another store.
+  // IT IS THE WORST OF THE TWELVE, on three separate routes:
+  //  1. OFF THE DEVICE, UNATTENDED. `totry_tgt` is in SYNC_KEYS, and `enableSyncMonitoring`
+  //     overrides `localStorage.setItem`, so the blur that ends the sentence upserts it into
+  //     Supabase `user_data` in the same tick. It is in the plaintext backup export too.
+  //  2. THE APP COMPOSES IT INTO A MESSAGE AND TELLS THEM TO SEND IT. `_tgtTellThem` reads `t.c`
+  //     and builds "<name> — just so you know: <their sentence>. Thought you should hear it.",
+  //     pre-fills it, and `_tgtCopyAndDone` puts it on the clipboard under "Now go send it."
+  //     I looked at `_tgtCopyAndDone` EARLIER TODAY and recorded it as deliberately not a door,
+  //     reasoning that somebody writing a message to a real person is already doing the thing this
+  //     app exists for. That was wrong: the message is not theirs, it is COMPOSED BY THE APP from
+  //     this field, so a disclosure becomes a cheerful gratitude note addressed to their mother.
+  //  3. SILENCE AT THE MOMENT. The placeholder is "Something that went right…" under copy reading
+  //     "so the day isn't only remembered by what went wrong" — it invites a true thing at the end
+  //     of a bad day, and answered with nothing.
+  // Gating per FIELD is what keeps their work: a and b are saved by their own blur and are
+  // untouched, so only the field carrying the sentence is refused.
+  const _tc = (typeof crisisInAny==='function') ? crisisInAny([v]) : null;
+  if(_tc){
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_tc);
+    return;
+  }
   const cur=getTGT()||{};
   if(cur[which]===v) return;
   const patch={}; patch[which]=v; saveTGT(patch);

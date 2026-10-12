@@ -14286,6 +14286,93 @@ H.section('no declaration in this suite shadows a bundle global');
 // `totry_feedback_outbox`, which a boot timer flushes four seconds after launch.
 // This is the fourth distinct way a door has hidden here (one SHAPE of modal; a tag matched inside a
 // JS string; an <input> where the census grepped <textarea>; and now a class selector).
+// ─────────────────────────────────────────────────
+// THREE GOOD THINGS — THE TWELFTH DOOR, AND THE SIXTH WAY ONE HAS HIDDEN (12 Oct 2026)
+// `onblur="_tgtSaveField('a',this.value)"` — the typed value reaches code only as an ARGUMENT, so
+// no id and no selector sits on the path. The id census, the class census, the <textarea> census
+// and the sink census were all structurally blind to it. Three routes made it the worst of the
+// twelve: `totry_tgt` is in SYNC_KEYS so the blur upserts to Supabase in the same tick; the heatmap
+// replays it; and `_tgtTellThem` COMPOSES it into "<name> — just so you know: <sentence>. Thought
+// you should hear it." for the clipboard. I read `_tgtCopyAndDone` earlier the same day and
+// recorded it as deliberately not a door, reasoning that a person writing to a real human is doing
+// what this app exists for. The message is not theirs — the app writes it from this field.
+H.section('three good things is gated, and the message cannot carry a disclosure');
+{
+  const { crisisInAny, detectCrisis } = H.load(['crisisInAny', 'detectCrisis']);
+  const D = 'i want to kill myself';
+  H.ok(!!detectCrisis(D), 'calibration: the phrase is a disclosure');
+
+  const SRC = ['dayKeyNorm', 'dayKeyOf', '_dayKeyEnginePads', '_auKeyMs',
+               'getTGT', 'saveTGT', '_tgtKey', '_tgtSaveField'].map(H.extractFn).join('\n\n');
+  const drive = (seed, which, val, src) => {
+    const store = { totry_tgt: seed };
+    let met = false;
+    const sb = { crisisInAny, detectCrisis,
+      ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; },
+      journalMeetCrisis: () => { met = true; return true; },
+      document: { getElementById: () => null, querySelector: () => null },
+      Date, JSON, Object, Array, String, Math, parseInt, parseFloat, isNaN, Number, RegExp };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    try{
+      const out = new Function(...k, (src || SRC) +
+        '\nif(' + JSON.stringify(!!which) + ') _tgtSaveField(' + JSON.stringify(which) + ',' +
+        JSON.stringify(val) + ');\nreturn { stored: ls("totry_tgt"), read: getTGT() };')(...v);
+      return { met, ...out };
+    }catch(e){ return { threw: String(e.message).slice(0, 70) }; }
+  };
+
+  // 1. ORDINARY: it saves.
+  const ok = drive({}, 'a', 'the walk after dinner');
+  H.ok(!ok.threw, 'calibration: an ordinary good thing saves' + (ok.threw ? ' — ' + ok.threw : ''));
+  H.ok(!!ok.read && ok.read.a === 'the walk after dinner', 'calibration: and reads back');
+  H.ok(!ok.met, 'and raises no card');
+
+  // 2. A DISCLOSURE IN THE THIRD FIELD — the one the app composes a message from.
+  const hit = drive({}, 'c', D);
+  H.ok(!hit.threw, 'a disclosure runs' + (hit.threw ? ' — ' + hit.threw : ''));
+  H.ok(hit.met, 'a disclosure in a good-thing field reaches real help');
+  H.ok(JSON.stringify(hit.stored || null).toLowerCase().indexOf('kill myself') < 0,
+    'and is NOT persisted — totry_tgt is in SYNC_KEYS, so the blur would upsert it to Supabase ' +
+    'in the same tick, with nobody on screen');
+
+  // 3. THEIR OTHER WORK SURVIVES. Gating per field is what makes that true.
+  const seeded = { };
+  const first = drive(seeded, 'a', 'coffee with dad');
+  const second = drive(first.stored, 'c', D);
+  H.ok(second.read && second.read.a === 'coffee with dad',
+    'the two ordinary good things are untouched — only the field carrying the sentence is refused');
+
+  // 4. WHAT WAS ALREADY WRITTEN. A pre-gate store is scrubbed at the READER, because `_tgtTellThem`
+  //    composes from `getTGT().c` and the heatmap's day detail prints all three.
+  const legacyKey = drive({}, 'a', 'x').stored;        // a real key in this engine's spelling
+  const dayKey = Object.keys(legacyKey)[0];
+  const legacy = {}; legacy[dayKey] = { a: 'the walk', b: 'a good email', c: D };
+  const past = drive(legacy, null, null);
+  H.ok(!past.threw, 'calibration: the legacy read runs' + (past.threw ? ' — ' + past.threw : ''));
+  H.eq(past.read && past.read.c, '',
+    'a disclosure already in the store comes back BLANK, so the app cannot compose it into ' +
+    '"<name> — just so you know: …" for the clipboard');
+  H.eq(past.read && past.read.a, 'the walk', 'while the ordinary entries are handed back intact');
+  H.eq(past.read && past.read.b, 'a good email', 'both of them');
+
+  // FAULT INJECTION 1: remove the write gate.
+  const noGate = SRC.replace(/const _tc = \(typeof crisisInAny[^;]*;/, 'const _tc = null;');
+  H.ok(noGate !== SRC, 'calibration: the write gate was really removed');
+  const leak = drive({}, 'c', D, noGate);
+  H.ok(!leak.met && JSON.stringify(leak.stored || null).toLowerCase().indexOf('kill myself') >= 0,
+    'fault-injected: without the gate the disclosure is stored and nobody is met — and that store ' +
+    'syncs to Supabase on the same blur');
+
+  // FAULT INJECTION 2: remove the reader scrub, and the legacy entry comes back whole.
+  const noScrub = SRC.replace(/if\(out\[k\] && crisisInAny\(\[out\[k\]\]\)\)\{ out\[k\]=''; moved=true; \}/,
+                              '');
+  H.ok(noScrub !== SRC, 'calibration: the reader scrub was really removed');
+  const stale = drive(legacy, null, null, noScrub);
+  H.eq(stale.read && stale.read.c, D,
+    'fault-injected: without the scrub a pre-gate disclosure is handed straight back, and that is ' +
+    'the value _tgtTellThem turns into a message for a named person');
+}
+
 H.section('every class-addressed field that takes typing is gated');
 {
   const fs = require('fs');
