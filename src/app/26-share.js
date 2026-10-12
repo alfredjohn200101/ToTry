@@ -590,6 +590,18 @@ async function flushFeedbackOutbox(){
     const remaining = [];
     for(const entry of outbox){
       if(entry.__sent){ continue; } // already confirmed — submitFeedback marks it on a successful insert
+      // GATING THE WRITE DOES NOT REACH WHAT WAS ALREADY WRITTEN (12 Oct 2026). `submitFeedback` and
+      // the progress check-in are gated now, but this outbox PERSISTS, and a boot timer flushes it
+      // four seconds after launch — so any disclosure written by a version that predates those
+      // gates would still be inserted into Supabase on the next open, where nothing answers it.
+      // The same shape as the stored meal prefs, fixed the same way: at the READER.
+      // It is DROPPED, not deferred: nobody is on screen four seconds into a boot, so raising a
+      // card here would be a days-old sentence arriving as an emergency with no context — and
+      // sending it achieves nothing for the person while putting their most private line on a
+      // server. If they are still carrying it, every live surface in the app will meet them.
+      try{
+        if(typeof crisisInAny === 'function' && crisisInAny([entry && entry.message])) continue;
+      }catch(_){ }
       try{
         const { error } = await Promise.race([
           sb.from('feedback').insert([{ type:entry.type, message:entry.message, email:entry.email, app_info:entry.app_info, created_at:entry.ts }]),

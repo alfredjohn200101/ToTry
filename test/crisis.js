@@ -196,6 +196,29 @@ const DOORS = [
         return 'the disclosure was STORED raw in totry_meal_prefs, where `country` is concatenated into the meal-plan prompt and the price-lookup prompt';
       return null;
     }, phrase) },
+  // DOOR 51 — THE PROGRESS CHECK-IN. It hid from all three earlier censuses for a NEW reason:
+  // `.pc-note` is addressed by CLASS, so every census that enumerated ids was structurally blind to
+  // it. And it is one of the worst to leave open — it INSERTS STRAIGHT INTO SUPABASE and persists to
+  // `totry_feedback_outbox`, which a boot timer flushes four seconds after launch.
+  { name: 'the progress check-in (free-text note)',
+    go: async page => page.evaluate(async () => { try{ if(typeof openProgressCheckin==='function') openProgressCheckin(); }catch(_){ } }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const el = document.querySelector('.pc-note');
+      window.__d51 = { field: !!el };
+      if(el){ el.value = p; el.dispatchEvent(new Event('input',{bubbles:true})); }
+      const send = document.querySelector('.pc-send');
+      if(send) send.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const d51 = window.__d51 || {};
+      if(!d51.field)
+        return '.pc-note was not in the DOM, so this door asserted nothing — THE CHECK IS WRONG, NOT THE APP';
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_feedback_outbox') || ''; }catch(_){ }
+      if(raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0)
+        return 'the disclosure was queued in totry_feedback_outbox, which a boot timer inserts into the Supabase feedback table four seconds after launch';
+      return null;
+    }, phrase) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
       document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));

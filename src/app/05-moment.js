@@ -2127,8 +2127,26 @@ function openProgressCheckin(){
   const areasWrap=m.querySelector('.pc-areas');
   AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.className='meal-chip'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.classList.remove('selected'); } else { picked.add(a); b.classList.add('selected'); } b.setAttribute('aria-pressed', picked.has(a)?'true':'false'); }; areasWrap.appendChild(b); });
   m.querySelector('.pc-send').onclick=()=>{
-    const note=(m.querySelector('.pc-note').value||'').trim();
-    if(!picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
+    const _noteRaw=(m.querySelector('.pc-note').value||'').trim();
+    // GATED, 12 Oct 2026 — THE ELEVENTH UNGATED DOOR, AND IT HID FOR A NEW REASON: `.pc-note` is
+    // addressed by CLASS. All three earlier censuses enumerated ids — `<textarea id="…">` in the
+    // bundle, then every `getElementById` whose value feeds a sink — so a field the app reaches
+    // with `querySelector('.pc-note')` was structurally invisible to every one of them.
+    // This surface is one of the worst to leave open: it INSERTS STRAIGHT INTO SUPABASE and also
+    // persists to `totry_feedback_outbox`, which a boot timer flushes 4 seconds after launch. So a
+    // disclosure typed here reached a server where nothing answers it — the sealed-letter harm with
+    // a network hop. And the comment below shows the surface was already audited ONCE, for putting
+    // identifying content into app_events; the crisis gate was simply never added, which is the
+    // half-applied shape this repo names over and over.
+    // THEIR CHIPS ARE KEPT AND THE SENTENCE IS DROPPED, the same contract as the quick log: the
+    // life areas they tapped are a choice, the note is the disclosure.
+    const _pcC = (typeof crisisInAny==='function') ? crisisInAny([_noteRaw]) : null;
+    const note = _pcC ? '' : _noteRaw;
+    // THE GATE IS ABOVE THIS, and it must stay there: blanking `note` on a hit means this guard
+    // would otherwise fire on a person who typed only a disclosure and tapped no chip, so a grey
+    // "Tell me one thing" would outrank a disclosure — the Sunday check-in shape for the fourth
+    // time. `_pcC` short-circuits it.
+    if(!_pcC && !picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
     const email = (typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||null;
     // This is feedback, not a metric, and it used to go ONLY to app_events — the anonymous counter
     // table — carrying their free-text note and their email. Two failures in one: it put identifying
@@ -2157,6 +2175,13 @@ function openProgressCheckin(){
     // week. The event that a check-in happened is the feature signal; the rest is theirs.
     try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
     m.remove();
+    if(_pcC){
+      // The card instead of "Thank you — really." Thanking somebody for what they just said, and
+      // then saying nothing about it, is the app talking over them.
+      if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pcC);
+      if(typeof haptic==='function') haptic('warning');
+      return;
+    }
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
     // A one-line confirmation, so it is the one sheet here that centres. The title is the sheet-title role
     // rather than the display face named at weight 700.

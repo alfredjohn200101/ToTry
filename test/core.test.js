@@ -14276,6 +14276,64 @@ H.section('no declaration in this suite shadows a bundle global');
 // knew was false. `completeMorning`'s contract already said it: their words are always kept, the
 // app simply stops and meets them instead of carrying on. Two risks pull opposite ways on one
 // object, which is why both directions are asserted here.
+// ─────────────────────────────────────────────────
+// A CENSUS KEYED ON IDs CANNOT SEE A FIELD ADDRESSED BY CLASS (12 Oct 2026)
+// The eleventh ungated free-text door was `.pc-note` in `openProgressCheckin`, and it hid from all
+// three previous censuses for a reason none of them covered: they enumerated ids — `<textarea
+// id="…">` in the bundle, then every `getElementById` whose value feeds a sink — so a field the app
+// reaches with `querySelector('.pc-note')` was structurally invisible to every one. It was one of
+// the worst to leave open: the note is INSERTED STRAIGHT INTO SUPABASE and persisted to
+// `totry_feedback_outbox`, which a boot timer flushes four seconds after launch.
+// This is the fourth distinct way a door has hidden here (one SHAPE of modal; a tag matched inside a
+// JS string; an <input> where the census grepped <textarea>; and now a class selector).
+H.section('every class-addressed field that takes typing is gated');
+{
+  const fs = require('fs');
+  // NON-TEXT BY CONSTRUCTION — a number, a date and a time. Named, with the reason, rather than
+  // skipped by a pattern that would also skip a real field.
+  const NOT_TEXT = {
+    '.vp-line': 'parseInt — the moderation threshold, a number',
+    '.mal-date': 'a date input',
+    '.mal-time': 'a time input',
+  };
+  const GATED = {
+    '.vp-why': 'journalCrisisOf at 05-moment.js — the door added 9 Oct ("the gated function opens the ungated door itself")',
+    '.pc-note': 'crisisInAny at 05-moment.js — door 51, added 12 Oct',
+  };
+  const found = [];
+  fs.readdirSync('src/app').filter(f => f.endsWith('.js')).forEach(f => {
+    const src = fs.readFileSync('src/app/' + f, 'utf8');
+    src.split('\n').forEach((l, i) => {
+      if(/^\s*(?:\/\/|\*)/.test(l)) return;
+      const m = l.match(/querySelector\((['"])([.\[][^'"]+)\1\)\s*\??\.value/g) || [];
+      m.forEach(hit => {
+        const sel = /(['"])([.\[][^'"]+)\1/.exec(hit)[2];
+        found.push({ file: f, line: i + 1, sel });
+      });
+    });
+  });
+  H.ok(found.length >= 4,
+    'calibration: the scan finds ' + found.length + ' class/attribute-addressed value reads — a ' +
+    'scan that finds none passes whatever the code does');
+  const unaccounted = found.filter(x => !(x.sel in NOT_TEXT) && !(x.sel in GATED));
+  H.eq(unaccounted.map(x => x.sel + ' (' + x.file + ':' + x.line + ')'), [],
+    'every class-addressed value read is either non-text or gated, by name — a new one is a ' +
+    'DOOR until somebody says otherwise here');
+
+  // AND THE TWO GATED ONES REALLY ARE. A name in an allowlist is a claim, not evidence.
+  Object.keys(GATED).forEach(sel => {
+    const owner = found.find(x => x.sel === sel);
+    if(!owner) return;                     // renamed; the unaccounted check above owns that case
+    const src = H.code(fs.readFileSync('src/app/' + owner.file, 'utf8'));
+    const at = src.indexOf(sel);
+    H.ok(at > 0, 'calibration: ' + sel + ' located in ' + owner.file);
+    // the gate belongs within the same handler, so look at the next ~2000 chars
+    const after = src.slice(at, at + 2000);
+    H.ok(/(?:detectCrisis|crisisInAny|journalCrisisOf)\(/.test(after),
+      sel + ' is gated where it is read, not merely listed as gated');
+  });
+}
+
 H.section('the quick log keeps the slip and drops the sentence');
 {
   // PREPEND THE REAL DAY PRIMITIVES, never a stub. `saveQuickLog` stamps its entry with
