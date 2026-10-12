@@ -13523,7 +13523,28 @@ function detectCrisis(text){
   // NOT the zero-width family U+200B–U+200D, which arrives by paste, so those are named explicitly.
   // They collapse TO A SPACE rather than being removed, because a zero-width character typed in
   // place of a space ("kill\u200bmyself") must still read as two words.
-  const _base = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  // ONE SPELLING FOR THE WHOLE FUNCTION (12 Oct 2026). Normalisation folded curly apostrophes and
+  // produced an apostrophe-STRIPPED pass, so "can't" also matched "cant" — but never the EXPANDED
+  // spelling, while every one of the ~90 patterns, bounds and innocent completions here is written
+  // contracted. Measured against the committed bundle, that cut BOTH ways:
+  //   "i cannot go on"                -> null, while "i cant go on" fires   (a SILENCED disclosure)
+  //   "i do not want to live anymore" -> null                                (the same)
+  //   "i hope i do not wake up tomorrow, that's how wrecked my legs are" -> SUICIDE, while the
+  //     contracted form is null — because the suppression that makes that DOMS joke benign is also
+  //     written contracted, so the expanded spelling escaped the guard and kept the hit.
+  // Contracting HERE rather than adding a fifth matched form is what fixes both directions at once:
+  // a pattern and its own guard then always see the same spelling. Semantically safe — "cannot" and
+  // "can't" are the same word — and it runs before `_suppress`, so every span and lookahead
+  // inherits it for free.
+  const _base = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'")
+    .replace(/\bcan ?not\b/g, "can't").replace(/\bdo not\b/g, "don't")
+    .replace(/\bdoes not\b/g, "doesn't").replace(/\bdid not\b/g, "didn't")
+    .replace(/\bwill not\b/g, "won't").replace(/\bwould not\b/g, "wouldn't")
+    .replace(/\bcould not\b/g, "couldn't").replace(/\bshould not\b/g, "shouldn't")
+    .replace(/\bis not\b/g, "isn't").replace(/\bare not\b/g, "aren't")
+    .replace(/\bwas not\b/g, "wasn't").replace(/\bwere not\b/g, "weren't")
+    .replace(/\bhave not\b/g, "haven't").replace(/\bhas not\b/g, "hasn't")
+    .replace(/\bhad not\b/g, "hadn't");
   // INNOCENT COMPLETIONS. A few phrases below are serious on their own and ordinary when finished a
   // particular way: "ending things WITH MY EX", "no reason to keep going TO THAT GYM", "can't go on
   // THIS CUT". Dropping those phrases would reopen real misses, so instead the benign span is removed
@@ -13568,7 +13589,16 @@ function detectCrisis(text){
   // So every open wildcard now refuses the opening word of a disclosure. The object slot still
   // takes any ordinary word, which is what these spans exist for.
   const _suppress = function(_x){
-  [// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
+  [
+   // A HEAD COLD IS NOT AN EMERGENCY (12 Oct 2026). `can't breathe` sits in MEDICAL_AMBIGUOUS as a
+   // bare phrase, and when it is the ONLY kind matched it becomes the primary — so
+   // "i cant breathe through my nose with this cold" rendered "I'm an app — I can't help with
+   // medical emergencies. Please call emergency services or get to a hospital immediately."
+   // SUFFIX-ONLY and deliberately narrow: it names the explicitly nasal completions and nothing
+   // else, so a bare "i can't breathe" still reaches the medical card. This repo's stance on
+   // `chest pain` — the one place where erring toward "get that checked" is the right error — is
+   // why no attempt is made to bound this generally.
+   /can'?t breathe (?:through (?:my|the) nose|out of (?:my|the) nose|with (?:this|the|my) (?:cold|flu|hay ?fever|allergies|sinuses|blocked nose|stuffy nose)|because of (?:this|the|my) (?:cold|flu|hay ?fever|allergies|sinuses))/g,// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
    // anchors on `[\n\r]\s*` as a sentence start, on purpose — somebody types a line, presses
    // Enter and says it. But four of the gate's own benign sentences are a SUBORDINATING clause,
    // an Enter, then the statement: "if i stop gambling\nmy family would be better off",
@@ -13622,7 +13652,7 @@ function detectCrisis(text){
    // SELFHARM phrase, and the dopamine-detox thesis this whole app is built on is "starve myself of
    // dopamine / of screens" — depriving yourself of the hit, not of food. Only the non-food object
    // is suppressed: "starve myself", "starve myself of food" and "of calories" all still fire.
-   /\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\b/g,
+   /\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise|sugar|carbs|carbohydrates|junk|junk food|fast food|takeaway|takeout|treats|snacks|sweets|chocolate|dessert|alcohol|booze|caffeine|soft drink|fizzy drinks|bread)\b/g,
    // WHEN THE SENTENCE NAMES WHAT IT IS ENDING, IT IS NOT ENDING A LIFE. Measured: "i'm on a
    // deficit and i want to end it" and "i want to end it, the vice i mean" both returned
    // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
@@ -13638,8 +13668,8 @@ function detectCrisis(text){
    // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
    // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
    // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
-   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b/g,
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season|project|call|chat|conversation|thread|meeting|shift|rotation|sprint|trial|course|semester|tenancy|argument|essay|assignment|placement|episode|chapter|draft|stream|podcast)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season|project|call|chat|conversation|thread|meeting|shift|rotation|sprint|trial|course|semester|tenancy|argument|essay|assignment|placement|episode|chapter|draft|stream|podcast)\b/g,
    // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
    // `ending things with` span beside it already excludes, in the other inflection.
    // "I WANT IT TO STOP" AFTER A SLIP IS THE FIGHT'S OWN VOCABULARY. The register keeps the
@@ -13704,7 +13734,8 @@ function detectCrisis(text){
   const tc = _suppress(_base.replace(/[\s​-‍﻿]+/g, ' ').trim());
   const tNo = t.replace(/'/g, ''), tcNo = tc.replace(/'/g, '');
   const _hit = function(list){ for(const p of list){ const q = p.replace(/'/g,'');
-    if(t.includes(p) || tNo.includes(q) || tc.includes(p) || tcNo.includes(q)) return true; } return false; };
+    if(t.includes(p) || tNo.includes(q) || tc.includes(p) || tcNo.includes(q)) return true;
+    } return false; };
 
   // Direct self-harm / suicide indicators
   const SUICIDE_PHRASES = [
@@ -13892,7 +13923,7 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // lord" both returned suicide — the app teaches the surrender idiom and then reads it as a
     // disclosure, the same defect as "die to my old self". The intent forms are untouched:
     // "i want to take my life" and "i'm going to take my life" still fire.
-    /\btak(?:e|ing) my (?:own )?life\b(?!\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
+    /\btak(?:e|ing) my (?:own )?life\b(?!\s*,?\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
@@ -14083,7 +14114,8 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   ];
 
   const _hitRe = function(list){ for(const re0 of list){ const re = _wsTol(re0);
-    if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
+    if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true;
+    } return false; };
 
   // ONE CHAIN COULD ONLY EVER NAME ONE NEED, AND THE ONE IT DROPPED WAS THE AMBULANCE.
   // The four kinds were a precedence chain returning the FIRST hit, so a second need was invisible.
@@ -21267,8 +21299,21 @@ function _impulseHold(what, amt, fi){
   if(typeof haptic==='function') haptic('tap');
 }
 function _impulseSaveHold(what, amt){
-  try{ const h=_holds(); h.unshift({what:String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
+  // GATED, 12 Oct 2026. The value arrives as an ARGUMENT, so no census that enumerated ids,
+  // classes or tags could see this. `what` is what the person named as "what was actually going
+  // on" at the moment they stopped themselves spending — one of the surfaces that most invites a
+  // true thing, and the copy below says so in its own words.
+  // THE HOLD IS KEPT AND THE SENTENCE IS DROPPED. Stopping before they spent is the achievement
+  // and it is theirs; only the named reason is the disclosure. And `theRelease` CELEBRATES —
+  // "That's the whole move" on top of what they just said would be the app talking over them.
+  const _ihC = (typeof crisisInAny==='function') ? crisisInAny([what]) : null;
+  try{ const h=_holds(); h.unshift({what:_ihC?'':String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(_ihC){
+    try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC);
+    return;
+  }
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   theRelease({did:'You stopped before you spent, and named what was actually going on. That’s the whole move.'});
 }
@@ -38931,7 +38976,18 @@ function getMealPrefs(){
   try{
     if(typeof detectCrisis !== 'function') return p;
     const raw = JSON.stringify(p);
-    if(raw === getMealPrefs._raw && getMealPrefs._clean) return getMealPrefs._clean;
+    // HAND OUT A COPY, NEVER THE CACHE. The save idiom across this file is
+    // `saveMealPrefs(Object.assign(getMealPrefs(), vals))`, and `Object.assign` MUTATES its first
+    // argument — so returning the cached object let every save write straight into the cache. If
+    // the subsequent `ls()` then failed (a full device, which this app handles everywhere else),
+    // storage kept the old values while the cache held the new ones, and the next read returned
+    // `raw === _raw` and handed back values that were never saved. A cache may hold the work; it
+    // must not hand out the only copy.
+    if(raw === getMealPrefs._raw && getMealPrefs._clean){
+      const _c = Object.assign({}, getMealPrefs._clean);
+      if(Array.isArray(_c.chains)) _c.chains = _c.chains.slice();
+      return _c;
+    }
     const out = Object.assign({}, p);
     if(out.restrictions && detectCrisis(String(out.restrictions))) out.restrictions = '';
     if(out.country && detectCrisis(String(out.country))) out.country = 'Australia';
@@ -38942,7 +38998,18 @@ function getMealPrefs(){
     if(out.chain && detectCrisis(String(out.chain)))
       out.chain = Array.isArray(out.chains) ? out.chains.join(', ') : '';
     getMealPrefs._raw = raw; getMealPrefs._clean = out;
-    return out;
+    const _o = Object.assign({}, out);
+    if(Array.isArray(_o.chains)) _o.chains = _o.chains.slice();
+    return _o;
+    // THE READ-SIDE BLANK ROUND-TRIPPING INTO STORAGE IS DELIBERATE, and a review finding asked for
+    // it to be prevented. Refused on analysis: if a stored `restrictions` really is a disclosure,
+    // the next save writing '' over it is exactly what this scrub exists to achieve — preserving it
+    // would keep the sentence in a cloud-synced store. The finding's harm case is a FALSE POSITIVE
+    // on a real allergy, and none is reproducible: "no nuts, severe allergy", "peanuts will kill
+    // me", "coeliac - cannot have gluten", "dairy kills me", "i cant have shellfish", "nothing with
+    // sesame" and "allergic to bee stings, carry an epipen" all return null. If the detector ever
+    // widens into that vocabulary this decision has to be revisited, which is why it is written down
+    // rather than left implicit.
   }catch(_){ return p; }
 }
 function saveMealPrefs(p){ ls('totry_meal_prefs', p); if(typeof syncToCloud==='function') syncToCloud(); }
@@ -45503,6 +45570,36 @@ function saveExerciseNote(ei, text){
   try{ setTimeout(function(){ try{ _saveSessionDraft(); }catch(_){ } }, 0); }catch(_){ }
   if(!currentSession[ei]) return;
   currentSession[ei].notes = text;
+  // GATED, 12 Oct 2026 — AND DEBOUNCED, WHICH IS THE WHOLE POINT. The value is argument-shaped
+  // (`oninput="saveExerciseNote(N,this.value)"`), so no census could see it, and the field's own
+  // placeholder is "Form cue, HOW IT FELT, what to try next..." — it asks.
+  // This handler fires PER KEYSTROKE. Gating it the obvious way would rebuild the defect found in
+  // `runUniversalSearch` the same afternoon: every innocent completion in this detector is a SUFFIX
+  // test, so a half-typed sentence has no suppressing suffix and 19 of 25 of the suite's own
+  // ordinary sentences raise a card mid-word. Judge the SETTLED note.
+  // The visible textarea is deliberately NOT cleared — yanking text out from under a cursor
+  // mid-typing is its own harm. What is undone is the PERSISTED note: the draft is re-saved without
+  // it, so the sentence does not travel into the finished workout (and `finishWorkout` is what puts
+  // a session where the coach and the model can read it).
+  // Latched per exercise, because a card re-rendering under a moving cursor is its own kind of
+  // not-listening.
+  try{
+    saveExerciseNote._t = saveExerciseNote._t || {};
+    saveExerciseNote._met = saveExerciseNote._met || {};
+    clearTimeout(saveExerciseNote._t[ei]);
+    saveExerciseNote._t[ei] = setTimeout(function(){
+      try{
+        if(saveExerciseNote._met[ei]) return;
+        if(typeof crisisInAny !== 'function') return;
+        const _k = crisisInAny([currentSession[ei] && currentSession[ei].notes]);
+        if(!_k) return;
+        saveExerciseNote._met[ei] = true;
+        if(currentSession[ei]) currentSession[ei].notes = '';
+        try{ _saveSessionDraft(); }catch(_){ }
+        if(typeof journalMeetCrisis==='function') journalMeetCrisis(_k);
+      }catch(_){ }
+    }, 500);
+  }catch(_){ }
   // Update the toggle label live
   const toggle = document.getElementById('ex-notes-toggle-'+ei);
   if(toggle){
@@ -49451,6 +49548,15 @@ function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(
 function _yfNote(idx, val){
   const few=getYourFew(); if(!few[idx]) return;
   const v=String(val||'').trim().slice(0,90);
+  // GATED, 12 Oct 2026. Argument-shaped, so invisible to every census. This is a note about one of
+  // the people a person has named as theirs to reach out to, and `renderReachOutCard()` shows it
+  // back. Unlike the impulse hold there is no separate choice to keep here — the note IS the data —
+  // so nothing is written and they are met.
+  const _yfC = (typeof crisisInAny==='function') ? crisisInAny([v]) : null;
+  if(_yfC){
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_yfC);
+    return;
+  }
   if(few[idx].note===v) return;
   few[idx].note=v; saveYourFew(few);
   try{ renderReachOutCard(); }catch(_){}
@@ -53439,7 +53545,7 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
-  try{ runUniversalSearch._met = false; }catch(_){ }   // a new sheet is a new conversation
+  try{ runUniversalSearch._metFor = null; }catch(_){ }   // a new sheet is a new conversation
   // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
   // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
@@ -53482,12 +53588,20 @@ function runUniversalSearch(query){
     clearTimeout(runUniversalSearch._t);
     runUniversalSearch._t = setTimeout(function(){
       try{
-        if(runUniversalSearch._met) return;
+        // LATCH ON THE SENTENCE, NOT ON THE SHEET. The first version set a bare `_met` the moment a
+        // card showed and then returned on it forever, so once ANY query raised a card — including
+        // the one residual named in the test, "not worth living", which is the string the secular
+        // examen prints — a REAL disclosure typed afterwards in the same sheet was met with
+        // nothing. A silenced disclosure, created by the fix for a noisy one, in the same session.
+        // So the quiet only covers the sentence already answered: still typing it, or backspacing
+        // inside it, stays quiet; clearing it and typing something else is met.
         const _el = document.getElementById('search-input');
         const _q = _el ? String(_el.value || '') : '';
+        const _m = runUniversalSearch._metFor;
+        if(_m && (_q.indexOf(_m) === 0 || _m.indexOf(_q) === 0)) return;
         const _sc = (typeof journalCrisisOf === 'function') ? journalCrisisOf(_q) : null;
         if(!_sc) return;
-        runUniversalSearch._met = true;
+        runUniversalSearch._metFor = _q;
         // A ROUTE BACK, and it is not optional here: `journalMeetCrisis` clears
         // `.modal-bg:not([id])`, and this sheet is built with no id, so meeting the person DELETES
         // the search they were using. And `saved:false` because a search keeps nothing.
@@ -55070,11 +55184,24 @@ async function markPrayerAnswered(id){
   const prayers = ls('totry_prayers') || [];
   const p = prayers.find(p => p.id === id);
   if(!p) return;
+  // GATED, 12 Oct 2026. The note arrives from `askText`, as an ARGUMENT-shaped value no census
+  // could see. Its own prompt is "How was it answered?" on a PRAYER surface — the register this
+  // app's faith layer invites five ways over — and `renderPrayers()` prints it back afterwards.
+  // THE ANSWER IS KEPT AND THE NOTE IS DROPPED, which the surface itself makes easy: the prompt
+  // says "Optional — leave it blank to skip", so marking the prayer answered is the choice and the
+  // note is the sentence. And the celebration is skipped: "Praise God", a celebrate haptic and a
+  // verse toast landing on top of what they just wrote is the app talking over them.
+  const _paC = (typeof crisisInAny==='function') ? crisisInAny([note]) : null;
   p.status = 'answered';
   p.answeredAt = new Date().toISOString();
-  p.answerNote = note || '';
+  p.answerNote = _paC ? '' : (note || '');
   ls('totry_prayers', prayers);
   renderPrayers();
+  if(_paC){
+    try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_paC);
+    return;
+  }
   showToast('Praise God', 'Answered prayer logged.');
   haptic('celebrate');
   setTimeout(() => showVerseToast('prayer_answered', 'Word for an answered prayer'), 800);
@@ -59250,6 +59377,23 @@ function exportWorkouts(){
 // ═══════════════════════════════════════════════════
 
 // ── IDENTITY ──────────────────────────────────────────────────
+// GATING THE WRITE DOES NOT REACH WHAT WAS ALREADY WRITTEN (12 Oct 2026). All three twins of this
+// field are gated now — onboarding's, `editIdentity`'s and `saveIdentity`'s — but `totry_identity`
+// has 25 direct `ls()` readers and not one of them asked. So a disclosure typed by any version
+// predating those gates is still in the store, and `buildCtx` appends it as `IDENTITY: …` to EVERY
+// coach message: a sentence somebody wrote once, handed to a model on every message afterwards.
+// The same shape as the stored meal prefs and the feedback outbox, fixed the same way: at the
+// reader. This is used at the PROMPT site, which is where the harm is. The display sites are
+// deliberately left alone — the person is on screen for those, and converting 25 call sites in one
+// pass is the blanket sweep this project fails builds over. If a display site ever starts feeding
+// something else, it gets this accessor then.
+function identityForPrompt(){
+  try{
+    const id = ls('totry_identity') || '';
+    if(!id || typeof crisisInAny !== 'function') return id;
+    return crisisInAny([id]) ? '' : id;
+  }catch(_){ return ''; }
+}
 function renderIdentity(){
   const id=ls('totry_identity');
   const el=document.getElementById('identity-text');
@@ -59750,7 +59894,8 @@ if(typeof buildCtx==='function'){
   const checkins=(ls('totry_checkins')||[]).filter(c => c && c.physical!=null);
     const recent=checkins[0];
     let extras='';
-    if(identity)extras+='\nIDENTITY: '+identity;
+    const _idp = (typeof identityForPrompt==='function') ? identityForPrompt() : identity;
+    if(_idp)extras+='\nIDENTITY: '+_idp;   // scrubbed — see identityForPrompt
     if(season&&SEASONS[season])extras+='\nSEASON: '+season+' — '+SEASONS[season].desc;
     if(recent)extras+='\nLAST CHECK-IN ('+recent.date+'): Physical '+recent.physical+'/10, Emotional '+recent.emotional+'/10, Spiritual '+recent.spiritual+'/10';
     return baseCtx+extras+'\nWhen relevant, reference their identity statement and adapt your tone to their current season. Someone in Grieving needs different words than someone in Celebrating.';

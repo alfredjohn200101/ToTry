@@ -591,8 +591,21 @@ function _impulseHold(what, amt, fi){
   if(typeof haptic==='function') haptic('tap');
 }
 function _impulseSaveHold(what, amt){
-  try{ const h=_holds(); h.unshift({what:String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
+  // GATED, 12 Oct 2026. The value arrives as an ARGUMENT, so no census that enumerated ids,
+  // classes or tags could see this. `what` is what the person named as "what was actually going
+  // on" at the moment they stopped themselves spending — one of the surfaces that most invites a
+  // true thing, and the copy below says so in its own words.
+  // THE HOLD IS KEPT AND THE SENTENCE IS DROPPED. Stopping before they spent is the achievement
+  // and it is theirs; only the named reason is the disclosure. And `theRelease` CELEBRATES —
+  // "That's the whole move" on top of what they just said would be the app talking over them.
+  const _ihC = (typeof crisisInAny==='function') ? crisisInAny([what]) : null;
+  try{ const h=_holds(); h.unshift({what:_ihC?'':String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(_ihC){
+    try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC);
+    return;
+  }
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   theRelease({did:'You stopped before you spent, and named what was actually going on. That’s the whole move.'});
 }

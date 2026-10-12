@@ -37,7 +37,18 @@ function getMealPrefs(){
   try{
     if(typeof detectCrisis !== 'function') return p;
     const raw = JSON.stringify(p);
-    if(raw === getMealPrefs._raw && getMealPrefs._clean) return getMealPrefs._clean;
+    // HAND OUT A COPY, NEVER THE CACHE. The save idiom across this file is
+    // `saveMealPrefs(Object.assign(getMealPrefs(), vals))`, and `Object.assign` MUTATES its first
+    // argument — so returning the cached object let every save write straight into the cache. If
+    // the subsequent `ls()` then failed (a full device, which this app handles everywhere else),
+    // storage kept the old values while the cache held the new ones, and the next read returned
+    // `raw === _raw` and handed back values that were never saved. A cache may hold the work; it
+    // must not hand out the only copy.
+    if(raw === getMealPrefs._raw && getMealPrefs._clean){
+      const _c = Object.assign({}, getMealPrefs._clean);
+      if(Array.isArray(_c.chains)) _c.chains = _c.chains.slice();
+      return _c;
+    }
     const out = Object.assign({}, p);
     if(out.restrictions && detectCrisis(String(out.restrictions))) out.restrictions = '';
     if(out.country && detectCrisis(String(out.country))) out.country = 'Australia';
@@ -48,7 +59,18 @@ function getMealPrefs(){
     if(out.chain && detectCrisis(String(out.chain)))
       out.chain = Array.isArray(out.chains) ? out.chains.join(', ') : '';
     getMealPrefs._raw = raw; getMealPrefs._clean = out;
-    return out;
+    const _o = Object.assign({}, out);
+    if(Array.isArray(_o.chains)) _o.chains = _o.chains.slice();
+    return _o;
+    // THE READ-SIDE BLANK ROUND-TRIPPING INTO STORAGE IS DELIBERATE, and a review finding asked for
+    // it to be prevented. Refused on analysis: if a stored `restrictions` really is a disclosure,
+    // the next save writing '' over it is exactly what this scrub exists to achieve — preserving it
+    // would keep the sentence in a cloud-synced store. The finding's harm case is a FALSE POSITIVE
+    // on a real allergy, and none is reproducible: "no nuts, severe allergy", "peanuts will kill
+    // me", "coeliac - cannot have gluten", "dairy kills me", "i cant have shellfish", "nothing with
+    // sesame" and "allergic to bee stings, carry an epipen" all return null. If the detector ever
+    // widens into that vocabulary this decision has to be revisited, which is why it is written down
+    // rather than left implicit.
   }catch(_){ return p; }
 }
 function saveMealPrefs(p){ ls('totry_meal_prefs', p); if(typeof syncToCloud==='function') syncToCloud(); }

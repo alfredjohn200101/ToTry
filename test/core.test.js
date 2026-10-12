@@ -12224,6 +12224,137 @@ H.section('the comma bound — fault-injected at every site that carries it');
 // of 358 benign sentences were never swept, so every corpus number reported before this was
 // over a partial corpus. Same family as the anchor-in-two-arrays trap CLAUDE.md records.
 const ORD_NEEDLE = 'const ' + 'ORDINARY' + ' = [';
+// ─────────────────────────────────────────────────
+// ONE SPELLING — THE UNABBREVIATED REGISTER (12 Oct 2026)
+// Every pattern, bound and innocent completion in detectCrisis is written CONTRACTED, and
+// normalisation produced a folded form and an apostrophe-stripped one but never the expanded
+// spelling. Measured against the pre-fix bundle that cut both ways: "i cannot go on" returned null
+// while "i cant go on" fired, and "i hope i do not wake up tomorrow, that's how wrecked my legs
+// are" returned SUICIDE while its contracted form was null — because the suppression that makes
+// that DOMS joke benign is contracted too, so the expanded spelling escaped its own guard.
+// ─────────────────────────────────────────────────
+// FOUR BARE-IN-ALL-BUT-NAME ENTRIES (12 Oct 2026)
+// Each had a guard whose list was narrower than the ordinary English around it, so each cried wolf
+// on a sentence from one of this app's own fronts. Every row below was MEASURED firing before the
+// widening, and the must-fire rows are what stops the widening going too far.
+H.section('four guards whose lists were narrower than the sentences around them');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  const SILENT = [
+    // 22 — the end-this object whitelist had 23 training and money nouns and no WORK nouns.
+    'i am going to end this project on friday', 'i am going to end this call',
+    'i am going to end this meeting', 'i am going to end this conversation',
+    'i am going to end this chapter tonight',
+    // 33 — starve-myself excluded only dopamine-shaped objects, so ordinary dieting fired.
+    'i am going to starve myself of sugar', 'i will starve myself of junk food this week',
+    'i am going to starve myself of takeaway for a month',
+    // 34 — `can't breathe` is a bare phrase in MEDICAL_AMBIGUOUS, and alone it becomes the PRIMARY,
+    //      so a head cold got "call emergency services or get to a hospital immediately".
+    'i cant breathe through my nose with this cold', 'i cant breathe with this hayfever',
+    "i can't breathe out of my nose with these allergies",
+    // 56 — the vocative fix covered an address BEFORE the phrase and an address after with no
+    //      comma; a prayer written with the comma is how most people write it.
+    'take my life, o lord', 'take my life, lord', 'take my life, jesus',
+  ];
+  const FIRE = [
+    ['i am going to end it tonight', 'suicide'], ['i am going to end this life', 'suicide'],
+    ['i am going to end it all', 'suicide'],
+    ['i am going to starve myself of food', 'selfharm'], ['i am going to starve myself', 'selfharm'],
+    ['i cant breathe', 'medical'], ['i have chest pain', 'medical'],
+    ['i am going to take my life', 'suicide'], ['i asked god to take my life', 'suicide'],
+  ];
+  const loud = SILENT.filter(s => !!detectCrisis(s));
+  H.eq(loud, [], 'none of the ' + SILENT.length + " ordinary sentences raises a card");
+  const quiet = FIRE.filter(([s, k]) => !String(detectCrisis(s)).includes(k));
+  H.eq(quiet.map(x => x[0]), [],
+    'and the widening did not reach the disclosures these guards sit next to — a suppression must ' +
+    'be NARROWER than the risk');
+
+  // 'life' must never enter the end-this object list, which is the one word that would turn this
+  // guard into a silenced disclosure. Asserted on the SOURCE so it cannot be added by accident.
+  const src = H.code(H.extractFn('detectCrisis'));
+  const lists = src.match(/deficit\|cut\|bulk[^)]*/g) || [];
+  H.ok(lists.length === 2, 'calibration: both end-this object lists were located (' + lists.length + ')');
+  H.eq(lists.filter(l => /\blife\b|\bit all\b|\bmyself\b/.test(l)).length, 0,
+    'and neither list admits life, it all or myself — the words that would make this guard silence ' +
+    'a disclosure rather than an ordinary ending');
+}
+
+H.section('one spelling — the expanded negations reach the patterns AND their guards');
+{
+  const fs = require('fs');
+  const own = fs.readFileSync(__filename, 'utf8');
+  const rows = [];
+  let at = 0;
+  while((at = own.indexOf(ORD_NEEDLE, at)) >= 0){
+    let open = own.indexOf('[', at), depth = 0, end = open;
+    for(; end < own.length; end++){ const c = own[end]; if(c === '[') depth++; else if(c === ']'){ depth--; if(!depth) break; } }
+    try {
+      // eslint-disable-next-line no-new-func
+      const v = new Function('return ' + H.code(own.slice(open, end + 1)))();
+      for(const x of v){ if(typeof x === 'string') rows.push(x); else if(Array.isArray(x) && typeof x[0] === 'string') rows.push(x[0]); }
+    } catch(e){ /* reported by the size assertion below */ }
+    at = end;
+  }
+  const BENIGN = [...new Set(rows)];
+  H.ok(BENIGN.length >= 300, 'calibration: the benign corpus read out of this file is ' + BENIGN.length + ' (>= 300)');
+
+  const EXPAND = s => s
+    .replace(/\bcan'?t\b/g, 'cannot').replace(/\bdon'?t\b/g, 'do not')
+    .replace(/\bdoesn'?t\b/g, 'does not').replace(/\bdidn'?t\b/g, 'did not')
+    .replace(/\bwon'?t\b/g, 'will not').replace(/\bwouldn'?t\b/g, 'would not')
+    .replace(/\bcouldn'?t\b/g, 'could not').replace(/\bshouldn'?t\b/g, 'should not')
+    .replace(/\bisn'?t\b/g, 'is not').replace(/\baren'?t\b/g, 'are not')
+    .replace(/\bwasn'?t\b/g, 'was not').replace(/\bweren'?t\b/g, 'were not')
+    .replace(/\bhaven'?t\b/g, 'have not').replace(/\bhasn'?t\b/g, 'has not')
+    .replace(/\bhadn'?t\b/g, 'had not');
+
+  const KEYS = ['Math','Date','JSON','Array','Object','isNaN','parseFloat','parseInt','String','Number','RegExp','console'];
+  const VALS = [Math,Date,JSON,Array,Object,isNaN,parseFloat,parseInt,String,Number,RegExp,console];
+  const SRC = H.extractFn('detectCrisis');
+  const build = src => new Function(...KEYS, src + '\nreturn detectCrisis;')(...VALS);
+  const live = build(SRC);
+
+  // CALIBRATION: the corpus must actually CONTAIN contractions, or this whole section is vacuous —
+  // which is exactly what my first ad-hoc probe did (89 sentences harvested, 0 expandable, "0 false
+  // positives" reported over nothing).
+  const expandable = BENIGN.filter(s => EXPAND(s) !== s);
+  H.ok(expandable.length >= 40,
+    'calibration: ' + expandable.length + ' benign sentences contain a contraction to expand (>= 40) ' +
+    '— a corpus with nothing to expand would pass this section whatever the code does');
+
+  const fired = expandable.filter(s => !live(s) && live(EXPAND(s)));
+  H.eq(fired.map(s => EXPAND(s)), [],
+    'no benign sentence starts firing when its contractions are written out in full');
+
+  // AND THE DISCLOSING DIRECTION, which is why the change exists at all.
+  // SPLIT BY MEASUREMENT, NOT BY ASSUMPTION. My first version of this asserted that ALL of these
+  // go null without the contraction, and one did not: "i do not want to wake up" fires either way,
+  // because that phrasing is reachable by an entry that does not depend on the contracted spelling.
+  // That is a useful fact rather than noise — the register was not uniformly broken, so the fix
+  // ADDS coverage for the five rather than creating the sixth.
+  const GAINED = ['i cannot go on', 'i can not go on', 'i do not want to live anymore',
+                  'i cannot keep going', 'i cannot do this anymore.'];
+  const ALREADY = ['i do not want to wake up'];
+  H.eq(GAINED.filter(s => !live(s)), [], 'every unabbreviated disclosure is caught');
+  H.eq(ALREADY.filter(s => !live(s)), [], 'including the one phrasing that was already reachable');
+
+  // FAULT INJECTION: take the contraction out of _base and BOTH directions break again.
+  const flat = SRC.replace(/\n\s*\.replace\(\/\\bcan \?not\\b\/g, "can't"\)[\s\S]*?\.replace\(\/\\bhad not\\b\/g, "hadn't"\);/,
+                           ';');
+  H.ok(flat !== SRC, 'calibration: the contraction was really removed from _base');
+  const old = build(flat);
+  H.eq(GAINED.filter(s => !!old(s)), [],
+    'fault-injected: without it all five return NULL — which is what the committed bundle did, ' +
+    'measured, for "i cannot go on" and "i do not want to live anymore"');
+  H.ok(!!old(ALREADY[0]),
+    'while the already-reachable phrasing still fires, so this injection is pinned to what the ' +
+    'contraction actually BUYS rather than to the whole register');
+  H.ok(!!old("i hope i do not wake up tomorrow, that's how wrecked my legs are"),
+    'and the DOMS joke written out in full raises a card, because the suppression that makes it ' +
+    'benign is written contracted and the expanded spelling walked past its own guard');
+}
+
 H.section('one Enter — every benign sentence the gate owns, with a newline at each word boundary');
 {
   const fs = require('fs');
@@ -13688,9 +13819,13 @@ H.section("the app's own devotional vocabulary does not trip its own detector");
     "/\\bzzzzz-never-matches-zzzzz/g",
     ['The unexamined life is not worth living.'], 'suicide');
 
+  // ANCHOR ON THE SPAN'S HEAD, NOT ITS OBJECT LIST. This pinned the whole regex including every
+  // object, so widening the list with the diet nouns (sugar, junk food, takeaway…) removed the
+  // anchor and the calibration failed on correct code — a test pinned to text that is expected to
+  // grow. The head is stable; replacing it leaves a valid regex that cannot match.
   inject("the detox-object span",
-    "/\\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\\b/g",
-    "/\\bzzzzz-never-matches-zzzzz/g",
+    "/\\bstarv(?:e|ing) myself of (?:",
+    "/\\bzzzzz-never-matches-zzzzz(?:",
     ['i am going to starve myself of dopamine tonight and read instead', 'i starve myself of screens after 9pm'], 'selfharm');
 
   inject("the widened surrender objects",
@@ -14296,6 +14431,141 @@ H.section('no declaration in this suite shadows a bundle global');
 // you should hear it." for the clipboard. I read `_tgtCopyAndDone` earlier the same day and
 // recorded it as deliberately not a door, reasoning that a person writing to a real human is doing
 // what this app exists for. The message is not theirs — the app writes it from this field.
+// ─────────────────────────────────────────────────
+// THE ARGUMENT-SHAPED CLASS, FIRST BUCKET (12 Oct 2026)
+// Four more doors whose typed value reaches code only as an argument, so no census that enumerated
+// ids, classes or tags could see any of them. Each keeps whatever of the person's work is a CHOICE
+// and drops only the sentence, and none of them celebrates over a disclosure.
+H.section('the argument-shaped doors are gated, and none celebrates over a disclosure');
+{
+  const { crisisInAny, detectCrisis } = H.load(['crisisInAny', 'detectCrisis']);
+  const D = 'i want to kill myself';
+  H.ok(!!detectCrisis(D), 'calibration: the phrase is a disclosure');
+  const run = (names, extra, tail, src) => {
+    const sb = Object.assign({ crisisInAny, detectCrisis, Date, JSON, Object, Array, String,
+      Math, parseInt, parseFloat, isNaN, Number, RegExp,
+      setTimeout: fn => { try{ fn(); }catch(_){ } }, clearTimeout: () => {} }, extra);
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    const body = (src || names.map(H.extractFn).join('\n\n')) + '\n' + tail;
+    try{ return { out: new Function(...k, body)(...v) }; }
+    catch(e){ return { threw: String(e.message).slice(0, 80) }; }
+  };
+
+  // ── 1. THE IMPULSE HOLD. The hold is the achievement and it is theirs; the named reason is the
+  //       sentence. And `theRelease` CELEBRATES ("That's the whole move"), which must not land.
+  {
+    const mk = (what) => {
+      let stored = null, met = false, released = false, haptics = [];
+      const r = run(['_impulseSaveHold'], {
+        _holds: () => [], ls: (k, v) => { if(v === undefined) return null; stored = v; },
+        haptic: h => haptics.push(h), journalMeetCrisis: () => { met = true; return true; },
+        theRelease: () => { released = true; },
+        document: { querySelectorAll: () => ({ forEach: () => {} }) },
+      }, '_impulseSaveHold(' + JSON.stringify(what) + ', 30);');
+      return { threw: r.threw, stored, met, released, haptics };
+    };
+    const ok = mk('scrolling the sale page again');
+    H.ok(!ok.threw, 'calibration: an ordinary impulse hold runs' + (ok.threw ? ' — ' + ok.threw : ''));
+    H.eq(ok.stored && ok.stored[0] && ok.stored[0].what, 'scrolling the sale page again',
+      'calibration: and keeps what they named');
+    H.ok(ok.released && !ok.met, 'calibration: and reaches theRelease');
+
+    const hit = mk(D);
+    H.ok(hit.met, 'a disclosure in the impulse hold reaches real help');
+    H.eq(hit.stored && hit.stored[0] && hit.stored[0].what, '', 'with the named reason dropped');
+    H.eq(hit.stored && hit.stored[0] && hit.stored[0].amt, 30,
+      'AND THE HOLD ITSELF KEPT — stopping before they spent is the achievement, and it is theirs');
+    H.ok(!hit.released, 'and theRelease does NOT fire — "that\'s the whole move" would talk over them');
+    H.ok(hit.haptics.indexOf('success') < 0, 'and it does not buzz success at them');
+  }
+
+  // ── 2. THE ANSWERED PRAYER. Its own prompt says the note is optional, so marking it answered is
+  //       the choice. "Praise God" + a celebrate haptic + a verse toast must not land on it.
+  {
+    const mk = (note) => {
+      let saved = null, met = false, toast = null, verse = false, haptics = [];
+      const r = run(['markPrayerAnswered'], {
+        askText: () => Promise.resolve(note),
+        ls: (k, v) => { if(v === undefined) return [{ id: 7, text: 'for mum' }]; saved = v; },
+        renderPrayers: () => {}, haptic: h => haptics.push(h),
+        journalMeetCrisis: () => { met = true; return true; },
+        showToast: (a) => { toast = a; }, showVerseToast: () => { verse = true; },
+      }, 'return markPrayerAnswered(7);');
+      return { r, get state(){ return { saved, met, toast, verse, haptics }; } };
+    };
+    const okm = mk('she got the job');
+    H.defer(Promise.resolve(okm.r.out).then(() => {
+      const s = okm.state;
+      H.ok(!okm.r.threw, 'calibration: an ordinary answered prayer runs' + (okm.r.threw ? ' — ' + okm.r.threw : ''));
+      H.eq(s.saved && s.saved[0].answerNote, 'she got the job', 'calibration: and keeps the note');
+      H.eq(s.toast, 'Praise God', 'calibration: and praises');
+    }));
+    const hitm = mk(D);
+    H.defer(Promise.resolve(hitm.r.out).then(() => {
+      const s = hitm.state;
+      H.ok(s.met, 'a disclosure in an answered-prayer note reaches real help');
+      H.eq(s.saved && s.saved[0].answerNote, '', 'with the note dropped');
+      H.eq(s.saved && s.saved[0].status, 'answered',
+        'AND THE PRAYER STILL MARKED ANSWERED — the note is optional, so that was the choice');
+      H.ok(s.toast !== 'Praise God' && !s.verse && s.haptics.indexOf('celebrate') < 0,
+        'and nothing celebrates: no "Praise God", no verse toast, no celebrate haptic');
+    }));
+  }
+
+  // ── 3. THE NOTE ON ONE OF YOUR FEW. No separate choice here — the note IS the data.
+  {
+    const mk = (val) => {
+      let saved = null, met = false;
+      const r = run(['_yfNote'], {
+        getYourFew: () => [{ name: 'Dad', note: '' }],
+        saveYourFew: a => { saved = a; }, renderReachOutCard: () => {},
+        journalMeetCrisis: () => { met = true; return true; },
+      }, '_yfNote(0, ' + JSON.stringify(val) + ');');
+      return { threw: r.threw, saved, met };
+    };
+    const ok = mk('ring him on Sunday');
+    H.ok(!ok.threw && ok.saved && ok.saved[0].note === 'ring him on Sunday',
+      'calibration: an ordinary note about one of your few saves');
+    const hit = mk(D);
+    H.ok(hit.met, 'a disclosure in a note about one of your few reaches real help');
+    H.eq(hit.saved, null, 'and nothing is written — here the note IS the data, so there is no choice to keep');
+  }
+
+  // ── 4. THE EXERCISE NOTE — `oninput`, so the gate must judge a SETTLED note, not a prefix.
+  {
+    const src = H.code(H.extractFn('saveExerciseNote'));
+    H.ok(/clearTimeout\(saveExerciseNote\._t\[ei\]\)/.test(src) && /saveExerciseNote\._t\[ei\] = setTimeout\(/.test(src),
+      'the exercise-note gate waits for the typing to stop');
+    H.ok(src.indexOf('crisisInAny') > src.indexOf('saveExerciseNote._t[ei] = setTimeout('),
+      'and the detector is asked INSIDE the timer — this field fires per keystroke, and every ' +
+      'innocent completion in the detector is a SUFFIX test, so a prefix gate would raise a card ' +
+      'mid-word exactly as the universal search did');
+    let met = false, drafts = 0;
+    const cs = [{ notes: '' }];
+    const r = run(['saveExerciseNote'], {
+      currentSession: cs, _saveSessionDraft: () => { drafts++; },
+      journalMeetCrisis: () => { met = true; return true; },
+      svgIcon: () => '', _escFew: s => s,
+      document: { getElementById: () => null },
+    }, 'saveExerciseNote(0, ' + JSON.stringify(D) + ');');
+    H.ok(!r.threw, 'the exercise note runs' + (r.threw ? ' — ' + r.threw : ''));
+    H.ok(met, 'a settled disclosure in an exercise note reaches real help');
+    H.eq(cs[0].notes, '',
+      'and the PERSISTED note is undone, so the sentence never travels into the finished workout ' +
+      'that finishWorkout hands to the coach');
+    H.ok(drafts >= 1, 'and the draft is re-saved without it');
+  }
+
+  // ── FAULT INJECTION: neuter each gate's own judgement and the disclosure flows again.
+  [['_impulseSaveHold', '05-moment'], ['_yfNote', '23-evening']].forEach(([fn]) => {
+    const s = H.extractFn(fn);
+    const blind = s.replace(/crisisInAny\(\[[^\]]*\]\)/, 'null');
+    H.ok(blind !== s, 'calibration: ' + fn + "'s gate was really neutered");
+    H.ok(!/crisisInAny\(\[/.test(blind.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n')),
+      'fault-injected: ' + fn + ' no longer asks the detector, which is the shape that shipped');
+  });
+}
+
 H.section('three good things is gated, and the message cannot carry a disclosure');
 {
   const { crisisInAny, detectCrisis } = H.load(['crisisInAny', 'detectCrisis']);

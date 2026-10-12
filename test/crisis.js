@@ -241,6 +241,77 @@ const DOORS = [
       if(!d52.field) return null;   // the field not being built is not a finding; the save path above still ran
       return null;
     }, phrase) },
+  // DOORS 53-56 — THE ARGUMENT-SHAPED BUCKET. Each takes its typed value as a function argument,
+  // so no census that enumerated ids, classes or tags could see any of them.
+  { name: 'the impulse hold (what was going on)',
+    go: async page => page.evaluate(() => {}),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof _impulseSaveHold === 'function') _impulseSaveHold(p, 30);
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_impulse_holds') || ''; }catch(_){ }
+      return raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0
+        ? 'the disclosure was stored in totry_impulse_holds as what was "actually going on"'
+        : null;
+    }, phrase) },
+  { name: 'an answered prayer (how was it answered)',
+    go: async page => page.evaluate(() => {
+      localStorage.setItem('totry_prayers', JSON.stringify([{ id: 7, text: 'for mum', status: 'open' }]));
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      // askText is a modal; the shipped path awaits it, so answer it directly for the drive.
+      window.askText = () => Promise.resolve(p);
+      if(typeof markPrayerAnswered === 'function') await markPrayerAnswered(7);
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_prayers') || ''; }catch(_){ }
+      return raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0
+        ? 'the disclosure was stored as the answerNote and is printed back by renderPrayers()'
+        : null;
+    }, phrase) },
+  { name: 'a note on one of your few',
+    go: async page => page.evaluate(() => {
+      // totry_your_few is the key getYourFew() reads — seeding the test's own spelling instead
+      // reports the door broken, which has happened in this suite before.
+      localStorage.setItem('totry_your_few', JSON.stringify([{ name: 'Dad', note: '' }]));
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof _yfNote === 'function') _yfNote(0, p);
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_your_few') || ''; }catch(_){ }
+      return raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0
+        ? 'the disclosure was stored on one of their few and is shown by renderReachOutCard()'
+        : null;
+    }, phrase) },
+  { name: 'an exercise note (how it felt)',
+    // MUTATE THE REAL ARRAY, DO NOT ASSIGN A WINDOW PROPERTY. `currentSession` is
+    // `let currentSession=[]` at 19-workout.js:8 — a top-level binding in a classic script, so it
+    // lives in the GLOBAL LEXICAL environment: reachable by bare name, invisible as `window.x`.
+    // The first version of this door set `window.currentSession`, which created an unrelated global
+    // while the real array stayed empty, so `saveExerciseNote` returned at `if(!currentSession[ei])`
+    // and the door reported "NO crisis card" against a working gate. The suite's own negative pass
+    // named it correctly — "QUIET because it is BROKEN, not because it is calm" — which is the one
+    // check that can tell those two apart.
+    go: async page => page.evaluate(() => {
+      try{ if(typeof currentSession !== 'undefined'){ currentSession.length = 0; currentSession.push({ name: 'Squat', sets: [], notes: '' }); } }catch(_){ }
+    }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof saveExerciseNote === 'function') saveExerciseNote(0, p);
+      // the gate is DEBOUNCED on purpose — this field fires per keystroke — so wait it out
+      await new Promise(r => setTimeout(r, 700));
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      try{
+        const n = (typeof currentSession !== 'undefined' && currentSession[0] && currentSession[0].notes) || '';
+        if(String(n).toLowerCase().indexOf(String(p).toLowerCase()) >= 0)
+          return 'the disclosure is still on the session, so finishWorkout would carry it to the coach';
+      }catch(_){ }
+      return null;
+    }, phrase) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
       document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));

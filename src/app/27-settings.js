@@ -981,7 +981,7 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
-  try{ runUniversalSearch._met = false; }catch(_){ }   // a new sheet is a new conversation
+  try{ runUniversalSearch._metFor = null; }catch(_){ }   // a new sheet is a new conversation
   // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
   // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
@@ -1024,12 +1024,20 @@ function runUniversalSearch(query){
     clearTimeout(runUniversalSearch._t);
     runUniversalSearch._t = setTimeout(function(){
       try{
-        if(runUniversalSearch._met) return;
+        // LATCH ON THE SENTENCE, NOT ON THE SHEET. The first version set a bare `_met` the moment a
+        // card showed and then returned on it forever, so once ANY query raised a card — including
+        // the one residual named in the test, "not worth living", which is the string the secular
+        // examen prints — a REAL disclosure typed afterwards in the same sheet was met with
+        // nothing. A silenced disclosure, created by the fix for a noisy one, in the same session.
+        // So the quiet only covers the sentence already answered: still typing it, or backspacing
+        // inside it, stays quiet; clearing it and typing something else is met.
         const _el = document.getElementById('search-input');
         const _q = _el ? String(_el.value || '') : '';
+        const _m = runUniversalSearch._metFor;
+        if(_m && (_q.indexOf(_m) === 0 || _m.indexOf(_q) === 0)) return;
         const _sc = (typeof journalCrisisOf === 'function') ? journalCrisisOf(_q) : null;
         if(!_sc) return;
-        runUniversalSearch._met = true;
+        runUniversalSearch._metFor = _q;
         // A ROUTE BACK, and it is not optional here: `journalMeetCrisis` clears
         // `.modal-bg:not([id])`, and this sheet is built with no id, so meeting the person DELETES
         // the search they were using. And `saved:false` because a search keeps nothing.

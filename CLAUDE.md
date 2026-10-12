@@ -159,7 +159,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 3980 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 4009 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -1404,7 +1404,39 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      bucket-at-a-time with a false-positive panel per bucket. Each needs the same treatment door 52
      got: the function read in FULL (not as a hunk), the gate above every validation, a decision
      about what of their work survives, a drive, and a door in `npm run crisis` the same day.
-   - `npm run crisis` — **52 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
+   - **THE ARGUMENT-SHAPED BUCKET IS CLOSED, AND SO IS THE QUESTION "WHICH OF THE REST ARE DOORS?"
+     (12 Oct 2026). Doors 53-56.** Four more argument-shaped fields gated, each keeping whatever of
+     the person's work was a CHOICE and dropping only the sentence:
+     `_impulseSaveHold` — what they named as *"what was actually going on"* at the moment they
+     stopped themselves spending. **The hold and the amount are kept** (stopping before they spent
+     is the achievement and it is theirs) and `theRelease` is suppressed, because *"that's the whole
+     move"* landing on top of what they just said is the app talking over them.
+     `markPrayerAnswered` — *"How was it answered?"* on a prayer, printed back by `renderPrayers()`.
+     **The prayer stays marked answered**, which the surface itself makes easy: its prompt says
+     *"Optional — leave it blank to skip"*, so the answer was the choice. No "Praise God", no verse
+     toast, no celebrate haptic.
+     `_yfNote` — a note about one of the people they named as theirs to reach out to. Nothing is
+     written, because here the note IS the data and there is no choice to keep beside it.
+     `saveExerciseNote` — placeholder *"Form cue, HOW IT FELT, what to try next..."*, and it is
+     wired **`oninput`**, so it takes the DEBOUNCED treatment. Gating it the obvious way would have
+     rebuilt the `runUniversalSearch` prefix defect found four hours earlier. The persisted note is
+     undone so the sentence never travels into the finished workout `finishWorkout` hands the coach,
+     while the visible textarea is deliberately left alone — yanking text from under a cursor
+     mid-typing is its own harm.
+     **AND THE OTHER SIXTEEN ARE NOT DOORS, WHICH IS A FINDING RATHER THAN A SHORTFALL.** The
+     criterion is the one this file already uses and it is the FIELD'S OWN COPY: does it invite a
+     sentence, or name a thing? Measured, the app answers it itself with "e.g." examples —
+     `bill-name` *"e.g. Car rego, electricity, rent"*, `ev-title` *"e.g. Work shift, Lecture, Gym,
+     Mass"*, `split-edit-focus` *"e.g. Push, Pull, Legs, Rest..."* — and the rest are `cf-name`,
+     `cx-name`, `recipe-name`, `recipe-add-name` and numbers. **A label is not an invitation.**
+     The search fields make the line principled rather than arbitrary: `search-input` is
+     *"Try a word, a name, a FEELING..."* and is door 48; `pt-ex-search` is *"Search exercises..."*
+     and is a lookup; the scripture search (*"Search — a word, or John 3:16"*) was already gated.
+     **A field that names a feeling is a door; a field that names a thing to look up is not.**
+     `_promptCity` is refused on the same ground — a city for prayer times.
+     So gating all 21 would have been the blanket sweep this file fails builds over, and the right
+     output of a census is a CRITERION, not a count. If somebody re-flags these, the answer is here.
+   - `npm run crisis` — **56 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
      then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every

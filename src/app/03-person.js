@@ -1906,7 +1906,28 @@ function detectCrisis(text){
   // NOT the zero-width family U+200B–U+200D, which arrives by paste, so those are named explicitly.
   // They collapse TO A SPACE rather than being removed, because a zero-width character typed in
   // place of a space ("kill\u200bmyself") must still read as two words.
-  const _base = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  // ONE SPELLING FOR THE WHOLE FUNCTION (12 Oct 2026). Normalisation folded curly apostrophes and
+  // produced an apostrophe-STRIPPED pass, so "can't" also matched "cant" — but never the EXPANDED
+  // spelling, while every one of the ~90 patterns, bounds and innocent completions here is written
+  // contracted. Measured against the committed bundle, that cut BOTH ways:
+  //   "i cannot go on"                -> null, while "i cant go on" fires   (a SILENCED disclosure)
+  //   "i do not want to live anymore" -> null                                (the same)
+  //   "i hope i do not wake up tomorrow, that's how wrecked my legs are" -> SUICIDE, while the
+  //     contracted form is null — because the suppression that makes that DOMS joke benign is also
+  //     written contracted, so the expanded spelling escaped the guard and kept the hit.
+  // Contracting HERE rather than adding a fifth matched form is what fixes both directions at once:
+  // a pattern and its own guard then always see the same spelling. Semantically safe — "cannot" and
+  // "can't" are the same word — and it runs before `_suppress`, so every span and lookahead
+  // inherits it for free.
+  const _base = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'")
+    .replace(/\bcan ?not\b/g, "can't").replace(/\bdo not\b/g, "don't")
+    .replace(/\bdoes not\b/g, "doesn't").replace(/\bdid not\b/g, "didn't")
+    .replace(/\bwill not\b/g, "won't").replace(/\bwould not\b/g, "wouldn't")
+    .replace(/\bcould not\b/g, "couldn't").replace(/\bshould not\b/g, "shouldn't")
+    .replace(/\bis not\b/g, "isn't").replace(/\bare not\b/g, "aren't")
+    .replace(/\bwas not\b/g, "wasn't").replace(/\bwere not\b/g, "weren't")
+    .replace(/\bhave not\b/g, "haven't").replace(/\bhas not\b/g, "hasn't")
+    .replace(/\bhad not\b/g, "hadn't");
   // INNOCENT COMPLETIONS. A few phrases below are serious on their own and ordinary when finished a
   // particular way: "ending things WITH MY EX", "no reason to keep going TO THAT GYM", "can't go on
   // THIS CUT". Dropping those phrases would reopen real misses, so instead the benign span is removed
@@ -1951,7 +1972,16 @@ function detectCrisis(text){
   // So every open wildcard now refuses the opening word of a disclosure. The object slot still
   // takes any ordinary word, which is what these spans exist for.
   const _suppress = function(_x){
-  [// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
+  [
+   // A HEAD COLD IS NOT AN EMERGENCY (12 Oct 2026). `can't breathe` sits in MEDICAL_AMBIGUOUS as a
+   // bare phrase, and when it is the ONLY kind matched it becomes the primary — so
+   // "i cant breathe through my nose with this cold" rendered "I'm an app — I can't help with
+   // medical emergencies. Please call emergency services or get to a hospital immediately."
+   // SUFFIX-ONLY and deliberately narrow: it names the explicitly nasal completions and nothing
+   // else, so a bare "i can't breathe" still reaches the medical card. This repo's stance on
+   // `chest pain` — the one place where erring toward "get that checked" is the right error — is
+   // why no attempt is made to bound this generally.
+   /can'?t breathe (?:through (?:my|the) nose|out of (?:my|the) nose|with (?:this|the|my) (?:cold|flu|hay ?fever|allergies|sinuses|blocked nose|stuffy nose)|because of (?:this|the|my) (?:cold|flu|hay ?fever|allergies|sinuses))/g,// A SENTENCE START CANNOT SEE WHAT PRECEDES IT. The "everyone would be better off" entry
    // anchors on `[\n\r]\s*` as a sentence start, on purpose — somebody types a line, presses
    // Enter and says it. But four of the gate's own benign sentences are a SUBORDINATING clause,
    // an Enter, then the statement: "if i stop gambling\nmy family would be better off",
@@ -2005,7 +2035,7 @@ function detectCrisis(text){
    // SELFHARM phrase, and the dopamine-detox thesis this whole app is built on is "starve myself of
    // dopamine / of screens" — depriving yourself of the hit, not of food. Only the non-food object
    // is suppressed: "starve myself", "starve myself of food" and "of calories" all still fire.
-   /\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise)\b/g,
+   /\bstarv(?:e|ing) myself of (?:dopamine|screens?|the phone|my phone|social media|attention|stimulation|novelty|distraction|entertainment|input|validation|noise|sugar|carbs|carbohydrates|junk|junk food|fast food|takeaway|takeout|treats|snacks|sweets|chocolate|dessert|alcohol|booze|caffeine|soft drink|fizzy drinks|bread)\b/g,
    // WHEN THE SENTENCE NAMES WHAT IT IS ENDING, IT IS NOT ENDING A LIFE. Measured: "i'm on a
    // deficit and i want to end it" and "i want to end it, the vice i mean" both returned
    // suicide. The disqualifying context sits in FRONT of the match, which no suffix bound can
@@ -2021,8 +2051,8 @@ function detectCrisis(text){
    // "…end this subscription", "…end things with my ex"), and the `i am` spelling was NEW — the
    // pre-series bundle returned null for all three. This work extended a pre-existing gap to a
    // spelling that had been safe, which is rule 4 failure mode 2: the fix moved the bug.
-   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
-   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season)\b/g,
+   /\b(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season|project|call|chat|conversation|thread|meeting|shift|rotation|sprint|trial|course|semester|tenancy|argument|essay|assignment|placement|episode|chapter|draft|stream|podcast)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,34}\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b/g,
+   /\b(?:(?:want|wanna|ready|about|going|need) to|gonna|wanna) end (?:it|this|things)\b(?:(?!\b(?:kill(?:ing)? myself|want(?:s)? to die|wanna die|can'?t go on|cant go on|can'?t keep going|end my life|end it all|miss me|hurt myself|better off dead|do ?n'?t want to live|do ?n'?t want to be here|going to end it|going to end my|take my (?:own )?life|no point in going on|nothing left to live for)\b)[^.!?]){0,24}\b(?:the |my |this |that )?(?:deficit|cut|bulk|split|streak|vice|habit|fast|diet|programme|program|challenge|binge|cycle|lease|contract|subscription|block|phase|mesocycle|taper|deload|week|month|season|project|call|chat|conversation|thread|meeting|shift|rotation|sprint|trial|course|semester|tenancy|argument|essay|assignment|placement|episode|chapter|draft|stream|podcast)\b/g,
    // "end things WITH <somebody>" is a breakup or a client, never a life — the same completion the
    // `ending things with` span beside it already excludes, in the other inflection.
    // "I WANT IT TO STOP" AFTER A SLIP IS THE FIGHT'S OWN VOCABULARY. The register keeps the
@@ -2087,7 +2117,8 @@ function detectCrisis(text){
   const tc = _suppress(_base.replace(/[\s​-‍﻿]+/g, ' ').trim());
   const tNo = t.replace(/'/g, ''), tcNo = tc.replace(/'/g, '');
   const _hit = function(list){ for(const p of list){ const q = p.replace(/'/g,'');
-    if(t.includes(p) || tNo.includes(q) || tc.includes(p) || tcNo.includes(q)) return true; } return false; };
+    if(t.includes(p) || tNo.includes(q) || tc.includes(p) || tcNo.includes(q)) return true;
+    } return false; };
 
   // Direct self-harm / suicide indicators
   const SUICIDE_PHRASES = [
@@ -2275,7 +2306,7 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // lord" both returned suicide — the app teaches the surrender idiom and then reads it as a
     // disclosure, the same defect as "die to my old self". The intent forms are untouched:
     // "i want to take my life" and "i'm going to take my life" still fire.
-    /\btak(?:e|ing) my (?:own )?life\b(?!\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
+    /\btak(?:e|ing) my (?:own )?life\b(?!\s*,?\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
@@ -2466,7 +2497,8 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   ];
 
   const _hitRe = function(list){ for(const re0 of list){ const re = _wsTol(re0);
-    if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true; } return false; };
+    if(re.test(t) || re.test(tNo) || re.test(tc) || re.test(tcNo)) return true;
+    } return false; };
 
   // ONE CHAIN COULD ONLY EVER NAME ONE NEED, AND THE ONE IT DROPPED WAS THE AMBULANCE.
   // The four kinds were a precedence chain returning the FIRST hit, so a second need was invisible.

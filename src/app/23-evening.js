@@ -1392,6 +1392,15 @@ function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(
 function _yfNote(idx, val){
   const few=getYourFew(); if(!few[idx]) return;
   const v=String(val||'').trim().slice(0,90);
+  // GATED, 12 Oct 2026. Argument-shaped, so invisible to every census. This is a note about one of
+  // the people a person has named as theirs to reach out to, and `renderReachOutCard()` shows it
+  // back. Unlike the impulse hold there is no separate choice to keep here — the note IS the data —
+  // so nothing is written and they are met.
+  const _yfC = (typeof crisisInAny==='function') ? crisisInAny([v]) : null;
+  if(_yfC){
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_yfC);
+    return;
+  }
   if(few[idx].note===v) return;
   few[idx].note=v; saveYourFew(few);
   try{ renderReachOutCard(); }catch(_){}

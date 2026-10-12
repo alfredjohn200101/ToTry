@@ -3,6 +3,23 @@
 // ═══════════════════════════════════════════════════
 
 // ── IDENTITY ──────────────────────────────────────────────────
+// GATING THE WRITE DOES NOT REACH WHAT WAS ALREADY WRITTEN (12 Oct 2026). All three twins of this
+// field are gated now — onboarding's, `editIdentity`'s and `saveIdentity`'s — but `totry_identity`
+// has 25 direct `ls()` readers and not one of them asked. So a disclosure typed by any version
+// predating those gates is still in the store, and `buildCtx` appends it as `IDENTITY: …` to EVERY
+// coach message: a sentence somebody wrote once, handed to a model on every message afterwards.
+// The same shape as the stored meal prefs and the feedback outbox, fixed the same way: at the
+// reader. This is used at the PROMPT site, which is where the harm is. The display sites are
+// deliberately left alone — the person is on screen for those, and converting 25 call sites in one
+// pass is the blanket sweep this project fails builds over. If a display site ever starts feeding
+// something else, it gets this accessor then.
+function identityForPrompt(){
+  try{
+    const id = ls('totry_identity') || '';
+    if(!id || typeof crisisInAny !== 'function') return id;
+    return crisisInAny([id]) ? '' : id;
+  }catch(_){ return ''; }
+}
 function renderIdentity(){
   const id=ls('totry_identity');
   const el=document.getElementById('identity-text');
@@ -503,7 +520,8 @@ if(typeof buildCtx==='function'){
   const checkins=(ls('totry_checkins')||[]).filter(c => c && c.physical!=null);
     const recent=checkins[0];
     let extras='';
-    if(identity)extras+='\nIDENTITY: '+identity;
+    const _idp = (typeof identityForPrompt==='function') ? identityForPrompt() : identity;
+    if(_idp)extras+='\nIDENTITY: '+_idp;   // scrubbed — see identityForPrompt
     if(season&&SEASONS[season])extras+='\nSEASON: '+season+' — '+SEASONS[season].desc;
     if(recent)extras+='\nLAST CHECK-IN ('+recent.date+'): Physical '+recent.physical+'/10, Emotional '+recent.emotional+'/10, Spiritual '+recent.spiritual+'/10';
     return baseCtx+extras+'\nWhen relevant, reference their identity statement and adapt your tone to their current season. Someone in Grieving needs different words than someone in Celebrating.';

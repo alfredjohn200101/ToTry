@@ -684,6 +684,36 @@ function saveExerciseNote(ei, text){
   try{ setTimeout(function(){ try{ _saveSessionDraft(); }catch(_){ } }, 0); }catch(_){ }
   if(!currentSession[ei]) return;
   currentSession[ei].notes = text;
+  // GATED, 12 Oct 2026 — AND DEBOUNCED, WHICH IS THE WHOLE POINT. The value is argument-shaped
+  // (`oninput="saveExerciseNote(N,this.value)"`), so no census could see it, and the field's own
+  // placeholder is "Form cue, HOW IT FELT, what to try next..." — it asks.
+  // This handler fires PER KEYSTROKE. Gating it the obvious way would rebuild the defect found in
+  // `runUniversalSearch` the same afternoon: every innocent completion in this detector is a SUFFIX
+  // test, so a half-typed sentence has no suppressing suffix and 19 of 25 of the suite's own
+  // ordinary sentences raise a card mid-word. Judge the SETTLED note.
+  // The visible textarea is deliberately NOT cleared — yanking text out from under a cursor
+  // mid-typing is its own harm. What is undone is the PERSISTED note: the draft is re-saved without
+  // it, so the sentence does not travel into the finished workout (and `finishWorkout` is what puts
+  // a session where the coach and the model can read it).
+  // Latched per exercise, because a card re-rendering under a moving cursor is its own kind of
+  // not-listening.
+  try{
+    saveExerciseNote._t = saveExerciseNote._t || {};
+    saveExerciseNote._met = saveExerciseNote._met || {};
+    clearTimeout(saveExerciseNote._t[ei]);
+    saveExerciseNote._t[ei] = setTimeout(function(){
+      try{
+        if(saveExerciseNote._met[ei]) return;
+        if(typeof crisisInAny !== 'function') return;
+        const _k = crisisInAny([currentSession[ei] && currentSession[ei].notes]);
+        if(!_k) return;
+        saveExerciseNote._met[ei] = true;
+        if(currentSession[ei]) currentSession[ei].notes = '';
+        try{ _saveSessionDraft(); }catch(_){ }
+        if(typeof journalMeetCrisis==='function') journalMeetCrisis(_k);
+      }catch(_){ }
+    }, 500);
+  }catch(_){ }
   // Update the toggle label live
   const toggle = document.getElementById('ex-notes-toggle-'+ei);
   if(toggle){

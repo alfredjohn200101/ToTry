@@ -354,11 +354,24 @@ async function markPrayerAnswered(id){
   const prayers = ls('totry_prayers') || [];
   const p = prayers.find(p => p.id === id);
   if(!p) return;
+  // GATED, 12 Oct 2026. The note arrives from `askText`, as an ARGUMENT-shaped value no census
+  // could see. Its own prompt is "How was it answered?" on a PRAYER surface — the register this
+  // app's faith layer invites five ways over — and `renderPrayers()` prints it back afterwards.
+  // THE ANSWER IS KEPT AND THE NOTE IS DROPPED, which the surface itself makes easy: the prompt
+  // says "Optional — leave it blank to skip", so marking the prayer answered is the choice and the
+  // note is the sentence. And the celebration is skipped: "Praise God", a celebrate haptic and a
+  // verse toast landing on top of what they just wrote is the app talking over them.
+  const _paC = (typeof crisisInAny==='function') ? crisisInAny([note]) : null;
   p.status = 'answered';
   p.answeredAt = new Date().toISOString();
-  p.answerNote = note || '';
+  p.answerNote = _paC ? '' : (note || '');
   ls('totry_prayers', prayers);
   renderPrayers();
+  if(_paC){
+    try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_paC);
+    return;
+  }
   showToast('Praise God', 'Answered prayer logged.');
   haptic('celebrate');
   setTimeout(() => showVerseToast('prayer_answered', 'Word for an answered prayer'), 800);
