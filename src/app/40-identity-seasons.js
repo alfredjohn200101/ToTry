@@ -91,6 +91,17 @@ function saveIdentity(){
   const v=document.getElementById('settings-identity');
   if(!v)return;
   const text=v.value.trim();
+  // GATED, 12 Oct 2026 — THE THIRD TWIN OF THE SAME FIELD. The 5 Sep audit gated onboarding's
+  // identity sentence; the 30 Sep sweep found the in-app `editIdentity()` still open and gated
+  // that; and THIS one, reading the same `#settings-identity`, auto-prefixing the same
+  // "I am becoming a person who" and persisting the same store, was never found by either —
+  // because both censuses enumerated one SHAPE of door rather than asking which fields exist.
+  // Above the empty-field check, because a validation rule must never outrank a disclosure.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
   if(!text){showToast('Empty','Write what you are becoming first.');return;}
   // Auto-prefix if user did not include
   const lower=text.toLowerCase();

@@ -404,7 +404,16 @@ function renderWhyAffirmations(){
 }
 function addWhyAffirmation(){
   const inp = document.getElementById('new-affirmation'); if(!inp) return;
-  const v = inp.value.trim(); if(!v) return;
+  const v = inp.value.trim();
+  // GATED, 12 Oct 2026. An affirmation is a sentence a person writes ABOUT THEMSELVES and then
+  // reads back on the Soul tab — the same shape as the identity sentence, stored in
+  // `totry_affirmations` and rendered every time they open it.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(v) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
+  if(!v) return;
   const list = ls('totry_affirmations') || []; list.unshift(v); ls('totry_affirmations', list);
   inp.value = ''; renderWhyAffirmations(); haptic('success');
 }

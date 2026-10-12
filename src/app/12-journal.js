@@ -214,7 +214,7 @@ function journalCrisisOf(text){
 // begin" — one word apart. So the door stops being all-or-nothing instead.
 // IT DOES NOT WEAKEN THE CARD: the helpline keeps the screen and the primary position, the route
 // back is a quiet secondary below Close, and every other caller passes nothing and is unchanged.
-function journalMeetCrisis(kind, back){
+function journalMeetCrisis(kind, back, opts){
   if(!kind) return false;
   try{
     // :not([id]) is load-bearing — #journal-modal, #payday-modal and #rest-timer-overlay are STATIC
@@ -233,7 +233,15 @@ function journalMeetCrisis(kind, back){
     if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
   }catch(_){ }
   try{ if(typeof haptic === 'function') haptic('warning'); }catch(_){ }
-  try{ if(typeof showToast === 'function') showToast('Saved', 'I read what you wrote. Please look at this.'); }catch(_){ }
+  // DO NOT CLAIM A SAVE THAT DID NOT HAPPEN. Every door that reached here until now was a door
+  // that had just PERSISTED what the person wrote, so 'Saved' was true. The universal search
+  // stores nothing — it is a read — so the app was telling somebody it had kept a sentence it
+  // had not kept, on the one surface where being believed matters most. `opts.saved === false`
+  // is opt-in, so all nine existing callers keep the wording they were measured with.
+  try{ if(typeof showToast === 'function'){
+    if(opts && opts.saved === false) showToast('I read that', 'Please look at this.');
+    else showToast('Saved', 'I read what you wrote. Please look at this.');
+  } }catch(_){ }
   return true;
 }
 

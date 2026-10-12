@@ -321,7 +321,22 @@ function syncShopsRow(){
 function _fuelShopSave(andGenerate){
   const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
   const shops = Array.prototype.slice.call(document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on')).map(function(b){ return b.getAttribute('data-shop'); }).filter(Boolean);
-  if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
+  // MOVED ABOVE THE VALIDATION, 12 Oct 2026, AND THE COMMENT BELOW IS WHY THAT IS EMBARRASSING.
+  // It calls itself "the half the fuel fix missed" and then half-applied the OTHER rule in this
+  // same file: the gate sat UNDER `if(!shops.length) return`, so a disclosure typed into
+  // `#fuel-country` with no shop chip selected got a grey "Pick at least one shop so the list and
+  // prices are real." and NO helpline, while the identical sentence with a chip on got the full
+  // card. That is the Sunday check-in's out-of-band weight for the third time in this repo and the
+  // SECOND TIME IN ONE SESSION — I rebuilt it in `saveQuickLog` the same afternoon, fixed it there,
+  // and never asked what else I had just written. A validation rule must never outrank a disclosure.
+  // Reachable for exactly the worst person: `_fuelShopPicker` sets a chip `on` only from
+  // `saved.indexOf(c) >= 0`, so a FIRST-TIME user has none selected and always took the toast.
+  // `#fuel-shop-add` is read too, though it is neither persisted nor sent — somebody who types a
+  // true thing into "Add another shop (any country)..." and taps Save has it silently discarded,
+  // and the search-box door settles what that costs: the harm "is not a leak, it is that a person
+  // said the truest thing they had and the app answered with no results".
+  // And it had NO DOOR in `npm run crisis` until now, which is how a gate sits a whole day without
+  // ever running: a gate nobody drives is a gate that may not run.
   // GATED, 11 Oct 2026 — AND THIS IS THE HALF THE FUEL FIX MISSED. `_fuelElicitSave` was fixed that
   // morning to gate `#fuel-diet-free`, and its own HAPPY PATH then opens this modal, which carries
   // two MORE free-text inputs nothing was asking about: `#fuel-country`, and `#fuel-shop-add`
@@ -332,9 +347,13 @@ function _fuelShopSave(andGenerate){
   // the fix for it. Nothing is persisted on a hit: unlike the budget and the diet chips, the typed
   // text IS the data here, so there is no choice to keep separately from the sentence.
   try{
-    if(typeof detectCrisis === 'function'){
-      const _st = [country].concat(shops).filter(Boolean).join(' ').trim();
-      const _sc = _st ? detectCrisis(_st) : null;
+    // GUARD THE SYMBOL YOU CALL. This read `typeof detectCrisis` while calling crisisInAny, so in
+    // any scope holding one and not the other the gate threw into its own catch and silently did
+    // nothing — the dead-gate shape again, from the guard this time rather than the argument.
+    if(typeof crisisInAny === 'function'){
+      const _unadded = ((document.getElementById('fuel-shop-add')||{}).value || '').trim();
+      // EACH FIELD, NEVER THE JOIN — see crisisInAny. My own gate, same defect.
+      const _sc = crisisInAny([country].concat(shops).concat([_unadded]));
       if(_sc){
         const _m = document.getElementById('fuel-shop-modal'); if(_m) _m.remove();
         setTimeout(function(){
@@ -347,6 +366,7 @@ function _fuelShopSave(andGenerate){
       }
     }
   }catch(_){ }
+  if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
   saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chains:shops, chain:shops.join(', ') }));
   const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
   renderFuelPlanCard();

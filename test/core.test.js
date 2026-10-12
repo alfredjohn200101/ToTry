@@ -204,7 +204,12 @@ H.section('crisis gate — call-site coverage must never regress');
     H.ok(i > 0, fn + ' exists');
     // look only inside the first 3000 chars of the function body — the gate belongs at the top
     const body = html.slice(i, i + 3000);
-    H.ok(body.indexOf('detectCrisis') > 0, fn + ' calls detectCrisis before doing its work');
+    // THE FACT IS "IT GATES", NOT "IT NAMES detectCrisis". `logBody` now goes through
+    // `crisisInAny`, which judges each field separately because joining them destroyed the clause
+    // end every bounded pattern needs — so this assertion went red on a function whose gate had
+    // just been made STRONGER. Name every helper that is a gate.
+    H.ok(/(?:detectCrisis|crisisInAny|journalCrisisOf)\(/.test(body),
+      fn + ' calls the crisis gate before doing its work');
   });
 }
 
@@ -2036,7 +2041,7 @@ H.section('a disclosure written down must not become AI context')
     const i = code.indexOf('function ' + fn + '(');
     H.ok(i > 0, fn + ' exists');
     const body = code.slice(i, i + 5200);
-    H.ok(/detectCrisis\(/.test(body), fn + ' runs the crisis gate');
+    H.ok(/(?:detectCrisis|crisisInAny)\(/.test(body), fn + ' runs the crisis gate');
     H.ok(new RegExp('flagged:!!' + flag).test(body), fn + ' marks the entry rather than discarding it');
     H.ok(/showCrisisResponse\(/.test(body), fn + ' shows the bridge to a human');
   }
@@ -2326,7 +2331,7 @@ H.section('the weekly check-in marks what it stores')
 
   const i = code.indexOf('function logBody(');
   const lb = code.slice(i, i + 7000);
-  H.ok(/detectCrisis\(/.test(lb), 'logBody still gates');
+  H.ok(/(?:detectCrisis|crisisInAny)\(/.test(lb), 'logBody still gates');
   H.ok(/newEntry\.flagged = true/.test(lb), 'and marks the stored entry');
 
   // Declaration must precede use, or the flag silently never sets. My first attempt referenced _wkCrisis
@@ -2351,7 +2356,7 @@ H.section('the last ungated surface, the error screen, and two false delete prom
 
   // 1. completeMorning was the third free-text ritual and the only one still ungated.
   const cm = code.slice(code.indexOf('function completeMorning('), code.indexOf('function completeMorning(') + 2600);
-  H.ok(/detectCrisis\(/.test(cm), 'completeMorning gates its free text');
+  H.ok(/(?:detectCrisis|crisisInAny)\(/.test(cm), 'completeMorning gates its free text');
   H.ok(/showCrisisResponse\(/.test(cm), 'and shows the bridge');
   H.ok(cm.indexOf('detectCrisis') < cm.indexOf('return;'), 'before it completes the ritual');
 
@@ -12011,7 +12016,77 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // ── AND THE DOOR IS NO LONGER ALL-OR-NOTHING ──
   // journalMeetCrisis took only a kind, so a non-null at the Can't-start door replaced the
   // two-minute flow with the card and nothing to tap. It takes an optional route back now.
-  H.ok(/function journalMeetCrisis\(kind, back\)/.test(code), 'the crisis card can carry a route back');
+  // ASSERT THE FACT, NOT THE PHRASING. This matched the signature TEXT `(kind, back)` and so went
+  // red the moment a third parameter was added for an unrelated reason — on correct code, with the
+  // route-back feature entirely intact. The repo records this trap for the safety-note wording; it
+  // reaches a signature the same way.
+  {
+    const jmc = H.code(H.extractFn('journalMeetCrisis'));
+    H.ok(/^function journalMeetCrisis\(\s*kind\s*,\s*back\b/.test(jmc),
+      'the crisis card can carry a route back — `back` is still the second argument');
+    H.ok(jmc.indexOf('back.label') > 0 && jmc.indexOf('back.onclick') > 0,
+      'and it renders that route as a button, so the door is not all-or-nothing');
+  }
+
+  // ── THE SEARCH GATE JUDGED PREFIXES (12 Oct 2026) ──
+  // `runUniversalSearch` is wired `oninput`, so the gate landed earlier today asked the detector
+  // about every intermediate prefix of what somebody was typing. Every innocent completion in this
+  // detector is a SUFFIX test, so a suffix nobody has typed yet cannot suppress anything.
+  {
+    const us = H.code(H.extractFn('runUniversalSearch'));
+    H.ok(us.indexOf('journalCrisisOf') > 0, 'calibration: the search gate is still present');
+    // ANCHOR ON THE GATE'S OWN TIMER. A bare /setTimeout\(/ passes on four unrelated ones inside
+    // this very function (search-result onclick strings that navigate then scroll), so it would have
+    // reported a debounce with the gate's timer deleted — and its mirror image made the fault
+    // injection below fail on correct code.
+    H.ok((us.match(/setTimeout\(/g) || []).length >= 5,
+      'calibration: this function contains other setTimeouts, which is why the anchor must be exact');
+    H.ok(/clearTimeout\(runUniversalSearch\._t\)/.test(us) && /runUniversalSearch\._t = setTimeout\(/.test(us),
+      'the gate waits for the typing to STOP rather than judging each keystroke');
+    H.ok(us.indexOf('journalCrisisOf') > us.indexOf('setTimeout('),
+      'and the detector is asked INSIDE the timer, not before it — a debounce that still calls the ' +
+      'detector synchronously fixes nothing');
+    H.ok(/label:\s*'Back to search'/.test(us) && /saved:\s*false/.test(us),
+      'it offers a route back (its own sheet is what journalMeetCrisis deletes) and does not claim ' +
+      'to have saved a search');
+
+    // THE MEASUREMENT THAT FOUND IT: the gate's own cried-wolf corpus, asked about prefixes.
+    const { detectCrisis } = H.load(['detectCrisis']);
+    const PANEL = [
+      ['nothing left in the tank', 'nothing left'],
+      ['take my life and let it be', 'take my life'],
+      ['i want to die to my old self', 'i want to die'],
+      ['i took all my pills this morning', 'i took all my pills'],
+      ['better off deadlifting twice a week', 'better off dead'],
+      ['i want it to stop raining', 'i want it to stop'],
+    ];
+    const fullClean = PANEL.filter(([full]) => !detectCrisis(full)).length;
+    H.eq(fullClean, PANEL.length,
+      'calibration: all ' + PANEL.length + ' of these ordinary sentences are clean IN FULL');
+    const prefixFires = PANEL.filter(([, pre]) => !!detectCrisis(pre)).length;
+    H.eq(prefixFires, PANEL.length,
+      'and every one of them DOES fire on its own prefix — which is why this gate must never be ' +
+      'asked mid-word, and why no bound can repair it: the suppressing suffix does not exist yet');
+
+    // A NAMED RESIDUAL, DRIVEN AND KEPT ON PURPOSE. Typed character by character at 120ms/key in a
+    // real browser, the hymn now stays silent throughout AND settled; a real disclosure is still met
+    // with a route back. But "not worth living" typed as a COMPLETE query still raises the card —
+    // and that is the string `_EXAMEN_CLOSE.secular.q` prints every night, on a box that searches
+    // examens. It is left firing deliberately: the prefix harm is gone, and as a settled query the
+    // detector genuinely cannot tell a lookup from a disclosure, while this surface is now ADDITIVE
+    // (nothing stored, nothing sent, the sheet recoverable in one tap). The same call this repo made
+    // for "chest pain after that curry" — the error worth making, named rather than discovered.
+    H.ok(!!detectCrisis('not worth living'),
+      'residual ON THE RECORD: the secular examen\'s own printed quote still fires as a settled ' +
+      'search query — additive now, and a decision rather than an oversight');
+
+    // FAULT INJECTION: restore the synchronous gate and the prefix reaches the detector again.
+    const sync = us.replace(/setTimeout\(function\(\)\{/, '(function(){').replace(/\},\s*500\);/, '})();');
+    H.ok(sync !== us, 'calibration: the synchronous shape was really restored');
+    H.ok(!/runUniversalSearch\._t = setTimeout\(/.test(sync),
+      'fault-injected: with the gate\'s own timer gone the detector is asked on every keystroke ' +
+      'again, which is the shape that put a card on 19 of 25 of the suite\'s own ordinary sentences');
+  }
   H.ok(/Still help me start this/.test(code), "and the Can't-start door passes one");
   // _jsAttr, NOT _escFew: the thing they typed goes into a JS string inside an attribute, and an
   // HTML escape does not close that — the parser decodes it before the JS compiles. Driven: with
@@ -13886,12 +13961,16 @@ H.section('a legacy disclosure in stored meal prefs never reaches a prompt');
 H.section('the shop picker gates its two free-text fields too');
 {
   const SRC = H.extractFn('_fuelShopSave');
-  const { detectCrisis } = H.load(['detectCrisis']);
-  const run = (country, shops) => {
+  const { detectCrisis, crisisInAny } = H.load(['detectCrisis', 'crisisInAny']);
+  const run = (country, shops, typed, src) => {
     let saved = null, met = false, generated = false;
     const chips = shops.map(s => ({ getAttribute: () => s }));
-    const sb = { detectCrisis,
-      document: { getElementById: id => (id === 'fuel-country' ? { value: country } : { remove(){} }),
+    // crisisInAny IS THE GATE NOW, so the sandbox must hold it; without it the real function
+    // throws into its own catch and the door reports 'no card' against working code.
+    const sb = { detectCrisis, crisisInAny,
+      document: { getElementById: id => (id === 'fuel-country' ? { value: country }
+                                       : id === 'fuel-shop-add' ? { value: (typed || '') }
+                                       : { remove(){} }),
                   querySelectorAll: () => chips, querySelector: () => null },
       Array, String, RegExp, Object,
       saveMealPrefs: p => { saved = p; }, getMealPrefs: () => ({}),
@@ -13900,7 +13979,7 @@ H.section('the shop picker gates its two free-text fields too');
       renderFuelPlanCard: () => {}, syncShopsRow: () => {}, _fuelGenerate: () => { generated = true; },
       showToast: () => {} };
     const k = Object.keys(sb), v = k.map(x => sb[x]);
-    new Function(...k, SRC + '\n_fuelShopSave(true);')(...v);
+    new Function(...k, (src || SRC) + '\n_fuelShopSave(true);')(...v);
     return { saved, met, generated };
   };
 
@@ -13917,14 +13996,61 @@ H.section('the shop picker gates its two free-text fields too');
   H.ok(!ok.met, 'while an ordinary country and shop list does not cry wolf');
   H.ok(!!ok.saved && ok.generated, 'and goes on to save and generate');
 
-  // FAULT INJECTION: neuter the gate's input, exactly as the dead gate next door did.
-  H.ok(SRC.indexOf('[country].concat(shops)') > 0,
-    'calibration: the gate reads the country AND the shop names (else THE MEASUREMENT IS WRONG)');
-  const blind = SRC.split('[country].concat(shops).filter(Boolean).join(\' \').trim()').join("''");
+  // ===== THE NO-CHIP STATE, 12 Oct 2026. Every case above passes a non-empty chip list, which is
+  // why 3888 assertions were green over the defect: the gate sat BELOW
+  // `if(!shops.length) return`, so a disclosure typed as the country with nothing selected got a
+  // grey "Pick at least one shop" and no helpline. `_fuelShopPicker` turns a chip on only from
+  // `saved.indexOf(c) >= 0`, so that is a FIRST-TIME person's state, not an edge case.
+  const nochip = run('i want to kill myself', []);
+  H.ok(nochip.met, 'a disclosure typed as the COUNTRY reaches real help with NO shop chip selected too');
+  H.ok(!nochip.saved, 'and is still not persisted');
+
+  // And the field a person types into without tapping Add. It is neither stored nor sent, so the
+  // harm is the search box's: they said the truest thing they had and the app said "pick a shop".
+  const unadded = run('Australia', [], 'i want to kill myself');
+  H.ok(unadded.met, 'a disclosure typed into "Add another shop" and never added is heard');
+
+  const okNoChip = run('Australia', [], 'Woolworths');
+  H.ok(!okNoChip.met, 'while an ordinary unadded shop name does not cry wolf');
+
+  // FAULT INJECTION 1: put the validation back ABOVE the gate — the defect exactly as it shipped.
+  // Not a deletion: the line is MOVED, because the bug was never a missing gate, it was an order.
+  {
+    const L = SRC.split('\n');
+    const vi = L.findIndex(l => l.indexOf('shops.length){ if(typeof showToast') >= 0);
+    // LOCATE THE GATE BY WHAT IT IS, not by one helper's name — this was pinned to
+    // `typeof detectCrisis` and went red the moment the gate moved to crisisInAny, on correct code.
+    const gi = L.findIndex(l => /typeof (?:detectCrisis|crisisInAny) === 'function'/.test(l));
+    H.ok(vi > 0 && gi > 0, 'calibration: both the validation and the gate were located in the source');
+    H.ok(gi < vi, 'the gate really does precede the validation in the shipped source');
+    const moved = L.slice();
+    const val = moved.splice(vi, 1)[0];
+    moved.splice(gi - 1, 0, val);            // immediately above the gate's own `try{`
+    const reordered = moved.join('\n');
+    H.ok(reordered !== SRC, 'calibration: the validation was really moved back above the gate');
+    const back = run('i want to kill myself', [], '', reordered);
+    H.ok(!back.met,
+      'fault-injected: with the validation back above it, the no-chip disclosure goes SILENT — ' +
+      'a grey "Pick at least one shop" instead of a helpline, which is what shipped for a day');
+  }
+
+  // FAULT INJECTION 2: neuter the gate's input, exactly as the dead gate next door did.
+  H.ok(/crisisInAny\(\[country\]\.concat\(shops\)/.test(SRC) && SRC.indexOf('fuel-shop-add') > 0,
+    'calibration: the gate reads the country, the shop names AND the unadded field, each SEPARATELY ' +
+    '(else THE MEASUREMENT IS WRONG)');
+  // NEUTER THE WHOLE LINE, NOT A PAREN-BOUNDED SLICE. `[^)]*` cannot span nested parentheses: it
+  // stopped at the `)` inside `.concat(shops)` and left `.concat([_unadded]))` dangling, which made
+  // `blind` a SyntaxError and crashed the suite instead of failing it. The bracket-matching rule
+  // this file already carries, arriving in a fault injection.
+  const blind = SRC.split('\n').map(l => /const _sc = crisisInAny\(/.test(l)
+    ? l.replace(/crisisInAny\([\s\S]*$/, 'crisisInAny([]);') : l).join('\n');
+  H.ok(blind !== SRC,
+    'calibration: the gate\'s input was really neutered — an injection that matched nothing would ' +
+    'otherwise report a clean pass over working code, which is how this very block went red');
   let metB = false, savedB = null;
   {
     const chips = [{ getAttribute: () => 'Coles' }];
-    const sb = { detectCrisis,
+    const sb = { detectCrisis, crisisInAny,
       document: { getElementById: id => (id === 'fuel-country' ? { value: 'i want to kill myself' } : { remove(){} }),
                   querySelectorAll: () => chips, querySelector: () => null },
       Array, String, RegExp, Object,
@@ -14018,6 +14144,285 @@ H.section('every element id a crisis gate reads actually exists');
 // surface with six callers, and it is noted in the handoff instead. It requires only that every
 // number it dials is one the app has verified somewhere else, so a correction to CRISIS_LINES that
 // leaves this behind fails the build rather than shipping two different answers.
+// ─────────────────────────────────────────────────
+// THE BRIDGE SHOWED THREE OF SEVEN ROUTES (12 Oct 2026)
+// The guard below asks whether every number the bundle DIALS is verified somewhere. Nothing asked
+// the OTHER direction, and measured, `bridgeToRealHelp` rendered 3 of the 7 rows in CRISIS_LINES —
+// dropping Beyond Blue, the Suicide Call Back Service and 13YARN, the Aboriginal & Torres Strait
+// Islander line, from the bridge-to-real-help of an AUSTRALIAN app. Seven callers show that surface.
+// A list that cannot drift in its NUMBERS can still drift in its LENGTH.
+H.section('the bridge shows every route the app has verified');
+{
+  const code = H.code();
+  const i = code.indexOf('const CRISIS_LINES');
+  H.ok(i > 0, 'calibration: CRISIS_LINES was located');
+  const arr = (() => {                         // bracket-match; never slice a fixed window
+    const open = code.indexOf('[', i); let depth = 0;
+    for(let k = open; k < code.length; k++){
+      if(code[k] === '[') depth++;
+      else if(code[k] === ']'){ depth--; if(!depth) return code.slice(open, k + 1); }
+    }
+    return null;
+  })();
+  H.ok(!!arr, 'calibration: the array literal was bracket-matched');
+  // eslint-disable-next-line no-eval
+  const LINES = eval(arr);
+  H.ok(LINES.length >= 7, 'calibration: CRISIS_LINES carries ' + LINES.length + ' routes (>=7)');
+
+  // NAME THE GLOBAL SOMETHING ELSE. A top-level `const CRISIS_LINES` in a Node SCRIPT creates a
+  // binding in the GLOBAL LEXICAL environment — absent from `global.CRISIS_LINES`, yet visible
+  // inside every `new Function` H.load builds. My own probe for the fallback branch was
+  // contaminated by its own variable NAME and reported all six numbers where it should have shown
+  // one. The collision guard further down exists because of this.
+  const { _bridgeLines } = H.load(['_bridgeLines', '_esc'], { CRISIS_LINES: LINES });
+  const html = _bridgeLines();
+  const { _esc } = H.load(['_esc'], {});
+
+  const dialled = new Set((html.match(/tel:[0-9]+/g) || []).map(s => s.slice(4)));
+  const phones  = LINES.filter(r => /^[0-9 ]+$/.test(String(r.contact)));
+  H.ok(phones.length >= 5, 'calibration: ' + phones.length + ' of the routes are phone numbers');
+  const unshown = phones.filter(r => !dialled.has(String(r.contact).replace(/ /g, '')));
+  H.eq(unshown.map(r => r.name), [],
+    'every phone route in CRISIS_LINES is dialable from the bridge — 13YARN, Beyond Blue and the ' +
+    'Suicide Call Back Service were all missing before this');
+
+  // COMPARE ESCAPED. '988 Suicide & Crisis Lifeline' renders as '&amp;', so a raw comparison
+  // reports a missing name on correct code — which is what my first measurement did.
+  const unnamed = LINES.filter(r => html.indexOf(_esc(r.name)) < 0);
+  H.eq(unnamed.map(r => r.name), [], 'and every route is named, compared ESCAPED not raw');
+
+  // STRIP COMMENTS FIRST, AND THAT IS NOT HOUSEKEEPING. The aria-label string appears TWICE in
+  // `bridgeToRealHelp` — once in the markup and once in the comment explaining why it is there — so
+  // the absence half of the fault injection below found it in the COMMENT and failed on correct
+  // code, and the presence half would have been satisfied by that comment even if the markup had
+  // lost the label entirely. The recorded trap, landing inside the test written to guard the thing.
+  // `(?<!:)` so the strip does not eat `https://` out of the row it builds.
+  const bridge = H.extractFn('bridgeToRealHelp').replace(/(?<!:)\/\/.*$/gm, '');
+  H.ok(bridge.indexOf('//') < 0 || !/^\s*\/\//m.test(bridge),
+    'calibration: comments really were stripped from the extract');
+  H.ok(bridge.indexOf('_bridgeLines()') > 0,
+    'the bridge renders from the one list rather than its own copy of the numbers');
+  H.ok(bridge.indexOf('aria-label="Urgent: real people you can contact right now"') > 0,
+    'and it is ANNOUNCED with the label `npm run crisis` selects on, so the visible-and-tappable ' +
+    'guarantee reaches a surface seven callers show and no door had ever hit-tested');
+  H.ok(!/tel:131114|tel:988|tel:116123/.test(bridge.replace(/_bridgeLines\(\)/g, '')),
+    'and the three hardcoded numbers are gone from its markup');
+
+  // THE FALLBACK IS A REAL HELPLINE, AND IT IS DRIVEN, NOT ASSUMED. `return ''` there would make a
+  // crisis surface render no number at all — worse than the hardcoding this replaced. An
+  // unreachable default is an unasserted default.
+  const bare = H.load(['_bridgeLines', '_esc'], {})._bridgeLines();
+  H.ok(/tel:[0-9]{6,}/.test(bare),
+    'with CRISIS_LINES absent the bridge still dials a real helpline rather than rendering empty');
+  H.eq((bare.match(/tel:[0-9]+/g) || []).length, 1,
+    'calibration: that really was the fallback branch and not the full list leaking in');
+
+  // FAULT INJECTION 1: drop a route from the data and the coverage assertion must fail.
+  const short = LINES.slice(0, 2);
+  const h2 = H.load(['_bridgeLines', '_esc'], { CRISIS_LINES: short })._bridgeLines();
+  H.ok((h2.match(/tel:/g) || []).length < phones.length,
+    'fault-injected: the check reads the DATA, so a shortened list renders fewer routes');
+
+  // FAULT INJECTION 2: the pre-fix markup, restored. Three literals, no helper, no label.
+  const old = bridge
+    .replace(/_bridgeLines\(\)/g, "'<a href=\"tel:131114\">13 11 14</a>'")
+    .replace(/ aria-label="Urgent: real people you can contact right now"/g, '');
+  H.ok(old !== bridge, 'calibration: the pre-fix markup was really restored');
+  H.ok(old.indexOf('aria-label="Urgent: real people you can contact right now"') < 0 &&
+       /tel:131114/.test(old) && old.indexOf('_bridgeLines()') < 0,
+    'fault-injected: the old shape has no label, no helper and a hardcoded number — all three ' +
+    'assertions above would fail on it');
+}
+
+// ─────────────────────────────────────────────────
+// A TOP-LEVEL `const` IN THIS FILE IS VISIBLE INSIDE EVERY EXTRACT (12 Oct 2026)
+// Found the hard way, measuring the bridge's fallback. `node test/core.test.js` runs as a SCRIPT,
+// not a module, so a top-level `const`/`let` here lands in the GLOBAL LEXICAL environment: it does
+// NOT appear on `global.X`, so a check for leakage reports none — and it IS in scope inside every
+// `new Function` H.load builds. A declaration here named like a bundle global therefore feeds a
+// value into every extracted function silently, and a section asserting a fallback for a MISSING
+// global would measure the present one instead. That is a harness lying in the "already fine"
+// direction. 1793 top-level names in the bundle are available to collide with.
+H.section('no declaration in this suite shadows a bundle global');
+{
+  const self = require('fs').readFileSync(__filename, 'utf8').split('\n');
+  const decls = new Set();
+  self.forEach(l => { const m = /^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/.exec(l); if(m) decls.add(m[1]); });
+  H.ok(decls.size >= 1, 'calibration: ' + decls.size + ' top-level declaration(s) found in this file');
+  const bundle = new Set();
+  H.html.replace(/^(?:const|let|var|function)\s+([A-Za-z_$][\w$]*)/gm, (_, n) => { bundle.add(n); return _; });
+  H.ok(bundle.size > 500, 'calibration: ' + bundle.size + ' top-level bundle names to collide with');
+  const clash = [...decls].filter(n => bundle.has(n));
+  H.eq(clash, [], 'no top-level declaration here shares a name with a bundle global');
+  // FAULT INJECTION: a planted collision must be caught, or this check is decorative.
+  const planted = [...bundle][0];
+  H.ok([...new Set([...decls, planted])].filter(n => bundle.has(n)).length === 1,
+    'fault-injected: a declaration named `' + planted + '` would be caught');
+}
+
+// ─────────────────────────────────────────────────
+// FIVE GATES JUDGED THE JOIN, NOT THE FIELDS (12 Oct 2026)
+// Every clause-bounded pattern in detectCrisis needs a clause end or `$` — the bound measured at 2
+// false positives rather than 42 — and joining a second field onto the first DESTROYS that `$`. So
+// a disclosure typed in one box was silenced by whatever ordinary thing sat in the next. Three of
+// the five sites were pre-existing, and two of those are the Sunday check-in and the evening
+// ritual. The exact mirror of the recorded net lesson (joining MANUFACTURES false positives); both
+// say judge the FIELDS. A false negative is the worse direction: nothing on screen shows it.
+// ─────────────────────────────────────────────────
+// THE QUICK LOG KEPT THE SENTENCE OR LOST THE SLIP (12 Oct 2026)
+// The gate landed this morning bare-`return`ed above `loadV()` and every counter, so somebody who
+// had already tapped win-or-lose and THEN typed something true lost the slip itself — the total,
+// the win/loss, the savings and the clean-day reset — and the next screen showed them a streak they
+// knew was false. `completeMorning`'s contract already said it: their words are always kept, the
+// app simply stops and meets them instead of carrying on. Two risks pull opposite ways on one
+// object, which is why both directions are asserted here.
+H.section('the quick log keeps the slip and drops the sentence');
+{
+  // PREPEND THE REAL DAY PRIMITIVES, never a stub. `saveQuickLog` stamps its entry with
+  // `dayKeyOf()`, and H.load REFUSES a stub for it — a stubbed day primitive is silently shadowed
+  // by the prepended declaration, which is how this gate went green all of 30 Sep and red at
+  // midnight on code nobody had touched. A hand-built sandbox has to do what H.load does.
+  const SRC = ['dayKeyNorm', 'dayKeyOf', '_dayKeyEnginePads'].map(H.extractFn).join('\n\n') +
+    '\n\n' + H.extractFn('saveQuickLog');
+  const { detectCrisis, crisisInAny } = H.load(['detectCrisis', 'crisisInAny']);
+  const drive = (fields, outcome) => {
+    let met = false, saved = null, log = null, toasted = null, grace = false;
+    const store = {};
+    const sb = {
+      detectCrisis, crisisInAny,
+      document: { getElementById: id => (id in fields ? { value: fields[id] } : null),
+                  querySelector: () => ({ remove(){} }),
+                  querySelectorAll: () => ({ forEach: () => {} }) },
+      _qlOutcome: outcome,
+      loadV: () => {}, saveV: () => { saved = true; },
+      vices: [{ n: 'porn', total: 2, w: 1 }], curVice: 0,
+      ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; log = k === 'totry_fight_log' ? v : log; },
+      journalMeetCrisis: () => { met = true; return true; },
+      showToast: (a, b) => { toasted = a + '|' + b; },
+      _graceAfterRelapse: () => { grace = true; },
+      haptic: () => {}, renderVices: () => {}, renderScoreboard: () => {}, renderDayCounter: () => {},
+      // ENUMERATED, NOT GUESSED: every call in the extract minus what is already provided. A
+      // missing global throws into nothing and the calibration reports the instrument, which is
+      // how `viceCleanDays` was found rather than mistaken for a defect.
+      renderWinsLog: () => {}, _celebrateFirstWin: () => {}, viceCleanDays: () => 5,
+      setTimeout: fn => { try{ fn(); }catch(_){ } },
+      window: {}, parseInt, Date, JSON, Array, Object, String,
+    };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    try{ new Function(...k, SRC + '\nsaveQuickLog();')(...v); }catch(e){ return { threw: String(e.message).slice(0,70) }; }
+    return { met, saved, log, toasted, grace, vice: sb.vices[0] };
+  };
+
+  const D = 'i want to kill myself';
+  H.ok(!!detectCrisis(D), 'calibration: the phrase is a disclosure');
+
+  // 1. ORDINARY: the slip is recorded and the text is kept.
+  const ok = drive({ 'ql-trigger': 'late night', 'ql-note': 'tired', 'ql-intensity': '7' }, false);
+  H.ok(!ok.threw, 'calibration: an ordinary quick log runs clean' + (ok.threw ? ' — ' + ok.threw : ''));
+  H.ok(!!ok.log && ok.log.length === 1, 'calibration: it writes one fight-log entry');
+  H.eq(ok.log && ok.log[0].trigger, 'late night', 'calibration: and keeps the trigger it was given');
+  H.ok(!ok.met, 'and does not raise a card');
+
+  // 2. A DISCLOSURE WITH AN OUTCOME ALREADY CHOSEN: keep the slip, drop the sentence, show the card.
+  const hit = drive({ 'ql-trigger': D, 'ql-note': 'after work', 'ql-intensity': '7' }, false);
+  H.ok(!hit.threw, 'a disclosure with the outcome chosen still runs' + (hit.threw ? ' — ' + hit.threw : ''));
+  H.ok(hit.met, 'and reaches real help');
+  H.ok(!!hit.log && hit.log.length === 1,
+    'AND THE SLIP IS STILL RECORDED — losing it would show them a clean streak they know is false');
+  H.eq(hit.log && hit.log[0].won, false, 'with the outcome they actually tapped');
+  H.eq(hit.log && hit.log[0].trigger, '', 'and the typed trigger BLANK, because that is the disclosure');
+  H.eq(hit.log && hit.log[0].note, '', 'and the note blank with it');
+  H.ok(JSON.stringify(hit.log || null).toLowerCase().indexOf('kill myself') < 0,
+    'so the disclosure is nowhere in the stored entry — `trigger` is replayed to the model as ' +
+    '"Most common trigger: …"');
+  H.ok(!hit.grace && !/Logged/.test(hit.toasted || ''),
+    'and the card REPLACES the celebration and the grace sheet rather than arriving beside them');
+
+  // 3. A DISCLOSURE WITH NO OUTCOME YET: nothing to keep, so just meet them — and the validation
+  //    must not outrank it, which is the defect this door was added for.
+  const noChoice = drive({ 'ql-trigger': D, 'ql-note': '', 'ql-intensity': '5' }, null);
+  H.ok(noChoice.met, 'with no outcome chosen the disclosure still reaches help, not "Pick one"');
+  H.ok(!/Pick one/.test(noChoice.toasted || ''), 'and the validation toast never appears instead');
+
+  // FAULT INJECTION: the pre-fix bare return, restored.
+  const old = SRC.replace(/if\(_qlC && _qlOutcome === null\)\{/, 'if(_qlC){');
+  H.ok(old !== SRC, 'calibration: the pre-fix early return was really restored');
+  const back = (() => {
+    const s = old;
+    let met = false, log = null; const store = {};
+    const sb = { detectCrisis, crisisInAny,
+      document: { getElementById: id => ({ 'ql-trigger': { value: D }, 'ql-note': { value: 'after work' },
+                                           'ql-intensity': { value: '7' } })[id] || null,
+                  querySelector: () => ({ remove(){} }), querySelectorAll: () => ({ forEach: () => {} }) },
+      _qlOutcome: false, loadV: () => {}, saveV: () => {}, vices: [{ n: 'porn' }], curVice: 0,
+      ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; if(k === 'totry_fight_log') log = v; },
+      journalMeetCrisis: () => { met = true; return true; }, showToast: () => {},
+      _graceAfterRelapse: () => {}, haptic: () => {}, renderVices: () => {}, renderScoreboard: () => {},
+      renderDayCounter: () => {}, renderWinsLog: () => {}, _celebrateFirstWin: () => {},
+      viceCleanDays: () => 5, setTimeout: fn => { try{ fn(); }catch(_){ } },
+      window: {}, parseInt, Date, JSON, Array, Object, String };
+    const k = Object.keys(sb), v = k.map(x => sb[x]);
+    try{ new Function(...k, s + '\nsaveQuickLog();')(...v); }catch(e){ return { threw: String(e.message).slice(0,60) }; }
+    return { met, log };
+  })();
+  H.ok(!back.threw, 'calibration: the injected version still runs' + (back.threw ? ' — ' + back.threw : ''));
+  H.ok(back.met && !back.log,
+    'fault-injected: the old bare return still met the person but recorded NOTHING — the slip, the ' +
+    'win/loss and the clean-day reset all lost, which is what shipped this morning');
+}
+
+H.section('a gate judges each field, never the concatenation');
+{
+  const { crisisInAny, detectCrisis } = H.load(['crisisInAny', 'detectCrisis']);
+  const TRIG = ['i cant go on', 'nothing left', 'i want it to stop', 'i cant keep going',
+                'i am a burden to my kids', 'nobody would miss me', 'i want to die',
+                'i cant do this anymore', 'better off without me', 'i dont want to wake up'];
+  const NOTE = ['walked the dog', 'late night', 'after work', 'tired', 'at my desk', 'home alone'];
+  H.eq(TRIG.filter(t => !!detectCrisis(t)).length, TRIG.length,
+    'calibration: all ' + TRIG.length + ' of these fire on their own');
+
+  let joined = 0, separate = 0;
+  for(const t of TRIG) for(const n of NOTE){
+    if(detectCrisis([t, n].filter(Boolean).join(' '))) joined++;
+    if(crisisInAny([t, n])) separate++;
+  }
+  H.eq(separate, TRIG.length * NOTE.length,
+    'every disclosure survives an ordinary note in the next box (' + separate + ' of ' +
+    TRIG.length * NOTE.length + ')');
+  H.ok(joined < separate,
+    'calibration: the OLD joined form really did silence them (' + joined + ' of ' +
+    TRIG.length * NOTE.length + ') — if these ever match, this check has stopped measuring anything');
+
+  H.ok(!crisisInAny(['walked the dog', 'late night', 'at my desk']), 'and ordinary fields stay clean');
+  H.eq(crisisInAny([]), null, 'and an empty set is null, not a throw');
+  H.eq(crisisInAny(null), null, 'and so is nothing at all');
+  H.ok(!!crisisInAny(['', 'i want to kill myself']),
+    'and an empty FIRST field does not stop it reading the second');
+
+  // EVERY SITE, BY NAME. A count cannot say which surface went back to joining, and this defect
+  // was three pre-existing sites plus two of my own — exactly the half-applied shape.
+  const code = H.code();
+  [['saveQuickLog', '04-fight'], ['saveWeeklyReview', '13-body'], ['saveEvening', '23-evening'],
+   ['_fuelShopSave', '17-fuelplan']].forEach(([fn]) => {
+    let src = null;
+    try{ src = H.code(H.extractFn(fn)); }catch(_){ }
+    if(!src) return;                       // a renamed function is not this check's business
+    if(src.indexOf('crisisInAny') < 0 && src.indexOf('detectCrisis') < 0 &&
+       src.indexOf('journalCrisisOf') < 0) return;   // no gate here at all
+    H.ok(!/(?:detectCrisis|journalCrisisOf)\(\s*\[[^\]]*\][^)]*join\(/.test(src),
+      fn + ' does not hand a joined string to the detector');
+  });
+  H.ok(!/(?:detectCrisis|journalCrisisOf)\(\s*\[[^\]]*\]\s*\.filter\(Boolean\)\s*\.join\(/.test(code),
+    'and no surface anywhere in the bundle does — the shape is gone, not just moved');
+
+  // FAULT INJECTION: the pre-fix call, restored.
+  const back = (t, n) => detectCrisis([t, n].filter(Boolean).join(' '));
+  H.ok(!back('i cant go on', 'walked the dog'),
+    'fault-injected: the joined form returns NULL for "i cant go on" + "walked the dog", which is ' +
+    'what shipped — and crisisInAny returns a kind for the same pair');
+  H.ok(!!crisisInAny(['i cant go on', 'walked the dog']), 'and the fixed form does not');
+}
+
 H.section('no surface dials a number the app has not verified');
 {
   const code = H.code();

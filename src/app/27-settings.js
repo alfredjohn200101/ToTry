@@ -950,7 +950,14 @@ function showTermsOfUse(){
 
 function changeName(){openFormModal('Your name','What should the app call you?',[{id:'name',label:'First name',type:'text',placeholder:'Your first name',value: (typeof userName!=='undefined'?userName:'')}],'Save',(vals)=>{if(!vals.name||!vals.name.trim())return 'Enter a name.';userName=vals.name.trim();ls('totry_name',userName);initSettingsTab();showToast('Name updated','Hey '+userName+'.');return true;});}
 function logQuickWin(){
-  const input=document.getElementById('quick-win-input');const text=input?.value.trim();if(!text)return;
+  const input=document.getElementById('quick-win-input');const text=input?.value.trim();
+  // GATED, 12 Oct 2026. Persisted to `totry_wins` and replayed in the wins log afterwards.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
+  if(!text)return;
   const wins=ls('totry_wins')||[];
   wins.unshift({id:Date.now(),text,date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),ts:new Date().toISOString(),day:getDayCount()});
   ls('totry_wins',wins.slice(0,500));input.value='';renderWinsLog();showToast('Win logged',text.slice(0,50));
@@ -974,6 +981,7 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
+  try{ runUniversalSearch._met = false; }catch(_){ }   // a new sheet is a new conversation
   // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
   // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
@@ -999,7 +1007,38 @@ function openUniversalSearch(){
 function runUniversalSearch(query){
   const box = document.getElementById('search-results');
   if(!box) return;
-  
+  // JUDGE A SETTLED QUERY, NOT A PREFIX (12 Oct 2026). The first version of this gate sat at the top
+  // of a handler wired `oninput="runUniversalSearch(this.value)"`, so it asked the detector about
+  // every intermediate PREFIX of what somebody was typing. Every innocent completion in this
+  // detector is a SUFFIX test — the hymn, the devotional idiom, the pill organiser, the fast, the
+  // surrender idiom — and a suffix nobody has typed yet cannot suppress anything.
+  // Measured against `npm run crisis`'s OWN cried-wolf panel: 19 of its 25 ordinary sentences raised
+  // a card here while the full sentence returns null. "take my life" fires before "and let it be";
+  // "better off dead" before "deadlifting"; "i took all my pills" returns MEDICAL, an ambulance card,
+  // before "this morning". Worst of them: "not worth living" IS the string the secular examen prints
+  // every night (`_EXAMEN_CLOSE.secular.q`), and examens are one of the things this box searches —
+  // so looking up the app's own words raised six helplines and deleted the search.
+  // THE SUITE COULD NOT SEE IT: every door's `fire` passes the whole string in one call, and this is
+  // the only door whose live handler runs per keystroke. Widening a bound would be the wrong repair.
+  try{
+    clearTimeout(runUniversalSearch._t);
+    runUniversalSearch._t = setTimeout(function(){
+      try{
+        if(runUniversalSearch._met) return;
+        const _el = document.getElementById('search-input');
+        const _q = _el ? String(_el.value || '') : '';
+        const _sc = (typeof journalCrisisOf === 'function') ? journalCrisisOf(_q) : null;
+        if(!_sc) return;
+        runUniversalSearch._met = true;
+        // A ROUTE BACK, and it is not optional here: `journalMeetCrisis` clears
+        // `.modal-bg:not([id])`, and this sheet is built with no id, so meeting the person DELETES
+        // the search they were using. And `saved:false` because a search keeps nothing.
+        if(typeof journalMeetCrisis === 'function')
+          journalMeetCrisis(_sc, { label: 'Back to search', onclick: 'openUniversalSearch()' }, { saved: false });
+      }catch(_){ }
+    }, 500);
+  }catch(_){ }
+
   const q = (query || '').trim().toLowerCase();
   if(q.length < 2){
     // An empty state, so centred — but upright, in the secondary grey. It was italic in the third grey.

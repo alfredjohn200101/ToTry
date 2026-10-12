@@ -963,7 +963,8 @@ function completeEvening(){
   // heaviest question the app asks, and it was ungated — the answer went straight into the coach's
   // context (see honestCtx in buildCtx) and was narrated back to a model afterwards.
   let _evCrisis = null;
-  try{ if(typeof detectCrisis === 'function') _evCrisis = detectCrisis([win, release, see].filter(Boolean).join(' ')); }catch(_){ }
+  // EACH FIELD, NEVER THE JOIN — see crisisInAny. The evening ritual's three boxes, same shape.
+  try{ if(typeof crisisInAny === 'function') _evCrisis = crisisInAny([win, release, see]); }catch(_){ }
   const t1=document.getElementById('eve-task1')?.value.trim()||'';
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';

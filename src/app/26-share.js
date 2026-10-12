@@ -605,6 +605,19 @@ async function flushFeedbackOutbox(){
 async function submitFeedback(){
   const text = (document.getElementById('fb-text')?.value || '').trim();
   if(!text){ showToast('Empty', 'Write something first.'); return; }
+  // GATED, 12 Oct 2026. Found by censusing every free-text field in the app rather than every
+  // field of one SHAPE — the mistake both earlier censuses made. This box's own copy is
+  // "Tell me what's improving and what's missing — I READ EVERY NOTE", which is an invitation to
+  // say something true, and the text is INSERTED INTO A SUPABASE TABLE. So a disclosure here was
+  // stored on a server and answered by nothing, reaching a person only whenever a developer next
+  // reads a queue — the sealed-letter shape this repo already fixed once, where the harm is that
+  // nobody is on screen. Meet them now instead; the message is not sent, exactly as every other
+  // door declines to persist what it just gated.
+  const _fbC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_fbC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_fbC); }catch(_){ } }, 250);
+    return;
+  }
   const includeState = document.getElementById('fb-include-state')?.checked;
   
   // Basic, non-sensitive app info to help debugging (only if user opted in)

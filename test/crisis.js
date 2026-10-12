@@ -41,6 +41,91 @@ const DOORS = [
   // person is becoming, why it matters to them, and a vice on their card with a clean-day counter
   // attached. detectCrisis() already answered "suicide" for the sentence in that same page. The
   // doors simply never asked, and none of them were in this list.
+  // DOORS 40-44 — FOUND BY CENSUSING EVERY FREE-TEXT FIELD IN THE APP (12 Oct 2026), rather than
+  // every field of one SHAPE. Both earlier censuses did the latter: one walked openFormModal, the
+  // other grepped for a textarea tag. This one enumerated every textarea and every text-accepting
+  // input in src/ -- 102 ids -- then asked which are persisted or reach a model and are read by no
+  // function that gates. Five survived, and every one was DRIVEN in a browser, with the journal as
+  // a control proving the probe can see a card, before any of them was believed.
+  // The universal search's placeholder asks for "a word, a name, a FEELING", and this is the exact
+  // shape the note at the top of this file was written about: somebody typed the worst sentence
+  // into a Bible search and the results box stayed empty, so the app appeared to do nothing.
+  // THE IDENTITY SENTENCE, A THIRD TIME. The 5 Sep audit gated onboarding's; the 30 Sep sweep found
+  // the in-app editIdentity() still open and gated that; saveIdentity() reads the same field, does
+  // the same auto-prefix and writes the same store, and was found by neither — because both of
+  // those censuses enumerated one SHAPE of door instead of asking which fields exist.
+  { name: 'the identity sentence (Settings)',
+    go: async page => page.evaluate(() => { try{ if(typeof go==='function') go('why'); }catch(_){ } }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('settings-identity');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof saveIdentity === 'function') saveIdentity();
+    }, phrase) },
+  { name: 'an affirmation about yourself',
+    go: async page => page.evaluate(() => { try{ if(typeof go==='function') go('why'); }catch(_){ } }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('new-affirmation');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof addWhyAffirmation === 'function') addWhyAffirmation();
+    }, phrase) },
+  { name: 'a quick win',
+    go: async page => page.evaluate(() => {}),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('quick-win-input');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof logQuickWin === 'function') logQuickWin();
+    }, phrase) },
+  { name: 'the universal search',
+    go: async page => page.evaluate(() => { if(typeof openUniversalSearch==='function') openUniversalSearch(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('search-input');
+      if(i){ i.value = p; }
+      if(typeof runUniversalSearch === 'function') runUniversalSearch(p);
+    }, phrase) },
+  { name: 'the goal routine (sent to a model)',
+    go: async page => page.evaluate(() => { if(typeof openGoalRoutine==='function') openGoalRoutine(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('goal-routine-input');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof generateGoalRoutine === 'function') generateGoalRoutine();
+    }, phrase) },
+  { name: 'feedback to Alfy',
+    go: async page => page.evaluate(() => { if(typeof openFeedback==='function') openFeedback(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('fb-text');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof submitFeedback === 'function') submitFeedback();
+    }, phrase) },
+  { name: 'a goal',
+    go: async page => page.evaluate(() => { if(typeof editGoal==='function') editGoal('year'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('goal-input');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof saveGoalEdit === 'function') saveGoalEdit('year');
+    }, phrase) },
+  // The quick log is what somebody fills in right after a SLIP. savePostUrge is already a door
+  // because it catches the moment after a WIN; this is the other one, and it had no gate at all.
+  { name: 'the quick log - what triggered it',
+    go: async page => page.evaluate(() => { if(typeof startQuickLog==='function') startQuickLog(0); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('ql-trigger');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof saveQuickLog === 'function') saveQuickLog();
+    }, phrase) },
+  { name: 'the quick log - the note',
+    go: async page => page.evaluate(() => { if(typeof startQuickLog==='function') startQuickLog(0); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('ql-note');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof saveQuickLog === 'function') saveQuickLog();
+    }, phrase) },
+  { name: 'a habit anchor',
+    go: async page => page.evaluate(() => { if(typeof openHabitAnchor==='function') openHabitAnchor(0); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('hab-anchor');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof saveHabitAnchor === 'function') saveHabitAnchor(0);
+    }, phrase) },
   // DOOR 39 — THE FUEL PLAN'S ONE FREE-TEXT FIELD. It HAD a gate and the gate was DEAD: it read
   // `fuel-dislikes`, `fuel-notes` and `fuel-diet`, none of which exist (the diet and dislike
   // controls are CHIP ROWS, `fuel-diet-row` / `fuel-dislike-row`, carrying no typed text). The one
@@ -79,6 +164,37 @@ const DOORS = [
       if(blob.indexOf(String(p).toLowerCase()) >= 0)
         problems.push('the disclosure was STORED in meal prefs, where it is rendered back into the form and built into three api() prompts');
       return problems.length ? problems.join('; ') : null;
+    }, phrase) },
+  // DOOR 50 — THE SHOP PICKER WITH NO CHIP SELECTED, which is the only state the defect lived in.
+  // `_fuelShopSave` was gated on 11 Oct and never driven, and its gate sat UNDER
+  // `if(!shops.length) return` — so a disclosure typed into `#fuel-country` by a first-time person
+  // (who has no saved chains, so no chip is `on`) got a grey "Pick at least one shop" and no
+  // helpline. Every chip is turned OFF here deliberately: a door that happens to run with a chip
+  // selected takes the happy path and cannot see this.
+  { name: 'the fuel plan · shops & country (no chip on)',
+    go: async page => page.evaluate(async () => { try{ if(typeof _fuelShopPicker==='function') _fuelShopPicker(true); }catch(_){ } }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      document.querySelectorAll('#fuel-shops-row .fuel-shop-chip').forEach(function(b){ b.classList.remove('on'); });
+      const c = document.getElementById('fuel-country');
+      // Recorded so a MISSING field reports the instrument rather than reading like a missing gate.
+      window.__d50 = { field: !!c, chipsOn: document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on').length };
+      if(c){ c.value = p; c.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof _fuelShopSave === 'function') _fuelShopSave();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const d50 = window.__d50 || {};
+      if(!d50.field)
+        return '#fuel-country was not in the DOM, so this door asserted nothing — THE CHECK IS WRONG, NOT THE APP';
+      if(d50.chipsOn !== 0)
+        return 'a shop chip was still on (' + d50.chipsOn + '), so this door took the happy path and did NOT test the no-chip state — THE CHECK IS WRONG, NOT THE APP';
+      // THE RAW STORE, NEVER getMealPrefs(). That reader SCRUBS a disclosure out of the prefs on the
+      // way past (the legacy scrub added 11 Oct, because gating the write does not reach what was
+      // already written) — so asking it would report a clean pass over text that really was stored.
+      let raw = '';
+      try{ raw = localStorage.getItem('totry_meal_prefs') || ''; }catch(_){ }
+      if(raw.toLowerCase().indexOf(String(p).toLowerCase()) >= 0)
+        return 'the disclosure was STORED raw in totry_meal_prefs, where `country` is concatenated into the meal-plan prompt and the price-lookup prompt';
+      return null;
     }, phrase) },
   { name: 'onboarding · the identity sentence',
     go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
@@ -502,7 +618,12 @@ const PROBE = `(() => {
     const page = await ctx.newPage();
     const errs = []; page.on('pageerror', e => errs.push(e.message.slice(0,120)));
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
+      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // key only the test believes in reports the app broken -- that happened once already,
+      // with totry_vices against a loadV() that reads totry_v.
+      s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
+      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     // Anything that opened on its own would sit over the card and make this measure the overlay, not
@@ -585,7 +706,12 @@ const PROBE = `(() => {
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
+      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // key only the test believes in reports the app broken -- that happened once already,
+      // with totry_vices against a loadV() that reads totry_v.
+      s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
+      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
@@ -627,7 +753,12 @@ const PROBE = `(() => {
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
+      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // key only the test believes in reports the app broken -- that happened once already,
+      // with totry_vices against a loadV() that reads totry_v.
+      s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
+      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     await page.evaluate(() => {
@@ -704,7 +835,12 @@ const PROBE = `(() => {
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
+      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // key only the test believes in reports the app broken -- that happened once already,
+      // with totry_vices against a loadV() that reads totry_v.
+      s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
+      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     const r = await page.evaluate(async () => {

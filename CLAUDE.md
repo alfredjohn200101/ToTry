@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v611**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v615**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The design system — ToTry × Liquid Glass (16 Sep 2026, branch `ios-native`)
 Read `docs/DESIGN.md` before touching any UI. It was `docs/APPLE-NATIVE.md` for one day, and the rename
@@ -159,7 +159,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 2367 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 3940 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -1226,7 +1226,147 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      into `test/` during its investigation and swept into a commit whose subject was something else
      entirely. Nothing references it and its own header calls it temporary. **After running agents
      that write files, `git status` before `git add -A`** — they work in the repo, not a sandbox.
-   - `npm run crisis` — **39 doors as of 11 Oct 2026, and it now also asserts WHICH CARD.** The three
+   - **AND A THIRD CENSUS FOUND SEVEN MORE UNGATED DOORS (12 Oct 2026). 39 → 46.** The first census
+     walked `openFormModal` — one SHAPE of door. The second grepped `index.html` for
+     `<textarea id="…">` — one TAG, and it matched inside JS string literals. Both are recorded
+     above as mistakes, and both were still being repeated, because the fuel plan's
+     `#fuel-country` and `#fuel-shop-add` had never been doors either.
+     This one asked the INVERSE question. Enumerate every `<textarea>` and every text-accepting
+     `<input>` in `src/` — **102 ids** — then keep the ones that are persisted or reach a model and
+     are read by NO function that gates. 83 reader-pairs survived that, almost all of them benign
+     (a barcode, a bill name, a serving size), so the last filter is the PLACEHOLDER: the field's
+     own copy tells you what it invites. Then DRIVE each candidate in a browser, with a known door
+     as the control.
+     **The seven: `fb-text`, whose own copy is "Tell me what's improving and what's missing — I
+     READ EVERY NOTE" and which INSERTS INTO A SUPABASE TABLE**, so a disclosure sat on a server
+     answered by nothing, reaching a human only whenever somebody next read a queue — the sealed
+     letter again. `ql-trigger` and `ql-note`, **the quick log, which is what a person fills in
+     right after a SLIP** — `savePostUrge` was already a door for "one of the two moments they are
+     most likely to say the true thing", and this is the other one. `search-input`, whose
+     placeholder literally asks for **"a word, a name, a feeling"** and which is the shape the
+     crisis suite's own header was written about — the Bible search where the results box stayed
+     empty and "the app appeared to do nothing". `goal-routine-input`, which is sent to a MODEL.
+     Plus `goal-input` and `hab-anchor`, both persisted and shown back.
+     **The examen was NOT one of them**, and checking that mattered: the probe could not reach its
+     save and reported nothing, which looks identical to an ungated door. Reading the source showed
+     it gated at the final save with the persist-first contract. A probe that cannot reach the code
+     path reports the same thing as a missing fix — so confirm in the source before believing a
+     silence.
+     **AND THE FIX FOR ONE OF THEM REBUILT A DEFECT THIS FILE ALREADY RECORDS.** `saveQuickLog`'s
+     new gate first sat BELOW its `_qlOutcome === null` check, so somebody who typed something true
+     and had not yet tapped win-or-lose got a grey "Pick one" toast and no helpline — which is
+     exactly the Sunday check-in's out-of-band weight, three paragraphs of this file away, under
+     the sentence "a validation rule must never be able to outrank a disclosure". Caught by
+     DRIVING, not by reading. Every gate added since goes above the validation.
+   - **AND THEN I DID IT AGAIN, IN THE SAME SESSION, ONE FILE AWAY (12 Oct 2026). 46 → 50 doors.**
+     `_fuelShopSave` was gated on 11 Oct under a comment calling itself *"the half the fuel fix
+     missed"*, and it then half-applied the OTHER rule on the line above: the gate sat UNDER
+     `if(!shops.length){ showToast('One thing', 'Pick at least one shop…'); return; }`. So a
+     disclosure typed into `#fuel-country` with no shop chip selected got a grey toast and **no
+     helpline**, while the identical sentence with a chip on got the full card. `_fuelShopPicker`
+     turns a chip `on` only from `saved.indexOf(c) >= 0`, so that is a **FIRST-TIME person's state**,
+     not an edge case. Third occurrence of the Sunday check-in's out-of-band weight in this repo,
+     **second in one afternoon** — I fixed it in `saveQuickLog`, wrote "every gate added since goes
+     above the validation", and never asked what else I had already written.
+     Found by reading each gated function IN FULL rather than as a diff hunk, with a checker that
+     lists every `return`/`showToast` ABOVE each gate and distinguishes a same-field EMPTY check
+     (safe — a disclosure is non-empty) from a different-field guard (a defect). `#fuel-shop-add` is
+     read now too: typed and never added, it was silently discarded, and the search-box door already
+     settled what that costs. **And it had no door in `npm run crisis`** — gated a whole day without
+     ever running, which is the pairing this file names: a gate nobody drives is a gate that may not
+     run. Door 50 drives the NO-CHIP state and refuses to report if a chip is on.
+     **No existing assertion could have caught it: every case in that section passed a non-empty chip
+     list.** 3888 assertions were green over it. The new injection MOVES the validation back above
+     the gate rather than deleting anything — the bug was never a missing gate, it was an order — and
+     it reproduces. Door 50's `also` reads **raw localStorage, never `getMealPrefs()`**, because that
+     reader now SCRUBS a disclosure on the way past and would report a clean pass over stored text.
+   - **AND THE BRIDGE SHOWED THREE OF SEVEN ROUTES (12 Oct 2026).** `bridgeToRealHelp` is the third
+     copy of the helpline numbers, recorded above and deliberately deferred because it has seven
+     callers. The guard that landed with that note asks whether every number the bundle DIALS is
+     verified somewhere. **Nothing asked the other direction**, and measured, it rendered 3 of the 7
+     rows in `CRISIS_LINES`: the ones it dropped were Beyond Blue, the Suicide Call Back Service and
+     **13YARN — the Aboriginal & Torres Strait Islander line — absent from the bridge-to-real-help of
+     an AUSTRALIAN app**, on the surface shown by the eating-disorder card, three Feeling Door paths
+     and three fuel-plan fallbacks. **A list that cannot drift in its NUMBERS can still drift in its
+     LENGTH.** It renders from `CRISIS_LINES` through one `_bridgeLines()` now, and three flag emoji
+     went with the literals (the icon census is recorded as having missed flags).
+     **It also carried no `aria-label`, so SEVEN callers showed a crisis surface no door had ever
+     hit-tested** — `npm run crisis` selects on that label. It has it now, and driven on a 414x896
+     phone across all three reasons, **6 of 6 numbers are visible and own their own centre.**
+     The fallback is a real helpline, not `''`: an empty block on a crisis surface would be worse
+     than the hardcoding it replaces, and an unreachable default is an unasserted default, so the
+     test drives that branch and pins it to exactly one number.
+   - **THREE INSTRUMENTS LIED WHILE LANDING THOSE TWO, ALL TOWARDS "THE APP IS BROKEN" (12 Oct 2026).**
+     **A BOTTOM SHEET ANIMATES IN.** The bridge's six numbers all read `offscreen`, 0 of 6 owning
+     their centre, on a surface that works: the modal's own rect was `top: 842` in an 896px viewport
+     because it was measured in the same tick as `appendChild`. Mid-animation is one of the three
+     capture artifacts this file already records. The probe settles the sheet AND requires the rect
+     to have stopped moving between two reads, so a slow machine cannot reproduce the false finding
+     quietly. Hypotheses about `scroll-behavior:smooth` and flex alignment were both wrong — it is on
+     `html, body, .app`, not `.modal` — and only the raw numbers found it.
+     **A TOP-LEVEL `const` IN A NODE SCRIPT IS IN SCOPE INSIDE EVERY `new Function`.** Testing the
+     fallback branch, a `const CRISIS_LINES` in the probe made it dial all six numbers. `H.load` does
+     not leak — it passes globals as parameters — but a script's top-level `const` lands in the
+     **global lexical environment**: absent from `global.X`, so a leak check reports none, and fully
+     visible to every function the harness compiles. The probe was contaminated by its own variable
+     NAME. `core.test.js` has 2 top-level declarations and 0 collisions against 1793 bundle names, so
+     the suite was clean — and it is guarded now, with a planted collision as the calibration.
+     **AND MY FIRST EDIT MATCHED A 2-SPACE NEEDLE AGAINST A 10-SPACE LINE.** Moving the gate, my
+     `"  }catch(_){ }\n"` anchor hit the INNER catch as a substring, truncated the block mid-statement
+     and landed the validation inside a `setTimeout`. Reverted; redone by brace depth. And the
+     `node --check` I used to verify ran on a fixed line slice that cannot end at a function
+     boundary — the never-slice-a-fixed-window trap, in the verification rather than the code.
+     **A test I wrote to guard a label matched its own comment**: the aria-label appears twice in
+     `bridgeToRealHelp`, in the markup and in the comment explaining it, so the absence half failed on
+     CORRECT code and the presence half would have passed with the markup's label deleted. Strip
+     comments (`(?<!:)//`, so `https://` survives) before any presence OR absence check on an extract.
+   - **AND FIVE GATES JUDGED THE JOIN, NOT THE FIELDS (12 Oct 2026). 18 of 60 → 60 of 60.**
+     The single worst finding of the session, and it points the opposite way to everything above:
+     a **false NEGATIVE**. Five gates asked the detector about
+     `[a, b, c].filter(Boolean).join(' ')`. Every clause-bounded pattern in `detectCrisis` needs a
+     clause end or `$` — the bound the owner chose on measurement, 2 false positives instead of 42 —
+     and **joining a second field onto the first DESTROYS that `$`**. So a disclosure typed in one box
+     was silenced by whatever ordinary thing sat in the next box. Measured over 10 disclosures × 6
+     ordinary notes: the field alone fires 10 of 10, the join fires 18 of 60. **"i cant go on" +
+     "walked the dog" returned null.**
+     **Three of the five are PRE-EXISTING, and two of those are `logBody` — the Sunday check-in, crisis
+     door #11 — and `completeEvening`.** `completeMorning` is the third. The other two were mine, from
+     this session. One `crisisInAny(parts)` helper now judges each field and returns the first hit.
+     **It is the exact mirror of the recorded net lesson** — *"joining a prompt's free-text fields
+     manufactures false positives no single field produces"* — and both say the same thing: judge the
+     FIELDS, never the concatenation. A false positive is visible on screen; **a silenced disclosure
+     is not**, which is why this direction is worse.
+     Landing it cost five more instances of shapes this file already names, which is the honest half:
+     **the guard tested a different symbol than the call** (`typeof detectCrisis` guarding a
+     `crisisInAny(...)` call — the dead-gate shape, from the guard rather than the argument);
+     **`[^)]*` cannot span nested parens**, so my fault injection cut inside `.concat(shops)`, left
+     `.concat([_unadded]))` dangling and **CRASHED the suite instead of failing it**; and four
+     assertions were pinned to the WORD `detectCrisis` rather than to the fact that the function
+     gates, so they went red on a gate that had just been made stronger — including the call-site
+     coverage check and the gate-locator inside my own injection. Assert the FACT, not the helper.
+   - **AND MY OWN SEARCH GATE JUDGED PREFIXES (12 Oct 2026).** Found by a six-lens review of the
+     session's own work, and it is rule 4 again on a fix four hours old. `runUniversalSearch` is
+     wired `oninput`, so the gate landed that morning asked the detector about **every intermediate
+     prefix** of what somebody was typing — and **every innocent completion in this detector is a
+     SUFFIX test**, so a suffix nobody has typed yet cannot suppress anything.
+     Measured against `npm run crisis`'s OWN cried-wolf panel: **19 of its 25 ordinary sentences
+     raised a card at this door** while the full sentence returns null. "take my life" fires before
+     "and let it be"; "better off dead" before "deadlifting"; "i took all my pills" returns MEDICAL —
+     an ambulance card — before "this morning". Worst of them: **"not worth living" IS the string
+     `_EXAMEN_CLOSE.secular.q` prints every night**, on a box that searches examens, so looking up the
+     app's own words raised six helplines and deleted the search sheet.
+     **THE SUITE COULD NOT SEE IT**: every door's `fire` passes the whole string in one call, and this
+     is the only door whose live handler runs per keystroke. The gate waits 500ms for the typing to
+     stop now (under both the suite's 900ms and 1000ms waits), carries a route back — its own sheet is
+     what `journalMeetCrisis` deletes — and passes `saved:false`, because **`journalMeetCrisis` toasted
+     "Saved · I read what you wrote" on a surface that stores nothing**, telling somebody it had kept
+     a sentence it had not kept. Driven character by character at 120ms/key: the hymn is silent
+     throughout and settled, a real disclosure is still met with a way back.
+     **One residual is kept and named in the test**: "not worth living" as a COMPLETE query still
+     fires. The prefix harm is gone, the detector genuinely cannot tell a lookup from a disclosure
+     there, and the surface is now additive — nothing stored, nothing sent, one tap back. The same
+     call as "chest pain after that curry": the error worth making, on the record.
+   - `npm run crisis` — **50 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
      then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every

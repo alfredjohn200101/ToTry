@@ -1203,6 +1203,39 @@ function setQLOutcome(won){
 }
 
 function saveQuickLog(){
+  // THE GATE GOES ABOVE THE VALIDATION. The first version of this sat below the
+  // `_qlOutcome === null` check, so somebody who typed something true and had not yet tapped
+  // win-or-lose got a grey "Pick one" toast and no helpline — which is EXACTLY the Sunday
+  // check-in's out-of-band weight, recorded in CLAUDE.md as "a validation rule must never be
+  // able to outrank a disclosure", rebuilt here by the fix for an ungated door. Driven, not
+  // reasoned: with the gate below, the probe saw no card.
+  // GATED, 12 Oct 2026. `savePostUrge` is already a door because it opens right after somebody
+  // WINS an urge — "one of the two moments they are most likely to say the true thing". This is
+  // the OTHER moment, and it had no gate at all: the quick log is what a person fills in right
+  // after a SLIP, at 2am, in the two boxes that ask what triggered it and what they want to note.
+  // Both are stored on the vice and shown back in its history. Found by censusing every free-text
+  // field in the app rather than every field of one SHAPE — which is the mistake both earlier
+  // door censuses made, and the reason this one was never in the list.
+  const _qlT = (document.getElementById('ql-trigger')||{}).value || '';
+  const _qlN = (document.getElementById('ql-note')||{}).value || '';
+  // EACH FIELD, NEVER THE JOIN. Joining the note onto the trigger removed the clause end that
+  // every bounded pattern needs: measured, 42 of 60 trigger+note pairs went null while the
+  // trigger alone fired on 10 of 10. My own gate from this morning, silenced by its own join.
+  const _qlC = (typeof crisisInAny==='function') ? crisisInAny([_qlT,_qlN]) : null;
+  // THEIR WORK IS KEPT; ONLY THE SENTENCE IS DROPPED. This used to bare-`return` right here, above
+  // `loadV()` and every counter — so somebody who had already tapped win-or-lose and THEN typed
+  // something true lost the slip itself: the total, the win/loss, the savings and the clean-day
+  // reset. That is the denial-of-service shape, and `completeMorning`'s contract already says it in
+  // words — their words are always kept, the app simply stops and meets them instead of carrying
+  // on. It is worse here than losing a budget, because the next screen would show the person a
+  // clean streak they know is false. So the entry is written with the two TYPED fields blank (they
+  // are the disclosure, and the trigger is replayed as "Most common trigger: …" to the model), and
+  // the card REPLACES the celebratory toast and the grace sheet rather than arriving beside them.
+  if(_qlC && _qlOutcome === null){
+    // Nothing to keep: they had not chosen yet, so there is no choice to persist.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+    return;
+  }
   if(_qlOutcome === null){
     showToast('Pick one','Did you win or lose this fight?');
     return;
@@ -1262,9 +1295,11 @@ function saveQuickLog(){
   
   // Save the fight log entry with details
   const intensity = parseInt(document.getElementById('ql-intensity')?.value||5);
-  const trigger = document.getElementById('ql-trigger')?.value.trim();
+  // BLANK ON A HIT, so the slip is recorded and the sentence is not. `window.__sosTrigger` is read
+  // by the SOS screen and the model, which is exactly where it must not go.
+  const trigger = _qlC ? '' : document.getElementById('ql-trigger')?.value.trim();
   window.__sosIntensity = intensity; window.__sosTrigger = trigger;
-  const note = document.getElementById('ql-note')?.value.trim();
+  const note = _qlC ? '' : document.getElementById('ql-note')?.value.trim();
   
   if(!v.urgelog) v.urgelog = [];
   v.urgelog.push(new Date().toISOString());
@@ -1291,7 +1326,11 @@ function saveQuickLog(){
   renderScoreboard();
   renderDayCounter();
 
-  if(!_wasRelapse){
+  if(_qlC){
+    // The card instead of the toast. Celebrating, or opening the grace sheet, on top of what they
+    // just said would be the app talking over them.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+  } else if(!_wasRelapse){
     haptic('celebrate');
     showToast('Logged','Your win matters. Every one counts.');
   } else {
@@ -1647,6 +1686,40 @@ function openServiceExit(){
   if(typeof haptic==='function') haptic('tap');
 }
 
+// EVERY ROUTE THE APP HAS VERIFIED, RENDERED FROM THE ONE LIST (12 Oct 2026).
+// `bridgeToRealHelp` hardcoded tel:131114, tel:988 and tel:116123 — a THIRD copy of the numbers,
+// recorded in CLAUDE.md and deliberately deferred because the surface has seven callers. The guard
+// that landed with that note asks whether every number the bundle DIALS is verified somewhere.
+// NOTHING ASKED THE OTHER DIRECTION, and measured, this surface rendered 3 of the 7 rows in
+// CRISIS_LINES. The ones it dropped were Beyond Blue, the Suicide Call Back Service and 13YARN —
+// the Aboriginal & Torres Strait Islander line, absent from the bridge-to-real-help of an
+// AUSTRALIAN app, on the surface shown by the eating-disorder card, three Feeling Door paths and
+// three fuel-plan fallbacks. A list that cannot drift in its numbers can still drift in its LENGTH.
+// Three flag emoji went with it — the icon census is recorded as having missed flags — replaced by
+// the region and detail each row already names.
+// THE FALLBACK IS A REAL HELPLINE, NEVER AN EMPTY BLOCK. `return ''` on a missing CRISIS_LINES
+// would make a crisis surface render no number at all, which is worse than the hardcoding this
+// replaces; and an unreachable default is an unasserted default, so the test drives this branch.
+function _bridgeLines(){
+  const link = 'color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)';
+  try{
+    const L = (typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES)) ? CRISIS_LINES : [];
+    if(L.length){
+      return L.map(function(r){
+        const c = String(r.contact == null ? '' : r.contact);
+        const phone = /^[\d\s]+$/.test(c) && /\d/.test(c);
+        const inner = phone
+          ? '<a href="tel:' + c.replace(/\s+/g, '') + '" style="' + link + '">' + _esc(c) + '</a>'
+          : '<a href="https://' + _esc(c) + '" target="_blank" rel="noopener" style="' + link + '">' + _esc(c) + '</a>';
+        return '<span style="display:block">' + _esc(r.name) + ' ' + inner +
+          ' <span style="color:var(--tx3);font-size:var(--t-micro)">' + _esc(r.region) + ' \u00b7 ' + _esc(r.detail) + '</span></span>';
+      }).join('');
+    }
+  }catch(_){ }
+  return '<span style="display:block">Lifeline <a href="tel:131114" style="' + link + '">13 11 14</a>' +
+    ' <span style="color:var(--tx3);font-size:var(--t-micro)">Australia \u00b7 24/7 phone</span></span>';
+}
+
 function bridgeToRealHelp(reason){
   try{
     const name = ls('totry_name') || '';
@@ -1667,11 +1740,12 @@ function bridgeToRealHelp(reason){
           '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
-          '<span style="display:inline-block;margin-top:4px;font-size:var(--t-sm);line-height:1.9">'+
-            '\uD83C\uDDE6\uD83C\uDDFA Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a> \u00b7 '+
-            '\uD83C\uDDFA\uD83C\uDDF8 <a href="tel:988" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">988</a> \u00b7 '+
-            '\uD83C\uDDEC\uD83C\uDDE7 <a href="tel:116123" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">116 123</a><br>'+
-            '<a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--tx3);text-decoration:none;border-bottom:1px solid var(--bd)">findahelpline.com</a> \u2014 130+ countries'+
+          // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`
+          // asserts a helpline is visible AND TAPPABLE by selecting
+          // [aria-label="Urgent: real people you can contact right now"] — which this surface did
+          // not carry, so SEVEN callers showed a crisis surface no door had ever hit-tested.
+          '<span aria-label="Urgent: real people you can contact right now" style="display:inline-block;margin-top:4px;font-size:var(--t-sm);line-height:1.9">'+
+            _bridgeLines()+
           '</span>'+
         '</div>'+
       '</div>'+

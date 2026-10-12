@@ -2179,6 +2179,14 @@ function openGoalRoutine(){
 }
 async function generateGoalRoutine(){
   const goal=(document.getElementById('goal-routine-input')||{}).value||'';
+  // GATED, 12 Oct 2026 — ABOVE the empty-field check, because a validation rule must never be able
+  // to outrank a disclosure (the Sunday check-in's out-of-band weight, recorded in CLAUDE.md, and
+  // rebuilt by me in saveQuickLog an hour ago). This text is sent straight to a MODEL.
+  const _grC = (typeof journalCrisisOf==='function') ? journalCrisisOf(goal) : null;
+  if(_grC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_grC); }catch(_){ } }, 250);
+    return;
+  }
   if(!goal.trim()){ showToast('Tell me your goal','Describe what you\u2019re training for first.'); return; }
   const btn=document.getElementById('goal-routine-btn'); const out=document.getElementById('goal-routine-out');
   if(btn){ btn.textContent='Drafting...'; btn.disabled=true; }

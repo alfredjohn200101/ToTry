@@ -90,6 +90,13 @@ function editGoal(level){
 }
 function saveGoalEdit(level){
   const text = document.getElementById('goal-input')?.value.trim() || '';
+  // GATED, 12 Oct 2026, same census. A goal is a sentence about what a person wants their life to
+  // be, and it is persisted and shown back on the Goals screen afterwards.
+  const _gC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_gC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_gC); }catch(_){ } }, 250);
+    return;
+  }
   setGoal(level, text);
   document.querySelector('.modal-bg.open')?.remove();
   renderGoals();

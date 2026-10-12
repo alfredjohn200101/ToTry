@@ -8723,7 +8723,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v611';
+const APP_VERSION = 'v615';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13474,6 +13474,30 @@ async function sendCoach(){
 // imminent harm to others, severe medical emergency, or acute mental health crisis.
 // On detection: bypasses AI entirely and shows real-world resources.
 // This is intentionally conservative — false positives are acceptable here.
+// JUDGE EACH FIELD, NEVER THE JOIN (12 Oct 2026).
+// Five gates asked `detectCrisis` about `[a, b, c].filter(Boolean).join(' ')`. Every clause-bounded
+// pattern in this detector needs a clause end or `$` — the bound the owner measured at 2 false
+// positives instead of 42 — and joining a second field onto the first DESTROYS that `$`. So a
+// disclosure typed in one box was silenced by whatever ordinary thing sat in the next box.
+// Measured over 10 disclosures x 6 ordinary notes: the first field alone fires 10 of 10, the join
+// fires 18 of 60, and 42 of 60 go NULL. "i cant go on" + "walked the dog" returned nothing.
+// Three of the five sites are PRE-EXISTING and two are the Sunday check-in and the evening ritual,
+// which are among the most invited disclosure surfaces in the app.
+// This is the exact mirror of the recorded net lesson — joining a prompt's free-text fields
+// MANUFACTURES false positives no single field produces — and both say the same thing: judge the
+// FIELDS, not the concatenation. A false negative here is the worse direction, because nothing on
+// screen shows it happened.
+function crisisInAny(parts){
+  try{
+    const list = (Array.isArray(parts) ? parts : [parts]).filter(Boolean);
+    for(let i = 0; i < list.length; i++){
+      const k = detectCrisis(String(list[i]));
+      if(k) return k;
+    }
+  }catch(_){ }
+  return null;
+}
+
 function detectCrisis(text){
   if(!text || typeof text !== 'string') return null;
   // APOSTROPHE NORMALISATION — non-negotiable. iOS Smart Punctuation (on by default) rewrites ' to
@@ -17852,7 +17876,7 @@ function completeMorning(){
     if(typeof detectCrisis === 'function'){
       const _g = (document.getElementById('morning-gratitude')||{}).value || '';
       const _i = (document.getElementById('morning-intention')||{}).value || '';
-      _mCrisis = detectCrisis([_g, _i].filter(Boolean).join(' '));
+      _mCrisis = crisisInAny([_g, _i]);   // each field, never the join
     }
   }catch(_){ }
   // PERSIST FIRST, ALWAYS. The crisis branch below used to `return` before this write, so the single
@@ -19322,6 +19346,39 @@ function setQLOutcome(won){
 }
 
 function saveQuickLog(){
+  // THE GATE GOES ABOVE THE VALIDATION. The first version of this sat below the
+  // `_qlOutcome === null` check, so somebody who typed something true and had not yet tapped
+  // win-or-lose got a grey "Pick one" toast and no helpline — which is EXACTLY the Sunday
+  // check-in's out-of-band weight, recorded in CLAUDE.md as "a validation rule must never be
+  // able to outrank a disclosure", rebuilt here by the fix for an ungated door. Driven, not
+  // reasoned: with the gate below, the probe saw no card.
+  // GATED, 12 Oct 2026. `savePostUrge` is already a door because it opens right after somebody
+  // WINS an urge — "one of the two moments they are most likely to say the true thing". This is
+  // the OTHER moment, and it had no gate at all: the quick log is what a person fills in right
+  // after a SLIP, at 2am, in the two boxes that ask what triggered it and what they want to note.
+  // Both are stored on the vice and shown back in its history. Found by censusing every free-text
+  // field in the app rather than every field of one SHAPE — which is the mistake both earlier
+  // door censuses made, and the reason this one was never in the list.
+  const _qlT = (document.getElementById('ql-trigger')||{}).value || '';
+  const _qlN = (document.getElementById('ql-note')||{}).value || '';
+  // EACH FIELD, NEVER THE JOIN. Joining the note onto the trigger removed the clause end that
+  // every bounded pattern needs: measured, 42 of 60 trigger+note pairs went null while the
+  // trigger alone fired on 10 of 10. My own gate from this morning, silenced by its own join.
+  const _qlC = (typeof crisisInAny==='function') ? crisisInAny([_qlT,_qlN]) : null;
+  // THEIR WORK IS KEPT; ONLY THE SENTENCE IS DROPPED. This used to bare-`return` right here, above
+  // `loadV()` and every counter — so somebody who had already tapped win-or-lose and THEN typed
+  // something true lost the slip itself: the total, the win/loss, the savings and the clean-day
+  // reset. That is the denial-of-service shape, and `completeMorning`'s contract already says it in
+  // words — their words are always kept, the app simply stops and meets them instead of carrying
+  // on. It is worse here than losing a budget, because the next screen would show the person a
+  // clean streak they know is false. So the entry is written with the two TYPED fields blank (they
+  // are the disclosure, and the trigger is replayed as "Most common trigger: …" to the model), and
+  // the card REPLACES the celebratory toast and the grace sheet rather than arriving beside them.
+  if(_qlC && _qlOutcome === null){
+    // Nothing to keep: they had not chosen yet, so there is no choice to persist.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+    return;
+  }
   if(_qlOutcome === null){
     showToast('Pick one','Did you win or lose this fight?');
     return;
@@ -19381,9 +19438,11 @@ function saveQuickLog(){
   
   // Save the fight log entry with details
   const intensity = parseInt(document.getElementById('ql-intensity')?.value||5);
-  const trigger = document.getElementById('ql-trigger')?.value.trim();
+  // BLANK ON A HIT, so the slip is recorded and the sentence is not. `window.__sosTrigger` is read
+  // by the SOS screen and the model, which is exactly where it must not go.
+  const trigger = _qlC ? '' : document.getElementById('ql-trigger')?.value.trim();
   window.__sosIntensity = intensity; window.__sosTrigger = trigger;
-  const note = document.getElementById('ql-note')?.value.trim();
+  const note = _qlC ? '' : document.getElementById('ql-note')?.value.trim();
   
   if(!v.urgelog) v.urgelog = [];
   v.urgelog.push(new Date().toISOString());
@@ -19410,7 +19469,11 @@ function saveQuickLog(){
   renderScoreboard();
   renderDayCounter();
 
-  if(!_wasRelapse){
+  if(_qlC){
+    // The card instead of the toast. Celebrating, or opening the grace sheet, on top of what they
+    // just said would be the app talking over them.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+  } else if(!_wasRelapse){
     haptic('celebrate');
     showToast('Logged','Your win matters. Every one counts.');
   } else {
@@ -19766,6 +19829,40 @@ function openServiceExit(){
   if(typeof haptic==='function') haptic('tap');
 }
 
+// EVERY ROUTE THE APP HAS VERIFIED, RENDERED FROM THE ONE LIST (12 Oct 2026).
+// `bridgeToRealHelp` hardcoded tel:131114, tel:988 and tel:116123 — a THIRD copy of the numbers,
+// recorded in CLAUDE.md and deliberately deferred because the surface has seven callers. The guard
+// that landed with that note asks whether every number the bundle DIALS is verified somewhere.
+// NOTHING ASKED THE OTHER DIRECTION, and measured, this surface rendered 3 of the 7 rows in
+// CRISIS_LINES. The ones it dropped were Beyond Blue, the Suicide Call Back Service and 13YARN —
+// the Aboriginal & Torres Strait Islander line, absent from the bridge-to-real-help of an
+// AUSTRALIAN app, on the surface shown by the eating-disorder card, three Feeling Door paths and
+// three fuel-plan fallbacks. A list that cannot drift in its numbers can still drift in its LENGTH.
+// Three flag emoji went with it — the icon census is recorded as having missed flags — replaced by
+// the region and detail each row already names.
+// THE FALLBACK IS A REAL HELPLINE, NEVER AN EMPTY BLOCK. `return ''` on a missing CRISIS_LINES
+// would make a crisis surface render no number at all, which is worse than the hardcoding this
+// replaces; and an unreachable default is an unasserted default, so the test drives this branch.
+function _bridgeLines(){
+  const link = 'color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)';
+  try{
+    const L = (typeof CRISIS_LINES !== 'undefined' && Array.isArray(CRISIS_LINES)) ? CRISIS_LINES : [];
+    if(L.length){
+      return L.map(function(r){
+        const c = String(r.contact == null ? '' : r.contact);
+        const phone = /^[\d\s]+$/.test(c) && /\d/.test(c);
+        const inner = phone
+          ? '<a href="tel:' + c.replace(/\s+/g, '') + '" style="' + link + '">' + _esc(c) + '</a>'
+          : '<a href="https://' + _esc(c) + '" target="_blank" rel="noopener" style="' + link + '">' + _esc(c) + '</a>';
+        return '<span style="display:block">' + _esc(r.name) + ' ' + inner +
+          ' <span style="color:var(--tx3);font-size:var(--t-micro)">' + _esc(r.region) + ' \u00b7 ' + _esc(r.detail) + '</span></span>';
+      }).join('');
+    }
+  }catch(_){ }
+  return '<span style="display:block">Lifeline <a href="tel:131114" style="' + link + '">13 11 14</a>' +
+    ' <span style="color:var(--tx3);font-size:var(--t-micro)">Australia \u00b7 24/7 phone</span></span>';
+}
+
 function bridgeToRealHelp(reason){
   try{
     const name = ls('totry_name') || '';
@@ -19786,11 +19883,12 @@ function bridgeToRealHelp(reason){
           '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
-          '<span style="display:inline-block;margin-top:4px;font-size:var(--t-sm);line-height:1.9">'+
-            '\uD83C\uDDE6\uD83C\uDDFA Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a> \u00b7 '+
-            '\uD83C\uDDFA\uD83C\uDDF8 <a href="tel:988" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">988</a> \u00b7 '+
-            '\uD83C\uDDEC\uD83C\uDDE7 <a href="tel:116123" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">116 123</a><br>'+
-            '<a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--tx3);text-decoration:none;border-bottom:1px solid var(--bd)">findahelpline.com</a> \u2014 130+ countries'+
+          // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`
+          // asserts a helpline is visible AND TAPPABLE by selecting
+          // [aria-label="Urgent: real people you can contact right now"] — which this surface did
+          // not carry, so SEVEN callers showed a crisis surface no door had ever hit-tested.
+          '<span aria-label="Urgent: real people you can contact right now" style="display:inline-block;margin-top:4px;font-size:var(--t-sm);line-height:1.9">'+
+            _bridgeLines()+
           '</span>'+
         '</div>'+
       '</div>'+
@@ -27701,6 +27799,12 @@ function saveHabitAnchor(hi){
   const el=document.getElementById('hab-anchor');
   const val=((el&&el.value)||'').trim().slice(0,70);
   if(!val){ if(typeof showToast==='function') showToast('Empty','Name one thing you already do every day.'); return; }
+  // GATED, 12 Oct 2026, same census. It is persisted on the habit and shown back beside it.
+  const _haC = (typeof journalCrisisOf==='function') ? journalCrisisOf(val) : null;
+  if(_haC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_haC); }catch(_){ } }, 250);
+    return;
+  }
   // The target rides with the anchor — one sheet, one save. Blank clears it back to "most days".
   const _pwEl=document.getElementById('hab-pw');
   const _pwRaw=((_pwEl&&_pwEl.value)||'').trim();
@@ -29580,7 +29684,7 @@ function journalCrisisOf(text){
 // begin" — one word apart. So the door stops being all-or-nothing instead.
 // IT DOES NOT WEAKEN THE CARD: the helpline keeps the screen and the primary position, the route
 // back is a quiet secondary below Close, and every other caller passes nothing and is unchanged.
-function journalMeetCrisis(kind, back){
+function journalMeetCrisis(kind, back, opts){
   if(!kind) return false;
   try{
     // :not([id]) is load-bearing — #journal-modal, #payday-modal and #rest-timer-overlay are STATIC
@@ -29599,7 +29703,15 @@ function journalMeetCrisis(kind, back){
     if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
   }catch(_){ }
   try{ if(typeof haptic === 'function') haptic('warning'); }catch(_){ }
-  try{ if(typeof showToast === 'function') showToast('Saved', 'I read what you wrote. Please look at this.'); }catch(_){ }
+  // DO NOT CLAIM A SAVE THAT DID NOT HAPPEN. Every door that reached here until now was a door
+  // that had just PERSISTED what the person wrote, so 'Saved' was true. The universal search
+  // stores nothing — it is a read — so the app was telling somebody it had kept a sentence it
+  // had not kept, on the one surface where being believed matters most. `opts.saved === false`
+  // is opt-in, so all nine existing callers keep the wording they were measured with.
+  try{ if(typeof showToast === 'function'){
+    if(opts && opts.saved === false) showToast('I read that', 'Please look at this.');
+    else showToast('Saved', 'I read what you wrote. Please look at this.');
+  } }catch(_){ }
   return true;
 }
 
@@ -29863,7 +29975,10 @@ async function logBody(){
   // because that line sat inside a try/catch the error would have been SWALLOWED and the flag silently
   // never set. A gate that appears to work and does nothing is the exact failure this file keeps having.
   let _wkCrisis = null;
-  try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
+  // EACH FIELD, NEVER THE JOIN — see crisisInAny. The Sunday check-in is crisis door #11 and its
+  // three boxes were judged as one string, so a disclosure in the win box was silenced by an
+  // ordinary struggle or focus typed after it.
+  try{ if(typeof crisisInAny === 'function') _wkCrisis = crisisInAny([winText, struggleText, focusText]); }catch(_){ }
 
   
   // THE SAME 20-400 BAND THE OTHER THREE WEIGH-IN DOORS ENFORCE. saveQuickWeight and both import
@@ -39075,7 +39190,22 @@ function syncShopsRow(){
 function _fuelShopSave(andGenerate){
   const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
   const shops = Array.prototype.slice.call(document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on')).map(function(b){ return b.getAttribute('data-shop'); }).filter(Boolean);
-  if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
+  // MOVED ABOVE THE VALIDATION, 12 Oct 2026, AND THE COMMENT BELOW IS WHY THAT IS EMBARRASSING.
+  // It calls itself "the half the fuel fix missed" and then half-applied the OTHER rule in this
+  // same file: the gate sat UNDER `if(!shops.length) return`, so a disclosure typed into
+  // `#fuel-country` with no shop chip selected got a grey "Pick at least one shop so the list and
+  // prices are real." and NO helpline, while the identical sentence with a chip on got the full
+  // card. That is the Sunday check-in's out-of-band weight for the third time in this repo and the
+  // SECOND TIME IN ONE SESSION — I rebuilt it in `saveQuickLog` the same afternoon, fixed it there,
+  // and never asked what else I had just written. A validation rule must never outrank a disclosure.
+  // Reachable for exactly the worst person: `_fuelShopPicker` sets a chip `on` only from
+  // `saved.indexOf(c) >= 0`, so a FIRST-TIME user has none selected and always took the toast.
+  // `#fuel-shop-add` is read too, though it is neither persisted nor sent — somebody who types a
+  // true thing into "Add another shop (any country)..." and taps Save has it silently discarded,
+  // and the search-box door settles what that costs: the harm "is not a leak, it is that a person
+  // said the truest thing they had and the app answered with no results".
+  // And it had NO DOOR in `npm run crisis` until now, which is how a gate sits a whole day without
+  // ever running: a gate nobody drives is a gate that may not run.
   // GATED, 11 Oct 2026 — AND THIS IS THE HALF THE FUEL FIX MISSED. `_fuelElicitSave` was fixed that
   // morning to gate `#fuel-diet-free`, and its own HAPPY PATH then opens this modal, which carries
   // two MORE free-text inputs nothing was asking about: `#fuel-country`, and `#fuel-shop-add`
@@ -39086,9 +39216,13 @@ function _fuelShopSave(andGenerate){
   // the fix for it. Nothing is persisted on a hit: unlike the budget and the diet chips, the typed
   // text IS the data here, so there is no choice to keep separately from the sentence.
   try{
-    if(typeof detectCrisis === 'function'){
-      const _st = [country].concat(shops).filter(Boolean).join(' ').trim();
-      const _sc = _st ? detectCrisis(_st) : null;
+    // GUARD THE SYMBOL YOU CALL. This read `typeof detectCrisis` while calling crisisInAny, so in
+    // any scope holding one and not the other the gate threw into its own catch and silently did
+    // nothing — the dead-gate shape again, from the guard this time rather than the argument.
+    if(typeof crisisInAny === 'function'){
+      const _unadded = ((document.getElementById('fuel-shop-add')||{}).value || '').trim();
+      // EACH FIELD, NEVER THE JOIN — see crisisInAny. My own gate, same defect.
+      const _sc = crisisInAny([country].concat(shops).concat([_unadded]));
       if(_sc){
         const _m = document.getElementById('fuel-shop-modal'); if(_m) _m.remove();
         setTimeout(function(){
@@ -39101,6 +39235,7 @@ function _fuelShopSave(andGenerate){
       }
     }
   }catch(_){ }
+  if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
   saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chains:shops, chain:shops.join(', ') }));
   const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
   renderFuelPlanCard();
@@ -46838,6 +46973,14 @@ function openGoalRoutine(){
 }
 async function generateGoalRoutine(){
   const goal=(document.getElementById('goal-routine-input')||{}).value||'';
+  // GATED, 12 Oct 2026 — ABOVE the empty-field check, because a validation rule must never be able
+  // to outrank a disclosure (the Sunday check-in's out-of-band weight, recorded in CLAUDE.md, and
+  // rebuilt by me in saveQuickLog an hour ago). This text is sent straight to a MODEL.
+  const _grC = (typeof journalCrisisOf==='function') ? journalCrisisOf(goal) : null;
+  if(_grC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_grC); }catch(_){ } }, 250);
+    return;
+  }
   if(!goal.trim()){ showToast('Tell me your goal','Describe what you\u2019re training for first.'); return; }
   const btn=document.getElementById('goal-routine-btn'); const out=document.getElementById('goal-routine-out');
   if(btn){ btn.textContent='Drafting...'; btn.disabled=true; }
@@ -48854,7 +48997,8 @@ function completeEvening(){
   // heaviest question the app asks, and it was ungated — the answer went straight into the coach's
   // context (see honestCtx in buildCtx) and was narrated back to a model afterwards.
   let _evCrisis = null;
-  try{ if(typeof detectCrisis === 'function') _evCrisis = detectCrisis([win, release, see].filter(Boolean).join(' ')); }catch(_){ }
+  // EACH FIELD, NEVER THE JOIN — see crisisInAny. The evening ritual's three boxes, same shape.
+  try{ if(typeof crisisInAny === 'function') _evCrisis = crisisInAny([win, release, see]); }catch(_){ }
   const t1=document.getElementById('eve-task1')?.value.trim()||'';
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';
@@ -50608,7 +50752,16 @@ function renderWhyAffirmations(){
 }
 function addWhyAffirmation(){
   const inp = document.getElementById('new-affirmation'); if(!inp) return;
-  const v = inp.value.trim(); if(!v) return;
+  const v = inp.value.trim();
+  // GATED, 12 Oct 2026. An affirmation is a sentence a person writes ABOUT THEMSELVES and then
+  // reads back on the Soul tab — the same shape as the identity sentence, stored in
+  // `totry_affirmations` and rendered every time they open it.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(v) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
+  if(!v) return;
   const list = ls('totry_affirmations') || []; list.unshift(v); ls('totry_affirmations', list);
   inp.value = ''; renderWhyAffirmations(); haptic('success');
 }
@@ -52138,6 +52291,19 @@ async function flushFeedbackOutbox(){
 async function submitFeedback(){
   const text = (document.getElementById('fb-text')?.value || '').trim();
   if(!text){ showToast('Empty', 'Write something first.'); return; }
+  // GATED, 12 Oct 2026. Found by censusing every free-text field in the app rather than every
+  // field of one SHAPE — the mistake both earlier censuses made. This box's own copy is
+  // "Tell me what's improving and what's missing — I READ EVERY NOTE", which is an invitation to
+  // say something true, and the text is INSERTED INTO A SUPABASE TABLE. So a disclosure here was
+  // stored on a server and answered by nothing, reaching a person only whenever a developer next
+  // reads a queue — the sealed-letter shape this repo already fixed once, where the harm is that
+  // nobody is on screen. Meet them now instead; the message is not sent, exactly as every other
+  // door declines to persist what it just gated.
+  const _fbC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_fbC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_fbC); }catch(_){ } }, 250);
+    return;
+  }
   const includeState = document.getElementById('fb-include-state')?.checked;
   
   // Basic, non-sensitive app info to help debugging (only if user opted in)
@@ -53164,7 +53330,14 @@ function showTermsOfUse(){
 
 function changeName(){openFormModal('Your name','What should the app call you?',[{id:'name',label:'First name',type:'text',placeholder:'Your first name',value: (typeof userName!=='undefined'?userName:'')}],'Save',(vals)=>{if(!vals.name||!vals.name.trim())return 'Enter a name.';userName=vals.name.trim();ls('totry_name',userName);initSettingsTab();showToast('Name updated','Hey '+userName+'.');return true;});}
 function logQuickWin(){
-  const input=document.getElementById('quick-win-input');const text=input?.value.trim();if(!text)return;
+  const input=document.getElementById('quick-win-input');const text=input?.value.trim();
+  // GATED, 12 Oct 2026. Persisted to `totry_wins` and replayed in the wins log afterwards.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
+  if(!text)return;
   const wins=ls('totry_wins')||[];
   wins.unshift({id:Date.now(),text,date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),ts:new Date().toISOString(),day:getDayCount()});
   ls('totry_wins',wins.slice(0,500));input.value='';renderWinsLog();showToast('Win logged',text.slice(0,50));
@@ -53188,6 +53361,7 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
+  try{ runUniversalSearch._met = false; }catch(_){ }   // a new sheet is a new conversation
   // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
   // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
@@ -53213,7 +53387,38 @@ function openUniversalSearch(){
 function runUniversalSearch(query){
   const box = document.getElementById('search-results');
   if(!box) return;
-  
+  // JUDGE A SETTLED QUERY, NOT A PREFIX (12 Oct 2026). The first version of this gate sat at the top
+  // of a handler wired `oninput="runUniversalSearch(this.value)"`, so it asked the detector about
+  // every intermediate PREFIX of what somebody was typing. Every innocent completion in this
+  // detector is a SUFFIX test — the hymn, the devotional idiom, the pill organiser, the fast, the
+  // surrender idiom — and a suffix nobody has typed yet cannot suppress anything.
+  // Measured against `npm run crisis`'s OWN cried-wolf panel: 19 of its 25 ordinary sentences raised
+  // a card here while the full sentence returns null. "take my life" fires before "and let it be";
+  // "better off dead" before "deadlifting"; "i took all my pills" returns MEDICAL, an ambulance card,
+  // before "this morning". Worst of them: "not worth living" IS the string the secular examen prints
+  // every night (`_EXAMEN_CLOSE.secular.q`), and examens are one of the things this box searches —
+  // so looking up the app's own words raised six helplines and deleted the search.
+  // THE SUITE COULD NOT SEE IT: every door's `fire` passes the whole string in one call, and this is
+  // the only door whose live handler runs per keystroke. Widening a bound would be the wrong repair.
+  try{
+    clearTimeout(runUniversalSearch._t);
+    runUniversalSearch._t = setTimeout(function(){
+      try{
+        if(runUniversalSearch._met) return;
+        const _el = document.getElementById('search-input');
+        const _q = _el ? String(_el.value || '') : '';
+        const _sc = (typeof journalCrisisOf === 'function') ? journalCrisisOf(_q) : null;
+        if(!_sc) return;
+        runUniversalSearch._met = true;
+        // A ROUTE BACK, and it is not optional here: `journalMeetCrisis` clears
+        // `.modal-bg:not([id])`, and this sheet is built with no id, so meeting the person DELETES
+        // the search they were using. And `saved:false` because a search keeps nothing.
+        if(typeof journalMeetCrisis === 'function')
+          journalMeetCrisis(_sc, { label: 'Back to search', onclick: 'openUniversalSearch()' }, { saved: false });
+      }catch(_){ }
+    }, 500);
+  }catch(_){ }
+
   const q = (query || '').trim().toLowerCase();
   if(q.length < 2){
     // An empty state, so centred — but upright, in the secondary grey. It was italic in the third grey.
@@ -54523,6 +54728,13 @@ function editGoal(level){
 }
 function saveGoalEdit(level){
   const text = document.getElementById('goal-input')?.value.trim() || '';
+  // GATED, 12 Oct 2026, same census. A goal is a sentence about what a person wants their life to
+  // be, and it is persisted and shown back on the Goals screen afterwards.
+  const _gC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_gC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_gC); }catch(_){ } }, 250);
+    return;
+  }
   setGoal(level, text);
   document.querySelector('.modal-bg.open')?.remove();
   renderGoals();
@@ -59048,6 +59260,17 @@ function saveIdentity(){
   const v=document.getElementById('settings-identity');
   if(!v)return;
   const text=v.value.trim();
+  // GATED, 12 Oct 2026 — THE THIRD TWIN OF THE SAME FIELD. The 5 Sep audit gated onboarding's
+  // identity sentence; the 30 Sep sweep found the in-app `editIdentity()` still open and gated
+  // that; and THIS one, reading the same `#settings-identity`, auto-prefixing the same
+  // "I am becoming a person who" and persisting the same store, was never found by either —
+  // because both censuses enumerated one SHAPE of door rather than asking which fields exist.
+  // Above the empty-field check, because a validation rule must never outrank a disclosure.
+  const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_c){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    return;
+  }
   if(!text){showToast('Empty','Write what you are becoming first.');return;}
   // Auto-prefix if user did not include
   const lower=text.toLowerCase();

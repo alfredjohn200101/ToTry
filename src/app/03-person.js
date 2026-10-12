@@ -1857,6 +1857,30 @@ async function sendCoach(){
 // imminent harm to others, severe medical emergency, or acute mental health crisis.
 // On detection: bypasses AI entirely and shows real-world resources.
 // This is intentionally conservative — false positives are acceptable here.
+// JUDGE EACH FIELD, NEVER THE JOIN (12 Oct 2026).
+// Five gates asked `detectCrisis` about `[a, b, c].filter(Boolean).join(' ')`. Every clause-bounded
+// pattern in this detector needs a clause end or `$` — the bound the owner measured at 2 false
+// positives instead of 42 — and joining a second field onto the first DESTROYS that `$`. So a
+// disclosure typed in one box was silenced by whatever ordinary thing sat in the next box.
+// Measured over 10 disclosures x 6 ordinary notes: the first field alone fires 10 of 10, the join
+// fires 18 of 60, and 42 of 60 go NULL. "i cant go on" + "walked the dog" returned nothing.
+// Three of the five sites are PRE-EXISTING and two are the Sunday check-in and the evening ritual,
+// which are among the most invited disclosure surfaces in the app.
+// This is the exact mirror of the recorded net lesson — joining a prompt's free-text fields
+// MANUFACTURES false positives no single field produces — and both say the same thing: judge the
+// FIELDS, not the concatenation. A false negative here is the worse direction, because nothing on
+// screen shows it happened.
+function crisisInAny(parts){
+  try{
+    const list = (Array.isArray(parts) ? parts : [parts]).filter(Boolean);
+    for(let i = 0; i < list.length; i++){
+      const k = detectCrisis(String(list[i]));
+      if(k) return k;
+    }
+  }catch(_){ }
+  return null;
+}
+
 function detectCrisis(text){
   if(!text || typeof text !== 'string') return null;
   // APOSTROPHE NORMALISATION — non-negotiable. iOS Smart Punctuation (on by default) rewrites ' to
@@ -6235,7 +6259,7 @@ function completeMorning(){
     if(typeof detectCrisis === 'function'){
       const _g = (document.getElementById('morning-gratitude')||{}).value || '';
       const _i = (document.getElementById('morning-intention')||{}).value || '';
-      _mCrisis = detectCrisis([_g, _i].filter(Boolean).join(' '));
+      _mCrisis = crisisInAny([_g, _i]);   // each field, never the join
     }
   }catch(_){ }
   // PERSIST FIRST, ALWAYS. The crisis branch below used to `return` before this write, so the single

@@ -158,7 +158,10 @@ async function logBody(){
   // because that line sat inside a try/catch the error would have been SWALLOWED and the flag silently
   // never set. A gate that appears to work and does nothing is the exact failure this file keeps having.
   let _wkCrisis = null;
-  try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
+  // EACH FIELD, NEVER THE JOIN — see crisisInAny. The Sunday check-in is crisis door #11 and its
+  // three boxes were judged as one string, so a disclosure in the win box was silenced by an
+  // ordinary struggle or focus typed after it.
+  try{ if(typeof crisisInAny === 'function') _wkCrisis = crisisInAny([winText, struggleText, focusText]); }catch(_){ }
 
   
   // THE SAME 20-400 BAND THE OTHER THREE WEIGH-IN DOORS ENFORCE. saveQuickWeight and both import
