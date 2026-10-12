@@ -103,10 +103,33 @@ if (plist) {
   const NEEDED = ['NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSPhotoLibraryAddUsageDescription',
                   'NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription',
                   'NSLocationWhenInUseUsageDescription', 'NSFaceIDUsageDescription'];
-  const absent = NEEDED.filter(k => !plist.includes(k));
-  // A missing usage string does not warn — iOS TERMINATES the app the moment the API is touched.
-  if (absent.length) bad(`Info.plist is missing ${absent.join(', ')} — iOS terminates the app when that API is touched`);
-  else good(`all ${NEEDED.length} usage descriptions present`);
+  // ASK THE PARSED PLIST, NOT THE RAW TEXT. `!plist.includes(k)` is a substring test: it never asks
+  // for the key's VALUE, so an empty `<string></string>` satisfied it — and Apple REJECTS a blank
+  // purpose string, which means this guard could pass a build that review then bounces. A key
+  // sitting inside an XML comment satisfied it too. `plutil -convert json` gives real values.
+  let parsed = null;
+  try {
+    parsed = JSON.parse(require('child_process')
+      .execFileSync('plutil', ['-convert', 'json', '-o', '-', 'ios/App/App/Info.plist'], { encoding: 'utf8' }));
+  } catch (e) { parsed = null; }
+  if (!parsed) {
+    bad('Info.plist could not be parsed by plutil — the usage-description checks below cannot run, ' +
+        'so this is a refusal to report rather than a pass');
+  } else {
+    const absent = NEEDED.filter(k => !(k in parsed));
+    // A missing usage string does not warn — iOS TERMINATES the app the moment the API is touched.
+    if (absent.length) bad(`Info.plist is missing ${absent.join(', ')} — iOS terminates the app when that API is touched`);
+    else {
+      // AND THE VALUE HAS TO BE A REAL SENTENCE. A present-but-empty string is the shape the
+      // substring test could not see, and it is a review rejection rather than a crash.
+      const blank = NEEDED.filter(k => !String(parsed[k] || '').trim());
+      const terse = NEEDED.filter(k => String(parsed[k] || '').trim().length > 0 &&
+                                       String(parsed[k] || '').trim().length < 20);
+      if (blank.length) bad(`Info.plist has ${blank.join(', ')} present but EMPTY — App Review rejects a blank purpose string`);
+      else if (terse.length) bad(`Info.plist has ${terse.join(', ')} under 20 characters — a purpose string has to say what the app does with it`);
+      else good(`all ${NEEDED.length} usage descriptions present, non-empty and explanatory`);
+    }
+  }
   // AND THE LIST ITSELF HAS TO BE COMPLETE. This guarded SIX of the seven strings that actually
   // ship, and the one it missed was NSPhotoLibraryAddUsageDescription — the string iOS demands
   // before an app may SAVE to the photo library, which is exactly the capability the App Privacy
@@ -114,7 +137,14 @@ if (plist) {
   // added later, so the plist is asked what it carries and the list is required to cover all of
   // it. Found 10 Oct 2026 while reviewing the commit that added the manifest cross-check above.
   {
-    const shipped = Array.from(new Set((plist.match(/NS[A-Za-z]*UsageDescription/g) || [])));
+    // AND THE CENSUS MUST SEE A NON-`NS` PURPOSE STRING. `/NS[A-Za-z]*UsageDescription/` cannot see
+    // Apple's `NFCReaderUsageDescription`, which carries no NS prefix — so it was invisible to the
+    // census AND, being absent from NEEDED, invisible to the presence check: a purpose string the
+    // app could add later and nothing here would guard. Asked of the PARSED keys now, which also
+    // means a key inside an XML comment is no longer counted as shipped.
+    const shipped = parsed
+      ? Object.keys(parsed).filter(k => /UsageDescription$/.test(k))
+      : Array.from(new Set((plist.match(/[A-Za-z]*UsageDescription/g) || [])));
     const unguarded = shipped.filter(k => NEEDED.indexOf(k) === -1);
     if (unguarded.length) bad(`Info.plist ships ${unguarded.join(', ')} but preflight does not guard it — add it to NEEDED`);
     else good(`and the guard list covers every usage description the plist ships (${shipped.length})`);

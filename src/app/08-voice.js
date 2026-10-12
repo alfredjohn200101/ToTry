@@ -101,7 +101,14 @@ const _RISK_REASON = [
   /\bbetter off without me\b/, /\bbetter off with me (?:gone|dead)\b/,
   // "my family would be relieved when i tell them i'm 90 days clean" is the sentence this app is FOR
   /\b(?:they|everyone|everybody|my family)(?:'?d| would)? (?:all )?be relieved\s*(?:if i (?:was |were |wasn'?t |weren'?t |am |'?m )?(?:not |never )?(?:gone|dead|here|around|alive)\b|when i'?m gone\b|without me\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
-  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))/,
+   // THE RESOLVE CONTINUATION THIS APP ASKS FOR. detectCrisis's copy of this entry gained this
+   // guard on 9 Oct; the net's copy did not — and the net reads a whole MESSAGE, so measured:
+   //   "i'm a burden on my kids and that's my why. i've picked the day."   -> NETTED
+   //   "i am a burden to my family and that changes today. i've picked the day." -> NETTED
+   // That is onboarding's "why does this matter?" (crisis door #18) beside the thing the
+   // Can't-start flow exists to produce, answered by appending a crisis line to an ordinary
+   // motivational reply. The window is tempered with [^.!?] so it cannot cross a sentence.
+  /\b(?:i'?m|i am|im)\s+(?:just |such |only )?a burden\b(?!\s*(?:bearer|carrier|ha[sd]\b|is\b|was\b|been\b|lift|off\b))\s*(?:(?:to|on|for) (?:them|everyone|everybody|the people|you|us|dad|mum|mom|my (?:family|wife|husband|partner|girlfriend|boyfriend|kids|children|parents|mum|mom|dad|sister|brother|mates|friends|team ?mates|training partner|whole family))\b|(?:[.!?]|[,\n\r]\s*(?:$|(?:i(?!'?ll\b|\s+will\b)|please|none|nothing|no ?one|nobody)\b)|[\n\r]\s*(?:and i|really)\b|$))(?!\s*(?:and|,|\u2014|-)?\s*(?:that'?s|thats|that is|this is|which is)\s+(?:my |the )?(?:why|reason)\b|[^.!?]{0,24}\band that (?:changes|stops|ends)\b|[^.!?]{0,24}\band (?:i'?m|i am|im) (?:changing|fixing|done) (?:that|it|with that)\b)/,
   /\bdon'?t want to be a burden any ?more\b/,
   // `will` and `'ll` beside `would`: "no one will need me." and "nobody will want me." were null in
   // BOTH layers. ("will miss me" was already covered — SUICIDE_RE's own entry has a 16-char

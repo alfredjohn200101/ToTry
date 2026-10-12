@@ -12237,6 +12237,65 @@ const ORD_NEEDLE = 'const ' + 'ORDINARY' + ' = [';
 // Each had a guard whose list was narrower than the ordinary English around it, so each cried wolf
 // on a sentence from one of this app's own fronts. Every row below was MEASURED firing before the
 // widening, and the must-fire rows are what stops the widening going too far.
+// ─────────────────────────────────────────────────
+// THE NET'S `a burden` LACKED THE RESOLVE GUARD ITS SIBLING GAINED (12 Oct 2026)
+// detectCrisis's copy of this entry got a resolve-continuation guard on 9 Oct. The net's copy did
+// not — and the net reads a whole MESSAGE, so onboarding's "why does this matter?" beside the thing
+// the Can't-start flow exists to produce got a crisis line appended to an ordinary reply.
+H.section('the net does not answer a resolve with a helpline');
+{
+  const code = H.code();
+  const arr = (n) => { const i = code.indexOf('const ' + n); if(i < 0) return null;
+    const o = code.indexOf('[', i); let dep = 0;
+    for(let k = o; k < code.length; k++){ if(code[k] === '[') dep++;
+      else if(code[k] === ']'){ dep--; if(!dep) return code.slice(o, k + 1); } } return null; };
+  const R = arr('_RISK_REASON'), P = arr('_RISK_PLAN');
+  H.ok(!!R && !!P, 'calibration: both net lists were bracket-matched');
+  const KEYS = ['Math','Date','JSON','Array','Object','String','RegExp','console','CRISIS_LINES'];
+  const VALS = [Math,Date,JSON,Array,Object,String,RegExp,console,
+                [{region:'Australia',name:'Lifeline',contact:'13 11 14',detail:'24/7 phone'}]];
+  // THE CONSTS MUST BE SUPPLIED. H.load extracts FUNCTIONS only, so driving _needsHumanNet without
+  // _RISK_REASON/_RISK_PLAN/_replyNamesAHuman makes it throw into its own catch and return false
+  // for EVERYTHING — which is what my first probe did, reporting four quiet results that meant
+  // nothing, including a control that must net.
+  const mk = (reasonSrc) => new Function(...KEYS,
+    'const _RISK_REASON=' + reasonSrc + ';\nconst _RISK_PLAN=' + P + ';\n' +
+    H.extractFn('_replyNamesAHuman') + '\n' + H.extractFn('_needsHumanNet') +
+    '\nreturn _needsHumanNet;')(...VALS);
+  const net = mk(R);
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  // CONTROL FIRST: a probe that cannot reach the net reports the same thing as a fixed defect.
+  H.ok(net('nobody needs me here. i have written a note for each of them.', 'you have got this'),
+    'calibration: a stacked reason and plan with no human in the reply DOES net');
+  H.ok(!net('had a good session today. i have picked the day, monday is day one.', 'nice work'),
+    'calibration: a plan with no reason does not');
+
+  const RESOLVE = [
+    "i'm a burden on my kids and that's my why. i've picked the day.",
+    'i am a burden to my family and that changes today. i have picked the day.',
+    "i'm a burden on my kids and thats my why. i've picked the day.",
+  ];
+  const netted = RESOLVE.filter(t => !detectCrisis(t) && net(t, 'you have got this'));
+  H.eq(netted, [],
+    'a burden named as a REASON TO CHANGE is not answered with a helpline — that sentence is ' +
+    "onboarding's why, which is crisis door #18, beside the thing the app asks people to do");
+
+  // FAULT INJECTION: take the guard out and both forms net again.
+  // NEUTER THE GUARD BY ITS INNER TOKEN, not by trying to match its bounds. My first injection
+  // tried to regex the whole lookahead out and matched nothing — and the calibration below
+  // correctly reported THE MEASUREMENT IS WRONG rather than passing over an injection that did
+  // nothing, which is the whole reason that branch exists.
+  const bare = R.replace("that'?s|thats|that is|this is|which is", 'zzzzz-never-matches-zzzzz');
+  if(bare !== R){
+    const old = mk(bare);
+    H.ok(RESOLVE.some(t => old(t, 'you have got this')),
+      'fault-injected: without the resolve guard the net answers onboarding\'s why with a helpline');
+  } else {
+    H.ok(false, 'calibration: the resolve guard could not be located for injection — THE MEASUREMENT IS WRONG');
+  }
+}
+
 H.section('four guards whose lists were narrower than the sentences around them');
 {
   const { detectCrisis } = H.load(['detectCrisis']);
@@ -14881,17 +14940,48 @@ H.section('no surface dials a number the app has not verified');
     .map(x => x.replace(/[^0-9]/g, '')).filter(x => x.length >= 3);
   const collect = (src) => (src.match(/contact:\s*['"]([^'"]+)['"]/g) || [])
     .flatMap(s => numsIn(s.replace(/.*['"]([^'"]+)['"].*/, '$1')));
-  const verified = new Set(collect(block));
-  // The OTHER verified lists, because a medical or harm number is no less checked than a crisis one.
-  ['MEDICAL_LINES', 'HARM_LINES'].forEach(n => {
+  // EVALUATE THE ARRAY, DO NOT REGEX ITS SOURCE. `collect()` reads the raw source text of each
+  // `contact:` field, and `03-person.js` writes the separator as a `\u00b7` ESCAPE — so the digit
+  // run matched "7 911" out of "u00b7 911" and the verified set held **7911 and 7999 instead of
+  // 911 and 999**. Measured. On the one check whose entire subject is a wrong number, the parser
+  // was inventing numbers and losing the real ones. Evaluating gives decoded strings.
+  const listOf = (n) => {
     const j = code.indexOf('const ' + n);
-    if (j < 0) return;
+    if (j < 0) return null;
     const o = code.indexOf('[', j); let dep = 0;
     for (let k = o; k < code.length; k++) {
       if (code[k] === '[') dep++;
-      else if (code[k] === ']') { dep--; if (!dep) { collect(code.slice(j, k + 1)).forEach(x => verified.add(x)); break; } }
+      else if (code[k] === ']') { dep--; if (!dep) {
+        try { return new Function('return ' + code.slice(o, k + 1))(); } catch(e){ return null; }
+      } }
     }
-  });
+    return null;
+  };
+  const numsOf = (rows) => (rows || []).flatMap(r => numsIn(r && r.contact));
+  const LINES = { CRISIS_LINES: listOf('CRISIS_LINES'), MEDICAL_LINES: listOf('MEDICAL_LINES'),
+                  HARM_LINES: listOf('HARM_LINES') };
+  H.ok(LINES.CRISIS_LINES && LINES.CRISIS_LINES.length >= 7,
+    'calibration: CRISIS_LINES evaluated to ' + ((LINES.CRISIS_LINES || []).length) + ' rows (>=7)');
+  const harmNums = numsOf(LINES.HARM_LINES);
+  H.ok(harmNums.indexOf('911') >= 0 && harmNums.indexOf('999') >= 0,
+    'calibration: the parser reads 911 and 999 out of HARM_LINES — it used to read 7911 and 7999, ' +
+    'so this assertion is the one that would have caught it');
+  H.eq(harmNums.filter(n => n === '7911' || n === '7999'), [],
+    'and invents neither 7911 nor 7999 from the separator escape');
+
+  const verified = new Set([].concat(numsOf(LINES.CRISIS_LINES), numsOf(LINES.MEDICAL_LINES), numsOf(LINES.HARM_LINES)));
+
+  // AND THE CARD DIMENSION, WHICH THE UNION THREW AWAY. Flattening three lists into one Set makes
+  // every number verified for every card — so **111 passes**, and 111 is the NHS NON-emergency
+  // line: right on a medical card, and exactly the wrong number on a suicide one. This check exists
+  // because the model once offered "988 in the US and Canada, or 111 in the UK" to an AUSTRALIAN
+  // user, so a union that admits 111 anywhere cannot catch its own founding defect.
+  const suicideNums = new Set(numsOf(LINES.CRISIS_LINES));
+  H.ok(!suicideNums.has('111'),
+    'the suicide card\'s own list does not carry 111 — the number this whole check was built for');
+  H.ok(new Set(numsOf(LINES.MEDICAL_LINES)).has('111'),
+    'calibration: 111 really is in MEDICAL_LINES, where it belongs, so the assertion above is ' +
+    'distinguishing the two cards rather than asserting an absence that is true everywhere');
   // NAMED, WITH ITS REASON, the way this repo allowlists a hardcoded colour rather than guessing.
   // 1800 33 4673 is the Butterfly Foundation's national helpline — "1800 ED HOPE" — dialled by
   // showEDSupport(). It is not a crisis, medical or harm line, so it does not belong in those

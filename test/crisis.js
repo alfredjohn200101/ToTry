@@ -97,11 +97,11 @@ const DOORS = [
       if(typeof submitFeedback === 'function') submitFeedback();
     }, phrase) },
   { name: 'a goal',
-    go: async page => page.evaluate(() => { if(typeof editGoal==='function') editGoal('year'); }),
+    go: async page => page.evaluate(() => { if(typeof editGoal==='function') editGoal('yearly'); }),
     fire: async (page, phrase) => page.evaluate(async p => {
       const i = document.getElementById('goal-input');
       if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
-      if(typeof saveGoalEdit === 'function') saveGoalEdit('year');
+      if(typeof saveGoalEdit === 'function') saveGoalEdit('yearly');
     }, phrase) },
   // The quick log is what somebody fills in right after a SLIP. savePostUrge is already a door
   // because it catches the moment after a WIN; this is the other one, and it had no gate at all.
@@ -735,11 +735,11 @@ const PROBE = `(() => {
     const errs = []; page.on('pageerror', e => errs.push(e.message.slice(0,120)));
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
-      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // totry_v and totry_h are the keys the APP'S OWN READERS use (loadV/loadH). A door seeded with a
       // key only the test believes in reports the app broken -- that happened once already,
       // with totry_vices against a loadV() that reads totry_v.
       s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
-      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
+      s('totry_h',[{n:'Read',a:'',done:[]}]); });   // totry_h is what loadH() reads
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     // Anything that opened on its own would sit over the card and make this measure the overlay, not
@@ -823,11 +823,11 @@ const PROBE = `(() => {
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
-      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // totry_v and totry_h are the keys the APP'S OWN READERS use (loadV/loadH). A door seeded with a
       // key only the test believes in reports the app broken -- that happened once already,
       // with totry_vices against a loadV() that reads totry_v.
       s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
-      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
+      s('totry_h',[{n:'Read',a:'',done:[]}]); });   // totry_h is what loadH() reads
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
@@ -870,11 +870,11 @@ const PROBE = `(() => {
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
-      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // totry_v and totry_h are the keys the APP'S OWN READERS use (loadV/loadH). A door seeded with a
       // key only the test believes in reports the app broken -- that happened once already,
       // with totry_vices against a loadV() that reads totry_v.
       s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
-      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
+      s('totry_h',[{n:'Read',a:'',done:[]}]); });   // totry_h is what loadH() reads
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     await page.evaluate(() => {
@@ -952,11 +952,11 @@ const PROBE = `(() => {
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity');
-      // totry_v and totry_habits are the keys the APP'S OWN READERS use. A door seeded with a
+      // totry_v and totry_h are the keys the APP'S OWN READERS use (loadV/loadH). A door seeded with a
       // key only the test believes in reports the app broken -- that happened once already,
       // with totry_vices against a loadV() that reads totry_v.
       s('totry_v',[{n:'porn',since:Date.now()-86400000*5,kind:'vice'}]);
-      s('totry_habits',[{name:'Read',anchor:'',done:[]}]); });
+      s('totry_h',[{n:'Read',a:'',done:[]}]); });   // totry_h is what loadH() reads
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2900);
     const r = await page.evaluate(async () => {
