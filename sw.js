@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v617-a-real-scanner'
+const CACHE = 'totry-v618-the-scanner-reviewed'
 
 const CORE = [
   './',

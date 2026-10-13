@@ -5269,10 +5269,152 @@ H.section('a camera that cannot open says why, and offers the way back');
   // products carry a name and nothing else; queueing one put 0 cal in the diary under a believable
   // name, and the memory then cached that zero for good. This project already fixed exactly this
   // class for USDA.
-  H.ok(/!\(food\.cal > 0\)/.test(start),
-    'a product with no calories is refused rather than queued at zero');
-  H.ok(start.indexOf('!(food.cal > 0)') < start.indexOf('barcodeRemember(code, food)'),
-    'and refused BEFORE it is written into the barcode memory, where a zero would be permanent');
+  //
+  // DRIVEN, NOT GREPPED. The first version of these two matched `!(food.cal > 0)` in the source of
+  // `_startLiveBarcodeScan`, and when the read handler moved out into `_bcOnRead` they failed on
+  // correct code — the location, asserted instead of the fact, for the Nth time in this file. These
+  // run the handler.
+  H.defer((async () => {
+    const mk = (over) => {
+      const queued = [], remembered = [], missed = [], cards = [];
+      const L = H.load(['_bcOnRead'], Object.assign({
+        _bcSeq: 0,
+        _bcQueueAdd: (f, c) => { queued.push((f && f.name) + '|' + c); },
+        barcodeRemember: (c, f) => { remembered.push(c); },
+        _bcMissAdd: (c) => { missed.push(c); },
+        barcodeRecall: () => null,
+        _bcFetchForScanner: async () => ({ name: 'Mystery tin', cal: 0, per100: true }),
+      }, over || {}));
+      const P = { showScanResult: async (o) => { cards.push(o.title + '|' + o.sub); } };
+      return { L, P, queued, remembered, missed, cards };
+    };
+
+    const z = mk();
+    H.ok(typeof z.L._bcOnRead === 'function', 'calibration: the read handler loaded');
+    await z.L._bcOnRead({ code: '5012345678900' }, z.P);
+    H.ok(z.queued.length === 0,
+      'a product with no calories is refused rather than queued at zero');
+    H.ok(z.remembered.length === 0,
+      'and refused BEFORE it is written into the barcode memory, where a zero would be permanent');
+    H.ok(z.cards.some(c => /no calories on record/i.test(c)),
+      'and the viewfinder says so rather than claiming it was added');
+    H.ok(z.missed.indexOf('5012345678900') >= 0,
+      'and it is kept as a miss, so the person is offered the way to add it once');
+
+    // CALIBRATION: the same handler DOES queue a real food, so the refusal above is the guard
+    // working and not the stub failing to reach the code at all.
+    const ok = mk({ _bcFetchForScanner: async () => ({ name: 'Baked beans', cal: 94, per100: true }) });
+    await ok.L._bcOnRead({ code: '5000171000019' }, ok.P);
+    H.ok(ok.queued.length === 1 && /Baked beans/.test(ok.queued[0]),
+      'calibration: a product WITH calories is queued');
+    H.ok(ok.remembered.length === 1, 'calibration: and remembered');
+
+    // A STALE LOOKUP MUST NOT PAINT OVER A NEWER ONE. Two different barcodes a second apart are two
+    // concurrent lookups and Open Food Facts does not answer in order; the slow first product used
+    // to name itself on a card while the camera was pointed at the second. The food is still
+    // queued — only the CARD is suppressed.
+    //
+    // TWO REAL CONCURRENT READS, not a poked variable. The first cut set `L._bcSeq = 9` from the
+    // outside and failed on correct code: H.load passes module state as a WRAPPER PARAMETER, so the
+    // property on the returned object is a different binding from the one the function closes over.
+    // Driving a second read is also the honest reproduction — that is how it happens in a shop.
+    let release = null, calls = 0;
+    const race = mk({ _bcFetchForScanner: () => {
+      calls++;
+      if(calls === 1) return new Promise((res) => {
+        release = () => res({ name: 'Slow lentils', cal: 116, per100: true });
+      });
+      return Promise.resolve({ name: 'Fast rice', cal: 130, per100: true });
+    } });
+    const first = race.L._bcOnRead({ code: '5000171000026' }, race.P);   // stalls on the network
+    await race.L._bcOnRead({ code: '5000171000033' }, race.P);           // overtakes it
+    release();
+    await first;
+    H.ok(race.queued.length === 2,
+      'an overtaken lookup still queues its food — nothing the person scanned is dropped');
+    H.ok(race.cards.length === 1 && /Fast rice/.test(race.cards[0]),
+      'but only the NEWEST read paints a card, because a card names the thing in your hand');
+  })());
+}
+
+H.section('a scan still in flight when Done is tapped is not lost');
+{
+  // `P.scan()` resolves the moment the person taps Done. A lookup started a second earlier is still
+  // awaiting the network, and its `_bcQueueAdd` then ran AFTER `_bcFlushQueue()` had already
+  // drained — so the food sat in the array until the next session cleared it. Scanned, acknowledged
+  // on screen, and silently gone, which is the one outcome this path must never produce.
+  const mk = (state) => {
+    const flushed = [];
+    const q = [];
+    const L = H.load(['_bcQueueAdd'], Object.assign({
+      _bcQueue: q, _bcFlushQueue: () => { flushed.push(1); },
+    }, state));
+    return { L, flushed, q };
+  };
+
+  const late = mk({ _bcSessionEnded: true, _bcDraining: false });
+  H.ok(typeof late.L._bcQueueAdd === 'function', 'calibration: the queue add loaded');
+  late.L._bcQueueAdd({ name: 'Baked beans' }, '5000171000019');
+  H.ok(late.q.length === 1, 'the straggler is queued');
+  H.ok(late.flushed.length === 1,
+    'and because the session has ended and the drain is finished, it drains ITSELF rather than ' +
+    'being stranded until the next scan clears the array');
+
+  const during = mk({ _bcSessionEnded: true, _bcDraining: true });
+  during.L._bcQueueAdd({ name: 'Rice' }, '222');
+  H.ok(during.q.length === 1 && during.flushed.length === 0,
+    'mid-drain it does NOT re-flush — addFoodToLog calls _bcNext() and will reach it, and a second ' +
+    'flush there would open two serving sheets');
+
+  const live = mk({ _bcSessionEnded: false, _bcDraining: false });
+  live.L._bcQueueAdd({ name: 'Lentils' }, '333');
+  H.ok(live.q.length === 1 && live.flushed.length === 0,
+    'and with the camera still open it only queues — a serving sheet opened under ' +
+    '#barcode-scanner-modal is the bug that made this whole path unable to log anything');
+}
+
+H.section('a barcode the database does not have gets a route, not a verdict');
+{
+  // "Not in the database" inside the viewfinder was the end of the road: by the time the camera
+  // closed the number was gone, and copying thirteen digits off a tin by hand is the exact job the
+  // camera was opened for.
+  const asked = [], created = [];
+  const M = H.load(['_bcMissAdd', '_bcMissesOffer'], {
+    _bcMisses: [],
+    _bcCreateFor: (c) => { created.push(c); },
+    askConfirm: (t, b) => { asked.push(t + '|' + b); return Promise.resolve(false); },
+  });
+  H.ok(typeof M._bcMissAdd === 'function' && typeof M._bcMissesOffer === 'function',
+    'calibration: the miss helpers loaded');
+
+  M._bcMissAdd('5012345678900');
+  M._bcMissAdd('5012345678900');
+  M._bcMissAdd('');
+  M._bcMissAdd('5099999999999');
+  H.defer((async () => {
+    M._bcMissesOffer();
+    await new Promise((r) => setTimeout(r, 0));
+    H.ok(asked.length === 1, 'the misses are offered ONCE, together');
+    H.ok(/2 barcodes/.test(asked[0] || ''),
+      'de-duplicated and counted — a trolley sweep reads the same unknown tin twice, and offering ' +
+      'it twice is worse than not offering it');
+    H.ok(created.length === 0,
+      'and it ASKS: answering no opens nothing, because the custom-food creator springing open for ' +
+      'a tin somebody scanned by accident is a takeover');
+
+    const yes = [], madeYes = [];
+    const Y = H.load(['_bcMissAdd', '_bcMissesOffer'], {
+      _bcMisses: [],
+      _bcCreateFor: (c) => { madeYes.push(c); },
+      askConfirm: (t) => { yes.push(t); return Promise.resolve(true); },
+    });
+    Y._bcMissAdd('5012345678900');
+    Y._bcMissesOffer();
+    await new Promise((r) => setTimeout(r, 0));
+    H.ok(/One barcode/.test(yes[0] || ''), 'one miss is phrased as one');
+    H.ok(madeYes.length === 1 && madeYes[0] === '5012345678900',
+      'and yes carries the DIGITS through to the creator — the whole point is not retyping them');
+  })());
 }
 
 H.section('the scan queue drains once and never replays');
@@ -7055,6 +7197,28 @@ H.section('a camera that is switched off says so, instead of going quiet');
   // so renaming the implementation out from under the declaration slipped straight past it.
   H.ok(/@objc func openSettings\(_ call: CAPPluginCall\)/.test(swift), 'and implements it, under that exact name');
   H.ok(/UIApplication\.openSettingsURLString/.test(swift), 'opening this app’s own page in Settings');
+
+  // A CAMERA THAT COMES BACK FROZEN READS AS A BROKEN FEATURE. Backgrounding mid-scan does NOT call
+  // `viewWillDisappear` — the controller stays presented while iOS interrupts the session — so the
+  // existing swipe-to-dismiss guard cannot cover it. Most interruptions resume on their own;
+  // `.videoDeviceInUseByAnotherClient` and a media-services reset do not.
+  const sc = H.code(swift);
+  H.ok(/willEnterForegroundNotification/.test(sc),
+    'the scanner restarts its session when the app comes back to the foreground');
+  H.ok(/AVCaptureSessionInterruptionEnded/.test(sc),
+    'and when the interruption itself ends, which is the notification that fires for a phone call');
+  H.ok(/AVCaptureSessionRuntimeError/.test(sc),
+    'and it watches for a runtime error, which no amount of waiting recovers from');
+  H.ok(/mediaServicesWereReset/.test(sc) && /self\.finish\(nil\)/.test(sc),
+    'retrying only the recoverable one and ANSWERING THE PROMISE otherwise — a viewfinder left up ' +
+    'over a dead session is the "appears dead from then on" failure, with no swipe the person has ' +
+    'any reason to try');
+  // AN OBSERVER THAT OUTLIVES ITS CONTROLLER IS A LEAK, and this controller is presented once per
+  // scan. Both exits must release: `finish` for the ordinary path and `deinit` as the backstop.
+  H.ok(/releaseLifecycleObservers\(\)/.test(sc) && /deinit \{ releaseLifecycleObservers\(\) \}/.test(sc),
+    'and every observer is released on both exits, so a scan per shop does not stack them up');
+  H.ok(sc.split('releaseLifecycleObservers()').length - 1 >= 3,
+    'calibration: released from the declaration, from finish, and from deinit');
   // A declared-but-unimplemented method, or an implemented-but-undeclared one, is the v408 bug again:
   // a silent no-op. Both halves or neither.
   H.ok(/openSettings/.test(H.html), 'and the app actually calls it');

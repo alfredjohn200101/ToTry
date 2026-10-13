@@ -8697,7 +8697,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v617';
+const APP_VERSION = 'v618';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -33746,6 +33746,7 @@ async function _startLiveBarcodeScan(){
   // A new session starts empty. Without this, items stranded by a cancelled sheet last week are
   // still in the array and would be drained into this shop.
   _bcQueue = []; _bcDraining = false; _bcAfterDrain = null;
+  _bcLookups = []; _bcMisses = []; _bcSeq = 0; _bcSessionEnded = false;
   // RECIPE MODE IS NOT OURS TO HANDLE. `__recipeScan` says "this scan is for the recipe builder", and
   // `lookupBarcode` consumes it and routes the item into the recipe. A continuous trolley scan has no
   // meaning there — and bypassing lookupBarcode would both log the ingredient to today's diary and
@@ -33765,36 +33766,14 @@ async function _startLiveBarcodeScan(){
   if(canStream){
     let handle = null;
     try{
-      handle = await P.addListener('barcodeScanned', async (ev) => {
-        const code = String((ev && ev.code) || '').replace(/\D/g, '');
-        if(!code) return;
-        try{
-          const known = (typeof barcodeRecall === 'function') ? barcodeRecall(code) : null;
-          const food = known || await _bcFetchForScanner(code);
-          // A FOOD WITH NO CALORIE FIGURE IS NOT LOGGABLE, and must not be cached either. Open Food
-          // Facts is a public wiki: plenty of products carry a name and nothing else, and queueing
-          // one put 0 cal in the diary under a name the person would believe — then the memory
-          // cached that zero and every later scan of it returned 0 for good. This project already
-          // fixed exactly this for USDA; the flag has to be the ABSENCE of a figure, not a value of
-          // 0, because a genuinely calorie-free food (water) legitimately reports 0.
-          if(food && !(food.cal > 0) && !food.__zeroOk){
-            await P.showScanResult({ title: food.name || 'No nutrition data',
-              sub: 'The database has no calories for this — add it by hand', ok: false });
-          } else if(food){
-            if(!known && typeof barcodeRemember === 'function') barcodeRemember(code, food);
-            _bcQueueAdd(food, code);
-            await P.showScanResult({ title: food.name || 'Added',
-              // NOT "added to today" — nothing is in the diary until they confirm the serving. The
-              // card said it was, which made a cancelled sheet silent data loss.
-              sub: (food.cal != null ? food.cal + ' cal/100g · ' : '') + 'scanned · confirm when done',
-              ok: true });
-          } else {
-            await P.showScanResult({ title: 'Not in the database',
-              sub: code + ' · tap Done, then add it once', ok: false });
-          }
-        }catch(_){
-          try{ await P.showScanResult({ title: 'Could not look that up', sub: 'Check your connection', ok: false }); }catch(__){}
-        }
+      // TRACK THE PROMISE. `P.scan()` resolves the instant the person taps Done, and a lookup still
+      // awaiting the network then pushed its food into `_bcQueue` AFTER the flush had already run —
+      // scanned, acknowledged on screen, and silently gone. The handler is a named async function so
+      // the promise it returns can be waited on.
+      handle = await P.addListener('barcodeScanned', (ev) => {
+        const p = _bcOnRead(ev, P);
+        try{ _bcLookups.push(p); }catch(_){ }
+        return p;
       });
     }catch(_){ handle = null; }
 
@@ -33802,12 +33781,26 @@ async function _startLiveBarcodeScan(){
     try{ r = await P.scan({ continuous: true }); }catch(_){ r = null; }
     try{ if(handle && typeof handle.remove === 'function') await handle.remove(); }catch(_){ }
 
+    // DONE DOES NOT CANCEL WHAT IS IN FLIGHT. Removing the listener stops new reads; it does not
+    // abort a lookup already awaiting the network, which `_fetchT` bounds at ~14s across its two
+    // bases. Give the quick ones a moment so they drain in the order they were scanned.
+    if(_bcLookups.length){
+      try{ await Promise.race([ Promise.allSettled(_bcLookups.slice()),
+                                new Promise((res) => setTimeout(res, 2500)) ]); }catch(_){ }
+    }
+
     // CLOSE THE SHEET THE SCAN CAME FROM, FIRST. `#barcode-scanner-modal` is appended to body and so
     // sits ABOVE the static `#serving-modal` at the same z-index — so the serving sheet opened
     // UNDERNEATH it and "Add to today's log" could not be tapped. The continuous path cannot log
     // anything without this. The one-shot path never had the bug because `lookupBarcode()` closes
     // the sheet itself, and bypassing lookupBarcode is exactly what lost it.
     try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){ }
+
+    // ONLY NOW. `_bcSessionEnded` lets a lookup that lands after the drain re-flush itself instead
+    // of being stranded — and it is armed AFTER the camera sheet is removed, because a serving sheet
+    // opened while `#barcode-scanner-modal` is still on screen sits UNDERNEATH it and cannot be
+    // tapped. That is the bug that made the whole continuous path unable to log anything.
+    _bcSessionEnded = true;
 
     // DRAIN FIRST, THEN THE KEYPAD. Returning past the flush here would silently drop everything
     // they had already scanned before reaching for "Type it instead".
@@ -33822,6 +33815,7 @@ async function _startLiveBarcodeScan(){
       return;
     }
     if(r && r.manual) _bcAfterDrain = _bcManualEntry;
+    else if(_bcMisses.length) _bcAfterDrain = _bcMissesOffer;
     _bcFlushQueue();
     return;
   }
@@ -33834,6 +33828,54 @@ async function _startLiveBarcodeScan(){
   if(st) st.innerHTML = '<span style="color:var(--gr)">Found ' + _escFew(res) + ' \u2014 looking it up\u2026</span>';
   if(typeof haptic==='function') haptic('success');
   lookupBarcode(res);
+}
+
+// ONE READ, START TO FINISH. Extracted from the listener so its promise can be tracked.
+async function _bcOnRead(ev, P){
+  const code = String((ev && ev.code) || '').replace(/\D/g, '');
+  if(!code) return;
+  // WHICH SCAN IS THE PERSON LOOKING AT? Two different barcodes read a second apart are two
+  // concurrent lookups, and Open Food Facts does not answer them in the order they were asked — a
+  // slow first product painted its card OVER the second one's, so the viewfinder named a product
+  // the camera was no longer pointed at. Only the CARD is suppressed when a newer read has
+  // overtaken this one; the food is queued either way, because a card is a statement about the
+  // thing in your hand and the queue is a record of what you scanned.
+  const turn = ++_bcSeq;
+  try{
+    const known = (typeof barcodeRecall === 'function') ? barcodeRecall(code) : null;
+    const food = known || await _bcFetchForScanner(code);
+    const latest = (turn === _bcSeq);
+    // A FOOD WITH NO CALORIE FIGURE IS NOT LOGGABLE, and must not be cached either. Open Food
+    // Facts is a public wiki: plenty of products carry a name and nothing else, and queueing one
+    // put 0 cal in the diary under a name the person would believe — then the memory cached that
+    // zero and every later scan of it returned 0 for good. This project already fixed exactly this
+    // for USDA; the flag has to be the ABSENCE of a figure, not a value of 0, because a genuinely
+    // calorie-free food (water) legitimately reports 0.
+    if(food && !(food.cal > 0) && !food.__zeroOk){
+      _bcMissAdd(code);
+      if(latest) await P.showScanResult({ title: food.name || 'No nutrition data',
+        sub: 'No calories on record \u2014 tap Done to add it yourself', ok: false });
+    } else if(food){
+      if(!known && typeof barcodeRemember === 'function') barcodeRemember(code, food);
+      _bcQueueAdd(food, code);
+      if(latest) await P.showScanResult({ title: food.name || 'Added',
+        // NOT "added to today" — nothing is in the diary until they confirm the serving. The card
+        // said it was, which made a cancelled sheet silent data loss.
+        sub: (food.cal != null ? food.cal + ' cal/100g \u00b7 ' : '') + 'scanned \u00b7 confirm when done',
+        ok: true });
+    } else {
+      // A MISS NEEDS A ROUTE, NOT A VERDICT. "Not in the database" inside the viewfinder is the end
+      // of the road: by the time the camera closes the number is gone, and copying thirteen digits
+      // off a tin by hand is the exact job the camera was opened for. Keep it and offer it after
+      // the real items are logged.
+      _bcMissAdd(code);
+      if(latest) await P.showScanResult({ title: 'Not in the database',
+        sub: code + ' \u00b7 tap Done to add it yourself', ok: false });
+    }
+  }catch(_){
+    try{ if(turn === _bcSeq) await P.showScanResult({ title: 'Could not look that up',
+                                                     sub: 'Check your connection', ok: false }); }catch(__){}
+  }
 }
 
 // The camera could not open, and the person is owed the reason plus the one way back. iOS asks for
@@ -33871,7 +33913,46 @@ let _bcQueue = [];
 // ReferenceError exactly as the `const ic` calendar crash did.
 let _bcDraining = false;
 let _bcAfterDrain = null;
-function _bcQueueAdd(food, code){ try{ _bcQueue.push({ food: food, code: code }); }catch(_){ } }
+// Reads in flight, so the Done tap can wait for them; the sequence number of the newest read, so a
+// slow one cannot paint its card over a newer one; and whether the session has ended, which is what
+// lets a straggler drain itself instead of sitting in the array until the next scan clears it.
+let _bcLookups = [];
+let _bcSeq = 0;
+let _bcSessionEnded = false;
+function _bcQueueAdd(food, code){
+  try{
+    _bcQueue.push({ food: food, code: code });
+    // A LATE ARRIVAL MUST NOT BE STRANDED. If the drain already finished (or never started, because
+    // the queue was empty when Done was tapped) nothing will come back for this item — the next
+    // session resets the array and the food the person scanned and watched being acknowledged is
+    // gone. Mid-drain needs nothing: `addFoodToLog` calls `_bcNext()` and will reach it.
+    if(_bcSessionEnded && !_bcDraining) _bcFlushQueue();
+  }catch(_){ }
+}
+// Barcodes the database could not answer for. Capped and de-duplicated: a trolley scan can sweep the
+// same unknown tin twice, and offering it twice is worse than not offering it.
+let _bcMisses = [];
+function _bcMissAdd(code){
+  try{ if(code && _bcMisses.indexOf(code) < 0 && _bcMisses.length < 20) _bcMisses.push(code); }catch(_){ }
+}
+// Offered once the real items are logged, never instead of them — this runs from `_bcAfterDrain`.
+// It ASKS. Opening the custom-food creator unbidden for a tin somebody scanned by accident is a
+// takeover, and this app does not do those.
+function _bcMissesOffer(){
+  const codes = _bcMisses.slice();
+  _bcMisses = [];
+  if(!codes.length) return;
+  const n = codes.length;
+  if(typeof askConfirm !== 'function'){ _bcCreateFor(codes[0]); return; }
+  Promise.resolve(askConfirm(
+      n === 1 ? 'One barcode wasn\u2019t in the database' : n + ' barcodes weren\u2019t in the database',
+      n === 1 ? 'Add it once and every later scan of it is instant.'
+              : 'Add them once and every later scan is instant. We\u2019ll start with the first.',
+      { confirmLabel: 'Add it now', cancelLabel: 'Not now', danger: false }))
+    .then(function(yes){ if(yes) _bcCreateFor(codes[0]); })
+    .catch(function(){});
+}
+
 // DRIVE THE EXISTING SHEET, DO NOT REIMPLEMENT IT. The first cut of this built log entries itself and
 // called `addFoodToLog(food, 100)` — which takes NO arguments, reads `sm-qty` and `sm-serving-select`
 // out of the serving modal's own DOM, and carries the micronutrient scaling where this project's

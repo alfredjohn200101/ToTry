@@ -190,6 +190,7 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
     private let resultSub = UILabel()
     private let focusRing = UIView()
     private var aimBox: CGRect = .zero
+    private var lifecycleObservers: [NSObjectProtocol] = []
 
     private let gold = UIColor(red: 0.78, green: 0.66, blue: 0.43, alpha: 1)
 
@@ -230,9 +231,54 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         }
         buildOverlay()
         addGestures()
+        observeLifecycle()
         // startRunning blocks; keeping it off the main thread stops the present animation stuttering.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.session.startRunning() }
     }
+
+    /// A CAMERA THAT COMES BACK FROZEN READS AS A BROKEN FEATURE. Backgrounding the app mid-scan — a
+    /// phone call, a glance at a shopping list, the app switcher — does NOT call `viewWillDisappear`:
+    /// the controller stays presented while iOS interrupts the capture session. Most interruptions
+    /// resume on their own; `.videoDeviceInUseByAnotherClient` and a media-services reset do not, and
+    /// without this the person returns to a black rectangle that never scans again, with the only way
+    /// out being a swipe they have no reason to think will help.
+    private func observeLifecycle() {
+        let nc = NotificationCenter.default
+        let resume: (Notification) -> Void = { [weak self] _ in
+            guard let self = self, !self.finished, !self.session.isRunning else { return }
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.session.startRunning() }
+        }
+        lifecycleObservers.append(
+            nc.addObserver(forName: UIApplication.willEnterForegroundNotification,
+                           object: nil, queue: .main, using: resume))
+        lifecycleObservers.append(
+            nc.addObserver(forName: .AVCaptureSessionInterruptionEnded,
+                           object: session, queue: .main, using: resume))
+        // A RUNTIME ERROR IS NOT AN INTERRUPTION. `mediaServicesWereReset` is recoverable and worth
+        // one attempt; anything else has taken the camera for good, and leaving the viewfinder up
+        // would be the "appears dead from then on" failure `viewWillDisappear` already guards
+        // against — so answer the promise and let the JS offer the keypad.
+        lifecycleObservers.append(
+            nc.addObserver(forName: .AVCaptureSessionRuntimeError,
+                           object: session, queue: .main) { [weak self] note in
+                guard let self = self, !self.finished else { return }
+                let err = note.userInfo?[AVCaptureSessionErrorKey] as? NSError
+                if err?.code == AVError.mediaServicesWereReset.rawValue {
+                    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                        self?.session.startRunning()
+                    }
+                } else {
+                    self.finish(nil)
+                }
+            })
+    }
+
+    private func releaseLifecycleObservers() {
+        for o in lifecycleObservers { NotificationCenter.default.removeObserver(o) }
+        lifecycleObservers.removeAll()
+    }
+
+    deinit { releaseLifecycleObservers() }
 
     private var metadataOutput: AVCaptureMetadataOutput?
 
@@ -499,6 +545,7 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         if session.isRunning {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.session.stopRunning() }
         }
+        releaseLifecycleObservers()
         if BarcodeScanViewController.live === self { BarcodeScanViewController.live = nil }
         let cb = onResult
         onResult = nil
