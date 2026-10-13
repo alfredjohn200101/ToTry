@@ -1438,6 +1438,50 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `_promptCity` is refused on the same ground — a city for prayer times.
      So gating all 21 would have been the blanket sweep this file fails builds over, and the right
      output of a census is a CRITERION, not a count. If somebody re-flags these, the answer is here.
+   - **AND THE SCANNER'S FIX MOVED THE BUG, ONE COMMIT LATER (13 Oct 2026).** v618 fixed four real
+     scanner defects; a six-lens review of THAT commit found two of its own fixes defective, which is
+     rule 4 holding for the Nth time — and this time the regression was worse than the bug.
+     **A LATE ARRIVAL WAS STRANDED, AND THE FIX MADE IT OVERWRITE A LIVE SHEET.** `_bcNext` clears
+     `_bcDraining` when the LAST queued item opens its serving sheet
+     (`else _bcDraining = _bcQueue.length > 0`), so "the session ended and the drain is finished" is
+     ALSO true while somebody is entering a quantity. The new self-flush therefore called
+     `openServingModal`, which rewrites the single static `#serving-modal` — the product swapped
+     under their finger, "Add to today's log" logged the wrong food, and because the first item had
+     already been shifted out of the queue `_bcAbandonQueue` reported nothing discarded. **Before the
+     fix the straggler was merely lost; after it, the item the person was actively confirming was.**
+     `askConfirm` is the same hazard from the other side: it appends a `modal-locked` dialog AFTER
+     the static sheet at the same z-index, so a sheet opened beneath it cannot be seen or tapped —
+     the documented `#barcode-scanner-modal` overlay bug arriving through the app's own confirm.
+     One `_bcSheetUp()` predicate parks the straggler now, and **the confirm hook had to learn
+     `_bcSettle()` in the same change** — without it the guard becomes the stranding bug it was
+     written to avoid, because the hook only ever ran `_bcNext` when `_bcDraining` was true.
+     **AND A MONOTONIC COUNTER WAS RESET PER SESSION, WHICH DEFEATED THE GUARD AT THE BOUNDARY.**
+     `_bcSeq` is only ever compared for equality, so leaving it alone rejects every previous-session
+     read for free. Resetting it to 0 meant a lookup still in flight when the last session ended came
+     back holding turn 1, matched the NEW session's first read, painted a product the camera was never
+     pointed at, and queued it into that trolley. **Injecting the reset left the suite GREEN** — the
+     fix had no test at all — and the assertion it has now reads the **comment-stripped** source,
+     because the comment explaining the decision names `_bcSeq` and an unstripped grep fails on
+     correct code. That is this file's own recorded trap, inside the test written to close the gap.
+     Two more of the five were half-applied within one commit: `_bcQueueAdd` got late-arrival
+     handling and **`_bcMissAdd` did not**, so an unknown tin whose lookup had not answered by the
+     Done tap was pushed to `_bcMisses` after `_bcAfterDrain` had already been chosen, and sat there
+     until the next session wiped it — the dead end the feature exists to remove. And the offer's copy
+     promised *"we'll start with the first"*, which reads as a queue, then offered `codes[0]` and
+     dropped the rest.
+     **HOW THE REVIEW ITSELF LIED, AND IT IS A NEW SHAPE.** 75 of its 92 agents died on a session
+     limit, and the pipeline counts a finding as surviving when **fewer than two refuters kill it** —
+     so every finding whose refuters never ran was reported as having SURVIVED two refuters. A
+     refutation pass that fails open certifies whatever the finders said. Five of these were real on
+     inspection, which is luck rather than evidence; the right reading of that result is "unrefuted",
+     and each was verified by hand before being touched. **A quorum rule needs a denominator.**
+     Two instrument lessons came with it. **`H.load` extracts FUNCTIONS, so a new predicate inside a
+     tested function silently throws into its catch** — `_bcQueueAdd` calling the unloaded
+     `_bcSheetUp()` made the flush never happen and the section failed on correct code. And **a
+     global passed to `H.load` arrives as a WRAPPER PARAMETER**: the first stale-card test set
+     `L._bcSeq = 9` from outside, which is a property on the returned object and a different binding
+     from the one the function closes over, so the assertion could not fail. Driving two real
+     concurrent reads is both the correct test and the honest reproduction.
    - `npm run crisis` — **56 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
