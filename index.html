@@ -7818,7 +7818,7 @@ Amen.</div></div>
       <button type="button" class="meal-chip" data-meal="snack" onclick="selectMealChip('snack')"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 7c-1.5-2-4-2.5-5.5-1C4.5 7.5 4 11 5.5 15c1 2.6 2.3 4.5 4 4.5 1 0 1.5-.6 2.5-.6s1.5.6 2.5.6c1.7 0 3-1.9 4-4.5 1.5-4 1-7.5-1-9-1.5-1.5-4-1-5.5 1z"/><path d="M12 7c0-1.7 1-3.3 2.5-4"/></svg> Snack</button>
     </div>
     <button class="btn primary" onclick="addFoodToLog()" style="margin-bottom:8px">Add to today’s log</button>
-    <button class="btn" onclick="document.getElementById('serving-modal').classList.remove('open')">Cancel</button>
+    <button class="btn" onclick="closeServingModal()">Cancel</button>
   </div>
 </div>
 
@@ -33734,6 +33734,22 @@ function chooseMealPhoto(){
 // path, and the photo path falls back to typing the digits. Each of those already worked; this only
 // adds the best case on top.
 async function startLiveBarcodeScan(){
+  // A new session starts empty. Without this, items stranded by a cancelled sheet last week are
+  // still in the array and would be drained into this shop.
+  _bcQueue = []; _bcDraining = false; _bcAfterDrain = null;
+  // RECIPE MODE IS NOT OURS TO HANDLE. `__recipeScan` says "this scan is for the recipe builder", and
+  // `lookupBarcode` consumes it and routes the item into the recipe. A continuous trolley scan has no
+  // meaning there — and bypassing lookupBarcode would both log the ingredient to today's diary and
+  // leave the flag SET, so the next ordinary scan went into a recipe nobody was building. Hand the
+  // whole interaction back to the one-shot path, which already does this correctly.
+  try{
+    if(typeof window !== 'undefined' && window.__recipeScan){
+      const one = await LiveScan.scan();
+      if(one === '__manual__'){ _bcManualEntry(); return; }
+      if(one) lookupBarcode(one);
+      return;
+    }
+  }catch(_){ }
   const P = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
   const canStream = !!(P && typeof P.addListener === 'function' && typeof P.showScanResult === 'function');
 
@@ -33750,7 +33766,9 @@ async function startLiveBarcodeScan(){
             if(!known && typeof barcodeRemember === 'function') barcodeRemember(code, food);
             _bcQueueAdd(food, code);
             await P.showScanResult({ title: food.name || 'Added',
-              sub: (food.cal != null ? food.cal + ' cal/100g · ' : '') + 'added to today',
+              // NOT "added to today" — nothing is in the diary until they confirm the serving. The
+              // card said it was, which made a cancelled sheet silent data loss.
+              sub: (food.cal != null ? food.cal + ' cal/100g · ' : '') + 'scanned · confirm when done',
               ok: true });
           } else {
             await P.showScanResult({ title: 'Not in the database',
@@ -33766,7 +33784,16 @@ async function startLiveBarcodeScan(){
     try{ r = await P.scan({ continuous: true }); }catch(_){ r = null; }
     try{ if(handle && typeof handle.remove === 'function') await handle.remove(); }catch(_){ }
 
-    if(r && r.manual){ _bcManualEntry(); return; }
+    // CLOSE THE SHEET THE SCAN CAME FROM, FIRST. `#barcode-scanner-modal` is appended to body and so
+    // sits ABOVE the static `#serving-modal` at the same z-index — so the serving sheet opened
+    // UNDERNEATH it and "Add to today's log" could not be tapped. The continuous path cannot log
+    // anything without this. The one-shot path never had the bug because `lookupBarcode()` closes
+    // the sheet itself, and bypassing lookupBarcode is exactly what lost it.
+    try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){ }
+
+    // DRAIN FIRST, THEN THE KEYPAD. Returning past the flush here would silently drop everything
+    // they had already scanned before reaching for "Type it instead".
+    if(r && r.manual) _bcAfterDrain = _bcManualEntry;
     _bcFlushQueue();
     return;
   }
@@ -33784,6 +33811,17 @@ async function startLiveBarcodeScan(){
 // Scanned items are held until the camera closes, then logged in one go — so a trolley of six things
 // is six taps of the scanner and ONE write, rather than six sheets fighting the viewfinder.
 let _bcQueue = [];
+// A DRAIN IS A STATE, NOT A SIDE EFFECT. The first cut hooked `_bcNext()` unconditionally onto the
+// end of addFoodToLog — which is the app's UNIVERSAL food logger, used by search, recents, favourites
+// and custom foods, not just the scanner. With no reset on _bcQueue and a serving sheet whose Cancel
+// button calls nothing, cancelling one sheet stranded the rest in memory; then ANY later food log, in
+// any tab, on any day, advanced the queue and opened a serving sheet for a tin from a shop days ago —
+// and confirming it dated that tin TODAY. Food in the diary on a day they did not eat it.
+// Declared HERE rather than beside addFoodToLog on purpose: one shared top-level scope, and a `let`
+// below the hook would be in its temporal dead zone, where the hook's own catch(_) would swallow the
+// ReferenceError exactly as the `const ic` calendar crash did.
+let _bcDraining = false;
+let _bcAfterDrain = null;
 function _bcQueueAdd(food, code){ try{ _bcQueue.push({ food: food, code: code }); }catch(_){ } }
 // DRIVE THE EXISTING SHEET, DO NOT REIMPLEMENT IT. The first cut of this built log entries itself and
 // called `addFoodToLog(food, 100)` — which takes NO arguments, reads `sm-qty` and `sm-serving-select`
@@ -33792,22 +33830,58 @@ function _bcQueueAdd(food, code){ try{ _bcQueue.push({ food: food, code: code })
 // So each scanned item is handed to the sheet that already knows how, one after another, and the win
 // stands: the camera stayed up for the whole trolley instead of once per item.
 function _bcFlushQueue(){
-  if(!_bcQueue.length) return;
+  if(!_bcQueue.length){ _bcDraining = false; _bcRunAfterDrain(); return; }
+  _bcDraining = true;
   _bcNext();
+}
+function _bcRunAfterDrain(){
+  const fn = _bcAfterDrain; _bcAfterDrain = null;
+  if(typeof fn === 'function'){ try{ fn(); }catch(_){ } }
+}
+// NOTHING IS IN THE DIARY UNTIL THEY CONFIRM, so leaving the queue has to SAY what it dropped. The
+// scanner card used to read "added to today" while the item sat only in this array — so a silent
+// drop here would be data loss the person had already been told did not happen.
+function _bcAbandonQueue(){
+  const left = _bcQueue.length;
+  _bcQueue = [];
+  _bcDraining = false;
+  if(left && typeof showToast === 'function')
+    showToast('Not logged', left + ' scanned item' + (left === 1 ? '' : 's') + ' discarded — scan again when you are ready.');
+  _bcRunAfterDrain();
+}
+// One place that closes the sheet, so the Cancel button and the queue cannot drift apart. The button
+// used to inline `classList.remove('open')` in the shell, where no check in the gate could see it.
+function closeServingModal(){
+  try{ document.getElementById('serving-modal')?.classList.remove('open'); }catch(_){ }
+  _bcAbandonQueue();
 }
 function _bcNext(){
   const it = _bcQueue.shift();
-  if(!it) return;
+  // THE FLAG IS CLEARED ON EVERY EXIT, the catch included. Leaving it latched on a throw would mean
+  // the next ordinary food log advances the queue again — the same bug through another door.
+  if(!it){ _bcDraining = false; _bcRunAfterDrain(); return; }
   const left = _bcQueue.length;
   try{
     if(typeof openServingModal === 'function'){
-      openServingModal(Object.assign({}, it.food, {
-        servings: [{ name: '100g', cal: it.food.cal, pro: it.food.pro, carb: it.food.carb, fat: it.food.fat }]
-      }));
+      // THE PRODUCT'S OWN SERVING FIRST. Hardcoding a single "100g" meant a 330ml can opened at
+      // 100ml and a 45g bar at 100g — the person confirms what the sheet offers, so the default IS
+      // the number that lands in the diary.
+      const f = it.food, servings = [];
+      const sq = parseFloat(f.serving_quantity || 0) || 0;
+      if(sq > 0){
+        const k = sq / 100;
+        servings.push({ name: (f.serving_size || (sq + 'g')), cal: Math.round((f.cal || 0) * k),
+                        pro: Math.round((f.pro || 0) * k * 10) / 10,
+                        carb: Math.round((f.carb || 0) * k * 10) / 10,
+                        fat: Math.round((f.fat || 0) * k * 10) / 10 });
+      }
+      servings.push({ name: '100g', cal: f.cal, pro: f.pro, carb: f.carb, fat: f.fat });
+      openServingModal(Object.assign({}, f, { servings: servings }));
       if(left && typeof showToast === 'function')
         showToast('Scanned', left + ' more waiting — set this one and the next opens.');
+      else _bcDraining = _bcQueue.length > 0;
     }
-  }catch(_){ }
+  }catch(_){ _bcDraining = false; _bcRunAfterDrain(); }
 }
 
 // The scanner's own lookup: the memory first, then Open Food Facts. Deliberately NOT lookupBarcode(),
@@ -33831,11 +33905,22 @@ async function _bcFetchForScanner(code){
       };
       let cal = per100('energy-kcal');
       if(!cal){ const ej = per100('energy'); if(ej) cal = ej / 4.184; }
-      return { per100: true, name: p.product_name || p.generic_name || 'Unknown product',
+      // CARRY WHAT THE TYPED PATH CARRIES. `barcode` is the key saved label corrections are stored
+      // under, so omitting it meant a correction the person had already made stopped applying; and a
+      // food with no micronutrient panel, once written into the barcode memory, is what every later
+      // scan of that product returns. A thin cache entry is permanent.
+      const mg = (b, f) => { const v = per100(b); return v ? Math.round(v * (f || 1) * 10) / 10 : 0; };
+      return { per100: true, barcode: code,
+               name: p.product_name || p.generic_name || 'Unknown product',
                brand: p.brands || '', cal: Math.round(cal || 0),
                pro: Math.round(per100('proteins') * 10) / 10,
                carb: Math.round(per100('carbohydrates') * 10) / 10,
-               fat: Math.round(per100('fat') * 10) / 10, source: 'Open Food Facts' };
+               fat: Math.round(per100('fat') * 10) / 10,
+               fiber: mg('fiber'), sugar: mg('sugars'), sat_fat: mg('saturated-fat'),
+               sodium: mg('sodium', 1000), calcium: mg('calcium', 1000), iron: mg('iron', 1000),
+               potassium: mg('potassium', 1000), vit_c: mg('vitamin-c', 1000),
+               serving_size: p.serving_size || '', serving_quantity: servingG || 0,
+               source: 'Open Food Facts' };
     }catch(_){ /* try the mirror */ }
   }
   return null;
@@ -35259,7 +35344,9 @@ function addFoodToLog(){
   // until the camera closes, then hands them to this sheet one at a time; confirming one opens
   // the next. The hook lives at the end of the real logging path so a queued item cannot be
   // counted as logged unless it actually was.
-  try{ if(typeof _bcNext === 'function') _bcNext(); }catch(_){ }
+  // ADVANCES A DRAIN, DOES NOT START ONE. Unconditional, this replayed a week-old trolley into
+  // whatever the person happened to log next — see _bcDraining.
+  try{ if(_bcDraining && typeof _bcNext === 'function') _bcNext(); }catch(_){ }
 }
 
 // ── RECENT & FAVOURITE FOODS ──────────────────────────────────

@@ -222,6 +222,12 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         view.layer.addSublayer(layer)
         preview = layer
 
+        // ZOOM IS THE DEVICE'S, NOT THE SCREEN'S. A pinch to 6x persisted after dismissal, so the
+        // next scan opened at 6x showing a sliver of a shelf, with nothing on screen explaining it.
+        if let dev = device, (try? dev.lockForConfiguration()) != nil {
+            dev.videoZoomFactor = max(dev.minAvailableVideoZoomFactor, 1.0)
+            dev.unlockForConfiguration()
+        }
         buildOverlay()
         addGestures()
         // startRunning blocks; keeping it off the main thread stops the present animation stuttering.
@@ -370,9 +376,14 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         do {
             try device.lockForConfiguration()
             if device.isFocusPointOfInterestSupported { device.focusPointOfInterest = devicePoint }
-            if device.isFocusModeSupported(.autoFocus) { device.focusMode = .autoFocus }
+            // .autoFocus focuses ONCE and then holds, which is right for a photo and wrong for a
+            // scanner: the next product never comes into focus and the camera looks broken. Return to
+            // continuous after the tap, so the aim is a nudge rather than a lock.
+            if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+            else if device.isFocusModeSupported(.autoFocus) { device.focusMode = .autoFocus }
             if device.isExposurePointOfInterestSupported { device.exposurePointOfInterest = devicePoint }
-            if device.isExposureModeSupported(.autoExpose) { device.exposureMode = .autoExpose }
+            if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
+            else if device.isExposureModeSupported(.autoExpose) { device.exposureMode = .autoExpose }
             device.unlockForConfiguration()
         } catch { return }
         focusRing.frame = CGRect(x: p.x - 36, y: p.y - 36, width: 72, height: 72)
@@ -431,8 +442,15 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         if continuous {
             // DEBOUNCE THE SAME PRODUCT. The delegate fires many times a second while a barcode is in
             // view, and without this one tin would be logged repeatedly while they held the phone still.
+            // LATCH, DO NOT RE-ARM. Writing `lastReadAt = now` on every frame kept pushing the
+            // window forward only while the code kept matching — but the delegate fires many times a
+            // second, so the moment the person held still for 2.5s the same tin queued AGAIN, and
+            // again, and the trolley filled with duplicates of one product. The stamp is set ONCE per
+            // distinct code and only cleared when a DIFFERENT code is seen, so one product in view is
+            // one read no matter how long they hold it there.
             let now = Date()
-            if digits == lastCode && now.timeIntervalSince(lastReadAt) < 2.5 { return }
+            if digits == lastCode { return }
+            if now.timeIntervalSince(lastReadAt) < 0.4 { return }   // debounce a genuine re-aim
             lastCode = digits
             lastReadAt = now
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -471,8 +489,12 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         guard !finished else { return }
         finished = true
         // The torch is the device's, not ours — leaving it on would burn their battery after we are gone.
+        // THE LOCK MUST SUCCEED BEFORE THE WRITE. Written as three statements on one line, a failed
+        // lock still fell through to `torchMode = .off` and `unlockForConfiguration()` — configuring
+        // and unlocking a device we do not hold, which throws an NSException Swift cannot catch.
         if let d = device, d.hasTorch, d.torchMode == .on {
-            try? d.lockForConfiguration(); d.torchMode = .off; d.unlockForConfiguration()
+            do { try d.lockForConfiguration(); d.torchMode = .off; d.unlockForConfiguration() }
+            catch { /* someone else holds it; it will be released with the session */ }
         }
         if session.isRunning {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.session.stopRunning() }

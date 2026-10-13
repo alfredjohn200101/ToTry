@@ -5223,6 +5223,97 @@ function fnBodyOf(code, name){
 // standing in a supermarket aisle. Worse, the not-found path told them to "create a custom food"
 // and did NOT attach the barcode, so the product they had just typed in by hand was still unknown
 // the next time they scanned it. Forever. Nothing to do with the camera.
+// ─────────────────────────────────────────────────
+// A SCAN QUEUE MUST NOT REPLAY INTO AN UNRELATED FOOD LOG (13 Oct 2026)
+// The continuous scanner holds each product until the camera closes, then hands them to the serving
+// sheet one at a time. The first cut advanced that queue from an UNCONDITIONAL hook at the end of
+// `addFoodToLog` — which is the app's universal food logger, used by search, recents, favourites and
+// custom foods. With no reset on the queue, and a serving sheet whose Cancel button called nothing,
+// cancelling one sheet stranded the rest; then any later food log, in any tab, ON ANY DAY, opened a
+// serving sheet for a tin from a shop days ago — and confirming it dated that tin TODAY.
+// It cannot be driven (a simulator has no camera), so the state machine is driven instead.
+H.section('the scan queue drains once and never replays');
+{
+  const opened = [];
+  const toasts = [];
+  const L = H.load(['_bcQueueAdd', '_bcFlushQueue', '_bcNext', '_bcAbandonQueue', '_bcRunAfterDrain',
+                    'closeServingModal'], {
+    openServingModal: f => { opened.push(f && f.name); },
+    showToast: (a, b) => { toasts.push(a + '|' + b); },
+    document: { getElementById: () => ({ classList: { remove(){} } }) },
+    // THE MODULE-LEVEL STATE MUST BE SUPPLIED. H.load extracts FUNCTIONS only, so `let _bcQueue`
+    // and `let _bcDraining` are undefined in the sandbox and the first call throws — which is the
+    // third time today that a missing dependency has made an extract report the feature broken.
+    // They arrive as parameters, so the functions' own assignments rebind them here as they would
+    // in the bundle.
+    _bcQueue: [], _bcDraining: false, _bcAfterDrain: null,
+  });
+  H.ok(typeof L._bcFlushQueue === 'function' && typeof L._bcNext === 'function',
+    'calibration: the queue functions loaded');
+
+  // 1. A DRAIN IS BOUNDED. Three scanned, one sheet opens, and the rest wait for a confirm.
+  L._bcQueueAdd({ name: 'Beans' }, '1'); L._bcQueueAdd({ name: 'Rice' }, '2'); L._bcQueueAdd({ name: 'Oats' }, '3');
+  L._bcFlushQueue();
+  H.eq(opened, ['Beans'], 'the flush opens exactly one serving sheet, not three');
+  H.ok(toasts.some(t => /Scanned\|2 more/.test(t)), 'and says how many are still waiting');
+
+  // 2. CONFIRMING ADVANCES IT — this is what the hook in addFoodToLog does.
+  L._bcNext();
+  H.eq(opened, ['Beans', 'Rice'], 'confirming one opens the next');
+  L._bcNext();
+  H.eq(opened, ['Beans', 'Rice', 'Oats'], 'and the next');
+
+  // 3. THE QUEUE IS EMPTY AND THE DRAIN IS OVER. One more advance must do NOTHING — this is the
+  //    exact call the universal food logger makes after every ordinary add.
+  L._bcNext();
+  H.eq(opened.length, 3, 'an advance past the end opens nothing');
+
+  // 4. ABANDONING SAYS WHAT IT DROPPED. The scanner card no longer claims "added to today", so a
+  //    silent discard here would be data loss the person had been told did not happen.
+  const before = toasts.length;
+  L._bcQueueAdd({ name: 'Tin' }, '9'); L._bcQueueAdd({ name: 'Jar' }, '8');
+  L.closeServingModal();
+  H.ok(toasts.slice(before).some(t => /Not logged\|2 scanned items discarded/.test(t)),
+    'cancelling the sheet says how many scanned items it discarded');
+  L._bcNext();
+  H.eq(opened.length, 3, 'and the abandoned items cannot be drained afterwards');
+
+  // ── THE SOURCE GUARDS, which the state machine above cannot see ──
+  const afl = H.code(H.extractFn('addFoodToLog'));
+  H.ok(/_bcNext/.test(afl), 'calibration: the universal logger does advance the queue');
+  H.ok(/if\(_bcDraining && typeof _bcNext/.test(afl),
+    'but ONLY while a drain is in progress — unconditional, it replayed a week-old trolley into ' +
+    'whatever the person logged next');
+
+  const start = H.code(H.extractFn('startLiveBarcodeScan'));
+  H.ok(/_bcQueue = \[\];/.test(start) && /_bcDraining = false/.test(start),
+    'and a new scan session starts empty, so it cannot inherit the last trolley');
+
+  const flush = H.code(H.extractFn('_bcFlushQueue'));
+  H.ok(/_bcDraining = true/.test(flush), 'the flush is what opens the drain');
+  const next = H.code(H.extractFn('_bcNext'));
+  H.ok(/catch\(_\)\{ _bcDraining = false/.test(next),
+    'and a throw inside the drain closes it — a latched flag is the same bug through another door');
+
+  // THE DECLARATION MUST SIT BESIDE THE QUEUE, not below the logger. One shared top-level scope: a
+  // `let` declared after the hook would be in its temporal dead zone, and the hook's own catch(_)
+  // would swallow the ReferenceError exactly as the `const ic` calendar crash did.
+  const html = H.html;
+  H.ok(html.indexOf('let _bcDraining') > 0 && html.indexOf('let _bcDraining') < html.indexOf('function addFoodToLog'),
+    '_bcDraining is declared before addFoodToLog, so the hook cannot read it from the TDZ');
+
+  // THE CANCEL BUTTON GOES THROUGH THE FUNCTION, so the gate can see it. It used to inline
+  // classList.remove in the shell, where nothing in this suite could reach it.
+  H.ok(/onclick="closeServingModal\(\)"/.test(html),
+    "the serving sheet's Cancel calls closeServingModal rather than inlining a class removal");
+
+  // FAULT INJECTION: restore the unconditional hook and the replay comes back.
+  const bad = afl.replace('if(_bcDraining && typeof _bcNext', 'if(typeof _bcNext');
+  H.ok(bad !== afl, 'calibration: the guard was really removed');
+  H.ok(!/if\(_bcDraining && typeof _bcNext/.test(bad),
+    'fault-injected: without the guard, every ordinary food log advances a stale scan queue');
+}
+
 H.section('a barcode is remembered, and an unknown one can be taught once');
 {
   const store = {};
