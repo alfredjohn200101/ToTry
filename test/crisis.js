@@ -706,10 +706,25 @@ const PROBE = `(() => {
   const tels = [...card.querySelectorAll('a[href^="tel:"]')];
   if(!tels.length) return { card:true, tels:0 };
   let best = null;
+  const skipped = [];
   for(const t of tels){
-    t.scrollIntoView({ block:'center' });
+    // INSTANT, OR THIS MEASURES THE SCROLL IT JUST STARTED. scroll-behavior:smooth is set on html,
+    // body and .app, so a plain scrollIntoView begins an ANIMATED scroll and the
+    // getBoundingClientRect on the next line reads the PRE-scroll position. Every link then fails
+    // the viewport test, best stays null, and the door reports "the helpline is NOT usable - null"
+    // on a card that is perfectly fine. That happened on 13 Oct 2026 under machine load, and the
+    // same artifact is already recorded for the bridge probe: a sheet animates in, so a rect read
+    // in the same tick is a rect from before the move.
+    try{ t.scrollIntoView({ block:'center', behavior:'instant' }); }
+    catch(_){ t.scrollIntoView({ block:'center' }); }
     const q = t.getBoundingClientRect();
-    if(q.top < 0 || q.bottom > vh || q.left < 0 || q.right > vw || q.width < 1) continue;
+    if(q.top < 0 || q.bottom > vh || q.left < 0 || q.right > vw || q.width < 1){
+      // SAY WHY IT WAS SKIPPED. A bare "detail: null" is indistinguishable from "card present but
+      // nothing measurable", which is what made that failure take three steps to place.
+      skipped.push({ n: t.textContent.trim().slice(0,18),
+                     top: Math.round(q.top), bottom: Math.round(q.bottom), w: Math.round(q.width) });
+      continue;
+    }
     const hit = document.elementFromPoint(q.left + q.width/2, q.top + q.height/2);
     const clear = !!(hit && (hit === t || t.contains(hit)));
     // A number that is on screen and unobstructed but only 18px tall is still not usable by a
@@ -719,7 +734,8 @@ const PROBE = `(() => {
                         tooSmall: minSide < 24 }; break; }
     if(!best) best = { number: t.textContent.trim(), href: t.getAttribute('href'), covered: (hit ? (hit.id||hit.tagName) : 'nothing') };
   }
-  return { card:true, tels: tels.length, usable: !!(best && !best.covered && !best.tooSmall), detail: best,
+  return { card:true, tels: tels.length, usable: !!(best && !best.covered && !best.tooSmall),
+           detail: best || { noneInViewport: skipped.length, vh: vh, skipped: skipped.slice(0,4) },
            lifted: !!card.closest('.crisis-rescue-ov') };
 })()`;
 
