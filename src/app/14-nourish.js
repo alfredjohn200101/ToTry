@@ -2211,6 +2211,15 @@ function chooseMealPhoto(){
 // path, and the photo path falls back to typing the digits. Each of those already worked; this only
 // adds the best case on top.
 async function startLiveBarcodeScan(){
+  // ONE SESSION AT A TIME. A double tap on "Scan with camera" registered a SECOND `barcodeScanned`
+  // listener for the rest of the session, and every read was then queued twice — a trolley of
+  // duplicates with nothing on screen to explain it.
+  if(startLiveBarcodeScan._busy) return;
+  startLiveBarcodeScan._busy = true;
+  try{ await _startLiveBarcodeScan(); }
+  finally{ startLiveBarcodeScan._busy = false; }
+}
+async function _startLiveBarcodeScan(){
   // A new session starts empty. Without this, items stranded by a cancelled sheet last week are
   // still in the array and would be drained into this shop.
   _bcQueue = []; _bcDraining = false; _bcAfterDrain = null;
@@ -2239,7 +2248,16 @@ async function startLiveBarcodeScan(){
         try{
           const known = (typeof barcodeRecall === 'function') ? barcodeRecall(code) : null;
           const food = known || await _bcFetchForScanner(code);
-          if(food){
+          // A FOOD WITH NO CALORIE FIGURE IS NOT LOGGABLE, and must not be cached either. Open Food
+          // Facts is a public wiki: plenty of products carry a name and nothing else, and queueing
+          // one put 0 cal in the diary under a name the person would believe — then the memory
+          // cached that zero and every later scan of it returned 0 for good. This project already
+          // fixed exactly this for USDA; the flag has to be the ABSENCE of a figure, not a value of
+          // 0, because a genuinely calorie-free food (water) legitimately reports 0.
+          if(food && !(food.cal > 0) && !food.__zeroOk){
+            await P.showScanResult({ title: food.name || 'No nutrition data',
+              sub: 'The database has no calories for this — add it by hand', ok: false });
+          } else if(food){
             if(!known && typeof barcodeRemember === 'function') barcodeRemember(code, food);
             _bcQueueAdd(food, code);
             await P.showScanResult({ title: food.name || 'Added',
@@ -2270,6 +2288,16 @@ async function startLiveBarcodeScan(){
 
     // DRAIN FIRST, THEN THE KEYPAD. Returning past the flush here would silently drop everything
     // they had already scanned before reaching for "Type it instead".
+    // SAY WHY, AND OFFER THE WAY BACK. The plugin distinguishes "no camera" from "you declined" and
+    // returns the exact sentence to show — and this threw it away, so declining the prompt made the
+    // button do NOTHING, visibly or otherwise. That is the reported "the camera doesn't work like
+    // MyFitnessPal does" in one line of missing handling, and iOS asks exactly once: Settings is the
+    // only way back.
+    if(r && r.available === false){
+      _bcCameraUnavailable(r);
+      _bcFlushQueue();
+      return;
+    }
     if(r && r.manual) _bcAfterDrain = _bcManualEntry;
     _bcFlushQueue();
     return;
@@ -2283,6 +2311,27 @@ async function startLiveBarcodeScan(){
   if(st) st.innerHTML = '<span style="color:var(--gr)">Found ' + _escFew(res) + ' \u2014 looking it up\u2026</span>';
   if(typeof haptic==='function') haptic('success');
   lookupBarcode(res);
+}
+
+// The camera could not open, and the person is owed the reason plus the one way back. iOS asks for
+// the camera ONCE: after "Don't Allow" every camera surface in this app is dead, and hiding the
+// button is right for "this device has no camera" and a trap for "you said no once in March".
+function _bcCameraUnavailable(r){
+  const denied = (r && (r.permission === 'denied' || /declined|off for/i.test(r.reason || '')));
+  const why = (r && r.reason) || 'The camera could not be opened.';
+  const st = document.getElementById('barcode-photo-status');
+  if(st){
+    st.innerHTML = '<span style="color:var(--tx2)">' + _escFew(why) + '</span>' +
+      (denied ? ' <button class="btn quiet" style="width:auto;padding:4px 10px;margin-top:6px" onclick="_bcOpenSettings()">Open Settings</button>' : '');
+  } else if(typeof showToast === 'function'){
+    showToast(denied ? 'Camera is off' : 'No camera', why);
+  }
+}
+function _bcOpenSettings(){
+  try{
+    const P = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    if(P && P.openSettings) P.openSettings();
+  }catch(_){ }
 }
 
 // Scanned items are held until the camera closes, then logged in one go — so a trolley of six things

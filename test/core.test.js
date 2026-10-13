@@ -5232,6 +5232,49 @@ function fnBodyOf(code, name){
 // cancelling one sheet stranded the rest; then any later food log, in any tab, ON ANY DAY, opened a
 // serving sheet for a tin from a shop days ago — and confirming it dated that tin TODAY.
 // It cannot be driven (a simulator has no camera), so the state machine is driven instead.
+// ─────────────────────────────────────────────────
+// WHAT THE SCANNER DOES WHEN IT CANNOT WORK (13 Oct 2026)
+// Three of the six review lenses independently reported the same thing: declining the camera prompt
+// made the button do NOTHING, visibly or otherwise. The plugin distinguishes "no camera" from "you
+// declined" and returns the exact sentence to show; the JS threw it away. iOS asks ONCE, so after
+// "Don't Allow" every camera surface in the app is dead — which is the reported "the camera doesn't
+// work like MyFitnessPal does", in one line of missing handling.
+H.section('a camera that cannot open says why, and offers the way back');
+{
+  const start = H.code(H.extractFn('startLiveBarcodeScan')) + '\n' +
+                (() => { try { return H.code(H.extractFn('_startLiveBarcodeScan')); } catch(e){ return ''; } })();
+  H.ok(/available === false/.test(start),
+    'the scan result\'s available:false is handled rather than ignored');
+  H.ok(/_bcCameraUnavailable/.test(start), 'and routed somewhere that explains it');
+
+  const shown = [];
+  const U = H.load(['_bcCameraUnavailable', '_escFew'], {
+    document: { getElementById: () => ({ set innerHTML(v){ shown.push(v); } }) },
+    showToast: (a, b) => { shown.push(a + '|' + b); },
+  });
+  U._bcCameraUnavailable({ available: false, permission: 'denied',
+                           reason: 'Camera access is off for To Try. Turn it on in iOS Settings → To Try → Camera.' });
+  H.ok(shown.some(s => /iOS Settings/.test(s)), 'a denied camera says exactly why');
+  H.ok(shown.some(s => /_bcOpenSettings/.test(s)),
+    'and offers Settings — the only way back once iOS has been told no');
+
+  shown.length = 0;
+  U._bcCameraUnavailable({ available: false, reason: 'This device has no camera.' });
+  H.ok(shown.some(s => /no camera/i.test(s)), 'a device with no camera says that instead');
+  H.ok(!shown.some(s => /_bcOpenSettings/.test(s)),
+    'and does NOT offer Settings, because there is nothing there to turn on — the distinction the ' +
+    'plugin takes trouble to make, which this used to discard');
+
+  // A FOOD WITH NO CALORIE FIGURE IS NOT LOGGABLE. Open Food Facts is a public wiki and plenty of
+  // products carry a name and nothing else; queueing one put 0 cal in the diary under a believable
+  // name, and the memory then cached that zero for good. This project already fixed exactly this
+  // class for USDA.
+  H.ok(/!\(food\.cal > 0\)/.test(start),
+    'a product with no calories is refused rather than queued at zero');
+  H.ok(start.indexOf('!(food.cal > 0)') < start.indexOf('barcodeRemember(code, food)'),
+    'and refused BEFORE it is written into the barcode memory, where a zero would be permanent');
+}
+
 H.section('the scan queue drains once and never replays');
 {
   const opened = [];
@@ -5285,9 +5328,16 @@ H.section('the scan queue drains once and never replays');
     'but ONLY while a drain is in progress — unconditional, it replayed a week-old trolley into ' +
     'whatever the person logged next');
 
-  const start = H.code(H.extractFn('startLiveBarcodeScan'));
+  // BOTH HALVES OF THE ENTRY POINT. `startLiveBarcodeScan` became a re-entry guard wrapping
+  // `_startLiveBarcodeScan` (a double tap used to register a second listener and queue every read
+  // twice), and this assertion — pinned to the outer name — went red while the reset was intact one
+  // function away. Ask the pair.
+  const start = H.code(H.extractFn('startLiveBarcodeScan')) + '\n' +
+                (() => { try { return H.code(H.extractFn('_startLiveBarcodeScan')); } catch(e){ return ''; } })();
   H.ok(/_bcQueue = \[\];/.test(start) && /_bcDraining = false/.test(start),
     'and a new scan session starts empty, so it cannot inherit the last trolley');
+  H.ok(/_busy/.test(H.code(H.extractFn('startLiveBarcodeScan'))),
+    'and a second tap cannot open a second listener for the same session');
 
   const flush = H.code(H.extractFn('_bcFlushQueue'));
   H.ok(/_bcDraining = true/.test(flush), 'the flush is what opens the drain');
