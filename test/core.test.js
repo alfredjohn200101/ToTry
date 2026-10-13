@@ -5343,11 +5343,19 @@ H.section('a scan still in flight when Done is tapped is not lost');
   // awaiting the network, and its `_bcQueueAdd` then ran AFTER `_bcFlushQueue()` had already
   // drained — so the food sat in the array until the next session cleared it. Scanned, acknowledged
   // on screen, and silently gone, which is the one outcome this path must never produce.
-  const mk = (state) => {
+  // `_bcSheetUp` is LOADED, not stubbed, because it is the new guard under test — and it needs a
+  // document, or it throws into _bcQueueAdd's own catch and the flush silently never happens, which
+  // is how this section first failed on correct code.
+  const mk = (state, sheet) => {
     const flushed = [];
     const q = [];
-    const L = H.load(['_bcQueueAdd'], Object.assign({
+    const L = H.load(['_bcQueueAdd', '_bcSheetUp'], Object.assign({
       _bcQueue: q, _bcFlushQueue: () => { flushed.push(1); },
+      document: {
+        getElementById: (id) => (sheet === 'serving' && id === 'serving-modal'
+          ? { classList: { contains: () => true } } : null),
+        querySelector: () => (sheet === 'other' ? {} : null),
+      },
     }, state));
     return { L, flushed, q };
   };
@@ -5371,6 +5379,47 @@ H.section('a scan still in flight when Done is tapped is not lost');
   H.ok(live.q.length === 1 && live.flushed.length === 0,
     'and with the camera still open it only queues — a serving sheet opened under ' +
     '#barcode-scanner-modal is the bug that made this whole path unable to log anything');
+
+  // AND NOT OVER A SHEET THAT IS ALREADY OPEN. `_bcNext` clears `_bcDraining` when the LAST queued
+  // item opens its sheet, so "the drain is finished" is ALSO true while somebody is entering a
+  // quantity — and openServingModal rewrites that one static sheet, swapping the product under
+  // their finger. The first version of the self-flush did exactly that: the fix moving the bug.
+  const onSheet = mk({ _bcSessionEnded: true, _bcDraining: false }, 'serving');
+  onSheet.L._bcQueueAdd({ name: 'Rice' }, '444');
+  H.ok(onSheet.q.length === 1 && onSheet.flushed.length === 0,
+    'a straggler arriving while the serving sheet is OPEN is parked, not flushed over the product ' +
+    'the person is confirming');
+
+  // `askConfirm` is the same hazard from the other side: it appends a modal-locked dialog AFTER the
+  // static sheet in DOM order at the same z-index, so a sheet opened beneath it cannot be tapped.
+  const onModal = mk({ _bcSessionEnded: true, _bcDraining: false }, 'other');
+  onModal.L._bcQueueAdd({ name: 'Oats' }, '555');
+  H.ok(onModal.q.length === 1 && onModal.flushed.length === 0,
+    'and parked under any other open sheet too, which is what the miss-offer dialog is');
+}
+
+H.section('the stale-card guard survives the session boundary');
+{
+  // `_bcSeq` is only ever compared for equality, so leaving it monotonic makes every read from a
+  // previous session fail `turn === _bcSeq` for free. The first version reset it to 0 at session
+  // start, which defeated the guard at exactly the worst place: a lookup still in flight when the
+  // last session ended came back holding turn 1, matched the NEW session's first read, painted a
+  // product this camera was never pointed at and queued it into this trolley.
+  //
+  // This is an ABSENCE in one specific statement, so it is asserted on the source — but on the
+  // COMMENT-STRIPPED source, because the comment that explains the decision names `_bcSeq` itself
+  // and an unstripped grep fails on correct code. That trap is recorded in CLAUDE.md and it is the
+  // reason this reads H.code().
+  const src = H.code(H.extractFn('_startLiveBarcodeScan'));
+  H.ok(/_bcLookups\s*=\s*\[\]/.test(src),
+    'calibration: the session-start reset is still in this function and still found');
+  H.ok(!/_bcSeq\s*=\s*0/.test(src),
+    'and it does NOT reset _bcSeq — a straggler from the previous session must not be able to ' +
+    'match the new session\u2019s first read');
+  // The counter must still be ADVANCED per read, or the guard compares two constants and the whole
+  // mechanism is dead rather than merely boundary-blind.
+  H.ok(/\+\+_bcSeq/.test(H.code(H.extractFn('_bcOnRead'))),
+    'while each read still takes the next turn, so the guard has something to compare');
 }
 
 H.section('a barcode the database does not have gets a route, not a verdict');

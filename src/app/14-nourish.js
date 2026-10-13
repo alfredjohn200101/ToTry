@@ -2223,7 +2223,13 @@ async function _startLiveBarcodeScan(){
   // A new session starts empty. Without this, items stranded by a cancelled sheet last week are
   // still in the array and would be drained into this shop.
   _bcQueue = []; _bcDraining = false; _bcAfterDrain = null;
-  _bcLookups = []; _bcMisses = []; _bcSeq = 0; _bcSessionEnded = false;
+  // `_bcSeq` IS DELIBERATELY NOT RESET. It is only ever compared for equality, so leaving it
+  // monotonic makes every read from a previous session fail `turn === _bcSeq` for free. Resetting it
+  // to 0 here defeated the guard at exactly the session boundary, which is the worst place for it:
+  // a lookup still in flight when the last session ended came back holding turn 1, matched the new
+  // session's first read, and painted a product this camera was never pointed at — and queued it
+  // into THIS trolley.
+  _bcLookups = []; _bcMisses = []; _bcSessionEnded = false;
   // RECIPE MODE IS NOT OURS TO HANDLE. `__recipeScan` says "this scan is for the recipe builder", and
   // `lookupBarcode` consumes it and routes the item into the recipe. A continuous trolley scan has no
   // meaning there — and bypassing lookupBarcode would both log the ingredient to today's diary and
@@ -2403,14 +2409,50 @@ function _bcQueueAdd(food, code){
     // the queue was empty when Done was tapped) nothing will come back for this item — the next
     // session resets the array and the food the person scanned and watched being acknowledged is
     // gone. Mid-drain needs nothing: `addFoodToLog` calls `_bcNext()` and will reach it.
-    if(_bcSessionEnded && !_bcDraining) _bcFlushQueue();
+    //
+    // BUT NOT OVER A SHEET THAT IS ALREADY OPEN, and this is the first version of this line MOVING
+    // the bug rather than fixing it. `_bcNext` clears `_bcDraining` when the LAST queued item opens
+    // its sheet (`else _bcDraining = _bcQueue.length > 0`), so "the drain is finished" is also true
+    // while the person is entering a quantity — and `openServingModal` rewrites that one static
+    // sheet, swapping the product under their finger. `askConfirm` is the same hazard from the other
+    // side: it appends a `modal-locked` dialog AFTER the static sheet in DOM order, at the same
+    // z-index, so a sheet opened beneath it cannot be seen or tapped. Confirming or closing whatever
+    // is open calls `_bcNext`/`_bcSettle` and reaches this item, so deferring costs nothing.
+    if(_bcSessionEnded && !_bcDraining && !_bcSheetUp()) _bcFlushQueue();
   }catch(_){ }
 }
 // Barcodes the database could not answer for. Capped and de-duplicated: a trolley scan can sweep the
 // same unknown tin twice, and offering it twice is worse than not offering it.
 let _bcMisses = [];
+// Is anything already on screen that a serving sheet would land under, or replace? `#serving-modal`
+// is the single STATIC sheet every food goes through, and any `.modal-bg.open` appended to body sits
+// above it at the same z-index.
+function _bcSheetUp(){
+  try{
+    const sv = document.getElementById('serving-modal');
+    if(sv && sv.classList.contains('open')) return true;
+    return !!document.querySelector('.modal-bg.open');
+  }catch(_){ return false; }
+}
+// Called when a sheet closes, so anything parked by the guard above gets its turn. Safe to call
+// when there is nothing waiting.
+function _bcSettle(){
+  try{
+    if(!_bcSessionEnded || _bcDraining || _bcSheetUp()) return;
+    if(_bcQueue.length){ _bcFlushQueue(); return; }
+    // A MISS THAT LANDED LATE HAD NOTHING TO OFFER IT. `_bcAfterDrain` is chosen once, before the
+    // flush — so an unknown tin whose lookup had not answered by the Done tap was added to
+    // `_bcMisses` after that decision and sat there until the next session wiped it. The person
+    // scanned it, watched the camera close, and nothing happened: exactly the dead end this whole
+    // feature exists to remove.
+    if(_bcMisses.length) _bcMissesOffer();
+  }catch(_){ }
+}
 function _bcMissAdd(code){
-  try{ if(code && _bcMisses.indexOf(code) < 0 && _bcMisses.length < 20) _bcMisses.push(code); }catch(_){ }
+  try{
+    if(code && _bcMisses.indexOf(code) < 0 && _bcMisses.length < 20) _bcMisses.push(code);
+    if(_bcSessionEnded && !_bcDraining && !_bcSheetUp()) _bcMissesOffer();
+  }catch(_){ }
 }
 // Offered once the real items are logged, never instead of them — this runs from `_bcAfterDrain`.
 // It ASKS. Opening the custom-food creator unbidden for a tin somebody scanned by accident is a
@@ -2423,8 +2465,12 @@ function _bcMissesOffer(){
   if(typeof askConfirm !== 'function'){ _bcCreateFor(codes[0]); return; }
   Promise.resolve(askConfirm(
       n === 1 ? 'One barcode wasn\u2019t in the database' : n + ' barcodes weren\u2019t in the database',
+      // SAY WHAT ACTUALLY HAPPENS. The first version promised "we\u2019ll start with the first",
+      // which reads as a queue, and then offered `codes[0]` and dropped the rest — the person was
+      // back to copying twelve digits off a tin, which is the job the camera was opened for. One is
+      // offered; the others are named as not kept, so nobody waits for a prompt that is not coming.
       n === 1 ? 'Add it once and every later scan of it is instant.'
-              : 'Add them once and every later scan is instant. We\u2019ll start with the first.',
+              : 'You can add one now. The others aren\u2019t saved \u2014 scan them again when you have a moment.',
       { confirmLabel: 'Add it now', cancelLabel: 'Not now', danger: false }))
     .then(function(yes){ if(yes) _bcCreateFor(codes[0]); })
     .catch(function(){});
@@ -3953,7 +3999,14 @@ function addFoodToLog(){
   // counted as logged unless it actually was.
   // ADVANCES A DRAIN, DOES NOT START ONE. Unconditional, this replayed a week-old trolley into
   // whatever the person happened to log next — see _bcDraining.
-  try{ if(_bcDraining && typeof _bcNext === 'function') _bcNext(); }catch(_){ }
+  try{
+    if(_bcDraining && typeof _bcNext === 'function') _bcNext();
+    // AND RELEASE ANYTHING PARKED. `_bcNext` clears `_bcDraining` when the last queued item opens
+    // its sheet, so a straggler that arrived while that sheet was up was deliberately held back by
+    // `_bcQueueAdd`'s sheet guard — and nothing here would have reached it, which would have made
+    // that guard the stranding bug it was written to avoid.
+    else if(typeof _bcSettle === 'function') _bcSettle();
+  }catch(_){ }
 }
 
 // ── RECENT & FAVOURITE FOODS ──────────────────────────────────
