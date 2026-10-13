@@ -936,7 +936,7 @@ function renderTGT(){
       field('tgt-a','Something that went right…', t.a)+
       field('tgt-b','Something else…', t.b)+
     '</div>'+
-    '<div class="ios-footnote">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
+    '<div class="ios-footnote">Not a gratitude exercise to perform — three true things, however small.</div>'+
     '<div class="ios-header tgt-header">And one that was a person</div>'+
     '<div class="ios-list">'+
       field('tgt-c','Someone who made today better…', t.c)+
@@ -952,7 +952,7 @@ function renderTGT(){
       ? (told
           ? '<div class="vice-pledge">'+svgIcon('check', 17)+'<span>You told them. That’s the part that actually lands.</span></div>'
           : '<button class="btn" onclick="_tgtTellThem()">Tell them</button>'+
-            '<div class="ios-footnote">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
+            '<div class="ios-footnote">Saying it out loud is worth more than writing it down.</div>')
       : '');
 }
 function _tgtPickPerson(name){ saveTGT({person:String(name||'').slice(0,40)}); try{ renderTGT(); }catch(_){} }

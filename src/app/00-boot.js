@@ -406,8 +406,10 @@ function lsArr(k){
 // real date in Chromium and Invalid Date in WebKit. dayKeyNorm collapses both spellings.
 //
 // WHAT THIS DOES NOT FIX: the day key is still decided by the DEVICE'S TIMEZONE. Two devices in
-// different zones still disagree about which day an evening belongs to, and totry_timezone is a
-// deliberate no-op that says so in its own copy. That is a separate, still-open bug.
+// different zones still disagree about which day an evening belongs to. The Timezone SETTING was
+// REMOVED on 13 Oct 2026 rather than left standing: it was a fourteen-option select that nothing
+// read, and choosing an option toasted "Your days still follow this device's clock". The
+// underlying bug is unchanged and still open; what is gone is a control implying it was fixed.
 
 // Canonical zero-padded DD/MM/YYYY from a Date, epoch ms, an ISO timestamp, a bare YYYY-MM-DD, or a
 // key already in either engine's spelling. '' for anything it cannot read WITH CERTAINTY — a wrong
@@ -839,7 +841,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v615';
+const APP_VERSION = 'v616';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -1289,7 +1291,7 @@ const SYNC_KEYS = [
   // only input suhoor and iftar times are computed from — while totry_fast_season, set two lines away
   // in the same feature, has always synced. So a Muslim keeping Ramadan changed phone, found the
   // season still there, and found the times it depends on gone.
-  'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme',
   'totry_haptics','totry_city',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
   // Late additions — real state that should survive a reinstall

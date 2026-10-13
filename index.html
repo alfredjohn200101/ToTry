@@ -3974,14 +3974,12 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <!-- AUTH STEP 1: Email Entry -->
   <div class="auth-step active" id="auth-email">
     <div class="auth-title">Welcome.</div>
-    <div class="auth-sub">Enter your email to begin. We&rsquo;ll send you a 6&#8209;digit code to verify.</div>
     <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" autofocus>
     <button class="btn primary" id="auth-send-otp-btn" onclick="authSendOtp()">Send verification code</button>
     <!-- Shown only by bootWithoutCloud() when the app opened with no connection. The button stays
          enabled on purpose: signal can return between reading this and tapping it, and a dead control
          is worse than a failed request that explains itself. -->
     <div id="auth-offline-note" class="auth-note" style="display:none">No connection right now, so the code can&rsquo;t reach you. You can still come in below — everything saves on this phone, and you can make an account whenever you&rsquo;re back on.</div>
-    <div class="auth-foot">Your email is your account. No password needed. Sign in anytime with a code.</div>
 
     <!-- THE DOOR BEFORE THE WALL. A person in a hard moment should never have to make an account
          first — the help IS the product, and the evidence is blunt that a signup wall in front of the
@@ -6604,7 +6602,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-money" class="tab">
   <div class="page-title">Stewardship</div>
-  <div class="ios-footnote page-intro" data-intro-for="money">Money is freedom, not just numbers. Everything reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   <!-- The impulse door. A spending urge is a threshold moment exactly like a craving — same dopamine
        spike, same crash, same shame loop — so it gets the same before-it-takes-over treatment rather
        than a budget lecture. Sits at the top because it's needed BEFORE the money is gone. It was a
@@ -7161,7 +7158,7 @@ Amen.</div></div>
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
   <div class="card">
     <div class="card-title">Share your journey with Alfy</div>
-    <p class="card-body">This is built by one person, for you. <span id="feedback-raffle-line">Tell me what’s improving and what’s missing — I read every note.</span></p>
+    <p class="card-body"><span id="feedback-raffle-line"></span></p>
     <button class="btn primary" onclick="openProgressCheckin()">How far have you come?</button>
   </div>
 
@@ -7243,30 +7240,7 @@ Amen.</div></div>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
           </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
-          <!-- totry_timezone has three occurrences in the whole file: this write, the cloud-sync key list,
-               and this select's own restore. NOTHING reads it. Every date in the app comes from the
-               device's own clock via toLocaleDateString('en-AU'), which is what a person actually wants —
-               so the honest thing is to say the device decides, rather than imply a setting that does
-               nothing. Same call as the currency and weight-unit settings above. -->
-          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Timezone</span></span><select id="settings-timezone" class="row-field" aria-label="Timezone" onchange="savePref('totry_timezone',this.value);showToast('Noted','Your days still follow this device\u2019s clock.')">
-            <option value="auto">Auto-detect from device</option>
-            <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
-            <option value="Australia/Sydney">Sydney</option>
-            <option value="Australia/Brisbane">Brisbane</option>
-            <option value="Australia/Perth">Perth</option>
-            <option value="America/New_York">New York</option>
-            <option value="America/Los_Angeles">Los Angeles</option>
-            <option value="America/Chicago">Chicago</option>
-            <option value="Europe/London">London</option>
-            <option value="Europe/Paris">Paris</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Asia/Singapore">Singapore</option>
-            <option value="Asia/Kolkata">India (IST)</option>
-            <option value="Asia/Dubai">Dubai</option>
-            <option value="Pacific/Auckland">Auckland</option>
-          </select><span class="ios-row-chevron menu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></label>
         </div>
-        <div class="ios-footnote">Your days follow this device’s clock. Kept for a future export option.</div>
       </div>
 
       <!-- The breath paces a phase with a tick a second now, and a repeating cue must be refusable:
@@ -7304,7 +7278,7 @@ Amen.</div></div>
           <button type="button" class="ios-row sex-opt" data-sex="male" onclick="setUserSex('male')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Male</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
           <button type="button" class="ios-row sex-opt" data-sex="female" onclick="setUserSex('female')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Female</span></span><span class="ios-row-check"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><polyline points="20,6 9,17 4,12"/></svg></span></button>
         </div>
-        <div class="ios-footnote">This shapes the real numbers — calorie and protein targets, training context — and helps the app understand you. Used for the math, never to box you in.</div>
+        <div class="ios-footnote">This shapes your calorie and protein targets. Used for the math, never to box you in.</div>
       </div>
     </div>
   </details>
@@ -7469,7 +7443,6 @@ Amen.</div></div>
           <!-- Sync status (cloud-first). So a sync problem is always VISIBLE, never silent. -->
           <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cloud sync</span><span class="ios-row-sub" style="display:block" id="sync-status-line">Checking…</span></span><button type="button" class="btn row-btn" onclick="syncNow()">Sync now</button></div>
         </div>
-        <div class="ios-footnote">Your data is saved to your account in the cloud — that’s the real copy. This device keeps a fast local copy. Sign out anytime; everything restores when you sign back in.</div>
       </div>
       <div class="ios-section">
         <div class="ios-list">
@@ -7528,7 +7501,6 @@ Amen.</div></div>
     <div class="ios-list">
       <button type="button" class="ios-row has-icon" onclick="openFeedback()"><span class="ios-row-icon tone-yellow"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.75V17h8v-2.25A7 7 0 0 0 12 2z"/></svg></span><span class="ios-row-body"><span class="ios-row-title" style="display:block">Help improve ToTry</span><span class="ios-row-sub" style="display:block">Send feedback or report a bug</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></button>
     </div>
-    <div class="ios-footnote">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what’s wrong. Every message is read.</div>
   </div>
 
   <!-- SUPPORT — WEB ONLY.
@@ -8290,8 +8262,10 @@ function lsArr(k){
 // real date in Chromium and Invalid Date in WebKit. dayKeyNorm collapses both spellings.
 //
 // WHAT THIS DOES NOT FIX: the day key is still decided by the DEVICE'S TIMEZONE. Two devices in
-// different zones still disagree about which day an evening belongs to, and totry_timezone is a
-// deliberate no-op that says so in its own copy. That is a separate, still-open bug.
+// different zones still disagree about which day an evening belongs to. The Timezone SETTING was
+// REMOVED on 13 Oct 2026 rather than left standing: it was a fourteen-option select that nothing
+// read, and choosing an option toasted "Your days still follow this device's clock". The
+// underlying bug is unchanged and still open; what is gone is a control implying it was fixed.
 
 // Canonical zero-padded DD/MM/YYYY from a Date, epoch ms, an ISO timestamp, a bare YYYY-MM-DD, or a
 // key already in either engine's spelling. '' for anything it cannot read WITH CERTAINTY — a wrong
@@ -8723,7 +8697,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v615';
+const APP_VERSION = 'v616';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9173,7 +9147,7 @@ const SYNC_KEYS = [
   // only input suhoor and iftar times are computed from — while totry_fast_season, set two lines away
   // in the same feature, has always synced. So a Muslim keeping Ramadan changed phone, found the
   // season still there, and found the times it depends on gone.
-  'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme',
   'totry_haptics','totry_city',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
   // Late additions — real state that should survive a reinstall
@@ -22809,7 +22783,7 @@ const RAFFLE_TERMS = '';   // e.g. 'One $50 voucher, drawn 1 Sep 2026, 18+, winn
 function _raffleCopy(kind){
   if(!RAFFLE_ACTIVE || !RAFFLE_TERMS){
     // The truth, which is the better offer anyway: a real person actually reads your words.
-    if(kind==='card')   return 'Tell me what\u2019s improving and what\u2019s missing \u2014 I read every note.';
+    if(kind==='card')   return '';
     if(kind==='intro')  return 'Alfy reads every one personally.';
     if(kind==='send')   return 'Sent from your account, so Alfy knows who to thank.';
     if(kind==='thanks') return 'Every word helps me build this for you and the next person who needs it. Keep going.';
@@ -49099,7 +49073,7 @@ function renderTGT(){
       field('tgt-a','Something that went right…', t.a)+
       field('tgt-b','Something else…', t.b)+
     '</div>'+
-    '<div class="ios-footnote">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
+    '<div class="ios-footnote">Not a gratitude exercise to perform — three true things, however small.</div>'+
     '<div class="ios-header tgt-header">And one that was a person</div>'+
     '<div class="ios-list">'+
       field('tgt-c','Someone who made today better…', t.c)+
@@ -49115,7 +49089,7 @@ function renderTGT(){
       ? (told
           ? '<div class="vice-pledge">'+svgIcon('check', 17)+'<span>You told them. That’s the part that actually lands.</span></div>'
           : '<button class="btn" onclick="_tgtTellThem()">Tell them</button>'+
-            '<div class="ios-footnote">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
+            '<div class="ios-footnote">Saying it out loud is worth more than writing it down.</div>')
       : '');
 }
 function _tgtPickPerson(name){ saveTGT({person:String(name||'').slice(0,40)}); try{ renderTGT(); }catch(_){} }
@@ -52690,8 +52664,6 @@ function initSettingsTab(){
   if(duSel) duSel.value = ls('totry_distance_unit') || 'km';
   const themeSel = document.getElementById('settings-theme');
   if(themeSel) themeSel.value = ls('totry_theme') || 'system';
-  const tzSel = document.getElementById('settings-timezone');
-  if(tzSel) tzSel.value = ls('totry_timezone') || 'auto';
   
   // Populate year-review dropdown
   const yrSel = document.getElementById('year-review-select');

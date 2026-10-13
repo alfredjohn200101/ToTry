@@ -2792,7 +2792,21 @@ H.section('a store that is read must be a store that is written')
   H.ok(/Kept on this device/.test(eag), 'a guest is told where their data lives, from enterAsGuest itself');
   H.ok(/showToast/.test(eag), 'and told it in a way that reaches the screen');
   H.ok(/totry_guest_told/.test(eag), 'once per device — a warning repeated is a warning ignored');
-  H.ok(/Your days follow this device/.test(H.html), 'and the timezone setting stops implying otherwise');
+  // THE SETTING WAS REMOVED RATHER THAN EXPLAINED (13 Oct 2026). This used to assert that the
+  // Timezone row carried an honest footnote, because the select was a deliberate no-op. The owner's
+  // read was that a fourteen-option dropdown nothing reads — which toasted "Your days still follow
+  // this device's clock" when you used it — is the thing that makes an app look like a passion
+  // project, and that the footnote was an apology for a control that should not exist. It is gone.
+  // The underlying bug (the day key follows the DEVICE timezone) is unchanged and still open; what
+  // is gone is the control implying it was solved. Audited alongside it: Currency, Weight unit and
+  // Distance unit are all genuinely read (curSym/getUserCurrency, wUnit, dUnit) and stay.
+  H.ok(!/settings-timezone/.test(H.html),
+    'the dead Timezone select is gone from the shell');
+  H.ok(!/totry_timezone/.test(H.code()),
+    'and nothing writes, restores or syncs totry_timezone any more');
+  H.ok(/settings-currency|totry_currency/.test(H.html) || /curSym/.test(H.code()),
+    'calibration: the settings that DO work are still present, so this is not passing because the ' +
+    'whole screen went missing');
 }
 
 H.section('no third-party credential ships in a public bundle')
@@ -6828,9 +6842,14 @@ H.section('a preference about the PERSON follows them to the next phone');
   H.ok(members.size > 150, 'the SYNC_KEYS array parsed (' + members.size + ' members)');
 
   // A statement about the person. These travel.
-  const PERSONAL = ['totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  // totry_timezone was here until 13 Oct 2026, when the Timezone SETTING was removed: a
+  // fourteen-option select that nothing read, which toasted "Your days still follow this device's
+  // clock" when you used it. A key that nothing reads does not need to follow anyone to a new phone.
+  const PERSONAL = ['totry_currency','totry_weight_unit','totry_distance_unit','totry_theme',
                     'totry_faith_level','totry_faith_tradition','totry_sex','totry_nut_gentle',
                     'totry_haptics','totry_city'];
+  H.ok(!members.has('totry_timezone'),
+    'and totry_timezone is NOT in SYNC_KEYS — syncing a setting nothing reads is pure cost');
   for(const k of PERSONAL) H.ok(members.has(k), k + ' follows the person to a new phone');
 
   // CALIBRATION, and the other half of the rule. These are statements about the DEVICE, each already

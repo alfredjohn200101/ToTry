@@ -119,8 +119,6 @@ function initSettingsTab(){
   if(duSel) duSel.value = ls('totry_distance_unit') || 'km';
   const themeSel = document.getElementById('settings-theme');
   if(themeSel) themeSel.value = ls('totry_theme') || 'system';
-  const tzSel = document.getElementById('settings-timezone');
-  if(tzSel) tzSel.value = ls('totry_timezone') || 'auto';
   
   // Populate year-review dropdown
   const yrSel = document.getElementById('year-review-select');

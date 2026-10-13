@@ -28,7 +28,11 @@ import crypto from 'crypto'; import fs from 'fs'; import path from 'path'; impor
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 const [cmd, a1, a2] = process.argv.slice(2);
-const DEVICE = 'iPhone 17 Pro', BUNDLE = 'app.totry';
+// DEVICE is the BUILD destination only — install/launch/capture all target `booted`, so the
+// screenshots can be taken on any booted simulator. Overridable because App Store Connect
+// wants 6.9" (iPhone 17/16 Pro Max) and 6.5" (iPhone 11 Pro Max / Xs Max), and neither is
+// the 6.3" iPhone 17 Pro this was pinned to.
+const DEVICE = process.env.SIM_DEVICE || 'iPhone 17 Pro', BUNDLE = 'app.totry';
 const STATE = '/tmp/.totry-app-shot-last';
 const sh = (...a) => execFileSync('xcrun', a, { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
 const sleep = ms => new Promise(z => setTimeout(z, ms));

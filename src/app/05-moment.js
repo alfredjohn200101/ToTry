@@ -2101,7 +2101,7 @@ const RAFFLE_TERMS = '';   // e.g. 'One $50 voucher, drawn 1 Sep 2026, 18+, winn
 function _raffleCopy(kind){
   if(!RAFFLE_ACTIVE || !RAFFLE_TERMS){
     // The truth, which is the better offer anyway: a real person actually reads your words.
-    if(kind==='card')   return 'Tell me what\u2019s improving and what\u2019s missing \u2014 I read every note.';
+    if(kind==='card')   return '';
     if(kind==='intro')  return 'Alfy reads every one personally.';
     if(kind==='send')   return 'Sent from your account, so Alfy knows who to thank.';
     if(kind==='thanks') return 'Every word helps me build this for you and the next person who needs it. Keep going.';
