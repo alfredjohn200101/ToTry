@@ -5216,11 +5216,107 @@ function fnBodyOf(code, name){
   H.ok(/sm-fix-panel'\); if\(_fp\) _fp\.style\.display='none'/.test(H.extractFn('openServingModal')),
     'the fix panel is closed when a new food opens');
 
-  H.section('third-party product text is escaped');
-  // Name and brand come from OpenFoodFacts, a public wiki anyone can edit, and went into innerHTML raw.
+  // ─────────────────────────────────────────────────
+// A SCANNER THAT FORGETS IS NOT A SCANNER (13 Oct 2026)
+// Every scan was a network round trip to Open Food Facts: the same product cost one on Monday and
+// another on Tuesday, and OFFLINE a scan did nothing — which is the state somebody is actually in,
+// standing in a supermarket aisle. Worse, the not-found path told them to "create a custom food"
+// and did NOT attach the barcode, so the product they had just typed in by hand was still unknown
+// the next time they scanned it. Forever. Nothing to do with the camera.
+H.section('a barcode is remembered, and an unknown one can be taught once');
+{
+  const store = {};
+  const L = H.load(['barcodeRemember', 'barcodeRecall', '_bcMemAll'], {
+    ls: (k, v) => { if(v === undefined) return store[k]; store[k] = v; },
+    BARCODE_MEMORY_MAX: 300,
+  });
+
+  // 1. ROUND TRIP
+  H.eq(L.barcodeRecall('9300675024235'), null, 'calibration: an unseen barcode is not remembered');
+  L.barcodeRemember('9300675024235', { name: 'Powerade Mountain Blast', brand: 'Powerade', cal: 25, per100: true });
+  const back = L.barcodeRecall('9300675024235');
+  H.ok(!!back && back.name === 'Powerade Mountain Blast', 'a scanned product is remembered by its digits');
+  H.ok(!('_at' in (back || {})), 'and the timestamp is internal — the caller gets a clean food object');
+
+  // 2. THE DIGITS ARE THE KEY, however they arrive
+  H.ok(!!L.barcodeRecall(' 9300675024235 '), 'whitespace does not lose it');
+  H.ok(!!L.barcodeRecall('9-300-675-024-235'), 'nor do separators a scanner might hand over');
+
+  // 3. IT DOES NOT GROW FOREVER, and the cap evicts what nobody scans
+  for(let i = 0; i < 320; i++) L.barcodeRemember('10000000000' + String(i).padStart(3, '0'), { name: 'f' + i, cal: 1 });
+  const n = Object.keys(L._bcMemAll()).length;
+  H.ok(n <= 300, 'the memory is capped (' + n + ' <= 300)');
+
+  // 4. A JUNK STORE DOES NOT THROW — this is read on every scan
+  store['totry_barcode_memory'] = 'not an object';
+  H.eq(L.barcodeRecall('9300675024235'), null, 'a corrupted memory reads as empty rather than throwing');
+  store['totry_barcode_memory'] = ['an', 'array'];
+  H.eq(L.barcodeRecall('9300675024235'), null, 'and so does the wrong shape');
+
+  // 5. MEMORY IS CHECKED BEFORE THE NETWORK. Asserting the call alone would pass if it ran after the
+  //    fetch, which is the whole point — so compare positions.
+  // RAW, NOT H.code(). `H.code()` strips `//` comments with a bare /\/\/[^\n]*/ and therefore eats
+  // every URL in the bundle — `https://world.openfoodfacts.org` loses everything after the `//`.
+  // That is the documented trap, still live in the harness, and the calibration below is what
+  // caught it: the fetch simply could not be found. Comments here are harmless, because the
+  // thing being compared is a POSITION of two calls, not the absence of a string.
   const lb = H.extractFn('lookupBarcode');
+  const iRecall = lb.indexOf('barcodeRecall(');
+  const iFetch = lb.indexOf('openfoodfacts');
+  H.ok(iRecall > 0 && iFetch > 0, 'calibration: both the recall and the OFF fetch were located');
+  H.ok(iRecall < iFetch,
+    'the remembered hit is checked BEFORE any network call — instant, free, and the only path that ' +
+    'works with no connection');
+  H.ok(/barcodeRemember\(barcode, food\)/.test(lb), 'and a fresh lookup is written back');
+
+  // 6. THE UNKNOWN-BARCODE LOOP CLOSES. The not-found route carries the digits, and saving attaches
+  //    them — so the second scan of a product you typed in yourself finds it.
+  H.ok(/_bcCreateFor\(/.test(lb), 'an unknown barcode offers a route that carries the digits');
+  const bcf = H.code(H.extractFn('_bcCreateFor'));
+  H.ok(/__bcPending/.test(bcf) && /openCustomFoodCreator/.test(bcf),
+    'and that route parks the barcode and opens the creator');
+  const scf = H.code(H.extractFn('saveCustomFood'));
+  H.ok(/__bcPending/.test(scf) && /barcodeRemember/.test(scf),
+    'saving a custom food attaches the barcode it came in with');
+  H.ok(scf.indexOf('__bcPending') < scf.indexOf("querySelector('.modal-bg.open')"),
+    'and does it BEFORE the sheet is torn down, so the pending value is still readable');
+
+  // 7. DRIVEN END TO END: unknown -> taught once -> known.
+  const store2 = {};
+  // EVERY DEPENDENCY, NAMED. Leaving `_bcMemAll` out of this list made barcodeRemember throw into
+  // its own catch and write nothing, and the assertions below simply reported "not remembered" —
+  // indistinguishable from the feature being broken. That is the same swallowed-dependency shape the
+  // function itself was just hardened against, arriving in the test that proves it.
+  const M = H.load(['barcodeRemember', 'barcodeRecall', '_bcMemAll'], {
+    ls: (k, v) => { if(v === undefined) return store2[k]; store2[k] = v; },
+    BARCODE_MEMORY_MAX: 300,
+  });
+  H.ok(typeof M.barcodeRemember === 'function' && typeof M._bcMemAll === 'function',
+    'calibration: the memory and its reader both loaded');
+  const CODE = '93710472';
+  H.eq(M.barcodeRecall(CODE), null, 'scan 1: not in the database, not remembered');
+  M.barcodeRemember(CODE, { name: 'Mum\'s chicken curry', brand: 'My foods', cal: 180, source: 'Custom' });
+  const second = M.barcodeRecall(CODE);
+  H.ok(!!second && second.name === "Mum's chicken curry",
+    'scan 2 of the SAME product finds what they typed in once — the loop that was open forever');
+  H.eq(second && second.source, 'Custom', 'and knows it was their own food, not the database');
+}
+
+H.section('third-party product text is escaped');
+  // Name and brand come from OpenFoodFacts, a public wiki anyone can edit, and went into innerHTML raw.
+  // ASK THE FUNCTION THAT RENDERS IT, wherever that is. The markup moved out of lookupBarcode into
+  // `_barcodeResultCard` on 13 Oct 2026 when the remembered hit and the fresh lookup were made to
+  // share one card — and this assertion, pinned to the old location, went red while the escaping was
+  // entirely intact. OFF is a public wiki anyone can edit, so this is load-bearing: it asserts on
+  // BOTH functions joined, so the escape can live in either and neither can quietly drop it.
+  const lb = H.extractFn('lookupBarcode') + '\n' +
+             (() => { try { return H.extractFn('_barcodeResultCard'); } catch(e){ return ''; } })();
   H.ok(/_escFew\(food\.name\)/.test(lb) && /_escFew\(food\.brand\)/.test(lb),
     'the scan result escapes both, matching _makeFoodResultRow');
+  // and the card really is the thing that writes them, so the above cannot pass on a dead copy
+  const brc = (() => { try { return H.extractFn('_barcodeResultCard'); } catch(e){ return ''; } })();
+  H.ok(/innerHTML/.test(brc) && /_escFew\(food\.name\)/.test(brc),
+    'the shared card is what renders the product name, escaped');
 
   H.section('numbers off means numbers off, on the fastest paths too');
   H.ok(!/showToast\('Logged \\u2713', food\.name \+ ' \\u2014 ' \+ _qs\.cal/.test(H.html),

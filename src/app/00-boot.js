@@ -1262,7 +1262,7 @@ const SYNC_KEYS = [
   'totry_your_few','totry_reachouts','totry_if_then','totry_nut_gentle','totry_nourish_care_shown','totry_impulse_holds',
   // Nutrition
   'totry_nutlog','totry_nut_goals','totry_nut_macros','totry_tdee_data','totry_calorie_goal_type','totry_ca',
-  'totry_recipes','totry_custom_foods','totry_recent_foods','totry_water','totry_water_goal','totry_fasting','totry_fast_log','totry_usda_key','totry_esv_key','totry_nutritionix_id','totry_nutritionix_key',
+  'totry_recipes','totry_custom_foods','totry_barcode_memory','totry_recent_foods','totry_water','totry_water_goal','totry_fasting','totry_fast_log','totry_usda_key','totry_esv_key','totry_nutritionix_id','totry_nutritionix_key',
   // Money — totry_f holds debts+savings, totry_payments holds logged payments
   'totry_finance_goals','totry_transactions','totry_debt_strategy','totry_savings_usa','totry_savings_india',
   'totry_subscriptions','totry_bills','totry_budgets','totry_assets','totry_f','totry_payments','totry_family_contrib','totry_poker_sessions','totry_family_target',

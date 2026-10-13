@@ -1098,6 +1098,14 @@ function saveCustomFood(){
       ls('totry_custom_foods',lib.slice(0,200));
     }
   }
+  // ATTACH THE BARCODE THEY CAME IN WITH, so the next scan of this product finds it. Consumed here
+  // whether or not they ticked "save to my foods" — the memory is what the SCANNER reads, and a
+  // person who just typed a label in by hand has earned not doing it twice.
+  try{
+    const _pending = (typeof window !== 'undefined') ? window.__bcPending : '';
+    if(_pending && typeof barcodeRemember === 'function') barcodeRemember(_pending, food);
+    if(typeof window !== 'undefined') window.__bcPending = '';
+  }catch(_){ }
   document.querySelector('.modal-bg.open')?.remove();
   // Log it straight to today via the serving modal (so quantity can be adjusted)
   if(typeof openServingModal==='function'){
@@ -2371,6 +2379,78 @@ function closeBarcodeScanner(){
   document.querySelector('.modal-bg.open')?.remove();
 }
 
+// ONE CARD, BOTH PATHS. The remembered hit and the fresh lookup must look identical — a person
+// should not be able to tell that one of them never touched the network, except that it was
+// instant. `fromMemory` only changes the toast, so the difference is visible if you look for it
+// and invisible if you do not.
+function _barcodeResultCard(food, res, barcode, fromMemory){
+  const el = document.createElement('div');
+  el.className = 'food-result';
+  el.style.cssText = 'border:1px solid var(--go-bd)';
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+      '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
+        '<div class="fr-name">' + _escFew(food.name) + '</div>' +
+        (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
+        '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
+        '<div style="font-size:var(--t-cap);color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
+      '</div>' +
+      '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
+    '</div>';
+  const tapZone = el.querySelector('#barcode-result-tap');
+  if(tapZone) tapZone.onclick = () => openServingModal(food);
+  if(res) res.appendChild(el);
+  showToast(fromMemory ? 'Found \u00b7 remembered' : 'Found', food.name);
+}
+
+// Opens the custom-food creator for a barcode the database does not know, and parks the digits so
+// `saveCustomFood` can attach them. One scan of effort, once, and the product is theirs for good.
+function _bcCreateFor(code){
+  try{ window.__bcPending = String(code || '').replace(/\D/g, ''); }catch(_){ }
+  if(typeof openCustomFoodCreator === 'function') openCustomFoodCreator('');
+}
+
+// ── BARCODE MEMORY ───────────────────────────────────────────────────────────────────────────────
+// A scanner that forgets is not a scanner. Before this, every scan was a network round trip to Open
+// Food Facts — the same Powerade cost one on Monday and another on Tuesday, and OFFLINE a scan did
+// nothing at all. Worse, the not-found path told the person to "create a custom food" and then did
+// not attach the barcode to it, so the product they had just entered by hand was STILL unknown the
+// next time they scanned it. Forever. That is the one thing that makes a food tracker feel broken,
+// and it is nothing to do with the camera.
+// Keyed by the digits, holding the same food shape openServingModal already takes. Capped, and
+// newest-first so the cap evicts what nobody scans.
+const BARCODE_MEMORY_MAX = 300;
+function _bcMemAll(){ try{ const m = ls('totry_barcode_memory'); return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {}; }catch(_){ return {}; } }
+function barcodeRemember(code, food){
+  try{
+    const k = String(code || '').replace(/\D/g, '');
+    if(!k || !food || !food.name) return;
+    const all = _bcMemAll();
+    all[k] = Object.assign({}, food, { _at: Date.now() });
+    // READ THE CAP DEFENSIVELY. This referenced the module-level const directly, and the whole
+    // body sits in a try/catch — so anywhere that const was not in scope, the ReferenceError was
+    // SWALLOWED and the function silently remembered nothing. It works in the shipped bundle,
+    // which is what makes that shape dangerous: it fails invisibly rather than loudly, and a
+    // test extracting this function alone measured a scanner that never learned.
+    const _max = (typeof BARCODE_MEMORY_MAX === 'number') ? BARCODE_MEMORY_MAX : 300;
+    const keys = Object.keys(all);
+    if(keys.length > _max){
+      keys.sort(function(a,b){ return (all[a]._at||0) - (all[b]._at||0); });
+      for(let i = 0; i < keys.length - _max; i++) delete all[keys[i]];
+    }
+    ls('totry_barcode_memory', all);
+  }catch(_){ }
+}
+function barcodeRecall(code){
+  try{
+    const k = String(code || '').replace(/\D/g, '');
+    if(!k) return null;
+    const hit = _bcMemAll()[k];
+    if(!hit || !hit.name) return null;
+    const out = Object.assign({}, hit); delete out._at;
+    return out;
+  }catch(_){ return null; }
+}
+
 async function lookupBarcode(barcode){
   // CONSUME THE MODE FLAG UP FRONT. __recipeScan says "this scan is for the recipe builder", and it
   // was only cleared on the SUCCESS path far below — so an unreadable code, a product not in the
@@ -2392,6 +2472,13 @@ async function lookupBarcode(barcode){
   closeBarcodeScanner();
   
   const res = document.getElementById('nut-search-results');
+  // REMEMBERED FIRST. Instant, free, and the only thing that works with no connection — which is
+  // exactly when somebody is standing in a supermarket aisle.
+  const _known = (typeof barcodeRecall === 'function') ? barcodeRecall(barcode) : null;
+  if(_known){
+    _barcodeResultCard(_known, res, barcode, true);
+    return;
+  }
   if(res) res.innerHTML = '<p class="pulsing" style="text-align:center;padding:16px;color:var(--tx3);font-style:italic">Looking up ' + barcode + '...</p>';
   
   try{
@@ -2407,7 +2494,16 @@ async function lookupBarcode(barcode){
     }
     
     if(!d || d.status !== 1 || !d.product){
-      if(res) res.innerHTML = '<div style="padding:14px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);line-height:1.5;text-align:center">Barcode <strong>' + barcode + '</strong> isn\'t in the food database. Try searching the product by name above, or tap "+ Create a custom food" to add it yourself.</div>';
+      // A ROUTE, NOT AN INSTRUCTION. This used to be a sentence telling the person to go and tap
+      // "+ Create a custom food" themselves — and because the barcode was not carried across, the
+      // product they then typed in by hand was STILL unknown the next time they scanned it. Forever.
+      // Now the button carries the digits, and saving attaches them, so the second scan finds it.
+      if(res) res.innerHTML =
+        '<div style="padding:14px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' +
+          '<div style="margin-bottom:10px">Barcode ' + _escFew(barcode) + ' is not in the food database yet.</div>' +
+          '<button class="btn primary" style="margin-bottom:6px" onclick="_bcCreateFor(&apos;' + _escFew(barcode) + '&apos;)">Add it yourself \u2014 once</button>' +
+          '<div style="font-size:var(--t-cap);color:var(--tx3)">Scan it again any time and it will be here.</div>' +
+        '</div>';
       return;
     }
     
@@ -2476,22 +2572,10 @@ async function lookupBarcode(barcode){
       return;
     }
     if(res) res.innerHTML = '';
-    const el = document.createElement('div');
-    el.className = 'food-result';
-    el.style.cssText = 'border:1px solid var(--go-bd)';
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-        '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
-          '<div class="fr-name">' + _escFew(food.name) + '</div>' +
-          (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
-          '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
-          '<div style="font-size:var(--t-cap);color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
-        '</div>' +
-        '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
-      '</div>';
-    const tapZone = el.querySelector('#barcode-result-tap');
-    if(tapZone) tapZone.onclick = () => openServingModal(food);
-    if(res) res.appendChild(el);
-    showToast('Found', food.name);
+    // REMEMBER IT. The next scan of this product is instant, costs nothing, and works with no
+    // connection — which is the state somebody is actually in, standing in an aisle.
+    try{ if(typeof barcodeRemember === 'function') barcodeRemember(barcode, food); }catch(_){ }
+    _barcodeResultCard(food, res, barcode, false);
   }catch(e){
     console.error('[barcode] lookup error:', e);
     if(res) res.innerHTML = '<div style="padding:14px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">Lookup failed. Check your connection and try again.</div>';
