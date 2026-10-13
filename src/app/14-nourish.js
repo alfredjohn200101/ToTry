@@ -2202,13 +2202,132 @@ function chooseMealPhoto(){
   if(el) el.click();
 }
 
+// THE CAMERA STAYS UP. Shopping is not one item, and the old shape — scan, dismiss, land back in the
+// diary, reopen for the next thing — is the single biggest difference between this and the apps it is
+// compared to. In continuous mode the native screen announces each read, this resolves it, and the
+// answer is painted OVER the viewfinder. The person scans a trolley without ever leaving the camera.
+//
+// Everything degrades: no listener support falls back to one-shot, one-shot falls back to the photo
+// path, and the photo path falls back to typing the digits. Each of those already worked; this only
+// adds the best case on top.
 async function startLiveBarcodeScan(){
-  const code = await LiveScan.scan();
-  if(!code) return;                      // cancelled or unavailable — the photo path is still on screen
+  const P = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+  const canStream = !!(P && typeof P.addListener === 'function' && typeof P.showScanResult === 'function');
+
+  if(canStream){
+    let handle = null;
+    try{
+      handle = await P.addListener('barcodeScanned', async (ev) => {
+        const code = String((ev && ev.code) || '').replace(/\D/g, '');
+        if(!code) return;
+        try{
+          const known = (typeof barcodeRecall === 'function') ? barcodeRecall(code) : null;
+          const food = known || await _bcFetchForScanner(code);
+          if(food){
+            if(!known && typeof barcodeRemember === 'function') barcodeRemember(code, food);
+            _bcQueueAdd(food, code);
+            await P.showScanResult({ title: food.name || 'Added',
+              sub: (food.cal != null ? food.cal + ' cal/100g · ' : '') + 'added to today',
+              ok: true });
+          } else {
+            await P.showScanResult({ title: 'Not in the database',
+              sub: code + ' · tap Done, then add it once', ok: false });
+          }
+        }catch(_){
+          try{ await P.showScanResult({ title: 'Could not look that up', sub: 'Check your connection', ok: false }); }catch(__){}
+        }
+      });
+    }catch(_){ handle = null; }
+
+    let r = null;
+    try{ r = await P.scan({ continuous: true }); }catch(_){ r = null; }
+    try{ if(handle && typeof handle.remove === 'function') await handle.remove(); }catch(_){ }
+
+    if(r && r.manual){ _bcManualEntry(); return; }
+    _bcFlushQueue();
+    return;
+  }
+
+  // One-shot: the path that existed before, unchanged.
+  const res = await LiveScan.scan();
+  if(res === '__manual__'){ _bcManualEntry(); return; }
+  if(!res) return;                       // cancelled or unavailable — the photo path is still on screen
   const st = document.getElementById('barcode-photo-status');
-  if(st) st.innerHTML = '<span style="color:var(--gr)">Found ' + _escFew(code) + ' \u2014 looking it up\u2026</span>';
+  if(st) st.innerHTML = '<span style="color:var(--gr)">Found ' + _escFew(res) + ' \u2014 looking it up\u2026</span>';
   if(typeof haptic==='function') haptic('success');
-  lookupBarcode(code);
+  lookupBarcode(res);
+}
+
+// Scanned items are held until the camera closes, then logged in one go — so a trolley of six things
+// is six taps of the scanner and ONE write, rather than six sheets fighting the viewfinder.
+let _bcQueue = [];
+function _bcQueueAdd(food, code){ try{ _bcQueue.push({ food: food, code: code }); }catch(_){ } }
+// DRIVE THE EXISTING SHEET, DO NOT REIMPLEMENT IT. The first cut of this built log entries itself and
+// called `addFoodToLog(food, 100)` — which takes NO arguments, reads `sm-qty` and `sm-serving-select`
+// out of the serving modal's own DOM, and carries the micronutrient scaling where this project's
+// 100x-sodium bug lived twice. Writing a second copy of that was the actual risk, not the saved taps.
+// So each scanned item is handed to the sheet that already knows how, one after another, and the win
+// stands: the camera stayed up for the whole trolley instead of once per item.
+function _bcFlushQueue(){
+  if(!_bcQueue.length) return;
+  _bcNext();
+}
+function _bcNext(){
+  const it = _bcQueue.shift();
+  if(!it) return;
+  const left = _bcQueue.length;
+  try{
+    if(typeof openServingModal === 'function'){
+      openServingModal(Object.assign({}, it.food, {
+        servings: [{ name: '100g', cal: it.food.cal, pro: it.food.pro, carb: it.food.carb, fat: it.food.fat }]
+      }));
+      if(left && typeof showToast === 'function')
+        showToast('Scanned', left + ' more waiting — set this one and the next opens.');
+    }
+  }catch(_){ }
+}
+
+// The scanner's own lookup: the memory first, then Open Food Facts. Deliberately NOT lookupBarcode(),
+// which renders a card into the food-search results — there is no such list on screen while the
+// camera is up, and calling it would paint into a sheet nobody can see.
+async function _bcFetchForScanner(code){
+  for(const base of ['https://world.openfoodfacts.org', 'https://us.openfoodfacts.org']){
+    try{
+      const r = await _fetchT(base + '/api/v2/product/' + encodeURIComponent(code) + '.json', 7000);
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j.status !== 1 || !j.product) continue;
+      const p = j.product, n = p.nutriments || {};
+      const servingG = parseFloat(n.serving_quantity || p.serving_quantity || 0) || 0;
+      const per100 = (b) => {
+        const v = n[b + '_100g'];
+        if(v != null && v !== '' && !isNaN(v) && Number(v) !== 0) return Number(v);
+        const s = n[b + '_serving'];
+        if(s != null && s !== '' && !isNaN(s) && servingG > 0) return Number(s) * 100 / servingG;
+        return Number(v) || 0;
+      };
+      let cal = per100('energy-kcal');
+      if(!cal){ const ej = per100('energy'); if(ej) cal = ej / 4.184; }
+      return { per100: true, name: p.product_name || p.generic_name || 'Unknown product',
+               brand: p.brands || '', cal: Math.round(cal || 0),
+               pro: Math.round(per100('proteins') * 10) / 10,
+               carb: Math.round(per100('carbohydrates') * 10) / 10,
+               fat: Math.round(per100('fat') * 10) / 10, source: 'Open Food Facts' };
+    }catch(_){ /* try the mirror */ }
+  }
+  return null;
+}
+
+// "Type it instead", from inside the camera. A scuffed or curved barcode is ordinary, and the answer
+// is the keypad — not being dropped back in the diary to go and find it.
+function _bcManualEntry(){
+  if(typeof askText !== 'function'){ if(typeof openBarcodeScanner === 'function') openBarcodeScanner(); return; }
+  Promise.resolve(askText('Type the barcode', 'The digits printed under the stripes.',
+                          { type: 'number', confirmLabel: 'Look it up' }))
+    .then(function(v){
+      const code = String(v || '').replace(/\D/g, '');
+      if(code) lookupBarcode(code);
+    }).catch(function(){});
 }
 async function openBarcodeScanner(){
   const m = document.createElement('div');
@@ -3613,6 +3732,11 @@ function addFoodToLog(){
       }, 900);
     }
   }catch(_){}
+  // THE SCANNER'S QUEUE ADVANCES HERE, and nowhere else. A continuous scan holds each product
+  // until the camera closes, then hands them to this sheet one at a time; confirming one opens
+  // the next. The hook lives at the end of the real logging path so a queued item cannot be
+  // counted as logged unless it actually was.
+  try{ if(typeof _bcNext === 'function') _bcNext(); }catch(_){ }
 }
 
 // ── RECENT & FAVOURITE FOODS ──────────────────────────────────
