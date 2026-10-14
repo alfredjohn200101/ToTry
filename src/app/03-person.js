@@ -3506,7 +3506,7 @@ function obNextToWhy(){
   // kept, exactly as the journal and the weekly check-in keep them — what changes is that the app
   // stops and meets them first.
   const _obC = (identity && typeof journalCrisisOf==='function') ? journalCrisisOf(identity) : null;
-  if(_obC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_obC)) return;
+  if(_obC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_obC, null, { saved: false })) return;
   // BEFORE the write, not after. The journal and the weekly check-in keep what a person wrote,
   // deliberately — grace over shame, nothing they said is thrown back at them. This is the opposite
   // case: storing it makes the app PRINT IT BACK as who they are becoming, on Home, every day, in
@@ -3520,7 +3520,7 @@ function obNextToWhy(){
 function finishWhyStep(){
   const why=document.getElementById('ob-why-text')?.value.trim();
   const _whyC = (why && typeof journalCrisisOf==='function') ? journalCrisisOf(why) : null;   // see obNextToWhy
-  if(_whyC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_whyC)) return;
+  if(_whyC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_whyC, null, { saved: false })) return;
   if(why) ls('totry_why', why);
   // Continue to the faith / path step (then season)
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
@@ -3593,7 +3593,7 @@ function obPersistVices(){
     // Gated BEFORE it becomes a vice card: a disclosure typed here used to end up printed back as
     // something the person is "fighting", with a clean-day counter attached to it. See obNextToWhy.
     const _vC = (custom && typeof journalCrisisOf==='function') ? journalCrisisOf(custom) : null;
-    if(_vC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_vC)) return;
+    if(_vC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_vC, null, { saved: false })) return;
     if(custom && obVices.indexOf(custom) < 0) obVices.push(custom);
     if(obVices.length){
       const ex=ls('totry_v')||[];

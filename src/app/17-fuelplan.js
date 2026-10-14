@@ -239,7 +239,7 @@ function _fuelElicitSave(){
         // added since 30 Sep uses. bridgeToRealHelp keeps its six other callers.
         setTimeout(function(){
           try{
-            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_c);
+            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_c, null, { saved: false });
             else if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
           }catch(_){ }
         }, 250);
@@ -380,7 +380,7 @@ function _fuelShopSave(andGenerate){
         const _m = document.getElementById('fuel-shop-modal'); if(_m) _m.remove();
         setTimeout(function(){
           try{
-            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_sc);
+            if(typeof journalMeetCrisis === 'function') journalMeetCrisis(_sc, null, { saved: false });
             else if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
           }catch(_){ }
         }, 250);
@@ -1139,7 +1139,7 @@ async function parseCalendarAI(){
   // the app brushing the sentence off. detectCrisis() already answered "suicide" for it in this very
   // page; this door just never asked. Gated before the text leaves the device.
   const _calC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
-  if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC)) return;
+  if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC, null, { saved: false })) return;
   if(btn){ btn.textContent = 'Reading...'; btn.disabled = true; }
   try{
     const sys = 'You extract calendar events from messy text (work rosters, class timetables, plain notes) into strict JSON. Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';

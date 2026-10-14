@@ -379,7 +379,7 @@ function saveWhyEdit(){
   // GATED, 30 Sep 2026. An IN-APP twin of onboarding's "why it matters", which was gated on 5 Sep — and it writes the SAME store, totry_why.
   const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(ta ? ta.value : '')) : null;
   if(_cc){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(ta){ const v = ta.value.trim(); ls('totry_why', v); }
@@ -410,7 +410,7 @@ function addWhyAffirmation(){
   // `totry_affirmations` and rendered every time they open it.
   const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(v) : null;
   if(_c){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!v) return;
@@ -443,7 +443,7 @@ function addPromiseFromWhy(){
   // that found it grepped index.html for `<textarea id="...">` and this field is an `<input>`.
   // A promise is stored with a due date and replayed when it comes round.
   const _pc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
-  if(_pc){ inp.value=''; setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250); return; }
+  if(_pc){ inp.value=''; setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc, null, { saved: false }); }catch(_){ } }, 250); return; }
   const days = parseInt(document.getElementById('why-promise-when').value||7);
   const promises = ls('totry_promises')||[];
   const due = new Date(); due.setDate(due.getDate()+days);
@@ -471,7 +471,7 @@ function saveLetterFromWhy(){
   // on screen when a disclosure typed here comes back, and the app celebrates its arrival.
   const _cc = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_cc){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   const deliverAt = new Date(); deliverAt.setDate(deliverAt.getDate()+days);

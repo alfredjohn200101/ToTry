@@ -713,7 +713,7 @@ async function submitFeedback(){
   // door declines to persist what it just gated.
   const _fbC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_fbC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_fbC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_fbC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   const includeState = document.getElementById('fb-include-state')?.checked;

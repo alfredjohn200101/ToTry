@@ -556,7 +556,7 @@ function savePostUrge(viceName){
   const _pc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(trig) || journalCrisisOf(helped)) : null;
   if(_pc){
     document.getElementById('post-urge-modal')?.remove();
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   const fl = ls('totry_fight_log') || [];
@@ -1346,7 +1346,7 @@ function addVice(){
   // can put the disclosure in the trigger box as easily as in the name.
   const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(n) || journalCrisisOf(t)) : null;
   if(_cc){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   // ONE NAME, ONE FIGHT. The cloud merge keys vices by the lowercased name — 01-sync.js says so in

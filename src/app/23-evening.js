@@ -900,7 +900,7 @@ function _tgtSaveField(which, val){
   // untouched, so only the field carrying the sentence is refused.
   const _tc = (typeof crisisInAny==='function') ? crisisInAny([v]) : null;
   if(_tc){
-    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_tc);
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_tc, null, { saved: false });
     return;
   }
   const cur=getTGT()||{};
@@ -1398,7 +1398,7 @@ function _yfNote(idx, val){
   // so nothing is written and they are met.
   const _yfC = (typeof crisisInAny==='function') ? crisisInAny([v]) : null;
   if(_yfC){
-    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_yfC);
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_yfC, null, { saved: false });
     return;
   }
   if(few[idx].note===v) return;
@@ -1435,7 +1435,7 @@ function saveWeeklyReview(){
   // GATED, 30 Sep 2026. Both boxes. The weekly review is stored for 52 weeks and replayed in renderReviewHistory().
   const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(proud) || journalCrisisOf(focus)) : null;
   if(_cc){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   const reviews=ls('totry_reviews')||[];

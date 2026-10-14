@@ -94,7 +94,7 @@ function saveGoalEdit(level){
   // be, and it is persisted and shown back on the Goals screen afterwards.
   const _gC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_gC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_gC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_gC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   setGoal(level, text);
@@ -326,7 +326,7 @@ function addPrayer(){
   // GATED, 30 Sep 2026. A prayer intention is exactly where someone says the thing they cannot say anywhere else, and it is stored and shown back in the list.
   const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(text)) : null;
   if(_cc){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   
@@ -369,7 +369,7 @@ async function markPrayerAnswered(id){
   renderPrayers();
   if(_paC){
     try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
-    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_paC);
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_paC, null, { saved: false });
     return;
   }
   showToast('Praise God', 'Answered prayer logged.');

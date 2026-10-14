@@ -952,7 +952,7 @@ function logQuickWin(){
   // GATED, 12 Oct 2026. Persisted to `totry_wins` and replayed in the wins log afterwards.
   const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_c){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!text)return;

@@ -5398,6 +5398,50 @@ H.section('a scan still in flight when Done is tapped is not lost');
     'and parked under any other open sheet too, which is what the miss-offer dialog is');
 }
 
+H.section('a crisis door only says "Saved" when it saved');
+{
+  // `journalMeetCrisis` DEFAULTS to toasting "Saved · I read what you wrote", so every call site is
+  // a CLAIM. A door that returns before persisting — which most crisis gates deliberately do, so a
+  // disclosure is not stored — told somebody their words were kept when they were not, on the one
+  // surface where being believed matters most. Audited 14 Oct 2026 across all 43 call sites, each
+  // function read in full: 39 do not persist on that path, 4 do.
+  const fs = require('fs'), path = require('path');
+  // The FOUR that persist first. "Saved" is TRUE at these, and stamping saved:false across them
+  // would strip a true reassurance — which is why this is an allowlist with reasons, not a sweep.
+  const PERSIST_FIRST = {
+    '_letGoSaveJournal': 'writes the journal entry, then meets them — its own comment says "saved above"',
+    'saveExamen':        "ls('totry_examens', …) sits one line above the gate",
+    'saveQuickJournal':  'the journal row is written before the gate',
+    '_planAnswerSave':   'the answer is persisted before the gate',
+  };
+  let total = 0, bare = [];
+  for(const f of fs.readdirSync(path.join(__dirname, '..', 'src/app')).filter(x => x.endsWith('.js'))){
+    const src = H.code(fs.readFileSync(path.join(__dirname, '..', 'src/app', f), 'utf8'));
+    src.split('\n').forEach((line, i) => {
+      if(line.indexOf('journalMeetCrisis(') < 0) return;
+      if(/function journalMeetCrisis\(/.test(line)) return;
+      total++;
+      if(line.indexOf('saved') < 0) bare.push(f + ':' + (i + 1) + ' ' + line.trim().slice(0, 72));
+    });
+  }
+  H.ok(total >= 40, 'calibration: the scan found the call sites (' + total + ')');
+  H.ok(bare.length === Object.keys(PERSIST_FIRST).length,
+    'every crisis door either passes an explicit saved flag or is one of the ' +
+    Object.keys(PERSIST_FIRST).length + ' that persist first (found ' + bare.length + ' bare' +
+    (bare.length ? ': ' + bare[0] : '') + ')');
+  // And the bare ones must be exactly those four, by name — a NEW bare call site would otherwise
+  // slip in under the count if somebody removed a flag elsewhere in the same commit.
+  const names = Object.keys(PERSIST_FIRST);
+  const bareText = bare.join(' | ');
+  H.ok(names.every(n => {
+        const fsrc = H.code(H.extractFn(n));
+        return fsrc.indexOf('journalMeetCrisis(') >= 0 && fsrc.indexOf('saved') < 0;
+      }),
+    'and those four are the named persist-first doors, each still bare in its own source');
+  H.ok(!/saveWhyEdit|addVice|openCBA|openWalkBack|submitFeedback/.test(bareText),
+    'while the doors that discard what was typed all carry the flag');
+}
+
 H.section('the tester allowlist still admits the testers');
 {
   // Six real people's addresses used to ship here in plaintext. They are hashes now — and a hash

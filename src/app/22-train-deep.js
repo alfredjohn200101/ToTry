@@ -710,7 +710,7 @@ function saveExerciseNote(ei, text){
         saveExerciseNote._met[ei] = true;
         if(currentSession[ei]) currentSession[ei].notes = '';
         try{ _saveSessionDraft(); }catch(_){ }
-        if(typeof journalMeetCrisis==='function') journalMeetCrisis(_k);
+        if(typeof journalMeetCrisis==='function') journalMeetCrisis(_k, null, { saved: false });
       }catch(_){ }
     }, 500);
   }catch(_){ }
@@ -2214,7 +2214,7 @@ async function generateGoalRoutine(){
   // rebuilt by me in saveQuickLog an hour ago). This text is sent straight to a MODEL.
   const _grC = (typeof journalCrisisOf==='function') ? journalCrisisOf(goal) : null;
   if(_grC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_grC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_grC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!goal.trim()){ showToast('Tell me your goal','Describe what you\u2019re training for first.'); return; }

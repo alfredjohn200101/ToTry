@@ -559,7 +559,7 @@ function saveHabitAnchor(hi){
   // GATED, 12 Oct 2026, same census. It is persisted on the habit and shown back beside it.
   const _haC = (typeof journalCrisisOf==='function') ? journalCrisisOf(val) : null;
   if(_haC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_haC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_haC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   // The target rides with the anchor — one sheet, one save. Blank clears it back to "most days".

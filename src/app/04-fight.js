@@ -1233,7 +1233,7 @@ function saveQuickLog(){
   // the card REPLACES the celebratory toast and the grace sheet rather than arriving beside them.
   if(_qlC && _qlOutcome === null){
     // Nothing to keep: they had not chosen yet, so there is no choice to persist.
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(_qlOutcome === null){
@@ -1329,7 +1329,7 @@ function saveQuickLog(){
   if(_qlC){
     // The card instead of the toast. Celebrating, or opening the grace sheet, on top of what they
     // just said would be the app talking over them.
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_qlC, null, { saved: false }); }catch(_){ } }, 250);
   } else if(!_wasRelapse){
     haptic('celebrate');
     showToast('Logged','Your win matters. Every one counts.');
@@ -2050,7 +2050,7 @@ function _feelingNowSaveWhy(){
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
     try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(v){ ls('totry_why', v); if(typeof syncToCloud==='function') syncToCloud(); haptic('success'); }

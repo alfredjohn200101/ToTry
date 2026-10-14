@@ -181,7 +181,7 @@ function _saveIfThenFromModal(feeling){
   const _ifCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(raw) : null;
   if(_ifCrisis){
     document.querySelector('.modal-bg.open')?.remove();
-    if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis)) return;
+    if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis, null, { saved: false })) return;
   }
   saveIfThen(feeling, raw);
   if(!ok) return;                                   // nothing saved → leave the plan modal open
@@ -318,7 +318,7 @@ function _startSmallestThing(){
       // Meet the person instead of instructing them.
       const _avCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
       if(_avCrisis){
-        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis); }catch(_){ } }, 250);
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis, null, { saved: false }); }catch(_){ } }, 250);
         return true;   // closes the form; the crisis card takes the screen instead of the 2-minute nudge
       }
       setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div><h3>Just 2 minutes</h3><div class="moment-body">Don\u2019t do <b>'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
@@ -438,7 +438,7 @@ function createLetGo(who){
     // surface away. createLetGo('') from the no-name path is unaffected.
     const _cc = who ? ((typeof journalCrisisOf==='function') ? journalCrisisOf(who) : null) : null;
     if(_cc){
-      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
       return;
     }
     if(typeof loadV==='function') loadV();
@@ -603,7 +603,7 @@ function _impulseSaveHold(what, amt){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(_ihC){
     try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
-    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC);
+    if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC, null, { saved: false });
     return;
   }
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
@@ -862,7 +862,7 @@ function _tkMyLine(){
       // GATED, 30 Sep 2026. This door's own copy says "I'll keep it and say it back when it turns up" — so an ungated disclosure here is replayed to the person at the exact moment of an urge.
       const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
       if(_cc){
-        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
         return true;
       }
       try{ const o=_tkStore(); o.myLine=t.slice(0,180); ls('totry_toolkit',o); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
@@ -960,7 +960,7 @@ function openCantStart(){
           // does not close that — the parser decodes it back before the JS compiles.
           const _bk = { label: 'Still help me start this',
             onclick: '_shrinkIt(\'' + ((typeof _jsAttr==='function') ? _jsAttr(t) : String(t).replace(/[\\'"]/g,'')) + '\',0)' };
-          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, _bk); }catch(_){ } }, 250);
+          setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, _bk, { saved: false }); }catch(_){ } }, 250);
           return true;
         }
         setTimeout(function(){ _shrinkIt(t, 0); }, 220);
@@ -1355,7 +1355,7 @@ function _vsSave(){
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
     try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   try{ ls('totry_values', { v:s.picked.slice(0,5), why:String(w?w.value:(s.why||'')).trim().slice(0,160), ts:new Date().toISOString() }); }catch(_){}
@@ -1763,7 +1763,7 @@ function openWalkBack(i){
       // GATED, 30 Sep 2026. Both fields. What is typed here is stored on the vice and read back the next time the form opens, as “last time you traced it…”.
       const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(chain) || journalCrisisOf((vals.catch||''))) : null;
       if(_cc){
-        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
         return true;
       }
       try{
@@ -1803,7 +1803,7 @@ function openCBA(i){
       // GATED, 30 Sep 2026. All three columns. Every one is stored on the vice and shown straight back in the ledger the next time it opens.
       const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf((vals.gain||'')) || journalCrisisOf((vals.cost||'')) || journalCrisisOf((vals.free||''))) : null;
       if(_cc){
-        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
         return true;
       }
       // Re-resolve by NAME inside the callback. `v` was captured before the form opened, and any
@@ -1921,7 +1921,7 @@ function openVicePlan(i){
     // handed to the model as 'their WHY (say it back to them)'. Its own placeholder promises
     // exactly that — "I'll say it back to you when it's hard."
     const _wc=(typeof journalCrisisOf==='function') ? journalCrisisOf(_why) : null;
-    if(_wc){ m.remove(); setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_wc); }catch(_){ } }, 250); return; }
+    if(_wc){ m.remove(); setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_wc, null, { saved: false }); }catch(_){ } }, 250); return; }
     vv.plan=Object.assign({}, vv.plan, { why:_why, move:[...chosen].join(' · '), updatedAt:Date.now() });
     try{ if(typeof saveV==='function') saveV(); }catch(_){}
     try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
@@ -2191,7 +2191,7 @@ function openProgressCheckin(){
     if(_pcC){
       // The card instead of "Thank you — really." Thanking somebody for what they just said, and
       // then saying nothing about it, is the app talking over them.
-      if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pcC);
+      if(typeof journalMeetCrisis==='function') journalMeetCrisis(_pcC, null, { saved: false });
       if(typeof haptic==='function') haptic('warning');
       return;
     }

@@ -116,7 +116,7 @@ function saveIdentity(){
   // Above the empty-field check, because a validation rule must never outrank a disclosure.
   const _c = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_c){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c); }catch(_){ } }, 250);
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_c, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!text){showToast('Empty','Write what you are becoming first.');return;}
@@ -144,7 +144,7 @@ function editIdentity(){
     // GATED, 30 Sep 2026. The IN-APP twin of onboarding's identity sentence, which was gated on 5 Sep. This is the field a person actually uses to CHANGE it, and it prefixes "I am becoming a person who " onto whatever it is handed, then shows it as the morning focus.
     const _cc = (typeof journalCrisisOf==='function') ? (journalCrisisOf(t)) : null;
     if(_cc){
-      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc); }catch(_){ } }, 250);
+      setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
       return true;
     }
     const lower=t.toLowerCase();
