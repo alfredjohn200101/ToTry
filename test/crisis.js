@@ -89,6 +89,21 @@ const DOORS = [
       if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
       if(typeof generateGoalRoutine === 'function') generateGoalRoutine();
     }, phrase) },
+  // DOOR 57, added 14 Oct 2026 with the surface itself. "What's wrong with it?" invites a SENTENCE
+  // rather than naming a thing, which is this repo's own criterion for a door, and the text is
+  // inserted into Supabase where nobody is sitting in front of it — the sealed-letter shape. The
+  // two fields are judged SEPARATELY (crisisInAny), because joining them destroys the clause end
+  // every bounded pattern needs; this door types into the WHY box and leaves the name box empty,
+  // which is the shape a join would silence.
+  { name: 'reporting shared content (why)',
+    go: async page => page.evaluate(() => { if(typeof openReportContent==='function') openReportContent(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('rc-why');
+      if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      const n = document.getElementById('rc-name');
+      if(n){ n.value = 'protein shake'; }   // an ordinary second field, which must not silence it
+      if(typeof submitContentReport === 'function') submitContentReport();
+    }, phrase) },
   { name: 'feedback to Alfy',
     go: async page => page.evaluate(() => { if(typeof openFeedback==='function') openFeedback(); }),
     fire: async (page, phrase) => page.evaluate(async p => {

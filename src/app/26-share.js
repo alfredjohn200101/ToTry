@@ -572,6 +572,82 @@ function openFeedback(){
   document.body.appendChild(m);
   setTimeout(() => document.getElementById('fb-text')?.focus(), 80);
 }
+// ── REPORTING SHARED CONTENT (App Store Guideline 1.2) ───────────────────────────────────────
+// This app surfaces other people's words in exactly one place: `pullSharedLibrary` merges
+// community exercise and food NAMES into the search lists. That is already pre-moderated —
+// nothing reaches another person unless `approved` is true AND `flagged` is false — which covers
+// 1.2's "filter objectionable material" limb. What was missing is the other limb: a way for the
+// person who SEES something wrong to say so. A pre-approval queue is only as good as the day it
+// was reviewed, and the one thing a reviewer cannot do is notice a name that becomes offensive in
+// context months later.
+//
+// It rides the `feedback` table rather than adding one, because that queue is already read and
+// adding a table means a migration nobody would run before launch. `type: 'content_report'` is
+// what separates it in the queue.
+function openReportContent(){
+  const m = document.createElement('div');
+  m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:6px">Report something you saw</h3>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px">' +
+      'Food and exercise names in search can come from other people. If one of them is offensive, ' +
+      'wrong, or shouldn\u2019t be there, tell me which one and I\u2019ll take it down.</p>' +
+    '<div class="lbl">What was it called?</div>' +
+    '<input type="text" id="rc-name" class="inp" placeholder="The name exactly as it appeared" ' +
+      'autocapitalize="none" autocomplete="off">' +
+    '<div class="lbl" style="margin-top:12px">What\u2019s wrong with it?</div>' +
+    '<textarea id="rc-why" class="fb-text" placeholder="A line is enough."></textarea>' +
+    '<button class="btn primary" onclick="submitContentReport()">Send the report</button>' +
+    '<button class="btn sheet-alt" onclick="closeModal(this)">Cancel</button>' +
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(() => document.getElementById('rc-name')?.focus(), 80);
+}
+
+async function submitContentReport(){
+  const nameEl = document.getElementById('rc-name');
+  const whyEl  = document.getElementById('rc-why');
+  const name = (nameEl?.value || '').trim();
+  const why  = (whyEl?.value || '').trim();
+  // A DOOR, BY THIS PROJECT'S OWN CRITERION. "What's wrong with it?" invites a SENTENCE, not a
+  // label, and the text is inserted into a Supabase table nobody is sitting in front of — the
+  // sealed-letter shape. So it is gated like every other door, and the fields are judged
+  // SEPARATELY: joining them destroys the clause end every bounded pattern in the detector needs,
+  // which is how "i cant go on" plus an ordinary second field returned null at five gates.
+  const _rcC = (typeof crisisInAny === 'function') ? crisisInAny([name, why])
+             : ((typeof journalCrisisOf === 'function') ? journalCrisisOf(why) : null);
+  if(_rcC){
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_rcC); }catch(_){ } }, 250);
+    return;
+  }
+  if(!name && !why){ showToast('Empty', 'Tell me which one, or what was wrong.'); return; }
+  const entry = {
+    type: 'content_report',
+    message: 'REPORTED: ' + (name || '(name not given)') + '\n\n' + (why || '(no reason given)'),
+    email: (typeof currentUser !== 'undefined' && currentUser?.email) || null,
+    app_info: { version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : null) },
+    ts: new Date().toISOString(),
+  };
+  let sent = false;
+  if(typeof sb !== 'undefined' && sb){
+    try{
+      const { error } = await Promise.race([
+        sb.from('feedback').insert([{ type: entry.type, message: entry.message,
+                                      email: entry.email, app_info: entry.app_info,
+                                      created_at: entry.ts }]),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]);
+      if(!error) sent = true;
+    }catch(_){ /* offline — fall through to the honest message below */ }
+  }
+  try{ closeModal(document.querySelector('.modal-bg.open')); }catch(_){ }
+  // SAY WHICH ACTUALLY HAPPENED. Telling somebody a report was filed when it never left the phone
+  // is the "Saved · I read what you wrote" defect this repo already fixed on a surface that stores
+  // nothing — so the offline branch names the address instead of claiming a send.
+  if(sent) showToast('Reported', 'Thank you \u2014 I\u2019ll look at it and take it down if it should go.');
+  else showToast('Not sent', 'No connection. Email totrybyaj@gmail.com and I\u2019ll take it down.');
+}
+
 let _feedbackType = 'bug';
 function setFeedbackType(t){
   _feedbackType = t;

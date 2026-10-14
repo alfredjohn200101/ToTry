@@ -1482,6 +1482,80 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `L._bcSeq = 9` from outside, which is a property on the returned object and a different binding
      from the one the function closes over, so the assertion could not fail. Driving two real
      concurrent reads is both the correct test and the honest reproduction.
+   - **AND THE DEVOTIONAL BOUND SILENCED A STATED INTENT (14 Oct 2026). 8 of 8 → 0, and 5 of 14 → 0.**
+     Found by asking "what else before the App Store" and CHECKING an old review's unactioned
+     crisis findings rather than listing from memory. Most were already fixed. This one was live,
+     and it is the eleventh time this app's own vocabulary has decided a crisis verdict.
+     **"i am going to take my life, god forgive me" returned NULL.** So did the lord/jesus/allah
+     forms, "i plan to take my life, lord" and "i decided to take my life, god" — 8 of 8. The
+     `/take my life/` entry excludes a divine name that FOLLOWS the phrase so that "take my life
+     lord" reads as the prayer it is, and `", god"` matched that exclusion and ate the whole
+     sentence. The comment above it claimed *"the intent forms are untouched"*, and that was true
+     only while nothing in the exclusion list happened to follow. In a FAITH-ROOTED app that is
+     close to the likeliest phrasing there is, and it is the highest-acuity register in the gate.
+     **The same pattern was wrong in the other direction at the same time:** 5 of 14 ordinary
+     sentences FIRED — *"i want to take my life in a new direction"*, *"time to take my life
+     seriously"*, *"i am going to take my life into my own hands"*. This is a SELF-IMPROVEMENT app
+     and that is its own vocabulary; the third is close to what onboarding asks a person to type.
+     **A lookahead cannot see the intent marker in front of it and this bundle forbids lookbehind,
+     so the intent form needed its OWN entry** — and a span removal could not have fixed it either,
+     because removing the address removes the disclosure with it. One shared `_TML_LIVING` list of
+     living completions feeds BOTH patterns, and a test asserts THREE references (one declaration,
+     two consumers) rather than trusting the comment that says they are shared — copying a bound
+     and missing a branch is the defect this file fails builds over. The half-applied injection
+     proves it: dropping the list from only the new pattern made *"i want to take my life back"*
+     fire, caught independently by a pre-existing assertion.
+   - **AND SIX REAL PEOPLE'S EMAIL ADDRESSES WERE SHIPPING IN THE BUNDLE (14 Oct 2026).**
+     `STRAVA_APPROVED_EMAILS` is a tester allowlist for Strava's ~10-athlete developer cap and it
+     carried six addresses in PLAINTEXT, four of them not the owner's, in a binary that downloads
+     from the App Store and is ALSO served publicly as a PWA from a public GitHub repo. Hashed now,
+     with the honest caveat written beside it: an email has low entropy and is enumerable, so this
+     is OBFUSCATION, not secrecy — somebody holding a candidate address can still test it, equally
+     true of SHA-256. What it stops is what was actually happening, harvesting by reading.
+     The hash is deliberately SYNCHRONOUS (`crypto.subtle` is async and five call sites call
+     `isStravaApproved()` inline). Measured: deterministic over 2000 runs, lossy above 2^53 but
+     IEEE754 specifies the multiply exactly so it is identical on every engine, and **0 collisions
+     over 400,000 synthetic addresses**. The owner's own three addresses in `DEV_EMAILS` are left
+     plaintext ON PURPOSE — knowing the address buys nothing, because it gates the moderation queue
+     and an attacker still needs the inbox to receive the sign-in code.
+   - **AND "BARCODE SCANNING NEEDS A PHONE" WAS ONLY EVER TRUE OF THE OPTICS (14 Oct 2026).**
+     This file said barcode scanning was one of two things that genuinely need hardware. The owner
+     pushed back, correctly: **a barcode is a NUMBER**, and the lookup, the parse, the serving
+     maths, the queue and the diary row all run off the digits. Only the optical read needs a lens.
+     Driven against LIVE Open Food Facts with `9310036230151` (OAK PLUS PROTEIN SALTED CARAMEL
+     500ml, the owner's own suggestion): parsed 61 cal/100g, 6g protein, sodium scaled 0.128g→128mg,
+     the sheet offered the bottle's own **500 g** serving rather than 100g, and the diary took
+     **305 cal / 30 g protein** on 14/10/2026. The response is now a FIXTURE so the parse and the
+     serving maths run in the offline gate, fault-injected three ways (hardcoding 100g, dropping the
+     `barcode` key, mis-scaling sodium).
+     305 against a true 304 because `cal` is rounded per-100g BEFORE scaling ×5; asserted as a BAND
+     (±2) rather than pinned, because pinning the app's current answer hides a wrong number later
+     and pinning 304 fails on correct code.
+     **My probe lied first, in the usual direction:** it invented `food.serving_g` and passed a
+     NUMBER where `_bcNext` builds an ARRAY of serving options, threw, and read exactly like a
+     broken app. Drive the real path (`_bcQueueAdd` → `_bcFlushQueue`), never a reconstruction.
+   - **AND THE APP STORE AUDIT FOUND ONE BLOCKER THAT WAS NOT IN ANY CHECKLIST (14 Oct 2026).**
+     Verified from the code, not recited: account deletion EXISTS (5.1.1(v)), Sign in with Apple is
+     NOT required (email OTP only, Google deliberately disabled), export compliance is declared,
+     both HealthKit strings are present, the privacy URL returns 200, medical disclaimers are in
+     several places, and shared content is PRE-MODERATED (`approved:true` AND `flagged:false`).
+     What was missing: **`01-home.png`, the FIRST image on the store listing, is not Home — it is
+     the Settings screen, mid-scroll, still showing the Timezone row the owner had deleted.** The
+     shots were taken at 13:54 and the copy removal landed at 15:41. `02-feeling-door.png` is
+     excellent and should LEAD. A screenshot is the one artefact nobody gates, and it had gone
+     stale inside two hours.
+     Two more landed with it. **1.2 wanted a second limb:** pre-moderation covers "filter
+     objectionable material", and nothing let the person who SEES something wrong say so — a
+     pre-approval queue is only as good as the day it was reviewed. Settings → Report shared
+     content now writes to the existing `feedback` table tagged `content_report` (no migration), and
+     **it is door 57**, because "what's wrong with it?" invites a SENTENCE and the text reaches a
+     server nobody is sitting in front of. It is gated per FIELD and ABOVE the validation, and it
+     says *"Not sent"* when offline rather than claiming a filing — the "Saved · I read what you
+     wrote" defect, refused in advance.
+     And **the guest door is real but not labelled as one**: `#auth-guest-btn` reads *"Something's
+     pulling at me right now →"*, which a reviewer facing an email-code wall will not read as
+     "skip sign-in". That is a 2.1 rejection waiting to happen, so `APP-REVIEW-NOTES.md` carries the
+     paste-ready note naming the button.
    - `npm run crisis` — **56 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and

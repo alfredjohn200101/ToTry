@@ -5398,6 +5398,59 @@ H.section('a scan still in flight when Done is tapped is not lost');
     'and parked under any other open sheet too, which is what the miss-offer dialog is');
 }
 
+H.section('shared content can be reported, and the report says what really happened');
+{
+  // Guideline 1.2 wants two limbs for user-generated content. The filter limb was already there —
+  // `pullSharedLibrary` requires approved:true AND flagged:false — and this is the other: a way for
+  // the person who SEES something wrong to say so. A pre-approval queue is only as good as the day
+  // it was reviewed.
+  const toasts = [], inserted = [], met = [];
+  const mk = (online) => H.load(['submitContentReport'], {
+    document: { getElementById: (id) => ({ value: id === 'rc-name' ? 'protein shake'
+                                                 : 'the name is a slur' }),
+                querySelector: () => null },
+    showToast: (a2, b2) => { toasts.push(a2 + '|' + b2); },
+    closeModal: () => {},
+    crisisInAny: () => null,
+    journalMeetCrisis: (k) => { met.push(k); },
+    currentUser: { email: 'x@example.com' },
+    APP_VERSION: 'vTEST',
+    sb: online ? { from: () => ({ insert: async (rows) => { inserted.push(rows[0]); return {}; } }) } : null,
+  });
+
+  H.defer((async () => {
+    const L = mk(true);
+    H.ok(typeof L.submitContentReport === 'function', 'calibration: the report sender loaded');
+    await L.submitContentReport();
+    H.ok(inserted.length === 1, 'an online report reaches the queue');
+    H.ok(inserted[0] && inserted[0].type === 'content_report',
+      'tagged content_report, so it is separable from ordinary feedback in the same table');
+    H.ok(inserted[0] && /protein shake/.test(inserted[0].message) && /slur/.test(inserted[0].message),
+      'and carries BOTH the name reported and the reason');
+    H.ok(toasts.some(t => /^Reported\|/.test(t)), 'and says so');
+
+    // AN HONEST FAILURE. Telling somebody a report was filed when it never left the phone is the
+    // "Saved - I read what you wrote" defect this repo already fixed on a surface that stores
+    // nothing. Offline must name the address instead of claiming a send.
+    toasts.length = 0;
+    const off = mk(false);
+    await off.submitContentReport();
+    H.ok(!toasts.some(t => /^Reported\|/.test(t)),
+      'offline does NOT claim the report was filed');
+    H.ok(toasts.some(t => /Not sent\|/.test(t) && /totrybyaj@gmail\.com/.test(t)),
+      'it says it did not send, and names the address that still works');
+  })());
+
+  // IT IS A DOOR. The why box invites a sentence and the text is inserted into Supabase where
+  // nobody is sitting in front of it. The gate judges the FIELDS, never the join.
+  const code = H.code(H.extractFn('submitContentReport'));
+  H.ok(/crisisInAny\s*\(\s*\[/.test(code),
+    'the report is crisis-gated per FIELD — joining them destroys the clause end the detector needs');
+  H.ok(code.indexOf('crisisInAny') < code.indexOf("showToast('Empty'"),
+    'and the gate sits ABOVE the empty-field validation, so a validation can never outrank a ' +
+    'disclosure — the defect this repo has now rebuilt three times');
+}
+
 H.section('a real barcode, a real product, the numbers a person would get');
 {
   // A BARCODE IS A NUMBER, AND A NUMBER NEEDS NO CAMERA. "barcode scanning needs a phone" was only
