@@ -5783,6 +5783,45 @@ H.section('the stale-card guard survives the session boundary');
     'while each read still takes the next turn, so the guard has something to compare');
 }
 
+H.section('a rest you adjusted is a rest the app remembers');
+{
+  // DEAD FOR HOWEVER LONG, AND DOCUMENTED AS DEAD. `totry_rest_times` was READ at the
+  // set-completion path and written by NOTHING — one reference in the entire bundle — so the map
+  // was always {} and every exercise fell to the same default forever. The comment at the read site
+  // says it outright: "restTime was never written by anything". Somebody noticed, wrote it down and
+  // left the feature dead.
+  const drive = (steps) => {
+    let store = {};
+    const L = H.load(['startRestTimer', 'addRestTime', 'stopRestTimer'], {
+      ls: (k, v) => { if(v === undefined) return store[k] || null; store[k] = v; return v; },
+      document: { getElementById: () => null, addEventListener: () => {}, removeEventListener: () => {} },
+      restTimerInt: null, restTimeLeft: 0, restEndAt: 0, Notify: undefined,
+      _restSync: () => {}, _restRemaining: () => 0, setInterval: () => 0, clearInterval: () => {},
+    });
+    steps(L);
+    return store.totry_rest_times || {};
+  };
+  H.ok(JSON.stringify(drive(l => { l.startRestTimer(90, 'Barbell Squat'); l.addRestTime(15); l.addRestTime(15); }))
+       === '{"Barbell Squat":120}',
+    'adjusting the rest twice stores the new total against that exercise, not the remaining time');
+  H.ok(drive(l => { l.startRestTimer(90, 'Curl'); l.addRestTime(-30); })['Curl'] === 60,
+    'and taking time off stores it too');
+  H.ok(drive(l => { l.startRestTimer(60, 'Curl'); for(let i=0;i<10;i++) l.addRestTime(-15); })['Curl'] === 15,
+    'floored at 15s, so a run of taps on minus cannot store a rest nobody can use');
+  H.ok(Object.keys(drive(l => { l.startRestTimer(90, null); l.addRestTime(15); })).length === 0,
+    'and a rest with no exercise named writes nothing \u2014 better no memory than a wrong one');
+  H.ok(drive(l => { l.startRestTimer(90, 'A'); l.addRestTime(30); l.startRestTimer(90, 'B'); l.addRestTime(15); })['A'] === 120,
+    'per exercise, not global \u2014 the rest a squat needs is not the rest a curl needs');
+
+  // AND THE READ SIDE HAS TO ASK FOR IT. A store written but never read is the same dead feature
+  // facing the other way.
+  const rd = H.code(H.extractFn('renderSets') || '') + H.code(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src/app/22-train-deep.js'), 'utf8'));
+  H.ok(/restMap\[ex\.name\]/.test(rd), 'the set-completion path still reads the remembered value');
+  H.ok(/startRestTimer\(restSecs, ex\.name\)/.test(rd),
+    'and the timer is told which exercise it belongs to, at both the superset and the plain call');
+}
+
 H.section('the SOS breath runs on one clock');
 {
   // THE APP'S FRONT DOOR AT 11PM, TELLING SOMEBODY THE OPPOSITE OF WHAT THEY SEE. The circle was a

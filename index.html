@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v631';
+const APP_VERSION = 'v632';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -46530,11 +46530,11 @@ function renderSets(ei){
         const isSecond = currentSession[ei] && currentSession[ei].superset === true;
         const partner = isSecond ? ei - 1 : ((currentSession[ei+1] && currentSession[ei+1].superset) ? ei + 1 : -1);
         if(partner > -1){
-          if(isSecond) startRestTimer(restSecs);
+          if(isSecond) startRestTimer(restSecs, ex.name);
           const pc = document.getElementById('ex-card-' + partner);
           if(pc) setTimeout(() => { try{ pc.scrollIntoView({block:'center', behavior:'smooth'}); }catch(_){} }, 150);
         } else {
-          startRestTimer(restSecs);
+          startRestTimer(restSecs, ex.name);
         }
         }
       }
@@ -47474,7 +47474,17 @@ function _restFinish(){
   if(typeof haptic==='function') haptic('success');
   showToast('Rest done','Next set.');
 }
-function startRestTimer(secs){
+// WHICH EXERCISE THIS REST BELONGS TO, so an adjustment can be remembered against it. The map
+// `totry_rest_times` has been READ at the set-completion path for however long and written by
+// NOTHING — one reference in the whole bundle — so it was always {} and every exercise fell to the
+// same default forever. The comment at the read site even says "restTime was never written by
+// anything": somebody noticed, wrote it down, and left the feature dead.
+// The mechanic Hevy and Strong both use is the cheap one: there is no settings screen for this. You
+// adjust the rest once with the buttons already on the timer, and the app remembers it for that
+// exercise from then on.
+let _restForEx = null, _restBase = 0;
+function startRestTimer(secs, exName){
+  _restForEx = exName || null; _restBase = secs;
   stopRestTimer();restTimeLeft=secs;restEndAt=Date.now()+secs*1000;
   const overlay=document.getElementById('rest-timer-overlay');const display=document.getElementById('rest-timer-display');
   if(!overlay||!display)return;overlay.style.display='block';display.textContent=restTimeLeft;display.style.color='var(--tx)';
@@ -47489,7 +47499,14 @@ function startRestTimer(secs){
   },250);   // four times a second, so coming back to the app corrects the display immediately
 }
 function stopRestTimer(){if(restTimerInt){clearInterval(restTimerInt);restTimerInt=null;}document.removeEventListener('visibilitychange', _restSync);restEndAt=0;const o=document.getElementById('rest-timer-overlay');if(o)o.style.display='none';}
-function addRestTime(secs){restEndAt=Math.max(Date.now(),restEndAt+secs*1000);restTimeLeft=_restRemaining();const d=document.getElementById('rest-timer-display');if(d)d.textContent=restTimeLeft;}
+function addRestTime(secs){
+  // REMEMBER IT. The adjustment used to extend only the timer in front of them, so the same person
+  // added the same fifteen seconds to the same exercise every session. Floored at 15s so a run of
+  // taps on minus cannot store a rest nobody can use, and stored against the exercise rather than
+  // globally, because the rest a squat needs is not the rest a curl needs.
+  _restBase = Math.max(15, (_restBase || 0) + secs);
+  if(_restForEx){ try{ const m = ls('totry_rest_times') || {}; m[_restForEx] = _restBase; ls('totry_rest_times', m); }catch(_){ } }
+  restEndAt=Math.max(Date.now(),restEndAt+secs*1000);restTimeLeft=_restRemaining();const d=document.getElementById('rest-timer-display');if(d)d.textContent=restTimeLeft;}
 function saveRoutine(){
   if(!currentSession.length){showToast('No exercises','Add exercises first.');return;}
   const name=document.getElementById('pt-routine-name')?.value.trim();if(!name){showToast('Name needed','Give your routine a name.');return;}
