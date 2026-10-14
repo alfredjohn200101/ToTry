@@ -8698,7 +8698,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v623';
+const APP_VERSION = 'v624';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13947,7 +13947,13 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   // the adjective bound had just closed: "i want to take my life somewhere quiet" went silent
   // again. `somewhere <ADJ>` in _TML_LIVING covers the living form; nothing else needs it.
   const _TML_ASPIRE = "more seriously|up a notch|forward\\b|one step at a time|day by day"
-                    + "|one day at a time";
+                    + "|one day at a time|step by step"
+                    // "to a better place" is the one genuinely two-faced completion here, because
+                    // it is also a death euphemism — but that euphemism is "GONE to a better
+                    // place", never "TAKE my life to", and the aspirational reading dominates. It
+                    // is bound to the living adjectives, so "take my life to a quiet place" (a
+                    // place, named for the first time) still fires.
+                    + "|to a (?:" + _TML_ADJ + ")\\b";
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
     // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead
@@ -53031,7 +53037,7 @@ async function submitContentReport(){
     app_info: { version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : null) },
     ts: new Date().toISOString(),
   };
-  let sent = false;
+  let sent = false, refused = false;
   if(typeof sb !== 'undefined' && sb){
     try{
       const { error } = await Promise.race([
@@ -53041,13 +53047,18 @@ async function submitContentReport(){
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
       ]);
       if(!error) sent = true;
-    }catch(_){ /* offline — fall through to the honest message below */ }
+      else refused = true;   // the server ANSWERED and said no — not the same as being offline
+    }catch(_){ /* no answer at all: offline, or the 8s race expired */ }
   }
   try{ closeModal(document.querySelector('.modal-bg.open')); }catch(_){ }
   // SAY WHICH ACTUALLY HAPPENED. Telling somebody a report was filed when it never left the phone
   // is the "Saved · I read what you wrote" defect this repo already fixed on a surface that stores
   // nothing — so the offline branch names the address instead of claiming a send.
+  // THREE OUTCOMES, NOT TWO. The first version collapsed "the server refused it" into "No
+  // connection", which tells somebody to check their signal when their signal was fine — and they
+  // would retry on the same path and fail again. Say which one it was.
   if(sent) showToast('Reported', 'Thank you \u2014 I\u2019ll look at it and take it down if it should go.');
+  else if(refused) showToast('Didn\u2019t go through', 'Something went wrong my end. Email totrybyaj@gmail.com and I\u2019ll take it down.');
   else showToast('Not sent', 'No connection. Email totrybyaj@gmail.com and I\u2019ll take it down.');
 }
 

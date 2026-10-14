@@ -5398,6 +5398,39 @@ H.section('a scan still in flight when Done is tapped is not lost');
     'and parked under any other open sheet too, which is what the miss-offer dialog is');
 }
 
+H.section('the tester allowlist still admits the testers');
+{
+  // Six real people's addresses used to ship here in plaintext. They are hashes now — and a hash
+  // list has a failure mode a plaintext list does not: ANY change to the hash function silently
+  // invalidates every entry at once, locking out all six with no error anywhere. `_emHash` is also
+  // lossy above 2^53 (the FNV multiply exceeds it), which looks like a bug worth "correcting" to
+  // anyone reading it cold. It is not — IEEE754 specifies the multiply exactly, so the result is
+  // identical on every engine — and this section is what stops the correction landing silently.
+  const S = H.load(['_emHash', 'isStravaApproved'], { currentUser: { email: '' } });
+  H.ok(typeof S._emHash === 'function', 'calibration: the hash loaded');
+
+  const src = H.code(H.extractFn('isStravaApproved'));
+  const listSrc = H.code(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src/app/35-strava.js'), 'utf8'));
+  const hashes = (listSrc.match(/'[0-9a-z]+\.[0-9a-z]+',/g) || []).map(x => x.slice(1, -2));
+  H.ok(hashes.length === 6, 'six testers are listed (found ' + hashes.length + ')');
+  H.ok(new Set(hashes).size === 6, 'and no two share a hash, which would approve the wrong person');
+
+  // The owner's own two addresses are the only ones that can be pinned here without putting the
+  // other four back into the repo in the very file that removed them.
+  H.ok(hashes.indexOf(S._emHash('alfredjohn200101@gmail.com')) >= 0,
+    'the owner still approves — any edit to _emHash invalidates all six at once, silently');
+  H.ok(hashes.indexOf(S._emHash('ALFREDJOHN200101@GMAIL.COM  ')) >= 0,
+    'and the hash lowercases and trims, exactly as the old .includes(email) did');
+  H.ok(hashes.indexOf(S._emHash('stranger@example.com')) < 0, 'a stranger does not');
+  H.ok(hashes.indexOf(S._emHash('')) < 0, 'and neither does the empty string');
+
+  H.ok(/_emHash\(/.test(src) && !/@/.test(src),
+    'and the check compares hashes, with no address left in the function');
+  H.ok(!/@(?:gmail|outlook|hotmail|yahoo|icloud)\.com/.test(listSrc.replace(/alfredjohn200101@gmail\.com/g, '')),
+    'no third party\u2019s address remains in the file — the whole point of the change');
+}
+
 H.section('shared content can be reported, and the report says what really happened');
 {
   // Guideline 1.2 wants two limbs for user-generated content. The filter limb was already there —

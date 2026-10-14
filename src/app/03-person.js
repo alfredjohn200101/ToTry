@@ -2355,7 +2355,13 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   // the adjective bound had just closed: "i want to take my life somewhere quiet" went silent
   // again. `somewhere <ADJ>` in _TML_LIVING covers the living form; nothing else needs it.
   const _TML_ASPIRE = "more seriously|up a notch|forward\\b|one step at a time|day by day"
-                    + "|one day at a time";
+                    + "|one day at a time|step by step"
+                    // "to a better place" is the one genuinely two-faced completion here, because
+                    // it is also a death euphemism — but that euphemism is "GONE to a better
+                    // place", never "TAKE my life to", and the aspirational reading dominates. It
+                    // is bound to the living adjectives, so "take my life to a quiet place" (a
+                    // place, named for the first time) still fires.
+                    + "|to a (?:" + _TML_ADJ + ")\\b";
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
     // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead

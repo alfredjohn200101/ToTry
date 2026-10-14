@@ -72,7 +72,12 @@ is stored in the Supabase project alongside everything else. Purpose: **App Func
 ### Health & Fitness — collected, linked
 Synced keys include workouts, body measurements, weight history, steps, sleep, nutrition and menstrual
 cycle data. The app also reads and writes **Apple Health** (`NSHealthShareUsageDescription` /
-`NSHealthUpdateUsageDescription`, plus the HealthKit entitlement including background delivery).
+`NSHealthUpdateUsageDescription`, plus the `com.apple.developer.healthkit` entitlement).
+It does NOT carry background delivery — this line used to claim it did, and the shipping IPA's
+entitlements carry `com.apple.developer.healthkit` alone. A doc that restates a mutable fact
+about the binary is wrong the moment the binary changes, which is why this one now names the
+exact key: verify with `codesign -d --entitlements - --xml <app>` against the IPA, never the
+archive.
 Purpose: **App Functionality**.
 
 > Note for the HealthKit review question: HealthKit data is used only to show the person their own

@@ -633,7 +633,7 @@ async function submitContentReport(){
     app_info: { version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : null) },
     ts: new Date().toISOString(),
   };
-  let sent = false;
+  let sent = false, refused = false;
   if(typeof sb !== 'undefined' && sb){
     try{
       const { error } = await Promise.race([
@@ -643,13 +643,18 @@ async function submitContentReport(){
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
       ]);
       if(!error) sent = true;
-    }catch(_){ /* offline — fall through to the honest message below */ }
+      else refused = true;   // the server ANSWERED and said no — not the same as being offline
+    }catch(_){ /* no answer at all: offline, or the 8s race expired */ }
   }
   try{ closeModal(document.querySelector('.modal-bg.open')); }catch(_){ }
   // SAY WHICH ACTUALLY HAPPENED. Telling somebody a report was filed when it never left the phone
   // is the "Saved · I read what you wrote" defect this repo already fixed on a surface that stores
   // nothing — so the offline branch names the address instead of claiming a send.
+  // THREE OUTCOMES, NOT TWO. The first version collapsed "the server refused it" into "No
+  // connection", which tells somebody to check their signal when their signal was fine — and they
+  // would retry on the same path and fail again. Say which one it was.
   if(sent) showToast('Reported', 'Thank you \u2014 I\u2019ll look at it and take it down if it should go.');
+  else if(refused) showToast('Didn\u2019t go through', 'Something went wrong my end. Email totrybyaj@gmail.com and I\u2019ll take it down.');
   else showToast('Not sent', 'No connection. Email totrybyaj@gmail.com and I\u2019ll take it down.');
 }
 
