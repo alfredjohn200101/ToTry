@@ -1655,7 +1655,23 @@ function openBreath(id, opts){
       }
       q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
     function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
-    function finish(){ cleanup(); _breathScale(orb,1.18,1.6); if(reason && state.before!=null){ askAfter(); return; } doneMsg(); }
+    // EVERY FINISHED SESSION LEAVES A MARK. `_breathLog` was reachable ONLY from askAfter(), which
+    // runs only when a `reason` was passed — and the Soul door calls openBreath('settle') with no
+    // reason on purpose, because the before/after distress scale is the wrong question to put in
+    // front of someone who simply sat down to be still. The consequence was that every breath taken
+    // from the Soul tab was unrecorded: a person who sat for ten minutes opened the heatmap and read
+    // "A quiet day · Nothing logged this day."
+    // That is the owner's own hook failing — a whole life in one place — in the realm the app says
+    // everything else grows from. The log now takes the session either way; `before`/`after` stay
+    // absent when they were never asked, which is what `_breathProof()` already filters on, so the
+    // "breathing brought the wave down N of your last M times" line is unchanged and still only
+    // counts sessions that actually measured something.
+    function finish(){
+      cleanup(); _breathScale(orb,1.18,1.6);
+      if(reason && state.before!=null){ askAfter(); return; }
+      try{ _breathLog({ protocol:id, reason:reason||null }); }catch(_){ }
+      doneMsg();
+    }
     function runPhase(){
       if(!state.alive) return;
       const ph=p.phases[state.pi];

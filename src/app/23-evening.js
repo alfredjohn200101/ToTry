@@ -641,6 +641,29 @@ function computeDayActivity(){
       if(e && (e.a || e.b || e.c)) map[k] = (map[k] || 0) + 1;
     });
   }catch(_){ }
+  // AND THE SOUL. This grid read nine stores and not one of them was a faith practice — no breath,
+  // no blessing, no rosary, no reading-plan day. So a person who sat and breathed for ten minutes,
+  // prayed a decade and finished a plan day opened the heatmap and read "A quiet day · Nothing
+  // logged this day." That is the app's own hook — a whole life in one place — failing in the realm
+  // it says everything else grows from, and it is worse than silence: the Soul tab proudly renders
+  // a ledger of OTHER apps' stillness ("N min of stillness this week · across all your apps") while
+  // contributing nothing of its own to the one screen that shows a life.
+  // Each store is read defensively and keyed through the same addDate, so a malformed row costs its
+  // own entry and not the grid — this file already records a tab dying from one bad row.
+  try{ (ls('totry_breath_log') || []).forEach(function(b){ if(b) addDate(b.ts); }); }catch(_){ }
+  try{ (ls('totry_blessings') || []).forEach(function(b){ if(b) addDate(b.ts); }); }catch(_){ }
+  // The rosary stores only the CURRENT day's position rather than a log, so it can credit one day:
+  // its own. `date` is already a day key, so it goes straight in rather than through addDate.
+  try{
+    const _ros = ls('totry_rosary_progress');
+    if(_ros && _ros.date && (_ros.i > 0)) map[_ros.date] = (map[_ros.date] || 0) + 1;
+  }catch(_){ }
+  // Reading plans keep the last advance per plan, not a per-day history, so each plan credits the
+  // day it was last moved forward. One mark per plan is honest; inventing the days between is not.
+  try{
+    const _pl = ls('totry_read_plans') || {};
+    Object.keys(_pl).forEach(function(k){ const e = _pl[k]; if(e && e.ts) addDate(e.ts); });
+  }catch(_){ }
   return map;
 }
 

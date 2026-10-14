@@ -5783,6 +5783,40 @@ H.section('the stale-card guard survives the session boundary');
     'while each read still takes the next turn, so the guard has something to compare');
 }
 
+H.section('the whole-life grid can see the soul');
+{
+  // THE HOOK, FAILING IN THE REALM THE APP SAYS EVERYTHING ELSE GROWS FROM. `computeDayActivity`
+  // read NINE stores — journal, evenings, mornings, workouts, examens, wins, fight log, prayers,
+  // three-good-things — and not one faith practice. Somebody who sat and breathed for ten minutes,
+  // prayed a decade and finished a reading-plan day opened the heatmap and read "A quiet day ·
+  // Nothing logged this day". Worse than silence: the Soul tab renders a ledger of OTHER apps'
+  // stillness while contributing nothing of its own to the one screen that shows a life.
+  const now = Date.now();
+  const grid = (stores) => H.load(['computeDayActivity'], { ls: (k) => stores[k] || null })
+                             .computeDayActivity();
+  H.ok(Object.keys(grid({})).length === 0, 'calibration: an empty person has an empty grid');
+
+  const breath = grid({ totry_breath_log: [{ ts: now }] });
+  H.ok(Object.keys(breath).length === 1, 'a breath session alone makes the day count');
+  const bless = grid({ totry_blessings: [{ ts: new Date(now).toISOString() }] });
+  H.ok(Object.keys(bless).length === 1, 'so does a blessing — its ts is an ISO string, not epoch ms');
+  const ros = grid({ totry_rosary_progress: { date: '15/10/2026', i: 12 } });
+  H.ok(ros['15/10/2026'] === 1,
+    'and the rosary, whose store holds only the current day\u2019s position and so credits exactly ' +
+    'one day rather than inventing the ones between');
+  H.ok(Object.keys(grid({ totry_rosary_progress: { date: '15/10/2026', i: 0 } })).length === 0,
+    'but a rosary at bead zero is not a practice');
+  const plans = grid({ totry_read_plans: { john: { d: 3, ts: now } } });
+  H.ok(Object.keys(plans).length === 1, 'and a reading plan credits the day it was last advanced');
+
+  // A MALFORMED ROW COSTS ITS OWN ENTRY, NOT THE GRID. This repo records a whole tab dying from one
+  // bad row, and `|| []` guards a MISSING key rather than a broken one.
+  let threw = false;
+  try { grid({ totry_breath_log: [null, { ts: now }, { ts: 'rubbish' }], totry_blessings: 'not-an-array' }); }
+  catch(_) { threw = true; }
+  H.ok(!threw, 'and a null row, an unparseable date and a store of the wrong type do not kill it');
+}
+
 H.section('the camera shows the trolley it is keeping');
 {
   // THE ACCUMULATION IS THE FEATURE, AND IT WAS INVISIBLE. Continuous scan, the queue, the debounce,

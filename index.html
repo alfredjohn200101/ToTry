@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v629';
+const APP_VERSION = 'v630';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -22463,7 +22463,23 @@ function openBreath(id, opts){
       }
       q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
     function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
-    function finish(){ cleanup(); _breathScale(orb,1.18,1.6); if(reason && state.before!=null){ askAfter(); return; } doneMsg(); }
+    // EVERY FINISHED SESSION LEAVES A MARK. `_breathLog` was reachable ONLY from askAfter(), which
+    // runs only when a `reason` was passed — and the Soul door calls openBreath('settle') with no
+    // reason on purpose, because the before/after distress scale is the wrong question to put in
+    // front of someone who simply sat down to be still. The consequence was that every breath taken
+    // from the Soul tab was unrecorded: a person who sat for ten minutes opened the heatmap and read
+    // "A quiet day · Nothing logged this day."
+    // That is the owner's own hook failing — a whole life in one place — in the realm the app says
+    // everything else grows from. The log now takes the session either way; `before`/`after` stay
+    // absent when they were never asked, which is what `_breathProof()` already filters on, so the
+    // "breathing brought the wave down N of your last M times" line is unchanged and still only
+    // counts sessions that actually measured something.
+    function finish(){
+      cleanup(); _breathScale(orb,1.18,1.6);
+      if(reason && state.before!=null){ askAfter(); return; }
+      try{ _breathLog({ protocol:id, reason:reason||null }); }catch(_){ }
+      doneMsg();
+    }
     function runPhase(){
       if(!state.alive) return;
       const ph=p.phases[state.pi];
@@ -49490,6 +49506,29 @@ function computeDayActivity(){
       const e = _tgt[k];
       if(e && (e.a || e.b || e.c)) map[k] = (map[k] || 0) + 1;
     });
+  }catch(_){ }
+  // AND THE SOUL. This grid read nine stores and not one of them was a faith practice — no breath,
+  // no blessing, no rosary, no reading-plan day. So a person who sat and breathed for ten minutes,
+  // prayed a decade and finished a plan day opened the heatmap and read "A quiet day · Nothing
+  // logged this day." That is the app's own hook — a whole life in one place — failing in the realm
+  // it says everything else grows from, and it is worse than silence: the Soul tab proudly renders
+  // a ledger of OTHER apps' stillness ("N min of stillness this week · across all your apps") while
+  // contributing nothing of its own to the one screen that shows a life.
+  // Each store is read defensively and keyed through the same addDate, so a malformed row costs its
+  // own entry and not the grid — this file already records a tab dying from one bad row.
+  try{ (ls('totry_breath_log') || []).forEach(function(b){ if(b) addDate(b.ts); }); }catch(_){ }
+  try{ (ls('totry_blessings') || []).forEach(function(b){ if(b) addDate(b.ts); }); }catch(_){ }
+  // The rosary stores only the CURRENT day's position rather than a log, so it can credit one day:
+  // its own. `date` is already a day key, so it goes straight in rather than through addDate.
+  try{
+    const _ros = ls('totry_rosary_progress');
+    if(_ros && _ros.date && (_ros.i > 0)) map[_ros.date] = (map[_ros.date] || 0) + 1;
+  }catch(_){ }
+  // Reading plans keep the last advance per plan, not a per-day history, so each plan credits the
+  // day it was last moved forward. One mark per plan is honest; inventing the days between is not.
+  try{
+    const _pl = ls('totry_read_plans') || {};
+    Object.keys(_pl).forEach(function(k){ const e = _pl[k]; if(e && e.ts) addDate(e.ts); });
   }catch(_){ }
   return map;
 }
