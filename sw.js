@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v625-only-say-saved-when-you-saved'
+const CACHE = 'totry-v627-nourish-first-pass'
 
 const CORE = [
   './',

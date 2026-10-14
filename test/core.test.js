@@ -5398,6 +5398,45 @@ H.section('a scan still in flight when Done is tapped is not lost');
     'and parked under any other open sheet too, which is what the miss-offer dialog is');
 }
 
+H.section('Nourish says one thing once, and an empty ring is empty');
+{
+  // TWO COMPONENTS SAYING THE SAME THING. On a first visit the tab drew an empty card reading "the
+  // target above is only a starting point" and, 344px below it, a setup strip reading "Your 2100
+  // cal target is a generic starting point" — the identical thought twice, in two components with
+  // two different dismiss affordances. The card's own comment had noticed the tension and resolved
+  // it by rewording, never by asking whether both should speak.
+  const mkBox = () => { let html = ''; return { el: { set innerHTML(v){ html = v; }, get innerHTML(){ return html; } }, read: () => html }; };
+  const run = (firstRun) => {
+    const b = mkBox();
+    const L = H.load(['renderNutSetupNudge'], {
+      document: { getElementById: () => b.el }, ls: () => null,
+      nutGentle: () => false, _nutFirstRunCard: firstRun,
+    });
+    try { L.renderNutSetupNudge(); } catch(_) {}
+    return b.read();
+  };
+  H.ok(run(true) === '', 'with the first-run card on screen the setup nudge stays silent');
+  H.ok(/starting point/.test(run(false)),
+    'calibration: without it the nudge DOES speak — so the silence above is the guard, not a dead probe');
+
+  // AND THE FLAG MUST BE CLEARED EVERY PAINT. Set-and-never-cleared would suppress the nudge for
+  // good from the second paint onward, for a person who never dismissed it: the latching-tracker
+  // shape this repo already records.
+  const log = H.code(H.extractFn('renderNutritionLog'));
+  H.ok(/_nutFirstRunCard\s*=\s*false/.test(log),
+    'renderNutritionLog resets the first-run flag on every paint rather than letting it latch');
+
+  // A ZERO-LENGTH DASH WITH A ROUND CAP IS A DOT. ring-pro carries stroke-linecap="round", so an
+  // arc of length 0 painted both caps on top of each other — on a day with nothing logged the hero
+  // ring showed coloured DOTS on a bare track, which reads as broken rather than as empty.
+  const arcs = H.code(H.extractFn('renderNutritionLog') + H.extractFn('renderAdaptiveNutrition'));
+  H.ok(/visibility\s*=\s*len\s*<\s*0\.5/.test(arcs) || /len < 0\.5 \? 'hidden'/.test(arcs),
+    'a zero-length arc is hidden outright rather than painting its round caps as a dot');
+  H.ok(!/'0 251'/.test(arcs),
+    'and the empty state no longer hardcodes a circumference from a ring of a different radius ' +
+    '(these circles are r=54, so C is ~339, not 251)');
+}
+
 H.section('a crisis door only says "Saved" when it saved');
 {
   // `journalMeetCrisis` DEFAULTS to toasting "Saved · I read what you wrote", so every call site is

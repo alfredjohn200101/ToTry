@@ -4865,6 +4865,13 @@ function renderNutDayNav(){
 }
 
 function renderNutritionLog(){
+  // CLEARED ON EVERY PAINT, SET ONLY BY THE BRANCH THAT DRAWS THE CARD. The first version set this
+  // true and never cleared it, so the moment somebody logged their first food the card stopped
+  // rendering while the flag stayed latched — and the setup nudge it suppresses would have been
+  // gone for good, on every later day, for a person who never dismissed it. That is the
+  // latching-tracker shape this repo already records: a flag that only ever turns on is a flag that
+  // is wrong from the second paint onward.
+  _nutFirstRunCard = false;
   // The real calendar day this paint belongs to — NOT nutDayKey(), which is the day being VIEWED.
   try{ _nutPaintedDay = dayKeyOf(); }catch(_){ }
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
@@ -5064,6 +5071,12 @@ function renderNutritionLog(){
   const setArc = (id, fraction, offset) => {
     const el = e(id); if(!el) return;
     const len = Math.max(0, fraction * C);
+    // A ZERO-LENGTH DASH WITH A ROUND CAP IS A DOT, NOT NOTHING. `ring-pro` carries
+    // stroke-linecap="round", so a arc of length 0 still paints both caps on top of each other —
+    // a filled circle the size of the stroke. On a day with nothing logged the hero ring rendered
+    // as a bare grey track with coloured DOTS sitting on it, which reads as broken rather than as
+    // empty. Hidden outright below half a point of arc: an empty ring should be an empty ring.
+    el.style.visibility = len < 0.5 ? 'hidden' : '';
     el.setAttribute('stroke-dasharray', len.toFixed(1) + ' ' + (C - len).toFixed(1));
     el.setAttribute('stroke-dashoffset', (-offset * C).toFixed(1));
   };
@@ -5082,7 +5095,11 @@ function renderNutritionLog(){
     setArc('ring-carb', cf, pf);
     setArc('ring-fat', ff, pf+cf);
   } else {
-    ['ring-pro','ring-carb','ring-fat'].forEach(id=>{const el=e(id); if(el) el.setAttribute('stroke-dasharray','0 251');});
+    // AND THE EMPTY STATE HARDCODED THE WRONG CIRCUMFERENCE. These circles are r=54, so C is
+    // ~339 — '0 251' was a literal from a ring of a different size, and it would have drawn a
+    // 88-point arc the moment anything made the dash length non-zero. Go through setArc so the
+    // empty state and the filled state can never disagree about the geometry.
+    ['ring-pro','ring-carb','ring-fat'].forEach(id=>setArc(id, 0, 0));
   }
   // Tint the hero number subtly when over budget (the one place red carries real meaning)
   const calHeroNum=document.getElementById('nut-cal');
@@ -5182,6 +5199,14 @@ function renderNutritionLog(){
           '<div class="ios-empty-body">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we’ll learn your rhythm from there.</div>'+
           '<button class="btn" style="margin-top:16px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
+        // ONE MESSAGE, NOT TWO. `renderNutSetupNudge` prints "Your 2100 cal target is a generic
+        // starting point" on the SAME screen as this card's "the target above is only a starting
+        // point" — the identical thought, 344px apart, in two different components with two
+        // different dismiss affordances. The comment above already noticed the tension between the
+        // card and the nudge and resolved it by rewording the card; it never asked whether both
+        // should be speaking. On a person's first ever visit to this tab they should be told one
+        // thing once.
+        _nutFirstRunCard = true;
         _nutTailRenders(totals, goalCal);
         return;
       }
@@ -6582,12 +6607,15 @@ function showEDSupport(){
 // the very bottom, so most never find it. This surfaces one warm, dismissible nudge at the TOP until
 // they set a target that fits them (detected by the _ts stamp every real save writes). It disappears
 // the moment their goal is personalised — no nagging.
+// True only while the first-run empty card is the body of this tab. Declared beside the nudge that
+// reads it, rather than near the card that writes it, because this is the consumer.
+let _nutFirstRunCard = false;
 function renderNutSetupNudge(){
   const box = document.getElementById('nut-setup-nudge');
   if(!box) return;
   const g = ls('totry_nut_goals');
   const personalised = g && g._ts;                 // any real save (manual, TDEE calc, adaptive) stamps _ts
-  if(personalised || ls('totry_nut_setup_dismissed')){ box.innerHTML=''; return; }
+  if(personalised || ls('totry_nut_setup_dismissed') || _nutFirstRunCard){ box.innerHTML=''; return; }
   const def = (typeof defaultNutGoals==='function') ? defaultNutGoals() : {cal:2100};
   // This was right to exist and wrong to shout. Five lines of prose under an italic headline, over a
   // full-width gold button, sitting ABOVE the ring — so the first thing on the food screen was an ad
