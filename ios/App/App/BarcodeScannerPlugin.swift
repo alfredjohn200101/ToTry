@@ -26,8 +26,28 @@ public class BarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin {
         // the JS, and the answer comes back through showScanResult so the person never leaves the
         // viewfinder. closeScan is the way out when they are done.
         CAPPluginMethod(name: "showScanResult", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "closeScan", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "closeScan", returnType: CAPPluginReturnPromise),
+        // THE TROLLEY HAS TO BE ON SCREEN. `showScanResult` paints ONE card for ONE read and the next
+        // read overwrites it, so a person scanning a shop saw a single line of text being replaced —
+        // the accumulation that is the entire point of continuous mode was invisible, and an
+        // accumulation you cannot see reads as nothing happening. The queue, the debounce, the
+        // late-arrival parking and the drain were all built and correct; the overlay rendered none
+        // of it. This is a separate method rather than more arguments on showScanResult because the
+        // two have different contracts: a result card is a CLAIM about the tin in your hand (and so
+        // carries the `_bcSeq` staleness guard), while this is a full push of JS-owned state where
+        // last-write-wins is correct and a turn guard would be wrong.
+        CAPPluginMethod(name: "setScanQueue", returnType: CAPPluginReturnPromise)
     ]
+
+    /// Full-state push of the scan queue. Always send the WHOLE array; there is no incremental form.
+    @objc func setScanQueue(_ call: CAPPluginCall) {
+        let items = call.getArray("items", JSObject.self) ?? []
+        DispatchQueue.main.async {
+            guard let vc = BarcodeScanViewController.live else { call.resolve(["shown": false]); return }
+            vc.applyQueue(items)
+            call.resolve(["shown": true])
+        }
+    }
 
     /// Paints the looked-up product over the live preview. Called by the JS after it resolves a code
     /// announced by `barcodeScanned`. Silently does nothing if the camera has since been dismissed —
@@ -108,6 +128,9 @@ public class BarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin {
                 vc.onContinuousRead = { [weak self] code in
                     self?.notifyListeners("barcodeScanned", data: ["code": code])
                 }
+                vc.onQueueRemove = { [weak self] idx in
+                    self?.notifyListeners("scanQueueRemove", data: ["index": idx])
+                }
                 vc.onResult = { code in
                     if code == "__manual__" {
                         // Not a cancel. They want the keypad, and the JS opens it rather than
@@ -170,6 +193,9 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
     /// Called for every read in continuous mode. The JS looks the code up and calls back with
     /// `present(result:)`, so the person never leaves the viewfinder.
     var onContinuousRead: ((String) -> Void)?
+    /// Fired when the person taps × on a trolley cell. The JS owns the queue, so it splices and
+    /// pushes the whole array back rather than this side mutating its own copy.
+    var onQueueRemove: ((Int) -> Void)?
     var continuous = false
 
     static weak var live: BarcodeScanViewController?
@@ -191,6 +217,15 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
     private let focusRing = UIView()
     private var aimBox: CGRect = .zero
     private var lifecycleObservers: [NSObjectProtocol] = []
+    // THE TROLLEY, ON SCREEN. A count chip that survives every card overwrite (it is the answer to
+    // "did that do anything"), and a strip of what is in the basket so a wrong product can be caught
+    // while the tin is still in your hand rather than in the diary three taps later.
+    private let countChip = UILabel()
+    private let strip = UIScrollView()
+    private var queue: [[String: Any]] = []
+    private var stripCells: [UIView] = []
+    private var cardHideWork: DispatchWorkItem?
+    private weak var cancelBtn: UIButton?
 
     private let gold = UIColor(red: 0.78, green: 0.66, blue: 0.43, alpha: 1)
 
@@ -318,6 +353,22 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         torchBtn.isHidden = !(device?.hasTorch ?? false)
         view.addSubview(torchBtn)
 
+        countChip.textColor = .white
+        countChip.font = .systemFont(ofSize: 14, weight: .semibold)
+        countChip.textAlignment = .center
+        countChip.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        countChip.layer.cornerRadius = 16
+        countChip.layer.borderWidth = 1
+        countChip.layer.borderColor = gold.withAlphaComponent(0.7).cgColor
+        countChip.clipsToBounds = true
+        countChip.isHidden = true
+        view.addSubview(countChip)
+
+        strip.showsHorizontalScrollIndicator = false
+        strip.alwaysBounceHorizontal = true
+        strip.isHidden = true
+        view.addSubview(strip)
+
         // A WAY OUT THAT IS NOT GIVING UP. A scuffed or curved barcode is common, and the answer is
         // to type the digits, not to leave the feature.
         let manual = UIButton(type: .system)
@@ -330,6 +381,7 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
 
         let cancel = UIButton(type: .system)
         cancel.setTitle(continuous ? "Done" : "Cancel", for: .normal)
+        cancelBtn = cancel
         cancel.setTitleColor(.white, for: .normal)
         cancel.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         cancel.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
@@ -389,7 +441,132 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
 
         view.viewWithTag(901)?.frame = CGRect(x: 20, y: b.height - safeBottom - 90, width: b.width - 40, height: 40)
         view.viewWithTag(902)?.frame = CGRect(x: 20, y: b.height - safeBottom - 48, width: b.width - 40, height: 40)
-        _ = safeTop
+
+        // FRAMED HERE AND NOWHERE ELSE. layoutOverlay re-lays every pass precisely so a rotation
+        // cannot strand a view at the old geometry; anything framed in buildOverlay is in the wrong
+        // place after one turn of the phone. `safeTop` was computed and then discarded (`_ = safeTop`)
+        // — the chip is what it was always for.
+        countChip.frame = CGRect(x: b.width - 20 - 104, y: safeTop + 12, width: 104, height: 32)
+        // The strip sits in the free band between the hint and the result card, so it displaces
+        // nothing: on a 393x852 with a 34pt inset the hint ends ~544 and the card starts ~650.
+        let stripH: CGFloat = 72
+        strip.frame = CGRect(x: 20, y: resultCard.frame.minY - stripH - 12, width: b.width - 40, height: stripH)
+        layoutStripCells()
+    }
+
+    /// Lays the cells inside the strip. Separate from layoutOverlay because the cell COUNT changes
+    /// on every read while the strip's own frame only changes on rotation.
+    private func layoutStripCells() {
+        let cw: CGFloat = 150, gap: CGFloat = 8
+        for (i, cell) in stripCells.enumerated() {
+            cell.frame = CGRect(x: CGFloat(i) * (cw + gap), y: 0, width: cw, height: strip.bounds.height)
+        }
+        strip.contentSize = CGSize(width: max(0, CGFloat(stripCells.count) * (cw + gap) - gap),
+                                   height: strip.bounds.height)
+    }
+
+    /// Applies the full queue the JS owns. Rebuilds the cells rather than diffing: the array is at
+    /// most a trolley's worth, and a diff is a second source of truth about what is on screen.
+    func applyQueue(_ items: [[String: Any]]) {
+        queue = items
+        stripCells.forEach { $0.removeFromSuperview() }
+        stripCells.removeAll()
+
+        let n = items.reduce(0) { $0 + (($1["n"] as? Int) ?? 1) }
+        countChip.text = n == 1 ? "1 kept" : "\(n) kept"
+        countChip.isHidden = n == 0
+        strip.isHidden = items.isEmpty
+        // A BUTTON WITH A VISIBLE OBJECT IS A DIFFERENT BUTTON. "Done" asks you to remember what you
+        // are finishing; "Done · 3 items" tells you what it is about to do with them.
+        if continuous {
+            cancelBtn?.setTitle(n == 0 ? "Done" : (n == 1 ? "Done · 1 item" : "Done · \(n) items"), for: .normal)
+        }
+
+        // NEWEST FIRST. The thing just scanned is the thing being checked, so it must not require a
+        // scroll to see.
+        for (i, it) in items.enumerated().reversed() {
+            let name = (it["name"] as? String) ?? "Unknown"
+            let cal  = it["cal"] as? Int
+            let qty  = (it["n"] as? Int) ?? 1
+            let cell = UIView()
+            cell.backgroundColor = UIColor.black.withAlphaComponent(0.58)
+            cell.layer.cornerRadius = 12
+            cell.layer.borderWidth = 1
+            cell.layer.borderColor = UIColor.white.withAlphaComponent(0.16).cgColor
+            cell.clipsToBounds = true
+
+            // A LETTER TILE RATHER THAN AN EMPTY SQUARE. The product image is fetched asynchronously
+            // and may never arrive — no network, no image on the record, a slow shop wifi — and a
+            // blank hole reads as broken where a letter reads as "this one".
+            let tile = UILabel(frame: CGRect(x: 10, y: 12, width: 48, height: 48))
+            tile.text = String(name.prefix(1)).uppercased()
+            tile.textColor = .white
+            tile.font = .systemFont(ofSize: 20, weight: .semibold)
+            tile.textAlignment = .center
+            tile.backgroundColor = UIColor.white.withAlphaComponent(0.12)
+            tile.layer.cornerRadius = 8
+            tile.clipsToBounds = true
+            cell.addSubview(tile)
+
+            let t = UILabel(frame: CGRect(x: 66, y: 13, width: 74, height: 18))
+            // TRUNCATE, NEVER WRAP — this repo's own rule for a row title, and a wrapped product
+            // name would push the calorie line out of a 72pt cell.
+            t.text = qty > 1 ? "\(name) ×\(qty)" : name
+            t.textColor = .white
+            t.font = .systemFont(ofSize: 13, weight: .semibold)
+            t.lineBreakMode = .byTruncatingTail
+            cell.addSubview(t)
+
+            let sub = UILabel(frame: CGRect(x: 66, y: 33, width: 74, height: 16))
+            sub.text = cal != nil ? "\(cal!) cal/100g" : "no figure"
+            sub.textColor = UIColor.white.withAlphaComponent(0.72)
+            sub.font = .systemFont(ofSize: 11, weight: .regular)
+            sub.lineBreakMode = .byTruncatingTail
+            cell.addSubview(sub)
+
+            // REMOVE IN THE AISLE, NOT IN THE DIARY. A mis-scan caught over the trolley costs one
+            // tap; the same mis-scan caught later costs a serving sheet, a confirm and a delete.
+            let x = UIButton(type: .system)
+            x.frame = CGRect(x: 150 - 30, y: 4, width: 26, height: 26)
+            x.setTitle("×", for: .normal)
+            x.setTitleColor(UIColor.white.withAlphaComponent(0.8), for: .normal)
+            x.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+            x.tag = 5000 + i
+            x.addTarget(self, action: #selector(removeFromQueue(_:)), for: .touchUpInside)
+            cell.addSubview(x)
+
+            strip.addSubview(cell)
+            stripCells.append(cell)
+            if let u = it["img"] as? String, !u.isEmpty { loadThumb(u, into: tile) }
+        }
+        layoutStripCells()
+        strip.setContentOffset(.zero, animated: false)
+    }
+
+    @objc private func removeFromQueue(_ sender: UIButton) {
+        let idx = sender.tag - 5000
+        guard idx >= 0 && idx < queue.count else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        onQueueRemove?(idx)
+    }
+
+    /// Fetches a product thumbnail. NEVER blocks the preview and never fails loudly: the letter tile
+    /// underneath is already a correct answer, so a dropped image costs nothing.
+    private func loadThumb(_ urlStr: String, into tile: UILabel) {
+        guard let u = URL(string: urlStr) else { return }
+        URLSession.shared.dataTask(with: u) { data, _, _ in
+            guard let d = data, let img = UIImage(data: d) else { return }
+            DispatchQueue.main.async {
+                guard tile.superview != nil else { return }   // the cell was rebuilt while we waited
+                let iv = UIImageView(frame: tile.bounds)
+                iv.image = img
+                iv.contentMode = .scaleAspectFill
+                iv.clipsToBounds = true
+                iv.layer.cornerRadius = 8
+                tile.text = ""
+                tile.addSubview(iv)
+            }
+        }.resume()
     }
 
     /// THE BOX IS THE SCANNER. Without this AVFoundation reads the whole frame, so the aiming frame was
@@ -550,6 +727,7 @@ class BarcodeScanViewController: UIViewController, AVCaptureMetadataOutputObject
         let cb = onResult
         onResult = nil
         onContinuousRead = nil
+        onQueueRemove = nil
         dismiss(animated: true) { cb?(code) }
     }
 

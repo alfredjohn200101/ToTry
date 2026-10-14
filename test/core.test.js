@@ -5783,6 +5783,55 @@ H.section('the stale-card guard survives the session boundary');
     'while each read still takes the next turn, so the guard has something to compare');
 }
 
+H.section('the camera shows the trolley it is keeping');
+{
+  // THE ACCUMULATION IS THE FEATURE, AND IT WAS INVISIBLE. Continuous scan, the queue, the debounce,
+  // the late-arrival parking and the drain were all built and correct — and the overlay rendered
+  // none of it. `present(result:sub:ok:)` was the WHOLE result UI: two single-line labels in a 72px
+  // card, overwritten by the next read. A person scanning a shop saw one line of text being
+  // replaced, which reads as nothing happening, so they close the camera and go back to one item at
+  // a time. That is the feature not existing.
+  // The strip and chip are NATIVE, so no browser suite can see them. What is assertable here is the
+  // JS CONTRACT: the full array is pushed after every change.
+  const pushed = [];
+  const L = H.load(['_bcQueueAdd', '_bcPushQueue'], {
+    _bcQueue: [], _bcFlushQueue: () => {}, _bcSheetUp: () => false,
+    _bcSessionEnded: false, _bcDraining: false,
+    _bcPlugin: () => ({ setScanQueue: (a) => { pushed.push(a.items); } }),
+  });
+  H.ok(typeof L._bcPushQueue === 'function', 'calibration: the pusher loaded');
+
+  L._bcQueueAdd({ name: 'Weet-Bix', cal: 362, img: 'https://x/i.jpg' }, '111');
+  // EVERY DEREFERENCE GUARDED. The first version read `pushed[0].length` directly, so removing the
+  // push made this section THROW rather than report — the suite crashed with no summary and the
+  // fault injection looked like a test that could not fail. That is this repo's recorded trap (a
+  // test dereferencing a null instead of failing) arriving inside the test written to catch a
+  // missing push.
+  const first = pushed[0] || [];
+  const f0 = first[0] || {};
+  H.ok(pushed.length === 1 && first.length === 1, 'the first scan pushes a one-item trolley');
+  H.ok(f0.name === 'Weet-Bix' && f0.cal === 362 && f0.n === 1,
+    'carrying the name, the calorie figure and a count');
+  H.ok(f0.img === 'https://x/i.jpg',
+    'and the product image — reused barcodes and regional pack variants are the commonest way this ' +
+    'lookup is wrong, and the picture is what catches it while the tin is still in your hand');
+
+  // A TROLLEY HOLDS THREE IDENTICAL YOGHURTS. The native debounce latches on the single previous
+  // code, so A→B→A reads twice — correctly, because that is a deliberate second tub.
+  L._bcQueueAdd({ name: 'Yoghurt', cal: 97 }, '222');
+  L._bcQueueAdd({ name: 'Weet-Bix', cal: 362 }, '111');
+  const last = pushed[pushed.length - 1] || [];
+  H.ok(last.length === 2, 'a repeat scan does not add a second row');
+  H.ok((last.find(x => x.name === 'Weet-Bix') || {}).n === 2,
+    'it increments the count, so the strip reads "×2" and the drain opens ONE sheet at quantity 2 ' +
+    'rather than two sheets');
+
+  // AND THE IMAGE HAS TO BE READ OFF THE RESPONSE, which nothing in this bundle ever did.
+  const fetchSrc = H.code(H.extractFn('_bcFetchForScanner'));
+  H.ok(/image_front_small_url/.test(fetchSrc),
+    'the Open Food Facts image field is read — it was always on the wire and never looked at');
+}
+
 H.section('a barcode the database does not have gets a route, not a verdict');
 {
   // "Not in the database" inside the viewfinder was the end of the road: by the time the camera

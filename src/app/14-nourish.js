@@ -2105,7 +2105,7 @@ const CameraAccess = {
   // 'web' — not the native shell, so we cannot know; the file input handles it
   async state(){
     try{
-      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      const p = _bcPlugin();
       if(!p || typeof isNativeApp!=='function' || !isNativeApp()){ this._state = 'web'; return 'web'; }
       const r = await p.isAvailable();
       let v = 'ok';
@@ -2117,13 +2117,13 @@ const CameraAccess = {
   },
   canOpenSettings(){
     try{
-      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      const p = _bcPlugin();
       return !!(p && typeof p.openSettings === 'function' && typeof isNativeApp==='function' && isNativeApp());
     }catch(_){ return false; }
   },
   async openSettings(){
     try{
-      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      const p = _bcPlugin();
       if(p && typeof p.openSettings==='function'){ await p.openSettings(); return true; }
     }catch(_){}
     return false;
@@ -2219,11 +2219,43 @@ function chooseMealPhoto(){
 // experience and reported it working.
 // On a phone this goes straight to the camera. The photo sheet is what the WEB gets, because a
 // browser cannot do this — it is a fallback, not a front door.
+// BOTH NAMES, BECAUSE CAPACITOR CAN REGISTER UNDER EITHER. The Swift sets
+// `identifier = "BarcodeScannerPlugin"` and `jsName = "BarcodeScanner"`, and which one appears on
+// `window.Capacitor.Plugins` is not something this side gets to assume. Every lookup in the bundle
+// asked for `.BarcodeScanner` ONLY — so when it registered under the identifier the plugin was
+// invisible, `scanBarcode` fell through to the photo sheet, and the owner saw "the basic camera
+// looking thing that it does on pwa" three builds running while I kept reporting the live scanner
+// fixed.
+// `HealthWrite._p()` four files away already reads `P.HealthWrite || P.HealthWritePlugin`. Somebody
+// hit this exact wall on that plugin and solved it; the lesson never crossed to this one. That is
+// the half-applied shape this project records more than any other, and it cost three rounds.
+function _bcPlugin(){
+  try{
+    const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+    return P.BarcodeScanner || P.BarcodeScannerPlugin || null;
+  }catch(_){ return null; }
+}
 function scanBarcode(){
+  let why = '';
   try{
     const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-    const P = native && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner;
+    const P = native && _bcPlugin();
     if(P && typeof startLiveBarcodeScan === 'function'){ startLiveBarcodeScan(); return; }
+    why = !native ? 'web' : (!P ? 'plugin' : 'fn');
+  }catch(e){ why = 'threw'; }
+  // A SILENT FALLBACK IS WHY THIS TOOK FOUR ROUNDS. On a phone this used to drop to the photo sheet
+  // without a word, so "there is no camera UI" and "the camera is working but unreachable" looked
+  // identical from the outside — to the owner AND to me. On the web the photo path IS the feature
+  // and needs no apology; on a phone, dropping to it means something is wrong and the app should
+  // say which thing, out loud, rather than quietly handing over a file picker.
+  try{
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if(native && why && typeof showToast === 'function'){
+      showToast('Camera unavailable',
+        why === 'plugin' ? 'The scanner isn\u2019t registered in this build \u2014 using a photo instead.'
+      : why === 'fn'     ? 'The scanner didn\u2019t load \u2014 using a photo instead.'
+      :                    'Couldn\u2019t start the camera \u2014 using a photo instead.');
+    }
   }catch(_){ }
   if(typeof openBarcodeScanner === 'function') openBarcodeScanner();
 }
@@ -2248,6 +2280,7 @@ async function _startLiveBarcodeScan(){
   // session's first read, and painted a product this camera was never pointed at — and queued it
   // into THIS trolley.
   _bcLookups = []; _bcMisses = []; _bcSessionEnded = false;
+  if(typeof _bcPushQueue === 'function') _bcPushQueue();   // an empty trolley at the start of a session, so nothing carries over visually
   // RECIPE MODE IS NOT OURS TO HANDLE. `__recipeScan` says "this scan is for the recipe builder", and
   // `lookupBarcode` consumes it and routes the item into the recipe. A continuous trolley scan has no
   // meaning there — and bypassing lookupBarcode would both log the ingredient to today's diary and
@@ -2261,7 +2294,7 @@ async function _startLiveBarcodeScan(){
       return;
     }
   }catch(_){ }
-  const P = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+  const P = _bcPlugin();
   const canStream = !!(P && typeof P.addListener === 'function' && typeof P.showScanResult === 'function');
 
   if(canStream){
@@ -2395,7 +2428,7 @@ function _bcCameraUnavailable(r){
 }
 function _bcOpenSettings(){
   try{
-    const P = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    const P = _bcPlugin();
     if(P && P.openSettings) P.openSettings();
   }catch(_){ }
 }
@@ -2420,9 +2453,31 @@ let _bcAfterDrain = null;
 let _bcLookups = [];
 let _bcSeq = 0;
 let _bcSessionEnded = false;
+// Pushes the whole queue to the viewfinder. ALWAYS the full array — the JS owns this state, so
+// last-write-wins is correct and there is no incremental form to get out of step.
+function _bcPushQueue(){
+  try{
+    const P = _bcPlugin();
+    if(P && typeof P.setScanQueue === 'function'){
+      P.setScanQueue({ items: _bcQueue.map(function(it){
+        return { name: (it.food && it.food.name) || 'Unknown',
+                 cal: (it.food && typeof it.food.cal === 'number') ? it.food.cal : null,
+                 img: (it.food && it.food.img) || '', n: it.n || 1 };
+      }) });
+    }
+  }catch(_){ }
+}
 function _bcQueueAdd(food, code){
   try{
-    _bcQueue.push({ food: food, code: code });
+    // A TROLLEY HOLDS THREE IDENTICAL YOGHURTS. The native debounce latches on the SINGLE previous
+    // code and clears the moment a different one is seen, so A→B→A reads twice — correctly, because
+    // that is a person deliberately scanning a second tub. This used to push a second row; it counts
+    // instead, so the strip reads "Weet-Bix ×2" and the drain opens ONE serving sheet at quantity 2
+    // rather than two sheets. The 0.4s re-aim debounce is untouched: it stops the ACCIDENTAL repeat
+    // from holding the phone still, which is a different thing and already solved.
+    const same = _bcQueue.find(function(it){ return it.code === code; });
+    if(same){ same.n = (same.n || 1) + 1; if(typeof _bcPushQueue === 'function') _bcPushQueue(); return; }
+    _bcQueue.push({ food: food, code: code, n: 1 });
     // A LATE ARRIVAL MUST NOT BE STRANDED. If the drain already finished (or never started, because
     // the queue was empty when Done was tapped) nothing will come back for this item — the next
     // session resets the array and the food the person scanned and watched being acknowledged is
@@ -2436,6 +2491,7 @@ function _bcQueueAdd(food, code){
     // side: it appends a `modal-locked` dialog AFTER the static sheet in DOM order, at the same
     // z-index, so a sheet opened beneath it cannot be seen or tapped. Confirming or closing whatever
     // is open calls `_bcNext`/`_bcSettle` and reaches this item, so deferring costs nothing.
+    if(typeof _bcPushQueue === 'function') _bcPushQueue();
     if(_bcSessionEnded && !_bcDraining && !_bcSheetUp()) _bcFlushQueue();
   }catch(_){ }
 }
@@ -2528,6 +2584,7 @@ function closeServingModal(){
 }
 function _bcNext(){
   const it = _bcQueue.shift();
+  if(typeof _bcPushQueue === 'function') _bcPushQueue();
   // THE FLAG IS CLEARED ON EVERY EXIT, the catch included. Leaving it latched on a throw would mean
   // the next ordinary food log advances the queue again — the same bug through another door.
   if(!it){ _bcDraining = false; _bcRunAfterDrain(); return; }
@@ -2583,6 +2640,12 @@ async function _bcFetchForScanner(code){
       const mg = (b, f) => { const v = per100(b); return v ? Math.round(v * (f || 1) * 10) / 10 : 0; };
       return { per100: true, barcode: code,
                name: p.product_name || p.generic_name || 'Unknown product',
+               // THE PICTURE WAS ALWAYS ON THE WIRE. Open Food Facts returns image_front_small_url
+               // on every record with a photo and nothing in this bundle has ever read it. A
+               // reused barcode or a regional pack variant is the most common way this lookup is
+               // wrong, and the thumbnail is the only thing that lets somebody catch it while the
+               // tin is still in their hand rather than after it is in the diary.
+               img: p.image_front_small_url || p.image_small_url || '',
                brand: p.brands || '', cal: Math.round(cal || 0),
                pro: Math.round(per100('proteins') * 10) / 10,
                carb: Math.round(per100('carbohydrates') * 10) / 10,

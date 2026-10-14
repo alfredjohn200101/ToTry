@@ -393,7 +393,7 @@ const Health = {
 // but it is not about the camera: notifications need exactly the same door.
 function openAppSettings(){
   try{
-    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    const p = (typeof _bcPlugin === 'function' ? _bcPlugin() : null);
     if(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp()){
       p.openSettings(); return true;
     }
@@ -402,7 +402,7 @@ function openAppSettings(){
 }
 function canOpenAppSettings(){
   try{
-    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    const p = (typeof _bcPlugin === 'function' ? _bcPlugin() : null);
     return !!(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp());
   }catch(_){ return false; }
 }
