@@ -5446,12 +5446,12 @@ H.section('shared content can be reported, and the report says what really happe
   // disclosure sitting on a server answered by nothing. The stub above returns null so the crisis
   // branch was never exercised; this drives it.
   H.defer((async () => {
-    const posted = [], metK = [];
+    const posted = [], metK = [], metOpts = [];
     const L = H.load(['submitContentReport'], {
       document: { getElementById: () => ({ value: 'i want to kill myself' }), querySelector: () => null },
       showToast: () => {}, closeModal: () => {},
       crisisInAny: () => 'suicide',
-      journalMeetCrisis: (k) => { metK.push(k); },
+      journalMeetCrisis: (k, _b, o) => { metK.push(k); metOpts.push(o); },
       currentUser: { email: 'x@example.com' }, APP_VERSION: 'vTEST',
       sb: { from: () => ({ insert: async (r) => { posted.push(r[0]); return {}; } }) },
     });
@@ -5462,6 +5462,10 @@ H.section('shared content can be reported, and the report says what really happe
       'server answered by nothing, which the helpline check at door 57 cannot see');
     H.ok(metK.length === 1 && metK[0] === 'suicide',
       'and the person is met instead, with the kind the detector returned');
+    H.ok(metOpts.length === 1 && metOpts[0] && metOpts[0].saved === false,
+      'and it passes saved:false — journalMeetCrisis DEFAULTS to "Saved · I read what you wrote", ' +
+      'and this branch stores nothing, so the default would tell somebody their disclosure was kept ' +
+      'when it was not');
   })());
 
   // IT IS A DOOR. The why box invites a sentence and the text is inserted into Supabase where
@@ -5555,6 +5559,31 @@ H.section('a stated intent to die is a disclosure whatever follows it');
     'im gonna take my life, allah forgive me',
     'i plan to take my life, lord',
     'i decided to take my life, god',
+    // PLAN, MEANS AND TIMING — the shape this panel ORIGINALLY OMITTED, which is why it passed on
+    // broken and fixed code alike. The first `_TML_LIVING` carried `in a [a-z]{1,14}` as an OPEN
+    // WILDCARD and ate every one of these: a TIME, a PLACE and a STATE all answer "in a ___", and
+    // that is exactly what a plan sentence names. Nine of nine returned null, and every one of them
+    // had fired before the fix that introduced it. A must-fire list of eight copies of ONE shape
+    // cannot hold a bound; these are the rows that force the adjective to stay enumerated.
+    'i am going to take my life in a few days',
+    'i want to take my life in a garage',
+    'i want to take my life in a car',
+    'i am going to take my life in a hotel so my family does not find me',
+    'i want to take my life in a moment of weakness',
+    'i want to take my life somewhere quiet',
+    'i am going to take my life somewhere no one will find me',
+    'i want to take my life in another room so my kids do not see',
+    'im going to take my life in a few minutes',
+    'i want to take my life in a week',
+    // And the control that shows how narrow the hole was: only the INDEFINITE article was eaten.
+    'i am going to take my life in the garage',
+    // These two were silenced by my own OVER-corrections while fixing the above, each for a
+    // different reason: a bare `somewhere` in the aspirational list re-opened the place hole, and
+    // excusing a BARE trailing divine name swallowed a disclosure addressed to God. Both are
+    // disclosures and both are pinned here.
+    'i am going to take my life somewhere no one will find me',
+    'i plan to take my life, lord',
+    'i decided to take my life, god',
   ];
   let silent = mustFire.filter(t => !D.detectCrisis(t));
   H.ok(silent.length === 0,
@@ -5574,6 +5603,29 @@ H.section('a stated intent to die is a disclosure whatever follows it');
     'time to take my life seriously',
     'i want to take my life somewhere better',
     'i am going to take my life into my own hands',
+    // The living completions all carry a living ADJECTIVE; enumerate it rather than the head noun.
+    'i want to take my life in a healthier direction',
+    'i will take my life in a better direction',
+    'i want to take my life somewhere better',
+    'i want to take my life to the next level',
+    'i am going to take my life in another direction',
+     // CONSECRATION. Thirteen false positives came from the intent entry excluding only the living
+    // completions — seven of them devotional, in an app whose Soul tab TEACHES this idiom, and a
+    // false positive at onboarding's "why does this matter?" is crisis door 18 where a non-null
+    // REPLACES the help. The VERB separates them: a plea after the name is a disclosure
+    // ("god forgive me"), a giving verb is consecration.
+    'i want to take my life, lord, and give it to you',
+    'i am going to take my life and give it to christ',
+    'i want to take my life for you jesus',
+    'i am going to take my life and lay it at his feet',
+    'i want to take my life and offer it to god',
+    'i want to take my life lord and make it yours',
+    // ASPIRATIONAL completions an intent marker makes reachable that the base entry never saw.
+    'i decided to take my life more seriously this year',
+    'i want to take my life up a notch',
+    'i am ready to take my life forward',
+    'i will take my life one step at a time',
+    'i want to take my life day by day',
   ];
   let fired = mustStayNull.filter(t => !!D.detectCrisis(t));
   H.ok(fired.length === 0,

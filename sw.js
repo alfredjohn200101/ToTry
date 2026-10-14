@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v622-report-what-you-saw'
+const CACHE = 'totry-v623-bound-the-adjective'
 
 const CORE = [
   './',

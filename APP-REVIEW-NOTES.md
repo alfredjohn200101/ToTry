@@ -21,9 +21,11 @@ that failure mode is recorded in CLAUDE.md twice.
 > If you would rather sign in, email **totrybyaj@gmail.com** and I will create an account and
 > send you the code within the hour.
 >
-> **Health data:** HealthKit is read-only for steps, energy, workouts, heart rate, mindful
-> minutes and sleep, to save manual logging. It is never used for advertising and never sold.
-> The app works fully without granting it.
+> **Health data:** To Try READS steps, active energy, workouts, heart rate, mindful minutes and
+> sleep from Apple Health so they count toward the day without manual logging. It can also WRITE
+> back — workouts, active energy and body mass — but only when the person turns that on themselves
+> in Settings; it is off by default. Health data is never used for advertising, never sold and
+> never shared. The app works fully without granting either permission.
 >
 > **Shared content:** community food and exercise *names* are pre-moderated — nothing is shown
 > to anyone until approved, and anything flagged is withheld. Settings → **Report shared
@@ -48,6 +50,8 @@ that failure mode is recorded in CLAUDE.md twice.
 | Report mechanism | **Yes** | Settings → Report shared content → the `feedback` queue, tagged `content_report` |
 | Contact | totrybyaj@gmail.com | Published in-app, in Settings |
 | Privacy policy | https://alfredjohn200101.github.io/ToTry/privacy.html | Verified HTTP 200 |
+| HealthKit read | **Yes** | `NSHealthShareUsageDescription`; steps, energy, workouts, HR, mindful, sleep |
+| HealthKit write | **Yes, opt-in, off by default** | `HealthWritePlugin.swift` writeTypes: workout, activeEnergyBurned, bodyMass — Settings toggle (`toggleHealthWrite`) |
 
 ---
 

@@ -8698,7 +8698,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v622';
+const APP_VERSION = 'v623';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13897,7 +13897,57 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   // what onboarding asks a person to type. Shared by BOTH patterns below rather than copied into
   // each, because copying a bound and missing one branch is the defect this file fails builds
   // over; a test asserts both consume it.
-  const _TML_LIVING = 'back\\b|seriously|somewhere|in ?to (?:my|our) own hands|in (?:my|our) own hands|in hand|in a [a-z]{1,14}|in another|to the next level|where i want';
+  // BOUND THE ADJECTIVE, NOT THE HEAD NOUN — and the first version of this list bounded NEITHER.
+  // `in a [a-z]{1,14}` was an OPEN WILDCARD and it ate the plan/means/timing register whole:
+  // measured 14 Oct 2026, "i am going to take my life in a few days" returned NULL, and so did
+  // "...in a garage", "...in a car", "...in a hotel so my family does not find me", "...in a
+  // moment of weakness", "...somewhere quiet", "...somewhere no one will find me" and "...in
+  // another room so my kids do not see" — nine of nine, every one of which FIRED before the fix
+  // that introduced this. A time, a place and a state all answer "in a ___", which is exactly
+  // what a plan sentence names. The controls show how narrow the hole was: "in THE garage" and a
+  // bare "tonight" both still fired, so only the INDEFINITE article was affected — and that is
+  // the wrong way round for safety, because "in a" is the natural phrasing for a place or an
+  // interval named for the FIRST time.
+  // The living completions all carry a living ADJECTIVE ("a new direction", "somewhere better");
+  // the disclosing ones never do. So the adjective is what is enumerated. Requiring the head noun
+  // instead (`in a [a-z]+ direction`) measures identically on this repo's corpus and then fires
+  // on "in a new way", "in a better place", "in a new season" — a clean corpus diff is not
+  // evidence of a clean fix when the corpus never held the shape.
+  // `where i want` was DROPPED: it ate "take my life where i want to be left alone" and no benign
+  // sentence in any panel needs it.
+  const _TML_ADJ = "new|newer|different|better|best|healthier|healthy|positive|bold|bolder|fresh|whole|good|great|brighter|bright|stronger|strong|clearer|clear|calmer|right|happier|kinder";
+  const _TML_LIVING = "back\\b|seriously|in ?to (?:my|our) own hands|in (?:my|our) own hands"
+                    + "|in hand|to the next level"
+                    + "|in a (?:" + _TML_ADJ + ")\\b"
+                    + "|in another (?:" + _TML_ADJ + ")\\b|in another direction"
+                    + "|somewhere (?:" + _TML_ADJ + ")\\b";
+  // WHAT THE *INTENT* PATTERN MUST ALSO LET THROUGH. The first cut of it excluded only the living
+  // completions, on the reasoning that "a stated intent is a disclosure whatever follows it" — and
+  // measured 14 Oct 2026 that produced THIRTEEN false positives, seven of them devotional:
+  // "i want to take my life lord", "...and give it to christ", "...for you jesus", "...and lay it
+  // at his feet", "...and offer it to god". This app's Soul tab TEACHES that idiom, and a false
+  // positive at onboarding's "why does this matter?" is crisis door 18, where a non-null REPLACES
+  // the help. The eleventh and twelfth times the app's own vocabulary decided a crisis verdict.
+  // THE VERB SEPARATES THEM. A PLEA after the divine name is a disclosure ("god FORGIVE me" — the
+  // sentence this pattern exists for); a GIVING verb is consecration ("and give it to", "for you",
+  // "lay it at his feet"). So the name is excused unless a plea follows it.
+  // THE NAME IS EXCUSED ONLY WHEN A GIVING VERB FOLLOWS IT. The first cut excused a BARE trailing
+  // name unless a plea followed, and that silenced "i plan to take my life, lord" and "i decided to
+  // take my life, god" — real disclosures addressed to God. With an INTENT MARKER in front, "take
+  // my life" means end it: the consecration reading needs God as the SUBJECT of an imperative
+  // ("take my life and let it be"), which this entry never matches because it requires
+  // "i want/plan/am going to" first. So only the handing-over continuation excuses the name.
+  const _TML_PRAY = "(?:and |, ?)?(?:o |oh )?(?:lord|jesus|christ|god|allah|krishna|rama|father"
+                  + "|almighty)\\b(?= ?,? ?(?:and (?:give|make|use|offer|lay|hand|spend)"
+                  + "|for (?:you|him|thee)))";
+  const _TML_GIVE = "and (?:give|offer|lay|hand|surrender|dedicate|consecrate|make|use|spend)"
+                  + "|for (?:you|him|thee|christ|jesus|god)";
+  // And the aspirational completions an intent marker makes reachable that the base pattern never saw.
+  // NOTE bare `somewhere` is NOT here. It was, for one measurement, and it re-opened the exact hole
+  // the adjective bound had just closed: "i want to take my life somewhere quiet" went silent
+  // again. `somewhere <ADJ>` in _TML_LIVING covers the living form; nothing else needs it.
+  const _TML_ASPIRE = "more seriously|up a notch|forward\\b|one step at a time|day by day"
+                    + "|one day at a time";
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
     // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead
@@ -13907,7 +13957,13 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // "i want to take my life" and "i'm going to take my life" still fire.
     new RegExp("\\btak(?:e|ing) my (?:own )?life\\b(?!\\s*,?\\s*(?:and (?:let|use|make)"
              + "|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)"
-             + "|in (?:your|thy)|for (?:your|thy)|" + _TML_LIVING + "))"),
+             + "|in (?:your|thy)|for (?:your|thy)|" + _TML_LIVING
+             // BOTH PATTERNS, OR THE TIGHTER ONE IS DECORATIVE. The aspirational and consecration
+             // completions were first added to the INTENT entry alone, and nine of the thirteen
+             // false positives survived untouched — because this entry has its own lookahead and
+             // matches the same sentence. A superseded pattern does not stop mattering: the looser
+             // one wins, which is the lesson this file already records twice.
+             + "|" + _TML_ASPIRE + "|" + _TML_GIVE + "))"),
     // AND A STATED INTENT IS A DISCLOSURE WHATEVER FOLLOWS IT. The entry above excludes a divine
     // name that FOLLOWS the phrase so that "take my life lord" reads as the prayer it is — and
     // measured 14 Oct 2026 that exclusion also swallowed 8 of 8 sentences carrying an explicit
@@ -13921,7 +13977,8 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // apply: "i want to take my life back" and "…in a new direction" stay clear.
     new RegExp("\\b(?:going to|gonna|want(?:ing)? to|wanna|will|plan(?:ning)? to|about to"
              + "|ready to|decided to|intend(?:ing)? to) tak(?:e|ing)? my (?:own )?life\\b"
-             + "(?!\\s*,?\\s*(?:" + _TML_LIVING + "))"),
+             + "(?!\\s*,?\\s*(?:" + _TML_LIVING + "|" + _TML_ASPIRE
+             + "|" + _TML_GIVE + "|" + _TML_PRAY + "))"),
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
@@ -52958,7 +53015,12 @@ async function submitContentReport(){
   const _rcC = (typeof crisisInAny === 'function') ? crisisInAny([name, why])
              : ((typeof journalCrisisOf === 'function') ? journalCrisisOf(why) : null);
   if(_rcC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_rcC); }catch(_){ } }, 250);
+    // `saved: false` IS LOAD-BEARING. journalMeetCrisis defaults to toasting
+    // "Saved · I read what you wrote", and this branch RETURNS before the insert — nothing is
+    // stored and nothing is sent. Telling somebody their disclosure was kept when it was not is
+    // the defect this repo already fixed at the search door, and I rebuilt it here the same day
+    // I wrote the test asserting the branch does not store.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_rcC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!name && !why){ showToast('Empty', 'Tell me which one, or what was wrong.'); return; }

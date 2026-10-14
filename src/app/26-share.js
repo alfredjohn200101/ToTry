@@ -617,7 +617,12 @@ async function submitContentReport(){
   const _rcC = (typeof crisisInAny === 'function') ? crisisInAny([name, why])
              : ((typeof journalCrisisOf === 'function') ? journalCrisisOf(why) : null);
   if(_rcC){
-    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_rcC); }catch(_){ } }, 250);
+    // `saved: false` IS LOAD-BEARING. journalMeetCrisis defaults to toasting
+    // "Saved · I read what you wrote", and this branch RETURNS before the insert — nothing is
+    // stored and nothing is sent. Telling somebody their disclosure was kept when it was not is
+    // the defect this repo already fixed at the search door, and I rebuilt it here the same day
+    // I wrote the test asserting the branch does not store.
+    setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_rcC, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   if(!name && !why){ showToast('Empty', 'Tell me which one, or what was wrong.'); return; }
