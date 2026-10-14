@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v619-the-fix-that-moved-the-bug'
+const CACHE = 'totry-v621-no-testers-emails-in-the-bundle'
 
 const CORE = [
   './',

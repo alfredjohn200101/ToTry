@@ -1,26 +1,50 @@
 // ── STRAVA TESTER ALLOWLIST ──────────────────────────────────────────
-// Strava's developer tier caps connections at a limited number of athletes (~10).
-// Add a tester's email here (lowercase) to let them connect Strava. Keep it under 10.
-// To add: put their email in quotes on its own line, with a comma. Example:
-//   'alfredjohn200101@gmail.com',
-//   'tester1@gmail.com',
-//   'tester2@icloud.com',
-const STRAVA_APPROVED_EMAILS = [
-  'alfredjohn200101@gmail.com',
-  'alfredjohn200101@yahoo.com',
-  // ↓ add tester emails below this line (lowercase, comma after each)
-  'amalgeot@outlook.com',
-  'brooklynl2001@hotmail.com',
-  'adampj09@gmail.com',
-  'glensaju@gmail.com',
+// Strava's developer tier caps connections at a limited number of athletes (~10), so the testers
+// who may connect are listed here.
+//
+// SIX REAL PEOPLE'S EMAIL ADDRESSES USED TO SHIP HERE IN PLAINTEXT, four of them not the owner's —
+// in a bundle that is downloadable from the App Store AND served publicly as a PWA from a public
+// GitHub repo. Anyone who opened the page source could read them straight off. They are stored as
+// hashes now.
+//
+// BE HONEST ABOUT WHAT THAT BUYS. An email address has low entropy and is enumerable, so a hash is
+// OBFUSCATION, not secrecy: somebody who already holds a candidate address can still test it, and
+// that is equally true of SHA-256. What it stops is the thing that actually happened — four
+// addresses harvestable by reading. The right fix is a server-side allowlist; this is the local one
+// that needs no deploy, and it is strictly better than plaintext.
+//
+// The hash is deliberately SYNCHRONOUS. `crypto.subtle.digest` is async and `isStravaApproved()` is
+// called inline at five sites (onboarding chip x2, the health screen, the connect tap, first-run),
+// so going async would have meant awaiting at all five for no security gain over the paragraph above.
+// Two independent accumulators are mixed so the pair is 64 bits: one 32-bit hash over six entries
+// would be a remote-but-real chance of approving the wrong person.
+//
+// To add a tester: node -e "<the _emHash below>" on their lowercased address, and paste the result.
+function _emHash(s){
+  let a = 0x811c9dc5, b = 0x01000193;
+  const t = String(s || '').toLowerCase().trim();
+  for(let i = 0; i < t.length; i++){
+    const c = t.charCodeAt(i);
+    a = ((a ^ c) * 16777619) >>> 0;
+    b = ((b + c) * 2654435761 + (b << 5)) >>> 0;
+  }
+  return (a >>> 0).toString(36) + '.' + (b >>> 0).toString(36);
+}
+const STRAVA_APPROVED_HASHES = [
+  '1fezqxg.z56tj4',   // the owner (gmail)
+  'fiu1ec.56l0jk',    // the owner (yahoo)
+  '157uhuc.zm5ips',
+  '6mzato.1x4d4hs',
+  '52bcf0.1f7nzsw',
+  '1pfph5g.yqntog',
 ];
 const STRAVA_MAX_ATHLETES = 10;
 
 function isStravaApproved(){
   const email = (currentUser?.email || '').toLowerCase().trim();
   if(!email) return false; // not logged in
-  // Guard the cap: even if more than 10 emails get added by mistake, only honour the first 10
-  return STRAVA_APPROVED_EMAILS.slice(0, STRAVA_MAX_ATHLETES).includes(email);
+  // Guard the cap: even if more than 10 hashes get added by mistake, only honour the first 10
+  return STRAVA_APPROVED_HASHES.slice(0, STRAVA_MAX_ATHLETES).includes(_emHash(email));
 }
 
 // Wait for currentUser to be loaded before checking — handles race condition on first tap

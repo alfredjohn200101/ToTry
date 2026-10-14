@@ -2299,6 +2299,13 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
   // The conditional-frame span below learns the comma at the same time, or the four benign drivers
   // come back with it: "once the debt is gone, my family would be better off" must stay silent.
   // Measured: 6 of 8 disclosures missed → 0, benign drivers 0 of 6, corpus false positives 0 of 372.
+  // WHAT MAKES "TAKE MY LIFE" NOT ABOUT DYING. Measured 14 Oct 2026: this is a SELF-IMPROVEMENT
+  // app, and "i want to take my life in a new direction", "time to take my life seriously" and
+  // "i am going to take my life into my own hands" all returned 'suicide' — the last is close to
+  // what onboarding asks a person to type. Shared by BOTH patterns below rather than copied into
+  // each, because copying a bound and missing one branch is the defect this file fails builds
+  // over; a test asserts both consume it.
+  const _TML_LIVING = 'back\\b|seriously|somewhere|in ?to (?:my|our) own hands|in (?:my|our) own hands|in hand|in a [a-z]{1,14}|in another|to the next level|where i want';
   const SUICIDE_RE = [
     /\bend(?:ing)? my (?:own )?life\b/,
     // "TAKE MY LIFE AND LET IT BE" IS A HYMN, AND THIS APP HAS A PRAYER SURFACE. The lookahead
@@ -2306,7 +2313,23 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
     // lord" both returned suicide — the app teaches the surrender idiom and then reads it as a
     // disclosure, the same defect as "die to my old self". The intent forms are untouched:
     // "i want to take my life" and "i'm going to take my life" still fire.
-    /\btak(?:e|ing) my (?:own )?life\b(?!\s*,?\s*(?:back|and (?:let|use|make)|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)|in (?:your|thy)|for (?:your|thy)))/,
+    new RegExp("\\btak(?:e|ing) my (?:own )?life\\b(?!\\s*,?\\s*(?:and (?:let|use|make)"
+             + "|(?:o |oh )?(?:lord|jesus|god|allah|krishna|rama|father|christ|almighty)"
+             + "|in (?:your|thy)|for (?:your|thy)|" + _TML_LIVING + "))"),
+    // AND A STATED INTENT IS A DISCLOSURE WHATEVER FOLLOWS IT. The entry above excludes a divine
+    // name that FOLLOWS the phrase so that "take my life lord" reads as the prayer it is — and
+    // measured 14 Oct 2026 that exclusion also swallowed 8 of 8 sentences carrying an explicit
+    // first-person intent plus a plea: "i am going to take my life, god forgive me" returned NULL.
+    // In a faith-rooted app that is close to the likeliest phrasing there is, and it is the highest
+    // acuity register in the gate. The comment above claimed "the intent forms are untouched", and
+    // that was true only while nothing in the exclusion list happened to follow.
+    // A lookahead cannot see the intent marker in front of it and this bundle forbids lookbehind,
+    // so the intent form needs its own entry — and a span removal could not have fixed it either,
+    // because removing the address removes the disclosure with it. The living completions still
+    // apply: "i want to take my life back" and "…in a new direction" stay clear.
+    new RegExp("\\b(?:going to|gonna|want(?:ing)? to|wanna|will|plan(?:ning)? to|about to"
+             + "|ready to|decided to|intend(?:ing)? to) tak(?:e|ing)? my (?:own )?life\\b"
+             + "(?!\\s*,?\\s*(?:" + _TML_LIVING + "))"),
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
     // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed

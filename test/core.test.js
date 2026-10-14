@@ -5398,6 +5398,123 @@ H.section('a scan still in flight when Done is tapped is not lost');
     'and parked under any other open sheet too, which is what the miss-offer dialog is');
 }
 
+H.section('a real barcode, a real product, the numbers a person would get');
+{
+  // A BARCODE IS A NUMBER, AND A NUMBER NEEDS NO CAMERA. "barcode scanning needs a phone" was only
+  // ever true of the OPTICS — the lookup, the parse, the serving maths and the diary row are the
+  // part that decides whether the feature works, and all of it runs off the digits. Driven 14 Oct
+  // 2026 against LIVE Open Food Facts with 9310036230151 (OAK PLUS PROTEIN SALTED CARAMEL 500ml,
+  // the owner's own suggestion), which logged 305 cal / 30 g protein into 14/10/2026. The response
+  // is kept here as a fixture so the parse and the maths are checked in the OFFLINE gate; the live
+  // API is a separate risk and a grep cannot see either.
+  const OFF_OAK = '{"status":1,"product":{"product_name":"OAK PLUS PROTEIN SALTED CARAMEL","brands":"OAK","serving_size":"500 g","serving_quantity":500,"nutriments":{"energy-kcal_100g":60.8,"energy_100g":255.3,"proteins_100g":6,"carbohydrates_100g":5.5,"fat_100g":1.4,"fiber_100g":1,"sugars_100g":5.4,"sodium_100g":0.128,"calcium_100g":0.198}}}';
+  const F = H.load(['_bcFetchForScanner'], {
+    _fetchT: async () => ({ ok: true, json: async () => JSON.parse(OFF_OAK) }),
+  });
+  H.ok(typeof F._bcFetchForScanner === 'function', 'calibration: the scanner fetch loaded');
+
+  H.defer((async () => {
+    const f = await F._bcFetchForScanner('9310036230151');
+    H.ok(!!f, 'a real product parses rather than returning null');
+    H.ok(f && f.name === 'OAK PLUS PROTEIN SALTED CARAMEL', 'the name comes through');
+    H.ok(f && f.barcode === '9310036230151',
+      'and the BARCODE is carried, which is the key a saved label correction is stored under — ' +
+      'omitting it silently stopped corrections applying');
+    // 60.8/100g rounds to 61. The figure a person sees per 100ml.
+    H.ok(f && f.cal === 61, 'calories per 100g are 61 (from 60.8), not 0 and not the kJ figure 255.3');
+    H.ok(f && f.pro === 6 && f.carb === 5.5 && f.fat === 1.4, 'macros per 100g are the real ones');
+    H.ok(f && f.fiber === 1 && f.sugar === 5.4,
+      'and the micronutrient panel is populated — a thin cache entry is permanent');
+    H.ok(f && f.sodium === 128 && f.calcium === 198,
+      'with sodium and calcium scaled from grams to mg (0.128 -> 128)');
+    H.ok(f && !(f.cal > 0) === false, 'and it passes the zero-calorie guard, so it is loggable');
+
+    // THE SERVING DECIDES THE DIARY ROW. A person confirms whatever the sheet already offers, so
+    // the default IS the number that lands. This bottle's own serving is 500 g; hardcoding 100g
+    // logged a 330ml can as 100ml, which is the defect this maths exists to prevent.
+    const seen = [];
+    const N = H.load(['_bcNext'], {
+      _bcQueue: [{ food: f, code: '9310036230151' }],
+      _bcDraining: true, _bcRunAfterDrain: () => {},
+      openServingModal: (x) => { seen.push(x); },
+      showToast: () => {},
+    });
+    N._bcNext();
+    H.ok(seen.length === 1, 'calibration: the serving sheet was opened once');
+    const opts = (seen[0] && seen[0].servings) || [];
+    H.ok(Array.isArray(opts) && opts.length === 2,
+      'two serving options are offered — the product\u2019s own, and 100g');
+    H.ok(opts[0] && /500/.test(String(opts[0].name)),
+      'the PRODUCT\u2019S OWN serving leads, not 100g — the whole bottle is what somebody drank');
+    // 61 * 5 = 305 against a true 60.8 * 5 = 304: `cal` is rounded per-100g BEFORE scaling, so the
+    // error is the rounding times the serving factor. Asserted as a BAND rather than 304, because
+    // 304 would fail on correct code and 305 would hide a genuinely wrong number.
+    H.ok(opts[0] && Math.abs(opts[0].cal - 304) <= 2,
+      'and it carries the bottle\u2019s calories (~304), not the 100g figure of 61');
+    H.ok(opts[0] && opts[0].pro === 30, 'protein for the bottle is exactly 30g (6 x 5)');
+    H.ok(opts[1] && opts[1].cal === 61, 'the 100g option is still there, unscaled');
+  })());
+}
+
+H.section('a stated intent to die is a disclosure whatever follows it');
+{
+  // The /take my life/ entry excludes a divine name that FOLLOWS the phrase so that
+  // "take my life lord" reads as the prayer it is — and measured 14 Oct 2026 that exclusion also
+  // swallowed 8 of 8 sentences carrying an explicit first-person intent plus a plea:
+  // "i am going to take my life, god forgive me" returned NULL. In a faith-rooted app that is close
+  // to the likeliest phrasing there is. The same pattern fired on 5 of 14 ORDINARY sentences, which
+  // is the other half: this is a SELF-IMPROVEMENT app and "time to take my life seriously" is its
+  // own vocabulary. Both directions, driven on the real detector.
+  const D = H.load(['detectCrisis']);
+  H.ok(typeof D.detectCrisis === 'function', 'calibration: the detector loaded');
+  H.ok(!!D.detectCrisis('i want to kill myself'),
+    'calibration: the detector still answers the plainest disclosure');
+
+  const mustFire = [
+    'i am going to take my life, god forgive me',
+    'im going to take my life, lord forgive me',
+    'i want to take my life, jesus forgive me',
+    'i am going to take my life, god have mercy on me',
+    'i will take my life, christ forgive me',
+    'im gonna take my life, allah forgive me',
+    'i plan to take my life, lord',
+    'i decided to take my life, god',
+  ];
+  let silent = mustFire.filter(t => !D.detectCrisis(t));
+  H.ok(silent.length === 0,
+    'an explicit intent followed by a plea for forgiveness still reaches a helpline' +
+    (silent.length ? ' — SILENT: ' + JSON.stringify(silent[0]) : ''));
+
+  // The devotional forms are why the exclusion exists, and the recovery/aspirational forms are this
+  // app's own words. Both must stay clear, or the fix above has simply traded one harm for another.
+  const mustStayNull = [
+    'take my life and let it be',          // a hymn
+    'take my life lord', 'o lord take my life', 'o allah take my life', 'lord, take my life',
+    'take my life in your hands',
+    'take my life back', 'i want to take my life back',
+    'i am going to take my life back from this addiction',
+    'i want to take my life in a new direction',
+    'i am going to take my life in a different direction',
+    'time to take my life seriously',
+    'i want to take my life somewhere better',
+    'i am going to take my life into my own hands',
+  ];
+  let fired = mustStayNull.filter(t => !!D.detectCrisis(t));
+  H.ok(fired.length === 0,
+    'and the hymn, the prayer, the reclaiming and the aspiration are all left alone' +
+    (fired.length ? ' — FIRED: ' + JSON.stringify(fired[0]) : ''));
+
+  // ONE LIST, TWO CONSUMERS. The comment above the declaration claims the living completions are
+  // shared rather than copied; copying a bound and missing one branch is the defect this repo fails
+  // builds over, so the claim is asserted rather than trusted. Comments are stripped because the
+  // explanation beside it would otherwise satisfy the count on its own.
+  const src = H.code(H.extractFn('detectCrisis'));
+  const uses = (src.match(/_TML_LIVING/g) || []).length;
+  H.ok(uses === 3,
+    'the living-completion list is declared once and consumed by BOTH take-my-life patterns ' +
+    '(found ' + uses + ' references, want 3)');
+}
+
 H.section('the stale-card guard survives the session boundary');
 {
   // `_bcSeq` is only ever compared for equality, so leaving it monotonic makes every read from a
