@@ -284,7 +284,7 @@ async function generateWeeklySynthesis(){
     // brotherSys() carries sexNote() and faithVoiceNote(). Every other AI surface builds on it; this
   // one did not, so the weekly synthesis was the single place that could call a woman brother and
   // speak Christian framing to a Muslim or secular person.
-  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
+  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       // THE NET, 9 Oct 2026. Three journal rows go into this prompt verbatim and the reply is
       // persisted AND shown in a modal, with no net on it. The net reads the FULL j.text, not the

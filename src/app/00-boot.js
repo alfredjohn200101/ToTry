@@ -1,7 +1,10 @@
 
 
 // ═══════════════════════════════════════════════════════════════
-// TO TRY — by Alfred John — Clean Build, no function conflicts
+// TO TRY — Clean Build, no function conflicts
+// The attribution came out on 14 Oct 2026 at the owner's request: "let go of me and embrace the
+// app is an app for the user". The VOICE stays — the brother who knows them is the moat, and the
+// owner was explicit that only the byline goes. Nobody needs to know whose brother it is.
 // ═══════════════════════════════════════════════════════════════
 
 // ── TEST-BUILD ISOLATION ──────────────────────────────────────

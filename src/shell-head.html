@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>ToTry &#8212; by Alfred John</title>
+<title>ToTry</title>
 <style>
 /* THE BRAND FONTS ARE BUNDLED, NOT FETCHED. All three came from fonts.googleapis.com until 12 Sep
    2026, and nothing was cached locally — so with no network document.fonts held ZERO faces and the
@@ -1891,7 +1891,10 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 .ios-nav-lead{justify-self:start;min-width:0;display:flex;align-items:center}
 .ios-nav-title{font-family:var(--font-text);font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--tx);opacity:0;transform:translateY(4px);
   transition:opacity .18s ease,transform .18s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw;pointer-events:none}
-.hdr.ios-scrolled .ios-nav-title{opacity:1;transform:none}
+/* The title rides the same progress: it rises and fades IN as the large title leaves, rather
+   than appearing fully formed at a threshold. Same single source of truth as the material. */
+.ios-nav-title{opacity:var(--nav-p);transform:translateY(calc((1 - var(--nav-p)) * 6px))}
+.hdr.ios-scrolled .ios-nav-title{opacity:var(--nav-p);transform:translateY(calc((1 - var(--nav-p)) * 6px))}
 #hub-back-bar{display:flex !important;align-items:center;gap:1px;background:none !important;border:0 !important;padding:0 8px 0 0 !important;margin:0 0 0 -7px !important;
   min-height:44px;color:var(--go) !important;font-family:var(--font-text) !important;font-size:17px !important;font-weight:400 !important;letter-spacing:-0.006em;cursor:pointer;white-space:nowrap}
 #hub-back-bar .ic{width:24px;height:24px;stroke-width:2.4}
@@ -2013,8 +2016,27 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* ── The chrome floats; the content runs under it ───────────────────────────────────────────────── */
 .app{position:relative}
 .hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
-.hdr.ios-scrolled{background:var(--glass-grad) !important;-webkit-backdrop-filter:var(--glass-filter) !important;backdrop-filter:var(--glass-filter) !important;
-  border-bottom:.5px solid var(--glass-line) !important;box-shadow:inset 0 1px 0 var(--glass-hi) !important}
+/* GLASS RESPONDS TO SCROLL; IT DOES NOT SWITCH ON. This was a single class toggled at a threshold
+   — transparent at rest, then the FULL material the instant `scrollTop` crossed the large title's
+   bottom edge. The owner's words: "Liquid glass doesn't move like the way its supposed to." It was
+   not moving at all; it was switching, and a switch is the one thing a material cannot do. Real
+   glass answers continuously to what is passing beneath it.
+   `--nav-p` is a 0→1 progress written by iosNavSync on every scroll frame, and everything the
+   material does is interpolated off it: the blur deepens, the saturation and brightness lift, the
+   tinted plate fades up, the rim and hairline arrive with it. The plate is a ::after rather than a
+   background on .hdr because --glass-grad is a full gradient string and a gradient's alpha cannot
+   be scaled by a variable; a pseudo-element can simply carry opacity. It sits at z-index:-1, which
+   paints it behind the header's own children but inside its box — .hdr already makes a stacking
+   context (position:absolute, z-index:60), so this is well-defined rather than lucky.
+   The CLASS is still toggled, because the back bar and other chrome read it, but it no longer
+   decides what the material looks like. */
+.hdr{--nav-p:0;
+  -webkit-backdrop-filter:blur(calc(var(--nav-p) * 30px)) saturate(calc(100% + var(--nav-p) * 35%)) brightness(calc(1 + var(--nav-p) * 0.10)) !important;
+  backdrop-filter:blur(calc(var(--nav-p) * 30px)) saturate(calc(100% + var(--nav-p) * 35%)) brightness(calc(1 + var(--nav-p) * 0.10)) !important}
+.hdr::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:var(--glass-grad);border-bottom:.5px solid var(--glass-line);
+  box-shadow:inset 0 1px 0 var(--glass-hi);opacity:var(--nav-p)}
+.hdr.ios-scrolled{background:transparent !important;border-bottom-color:transparent !important}
 /* The scroller clears the floating orb as well as the tab capsule. The orb is fixed at var(--sb)+94
    and is 54 tall, so content ended UNDER it: Threads' "Next ›" pager, Plans' closing footnote and the
    evening ritual's Continue button were each partly covered — three screens reporting the same defect
@@ -3951,7 +3973,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        a space in the name, so the very first thing a person saw did not match the app they were about
        to open. Size is the only override. -->
   <div class="logo-main" style="font-size:var(--t-2xl);letter-spacing:0.02em">To<em>Try</em></div>
-  <div style="font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);margin-top:10px">by Alfred John</div>
   <!-- The wordmark in its own face, and the byline the app icon carries, on the grouped background. No web
        spinner: an iOS launch surface never shows one, and this one is on screen for well under two seconds. -->
 </div>
@@ -3968,7 +3989,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
 <div class="auth-container" id="auth-container" style="display:none">
   <div class="auth-brand">
     <div class="logo-main">To<em>Try</em></div>
-    <div class="ob-by">by Alfred John</div>
   </div>
 
   <!-- AUTH STEP 1: Email Entry -->
@@ -4056,7 +4076,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <div class="ob-prog" id="ob-prog"></div>
   <div class="ob-step active ob-hero" id="ob1">
     <div class="ob-logo">To<em>Try</em></div>
-    <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
     <button class="btn primary" onclick="obNext(2)">Begin &#8594;</button>
@@ -4263,7 +4282,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
   <div class="ob-step" id="ob6">
     <div class="ob-quote">&ldquo;I’m not here because I made it.<br>I’m here because I’m trying.<br>That’s all any of us can do.&rdquo;</div>
-    <div class="ob-attr">&#8212; Alfred John, Day 1</div>
     <div class="ob-title" id="ob-ready-title">You’re ready.</div>
     <div class="ob-desc" id="ob-ready-desc">Your space is set up. Every day you open this is a day you chose to try.</div>
     <div class="ios-header ob-hd">How a day feels here</div>
@@ -7466,7 +7484,7 @@ Amen.</div></div>
       <div class="ios-section">
         <div class="ios-header">About</div>
         <div class="ios-list">
-          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Built by</span></span><span class="ios-row-value">Alfred John</span></div>
+          
           <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Instagram</span></span><span class="ios-row-value">&#64;totry_aj</span></div>
           <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Version</span></span><span class="ios-row-value" id="app-version-stamp"></span></div>
         </div>

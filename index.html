@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>ToTry &#8212; by Alfred John</title>
+<title>ToTry</title>
 <style>
 /* THE BRAND FONTS ARE BUNDLED, NOT FETCHED. All three came from fonts.googleapis.com until 12 Sep
    2026, and nothing was cached locally — so with no network document.fonts held ZERO faces and the
@@ -1891,7 +1891,10 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
 .ios-nav-lead{justify-self:start;min-width:0;display:flex;align-items:center}
 .ios-nav-title{font-family:var(--font-text);font-size:17px;font-weight:600;letter-spacing:-0.006em;color:var(--tx);opacity:0;transform:translateY(4px);
   transition:opacity .18s ease,transform .18s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw;pointer-events:none}
-.hdr.ios-scrolled .ios-nav-title{opacity:1;transform:none}
+/* The title rides the same progress: it rises and fades IN as the large title leaves, rather
+   than appearing fully formed at a threshold. Same single source of truth as the material. */
+.ios-nav-title{opacity:var(--nav-p);transform:translateY(calc((1 - var(--nav-p)) * 6px))}
+.hdr.ios-scrolled .ios-nav-title{opacity:var(--nav-p);transform:translateY(calc((1 - var(--nav-p)) * 6px))}
 #hub-back-bar{display:flex !important;align-items:center;gap:1px;background:none !important;border:0 !important;padding:0 8px 0 0 !important;margin:0 0 0 -7px !important;
   min-height:44px;color:var(--go) !important;font-family:var(--font-text) !important;font-size:17px !important;font-weight:400 !important;letter-spacing:-0.006em;cursor:pointer;white-space:nowrap}
 #hub-back-bar .ic{width:24px;height:24px;stroke-width:2.4}
@@ -2013,8 +2016,27 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 /* ── The chrome floats; the content runs under it ───────────────────────────────────────────────── */
 .app{position:relative}
 .hdr{position:absolute !important;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom-color:transparent !important}
-.hdr.ios-scrolled{background:var(--glass-grad) !important;-webkit-backdrop-filter:var(--glass-filter) !important;backdrop-filter:var(--glass-filter) !important;
-  border-bottom:.5px solid var(--glass-line) !important;box-shadow:inset 0 1px 0 var(--glass-hi) !important}
+/* GLASS RESPONDS TO SCROLL; IT DOES NOT SWITCH ON. This was a single class toggled at a threshold
+   — transparent at rest, then the FULL material the instant `scrollTop` crossed the large title's
+   bottom edge. The owner's words: "Liquid glass doesn't move like the way its supposed to." It was
+   not moving at all; it was switching, and a switch is the one thing a material cannot do. Real
+   glass answers continuously to what is passing beneath it.
+   `--nav-p` is a 0→1 progress written by iosNavSync on every scroll frame, and everything the
+   material does is interpolated off it: the blur deepens, the saturation and brightness lift, the
+   tinted plate fades up, the rim and hairline arrive with it. The plate is a ::after rather than a
+   background on .hdr because --glass-grad is a full gradient string and a gradient's alpha cannot
+   be scaled by a variable; a pseudo-element can simply carry opacity. It sits at z-index:-1, which
+   paints it behind the header's own children but inside its box — .hdr already makes a stacking
+   context (position:absolute, z-index:60), so this is well-defined rather than lucky.
+   The CLASS is still toggled, because the back bar and other chrome read it, but it no longer
+   decides what the material looks like. */
+.hdr{--nav-p:0;
+  -webkit-backdrop-filter:blur(calc(var(--nav-p) * 30px)) saturate(calc(100% + var(--nav-p) * 35%)) brightness(calc(1 + var(--nav-p) * 0.10)) !important;
+  backdrop-filter:blur(calc(var(--nav-p) * 30px)) saturate(calc(100% + var(--nav-p) * 35%)) brightness(calc(1 + var(--nav-p) * 0.10)) !important}
+.hdr::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:var(--glass-grad);border-bottom:.5px solid var(--glass-line);
+  box-shadow:inset 0 1px 0 var(--glass-hi);opacity:var(--nav-p)}
+.hdr.ios-scrolled{background:transparent !important;border-bottom-color:transparent !important}
 /* The scroller clears the floating orb as well as the tab capsule. The orb is fixed at var(--sb)+94
    and is 54 tall, so content ended UNDER it: Threads' "Next ›" pager, Plans' closing footnote and the
    evening ritual's Continue button were each partly covered — three screens reporting the same defect
@@ -3951,7 +3973,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        a space in the name, so the very first thing a person saw did not match the app they were about
        to open. Size is the only override. -->
   <div class="logo-main" style="font-size:var(--t-2xl);letter-spacing:0.02em">To<em>Try</em></div>
-  <div style="font-family:var(--font-brand);font-style:italic;font-size:var(--t-base);color:var(--tx2);margin-top:10px">by Alfred John</div>
   <!-- The wordmark in its own face, and the byline the app icon carries, on the grouped background. No web
        spinner: an iOS launch surface never shows one, and this one is on screen for well under two seconds. -->
 </div>
@@ -3968,7 +3989,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
 <div class="auth-container" id="auth-container" style="display:none">
   <div class="auth-brand">
     <div class="logo-main">To<em>Try</em></div>
-    <div class="ob-by">by Alfred John</div>
   </div>
 
   <!-- AUTH STEP 1: Email Entry -->
@@ -4056,7 +4076,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   <div class="ob-prog" id="ob-prog"></div>
   <div class="ob-step active ob-hero" id="ob1">
     <div class="ob-logo">To<em>Try</em></div>
-    <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
     <button class="btn primary" onclick="obNext(2)">Begin &#8594;</button>
@@ -4263,7 +4282,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
   <div class="ob-step" id="ob6">
     <div class="ob-quote">&ldquo;I’m not here because I made it.<br>I’m here because I’m trying.<br>That’s all any of us can do.&rdquo;</div>
-    <div class="ob-attr">&#8212; Alfred John, Day 1</div>
     <div class="ob-title" id="ob-ready-title">You’re ready.</div>
     <div class="ob-desc" id="ob-ready-desc">Your space is set up. Every day you open this is a day you chose to try.</div>
     <div class="ios-header ob-hd">How a day feels here</div>
@@ -7466,7 +7484,7 @@ Amen.</div></div>
       <div class="ios-section">
         <div class="ios-header">About</div>
         <div class="ios-list">
-          <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Built by</span></span><span class="ios-row-value">Alfred John</span></div>
+          
           <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Instagram</span></span><span class="ios-row-value">&#64;totry_aj</span></div>
           <div class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Version</span></span><span class="ios-row-value" id="app-version-stamp"></span></div>
         </div>
@@ -7858,7 +7876,10 @@ Amen.</div></div>
 <script>
 
 // ═══════════════════════════════════════════════════════════════
-// TO TRY — by Alfred John — Clean Build, no function conflicts
+// TO TRY — Clean Build, no function conflicts
+// The attribution came out on 14 Oct 2026 at the owner's request: "let go of me and embrace the
+// app is an app for the user". The VOICE stays — the brother who knows them is the moat, and the
+// owner was explicit that only the byline goes. Nobody needs to know whose brother it is.
 // ═══════════════════════════════════════════════════════════════
 
 // ── TEST-BUILD ISOLATION ──────────────────────────────────────
@@ -17363,7 +17384,25 @@ function iosNavSync(name){
       // it measuring a detached node forever (offsetTop 0), and the bar would show its title at rest.
       const large=tab.querySelector('.page-title, .ios-large-title');
       const edge = large ? (large.offsetTop + large.offsetHeight - 6) : 12;
-      hdr.classList.toggle('ios-scrolled', tab.scrollTop > edge);
+      // A MATERIAL ANSWERS CONTINUOUSLY. This toggled one class at `edge` and nothing else, so the
+      // header was transparent and then, one pixel later, fully glass — it switched on rather than
+      // responded, which is what "liquid glass doesn't move the way it's supposed to" was pointing
+      // at. `--nav-p` is the 0→1 progress of the large title leaving; every property of the material
+      // interpolates off it in CSS, so there is ONE source of truth for the blur, the tint, the rim
+      // and the bar title rather than four thresholds that could drift apart.
+      // It is floored at a small span so a screen with no large title still gets a gradient rather
+      // than a divide-by-zero, and clamped because a rubber-band overscroll reports a negative
+      // scrollTop on iOS and would otherwise push the blur backwards.
+      // THE RAMP HAS TO BE A DISTANCE A THUMB CAN FEEL. First cut floored this at 24px, and on
+      // Today — which has no .page-title, so `edge` falls to its 12px default — the material went
+      // from clear to full glass inside 25 pixels of scroll. Measured: blur 0 → 12.5 → 30 across
+      // three samples, which is interpolating correctly over a distance nobody can perceive, so it
+      // still read as the snap it replaced. 96px is roughly a large title's height, so a screen with
+      // one ramps over the title leaving and a screen without one gets the same unhurried travel.
+      const span = Math.max(96, edge);
+      const p = Math.max(0, Math.min(1, tab.scrollTop / span));
+      hdr.style.setProperty('--nav-p', p.toFixed(3));
+      hdr.classList.toggle('ios-scrolled', p > 0.02);
     };
     if(!tab.__iosNav){ tab.__iosNav = true; tab.addEventListener('scroll', sync, { passive:true }); }
     sync();
@@ -32109,7 +32148,7 @@ function openMoreWaysToLog(){
     // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
     ['camera','red','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
     ['image','purple','Photo from your library','A plate you already shot','chooseMealPhoto()'],
-    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
+    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','scanBarcode()'],
     ['mic','orange','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
     ['book','brown','My recipes','Something you make often','openRecipeBuilder()'],
     ['repeat','green','Repeat a day','Copy everything from another day','openRepeatDay()'],
@@ -33820,6 +33859,24 @@ function chooseMealPhoto(){
 // Everything degrades: no listener support falls back to one-shot, one-shot falls back to the photo
 // path, and the photo path falls back to typing the digits. Each of those already worked; this only
 // adds the best case on top.
+// THE BUTTON IS THE FEATURE. The whole live scanner was built and then the Nourish row still called
+// `openBarcodeScanner()` — the PHOTO sheet — with `startLiveBarcodeScan` reachable only from a
+// button INSIDE that sheet, starting at `display:none` and revealed after a permission probe. So on
+// a phone a person tapped "Scan a barcode" and got a file picker, and the viewfinder sat two taps
+// deep behind a sheet they should never see. Built, compiled, shipped, and unreachable: the
+// half-applied shape this project records over and over, and I verified the binary instead of the
+// experience and reported it working.
+// On a phone this goes straight to the camera. The photo sheet is what the WEB gets, because a
+// browser cannot do this — it is a fallback, not a front door.
+function scanBarcode(){
+  try{
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    const P = native && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner;
+    if(P && typeof startLiveBarcodeScan === 'function'){ startLiveBarcodeScan(); return; }
+  }catch(_){ }
+  if(typeof openBarcodeScanner === 'function') openBarcodeScanner();
+}
+
 async function startLiveBarcodeScan(){
   // ONE SESSION AT A TIME. A double tap on "Scan with camera" registered a SECOND `barcodeScanned`
   // listener for the rest of the session, and every read was then queued twice — a trolley of
@@ -50469,7 +50526,7 @@ async function generateWeeklySynthesis(){
     // brotherSys() carries sexNote() and faithVoiceNote(). Every other AI surface builds on it; this
   // one did not, so the weekly synthesis was the single place that could call a woman brother and
   // speak Christian framing to a Muslim or secular person.
-  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
+  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       // THE NET, 9 Oct 2026. Three journal rows go into this prompt verbatim and the reply is
       // persisted AND shown in a modal, with no net on it. The net reads the FULL j.text, not the
@@ -52393,7 +52450,7 @@ async function shareCardNative(url){
     const file=new File([blob],'totry-day-'+getDayCount()+'.png',{type:'image/png'});
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
-      text:'Still trying. ToTry by Alfred John.',
+      text:'Still trying. ToTry.',
       files:[file]
     });
   }catch(e){
@@ -54019,7 +54076,7 @@ function showPrivacyPolicy(){
     '<h3>Privacy policy</h3>' +
     // Sentence case under the title. It was 11px caps in the third grey, and at phone width the one
     // line wrapped to two — the caps-that-wrap shape, on the page a reviewer reads.
-    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026 · Plain English</p>' +
+    '<p class="modal-sub">ToTry · Last updated June 2026 · Plain English</p>' +
     '<div class="legal">' +
     
       '<p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -54091,13 +54148,13 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3>Terms of use</h3>' +
-    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026</p>' +
+    '<p class="modal-sub">ToTry · Last updated June 2026</p>' +
     '<div class="legal">' +
     
       '<p>By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
       '<h4>1. What this app is</h4>' +
-      '<p>A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
+      '<p>A free self-improvement app built on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
     
       '<h4>2. Not professional advice</h4>' +
       '<p>Nothing in this app is medical, psychiatric, legal, financial, or pastoral advice. The Coach is an AI — it can be wrong, it can be insensitive, it can hallucinate facts. If you have a real problem (mental health crisis, physical injury, financial emergency, suicidal thoughts), you need a real human professional. The app has a crisis-detection layer that will point you to one when it can — but it is not a substitute for one.</p>' +

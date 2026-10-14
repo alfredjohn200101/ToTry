@@ -1327,7 +1327,7 @@ async function shareCardNative(url){
     const file=new File([blob],'totry-day-'+getDayCount()+'.png',{type:'image/png'});
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
-      text:'Still trying. ToTry by Alfred John.',
+      text:'Still trying. ToTry.',
       files:[file]
     });
   }catch(e){

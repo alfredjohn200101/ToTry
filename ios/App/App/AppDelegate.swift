@@ -46,16 +46,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         cover.backgroundColor = .systemGroupedBackground
         cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        let label = UILabel()
-        label.text = "ToTry"
-        label.textColor = .label
-        label.font = UIFont.systemFont(ofSize: 28, weight: .bold)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        cover.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: cover.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: cover.centerYAnchor)
-        ])
+        // THE COVER IS THE APP'S OWN FACE, NOT SAN FRANCISCO. This drew "ToTry" in
+        // `UIFont.systemFont(.bold)` — a deliberate choice back when the brief read "Apple-native",
+        // and the owner corrected that brief: "i still liked the totry font, not complete apple
+        // font". The wordmark in Cormorant Garamond IS ToTry's identity, so a system-font cover is
+        // the one screen where the app does not look like itself — and it is the screen a person
+        // meets every time they come back to a locked app, which is the worst place to lose it.
+        // The web bundle's Cormorant is woff2, which UIKit cannot load, and nothing is registered in
+        // UIAppFonts. But the LAUNCH screen already renders the wordmark correctly because it is an
+        // IMAGE — Splash.imageset, with its own light and dark variants. Using that same asset here
+        // makes the cover and the launch screen visibly one app, which is the whole point, and costs
+        // no font registration.
+        if let mark = UIImage(named: "Splash") {
+            let iv = UIImageView(image: mark)
+            iv.contentMode = .scaleAspectFill
+            iv.clipsToBounds = true
+            iv.translatesAutoresizingMaskIntoConstraints = false
+            cover.addSubview(iv)
+            NSLayoutConstraint.activate([
+                iv.leadingAnchor.constraint(equalTo: cover.leadingAnchor),
+                iv.trailingAnchor.constraint(equalTo: cover.trailingAnchor),
+                iv.topAnchor.constraint(equalTo: cover.topAnchor),
+                iv.bottomAnchor.constraint(equalTo: cover.bottomAnchor)
+            ])
+        } else {
+            // A MISSING ASSET MUST NOT LEAVE A BLANK RECTANGLE. If Splash ever stops resolving, the
+            // cover still has to hide the journal underneath it — that is its actual job — so the
+            // old label stays as the fallback rather than being deleted.
+            let label = UILabel()
+            label.text = "ToTry"
+            label.textColor = .label
+            label.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            cover.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: cover.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: cover.centerYAnchor)
+            ])
+        }
         window.addSubview(cover)
         privacyCover = cover
     }

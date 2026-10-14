@@ -823,7 +823,7 @@ function showPrivacyPolicy(){
     '<h3>Privacy policy</h3>' +
     // Sentence case under the title. It was 11px caps in the third grey, and at phone width the one
     // line wrapped to two — the caps-that-wrap shape, on the page a reviewer reads.
-    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026 · Plain English</p>' +
+    '<p class="modal-sub">ToTry · Last updated June 2026 · Plain English</p>' +
     '<div class="legal">' +
     
       '<p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -895,13 +895,13 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3>Terms of use</h3>' +
-    '<p class="modal-sub">ToTry by Alfred John · Last updated June 2026</p>' +
+    '<p class="modal-sub">ToTry · Last updated June 2026</p>' +
     '<div class="legal">' +
     
       '<p>By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
       '<h4>1. What this app is</h4>' +
-      '<p>A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
+      '<p>A free self-improvement app built on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
     
       '<h4>2. Not professional advice</h4>' +
       '<p>Nothing in this app is medical, psychiatric, legal, financial, or pastoral advice. The Coach is an AI — it can be wrong, it can be insensitive, it can hallucinate facts. If you have a real problem (mental health crisis, physical injury, financial emergency, suicidal thoughts), you need a real human professional. The app has a crisis-detection layer that will point you to one when it can — but it is not a substitute for one.</p>' +

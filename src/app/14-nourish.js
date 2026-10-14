@@ -499,7 +499,7 @@ function openMoreWaysToLog(){
     // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
     ['camera','red','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
     ['image','purple','Photo from your library','A plate you already shot','chooseMealPhoto()'],
-    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
+    ['barcode','blue','Scan a barcode','Packaged food, straight off the label','scanBarcode()'],
     ['mic','orange','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
     ['book','brown','My recipes','Something you make often','openRecipeBuilder()'],
     ['repeat','green','Repeat a day','Copy everything from another day','openRepeatDay()'],
@@ -2210,6 +2210,24 @@ function chooseMealPhoto(){
 // Everything degrades: no listener support falls back to one-shot, one-shot falls back to the photo
 // path, and the photo path falls back to typing the digits. Each of those already worked; this only
 // adds the best case on top.
+// THE BUTTON IS THE FEATURE. The whole live scanner was built and then the Nourish row still called
+// `openBarcodeScanner()` — the PHOTO sheet — with `startLiveBarcodeScan` reachable only from a
+// button INSIDE that sheet, starting at `display:none` and revealed after a permission probe. So on
+// a phone a person tapped "Scan a barcode" and got a file picker, and the viewfinder sat two taps
+// deep behind a sheet they should never see. Built, compiled, shipped, and unreachable: the
+// half-applied shape this project records over and over, and I verified the binary instead of the
+// experience and reported it working.
+// On a phone this goes straight to the camera. The photo sheet is what the WEB gets, because a
+// browser cannot do this — it is a fallback, not a front door.
+function scanBarcode(){
+  try{
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    const P = native && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner;
+    if(P && typeof startLiveBarcodeScan === 'function'){ startLiveBarcodeScan(); return; }
+  }catch(_){ }
+  if(typeof openBarcodeScanner === 'function') openBarcodeScanner();
+}
+
 async function startLiveBarcodeScan(){
   // ONE SESSION AT A TIME. A double tap on "Scan with camera" registered a SECOND `barcodeScanned`
   // listener for the rest of the session, and every read was then queued twice — a trolley of

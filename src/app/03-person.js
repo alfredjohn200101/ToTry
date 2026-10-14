@@ -5771,7 +5771,25 @@ function iosNavSync(name){
       // it measuring a detached node forever (offsetTop 0), and the bar would show its title at rest.
       const large=tab.querySelector('.page-title, .ios-large-title');
       const edge = large ? (large.offsetTop + large.offsetHeight - 6) : 12;
-      hdr.classList.toggle('ios-scrolled', tab.scrollTop > edge);
+      // A MATERIAL ANSWERS CONTINUOUSLY. This toggled one class at `edge` and nothing else, so the
+      // header was transparent and then, one pixel later, fully glass — it switched on rather than
+      // responded, which is what "liquid glass doesn't move the way it's supposed to" was pointing
+      // at. `--nav-p` is the 0→1 progress of the large title leaving; every property of the material
+      // interpolates off it in CSS, so there is ONE source of truth for the blur, the tint, the rim
+      // and the bar title rather than four thresholds that could drift apart.
+      // It is floored at a small span so a screen with no large title still gets a gradient rather
+      // than a divide-by-zero, and clamped because a rubber-band overscroll reports a negative
+      // scrollTop on iOS and would otherwise push the blur backwards.
+      // THE RAMP HAS TO BE A DISTANCE A THUMB CAN FEEL. First cut floored this at 24px, and on
+      // Today — which has no .page-title, so `edge` falls to its 12px default — the material went
+      // from clear to full glass inside 25 pixels of scroll. Measured: blur 0 → 12.5 → 30 across
+      // three samples, which is interpolating correctly over a distance nobody can perceive, so it
+      // still read as the snap it replaced. 96px is roughly a large title's height, so a screen with
+      // one ramps over the title leaving and a screen without one gets the same unhurried travel.
+      const span = Math.max(96, edge);
+      const p = Math.max(0, Math.min(1, tab.scrollTop / span));
+      hdr.style.setProperty('--nav-p', p.toFixed(3));
+      hdr.classList.toggle('ios-scrolled', p > 0.02);
     };
     if(!tab.__iosNav){ tab.__iosNav = true; tab.addEventListener('scroll', sync, { passive:true }); }
     sync();
