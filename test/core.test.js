@@ -5441,6 +5441,29 @@ H.section('shared content can be reported, and the report says what really happe
       'it says it did not send, and names the address that still works');
   })());
 
+  // AND ON A HIT IT MUST NOT STORE. The helpline check at door 57 cannot see this: a surface can
+  // show the card AND still post the sentence to Supabase, which is the sealed-letter shape — a
+  // disclosure sitting on a server answered by nothing. The stub above returns null so the crisis
+  // branch was never exercised; this drives it.
+  H.defer((async () => {
+    const posted = [], metK = [];
+    const L = H.load(['submitContentReport'], {
+      document: { getElementById: () => ({ value: 'i want to kill myself' }), querySelector: () => null },
+      showToast: () => {}, closeModal: () => {},
+      crisisInAny: () => 'suicide',
+      journalMeetCrisis: (k) => { metK.push(k); },
+      currentUser: { email: 'x@example.com' }, APP_VERSION: 'vTEST',
+      sb: { from: () => ({ insert: async (r) => { posted.push(r[0]); return {}; } }) },
+    });
+    await L.submitContentReport();
+    await new Promise(r => setTimeout(r, 300));
+    H.ok(posted.length === 0,
+      'a disclosure typed into the report box is NOT inserted into Supabase — it would sit on a ' +
+      'server answered by nothing, which the helpline check at door 57 cannot see');
+    H.ok(metK.length === 1 && metK[0] === 'suicide',
+      'and the person is met instead, with the kind the detector returned');
+  })());
+
   // IT IS A DOOR. The why box invites a sentence and the text is inserted into Supabase where
   // nobody is sitting in front of it. The gate judges the FIELDS, never the join.
   const code = H.code(H.extractFn('submitContentReport'));
