@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v630';
+const APP_VERSION = 'v631';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20352,6 +20352,10 @@ function _feelingNowWon(){
   if(typeof showVerseToast==='function') setTimeout(()=>showVerseToast('win','A word for your win'),700);
 }
 function showSosPhase(phase){
+  // LEAVING PHASE 2 STOPS ITS CLOCK. The old breath was a CSS `infinite` animation with no handle
+  // on it and a label timer that killed itself after sixteen seconds — so nothing anywhere ever
+  // turned the circle off, and a self-scheduling step would have inherited exactly that bug.
+  try{ if(typeof _sosBreathStop === 'function' && phase !== 2) _sosBreathStop(); }catch(_){ }
   [0,1,2,3,4].forEach(n=>{const el=document.getElementById('sos-p'+n);if(el)el.className='sos-phase'+(n===phase?' active':'');});
 }
 function setLocation(loc){
@@ -20471,13 +20475,55 @@ function goSosP2(){
   // Inject the vice-specific science note (why this urge works the way it does) if there's a slot
   const sciEl=document.getElementById('sos-science-note');
   if(sciEl) sciEl.textContent = pb.science;
-  const circle=document.getElementById('sos-breathe-circle');if(circle)circle.classList.add('on');
+  // ONE CLOCK, OR THE GUIDE TELLS THEM THE OPPOSITE OF WHAT THEY SEE. This ran two timers that had
+  // nothing to do with each other: the circle was a CSS keyframe at `breatheAnim 4s`, and the label
+  // walked a FOUR-entry list at 2000ms — eight seconds a lap, exactly double. So four seconds in,
+  // the words said "Breathe out slowly" while the circle was expanding, and it stayed wrong for
+  // every later lap. Then `setTimeout(clearInterval, 16000)` froze the words on whatever they
+  // happened to be saying while the circle animated `infinite` underneath them.
+  // This is the app's front door at 11pm, for somebody whose willpower is gone and who is doing
+  // exactly what the screen tells them. Being told to exhale while the visual says inhale does not
+  // just fail to help — it breaks the one thing they came here able to follow.
+  // The timing was wrong on its own terms too: 2s a phase matches none of the protocols, while this
+  // app's own copy four hundred lines up says "in 4, hold 4, out 6".
+  // So: ONE phase list drives BOTH the word and the circle, the circle is transitioned inline
+  // rather than by a keyframe that cannot know about the labels, and it runs until the phase is
+  // left instead of stopping at an arbitrary sixteen seconds.
+  const circle=document.getElementById('sos-breathe-circle');
   const lbl=document.getElementById('sos-breathe-lbl');
-  const labels=['Breathe in...','Hold...','Breathe out slowly...','Rest...'];let li=0;
-  const bi=setInterval(()=>{li=(li+1)%labels.length;if(lbl)lbl.textContent=labels[li];},2000);
-  setTimeout(()=>clearInterval(bi),16000);
+  const PH=[{l:'Breathe in\u2026',s:4,scale:1.5},{l:'Hold\u2026',s:4,scale:1.5},{l:'Breathe out slowly\u2026',s:6,scale:1}];
+  let pi=-1;
+  if(_sosBreathTimer){ clearTimeout(_sosBreathTimer); _sosBreathTimer=null; }
+  const step=function(){
+    pi=(pi+1)%PH.length;
+    const ph=PH[pi];
+    if(lbl) lbl.textContent=ph.l;
+    if(circle){
+      // The keyframe is removed so the two can never run on separate clocks again.
+      circle.classList.remove('on');
+      circle.style.transition='transform '+ph.s+'s ease-in-out, opacity '+ph.s+'s ease-in-out';
+      circle.style.transform='scale('+ph.scale+')';
+      circle.style.opacity = ph.scale > 1 ? '1' : '0.5';
+    }
+    // One cue at each turn, the way the real engine does it — a person with their eyes shut can
+    // follow the phase changes without looking.
+    try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }
+    _sosBreathTimer=setTimeout(step, ph.s*1000);
+  };
+  step();
+}
+// Held at module level so leaving the phase can stop it. The old version had no handle on its own
+// circle at all: the CSS animation was `infinite` and nothing ever turned it off.
+let _sosBreathTimer=null;
+function _sosBreathStop(){
+  try{ if(_sosBreathTimer){ clearTimeout(_sosBreathTimer); _sosBreathTimer=null; } }catch(_){ }
+  try{
+    const c=document.getElementById('sos-breathe-circle');
+    if(c){ c.classList.remove('on'); c.style.transition=''; c.style.transform=''; c.style.opacity=''; }
+  }catch(_){ }
 }
 function goSosP3(){
+  try{ if(typeof _sosBreathStop === 'function') _sosBreathStop(); }catch(_){ }
   showSosPhase(3);
   loadV();
   const v = vices[curVice] || {};

@@ -5783,6 +5783,34 @@ H.section('the stale-card guard survives the session boundary');
     'while each read still takes the next turn, so the guard has something to compare');
 }
 
+H.section('the SOS breath runs on one clock');
+{
+  // THE APP'S FRONT DOOR AT 11PM, TELLING SOMEBODY THE OPPOSITE OF WHAT THEY SEE. The circle was a
+  // CSS keyframe at `breatheAnim 4s`; the label walked a FOUR-entry list at 2000ms — eight seconds
+  // a lap, exactly double. Four seconds in, the words said "Breathe out slowly" while the circle
+  // was expanding, and every later lap was wrong too. Then setTimeout(clearInterval, 16000) froze
+  // the words while the circle animated `infinite` underneath. For a person whose willpower is gone
+  // and who is doing exactly what the screen says, that does not merely fail to help.
+  const src = H.code(H.extractFn('goSosP2'));
+  H.ok(/sos-breathe-circle/.test(src), 'calibration: this is the SOS breath block');
+  H.ok(!/setInterval\([^)]*2000\)/.test(src) && !/,\s*2000\)/.test(src),
+    'the label no longer walks on its own 2000ms timer, independent of the circle');
+  H.ok(!/16000/.test(src),
+    'and nothing freezes the words after sixteen seconds while the circle keeps moving');
+  H.ok(/\{l:[^}]*s:4[^}]*\}/.test(src) && /s:6/.test(src),
+    'one phase list drives both, at the timing this app\u2019s own copy names \u2014 in 4, hold 4, out 6');
+  H.ok(/transition=/.test(src) && /transform=/.test(src),
+    'the circle is transitioned from that same list rather than by a keyframe that cannot know ' +
+    'about the labels');
+
+  // AND IT HAS TO STOP. The old circle was `infinite` with no handle on it, so nothing anywhere
+  // turned it off — and a self-scheduling step would inherit exactly that bug.
+  H.ok(/_sosBreathStop/.test(H.code(H.extractFn('showSosPhase'))),
+    'leaving the breathing phase stops its clock');
+  H.ok(/_sosBreathStop/.test(H.code(H.extractFn('goSosP3'))),
+    'and so does moving on to the next step');
+}
+
 H.section('the whole-life grid can see the soul');
 {
   // THE HOOK, FAILING IN THE REALM THE APP SAYS EVERYTHING ELSE GROWS FROM. `computeDayActivity`
