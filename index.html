@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v636';
+const APP_VERSION = 'v637';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9403,6 +9403,94 @@ function iosList(rows, o){
     '<div class="ios-list">' + (rows || []).join('') + '</div>' +
     (o.footer ? '<div class="ios-footnote">' + esc(o.footer) + '</div>' : '') +
   '</div>';
+}
+
+// ── THE IDENTITY SENTENCE — ONE PLACE, BECAUSE THERE WERE FOUR ────────────────────────────────
+// "I am becoming a person who ..." is the first thing anybody types in this app and the line Home
+// greets them with. The prefixing branch existed in FOUR independent copies — saveIdentity and
+// editIdentity (40-identity-seasons.js), obNextToWhy (03-person.js) and a dead obNext(4) copy that
+// tested a DIFFERENT prefix — so the same typed sentence could be stored two ways. Measured on the
+// shipped bundle, and byte-identical in v601, so upgrading never fixed any of it:
+//   "I am disciplined"      -> "Becoming a person who I am disciplined"      (doubled subject)
+//   "...keeps their promises" -> "Becoming a person who ...keeps their promises"  (the app's OWN
+//                                placeholder is "...keeps their promises", so this is invited)
+//   "Who keeps their promises" -> "Becoming a person Who keeps their promises"  (and two renderers
+//                                silently disagreed with a third about that capital)
+//   "I am becoming the man I said I would be" -> prefixed AGAIN, because only the literal
+//                                "i am becoming a person who" counted as already-complete.
+// Returns '' for nothing usable; every caller already handles an empty result.
+function _identitySentence(typed){
+  let t = String(typed == null ? '' : typed).trim();
+  // Leading ellipsis/dash/comma: the placeholder invites it, and it lands mid-sentence.
+  t = t.replace(/^[\s.\u2026\u00b7\u2022\-\u2013\u2014,:;]+/, '').trim();
+  if(!t) return '';
+  const lower = t.toLowerCase();
+  // REPAIR WHAT EARLIER VERSIONS ALREADY STORED. The fix above only helps the next time somebody
+  // types; the sentence Home greets them with is the one already in totry_identity. So a stored
+  // "I am becoming a person who I am disciplined" is taken apart and re-made, which also makes this
+  // function idempotent: a correct sentence passes straight back out.
+  const already = t.match(/^i am becoming a person who\s+(.*)$/i);
+  if(already){
+    const rest = (already[1] || '').trim();
+    if(!rest) return '';
+    if(!/^(?:i\s*am\b|i'?m\b|who\b)/i.test(rest) && !/^[.\u2026]/.test(rest)){
+      // Shape is right; REBUILD it anyway so the prefix and the fragment's lead are canonical.
+      // Returning `t` here left a stored "a person Who keeps their promises" capitalised, which
+      // two renderers silently corrected and a third did not — the same sentence, two screens,
+      // two spellings.
+      return 'I am becoming a person who ' + _identityLead(rest);
+    }
+    return _identitySentence(rest);
+  }
+  // Already a complete "I am becoming ..." sentence. The old test only recognised it when it
+  // continued "a person who", so "I am becoming the man I said I would be" got prefixed again.
+  if(lower.startsWith('i am becoming')) return t;
+  // "who ..." — their words, with the joining "who" lowercased so it reads as one sentence.
+  if(/^who\b/i.test(t)) return 'I am becoming a person ' + t.charAt(0).toLowerCase() + t.slice(1);
+  // "I am X" / "I'm X" is already a first-person clause. The old code prefixed it anyway and made
+  // "a person who I am X". The subject becomes the relative pronoun, so the verb agrees: "is".
+  const fp = t.match(/^(?:i\s*am|i'?m)\b\s*(.*)$/i);
+  if(fp){
+    const rest = (fp[1] || '').trim();
+    if(!rest) return '';                       // they typed only "I am" — nothing to become yet
+    return 'I am becoming a person who is ' + _identityLead(rest);
+  }
+  return 'I am becoming a person who ' + _identityLead(t);
+}
+// Lowercase the first letter of a fragment that now follows "who", but ONLY when it is plainly a
+// sentence capital. A faith-rooted app must not render "who christ is at the centre", so the names
+// are named rather than guessed at, and an all-caps or mixed-case word (GOD, iPhone) is left alone.
+function _identityLead(s){
+  const w = (String(s).match(/^\S+/) || [''])[0];
+  if(/^(?:god|christ|jesus|allah|krishna|rama|buddha|lord|father|holy|mary|yahweh|hashem)\b/i.test(w)) return s;
+  if(/^[A-Z][a-z'\u2019]*$/.test(w)) return s.charAt(0).toLowerCase() + s.slice(1);
+  return s;
+}
+
+// ── A WALL-CLOCK TIME MISLABELLED WITH A Z ────────────────────────────────────────────────────
+// Two different feeds hand this app a local wall time with a `Z` stuck on the end, which every
+// Date parser then reads as UTC:
+//   · Strava's `start_date_local`, stored as `.date` on every synced activity (35-strava.js:327)
+//   · a Hevy->Strava bridge copy's timestamp, which is that same field carried through
+// It arrived as `_bridgeCopyToUtc` in v634 for the second case only. The FIRST case is why the
+// burn ledger put an afternoon session on the wrong DAY: measured at Australia/Melbourne, every
+// Strava activity from 13:00 local onward was credited to tomorrow, so today's "Burned" was
+// missing the ride the person had just done and tomorrow's carried it — which reads exactly like
+// a double count. The all-days total is right, so no total-based assertion could ever see it.
+// Named for the stamp rather than for one of its callers, because naming it after the bridge is
+// what made it look inapplicable to Strava for a whole version.
+function _wallClockZToUtc(stamp){
+  try{
+    // `new Date(null)` is EPOCH 0, not NaN — so the isNaN guard alone let a null stamp through as a
+    // real instant. Inherited from v634 and caught by this helper's own test: the burn ledger would
+    // then mint a 1970 day key, which its `if(!dk) return` cannot reject because it is a valid
+    // string. Anything that is not a non-empty string or a finite number is handed straight back.
+    // A NUMBER IS ALREADY A TRUE INSTANT. Epoch milliseconds carry no timezone to be wrong about,
+    // so correcting one would corrupt it. Only a STRING can be a wall time mislabelled with a Z.
+    if(typeof stamp !== 'string' || !stamp.trim()) return stamp;
+    const d = new Date(stamp); const t = d.getTime();
+    return isNaN(t) ? stamp : t + d.getTimezoneOffset() * 60000;
+  }catch(_){ return stamp; }
 }
 // ═══════════════════════════════════════════════════════════════════════════
 // CLOUD-FIRST SYNC (v111). Supabase is the source of truth, the device is a cache.
@@ -12180,7 +12268,7 @@ function getLifeState(){
   const _haveConverted = new Set(_wRaw.map(w => String(w.id)));
   const _stravaTrain = (L('totry_strava_activities')||[])
     .filter(a => a && (a.ts||a.date) && !_haveConverted.has('stravahevy_' + a.id))
-    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||a.date,
+    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||_wallClockZToUtc(a.date),
                  type:a.type||'Cardio', splitFocus:a.name||a.type||'Cardio', title:a.name||a.type||'Cardio',
                  durationMin:a.durationMinutes||(a.moving_time?Math.round(a.moving_time/60):null),
                  calories:a.calories||null, exercises:[] }));
@@ -12633,7 +12721,9 @@ function buildPTCtx(){
     // block was dead — this carefully-composed line, the one place the coach is handed real HR and
     // effort data, has never once reached the model. Verified both ways: with the shape the sync
     // actually writes the line is absent, and adding a start_date field to the same rows produces it.
-    const _actDate = x => (x && (x.start_date || x.date)) || null;
+    // The stored `.date` is Strava's start_date_local — a wall time tagged Z — so reading it raw
+    // shifts the coach's "most recent cardio" onto the wrong day for anybody not near UTC.
+    const _actDate = x => { const d = (x && (x.start_date || x.date)) || null; return d ? _wallClockZToUtc(d) : null; };
     // NEWEST FIRST, because the line calls itself "Most recent cardio". The stored order is whatever
     // the Strava sync happened to write, so [0] handed the coach the OLDEST activity in the fortnight:
     // someone who ran 10km yesterday was described to the model as a twelve-day-old 40km ride, and
@@ -15137,14 +15227,7 @@ function obNextToWhy(){
   // who ..." when the person did not type it; onboarding wrote the bare fragment, so Home and the
   // coach met a sentence with no subject — and the two doors to the same field disagreed about what
   // a stored identity looks like.
-  const identity = (function(){
-    const t = _identityRaw || '';
-    if(!t) return t;
-    const lower = t.toLowerCase();
-    if(lower.startsWith('i am becoming a person who')) return t;
-    if(lower.startsWith('who ')) return 'I am becoming a person ' + t;
-    return 'I am becoming a person who ' + t.replace(/^who /i, '');
-  })();
+  const identity = _identitySentence(_identityRaw || '');
   // THE FIRST THING A PERSON EVER TYPES IN THIS APP, and it had no crisis gate. Someone answering
   // "I am becoming a person who...", "Why does this matter?" or "what are you fighting?" honestly at
   // their worst got no helpline — the sentence was stored verbatim and echoed back to them as their
@@ -15196,11 +15279,12 @@ function obNext(step){
     if(idEl){
       const v=idEl.value.trim();
       if(v){
-        const lower=v.toLowerCase();
-        let full;
-        if(lower.startsWith('i am becoming')){full=v;}
-        else{full='I am becoming a person who '+v.replace(/^who /i,'');}
-        ls('totry_identity',full);
+        // This copy tested 'i am becoming' where the other three tested the full
+        // 'i am becoming a person who', so the same sentence stored two ways. It is also DEAD —
+        // obNext is only ever called with 2, 5 and 6 — but a dead copy that disagrees is exactly
+        // how a fixed defect comes back, so it goes through the one helper like everything else.
+        const full = _identitySentence(v);
+        if(full) ls('totry_identity',full);
       }
     }
   }
@@ -43438,18 +43522,17 @@ function _sessionsOverlap(aTs, bTs, minutes){
 // A Hevy->Strava "bridge" copy (id 'stravahevy_...') stores Strava's start_date_LOCAL — wall-clock time
 // mislabelled with a Z — while every DIRECT row (Hevy API, manual, watch) stores the true UTC instant.
 // So one real session's two rows sit ~the user's UTC offset apart (~10-11h in AU), and a plain +/-90min
-// overlap never matches them: the de-dup "worked" only within 90 min of UTC. _bridgeCopyToUtc corrects the
+// overlap never matches them: the de-dup "worked" only within 90 min of UTC. _wallClockZToUtc corrects the
 // copy back to true UTC (using its OWN date's offset, so DST is handled), and _bridgedSessionMatch is the
 // one helper both de-dup consumers use so they cannot drift. It is only ever asked to match a bridge copy
 // against a PRIMARY row, so a free user whose only row IS the bridge copy has nothing to match and is kept.
-function _bridgeCopyToUtc(copyTs){
-  try{ const d = new Date(copyTs); const t = d.getTime(); return isNaN(t) ? copyTs : t + d.getTimezoneOffset()*60000; }catch(_){ return copyTs; }
-}
+// _wallClockZToUtc lives in 00-boot.js now — Strava's own start_date_local is the same stamp
+// shape, and 03-person.js (module 03) needs it, so it belongs in the shared base.
 function _bridgedSessionMatch(primaryTs, copyTs){
   // primaryTs is already true UTC; normalise the copy, then a TIGHT 90-min window means we only merge
   // rows at the SAME real instant — a session cannot be two different sessions at once, so no title
   // heuristic is needed and two genuinely-separate sessions never merge.
-  return _sessionsOverlap(primaryTs, _bridgeCopyToUtc(copyTs), 90);
+  return _sessionsOverlap(primaryTs, _wallClockZToUtc(copyTs), 90);
 }
 // ═══════════════════════════════════════════════════════════════════
 // TRAINING INTELLIGENCE (WS1) — central helpers used everywhere: manual
@@ -55278,7 +55361,7 @@ if(GOATCOUNTER_CODE && !metricsOff() && !(typeof isNativeApp==='function' && isN
 // Runs on every load. Idempotent, versioned migrations so a future release can change a data
 // shape without ever corrupting the data already on a user's device. Bump CURRENT_SCHEMA and add
 // a numbered step. Each step must be safe to run on data that's already been migrated.
-const CURRENT_SCHEMA = 1;
+const CURRENT_SCHEMA = 2;
 // Throttled, anonymous error logging (Phase 0). Lets the dev see if a release is breaking for real
 // users, via the existing app_events pipeline. NEVER logs personal data — only the error message,
 // source file/line, and a count. Max a few per session so one looping error can't spam the table.
@@ -55308,7 +55391,23 @@ function runSchemaMigrations(){
         }
       }catch(_){ }
     }
-    // (future steps: if(v < 2){ ... } etc.)
+    // v1 → v2: repair the identity sentence somebody is ALREADY being greeted with.
+    // Four independent writers prefixed "I am becoming a person who " onto whatever they were
+    // handed, so a first-person answer became "...a person who I am disciplined", the app's own
+    // "...keeps their promises" placeholder became a mid-sentence ellipsis, and a typed capital
+    // stayed mid-sentence. Fixing the writers only helps the NEXT time somebody types; this is the
+    // line on their Home screen today. _identitySentence is idempotent and repairs in place, so a
+    // correct sentence is written back unchanged and this runs at most once.
+    if(v < 2){
+      try{
+        const cur = ls('totry_identity');
+        if(cur && typeof _identitySentence === 'function'){
+          const fixed = _identitySentence(cur);
+          if(fixed && fixed !== cur) ls('totry_identity', fixed);
+        }
+      }catch(_){ }
+    }
+    // (future steps: if(v < 3){ ... } etc.)
     ls('totry_schema', CURRENT_SCHEMA);
   }catch(e){ /* never let a migration break boot */ console.warn('migration skipped', e); }
 }
@@ -58685,7 +58784,9 @@ async function syncStravaActivities(){
           }
         }
         if(!cals) return;
-        const dk = dayKeyOf(a.date);
+        // `a.date` IS Strava's start_date_local — a local wall time tagged Z. Keying the day off it
+        // raw credited every afternoon session to TOMORROW for anybody east of UTC.
+        const dk = dayKeyOf(_wallClockZToUtc(a.date));
         if(!dk) return;                     // an activity with no readable date has no day to land on
         freshByDay[dk] = (freshByDay[dk]||0) + Math.round(cals);
       });
@@ -58697,7 +58798,9 @@ async function syncStravaActivities(){
     // Auto-tick gym habit if there's an activity today
     if(added > 0){
       const today = new Date().toDateString();
-      const hasToday = data.some(a => new Date(a.start_date_local).toDateString() === today);
+      // Same stamp, same shift: an afternoon session read as tomorrow, so the gym habit did not
+      // auto-tick on the day it was actually done.
+      const hasToday = data.some(a => new Date(_wallClockZToUtc(a.start_date_local)).toDateString() === today);
       if(hasToday){
         loadH();
         const gymHabit = habits.findIndex(h => /gym|train|workout|exercise|move/i.test(h.n));
@@ -60499,16 +60602,11 @@ function saveIdentity(){
     return;
   }
   if(!text){showToast('Empty','Write what you are becoming first.');return;}
-  // Auto-prefix if user did not include
-  const lower=text.toLowerCase();
-  let full;
-  if(lower.startsWith('i am becoming a person who')){
-    full=text;
-  }else if(lower.startsWith('who ')){
-    full='I am becoming a person '+text;
-  }else{
-    full='I am becoming a person who '+text.replace(/^who /i,'');
-  }
+  // ONE normaliser for all four writers — see _identitySentence in 00-boot.js. This was four
+  // independent copies of a prefixing branch, two of which disagreed, and all of which produced
+  // "a person who I am disciplined" for a first-person sentence.
+  const full = _identitySentence(text);
+  if(!full){showToast('Empty','Write what you are becoming first.');return;}
   ls('totry_identity',full);
   renderIdentity();
   showToast('Identity saved','This is who you are becoming.');
@@ -60526,8 +60624,8 @@ function editIdentity(){
       setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
       return true;
     }
-    const lower=t.toLowerCase();
-    const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));
+    const full = _identitySentence(t);
+    if(!full) return 'Just name one thing.';
     ls('totry_identity',full);
     if(typeof renderIdentity==='function') renderIdentity();
     if(typeof showMorningFocus==='function') showMorningFocus();

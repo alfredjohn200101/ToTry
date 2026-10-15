@@ -16172,7 +16172,7 @@ H.section('stillness reaches the ledger it was already reading from');
   // tautology on CI, and restored afterwards so nothing downstream inherits it.
   const _tzWas = process.env.TZ;
   process.env.TZ = 'Australia/Sydney';
-  const F = H.load(['_bridgedSessionMatch', '_bridgeCopyToUtc', '_sessionsOverlap']);
+  const F = H.load(['_bridgedSessionMatch', '_wallClockZToUtc', '_sessionsOverlap']);
   const directUtc = '2026-07-15T03:00:00.000Z';                        // the session's true instant
   const off = new Date(directUtc).getTimezoneOffset();                 // pinned offset at that date (min)
   H.ok(off !== 0,
@@ -16284,5 +16284,146 @@ H.section('a micro it showed you is a micro it counts');
     'it coerces it instead');
 }
 
+
+H.section('the identity sentence is made in one place, and reads like English');
+{
+  // "I am becoming a person who ..." is the first thing anybody types in this app and the line Home
+  // greets them with. The prefixing branch existed in FOUR independent copies — saveIdentity,
+  // editIdentity, obNextToWhy and a DEAD obNext(4) copy that tested a different prefix — so the same
+  // typed sentence could be stored two ways. Byte-identical in v601, so the owner's report was never
+  // explained by a stale build; upgrading would have changed nothing.
+  const L = H.load(['_identitySentence', '_identityLead']);
+  const hero = (id) => { let t = id.replace(/^I am\s+/i, '').trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
+
+  // THE DOUBLED SUBJECT — the one that is unambiguously broken English.
+  H.eq(L._identitySentence('I am disciplined'), 'I am becoming a person who is disciplined',
+    'a first-person answer becomes a relative clause with an agreeing verb, not "who I am disciplined"');
+  H.eq(L._identitySentence("I'm not ruled by what tempts me"), 'I am becoming a person who is not ruled by what tempts me',
+    'and the contracted form too');
+  H.eq(L._identitySentence('im steady when it is hard'), 'I am becoming a person who is steady when it is hard',
+    'and without the apostrophe, which is how half of people type it');
+
+  // THE APP'S OWN PLACEHOLDER. Both fields show "...keeps their promises", so this is invited.
+  H.eq(L._identitySentence('...keeps their promises'), 'I am becoming a person who keeps their promises',
+    'the placeholder, taken literally, no longer lands a mid-sentence ellipsis on the Home screen');
+
+  // A TYPED CAPITAL, mid-sentence — and two renderers used to disagree with a third about it.
+  H.eq(L._identitySentence('Keeps their promises'), 'I am becoming a person who keeps their promises',
+    'a sentence capital is lowered once it follows "who"');
+  H.eq(L._identitySentence('Who keeps their promises'), 'I am becoming a person who keeps their promises',
+    'including the joining "who" itself');
+
+  // AND NOT A DIVINE NAME. In a faith-rooted app "who christ is at the centre" is worse than a
+  // stray capital, so the names are named rather than guessed at.
+  H.ok(/Christ/.test(L._identitySentence('Christ is at the centre')),
+    'a divine name keeps its capital — named explicitly, not inferred');
+  H.ok(/GOD/.test(L._identitySentence('GOD first, always')),
+    'and an all-caps word is left alone rather than half-lowered');
+
+  // ALREADY A COMPLETE SENTENCE. The old test only matched the literal "i am becoming a person who".
+  H.eq(L._identitySentence('I am becoming the man I said I would be'), 'I am becoming the man I said I would be',
+    'an "I am becoming ..." sentence that does not continue "a person who" is left alone');
+  H.eq(hero(L._identitySentence('keeps their promises, even to themselves')),
+    'Becoming a person who keeps their promises, even to themselves',
+    'and the ordinary case still reads exactly as it did');
+
+  // NOTHING USABLE -> empty, which every caller already handles with its own copy.
+  H.eq(L._identitySentence('I am'), '', 'someone who typed only "I am" has not named anything yet');
+  H.eq(L._identitySentence('   '), '', 'nor has someone who typed spaces');
+  H.eq(L._identitySentence(null), '', 'and null does not become the string "null" on the Home screen');
+
+  // REPAIR — the fix to the writers only helps the NEXT time somebody types. The sentence they are
+  // greeted with today is the one already in totry_identity, so the helper repairs in place and a
+  // schema migration runs it once.
+  H.eq(L._identitySentence('I am becoming a person who I am disciplined'), 'I am becoming a person who is disciplined',
+    'an already-stored doubled subject is repaired, not merely prevented');
+  H.eq(L._identitySentence('I am becoming a person Who keeps their promises'), 'I am becoming a person who keeps their promises',
+    'and a stored mid-sentence capital, which two renderers corrected and a third did not');
+
+  // IDEMPOTENT, because the migration and every writer run it over text it may have produced.
+  ['keeps their promises', 'I am disciplined', '...keeps their promises', 'Who keeps their promises',
+   'I am becoming the man I said I would be', 'I am becoming a person who I am disciplined'].forEach((c) => {
+    const a = L._identitySentence(c), b = L._identitySentence(a), d = L._identitySentence(b);
+    H.ok(a === b && b === d, 'running it three times over ' + JSON.stringify(c) + ' does not drift');
+  });
+
+  // ASSERT THE FACT, NOT A COUNT. A first cut banned the prefix string bundle-wide and failed on
+  // correct code twice: _identitySentence legitimately builds it on TWO return paths, and
+  // renderIdentity legitimately MATCHES it in order to strip it for display. What matters is that
+  // nothing OUTSIDE the one helper CONSTRUCTS it.
+  const src = H.code(H.html);
+  const helperSrc = H.code(H.extractFn('_identitySentence'));
+  const builtTotal = (src.match(/'I am becoming a person who '/g) || []).length;
+  const builtInHelper = (helperSrc.match(/'I am becoming a person who '/g) || []).length;
+  H.ok(builtInHelper >= 1, 'calibration: the helper builds the prefix (' + builtInHelper + ' path(s))');
+  H.eq(builtTotal, builtInHelper,
+    'the prefix is CONSTRUCTED only inside _identitySentence \u2014 it was built in four separate ' +
+    'writers, two of which disagreed about what counted as already-prefixed');
+  ['saveIdentity', 'editIdentity', 'obNextToWhy'].forEach((_w) => {
+    H.ok(!/startsWith\('i am becoming/.test(H.code(H.extractFn(_w))),
+      _w + ' no longer carries its own copy of the old prefix test');
+  });
+  const writers = ['saveIdentity', 'editIdentity', 'obNextToWhy'];
+  writers.forEach((w) => {
+    H.ok(/_identitySentence\(/.test(H.code(H.extractFn(w))),
+      w + ' routes through the one helper');
+  });
+  H.ok(/if\(v < 2\)/.test(H.code(H.extractFn('runSchemaMigrations'))) &&
+       /_identitySentence/.test(H.code(H.extractFn('runSchemaMigrations'))),
+    'and a one-time migration repairs the sentence somebody is already being greeted with');
+}
+
+
+H.section('a wall-clock stamp tagged Z lands on the day it happened');
+{
+  // Strava hands this app `start_date_local` — a LOCAL wall time with a `Z` stuck on the end — and
+  // the sync stores it verbatim as `.date` on every activity (35-strava.js:327). Every reader then
+  // parsed it as UTC. Measured at Australia/Melbourne: an activity at 13:00 local or later was
+  // credited to TOMORROW, so today's "Burned" was missing the ride the person had just finished and
+  // tomorrow's carried it — which reads exactly like the double count that was reported.
+  // The ALL-DAYS TOTAL IS CORRECT, which is why no total-based assertion in this suite ever saw it;
+  // only a per-day key does. v634 built the correction for the Hevy bridge copy and named it after
+  // that caller, which is what made it look inapplicable here for a whole version.
+  const _tzWas = process.env.TZ;
+  process.env.TZ = 'Australia/Melbourne';                 // pinned: at UTC this test cannot fail
+  const L = H.load(['_wallClockZToUtc', 'dayKeyOf']);
+  const off = new Date('2026-10-14T13:00:00Z').getTimezoneOffset();
+  H.ok(off !== 0, 'calibration: the zone is pinned non-UTC (' + off + ' min), so the shift is real here');
+
+  const wallDay = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
+  ['2026-10-14T06:30:00Z', '2026-10-14T12:30:00Z', '2026-10-14T13:00:00Z',
+   '2026-10-14T17:30:00Z', '2026-10-14T23:30:00Z'].forEach((iso) => {
+    H.eq(L.dayKeyOf(L._wallClockZToUtc(iso)), wallDay(iso),
+      'a session at ' + iso.slice(11, 16) + ' local is counted on the day it happened');
+  });
+
+  // The defect, pinned so a revert is visible: the RAW stamp lands on the wrong day after midday.
+  H.ok(L.dayKeyOf('2026-10-14T17:30:00Z') !== wallDay('2026-10-14T17:30:00Z'),
+    'fault-injected: reading the stamp RAW puts a 5:30pm session on the wrong day \u2014 that is the bug');
+  H.eq(L.dayKeyOf('2026-10-14T06:30:00Z'), wallDay('2026-10-14T06:30:00Z'),
+    'and a morning session was always right, which is how this survived: it only bites after midday');
+
+  // Malformed input must not throw or invent a day.
+  H.eq(L._wallClockZToUtc('not-a-date'), 'not-a-date', 'an unreadable stamp is handed back unchanged');
+  H.eq(L._wallClockZToUtc(null), null, 'and null does not become 1970');
+
+  // EVERY CONSUMER OF THAT STAMP, not just the one that was reported. The class had four members.
+  const src = H.code(H.html);
+  H.ok(/dayKeyOf\(_wallClockZToUtc\(a\.date\)\)/.test(src),
+    'the burn ledger corrects the stamp before keying the day');
+  H.ok(/_wallClockZToUtc\(a\.start_date_local\)/.test(src),
+    'and the gym-habit auto-tick, which otherwise missed a session done that afternoon');
+  H.ok(/ts:a\.ts\|\|_wallClockZToUtc\(a\.date\)/.test(src),
+    "and getLifeState's training list, which feeds recency and weekly load");
+  H.ok(/_wallClockZToUtc\(d\)/.test(src),
+    "and the coach's most-recent-cardio line");
+  H.eq((src.match(/function _wallClockZToUtc/g) || []).length, 1,
+    'and the correction itself exists in exactly one place');
+  H.ok(!/_bridgeCopyToUtc/.test(src),
+    'the old caller-named version is gone \u2014 naming it after the Hevy bridge is what hid the ' +
+    'Strava case for a version');
+
+  if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+}
 
 H.report();

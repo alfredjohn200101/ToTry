@@ -844,7 +844,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v636';
+const APP_VERSION = 'v637';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -1528,4 +1528,92 @@ function iosList(rows, o){
     '<div class="ios-list">' + (rows || []).join('') + '</div>' +
     (o.footer ? '<div class="ios-footnote">' + esc(o.footer) + '</div>' : '') +
   '</div>';
+}
+
+// ── THE IDENTITY SENTENCE — ONE PLACE, BECAUSE THERE WERE FOUR ────────────────────────────────
+// "I am becoming a person who ..." is the first thing anybody types in this app and the line Home
+// greets them with. The prefixing branch existed in FOUR independent copies — saveIdentity and
+// editIdentity (40-identity-seasons.js), obNextToWhy (03-person.js) and a dead obNext(4) copy that
+// tested a DIFFERENT prefix — so the same typed sentence could be stored two ways. Measured on the
+// shipped bundle, and byte-identical in v601, so upgrading never fixed any of it:
+//   "I am disciplined"      -> "Becoming a person who I am disciplined"      (doubled subject)
+//   "...keeps their promises" -> "Becoming a person who ...keeps their promises"  (the app's OWN
+//                                placeholder is "...keeps their promises", so this is invited)
+//   "Who keeps their promises" -> "Becoming a person Who keeps their promises"  (and two renderers
+//                                silently disagreed with a third about that capital)
+//   "I am becoming the man I said I would be" -> prefixed AGAIN, because only the literal
+//                                "i am becoming a person who" counted as already-complete.
+// Returns '' for nothing usable; every caller already handles an empty result.
+function _identitySentence(typed){
+  let t = String(typed == null ? '' : typed).trim();
+  // Leading ellipsis/dash/comma: the placeholder invites it, and it lands mid-sentence.
+  t = t.replace(/^[\s.\u2026\u00b7\u2022\-\u2013\u2014,:;]+/, '').trim();
+  if(!t) return '';
+  const lower = t.toLowerCase();
+  // REPAIR WHAT EARLIER VERSIONS ALREADY STORED. The fix above only helps the next time somebody
+  // types; the sentence Home greets them with is the one already in totry_identity. So a stored
+  // "I am becoming a person who I am disciplined" is taken apart and re-made, which also makes this
+  // function idempotent: a correct sentence passes straight back out.
+  const already = t.match(/^i am becoming a person who\s+(.*)$/i);
+  if(already){
+    const rest = (already[1] || '').trim();
+    if(!rest) return '';
+    if(!/^(?:i\s*am\b|i'?m\b|who\b)/i.test(rest) && !/^[.\u2026]/.test(rest)){
+      // Shape is right; REBUILD it anyway so the prefix and the fragment's lead are canonical.
+      // Returning `t` here left a stored "a person Who keeps their promises" capitalised, which
+      // two renderers silently corrected and a third did not — the same sentence, two screens,
+      // two spellings.
+      return 'I am becoming a person who ' + _identityLead(rest);
+    }
+    return _identitySentence(rest);
+  }
+  // Already a complete "I am becoming ..." sentence. The old test only recognised it when it
+  // continued "a person who", so "I am becoming the man I said I would be" got prefixed again.
+  if(lower.startsWith('i am becoming')) return t;
+  // "who ..." — their words, with the joining "who" lowercased so it reads as one sentence.
+  if(/^who\b/i.test(t)) return 'I am becoming a person ' + t.charAt(0).toLowerCase() + t.slice(1);
+  // "I am X" / "I'm X" is already a first-person clause. The old code prefixed it anyway and made
+  // "a person who I am X". The subject becomes the relative pronoun, so the verb agrees: "is".
+  const fp = t.match(/^(?:i\s*am|i'?m)\b\s*(.*)$/i);
+  if(fp){
+    const rest = (fp[1] || '').trim();
+    if(!rest) return '';                       // they typed only "I am" — nothing to become yet
+    return 'I am becoming a person who is ' + _identityLead(rest);
+  }
+  return 'I am becoming a person who ' + _identityLead(t);
+}
+// Lowercase the first letter of a fragment that now follows "who", but ONLY when it is plainly a
+// sentence capital. A faith-rooted app must not render "who christ is at the centre", so the names
+// are named rather than guessed at, and an all-caps or mixed-case word (GOD, iPhone) is left alone.
+function _identityLead(s){
+  const w = (String(s).match(/^\S+/) || [''])[0];
+  if(/^(?:god|christ|jesus|allah|krishna|rama|buddha|lord|father|holy|mary|yahweh|hashem)\b/i.test(w)) return s;
+  if(/^[A-Z][a-z'\u2019]*$/.test(w)) return s.charAt(0).toLowerCase() + s.slice(1);
+  return s;
+}
+
+// ── A WALL-CLOCK TIME MISLABELLED WITH A Z ────────────────────────────────────────────────────
+// Two different feeds hand this app a local wall time with a `Z` stuck on the end, which every
+// Date parser then reads as UTC:
+//   · Strava's `start_date_local`, stored as `.date` on every synced activity (35-strava.js:327)
+//   · a Hevy->Strava bridge copy's timestamp, which is that same field carried through
+// It arrived as `_bridgeCopyToUtc` in v634 for the second case only. The FIRST case is why the
+// burn ledger put an afternoon session on the wrong DAY: measured at Australia/Melbourne, every
+// Strava activity from 13:00 local onward was credited to tomorrow, so today's "Burned" was
+// missing the ride the person had just done and tomorrow's carried it — which reads exactly like
+// a double count. The all-days total is right, so no total-based assertion could ever see it.
+// Named for the stamp rather than for one of its callers, because naming it after the bridge is
+// what made it look inapplicable to Strava for a whole version.
+function _wallClockZToUtc(stamp){
+  try{
+    // `new Date(null)` is EPOCH 0, not NaN — so the isNaN guard alone let a null stamp through as a
+    // real instant. Inherited from v634 and caught by this helper's own test: the burn ledger would
+    // then mint a 1970 day key, which its `if(!dk) return` cannot reject because it is a valid
+    // string. Anything that is not a non-empty string or a finite number is handed straight back.
+    // A NUMBER IS ALREADY A TRUE INSTANT. Epoch milliseconds carry no timezone to be wrong about,
+    // so correcting one would corrupt it. Only a STRING can be a wall time mislabelled with a Z.
+    if(typeof stamp !== 'string' || !stamp.trim()) return stamp;
+    const d = new Date(stamp); const t = d.getTime();
+    return isNaN(t) ? stamp : t + d.getTimezoneOffset() * 60000;
+  }catch(_){ return stamp; }
 }

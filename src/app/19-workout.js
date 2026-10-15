@@ -131,18 +131,17 @@ function _sessionsOverlap(aTs, bTs, minutes){
 // A Hevy->Strava "bridge" copy (id 'stravahevy_...') stores Strava's start_date_LOCAL — wall-clock time
 // mislabelled with a Z — while every DIRECT row (Hevy API, manual, watch) stores the true UTC instant.
 // So one real session's two rows sit ~the user's UTC offset apart (~10-11h in AU), and a plain +/-90min
-// overlap never matches them: the de-dup "worked" only within 90 min of UTC. _bridgeCopyToUtc corrects the
+// overlap never matches them: the de-dup "worked" only within 90 min of UTC. _wallClockZToUtc corrects the
 // copy back to true UTC (using its OWN date's offset, so DST is handled), and _bridgedSessionMatch is the
 // one helper both de-dup consumers use so they cannot drift. It is only ever asked to match a bridge copy
 // against a PRIMARY row, so a free user whose only row IS the bridge copy has nothing to match and is kept.
-function _bridgeCopyToUtc(copyTs){
-  try{ const d = new Date(copyTs); const t = d.getTime(); return isNaN(t) ? copyTs : t + d.getTimezoneOffset()*60000; }catch(_){ return copyTs; }
-}
+// _wallClockZToUtc lives in 00-boot.js now — Strava's own start_date_local is the same stamp
+// shape, and 03-person.js (module 03) needs it, so it belongs in the shared base.
 function _bridgedSessionMatch(primaryTs, copyTs){
   // primaryTs is already true UTC; normalise the copy, then a TIGHT 90-min window means we only merge
   // rows at the SAME real instant — a session cannot be two different sessions at once, so no title
   // heuristic is needed and two genuinely-separate sessions never merge.
-  return _sessionsOverlap(primaryTs, _bridgeCopyToUtc(copyTs), 90);
+  return _sessionsOverlap(primaryTs, _wallClockZToUtc(copyTs), 90);
 }
 // ═══════════════════════════════════════════════════════════════════
 // TRAINING INTELLIGENCE (WS1) — central helpers used everywhere: manual

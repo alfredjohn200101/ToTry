@@ -120,16 +120,11 @@ function saveIdentity(){
     return;
   }
   if(!text){showToast('Empty','Write what you are becoming first.');return;}
-  // Auto-prefix if user did not include
-  const lower=text.toLowerCase();
-  let full;
-  if(lower.startsWith('i am becoming a person who')){
-    full=text;
-  }else if(lower.startsWith('who ')){
-    full='I am becoming a person '+text;
-  }else{
-    full='I am becoming a person who '+text.replace(/^who /i,'');
-  }
+  // ONE normaliser for all four writers — see _identitySentence in 00-boot.js. This was four
+  // independent copies of a prefixing branch, two of which disagreed, and all of which produced
+  // "a person who I am disciplined" for a first-person sentence.
+  const full = _identitySentence(text);
+  if(!full){showToast('Empty','Write what you are becoming first.');return;}
   ls('totry_identity',full);
   renderIdentity();
   showToast('Identity saved','This is who you are becoming.');
@@ -147,8 +142,8 @@ function editIdentity(){
       setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
       return true;
     }
-    const lower=t.toLowerCase();
-    const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));
+    const full = _identitySentence(t);
+    if(!full) return 'Just name one thing.';
     ls('totry_identity',full);
     if(typeof renderIdentity==='function') renderIdentity();
     if(typeof showMorningFocus==='function') showMorningFocus();

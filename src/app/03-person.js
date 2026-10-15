@@ -533,7 +533,7 @@ function getLifeState(){
   const _haveConverted = new Set(_wRaw.map(w => String(w.id)));
   const _stravaTrain = (L('totry_strava_activities')||[])
     .filter(a => a && (a.ts||a.date) && !_haveConverted.has('stravahevy_' + a.id))
-    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||a.date,
+    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||_wallClockZToUtc(a.date),
                  type:a.type||'Cardio', splitFocus:a.name||a.type||'Cardio', title:a.name||a.type||'Cardio',
                  durationMin:a.durationMinutes||(a.moving_time?Math.round(a.moving_time/60):null),
                  calories:a.calories||null, exercises:[] }));
@@ -986,7 +986,9 @@ function buildPTCtx(){
     // block was dead — this carefully-composed line, the one place the coach is handed real HR and
     // effort data, has never once reached the model. Verified both ways: with the shape the sync
     // actually writes the line is absent, and adding a start_date field to the same rows produces it.
-    const _actDate = x => (x && (x.start_date || x.date)) || null;
+    // The stored `.date` is Strava's start_date_local — a wall time tagged Z — so reading it raw
+    // shifts the coach's "most recent cardio" onto the wrong day for anybody not near UTC.
+    const _actDate = x => { const d = (x && (x.start_date || x.date)) || null; return d ? _wallClockZToUtc(d) : null; };
     // NEWEST FIRST, because the line calls itself "Most recent cardio". The stored order is whatever
     // the Strava sync happened to write, so [0] handed the coach the OLDEST activity in the fortnight:
     // someone who ran 10km yesterday was described to the model as a twelve-day-old 40km ride, and
@@ -3490,14 +3492,7 @@ function obNextToWhy(){
   // who ..." when the person did not type it; onboarding wrote the bare fragment, so Home and the
   // coach met a sentence with no subject — and the two doors to the same field disagreed about what
   // a stored identity looks like.
-  const identity = (function(){
-    const t = _identityRaw || '';
-    if(!t) return t;
-    const lower = t.toLowerCase();
-    if(lower.startsWith('i am becoming a person who')) return t;
-    if(lower.startsWith('who ')) return 'I am becoming a person ' + t;
-    return 'I am becoming a person who ' + t.replace(/^who /i, '');
-  })();
+  const identity = _identitySentence(_identityRaw || '');
   // THE FIRST THING A PERSON EVER TYPES IN THIS APP, and it had no crisis gate. Someone answering
   // "I am becoming a person who...", "Why does this matter?" or "what are you fighting?" honestly at
   // their worst got no helpline — the sentence was stored verbatim and echoed back to them as their
@@ -3549,11 +3544,12 @@ function obNext(step){
     if(idEl){
       const v=idEl.value.trim();
       if(v){
-        const lower=v.toLowerCase();
-        let full;
-        if(lower.startsWith('i am becoming')){full=v;}
-        else{full='I am becoming a person who '+v.replace(/^who /i,'');}
-        ls('totry_identity',full);
+        // This copy tested 'i am becoming' where the other three tested the full
+        // 'i am becoming a person who', so the same sentence stored two ways. It is also DEAD —
+        // obNext is only ever called with 2, 5 and 6 — but a dead copy that disagrees is exactly
+        // how a fixed defect comes back, so it goes through the one helper like everything else.
+        const full = _identitySentence(v);
+        if(full) ls('totry_identity',full);
       }
     }
   }

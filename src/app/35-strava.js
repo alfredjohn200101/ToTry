@@ -395,7 +395,9 @@ async function syncStravaActivities(){
           }
         }
         if(!cals) return;
-        const dk = dayKeyOf(a.date);
+        // `a.date` IS Strava's start_date_local — a local wall time tagged Z. Keying the day off it
+        // raw credited every afternoon session to TOMORROW for anybody east of UTC.
+        const dk = dayKeyOf(_wallClockZToUtc(a.date));
         if(!dk) return;                     // an activity with no readable date has no day to land on
         freshByDay[dk] = (freshByDay[dk]||0) + Math.round(cals);
       });
@@ -407,7 +409,9 @@ async function syncStravaActivities(){
     // Auto-tick gym habit if there's an activity today
     if(added > 0){
       const today = new Date().toDateString();
-      const hasToday = data.some(a => new Date(a.start_date_local).toDateString() === today);
+      // Same stamp, same shift: an afternoon session read as tomorrow, so the gym habit did not
+      // auto-tick on the day it was actually done.
+      const hasToday = data.some(a => new Date(_wallClockZToUtc(a.start_date_local)).toDateString() === today);
       if(hasToday){
         loadH();
         const gymHabit = habits.findIndex(h => /gym|train|workout|exercise|move/i.test(h.n));

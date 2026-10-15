@@ -374,7 +374,7 @@ if(GOATCOUNTER_CODE && !metricsOff() && !(typeof isNativeApp==='function' && isN
 // Runs on every load. Idempotent, versioned migrations so a future release can change a data
 // shape without ever corrupting the data already on a user's device. Bump CURRENT_SCHEMA and add
 // a numbered step. Each step must be safe to run on data that's already been migrated.
-const CURRENT_SCHEMA = 1;
+const CURRENT_SCHEMA = 2;
 // Throttled, anonymous error logging (Phase 0). Lets the dev see if a release is breaking for real
 // users, via the existing app_events pipeline. NEVER logs personal data — only the error message,
 // source file/line, and a count. Max a few per session so one looping error can't spam the table.
@@ -404,7 +404,23 @@ function runSchemaMigrations(){
         }
       }catch(_){ }
     }
-    // (future steps: if(v < 2){ ... } etc.)
+    // v1 → v2: repair the identity sentence somebody is ALREADY being greeted with.
+    // Four independent writers prefixed "I am becoming a person who " onto whatever they were
+    // handed, so a first-person answer became "...a person who I am disciplined", the app's own
+    // "...keeps their promises" placeholder became a mid-sentence ellipsis, and a typed capital
+    // stayed mid-sentence. Fixing the writers only helps the NEXT time somebody types; this is the
+    // line on their Home screen today. _identitySentence is idempotent and repairs in place, so a
+    // correct sentence is written back unchanged and this runs at most once.
+    if(v < 2){
+      try{
+        const cur = ls('totry_identity');
+        if(cur && typeof _identitySentence === 'function'){
+          const fixed = _identitySentence(cur);
+          if(fixed && fixed !== cur) ls('totry_identity', fixed);
+        }
+      }catch(_){ }
+    }
+    // (future steps: if(v < 3){ ... } etc.)
     ls('totry_schema', CURRENT_SCHEMA);
   }catch(e){ /* never let a migration break boot */ console.warn('migration skipped', e); }
 }
