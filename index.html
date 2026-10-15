@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v635';
+const APP_VERSION = 'v636';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -31776,6 +31776,18 @@ function updateTrackerDisplay(){
   syncWeightTodayRow();
 }
 
+// A MICRO SHOWN AND THEN DROPPED. `searchFoodWeb` mapped the model's reply with `cal`/`pro`/`carb`/
+// `fat` through Math.round and wrote `fiber`/`sugar`/`sodium` RAW beside them — and a model commonly
+// quotes its numbers ("fiber":"10"). The serving sheet's `currentFood.fiber > 0` coerces, so the
+// person was SHOWN "Fibre 10g"; `addFood`'s `typeof currentFood[k] === 'number'` guard does not, so
+// the diary row was written without it. Measured: shown 10g, counted 0, day total 8.5 against a
+// true 18.5 — and `nourishmentScore` then told them fibre was where the day was light, about the
+// fibre it had displayed one tap earlier. Nothing was broken on screen, which is why no check saw it.
+// Returns a finite, non-negative number or 0, so "N/A" and null cannot become NaN in a total.
+function _microNum(v){
+  const n = Number(v);
+  return (Number.isFinite(n) && n > 0) ? Math.round(n * 10) / 10 : 0;
+}
 // ── NUTRITION ─────────────────────────────────────────────────
 // ── THIRD-PARTY CREDENTIALS LIVE ON THE SERVER, NOT HERE ─────────────────────────────────────────
 // index.html is one public file on GitHub Pages, so anything in it is readable by anyone who views
@@ -33763,7 +33775,7 @@ async function searchFoodOnline(query){
           brand: (p.brand ? p.brand+' · ' : '') + 'web' + (p.found===false?' (closest match)':''),
           cal: Math.round(p.cal||0), pro: Math.round((p.pro||0)*10)/10,
           carb: Math.round((p.carb||0)*10)/10, fat: Math.round((p.fat||0)*10)/10,
-          fiber: p.fiber||0, sugar: p.sugar||0, sodium: p.sodium||0,
+          fiber: _microNum(p.fiber), sugar: _microNum(p.sugar), sodium: _microNum(p.sodium),
           source: 'Web',
           servings: [{ name: p.serving || '1 serving', cal: Math.round(p.cal||0), pro: p.pro||0, carb: p.carb||0, fat: p.fat||0 }]
         };
@@ -33772,7 +33784,7 @@ async function searchFoodOnline(query){
         window.__lastWebFood = (p.found!==false) ? {
           name: (p.name||query), brand: p.brand||'', serving: p.serving||'1 serving',
           cal: Math.round(p.cal||0), pro: p.pro||0, carb: p.carb||0, fat: p.fat||0,
-          fiber: p.fiber||0, sugar: p.sugar||0, sodium: p.sodium||0, per100: false, verified: true
+          fiber: _microNum(p.fiber), sugar: _microNum(p.sugar), sodium: _microNum(p.sodium), per100: false, verified: true
         } : null;
         openServingModal(food);
         return;
@@ -35736,8 +35748,14 @@ function addFoodToLog(){
     ? (s.gramsEquiv * qty / 100)
     : qty;
   MICRO_KEYS.forEach(k => {
-    if(typeof currentFood[k] === 'number' && currentFood[k] > 0){
-      entry[k] = Math.round(currentFood[k] * microMult * 100) / 100;
+    // COERCE, DO NOT DROP. This read `typeof currentFood[k] === 'number'`, so a micro that arrived
+    // as a string — which the model path did for fiber/sugar/sodium — was silently left out of the
+    // diary row AFTER the serving sheet had already shown it. Fixing only the producer would leave
+    // the next producer free to do it again, so the sink coerces too; _microNum rejects NaN, so
+    // "N/A" still cannot poison a day total.
+    const _mv = _microNum(currentFood[k]);
+    if(_mv > 0){
+      entry[k] = Math.round(_mv * microMult * 100) / 100;
     }
   });
   

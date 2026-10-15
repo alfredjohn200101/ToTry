@@ -9064,7 +9064,10 @@ H.section('the food search can feed a recipe, and cannot leak into tomorrow\'s d
     let reopened = false;
     const win = { __editingRecipeIdx:-1, __recipeSearch: opts.armed };
     if(opts.recipeOpen) win.__editingRecipe = rec;
-    const fns = H.load(['addFoodToLog'], {
+    // _microNum travels WITH addFoodToLog: H.load extracts functions BY NAME, so a helper the
+    // function under test now calls is absent unless it is named here — and an absent helper
+    // throws from inside the real code path, which is this repo's recorded H.load trap.
+    const fns = H.load(['addFoodToLog', '_microNum'], {
       window: win, currentFood, NUTRIENTS,
       document: { getElementById: el, querySelector: () => null },
       ls: (k, v) => (v === undefined ? (k === 'totry_nutlog' ? log : null) : (k === 'totry_nutlog' ? Object.assign(log, v) : v)),
@@ -16232,5 +16235,54 @@ H.section('the privacy policy counts its own doors');
     .readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8')),
     'and named in privacy.html too');
 }
+
+
+H.section('a micro it showed you is a micro it counts');
+{
+  // THE OWNER REPORTED "fibre and fat totals don't add up", and a peer session read it as staleness
+  // — five of his reports were said to be already fixed in v635 with his live app simply behind.
+  // Driven against the real functions, that was FALSE here: the path is BYTE-IDENTICAL in v601 and
+  // v635, so upgrading changed nothing. The real defect: `searchFoodWeb` mapped the model's reply
+  // with cal/pro/carb/fat through Math.round and wrote fiber/sugar/sodium RAW beside them. A model
+  // commonly quotes its numbers ("fiber":"10"). The serving sheet's `currentFood.fiber > 0` coerces
+  // a string, so the person was SHOWN "Fibre 10g"; addFood's `typeof === 'number'` guard does not,
+  // so the diary row was written WITHOUT it. Measured before the fix: shown 10, counted 0, day
+  // total 8.5 against a true 18.5 — and nourishmentScore then said fibre was where the day was
+  // light, about the fibre it had displayed one tap earlier.
+  // Nothing rendered wrong, nothing threw, every id existed. The signature silent failure.
+  const L = H.load(['_microNum']);
+
+  H.eq(L._microNum('10'), 10, 'a quoted number from a model is a number — the shape that caused this');
+  H.eq(L._microNum('22.46'), 22.5, 'and it is rounded the same way the macros beside it are');
+  H.eq(L._microNum(7), 7, 'a real number passes through');
+  H.eq(L._microNum('N/A'), 0, 'but "N/A" becomes 0, never NaN — one NaN poisons a whole day total');
+  H.eq(L._microNum(null), 0, 'and null');
+  H.eq(L._microNum(-3), 0, 'and a negative micro, which is not a thing a food has');
+
+  // THE INVARIANT, stated as the thing that was violated: what the sheet SHOWS and what the diary
+  // COUNTS must be the same number. Drive both halves with the shipped guards.
+  const shown = (f) => (f.fiber > 0 ? Number(f.fiber) : 0);          // the serving sheet's test
+  const counted = (f) => { const mv = L._microNum(f.fiber); return mv > 0 ? mv : 0; };  // the sink
+  [['10', 10], [10, 10], ['0', 0], ['N/A', 0], [8.5, 8.5]].forEach(([raw, want]) => {
+    const food = { fiber: L._microNum(raw) };
+    H.eq(counted(food), want, 'a food whose model reply said ' + JSON.stringify(raw) + ' counts ' + want);
+    H.eq(shown(food), counted(food),
+      'and what the sheet shows equals what the day counts for ' + JSON.stringify(raw) +
+      ' — the invariant the owner actually noticed being broken');
+  });
+
+  // BOTH ENDS ARE HELD. Fixing only the producer leaves the next producer free to do it again, so
+  // the sink coerces too. Comment-stripped: the explanation above names the old guard.
+  const src = H.code(H.html);
+  H.ok(/fiber: _microNum\(p\.fiber\), sugar: _microNum\(p\.sugar\), sodium: _microNum\(p\.sodium\)/.test(src),
+    'the model-reply mapping coerces its micros, the way cal/pro/carb/fat already did');
+  H.eq((src.match(/fiber: _microNum\(p\.fiber\)/g) || []).length, 2,
+    'at BOTH mapping sites — there are two, and fixing one is the half-applied shape');
+  H.ok(!/typeof currentFood\[k\] === 'number'/.test(src),
+    'and the sink no longer DROPS a micro that is not already a number');
+  H.ok(/const _mv = _microNum\(currentFood\[k\]\);/.test(src),
+    'it coerces it instead');
+}
+
 
 H.report();
