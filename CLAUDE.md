@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v625**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v635**. Bump it AND `CACHE` in sw.js together, always.
   (This line restates a mutable fact, which this file records as its own failure mode — `grep APP_VERSION
   src/app/00-boot.js` is the source of truth if it has drifted again.)
 
@@ -161,7 +161,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 4114 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 4225 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -1556,7 +1556,7 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      pulling at me right now →"*, which a reviewer facing an email-code wall will not read as
      "skip sign-in". That is a 2.1 rejection waiting to happen, so `APP-REVIEW-NOTES.md` carries the
      paste-ready note naming the button.
-   - `npm run crisis` — **56 doors as of 12 Oct 2026, and it now also asserts WHICH CARD.** The three
+   - `npm run crisis` — **57 doors as of 14 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and
      then, 64 lines later in the same body, auto-opens `openVicePlan` on a 220ms timer with every
@@ -1621,6 +1621,69 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      the identical sentence with the box left blank got the full response. A validation rule must
      never be able to outrank a disclosure — and this door was not in this list, which is how it
      shipped. When you add a free-text surface, add its door here the same day.
+   - **AND THE APP READ A LEDGER IT REFUSED TO WRITE TO (v633, 15 Oct 2026).** `02-native.js:217`
+     queries Apple Health for `mindfulness` and `openBreathMenu` renders it as *"N min of stillness
+     this week · across all your apps"* — while `HealthWritePlugin.writeTypes` requested three types
+     and never `.mindfulSession`. Somebody who breathed here ten times saw a weekly figure counting
+     none of them. The half-applied shape this file names over and over, pointing OUTWARD for once:
+     the app took stillness from every other app and gave none back, in the realm the product says
+     the rest grows from. Nearly free — `NSHealthUpdateUsageDescription` was already in the plist.
+     The mirror lives in `_breathLog`, the SINGLE sink, for the same reason v630 put the recording
+     there; both log paths carry the duration, and the test asserts BOTH rather than counting,
+     because `askAfter()` — the path somebody breathing mid-urge takes — is the one forgotten last
+     time. Duration is the PROTOCOL's own length, not wall-clock: `finish()` is only reachable once
+     every cycle has run, and a session backgrounded halfway still guided exactly those breaths.
+     **A BOOLEAN CANNOT TELL "not asked" FROM "said no"** — the toggle stores one flag, so anybody
+     who enabled the mirror before a write type existed reads "On" while iOS has never been asked and
+     every write of it resolves not-authorized, the silent-no-op shape. `status()` reports
+     granted/denied/undetermined per type and the row offers ONCE, for an undetermined type only.
+     Driven end to end on the simulator, not grepped: iOS's own sheet listed Mindful Minutes, a
+     Settle session from the Soul tab produced ONE `category_samples` row of exactly 80 seconds
+     attributed in `sources` to ToTry (quantity_samples and workouts both empty, so of the four
+     granted types only the mindful one could have made it), and the app's own line then rendered
+     "1 min of stillness this week". **And the store lied once on the way**: localStorage showed no
+     `totry_mindful_week`, which reads exactly like a dead read path — it was a stale snapshot,
+     because `simctl terminate` is a SIGKILL and WebKit had not flushed. Read the SCREEN, not the disk.
+   - **AND A DOC THAT ONLY DESCRIBES BEHAVIOUR WENT STALE A THIRD TIME — THIS TIME IT WAS A PROMISE
+     (15 Oct 2026).** Caught by an adversarial pre-deploy audit before publishing 216 commits to the
+     live PWA: 17 agents, six lenses, five findings refuted, one survived and was then verified by
+     hand. It was not a code defect. `privacy.html` and `showPrivacyPolicy()` both say *"five things
+     can send an image, and ALL OF THEM go to whichever vision model answers first"* and then
+     enumerate five — a CLOSED SET, which is a promise a person can check. `handleRecipeScreenshot`
+     ("Use a screenshot instead", on the recipe sheet) posts a downscaled JPEG to the vision chain
+     and is ABSENT from origin/main. Counted rather than recalled: `image_base64` call sites 7 → 8.
+     So the deploy would have made a published privacy statement false with nothing wrong in the
+     code, which is exactly why no check could see it — **the PROSE was the defect.**
+     Two more fell out of it. The copies disagreed about WHO receives the image: privacy.html named
+     five providers, the in-app copy named two, and `supabase/functions/ai-proxy`'s vision chain
+     reaches exactly the five — so the one a live PWA user actually reads was the wrong one.
+     (privacy.html is never hyperlinked from the app; it is the App Store listing URL. The copy a
+     person reads is the hardcoded duplicate in `showPrivacyPolicy()`.) And `APP-PRIVACY.md` said
+     *"the food camera is the only photo path"*, which was never true — the policy beside it had
+     said five since 10 Oct. The App Store ANSWER is unchanged (Photos: Yes/collected/linked — the
+     question asks whether photos leave the device, not through how many doors), but the reasoning
+     under it was wrong.
+     **SO THE GATE COUNTS THE DOORS NOW.** A ratchet pins the bundle's `image_base64` count and
+     requires both policy copies to state the same number word and to name the newest path; adding
+     an image path goes red naming the three files to edit. Fault-injected both ways. **An
+     enumeration in user-facing copy is an artefact the gate can compare, not prose to be trusted.**
+     And an existing assertion went RED ON CORRECTED COPY — it read `/OpenRouter as a fallback/` and
+     broke when the recipient list was widened to the true five. Assert the FACT, not the phrasing;
+     this file already records that trap and it still cost a run.
+   - **AND THE TEST FOR A TIMEZONE BUG WAS A TAUTOLOGY ON ANY UTC HOST (15 Oct 2026).** v634 fixed a
+     real one: a Hevy→Strava bridge copy stores `start_date_LOCAL` tagged with a Z while every direct
+     row stores true UTC, so one session's two rows sit the user's whole offset apart (~10h in AU)
+     and the ±90-minute dedup never fired — the session showed twice in the timeline and its
+     calories counted twice in Nourish. It "worked" only within 90 minutes of UTC.
+     The test derived its fake Strava copy from the HOST's own offset, so on a UTC machine `off===0`
+     makes the copy identical to the direct row and **the positive case passes with the fix
+     REVERTED**. Measured: TZ=UTC reverted → still true; TZ=Australia/Melbourne reverted → false. A
+     real test on the author's machine and an unfalsifiable one on CI — the inverse of the recorded
+     date bomb, and worse, because it fails OPEN instead of going red. The zone is PINNED for the
+     block (Node honours a runtime `process.env.TZ` change) with a calibration asserting the pin
+     took, and the fault injection runs INLINE. Proven by reverting the correction under TZ=UTC:
+     4217 passed / 1 failed, where the old test stayed green.
+     **Never derive a test's timezone from the host it happens to run on.**
    - `npm run personas` — 566 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
@@ -1740,6 +1803,33 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
    `npm run preflight` checks
    all of it — the repo has already sat four versions ahead of the iOS bundle without anyone seeing.
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
+   - **A HUNG NODE SUITE AND A BUFFERED ONE LOOK IDENTICAL (15 Oct 2026).** Node block-buffers stdout
+     to a FILE, so a browser suite in progress writes zero bytes — which is also exactly what a
+     starved one writes. The process is alive in both cases, so `pgrep` says "working" in both cases,
+     and `npm run crisis` was reported here as "alive and working, just buffering" while it had been
+     up **5h31m and burned 15 seconds of CPU with no browser running at all.** The separator is CPU
+     TIME, not liveness: `ps -o etime,time -p <pid>`. The cause was memory — swap 7516M of 8192M,
+     8.7M pageouts, with the iOS Simulator and Xcode's build output still resident. Shutting the
+     simulator down took swap to 4961M and the same suite then ran to 57/57 green.
+     So before declaring EITHER a hang or progress: read CPU time, count real browser processes
+     (`ps aux | grep -c '[m]s-playwright'` — `pgrep -i chrom` counts the owner's Chrome, which this
+     file already records), and check swap. And a killed run ORPHANS its port, so restart on a fresh
+     `PORT=`.
+   - **AND AGENTS WRITE INTO THE REPO, AGAIN (15 Oct 2026).** `.tmp-review/` — six playwright scratch
+     files — was swept in by `git add -A` at `7ff4bdd`, absent from origin/main, so the first push to
+     main would have PUBLISHED them. This file already records the same thing happening with
+     `test/_probe39.js`, which is why the directory is gitignored now rather than just deleted: a
+     rule nobody can forget beats a rule written down twice. Two review refuters called this one
+     refuted ("not newly committed") and were wrong on what mattered — not new to the BRANCH, but
+     new to what the public would see. **Ask "new to origin/main", not "new to this commit".**
+   - **THE BRANCH LIST ITSELF WAS A HAZARD (15 Oct 2026).** 37 local branches, 35 of them debris from
+     past multi-agent workflow runs and already ancestors of `ios-native`. The 36th was not:
+     `8bb5da3`, carrying the entirely plausible message *"v602 — the day key was a locale formatter,
+     so one day was two keys and two phones were two diaries"*. That is the REFUTED round this file
+     records as having *"erased 2000ml of logged water and a whole tracker day"*; the fix that shipped
+     is v607. A true-sounding commit message on an abandoned branch is how a reverted defect gets
+     re-merged a year later, so it is named `REFUTED-day-key-round2-DO-NOT-MERGE` now. Keep the
+     branch, never the innocent name.
    - **Read the whole gate BEFORE `git push`, not after.** v542 went out with `npm run panels` red
      because the output was read after the push.
    - **CALIBRATE THE INSTRUMENT, AND SAY SO WHEN IT FAILS.** A contrast probe built from computed
