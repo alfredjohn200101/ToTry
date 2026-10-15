@@ -3859,10 +3859,32 @@ function openServingModal(food){
       cal:(food.cal||0)/100, pro:(food.pro||0)/100, carb:(food.carb||0)/100, fat:(food.fat||0)/100 });
   }
   if(!food.per100 && food.servings && !food.servings.some(x => x && x.__gram)){
+    // A FOOD WITH NO "100 g" SERVING COULD NOT BE WEIGHED AT ALL. This was guarded on finding a
+    // serving literally named "100 g", and did nothing, silently, when there wasn't one. The
+    // reachable producer is saveCustomFood(), whose serving is a FREE-TEXT box — so a person's own
+    // food was gram-loggable only if they happened to type "100g" into it. The curated table is
+    // immune (_buildCommonFood appends a 100 g row) and USDA/barcode foods are immune (per100), so
+    // the one food shape this hit was the one the person made themselves.
+    // Any serving that NAMES a weight carries the same information, so derive from that instead:
+    // "1 scoop (30g)" gives per-gram macros just as well as a 100 g row does.
     const hg = food.servings.find(x => x && /100\s*g/i.test(x.name || ''));
-    // Same as the per-100 path: weighing it should mean typing the real number, not a fraction \u2014
+    let base = hg, per = 100, unit = 'Grams';
+    if(!base){
+      for(let i = 0; i < food.servings.length; i++){
+        const sv = food.servings[i];
+        const m = (sv && sv.name || '').match(/([\d.]+)\s*(g|ml)\b/i);
+        const n = m ? parseFloat(m[1]) : 0;
+        if(n > 0){ base = sv; per = n; unit = (m[2] || 'g').toLowerCase() === 'ml' ? 'Millilitres' : 'Grams'; break; }
+      }
+    }
+    // Still nothing? Then the food carries no weight anywhere and a gram option would be a guess.
+    // Same as the per-100 path: weighing it should mean typing the real number, not a fraction —
     // so this sits right after the product's own serving instead of last, and says what it does.
-    if(hg){ food.servings.splice(1, 0, {__gram:true, __exact:true, gramsEquiv:1, name:'Grams \u2014 type the exact amount', cal:(hg.cal||0)/100, pro:(hg.pro||0)/100, carb:(hg.carb||0)/100, fat:(hg.fat||0)/100}); }
+    if(base && per > 0){
+      food.servings.splice(1, 0, {__gram:true, __exact:true, gramsEquiv:1,
+        name: unit + ' — type the exact amount',
+        cal:(base.cal||0)/per, pro:(base.pro||0)/per, carb:(base.carb||0)/per, fat:(base.fat||0)/per});
+    }
   }
   // SAFETY NET: guarantee every serving carries macros. Web/AI/community foods sometimes arrive
   // with flat top-level macros but servings missing cal/pro/carb/fat — which showed as all-ZEROS

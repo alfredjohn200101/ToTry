@@ -16426,4 +16426,26 @@ H.section('a wall-clock stamp tagged Z lands on the day it happened');
   if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
 }
 
+
+H.section('a food you made yourself can be weighed');
+{
+  // A FOOD WITH NO "100 g" SERVING COULD NOT BE WEIGHED AT ALL, silently. The gram option was
+  // guarded on finding a serving literally NAMED "100 g" and, when there wasn't one, did nothing
+  // and said nothing. The curated table is immune (_buildCommonFood appends a 100 g row) and
+  // USDA/barcode foods are immune (per100:true) — so the one shape this hit was saveCustomFood(),
+  // whose serving is a FREE-TEXT box. A person's own food was gram-loggable only if they happened
+  // to type "100g" into it. It parses, every id exists, the suite was green, and it did nothing.
+  const src = H.code(H.html);
+  H.ok(/let base = hg, per = 100, unit = 'Grams';/.test(src),
+    'the gram option no longer requires a serving literally named "100 g"');
+  H.ok(/match\(\/\(\[\\d\.\]\+\)\\s\*\(g\|ml\)\\b\/i\)/.test(src),
+    'it derives the weight from any serving that NAMES one — "1 scoop (30g)" carries the same ' +
+    'information a 100 g row does');
+  H.ok(/unit \+ ' \\u2014 type the exact amount'|unit \+ ' — type the exact amount'/.test(src),
+    'and the label follows the unit, so a drink offers millilitres rather than grams');
+  H.ok(/if\(base && per > 0\)\{/.test(src),
+    'and a food that names no weight ANYWHERE still gets no gram option — inventing one would ' +
+    'be a guess at what the person ate');
+}
+
 H.report();
