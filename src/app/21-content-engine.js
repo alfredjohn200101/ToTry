@@ -134,7 +134,7 @@ function getUnifiedTraining(){
   const _primaryLifts = lifts.filter(l => !l.fromStrava);
   const liftsDeduped = lifts.filter(l => {
     if(!l.fromStrava) return true;
-    return !_primaryLifts.some(p => p.kind === 'strength' && _sessionsOverlap(p.ts, l.ts, 90));
+    return !_primaryLifts.some(p => p.kind === 'strength' && _bridgedSessionMatch(p.ts, l.ts));
   });
   const cardio = (ls('totry_strava_activities') || []).map(a => ({
     id: 'strava_' + a.id,

@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v633';
+const APP_VERSION = 'v634';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -43417,6 +43417,22 @@ function _sessionsOverlap(aTs, bTs, minutes){
   if(!aTs || !bTs) return false;
   return Math.abs(new Date(aTs).getTime() - new Date(bTs).getTime()) <= minutes*60000;
 }
+// A Hevy->Strava "bridge" copy (id 'stravahevy_...') stores Strava's start_date_LOCAL — wall-clock time
+// mislabelled with a Z — while every DIRECT row (Hevy API, manual, watch) stores the true UTC instant.
+// So one real session's two rows sit ~the user's UTC offset apart (~10-11h in AU), and a plain +/-90min
+// overlap never matches them: the de-dup "worked" only within 90 min of UTC. _bridgeCopyToUtc corrects the
+// copy back to true UTC (using its OWN date's offset, so DST is handled), and _bridgedSessionMatch is the
+// one helper both de-dup consumers use so they cannot drift. It is only ever asked to match a bridge copy
+// against a PRIMARY row, so a free user whose only row IS the bridge copy has nothing to match and is kept.
+function _bridgeCopyToUtc(copyTs){
+  try{ const d = new Date(copyTs); const t = d.getTime(); return isNaN(t) ? copyTs : t + d.getTimezoneOffset()*60000; }catch(_){ return copyTs; }
+}
+function _bridgedSessionMatch(primaryTs, copyTs){
+  // primaryTs is already true UTC; normalise the copy, then a TIGHT 90-min window means we only merge
+  // rows at the SAME real instant — a session cannot be two different sessions at once, so no title
+  // heuristic is needed and two genuinely-separate sessions never merge.
+  return _sessionsOverlap(primaryTs, _bridgeCopyToUtc(copyTs), 90);
+}
 // ═══════════════════════════════════════════════════════════════════
 // TRAINING INTELLIGENCE (WS1) — central helpers used everywhere: manual
 // logging, Hevy sync, exercise history, the coach. One source of truth so
@@ -44891,7 +44907,7 @@ function getUnifiedTraining(){
   const _primaryLifts = lifts.filter(l => !l.fromStrava);
   const liftsDeduped = lifts.filter(l => {
     if(!l.fromStrava) return true;
-    return !_primaryLifts.some(p => p.kind === 'strength' && _sessionsOverlap(p.ts, l.ts, 90));
+    return !_primaryLifts.some(p => p.kind === 'strength' && _bridgedSessionMatch(p.ts, l.ts));
   });
   const cardio = (ls('totry_strava_activities') || []).map(a => ({
     id: 'strava_' + a.id,
@@ -59498,7 +59514,7 @@ function recomputeWorkoutBurns(){
       if(w.source === 'strava') return;                 // genuine Strava cardio counted via its own ledger
       // A Hevy session pushed to Strava and converted back (via:'strava') is the SAME session as its
       // direct Hevy import — count it once. Skip the copy only when a direct import overlaps in time.
-      if(w.via === 'strava' && direct.some(d => d.id !== w.id && _sessionsOverlap(d.ts, w.ts, 90))) return;
+      if(w.via === 'strava' && direct.some(d => d.id !== w.id && _bridgedSessionMatch(d.ts, w.ts))) return;
       const cal = _burnForWorkout(w);
       if(cal <= 0) return;
       const dk = dayKeyOf(w.ts);

@@ -24,7 +24,7 @@ function recomputeWorkoutBurns(){
       if(w.source === 'strava') return;                 // genuine Strava cardio counted via its own ledger
       // A Hevy session pushed to Strava and converted back (via:'strava') is the SAME session as its
       // direct Hevy import — count it once. Skip the copy only when a direct import overlaps in time.
-      if(w.via === 'strava' && direct.some(d => d.id !== w.id && _sessionsOverlap(d.ts, w.ts, 90))) return;
+      if(w.via === 'strava' && direct.some(d => d.id !== w.id && _bridgedSessionMatch(d.ts, w.ts))) return;
       const cal = _burnForWorkout(w);
       if(cal <= 0) return;
       const dk = dayKeyOf(w.ts);

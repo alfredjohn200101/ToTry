@@ -16141,4 +16141,48 @@ H.section('stillness reaches the ledger it was already reading from');
     'and the row only offers for a type iOS has not been asked about');
 }
 
+// ── THE HEVY->STRAVA BRIDGE DE-DUP IS TIMEZONE-INVARIANT (v634) ────────────────────────────────
+// A free Hevy user gets full set detail by letting Hevy auto-post to Strava; To Try reconstructs the
+// session as a 'stravahevy_' workout. A Hevy-Pro user ALSO gets a direct import of the same session,
+// so the two must de-dup. The copy carries Strava's start_date_LOCAL (wall-clock tagged Z); the direct
+// row carries true UTC. So one real session's two timestamps sit ~the user's UTC offset apart (~10h in
+// AU) and the old +/-90min overlap missed them for everyone outside UTC — the session doubled in the
+// timeline AND its calories doubled in Nourish. _bridgedSessionMatch corrects the copy to true UTC first.
+// Measured on an AU host (GMT+1000) so reverting the fix turns the positive case red; the negative and
+// fail-safe cases are timezone-independent, and the source checks hold both consumers to the one helper.
+{
+  // THE HOST'S OWN ZONE CANNOT BE THE TEST'S ZONE. Derived from the host offset, this block is a
+  // NO-OP on a UTC machine: off===0 makes the "Strava copy" identical to the direct row, so the
+  // positive case passes with the fix REVERTED and the assertion can never fail. Measured both ways
+  // — TZ=UTC: reverted still true; TZ=Australia/Melbourne: reverted false. So the zone is PINNED to
+  // a non-UTC one for the duration, which is the only thing that makes this a test rather than a
+  // tautology on CI, and restored afterwards so nothing downstream inherits it.
+  const _tzWas = process.env.TZ;
+  process.env.TZ = 'Australia/Sydney';
+  const F = H.load(['_bridgedSessionMatch', '_bridgeCopyToUtc', '_sessionsOverlap']);
+  const directUtc = '2026-07-15T03:00:00.000Z';                        // the session's true instant
+  const off = new Date(directUtc).getTimezoneOffset();                 // pinned offset at that date (min)
+  H.ok(off !== 0,
+    'calibration: the zone is pinned to a non-UTC one (' + off + ' min), so a timezone-blind ' +
+    'overlap genuinely fails the positive case below instead of passing by coincidence');
+  const asLocalZ = (iso) => new Date(new Date(iso).getTime() - off * 60000).toISOString(); // what Strava stores
+  H.ok(F._bridgedSessionMatch(directUtc, asLocalZ(directUtc)) === true,
+    'a Hevy->Strava bridge copy de-dups against its direct UTC import regardless of timezone');
+  H.ok(F._bridgedSessionMatch(directUtc, asLocalZ('2026-07-15T06:00:00.000Z')) === false,
+    'two sessions 3h apart in real time never merge — the fix does not over-apply');
+  H.ok(F._bridgedSessionMatch(directUtc, 'not-a-date') === false,
+    'a malformed copy timestamp fails safe (false), never throws');
+  const code = H.code(H.html);
+  H.ok(/_primaryLifts\.some\(p => p\.kind === 'strength' && _bridgedSessionMatch\(p\.ts, l\.ts\)\)/.test(code),
+    'the unified-timeline de-dup routes through _bridgedSessionMatch, not a timezone-blind overlap');
+  H.ok(/direct\.some\(d => d\.id !== w\.id && _bridgedSessionMatch\(d\.ts, w\.ts\)\)/.test(code),
+    'the burn-ledger de-dup routes through it too, so a Hevy session is not counted twice in Nourish');
+  // AND THE TIMEZONE-BLIND VERSION MUST FAIL THE SAME CASE — the fault injection, run inline rather
+  // than claimed in a comment, so this block proves the correction is what does the work.
+  H.ok(F._sessionsOverlap(directUtc, asLocalZ(directUtc), 90) === false,
+    'fault-injected: the OLD timezone-blind overlap misses this very pair, which is the bug — ' +
+    'one session showing twice in the timeline and its calories counted twice in Nourish');
+  if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+}
+
 H.report();
