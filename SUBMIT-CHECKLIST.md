@@ -1,5 +1,41 @@
 # Submit — the exact steps and the exact answers
 
+
+---
+
+## ▶▶ CURRENT STATE — 15 Oct 2026 — BUILD 10, v635. READ THIS FIRST.
+
+**Everything below this block is HISTORY.** It still opens with "BUILD 9 — v600 — READY TO
+ARCHIVE", which was true once and has been false for 35 versions. This doc calls itself the live
+record, which is exactly why a stale line at the top is dangerous — the same failure this repo has
+now recorded three times.
+
+**The live PWA is deployed.** `origin/main` served **v601** until today while all the work sat on
+`ios-native`; it is now **v635**, verified by fetching the site rather than by trusting the push
+(service worker installs and activates, 14/14 CORE assets precached, helplines on the sign-in
+screen with no account, guest door works). Everything from October reached users in that one
+push — the 57 gated crisis doors, all three risk registers, the eleven devotional false positives,
+and the union card that calls an ambulance for an overdose instead of listing only helplines.
+
+**The archive is BUILD 10 at v635**, not build 9:
+`~/Library/Developer/Xcode/Archives/2026-10-15/ToTry-v635-build10.{xcarchive,ipa}`.
+Verified out of the IPA, never the archive — Apple Distribution: Alfred John (L4BD53PLVF),
+`get-task-allow=false`, `beta-reports-active=true`, 1.0 build 10, arm64 only, PrivacyInfo present,
+web bundle byte-identical to the repo (`3578137e88e5`). `npm run preflight` clean, **no warnings**.
+
+**Why 10 and not 9:** only App Store Connect knows whether 9 was ever uploaded, nothing local can
+tell you, a number it has already seen is a rejection, and skipping one costs nothing. The
+v625/build9 pair is in `~/Library/Developer/Xcode/ToTry-superseded-archives/`, kept not deleted.
+
+**Gate at this archive:** `npm test` 4225/0 · `npm run crisis` 57/57 doors dialable and 53 ordinary
+sentences left alone · `npm run personas` 566/0 · `npm run engines` 0 of 365 days forked ·
+`npm run panels` 0 failures · `npm run preflight` clean.
+
+**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).**
+
+**The upload click is the owner's.** Nothing here uploads anything.
+
+---
 Everything on the code side is done and **verified against a real Release archive** (Xcode 26.6,
 `ARCHIVE SUCCEEDED`). What's below is only the GUI work, which needs your hands and your Apple ID.
 
