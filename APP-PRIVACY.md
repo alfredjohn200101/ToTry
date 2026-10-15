@@ -85,7 +85,16 @@ Purpose: **App Functionality**.
 > with third parties. Be ready to say that in the review notes.
 
 ### User Content → Photos or Videos — collected, linked
-**Added 10 Oct 2026.** The food camera is the only photo path, and it does transmit. `downscaleImage`
+**Added 10 Oct 2026. Corrected 15 Oct 2026 — "the only photo path" was never true, and this is the
+THIRD time a doc that merely DESCRIBES behaviour has gone stale underneath it.** There are **six**
+user-facing image paths, not one, and every one of them transmits: a form check, a meal photo, a
+barcode/package photo when the scanner cannot read the code, a workout screenshot, a smart-scale
+screenshot, and a recipe screenshot (the last added in this release). Counted, not recalled — the
+shipped bundle carries 8 `image_base64` call sites, of which 6 are reachable by a person choosing an
+action. The ANSWER is unchanged (Yes / collected / linked, because the question asks whether photos
+leave the device, not how many doors do it), but the reasoning under it was wrong, and
+`privacy.html` + `showPrivacyPolicy()` both enumerate the set EXHAUSTIVELY — so a new path is a
+copy change in three files or the promise becomes false. `downscaleImage`
 re-encodes the picture at 1280px / quality 0.8 (`src/app/14-nourish.js:1125`), the data URL is split to
 base64 (`:1158`), and that base64 goes to the `ai-proxy` edge function with `action:'vision'`, which
 forwards it to a third-party vision model for a meal estimate. The photo is not stored in Supabase —

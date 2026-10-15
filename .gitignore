@@ -28,3 +28,7 @@ recordings/
 # a `git add -A` during a live run swept eight of them into a commit on 7 Oct 2026.
 test/_*.tmp.js
 test/_*.tmp.mjs
+
+# Review-agent scratch. Agents work in the repo, not a sandbox — this directory
+# exists so `git add -A` cannot sweep their probes into a commit again.
+.tmp-review/

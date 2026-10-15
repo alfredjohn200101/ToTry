@@ -3927,7 +3927,17 @@ function fnBodyOf(code, name){
   H.ok(imageSenders.length >= 3, `found ${imageSenders.length} image senders in the bundle`);
   H.ok(/form check/i.test(H.html), 'the form-check photo — the one with the person in it — is disclosed');
   H.ok(/smart-scale screenshot/i.test(H.html), 'the scale screenshot is disclosed');
-  H.ok(/OpenRouter as a fallback/i.test(H.html), 'and the fallback recipient is named, not just the first one');
+  // ASSERT THE FACT, NOT THE PHRASING. This read /OpenRouter as a fallback/ and went RED on 15 Oct
+  // when the copy was CORRECTED \u2014 the in-app policy had named 2 recipients while the vision chain in
+  // supabase/functions/ai-proxy reaches 5 (gemini, openrouter, mistral, cloudflare, nvidia), so
+  // widening it to the true set broke a test pinned to the narrow wording. The fact worth holding is
+  // that a person is told about more than the FIRST recipient, however that sentence is written.
+  const namedRecipients = ['OpenRouter', 'Mistral', 'Cloudflare', 'NVIDIA'].filter(r =>
+    new RegExp(r, 'i').test(H.html));
+  H.ok(namedRecipients.length >= 1,
+    'a fallback recipient is named, not just the first one (named: ' + namedRecipients.join(', ') + ')');
+  H.ok(/OpenRouter/i.test(H.html),
+    'and OpenRouter specifically, which is the first fallback the vision chain actually reaches');
   // The non-Christian readers fetch live from three third parties; only the Bible was proxied and named.
   for (const host of ['api.alquran.cloud', 'vedicscriptures.github.io', 'suttacentral.net']) {
     H.ok(H.html.includes(host), `${host} is named in the policy — it sees which passage was opened`);
@@ -16183,6 +16193,44 @@ H.section('stillness reaches the ledger it was already reading from');
     'fault-injected: the OLD timezone-blind overlap misses this very pair, which is the bug — ' +
     'one session showing twice in the timeline and its calories counted twice in Nourish');
   if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+}
+
+
+H.section('the privacy policy counts its own doors');
+{
+  // A DOC THAT ONLY DESCRIBES BEHAVIOUR GOES STALE UNDERNEATH IT — three times now in this repo.
+  // Both policy copies enumerate the image paths EXHAUSTIVELY ("six things can send an image, and
+  // ALL OF THEM go to..."), which is a promise a person can check, so adding an image path without
+  // touching the copy makes a published privacy statement false. The recipe screenshot did exactly
+  // that: it shipped while both copies still said five. Nothing in the gate could see it, because
+  // the code was correct and only the PROSE was wrong.
+  // This is a RATCHET, not a cleverness: it pins the number of image-sending call sites in the
+  // shipped bundle. Add one and this goes red with the three files to edit named in the message.
+  const sites = (H.html.match(/image_base64/g) || []).length;
+  H.eq(sites, 8,
+    'the shipped bundle has ' + sites + ' image_base64 call sites. If that moved, a new image path ' +
+    'shipped \u2014 update privacy.html, showPrivacyPolicy() in src/app/27-settings.js AND ' +
+    'APP-PRIVACY.md, then move this number. The policy promises an EXHAUSTIVE list.');
+
+  // Both copies must agree, and must agree with each other — one right and one wrong is the
+  // half-applied shape this repo keeps paying for.
+  const inApp = H.html.match(/(five|six|seven|eight|nine) things can send an image/);
+  H.ok(inApp && inApp[1] === 'six',
+    'the in-app policy a live PWA user reads in Settings says "six things can send an image"');
+  const onSite = require('fs')
+    .readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8')
+    .match(/(five|six|seven|eight|nine) things can send an image/);
+  H.ok(onSite && onSite[1] === 'six',
+    'and privacy.html \u2014 the policy the App Store listing points at \u2014 says the same number');
+  H.ok(inApp && onSite && inApp[1] === onSite[1],
+    'and the two copies agree, so a fix cannot reach one surface and miss the other');
+
+  // The newest door must actually be named in both, not just counted.
+  H.ok(/recipe screenshot/.test(H.html),
+    'the recipe screenshot is named in the in-app policy, not merely counted');
+  H.ok(/recipe screenshot/.test(require('fs')
+    .readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8')),
+    'and named in privacy.html too');
 }
 
 H.report();

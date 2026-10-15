@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v634-one-session-one-row'
+const CACHE = 'totry-v635-the-policy-counts-its-own-doors'
 
 const CORE = [
   './',
