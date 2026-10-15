@@ -12,9 +12,10 @@ import HealthKit
 /// Apple checks that a requested permission is actually used, and beyond the review risk it was simply a
 /// claim the code did not keep.
 ///
-/// This is deliberately narrow. It writes two things, both of which the person explicitly logged:
+/// This is deliberately narrow. It writes three things, each of which the person explicitly did:
 ///   · a workout    — type, start, duration, and energy burned if known
 ///   · a body mass  — a weigh-in
+///   · a mindful session — one completed guided breathing session
 /// It never writes anything inferred, never writes nutrition (the app's calorie figures are estimates and
 /// do not belong in a health record), and never writes on a schedule. One log, one write, at their action.
 ///
@@ -28,7 +29,9 @@ public class HealthWritePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestAuthorization", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveWorkout", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "saveWeight", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "saveWeight", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "saveMindful", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise)
     ]
 
     private let store = HKHealthStore()
@@ -39,6 +42,11 @@ public class HealthWritePlugin: CAPPlugin, CAPBridgedPlugin {
         t.insert(HKObjectType.workoutType())
         if let energy = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) { t.insert(energy) }
         if let mass = HKQuantityType.quantityType(forIdentifier: .bodyMass) { t.insert(mass) }
+        // STILLNESS WENT ONE WAY. `02-native.js` queries Health for `mindfulness` and openBreathMenu
+        // renders it as "N min of stillness this week · across all your apps" — while this set never
+        // contained .mindfulSession, so a breath session taken HERE reached no other app, not even
+        // Health's own summary. The app was reading from a ledger it refused to write to.
+        if let mindful = HKObjectType.categoryType(forIdentifier: .mindfulSession) { t.insert(mindful) }
         return t
     }
 
@@ -140,6 +148,69 @@ public class HealthWritePlugin: CAPPlugin, CAPBridgedPlugin {
         store.save(sample) { ok, err in
             call.resolve(["ok": ok, "reason": err?.localizedDescription ?? ""])
         }
+    }
+
+    /// saveMindful({ startMs, secs }) — one finished guided breathing session.
+    ///
+    /// `secs` is the protocol's own length (cycles × phases), not wall-clock elapsed: a session that sat
+    /// backgrounded mid-way still guided exactly those breaths, and the gap was not stillness. The caller
+    /// only reaches here on a COMPLETED session, so that figure is exact rather than an estimate — which
+    /// is the bar this plugin holds everything else to.
+    @objc func saveMindful(_ call: CAPPluginCall) {
+        guard HKHealthStore.isHealthDataAvailable(),
+              let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession) else {
+            call.reject("Health data unavailable"); return
+        }
+        guard store.authorizationStatus(for: mindfulType) == .sharingAuthorized else {
+            call.resolve(["ok": false, "reason": "not-authorized"]); return
+        }
+        let secs = call.getDouble("secs") ?? 0
+        guard secs >= 20, secs <= 7200 else { call.resolve(["ok": false, "reason": "implausible-duration"]); return }
+
+        let nowMs = Date().timeIntervalSince1970 * 1000
+        let startMs = call.getDouble("startMs") ?? (nowMs - secs * 1000)
+        let start = Date(timeIntervalSince1970: startMs / 1000)
+        let end = start.addingTimeInterval(secs)
+        // A sample ending in the future is rejected by HealthKit anyway; say which thing was wrong.
+        guard end.timeIntervalSince1970 <= (nowMs / 1000) + 60 else {
+            call.resolve(["ok": false, "reason": "future-session"]); return
+        }
+
+        let sample = HKCategorySample(type: mindfulType,
+                                      value: HKCategoryValue.notApplicable.rawValue,
+                                      start: start, end: end)
+        store.save(sample) { ok, err in
+            call.resolve(["ok": ok, "reason": err?.localizedDescription ?? ""])
+        }
+    }
+
+    /// status() — which write types iOS has ACTUALLY granted.
+    ///
+    /// The app stores one boolean for "mirror to Health", so somebody who turned it on before a write
+    /// type existed has it on with that type still undetermined — and every write of it then resolves
+    /// not-authorized while the row says "On". That is the silent-no-op shape, so the row gets to ask.
+    /// Write status is one of the few HealthKit answers iOS reports honestly, which is what makes this
+    /// worth asking rather than inferring.
+    @objc func status(_ call: CAPPluginCall) {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            call.resolve(["available": false, "workout": "unavailable", "weight": "unavailable", "mindful": "unavailable"]); return
+        }
+        // A BOOLEAN CANNOT TELL "not asked yet" FROM "they said no", and the row needs that difference:
+        // one is worth offering, the other is nagging somebody who already answered.
+        func state(_ t: HKObjectType?) -> String {
+            guard let t = t else { return "unavailable" }
+            switch store.authorizationStatus(for: t) {
+            case .sharingAuthorized: return "granted"
+            case .sharingDenied:     return "denied"
+            default:                 return "undetermined"
+            }
+        }
+        call.resolve([
+            "available": true,
+            "workout": state(HKObjectType.workoutType()),
+            "weight": state(HKQuantityType.quantityType(forIdentifier: .bodyMass)),
+            "mindful": state(HKObjectType.categoryType(forIdentifier: .mindfulSession))
+        ])
     }
 
     /// The app's session names are free text ("Push Day", "Indoor Walk", "Leg Day"), so this matches on

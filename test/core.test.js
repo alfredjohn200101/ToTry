@@ -15989,4 +15989,156 @@ H.section('no surface dials a number the app has not verified');
 }
 
 
+H.section('stillness reaches the ledger it was already reading from');
+{
+  // THE MIRROR POINTED INWARDS ONLY. `02-native.js:217` queries Apple Health for `mindfulness` and
+  // `openBreathMenu` renders the answer as "N min of stillness this week · across all your apps" —
+  // while `HealthWritePlugin.writeTypes` requested exactly three types and never `.mindfulSession`.
+  // So the app read a ledger it refused to write to: somebody who breathed here ten times saw a
+  // weekly figure that counted none of them, and no other app — not even Health's own summary —
+  // ever learned they had sat still. That is the owner's own hook, a whole life in one place,
+  // failing in the realm this product says the rest grows from.
+
+  // `const HealthWrite = {…}` is an object literal, not a function, so H.load cannot see it. Slice it
+  // out by brace depth and EXECUTE it — the fact under test is privacy-shaped (it must not write
+  // unless the person turned it on), and this repo has paid for asserting that kind of fact by grep.
+  const src = H.html;
+  const at = src.indexOf('const HealthWrite = {');
+  H.ok(at > 0 && src.indexOf('const HealthWrite = {', at + 1) === -1,
+    'calibration: the HealthWrite object is declared exactly once, so the slice below is unambiguous');
+  let d = 0, end = src.indexOf('{', at);
+  for (let i = end; i < src.length; i++) {
+    if (src[i] === '{') d++;
+    else if (src[i] === '}') { d--; if (d === 0) { end = i; break; } }
+  }
+  const objSrc = src.slice(at, end + 1);
+
+  // One recorded call, so a write is countable rather than inferred.
+  const mkHW = (opts) => {
+    const o = opts || {};
+    const calls = [];
+    const fakeWin = { Capacitor: { isNativePlatform: () => o.native !== false, Plugins: { HealthWrite: {
+      saveMindful: (a) => { calls.push(a); return Promise.resolve({ ok: true }); }
+    } } } };
+    const HW = new Function('ls', 'window', objSrc + ';\nreturn HealthWrite;')(
+      (k) => (k === 'totry_health_write' ? o.on : null), fakeWin);
+    return { HW, calls };
+  };
+
+  const base = mkHW({ on: true });
+  H.defer(base.HW.mindful(80, 1700000000000).then(() => {
+    H.eq(base.calls.length, 1, 'calibration: with the mirror on, a finished session writes one sample');
+    H.eq(base.calls[0] && base.calls[0].secs, 80, 'and it carries the session’s own length in seconds');
+    H.eq(base.calls[0] && base.calls[0].startMs, 1700000000000,
+      'and the moment it started, so Health places it where the person actually sat');
+  }));
+
+  // THE ONE THAT MATTERS. Opt-in, and OFF by default — `enabled()` reads `=== true`, so an unset key
+  // is false rather than falsy-but-maybe. Silently pushing somebody's prayer into a system health
+  // record is not a decision an app gets to make for them.
+  const off = mkHW({ on: undefined });
+  const no  = mkHW({ on: false });
+  const web = mkHW({ on: true, native: false });
+  H.defer(Promise.all([off.HW.mindful(80), no.HW.mindful(80), web.HW.mindful(80)]).then(() => {
+    H.eq(off.calls.length, 0, 'with the key never set, nothing is written — the default is off, not falsy');
+    H.eq(no.calls.length, 0, 'and nothing is written once they turn it off');
+    H.eq(web.calls.length, 0, 'and nothing on the web, where there is no Health to write to');
+  }));
+
+  // Bounds, both sides, and the real sessions sitting inside them.
+  const bnd = mkHW({ on: true });
+  H.defer(Promise.all([bnd.HW.mindful(19), bnd.HW.mindful(7201), bnd.HW.mindful(0), bnd.HW.mindful('x')])
+    .then(() => H.eq(bnd.calls.length, 0,
+      'a 19-second session, a two-hour-plus one, a zero and a non-number are all dropped rather ' +
+      'than written as something the person did not do')));
+
+  // EVERY PROTOCOL CLEARS THE FLOOR. A bound nothing can satisfy is a feature that silently does
+  // nothing — the shape this repo fails builds over — so the floor is measured against the real table.
+  const pAt = src.indexOf('const BREATH_PROTOCOLS = {');
+  let pd = 0, pEnd = src.indexOf('{', pAt);
+  for (let i = pEnd; i < src.length; i++) {
+    if (src[i] === '{') pd++;
+    else if (src[i] === '}') { pd--; if (pd === 0) { pEnd = i; break; } }
+  }
+  const PROTO = new Function(src.slice(pAt, pEnd + 1) + ';\nreturn BREATH_PROTOCOLS;')();
+  const secsOf = (p) => Math.round((p.cycles || 0) * (p.phases || []).reduce((a, ph) => a + (parseFloat(ph.s) || 0), 0));
+  const lens = Object.keys(PROTO).map((k) => secsOf(PROTO[k]));
+  H.ok(lens.length === 9, 'calibration: all nine protocols were read out of the shipped table');
+  H.eq(lens.filter((n) => n < 20 || n > 7200).length, 0,
+    'and every one of them lands inside the bound — none is silently unwritable');
+  H.eq(secsOf(PROTO.settle), 80,
+    'Settle is 8 rounds of 4-in and 6-out = 80s: the protocol’s OWN length, not wall-clock elapsed, ' +
+    'because a session that sat backgrounded halfway still guided exactly those breaths');
+  // The breath prayer swaps words per tradition and keeps its cycles, so every tradition writes 88s.
+  H.eq(secsOf(Object.assign({}, PROTO.prayer, { phases: [{ s: 5 }, { s: 6 }] })), 88,
+    'and the breath prayer measures the same in every tradition — _protoFor swaps the words, not the count');
+
+  // THE SINK, DRIVEN. v630 made every finished session reach `_breathLog` because it was the only
+  // place a session was recorded; the mirror lives there for the same reason, so there is one thing
+  // to keep in step instead of two.
+  const logged = [];
+  const mirrored = [];
+  const L = H.load(['_breathLog'], {
+    ls: (k, v) => { if (v !== undefined) { logged.push(v); return v; } return null; },
+    HealthWrite: { mindful: (secs, startMs) => { mirrored.push([secs, startMs]); } }
+  });
+  L._breathLog({ protocol: 'settle', reason: null, secs: 80, startedAt: 123 });
+  H.eq(mirrored.length, 1, 'a finished session recorded through the sink also reaches Apple Health');
+  H.eq(mirrored[0][0], 80, 'with its own length');
+  H.ok(logged.length === 1 && logged[0][0] && logged[0][0].ts > 0,
+    'and the person’s own log is still written first — Health is the copy, their record is the source');
+  L._breathLog({ protocol: 'settle', reason: null });
+  H.eq(mirrored.length, 1,
+    'while an entry carrying no duration writes nothing — a legacy row must not become a sample');
+
+  // AND IT MUST NEVER BE ABLE TO INTERRUPT THE END OF A BREATHING SESSION.
+  let blew = false;
+  const T = H.load(['_breathLog'], {
+    ls: () => null,
+    HealthWrite: { mindful: () => { throw new Error('Health is on fire'); } }
+  });
+  try { T._breathLog({ protocol: 'settle', secs: 80, startedAt: 1 }); } catch (_) { blew = true; }
+  H.ok(!blew, 'and a Health write that throws is swallowed — the mirror never breaks the moment');
+
+  // BOTH LOG PATHS CARRY IT. This is the exact shape v630 fixed: `_breathLog` was reachable only from
+  // askAfter(), so every breath taken from the Soul tab went unrecorded. Half-applying it again —
+  // mirroring the reasonless path and not the one that asks for a distress score — would mirror only
+  // the Soul tab's sessions and none of the ones taken mid-urge.
+  const ob = H.extractFn('openBreath');
+  const callsInOpenBreath = H.code(ob).match(/_breathLog\(\{[^}]*\}\)/g) || [];
+  H.eq(callsInOpenBreath.length, 2, 'calibration: openBreath logs a session from exactly two places');
+  H.eq(callsInOpenBreath.filter((c) => /secs:/.test(c) && /startedAt:/.test(c)).length, 2,
+    'and BOTH of them pass the duration and the start — the askAfter path is the one that got ' +
+    'forgotten last time, and it is the one a person mid-urge takes');
+  H.ok(/state\.startedAt\s*=\s*Date\.now\(\)/.test(H.code(ob)),
+    'and the start is stamped when the breathing begins, not when the sheet opened');
+
+  // THE PLUGIN HAS TO ASK iOS FOR THE TYPE. Asserted on `writeTypes` ALONE and comment-stripped: the
+  // comment that explains this fix names .mindfulSession, so a whole-file grep passes on a plugin
+  // that requests nothing — the trap this repo records inside the test written to avoid it.
+  const swift = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'ios', 'App', 'App', 'HealthWritePlugin.swift'), 'utf8');
+  const wtAt = swift.indexOf('private var writeTypes');
+  let wd = 0, wtEnd = swift.indexOf('{', wtAt);
+  for (let i = wtEnd; i < swift.length; i++) {
+    if (swift[i] === '{') wd++;
+    else if (swift[i] === '}') { wd--; if (wd === 0) { wtEnd = i; break; } }
+  }
+  const writeTypes = H.code(swift.slice(wtAt, wtEnd + 1));
+  H.ok(/\.mindfulSession/.test(writeTypes),
+    'writeTypes itself requests .mindfulSession — without it every write resolves not-authorized ' +
+    'and the feature is a silent no-op with a green suite over it');
+  H.ok(/saveMindful/.test(H.code(swift).slice(H.code(swift).indexOf('pluginMethods'), H.code(swift).indexOf('private let store'))),
+    'and the method is REGISTERED — an @objc func Capacitor was never told about is unreachable');
+
+  // A BOOLEAN CANNOT TELL "not asked" FROM "said no". The toggle stores one flag, so anybody who
+  // turned the mirror on before this type existed reads "On" while iOS has never been asked — and
+  // the row has to be able to offer rather than nag somebody who already declined.
+  H.ok(/case \.sharingDenied:\s*return "denied"/.test(swift) && /return "undetermined"/.test(swift),
+    'status() reports undetermined separately from denied, so the row offers once and then lets it be');
+  const row = H.code(H.extractFn('_healthWriteCheckTypes'));
+  H.ok(/st\.mindful !== 'undetermined'/.test(row),
+    'and the row only offers for a type iOS has not been asked about');
+}
+
 H.report();

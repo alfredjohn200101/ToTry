@@ -6371,7 +6371,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div id="health-write-row" class="ios-row has-icon" style="display:none">
         <span class="ios-row-icon tone-gray"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
         <span class="ios-row-body"><span class="ios-row-title" style="display:block">Send my logs back</span>
-          <span class="ios-row-sub" style="display:block">Workouts you finish here and your weigh-ins appear in Health and Fitness. Never your food &mdash; those numbers are estimates.</span></span>
+          <span class="ios-row-sub" style="display:block">Workouts you finish here, your weigh-ins and your breathing appear in Health and Fitness. Never your food &mdash; those numbers are estimates.</span></span>
         <button class="btn row-btn" id="health-write-btn" onclick="toggleHealthWrite()">Turn on</button>
       </div>
       <!-- THE WAY OUT. totry_health_connected was only ever written true — nothing in the app could turn
@@ -8719,7 +8719,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v632';
+const APP_VERSION = 'v633';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10696,7 +10696,41 @@ function renderHealthWriteRow(){
       btn.textContent = on ? 'On' : 'Turn on';
       btn.className = 'btn row-btn' + (on ? ' blue' : '');
     }
+    // A WRITE TYPE ADDED LATER IS OFF FOR EVERYONE WHO ALREADY SAID YES. The toggle stores one boolean,
+    // so `enabled()` is true while iOS has never been asked about .mindfulSession — the row reads "On"
+    // and every stillness write resolves not-authorized, which is the silent-no-op shape exactly. Ask
+    // iOS rather than assume, and only offer when it has NOT been asked: re-offering after somebody
+    // declined is nagging them for an answer they already gave.
+    if(on) _healthWriteCheckTypes();
   }catch(_){}
+}
+async function _healthWriteCheckTypes(){
+  try{
+    if(typeof HealthWrite==='undefined' || typeof HealthWrite.status!=='function') return;
+    const st = await HealthWrite.status();
+    const btn = document.getElementById('health-write-btn');
+    if(!btn || !st || st.available === false) return;
+    if(!HealthWrite.enabled()) return;                      // turned off while we were asking
+    if(st.mindful !== 'undetermined'){ return; }             // granted, declined, or no such type here
+    btn.textContent = 'Add stillness';
+    btn.className = 'btn row-btn';
+    btn.onclick = _healthWriteTopUp;
+  }catch(_){ }
+}
+// Re-asks iOS for the write types. The sheet only lists what has never been answered, so this shows
+// just the new one. `connect()` keys the toggle off the workout type, so declining this leaves the
+// mirror on and the other two types working — which is the honest outcome, not a failure.
+async function _healthWriteTopUp(){
+  const btn = document.getElementById('health-write-btn');
+  if(btn){ btn.textContent='…'; btn.disabled=true; }
+  let st = null;
+  try{ await HealthWrite.connect(); st = await HealthWrite.status(); }catch(_){ }
+  if(btn){ btn.disabled=false; btn.onclick=toggleHealthWrite; }
+  if(typeof showToast==='function'){
+    if(st && st.mindful === 'granted') showToast('Added','Breathing you do here will show up in Apple Health as stillness.');
+    else showToast('Left as it was','Workouts and weigh-ins still mirror — stillness stays here only.');
+  }
+  renderHealthWriteRow();
 }
 async function toggleHealthWrite(){
   if(typeof HealthWrite==='undefined') return;
@@ -10712,7 +10746,7 @@ async function toggleHealthWrite(){
   const r = await HealthWrite.connect();
   if(btn) btn.disabled=false;
   if(typeof showToast==='function'){
-    if(r && r.ok) showToast('On','Workouts and weigh-ins will appear in Apple Health from now on.');
+    if(r && r.ok) showToast('On','Workouts, weigh-ins and stillness will appear in Apple Health from now on.');
     else showToast('Not connected', (r&&r.reason) || 'Permission wasn\u2019t granted.');
   }
   if(typeof logEvent==='function' && r && r.ok) logEvent('health_write_on');
@@ -22397,7 +22431,16 @@ function _breathKind(phases, i){
   }catch(_){ return 'in'; }
 }
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
-function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
+// ONE SINK, SO ONE MIRROR. v630 made every finished session reach this function because `_breathLog`
+// was the only place a session was recorded; the Apple Health mirror goes here for the same reason. A
+// second call site in `finish()` would be a second thing to keep in step, and the askAfter() path —
+// the one that runs when a reason was passed — is exactly the path that got forgotten last time.
+function _breathLog(entry){
+  try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){}
+  // Fire-and-forget, opt-in, and off by default — HealthWrite.mindful() checks both. It must never be
+  // able to interrupt the end of a breathing session: the person's own log is the record, Health is a copy.
+  try{ if(typeof HealthWrite!=='undefined' && entry && entry.secs) HealthWrite.mindful(entry.secs, entry.startedAt||null); }catch(_){ }
+}
 function _breathSafetyGate(cb){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
@@ -22470,7 +22513,7 @@ function openBreath(id, opts){
   document.body.appendChild(ov);
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
-  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
+  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null, startedAt:0, secs:0};
   function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;}
     // Release the selection generator. Priming it keeps the Taptic Engine warm, which is what makes a
     // once-a-second cue land on the beat instead of a moment late — but holding it for the life of the
@@ -22490,6 +22533,11 @@ function openBreath(id, opts){
     const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;
+    // THE PROTOCOL'S OWN LENGTH, NOT WALL-CLOCK. finish() is only reachable once every cycle has run,
+    // so cycles × phases is exact rather than an estimate — and a session that sat backgrounded halfway
+    // through still guided precisely those breaths, while the gap it sat through was not stillness.
+    state.startedAt = Date.now();
+    try{ state.secs = Math.round((p.cycles||0) * (p.phases||[]).reduce(function(a,ph){ return a + (parseFloat(ph.s)||0); }, 0)); }catch(_){ state.secs = 0; }
     function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent = p.done || (_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'); q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
     function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg;
       // This is the escalation branch: the person has just told us, on a 0–10 scale, that a minute of
@@ -22508,7 +22556,7 @@ function openBreath(id, opts){
         } else { more.style.display='none'; more.innerHTML=''; }
       }
       q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
-    function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
+    function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n, secs:state.secs, startedAt:state.startedAt}); afterDone(); }); }
     // EVERY FINISHED SESSION LEAVES A MARK. `_breathLog` was reachable ONLY from askAfter(), which
     // runs only when a `reason` was passed — and the Soul door calls openBreath('settle') with no
     // reason on purpose, because the before/after distress scale is the wrong question to put in
@@ -22523,7 +22571,7 @@ function openBreath(id, opts){
     function finish(){
       cleanup(); _breathScale(orb,1.18,1.6);
       if(reason && state.before!=null){ askAfter(); return; }
-      try{ _breathLog({ protocol:id, reason:reason||null }); }catch(_){ }
+      try{ _breathLog({ protocol:id, reason:reason||null, secs:state.secs, startedAt:state.startedAt }); }catch(_){ }
       doneMsg();
     }
     function runPhase(){
@@ -23537,6 +23585,25 @@ const HealthWrite = {
     const n = parseFloat(kg) || 0;
     if(n <= 20 || n >= 500) return;              // same sanity floor the plugin enforces
     try{ await p.saveWeight({ kg:n, atMs: atMs || Date.now() }); }catch(_){}
+  },
+  // THE ONE MIRROR THAT POINTED INWARDS ONLY. `02-native.js` asks Health for `mindfulness` and the
+  // breath menu renders the answer as "N min of stillness this week \u00b7 across all your apps" \u2014 so the
+  // app showed stillness from every app except itself. A person who breathed here ten times saw a
+  // number that did not include one of them, in the realm the whole product says the rest grows from.
+  // `secs` is the protocol's own length, so a completed session writes exactly what it guided.
+  async mindful(secs, startMs){
+    if(!this.enabled() || !this.isNative()) return;
+    const p=this._p(); if(!p) return;
+    const n = Math.round(parseFloat(secs) || 0);
+    if(n < 20 || n > 7200) return;               // same bounds the plugin enforces
+    try{ await p.saveMindful({ secs:n, startMs: startMs || (Date.now() - n*1000) }); }catch(_){}
+  },
+  // Which types iOS has actually granted. The toggle is ONE boolean, so somebody who turned this on
+  // before a write type existed reads "On" while that type is still undetermined and every write of it
+  // silently resolves not-authorized. The row asks instead of assuming.
+  async status(){
+    const p=this._p(); if(!p) return null;
+    try{ return await p.status(); }catch(_){ return null; }
   }
 };
 

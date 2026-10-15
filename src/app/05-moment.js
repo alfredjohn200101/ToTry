@@ -1543,7 +1543,16 @@ function _breathKind(phases, i){
   }catch(_){ return 'in'; }
 }
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
-function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
+// ONE SINK, SO ONE MIRROR. v630 made every finished session reach this function because `_breathLog`
+// was the only place a session was recorded; the Apple Health mirror goes here for the same reason. A
+// second call site in `finish()` would be a second thing to keep in step, and the askAfter() path —
+// the one that runs when a reason was passed — is exactly the path that got forgotten last time.
+function _breathLog(entry){
+  try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){}
+  // Fire-and-forget, opt-in, and off by default — HealthWrite.mindful() checks both. It must never be
+  // able to interrupt the end of a breathing session: the person's own log is the record, Health is a copy.
+  try{ if(typeof HealthWrite!=='undefined' && entry && entry.secs) HealthWrite.mindful(entry.secs, entry.startedAt||null); }catch(_){ }
+}
 function _breathSafetyGate(cb){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
@@ -1616,7 +1625,7 @@ function openBreath(id, opts){
   document.body.appendChild(ov);
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
-  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
+  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null, startedAt:0, secs:0};
   function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;}
     // Release the selection generator. Priming it keeps the Taptic Engine warm, which is what makes a
     // once-a-second cue land on the beat instead of a moment late — but holding it for the life of the
@@ -1636,6 +1645,11 @@ function openBreath(id, opts){
     const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;
+    // THE PROTOCOL'S OWN LENGTH, NOT WALL-CLOCK. finish() is only reachable once every cycle has run,
+    // so cycles × phases is exact rather than an estimate — and a session that sat backgrounded halfway
+    // through still guided precisely those breaths, while the gap it sat through was not stillness.
+    state.startedAt = Date.now();
+    try{ state.secs = Math.round((p.cycles||0) * (p.phases||[]).reduce(function(a,ph){ return a + (parseFloat(ph.s)||0); }, 0)); }catch(_){ state.secs = 0; }
     function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent = p.done || (_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'); q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
     function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg;
       // This is the escalation branch: the person has just told us, on a 0–10 scale, that a minute of
@@ -1654,7 +1668,7 @@ function openBreath(id, opts){
         } else { more.style.display='none'; more.innerHTML=''; }
       }
       q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
-    function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
+    function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n, secs:state.secs, startedAt:state.startedAt}); afterDone(); }); }
     // EVERY FINISHED SESSION LEAVES A MARK. `_breathLog` was reachable ONLY from askAfter(), which
     // runs only when a `reason` was passed — and the Soul door calls openBreath('settle') with no
     // reason on purpose, because the before/after distress scale is the wrong question to put in
@@ -1669,7 +1683,7 @@ function openBreath(id, opts){
     function finish(){
       cleanup(); _breathScale(orb,1.18,1.6);
       if(reason && state.before!=null){ askAfter(); return; }
-      try{ _breathLog({ protocol:id, reason:reason||null }); }catch(_){ }
+      try{ _breathLog({ protocol:id, reason:reason||null, secs:state.secs, startedAt:state.startedAt }); }catch(_){ }
       doneMsg();
     }
     function runPhase(){

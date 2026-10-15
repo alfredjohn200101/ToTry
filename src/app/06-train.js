@@ -460,6 +460,25 @@ const HealthWrite = {
     const n = parseFloat(kg) || 0;
     if(n <= 20 || n >= 500) return;              // same sanity floor the plugin enforces
     try{ await p.saveWeight({ kg:n, atMs: atMs || Date.now() }); }catch(_){}
+  },
+  // THE ONE MIRROR THAT POINTED INWARDS ONLY. `02-native.js` asks Health for `mindfulness` and the
+  // breath menu renders the answer as "N min of stillness this week \u00b7 across all your apps" \u2014 so the
+  // app showed stillness from every app except itself. A person who breathed here ten times saw a
+  // number that did not include one of them, in the realm the whole product says the rest grows from.
+  // `secs` is the protocol's own length, so a completed session writes exactly what it guided.
+  async mindful(secs, startMs){
+    if(!this.enabled() || !this.isNative()) return;
+    const p=this._p(); if(!p) return;
+    const n = Math.round(parseFloat(secs) || 0);
+    if(n < 20 || n > 7200) return;               // same bounds the plugin enforces
+    try{ await p.saveMindful({ secs:n, startMs: startMs || (Date.now() - n*1000) }); }catch(_){}
+  },
+  // Which types iOS has actually granted. The toggle is ONE boolean, so somebody who turned this on
+  // before a write type existed reads "On" while that type is still undetermined and every write of it
+  // silently resolves not-authorized. The row asks instead of assuming.
+  async status(){
+    const p=this._p(); if(!p) return null;
+    try{ return await p.status(); }catch(_){ return null; }
   }
 };
 

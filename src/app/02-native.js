@@ -494,7 +494,41 @@ function renderHealthWriteRow(){
       btn.textContent = on ? 'On' : 'Turn on';
       btn.className = 'btn row-btn' + (on ? ' blue' : '');
     }
+    // A WRITE TYPE ADDED LATER IS OFF FOR EVERYONE WHO ALREADY SAID YES. The toggle stores one boolean,
+    // so `enabled()` is true while iOS has never been asked about .mindfulSession — the row reads "On"
+    // and every stillness write resolves not-authorized, which is the silent-no-op shape exactly. Ask
+    // iOS rather than assume, and only offer when it has NOT been asked: re-offering after somebody
+    // declined is nagging them for an answer they already gave.
+    if(on) _healthWriteCheckTypes();
   }catch(_){}
+}
+async function _healthWriteCheckTypes(){
+  try{
+    if(typeof HealthWrite==='undefined' || typeof HealthWrite.status!=='function') return;
+    const st = await HealthWrite.status();
+    const btn = document.getElementById('health-write-btn');
+    if(!btn || !st || st.available === false) return;
+    if(!HealthWrite.enabled()) return;                      // turned off while we were asking
+    if(st.mindful !== 'undetermined'){ return; }             // granted, declined, or no such type here
+    btn.textContent = 'Add stillness';
+    btn.className = 'btn row-btn';
+    btn.onclick = _healthWriteTopUp;
+  }catch(_){ }
+}
+// Re-asks iOS for the write types. The sheet only lists what has never been answered, so this shows
+// just the new one. `connect()` keys the toggle off the workout type, so declining this leaves the
+// mirror on and the other two types working — which is the honest outcome, not a failure.
+async function _healthWriteTopUp(){
+  const btn = document.getElementById('health-write-btn');
+  if(btn){ btn.textContent='…'; btn.disabled=true; }
+  let st = null;
+  try{ await HealthWrite.connect(); st = await HealthWrite.status(); }catch(_){ }
+  if(btn){ btn.disabled=false; btn.onclick=toggleHealthWrite; }
+  if(typeof showToast==='function'){
+    if(st && st.mindful === 'granted') showToast('Added','Breathing you do here will show up in Apple Health as stillness.');
+    else showToast('Left as it was','Workouts and weigh-ins still mirror — stillness stays here only.');
+  }
+  renderHealthWriteRow();
 }
 async function toggleHealthWrite(){
   if(typeof HealthWrite==='undefined') return;
@@ -510,7 +544,7 @@ async function toggleHealthWrite(){
   const r = await HealthWrite.connect();
   if(btn) btn.disabled=false;
   if(typeof showToast==='function'){
-    if(r && r.ok) showToast('On','Workouts and weigh-ins will appear in Apple Health from now on.');
+    if(r && r.ok) showToast('On','Workouts, weigh-ins and stillness will appear in Apple Health from now on.');
     else showToast('Not connected', (r&&r.reason) || 'Permission wasn\u2019t granted.');
   }
   if(typeof logEvent==='function' && r && r.ok) logEvent('health_write_on');
