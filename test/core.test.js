@@ -16411,8 +16411,20 @@ H.section('a wall-clock stamp tagged Z lands on the day it happened');
   const src = H.code(H.html);
   H.ok(/dayKeyOf\(_wallClockZToUtc\(a\.date\)\)/.test(src),
     'the burn ledger corrects the stamp before keying the day');
+  // ANCHOR ON THE SITE THE MESSAGE NAMES. This read /_wallClockZToUtc\(a\.start_date_local\)/ and
+  // PASSED while the thing its own message named — the gym-habit tick in 10-habits.js — was still
+  // raw: `start_date_local` appears in exactly one place in src/app, and it decides a TOAST STRING.
+  // v637 reached 3 of this stamp's 6 readers and the suite said it was done.
   H.ok(/_wallClockZToUtc\(a\.start_date_local\)/.test(src),
-    'and the gym-habit auto-tick, which otherwise missed a session done that afternoon');
+    'the sync\u2019s own has-one-today check corrects the stamp');
+  H.ok(/dayKeyOf\(_wallClockZToUtc\(a\.date\)\)===dateStr/.test(src),
+    'and the GYM HABIT tick — which otherwise failed to tick on the day the person trained, and ' +
+    'ticked the next one, breaking a streak they had earned');
+  H.ok(/ts: _wallClockZToUtc\(a\.date\), exercises: parsed/.test(src),
+    'and the Hevy bridge copy, which PERSISTS its ts into totry_workouts guarded by haveIds — so a ' +
+    'wrong stamp there is written once and never rewritten');
+  H.ok(/ts: _wallClockZToUtc\(a\.date\),\n/.test(src) || /ts: _wallClockZToUtc\(a\.date\),/.test(src),
+    "and getUnifiedTraining, which decides 'trainedToday' on Home and in the evening recap");
   H.ok(/ts:a\.ts\|\|_wallClockZToUtc\(a\.date\)/.test(src),
     "and getLifeState's training list, which feeds recency and weekly load");
   H.ok(/_wallClockZToUtc\(d\)/.test(src),
@@ -16446,6 +16458,60 @@ H.section('a food you made yourself can be weighed');
   H.ok(/if\(base && per > 0\)\{/.test(src),
     'and a food that names no weight ANYWHERE still gets no gram option — inventing one would ' +
     'be a guess at what the person ate');
+}
+
+
+H.section('the identity frame fits the words, and the migration does not restate them');
+{
+  // v637 FORCED EVERY ANSWER INTO THE "a person who ..." FRAME, and a noun phrase is not a verb
+  // phrase. The repo's OWN seeded identity is "A man who is present, steady, and keeps his word."
+  // — which reads perfectly — and came back as "a person who a man who is present...". Worse, the
+  // v1->v2 migration ran the composer over what was ALREADY stored and wrote the result back, so
+  // good text was rewritten into broken text in place, with no way back to it.
+  const L = H.load(['_identitySentence', '_identityLead', '_identityNeedsRepair']);
+
+  // A NOUN PHRASE IS ALREADY THE THING THEY ARE BECOMING — it needs no "person who" at all.
+  H.eq(L._identitySentence('A man who is present, steady, and keeps his word.'),
+    'I am becoming a man who is present, steady, and keeps his word.',
+    "the repo's own seeded identity reads as English again");
+  H.eq(L._identitySentence('A good father'), 'I am becoming a good father',
+    'and the commonest answer there is');
+
+  // AN ADJECTIVE NEEDS THE LINKING VERB THE FRAME LEAVES OUT.
+  H.eq(L._identitySentence('Sober'), 'I am becoming a person who is sober', '"who sober" is not English');
+  H.eq(L._identitySentence('Faithful to Christ'), 'I am becoming a person who is faithful to Christ',
+    'and the capital is still protected on the name, not on the adjective');
+
+  // A THIRD-PERSON VERB DOES NOT — that is what the field's own placeholder is.
+  H.eq(L._identitySentence('keeps their promises, even to themselves'),
+    'I am becoming a person who keeps their promises, even to themselves',
+    'the placeholder still composes exactly as before');
+  H.eq(L._identitySentence("doesn't give up"), "I am becoming a person who doesn't give up",
+    'and a negation, which does not end in s and is still a verb');
+  H.eq(L._identitySentence('never quits on his family'), 'I am becoming a person who never quits on his family',
+    'and an adverb in front of one');
+
+  // THE MIGRATION MAY REPAIR WHAT THIS APP MANGLED. IT MAY NOT RESTATE WHAT A PERSON WROTE.
+  H.ok(!L._identityNeedsRepair('A man who is present, steady, and keeps his word.'),
+    'a person\u2019s own noun phrase is left alone — a migration restating it is data loss, not a fix');
+  H.ok(!L._identityNeedsRepair('A good father'), 'and so is a short one');
+  H.ok(!L._identityNeedsRepair('I am becoming a person who keeps their promises, even to themselves'),
+    'and a correct sentence is not rewritten for the sake of it');
+  H.ok(L._identityNeedsRepair('I am becoming a person who I am disciplined'),
+    'but the doubled subject this app composed IS repaired');
+  H.ok(L._identityNeedsRepair('I am becoming a person who ...keeps their promises'),
+    'and the ellipsis its own placeholder invited');
+  H.ok(L._identityNeedsRepair('I am becoming a person Who keeps their promises'),
+    'and the capitalised joining "who", which sits inside the prefix and needs asking for separately');
+
+  // AND THE MIGRATION MUST ACTUALLY ASK. A first cut of this block tested the predicate only, so
+  // deleting the guard FROM THE CALL SITE left the suite green — the predicate was right and
+  // nothing consulted it. Assert the wiring, not just the rule.
+  const mig = H.code(H.extractFn('runSchemaMigrations'));
+  H.ok(/_identityNeedsRepair\(cur\)/.test(mig),
+    'runSchemaMigrations consults _identityNeedsRepair before rewriting a stored identity');
+  H.ok(/_identityNeedsRepair\(cur\)\)\{[\s\S]{0,200}_identitySentence\(cur\)/.test(mig),
+    'and the rewrite happens INSIDE that guard, not beside it');
 }
 
 H.report();

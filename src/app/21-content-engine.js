@@ -141,7 +141,7 @@ function getUnifiedTraining(){
     source: 'strava',
     kind: _isStrengthType(a.type) ? 'strength' : 'cardio',
     title: a.name || a.type || 'Activity',
-    ts: a.date,
+    ts: _wallClockZToUtc(a.date),
     durationMin: a.moving_time ? Math.round(a.moving_time/60) : null,
     volume: 0,
     sets: 0,

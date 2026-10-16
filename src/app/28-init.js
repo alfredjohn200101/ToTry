@@ -414,7 +414,12 @@ function runSchemaMigrations(){
     if(v < 2){
       try{
         const cur = ls('totry_identity');
-        if(cur && typeof _identitySentence === 'function'){
+        // REPAIR, NEVER REFRAME — see _identityNeedsRepair in 00-boot.js. The first cut of this ran
+        // the composer over ANY stored identity and rewrote "A man who is present, steady, and keeps
+        // his word." into "a person who a man who is present...". A person's own words are not a
+        // migration's to restate.
+        if(cur && typeof _identityNeedsRepair === 'function' && typeof _identitySentence === 'function'
+           && _identityNeedsRepair(cur)){
           const fixed = _identitySentence(cur);
           if(fixed && fixed !== cur) ls('totry_identity', fixed);
         }

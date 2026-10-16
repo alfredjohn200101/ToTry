@@ -358,7 +358,9 @@ async function syncStravaActivities(){
         wkts.unshift({
           id: wid, source:'hevy', via:'strava',
           splitFocus: a.name || 'Workout', type: a.name || 'Weight Training',
-          ts: a.date, exercises: parsed,
+          // PERSISTED, and guarded by `haveIds` so it is written ONCE and never rewritten — which
+          // makes this the worst of the six readers of this stamp to leave raw.
+          ts: _wallClockZToUtc(a.date), exercises: parsed,
           completedSets: totalSets, totalSets, volume: Math.round(volume),
           durationMin: a.moving_time ? Math.round(a.moving_time/60) : (a.elapsed_time?Math.round(a.elapsed_time/60):null),
           calories: a.calories || null, averageHeartRate: a.avg_hr || null

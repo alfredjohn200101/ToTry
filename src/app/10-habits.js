@@ -368,7 +368,7 @@ function autoTickHabits(){
       // they did not do the thing \u2014 which is worse than not guessing, because they cannot tell.
       } else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
         shouldTick = allWorkouts.some(w=>dayKeyNorm(w.date)===dateStr || (w.ts && dayKeyOf(w.ts)===dateStr))
-                  || allStrava.some(a=>a.date && dayKeyOf(a.date)===dateStr);
+                  || allStrava.some(a=>a.date && dayKeyOf(_wallClockZToUtc(a.date))===dateStr);
       } else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
         shouldTick = allEvenings.some(e=>e.ts && dayKeyOf(e.ts)===dateStr);
       } else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){

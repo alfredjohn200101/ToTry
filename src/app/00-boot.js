@@ -844,7 +844,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v638';
+const APP_VERSION = 'v639';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -1580,6 +1580,19 @@ function _identitySentence(typed){
     if(!rest) return '';                       // they typed only "I am" — nothing to become yet
     return 'I am becoming a person who is ' + _identityLead(rest);
   }
+  // A NOUN PHRASE IS NOT A VERB PHRASE, and v637 forced every answer into the "who ..." frame.
+  // The repo's OWN seeded person is "A man who is present, steady, and keeps his word." — which
+  // read perfectly — and came back as "a person who a man who is present...". Anything opening
+  // with an article is already the thing they are becoming, so it needs no "person who" at all.
+  if(/^(?:a|an|the)\s+\S/i.test(t)) return 'I am becoming ' + _identityLead(t);
+  // An ADJECTIVE needs the linking verb the frame leaves out: "Sober" -> "who IS sober", not
+  // "who sober". A third-person verb does not: "keeps their promises" is already complete.
+  // The test is the one English gives for free — a 3rd-person singular verb ends in s — plus the
+  // negations and modals that do not.
+  const w0 = (t.match(/^[A-Za-z'\u2019]+/) || [''])[0];
+  const isVerb = /s$/i.test(w0) ||
+    /^(?:do|does|don'?t|doesn'?t|won'?t|can'?t|cannot|will|would|can|never|always|still|refuse|refuses)$/i.test(w0);
+  if(!isVerb && w0) return 'I am becoming a person who is ' + _identityLead(t);
   return 'I am becoming a person who ' + _identityLead(t);
 }
 // Lowercase the first letter of a fragment that now follows "who", but ONLY when it is plainly a
@@ -1616,4 +1629,29 @@ function _wallClockZToUtc(stamp){
     const d = new Date(stamp); const t = d.getTime();
     return isNaN(t) ? stamp : t + d.getTimezoneOffset() * 60000;
   }catch(_){ return stamp; }
+}
+
+// ── WHAT THE MIGRATION IS ALLOWED TO TOUCH ────────────────────────────────────────────────────
+// v637 ran `_identitySentence` over whatever was already in `totry_identity` and wrote the result
+// back. That is safe for the shapes it was built for and DESTRUCTIVE for everything else: the
+// repo's own seeded identity, "A man who is present, steady, and keeps his word.", came back as
+// "I am becoming a person who a man who is present, steady, and keeps his word." — good text,
+// rewritten into broken text, in place, with no way back to it.
+// A migration may REPAIR a sentence this app demonstrably mangled. It may not REFRAME one a person
+// wrote. So this touches exactly the three shapes v637 was written for and leaves the rest alone.
+function _identityNeedsRepair(stored){
+  const t = String(stored == null ? '' : stored).trim();
+  if(!t) return false;
+  const m = t.match(/^i am becoming a person who\s+(.*)$/i);
+  if(!m) return false;                                   // not a sentence this app composed
+  const rest = (m[1] || '').trim();
+  if(!rest) return false;
+  if(/^(?:i\s*am\b|i'?m\b|who\b)/i.test(rest)) return true;   // doubled subject
+  if(/^[.\u2026]/.test(rest)) return true;                       // the placeholder's own ellipsis
+  if(/^[A-Z][a-z'\u2019]*(?:\s|$)/.test(rest)) return true;      // a capital stranded mid-sentence
+  // The joining "who" itself, capitalised. It sits INSIDE the prefix this match consumed
+  // case-insensitively, so it has to be asked for separately — and it is worth asking, because two
+  // renderers silently lowercase it and a third does not, so one stored sentence reads two ways.
+  if(/\bperson Who\b/.test(t)) return true;
+  return false;
 }
