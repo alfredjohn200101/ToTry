@@ -4767,6 +4767,15 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        76px to make room for. Same words, two cards. This is Soul's: the eyebrow inside, the
        scripture full measure, and the two tools as the app's own .verse-tools row — the same pair
        Today, Plans and the Bible put under a passage, each one carrying its own word. -->
+  <!-- YOUR LIFE, WOVEN — the stewardship spine: the whole self at a glance, right under the hero.
+       One line per domain, each a door. This is the app's thesis made visible in the first second.
+       IT WAS THE FOURTH BLOCK ON HOME, with the scripture card between it and the hero — so the
+       sentence above was not true as built, and the owner's stated hook ("they saw their whole life
+       in one place") landed below the fold. Moved to where its own comment always said it went.
+       Scripture follows it rather than precedes it: the word of the day is the thing you sit with
+       AFTER you have seen where you are, and a person of no faith at all still gets the spine first. -->
+  <div id="home-woven"></div>
+
   <div class="ios-section" id="home-verse-section">
     <div class="verse-pill hero-verse" onclick="nextVerse()">
       <div class="eyebrow">Today&#8217;s word</div>
@@ -4779,9 +4788,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     </div>
   </div>
 
-  <!-- YOUR LIFE, WOVEN — the stewardship spine: the whole self at a glance, right under the hero.
-       One line per domain, each a door. This is the app's thesis made visible in the first second. -->
-  <div id="home-woven"></div>
   <!-- Tester setup card — shows once for allowlisted Strava testers who haven't connected yet. -->
   <div id="tester-setup-card" class="card home-card" style="display:none">
     <div class="home-card-top">
@@ -8719,7 +8725,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v639';
+const APP_VERSION = 'v640';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -54210,10 +54216,12 @@ const TOUR_STEPS = [
   { tab:'home', title:'Welcome to ToTry', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
     title:'Your daily habits', caption:'These are the things you\u2019re building \u2014 the last seven days at a glance. Workouts and prayer tick themselves when you log them; you tick the rest when you close the day.' },
-  { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
-    prep:()=>{ try{ localStorage.setItem('totry_home_depth_open','1');
-                    if(typeof renderHomeDepthFold==='function') renderHomeDepthFold(); }catch(_){} },
-    title:'Fighting an urge?', caption:'Your vices live here, tracked honestly \u2014 wins and slips. Tap one the moment you\u2019re tempted and you\u2019ll get walked through it.' },
+  // WAS #home-quickwin-list, inside the depth fold — invisible to the only person this tour is
+  // auto-offered to, so the caption was read over a dimmed screen with nothing in it. #home-woven
+  // is always rendered and now sits third on Home, and it is the owner's own stated hook: "they
+  // saw their whole life in one place". The fight still gets its own step on the Fight tab below.
+  { tab:'home', find:()=>document.getElementById('home-woven'),
+    title:'Your whole life, in one place', caption:'Your fight, your body, your spirit, your money \u2014 one line each, every one of them a door. This is the part no single-purpose app can do: what it says to you is shaped by all four at once.' },
   // The orb opens the FEELING DOOR, not the coach \u2014 orbTap() calls openFeelingDoor(). This step used
   // to call it "your AI coach, 24/7", which taught people the wrong thing about the single most
   // important action in the app. The Feeling Door IS the thesis: you come because you FEEL something.
@@ -54227,14 +54235,21 @@ const TOUR_STEPS = [
     title:'Or turn the numbers off', caption:'If counting is the thing that hurt you, tap this. You still log food, you just never see a number \u2014 and the coach is told never to say one either.' },
   { tab:'fight', find:()=>document.getElementById('toolkit-card'),
     title:'Learn the tools before 11pm', caption:'Eight skills, two minutes each \u2014 urge surfing, defusion, HALT. Learn them while you\u2019re calm, so they\u2019re already yours in the moment. Free, and nothing to finish.' },
-  { tab:'money', find:()=>document.getElementById('sub-detect'),
-    title:'Money, honestly', caption:'Import a statement and it finds the subscriptions quietly draining you \u2014 and shows what a habit actually costs you a year. The same habit you\u2019re fighting one tab over.' },
+  // WAS #sub-detect, which renderMoneyGate keeps display:none until there are imported repeating
+  // transactions — so on an empty Money tab this step spotlighted nothing. #money-gate IS the empty
+  // state, and is what a new person is looking at. The caption no longer opens with "import a
+  // statement" either: that is the largest ask in the app at the smallest amount of earned trust.
+  { tab:'money', find:()=>document.getElementById('money-gate'),
+    title:'Money, honestly', caption:'Log what you spend, name what you owe, and see what a habit actually costs you a year \u2014 the same habit you\u2019re fighting one tab over. Start with one number; it builds from there.' },
   { tab:'soul', title:'Faith, woven in \u2014 or not', caption:'A daily verse, the Examen, and prayer. It works for Christian, Muslim, Hindu, Buddhist and secular \u2014 Settings lets you choose, or dial faith all the way down. Nothing is forced on you.' },
   { tab:'reflect', title:'Close the day', caption:'Each evening: one win, one thing to release, tomorrow\u2019s priorities, ending in the Examen. You can edit it right up until midnight.' },
   { tab:'home', title:'It won\u2019t chase you', caption:'No streak held over your head, no guilt, no notifications begging you back. At most a few quiet check-ins a week, before your hardest hour \u2014 and you can turn even those off.' },
   { tab:'home', title:'Free, and built with care', caption:'No ads, no paywall \u2014 this was made to help, not to profit. The goal is to keep it free for as long as that\u2019s possible.' },
 ];
 let _tourIdx = 0;
+// Counts consecutive steps skipped for having no visible target, so a run of them cannot recurse
+// to the end of the tour. Reset whenever a step actually renders.
+let _tourSkips = 0;
 // Onboarding trigger: brand-new users get the tour automatically on first Home view; people who
 // were already signed in before the tour existed get a one-time gentle prompt. Either way, once
 // they've been offered (and chosen), it never shows again.
@@ -54272,7 +54287,7 @@ function renderTourPrompt(){
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
 function dismissTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; }
 function startFeatureTour(){
-  _tourIdx = 0;
+  _tourIdx = 0; _tourSkips = 0;
   // Build the overlay layers once: a dimming backdrop with a "spotlight" hole, plus a tooltip card.
   let ov = document.getElementById('tour-overlay');
   if(!ov){
@@ -54311,6 +54326,19 @@ function renderTourStep(){
         }
       }catch(_){ }
     }
+    // A STEP THAT POINTS AT NOTHING IS WORSE THAN NO STEP. `prep` above was written for exactly
+    // this and cannot always win: step 3's target sits inside the depth fold, and
+    // renderHomeDepthFold re-CLOSES that fold when day-1 progressive disclosure has hidden all of
+    // its children — which is the state of the only person the tour is ever auto-offered to
+    // (renderTourPrompt offers it when dayCount <= 1). So the person read "Your vices live here
+    // … Tap one the moment you're tempted" over a dimmed screen with no hole in it. A step that
+    // declares a target and cannot find one is skipped now, rather than narrated at nothing.
+    if(step.find && !rect){
+      if(_tourSkips < TOUR_STEPS.length && _tourIdx < TOUR_STEPS.length - 1){
+        _tourSkips++; _tourIdx++; renderTourStep(); return;
+      }
+    }
+    _tourSkips = 0;
     if(rect && spot){
       // Spotlight the element (with a little padding).
       const pad = 8;
@@ -57073,10 +57101,15 @@ function renderLifeWoven(){
   }
   else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
-  const bodyTxt=bodyBits.length?bodyBits.join(' · '):'not logged yet';
+  // AN EMPTY ROW IS NOT A FAILED ROW. For a brand-new person three of these four said the same
+  // thing in three different words — "no fight named yet", "not logged yet", "not tracked yet" —
+  // so the surface built to deliver "they saw their whole life in one place" read as a scorecard
+  // of absences on the one day it matters most. Same four states, said as readiness: this row's
+  // neighbour already says "Morning open", which is the register.
+  const bodyTxt=bodyBits.length?bodyBits.join(' · '):'Open';
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
-  if(!vs.length) fightTxt='no fight named yet';
+  if(!vs.length) fightTxt='Yours to name';
   else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0));
     // "0 days clean", sixty seconds after naming your first fight, directly under a vice card
     // that says "Day 1 of the fight". Two surfaces, one person, opposite arithmetic \u2014 and the one
@@ -57096,7 +57129,7 @@ function renderLifeWoven(){
   const m=s.money||{}; const moneyBits=[];
   if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
   if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
-  const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
+  const moneyTxt=moneyBits.length?moneyBits.join(' · '):'Yours to set up';
   // Four grouped rows, built from the components rather than painted here. The hand-rolled version
   // gave the label a fixed 66px, so "The fight" — the row this app exists for — broke across two
   // lines under its own value on every phone. A row cell is one line that truncates; the component
@@ -57112,8 +57145,33 @@ function renderLifeWoven(){
   // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
   // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
   const rc=(typeof releaseCount==='function')?releaseCount():0;
-  box.innerHTML=iosList(rows,{header:'Your life, woven',
-    footer: rc>=3 ? (rc+' times, you came here and walked back into your life.') : ''});
+  // FOUR ROWS THAT NEVER TOUCH ARE FOUR APPS IN A LIST. "Integration IS the product" is this app's
+  // own soul statement and this is the surface that is supposed to show it — and every value here
+  // was computed independently, with no sentence anywhere that exists BECAUSE two fronts are both
+  // true. The footer carries one now, and it is only ever said when it is earned.
+  const _cleanBest = (function(){ try{
+    const q = vs.filter(function(v){ return viceIsAbstinence(v); });
+    return q.length ? Math.max.apply(null, q.map(function(v){ return v.cleanDays||0; })) : 0;
+  }catch(_){ return 0; } })();
+  // A DEFAULT IS NOT SOMETHING THEY DID. `bodyBits` is non-empty for a brand-new person because a
+  // calorie GOAL exists ("2,100 cal left") before they have logged anything — caught by screenshotting
+  // the real first-run Home, where the day-one footer never appeared. Count a front as live only on
+  // something the person actually did.
+  const _live = [vs.length>0, (t.sessions7>0 || n.todayCal>0), (mornDone||evenDone), moneyBits.length>0]
+                  .filter(Boolean).length;
+  const _sess = t.sessions7||0;
+  let _footer = '';
+  if(rc>=3) _footer = rc+' times, you came here and walked back into your life.';
+  // Nothing anywhere: day one. Say what this IS, rather than four things it is not.
+  else if(_live===0) _footer = 'It fills in as you go — one thing today is enough.';
+  // A cross-front fact: true only because two fronts are both true, which is the whole claim.
+  else if(_sess>0 && _cleanBest>0)
+    _footer = plural(_sess,'session')+' this week, and you were clean through every one.';
+  else if(_sess>0 && (n.todayCal!=null && n.todayCal>0))
+    _footer = 'You trained today, and you fuelled it.';
+  else if(_cleanBest>0 && (mornDone||evenDone))
+    _footer = plural(_cleanBest,'day')+' clean, and you kept today\u2019s rhythm.';
+  box.innerHTML=iosList(rows,{header:'Your life, woven', footer:_footer});
 }
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');

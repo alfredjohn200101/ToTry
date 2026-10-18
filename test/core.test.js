@@ -16514,4 +16514,58 @@ H.section('the identity frame fits the words, and the migration does not restate
     'and the rewrite happens INSIDE that guard, not beside it');
 }
 
+
+H.section('the spine is first, and no tour step points at nothing');
+{
+  // THE OWNER'S STATED HOOK IS "they saw their whole life in one place", and the surface built to
+  // deliver it was the FOURTH block on Home with the scripture card between it and the hero — while
+  // its own comment claimed "right under the hero ... visible in the first second". Order asserted,
+  // because a comment is not a layout.
+  const shell = H.html;
+  const iWoven = shell.indexOf('id="home-woven"');
+  const iVerse = shell.indexOf('id="home-verse-section"');
+  const iHero  = shell.indexOf('id="home-hero"');
+  H.ok(iHero > 0 && iWoven > 0 && iVerse > 0, 'calibration: all three blocks were located');
+  H.ok(iWoven > iHero, 'the spine sits under the hero');
+  H.ok(iWoven < iVerse,
+    'and ABOVE the word of the day — scripture is what you sit with after seeing where you are, ' +
+    'and a person of no faith at all still gets the spine first');
+
+  // THREE OF THE FOUR ROWS SAID THE SAME THING IN THREE DIFFERENT WORDS on day one — "no fight
+  // named yet", "not logged yet", "not tracked yet" — so the whole-life surface read as a scorecard
+  // of absences for the one person it matters most to.
+  const woven = H.code(H.extractFn('renderLifeWoven'));
+  ["'no fight named yet'", "'not logged yet'", "'not tracked yet'"].forEach((old) => {
+    H.ok(woven.indexOf(old) === -1, 'the empty row no longer reports an absence: ' + old);
+  });
+  H.ok(/'Yours to name'/.test(woven) && /'Yours to set up'/.test(woven),
+    'it states readiness instead — the register its own Spirit row already uses ("Morning open")');
+
+  // FOUR ROWS THAT NEVER TOUCH ARE FOUR APPS IN A LIST. "Integration IS the product" is the app's
+  // own soul statement; every value here was computed independently with no sentence anywhere that
+  // exists BECAUSE two fronts are both true.
+  H.ok(/_sess>0 && _cleanBest>0/.test(woven),
+    'the footer can say something true only because training AND the fight are both live');
+  H.ok(/It fills in as you go/.test(woven),
+    'and on day one it leads instead of tallying what is missing');
+
+  // NO TOUR STEP MAY POINT AT NOTHING. `prep` was written for exactly this and cannot always win:
+  // step 3's old target sat inside the depth fold, which renderHomeDepthFold RE-CLOSES when day-1
+  // progressive disclosure has hidden all of its children — the state of the only person the tour
+  // is ever auto-offered to. Driven in a browser: 2 steps spotlighted nothing before, 0 after.
+  const tour = H.code(H.extractFn('renderTourStep'));
+  H.ok(/if\(step\.find && !rect\)\{/.test(tour),
+    'a step that declares a target and cannot find one is skipped, not narrated at nothing');
+  H.ok(/_tourSkips < TOUR_STEPS\.length/.test(tour),
+    'and a run of invisible steps cannot recurse to the end of the tour');
+  const steps = H.code(H.html);
+  H.ok(!/find:\(\)=>document\.getElementById\('home-quickwin-list'\)/.test(steps),
+    'step 3 no longer targets an element inside the collapsed depth fold');
+  H.ok(!/find:\(\)=>document\.getElementById\('sub-detect'\)/.test(steps),
+    'and step 9 no longer targets a row renderMoneyGate hides until a statement has been imported');
+  H.ok(/Import a statement and it finds the subscriptions/.test(steps) === false,
+    'and that step no longer OPENS with the bank import — the largest ask in the app at the ' +
+    'smallest amount of earned trust');
+}
+
 H.report();

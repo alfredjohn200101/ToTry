@@ -273,10 +273,15 @@ function renderLifeWoven(){
   }
   else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
-  const bodyTxt=bodyBits.length?bodyBits.join(' · '):'not logged yet';
+  // AN EMPTY ROW IS NOT A FAILED ROW. For a brand-new person three of these four said the same
+  // thing in three different words — "no fight named yet", "not logged yet", "not tracked yet" —
+  // so the surface built to deliver "they saw their whole life in one place" read as a scorecard
+  // of absences on the one day it matters most. Same four states, said as readiness: this row's
+  // neighbour already says "Morning open", which is the register.
+  const bodyTxt=bodyBits.length?bodyBits.join(' · '):'Open';
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
-  if(!vs.length) fightTxt='no fight named yet';
+  if(!vs.length) fightTxt='Yours to name';
   else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0));
     // "0 days clean", sixty seconds after naming your first fight, directly under a vice card
     // that says "Day 1 of the fight". Two surfaces, one person, opposite arithmetic \u2014 and the one
@@ -296,7 +301,7 @@ function renderLifeWoven(){
   const m=s.money||{}; const moneyBits=[];
   if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
   if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
-  const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
+  const moneyTxt=moneyBits.length?moneyBits.join(' · '):'Yours to set up';
   // Four grouped rows, built from the components rather than painted here. The hand-rolled version
   // gave the label a fixed 66px, so "The fight" — the row this app exists for — broke across two
   // lines under its own value on every phone. A row cell is one line that truncates; the component
@@ -312,8 +317,33 @@ function renderLifeWoven(){
   // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
   // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
   const rc=(typeof releaseCount==='function')?releaseCount():0;
-  box.innerHTML=iosList(rows,{header:'Your life, woven',
-    footer: rc>=3 ? (rc+' times, you came here and walked back into your life.') : ''});
+  // FOUR ROWS THAT NEVER TOUCH ARE FOUR APPS IN A LIST. "Integration IS the product" is this app's
+  // own soul statement and this is the surface that is supposed to show it — and every value here
+  // was computed independently, with no sentence anywhere that exists BECAUSE two fronts are both
+  // true. The footer carries one now, and it is only ever said when it is earned.
+  const _cleanBest = (function(){ try{
+    const q = vs.filter(function(v){ return viceIsAbstinence(v); });
+    return q.length ? Math.max.apply(null, q.map(function(v){ return v.cleanDays||0; })) : 0;
+  }catch(_){ return 0; } })();
+  // A DEFAULT IS NOT SOMETHING THEY DID. `bodyBits` is non-empty for a brand-new person because a
+  // calorie GOAL exists ("2,100 cal left") before they have logged anything — caught by screenshotting
+  // the real first-run Home, where the day-one footer never appeared. Count a front as live only on
+  // something the person actually did.
+  const _live = [vs.length>0, (t.sessions7>0 || n.todayCal>0), (mornDone||evenDone), moneyBits.length>0]
+                  .filter(Boolean).length;
+  const _sess = t.sessions7||0;
+  let _footer = '';
+  if(rc>=3) _footer = rc+' times, you came here and walked back into your life.';
+  // Nothing anywhere: day one. Say what this IS, rather than four things it is not.
+  else if(_live===0) _footer = 'It fills in as you go — one thing today is enough.';
+  // A cross-front fact: true only because two fronts are both true, which is the whole claim.
+  else if(_sess>0 && _cleanBest>0)
+    _footer = plural(_sess,'session')+' this week, and you were clean through every one.';
+  else if(_sess>0 && (n.todayCal!=null && n.todayCal>0))
+    _footer = 'You trained today, and you fuelled it.';
+  else if(_cleanBest>0 && (mornDone||evenDone))
+    _footer = plural(_cleanBest,'day')+' clean, and you kept today\u2019s rhythm.';
+  box.innerHTML=iosList(rows,{header:'Your life, woven', footer:_footer});
 }
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');

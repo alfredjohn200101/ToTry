@@ -520,10 +520,12 @@ const TOUR_STEPS = [
   { tab:'home', title:'Welcome to ToTry', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
     title:'Your daily habits', caption:'These are the things you\u2019re building \u2014 the last seven days at a glance. Workouts and prayer tick themselves when you log them; you tick the rest when you close the day.' },
-  { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
-    prep:()=>{ try{ localStorage.setItem('totry_home_depth_open','1');
-                    if(typeof renderHomeDepthFold==='function') renderHomeDepthFold(); }catch(_){} },
-    title:'Fighting an urge?', caption:'Your vices live here, tracked honestly \u2014 wins and slips. Tap one the moment you\u2019re tempted and you\u2019ll get walked through it.' },
+  // WAS #home-quickwin-list, inside the depth fold — invisible to the only person this tour is
+  // auto-offered to, so the caption was read over a dimmed screen with nothing in it. #home-woven
+  // is always rendered and now sits third on Home, and it is the owner's own stated hook: "they
+  // saw their whole life in one place". The fight still gets its own step on the Fight tab below.
+  { tab:'home', find:()=>document.getElementById('home-woven'),
+    title:'Your whole life, in one place', caption:'Your fight, your body, your spirit, your money \u2014 one line each, every one of them a door. This is the part no single-purpose app can do: what it says to you is shaped by all four at once.' },
   // The orb opens the FEELING DOOR, not the coach \u2014 orbTap() calls openFeelingDoor(). This step used
   // to call it "your AI coach, 24/7", which taught people the wrong thing about the single most
   // important action in the app. The Feeling Door IS the thesis: you come because you FEEL something.
@@ -537,14 +539,21 @@ const TOUR_STEPS = [
     title:'Or turn the numbers off', caption:'If counting is the thing that hurt you, tap this. You still log food, you just never see a number \u2014 and the coach is told never to say one either.' },
   { tab:'fight', find:()=>document.getElementById('toolkit-card'),
     title:'Learn the tools before 11pm', caption:'Eight skills, two minutes each \u2014 urge surfing, defusion, HALT. Learn them while you\u2019re calm, so they\u2019re already yours in the moment. Free, and nothing to finish.' },
-  { tab:'money', find:()=>document.getElementById('sub-detect'),
-    title:'Money, honestly', caption:'Import a statement and it finds the subscriptions quietly draining you \u2014 and shows what a habit actually costs you a year. The same habit you\u2019re fighting one tab over.' },
+  // WAS #sub-detect, which renderMoneyGate keeps display:none until there are imported repeating
+  // transactions — so on an empty Money tab this step spotlighted nothing. #money-gate IS the empty
+  // state, and is what a new person is looking at. The caption no longer opens with "import a
+  // statement" either: that is the largest ask in the app at the smallest amount of earned trust.
+  { tab:'money', find:()=>document.getElementById('money-gate'),
+    title:'Money, honestly', caption:'Log what you spend, name what you owe, and see what a habit actually costs you a year \u2014 the same habit you\u2019re fighting one tab over. Start with one number; it builds from there.' },
   { tab:'soul', title:'Faith, woven in \u2014 or not', caption:'A daily verse, the Examen, and prayer. It works for Christian, Muslim, Hindu, Buddhist and secular \u2014 Settings lets you choose, or dial faith all the way down. Nothing is forced on you.' },
   { tab:'reflect', title:'Close the day', caption:'Each evening: one win, one thing to release, tomorrow\u2019s priorities, ending in the Examen. You can edit it right up until midnight.' },
   { tab:'home', title:'It won\u2019t chase you', caption:'No streak held over your head, no guilt, no notifications begging you back. At most a few quiet check-ins a week, before your hardest hour \u2014 and you can turn even those off.' },
   { tab:'home', title:'Free, and built with care', caption:'No ads, no paywall \u2014 this was made to help, not to profit. The goal is to keep it free for as long as that\u2019s possible.' },
 ];
 let _tourIdx = 0;
+// Counts consecutive steps skipped for having no visible target, so a run of them cannot recurse
+// to the end of the tour. Reset whenever a step actually renders.
+let _tourSkips = 0;
 // Onboarding trigger: brand-new users get the tour automatically on first Home view; people who
 // were already signed in before the tour existed get a one-time gentle prompt. Either way, once
 // they've been offered (and chosen), it never shows again.
@@ -582,7 +591,7 @@ function renderTourPrompt(){
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
 function dismissTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; }
 function startFeatureTour(){
-  _tourIdx = 0;
+  _tourIdx = 0; _tourSkips = 0;
   // Build the overlay layers once: a dimming backdrop with a "spotlight" hole, plus a tooltip card.
   let ov = document.getElementById('tour-overlay');
   if(!ov){
@@ -621,6 +630,19 @@ function renderTourStep(){
         }
       }catch(_){ }
     }
+    // A STEP THAT POINTS AT NOTHING IS WORSE THAN NO STEP. `prep` above was written for exactly
+    // this and cannot always win: step 3's target sits inside the depth fold, and
+    // renderHomeDepthFold re-CLOSES that fold when day-1 progressive disclosure has hidden all of
+    // its children — which is the state of the only person the tour is ever auto-offered to
+    // (renderTourPrompt offers it when dayCount <= 1). So the person read "Your vices live here
+    // … Tap one the moment you're tempted" over a dimmed screen with no hole in it. A step that
+    // declares a target and cannot find one is skipped now, rather than narrated at nothing.
+    if(step.find && !rect){
+      if(_tourSkips < TOUR_STEPS.length && _tourIdx < TOUR_STEPS.length - 1){
+        _tourSkips++; _tourIdx++; renderTourStep(); return;
+      }
+    }
+    _tourSkips = 0;
     if(rect && spot){
       // Spotlight the element (with a little padding).
       const pad = 8;
