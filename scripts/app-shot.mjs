@@ -1,6 +1,7 @@
 // Screenshot THE APP — the Capacitor build, installed and running, not a page in a browser.
 //
 //   node scripts/app-shot.mjs install                 build for the simulator and install it
+//   node scripts/app-shot.mjs seed                    write the repo's one person into the app's storage
 //   node scripts/app-shot.mjs launch [light|dark]     set the appearance, relaunch, wait out the cover
 //   node scripts/app-shot.mjs capture <name> [outDir] screenshot, and say whether the screen changed
 //
@@ -48,8 +49,59 @@ if (cmd === 'install') {
   sh('simctl', 'install', 'booted', app);
   console.log('installed ' + app);
 }
-else if (cmd === 'launch') {
-  const scheme = a1 === 'light' ? 'light' : 'dark';
+else // ── seed ─────────────────────────────────────────────────────────────────────────────────────────
+// THE STORE SCREENSHOTS CAME FROM A STATE NOBODY COULD RECREATE. This script builds, installs and
+// launches, and never seeded anything — so whatever happened to be in the simulator's WebKit
+// storage from some earlier session was the person Apple saw. Its localStorage held a
+// `__demo_seeded` flag that NOTHING IN THIS REPO SETS. Meanwhile ios-shot, sim-shot, craft-audit,
+// orb-audit, density-audit and clip-audit all share scripts/seed-person.mjs, so the one artefact
+// that actually ships to the App Store was the only one not drawn from the repo's own person.
+//
+// A Capacitor WebView has no URL scheme to inject through (the app declares no CFBundleURLTypes),
+// so the seed is written straight into WebKit's localstorage.sqlite3 with the app stopped. Values
+// are UTF-16LE blobs — verified against a value the app itself wrote, not assumed.
+if (cmd === 'seed') {
+  const { seedSource } = await import('./seed-person.mjs');
+  const pairs = {};
+  const shim = { setItem: (k, v) => { pairs[k] = String(v); }, getItem: () => null,
+                 removeItem: () => {}, clear: () => {}, key: () => null, length: 0 };
+  new Function('localStorage', 'window', 'document', seedSource())(shim, { localStorage: shim }, {});
+  const keys = Object.keys(pairs);
+  if (!keys.length) { console.error('seed produced no keys — refusing to write'); process.exit(1); }
+
+  try { execFileSync('xcrun', ['simctl', 'terminate', 'booted', BUNDLE], { stdio: 'ignore' }); } catch (_) {}
+
+  const base = path.join(process.env.HOME, 'Library/Developer/CoreSimulator/Devices');
+  const found = execFileSync('find', [base, '-name', 'localstorage.sqlite3', '-path', `*${BUNDLE}*`])
+    .toString().trim().split('\n').filter(Boolean);
+  if (!found.length) {
+    console.error('no localstorage.sqlite3 for ' + BUNDLE + ' — launch the app once first so WebKit creates it');
+    process.exit(1);
+  }
+  // Newest wins: a reinstall makes a new container and leaves the old one behind, and writing the
+  // stale one looks exactly like a seed that did not take.
+  const db = found.map(f => ({ f, t: fs.statSync(f).mtimeMs })).sort((a, b) => b.t - a.t)[0].f;
+
+  const sql = ["PRAGMA journal_mode=DELETE;", "BEGIN;", "DELETE FROM ItemTable;"];
+  for (const k of keys) {
+    const hex = Buffer.from(pairs[k], 'utf16le').toString('hex');
+    sql.push(`INSERT INTO ItemTable (key, value) VALUES ('${k.replace(/'/g, "''")}', X'${hex}');`);
+  }
+  sql.push("COMMIT;");
+  execFileSync('sqlite3', [db], { input: sql.join('\n') });
+
+  const back = execFileSync('sqlite3', [db, 'SELECT COUNT(*) FROM ItemTable;']).toString().trim();
+  if (Number(back) !== keys.length) {
+    console.error(`wrote ${keys.length} keys, read back ${back} — refusing to report success`);
+    process.exit(1);
+  }
+  console.log(`seeded ${keys.length} keys into ${db.split('/Application/')[1].slice(0, 36)}… — relaunch to see it`);
+  process.exit(0);
+}
+
+  if (cmd === 'launch') {
+
+const scheme = a1 === 'light' ? 'light' : 'dark';
   sh('simctl', 'ui', 'booted', 'appearance', scheme);
   await sleep(700);
   try { sh('simctl', 'terminate', 'booted', BUNDLE); } catch (_) { }
