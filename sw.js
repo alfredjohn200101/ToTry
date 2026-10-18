@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v641-two-screens-one-number'
+const CACHE = 'totry-v642-counted-somewhere'
 
 const CORE = [
   './',

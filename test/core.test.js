@@ -16621,4 +16621,42 @@ H.section('two screens, one number — and the support page is reachable');
   if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
 }
 
+
+H.section('a session nothing else counted is not skipped');
+{
+  // THE MIRROR OF THE DOUBLE-COUNT, AND THE WORSE DIRECTION. The burn loop skipped every
+  // Hevy-manufactured Strava activity on the grounds that it was "already counted once via the
+  // workout ledger (either its direct import or its converted copy)" — a CONDITIONAL justifying
+  // an UNCONDITIONAL `if(a.manufacturer === 'hevy') return;`.
+  // The conversion that would create that copy is guarded TWICE: `!a.description` and `!parsed`.
+  // So a Hevy session pushed to Strava with an empty or unparseable description, on a free account
+  // with no direct Hevy import, was converted by nobody and skipped here — its calories counted
+  // NOWHERE. An inflated "Burned" is visible and a missing one is not, which is why this direction
+  // is worse and why no total-based assertion would ever have found it.
+  const src = H.code(H.html);
+  H.ok(/const _convertedCopy = _wkIds\.has\('stravahevy_' \+ a\.id\)/.test(src),
+    'the skip asks whether the converted copy actually exists');
+  H.ok(/_bridgedSessionMatch\(d\.ts, a\.date\)/.test(src),
+    'and whether a direct import covers the same real instant — corrected for the wall-clock stamp, ' +
+    'because the two rows sit a whole UTC offset apart');
+  H.ok(/if\(_convertedCopy \|\| _directImport\) return;/.test(src),
+    'and only skips when one of them is true');
+  H.ok(!/^\s*if\(a\.manufacturer === 'hevy'\) return;/m.test(src),
+    'the unconditional skip is gone rather than left beside the fix');
+
+  // The matcher the skip leans on, driven with correctly-shaped stamps: Strava stores a LOCAL wall
+  // clock tagged Z, a direct import stores true UTC, and one real session produces both.
+  const _tzWas = process.env.TZ;
+  process.env.TZ = 'Australia/Melbourne';
+  const L = H.load(['_bridgedSessionMatch', '_wallClockZToUtc', '_sessionsOverlap']);
+  const local = new Date(); local.setHours(18, 0, 0, 0);
+  const stravaStamp = new Date(local.getTime() - local.getTimezoneOffset()*60000).toISOString();
+  H.ok(L._bridgedSessionMatch(local.toISOString(), stravaStamp),
+    'a direct import and its Strava copy of the SAME 18:00 session match, so the skip fires and ' +
+    'nothing is double-counted');
+  H.ok(!L._bridgedSessionMatch(new Date(local.getTime() - 5*3600e3).toISOString(), stravaStamp),
+    'and a genuinely different session five hours earlier does not, so the skip does not swallow it');
+  if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+}
+
 H.report();

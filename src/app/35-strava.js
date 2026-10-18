@@ -376,12 +376,34 @@ async function syncStravaActivities(){
     // burns are tracked separately so re-syncs replace (not double-count) them.
     try{
       const freshByDay = {};
+      // THE SKIP HAS TO ASK WHETHER ANYTHING ELSE ACTUALLY COUNTED IT. The comment below justified
+      // itself on "either its direct import or its converted copy" — a CONDITIONAL — and then fired
+      // unconditionally. The conversion above is guarded twice (`!a.description` and `!parsed`), so
+      // a Hevy session pushed to Strava with an empty or unparseable description, on a free account
+      // with no direct Hevy import, was converted by nobody and skipped here: its calories were
+      // counted NOWHERE. The mirror of the double-count this skip exists to prevent, and the
+      // worse direction, because an inflated "Burned" is visible and a missing one is not.
+      const _wk = (function(){ try{ return ls('totry_workouts') || []; }catch(_){ return []; } })();
+      const _wkIds = new Set(_wk.map(function(w){ return String(w && w.id); }));
+      const _wkDirect = _wk.filter(function(w){ return w && w.source !== 'strava' && w.via !== 'strava'; });
       saved.forEach(a => {
         if(!a.date) return;
         // A session that came from the lifting app is already counted once via the workout ledger
         // (either its direct import or its converted copy). Counting it here too inflated "Burned"
         // in Nourish for every pushed session — the net-calorie math was wrong all day because of it.
-        if(a.manufacturer === 'hevy') return;
+        // So skip it ONLY when one of those two really exists.
+        if(a.manufacturer === 'hevy'){
+          const _convertedCopy = _wkIds.has('stravahevy_' + a.id);
+          const _directImport = _wkDirect.some(function(d){
+            try{ return typeof _bridgedSessionMatch === 'function' && _bridgedSessionMatch(d.ts, a.date); }
+            catch(_){ return false; }
+          });
+          if(_convertedCopy || _directImport) return;
+          // Nothing else holds this session. Counting it here is the only way it is counted at all,
+          // and a later re-sync that DOES parse the description will convert it and take this
+          // branch instead — the Strava sub-ledger is replaced wholesale each sync, so that
+          // self-corrects rather than double-counting.
+        }
         let cals = a.calories;
         // Strava's activity LIST endpoint often omits calories (only the detail endpoint has them).
         // Until the edge function fetches detail, estimate from HR + duration so "Burned" isn't 0.
