@@ -34,7 +34,16 @@ export function seedSource() {
     S('totry_identity', 'A man who is present, steady, and keeps his word.'); S('totry_why', 'So my kids get the version of me that shows up.');
     S('totry_journey_start', a[1]);
     S('totry_v', [{ n: 'Porn', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [{ t: a[2], won: true }], t: 'late nights alone', lastConfirm: new Date().toISOString() },
-                  { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [], lastConfirm: new Date().toISOString() }]);
+                  { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [], lastConfirm: new Date().toISOString() },
+                  // THE MONEY HERO READ "$0 / Set weekly vice spend below" IN THE STORE SCREENSHOT,
+                  // on the one card the listing copy sells as "every dollar reclaimed from a habit
+                  // you dropped". totalReclaimed() sums viceMoneySaved(), which returns 0 for any
+                  // vice with no costAmount — and neither seeded fight had one. costAmount/costPer
+                  // is the pair viceSpendPicture actually reads (09-fight-deep.js:2204).
+                  { n: 'Vape', type: 'substance', mode: 'quit', startDate: a[0], fightingSince: a[1],
+                    cleanDaysTotal: 31, relapseCount: 2, w: 7, total: 9, urgelog: [],
+                    costAmount: 38, costPer: 'week', t: 'the drive home',
+                    lastConfirm: new Date().toISOString() }]);
     S('totry_body', [{ date: '14 Sep', ts: new Date().toISOString(), weight: 84.2 }, { date: '31 Aug', ts: a[3], weight: 86.1 }, { date: '17 Aug', ts: a[2], weight: 87.9 }]);
     S('totry_h', [{ n: 'Morning ritual done', d: [1, 1, 0, 1, 1, 1, 0] }, { n: 'No vice today', d: [1, 0, 1, 1, 0, 1, 1] }, { n: 'Daily prayer', d: [1, 1, 1, 1, 1, 1, 1] }, { n: 'Gym session', d: [0, 1, 0, 1, 0, 1, 0] }]);
     // MONEY, IN THE SHAPES THE MONEY SCREENS ACTUALLY WRITE (16 Sep 2026). The four lines below used to
