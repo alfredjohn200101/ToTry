@@ -180,6 +180,41 @@ if (plist) {
         if (unlabelled.length) soft(`PrivacyInfo.xcprivacy declares ${unlabelled.join(', ')}, which this check has no label for — add it to LABEL in preflight.js and to APP-PRIVACY.md`);
         if (undeclared.length) bad(`APP-PRIVACY.md does not mention ${undeclared.map(t => LABEL[t]).join(', ')}, which the shipped privacy manifest DOES declare — the form would be filled from the doc and under-declare`);
         else good(`the privacy manifest's ${types.length} collected types all appear in APP-PRIVACY.md`);
+
+        // AND THE SHEET THE FORM IS ACTUALLY FILLED FROM. APP-PRIVACY.md is the reasoning;
+        // APP-STORE-LISTING.md is the thing somebody reads while ticking boxes in App Store
+        // Connect — and it said "Ten types, all linked to the user", omitted Photos entirely, and
+        // had done since the food camera started transmitting. Checking only the first file is how
+        // that survived: it mentioned Photos, the listing did not, and nothing compared them.
+        const listPath = path.join(ROOT, 'APP-STORE-LISTING.md');
+        if (!fs.existsSync(listPath)) soft('APP-STORE-LISTING.md is missing — the App Privacy answers are filled from it');
+        else {
+          const list = fs.readFileSync(listPath, 'utf8');
+          const missingFromList = types.filter(t => LABEL[t] && !list.includes(LABEL[t]));
+          if (missingFromList.length) bad(`APP-STORE-LISTING.md — the sheet the App Privacy form is filled from — does not mention ${missingFromList.map(t => LABEL[t]).join(', ')}, which the shipped manifest declares. Ticking the boxes from it would UNDER-DECLARE.`);
+          else good(`and all ${types.length} appear in APP-STORE-LISTING.md, the sheet the form is filled from`);
+
+          // THE LINK FLAG IS A SEPARATE ANSWER AND IT IS NOT THE SAME FOR EVERY TYPE. Four of the
+          // eleven are NOT linked to the user; the sheet said all of them were, which over-declares
+          // three and is simply wrong about the fourth.
+          const blocks = man.split('<dict>');
+          const notLinked = [];
+          for (const b of blocks) {
+            const m = /NSPrivacyCollectedDataType<\/key>\s*<string>NSPrivacyCollectedDataType(\w+)<\/string>/.exec(b);
+            if (!m) continue;
+            if (/NSPrivacyCollectedDataTypeLinked<\/key>\s*<false\/>/.test(b)) notLinked.push(m[1]);
+          }
+          if (!notLinked.length) soft('no NOT-linked data types parsed — if the manifest really has none, delete this check rather than leaving one that cannot fire');
+          else {
+            const unflagged = notLinked.filter(t => {
+              const lab = LABEL[t]; if (!lab) return false;
+              const i = list.indexOf(lab); if (i < 0) return true;
+              return !/NOT linked/i.test(list.slice(i, i + 160));
+            });
+            if (unflagged.length) bad(`APP-STORE-LISTING.md does not mark ${unflagged.map(t => LABEL[t]).join(', ')} as NOT linked to the user, which is what the shipped manifest says — the form would over-declare`);
+            else good(`and the ${notLinked.length} NOT-linked types are marked as such (over-declaring is still a wrong answer)`);
+          }
+        }
       }
     }
   }

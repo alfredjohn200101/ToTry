@@ -16568,4 +16568,57 @@ H.section('the spine is first, and no tour step points at nothing');
     'smallest amount of earned trust');
 }
 
+
+H.section('two screens, one number — and the support page is reachable');
+{
+  // THE HEADLINE NUMBER OF THE WHOLE PILLAR, PRINTED TWO WAYS. renderHomeQuickWins rolled its own
+  // elapsed-24h arithmetic while every other surface counts CALENDAR days through viceCleanDays ->
+  // _calDaysSince. The divergence depends on the HOUR the person named the fight, which is why it
+  // is invisible to anyone testing in the morning. Measured at Australia/Melbourne: named at 09:00
+  // the two agree; named at 21:00 Home read ONE LOWER than the Fight card, every day, for as long
+  // as the streak lasted — a 41-day streak showed 40 on Home.
+  const _tzWas = process.env.TZ;
+  process.env.TZ = 'Australia/Melbourne';
+  const L = H.load(['_calDaysSince']);
+  const rolled = (iso) => Math.floor((Date.now() - new Date(iso).getTime())/86400000);
+  // TIME-INDEPENDENT BY CONSTRUCTION. A first cut anchored at a literal 21:00 and went RED whenever
+  // the suite ran after 21:00 \u2014 the divergence only exists while "now" is EARLIER in the day than
+  // the hour the fight was named. That is this repo's recorded trap (assert the invariant, not the
+  // rendering) and it is the same shape as the bug under test. So the anchors are built RELATIVE to
+  // now: one a minute later in the day (elapsed is a minute short of a whole day; calendar days is
+  // not), one a minute earlier (they agree). Both hold at every hour.
+  const laterInDay   = (d) => new Date(Date.now() - d*86400000 + 60000).toISOString();
+  const earlierInDay = (d) => new Date(Date.now() - d*86400000 - 60000).toISOString();
+  [1,3,10,41].forEach((d) => {
+    H.eq(L._calDaysSince(earlierInDay(d)), rolled(earlierInDay(d)),
+      'calibration at ' + d + ' days: with the anchor earlier in the day the two agree \u2014 which is why ' +
+      'this survived, and why the case below is the test');
+    H.ok(rolled(laterInDay(d)) !== L._calDaysSince(laterInDay(d)),
+      'fault-injected at ' + d + ' days: the OLD elapsed-24h arithmetic is a day short for a fight ' +
+      'named later in the day than it is now \u2014 that is the bug Home printed');
+  });
+
+  const qw = H.code(H.extractFn('renderHomeQuickWins'));
+  H.ok(/viceCleanDays\(v\)/.test(qw),
+    'Home counts clean days through viceCleanDays, the same function the Fight card uses');
+  H.ok(/_calDaysSince\(v\.startDate\) \+ 1/.test(qw),
+    'and the letting-go count carries the +1 that getLifeState().letGoDays uses — the woven row ' +
+    'DIRECTLY ABOVE it on the same screen said "day 11" where this said "day 9"');
+  H.ok(!/Math\.floor\(\(Date\.now\(\) - start\.getTime\(\)\)\/86400000\)/.test(qw),
+    'and the hand-rolled version is gone rather than left beside the fix');
+
+  // THE SUPPORT PAGE WAS DEPLOYED AND UNREACHABLE. Its only inbound link in the project was
+  // privacy.html's footer, while the App Store Support URL pointed at the PWA root — the sign-in
+  // screen. Somebody who taps Support because they cannot get in landed on what they could not
+  // get into.
+  H.ok(/onclick="openSupportPage\(\)"/.test(H.html), 'Settings carries a row that opens the support page');
+  const sp = H.code(H.extractFn('openSupportPage'));
+  H.ok(/'support\.html'/.test(sp) && !/'\/support\.html'/.test(sp),
+    'and it is RELATIVE — a root-absolute path 404s at the GitHub Pages subpath while working in ' +
+    'every local test, which is the one defect class nothing here can see');
+  H.ok(require('fs').existsSync(require('path').join(__dirname, '..', 'support.html')),
+    'and the page it opens actually exists in the repo');
+  if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+}
+
 H.report();

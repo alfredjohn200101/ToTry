@@ -548,6 +548,18 @@ function tellUser(title, body, opts){
 // ── IN-APP FEEDBACK ───────────────────────────────────────────
 // The QA channel. Users report bugs/ideas; saved to Supabase (feedback table) so Alfred
 // sees everything, with an email fallback so nothing is ever lost if the network is down.
+// Opens the support page that has existed, deployed and UNLINKED since July — its only inbound link
+// in the whole project was privacy.html's footer, while the App Store Support URL pointed at the PWA
+// root, which boots to the email-code sign-in screen. Somebody who tapped Support because they could
+// not get in landed on the thing they could not get into.
+// RELATIVE, so it resolves at the GitHub Pages SUBPATH (/ToTry/) and inside the Capacitor shell
+// alike; a root-absolute "/support.html" 404s live and works in every local test, which is the one
+// defect class no check here can see. `_blank` + noopener hands off to the system browser in the
+// native shell rather than replacing the app's own webview, which has no way back.
+function openSupportPage(){
+  try{ window.open('support.html', '_blank', 'noopener'); }
+  catch(_){ try{ location.href = 'support.html'; }catch(__){ } }
+}
 function openFeedback(){
   document.querySelector('.modal-bg.open')?.remove();
   const m = document.createElement('div');

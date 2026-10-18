@@ -68,7 +68,11 @@ The first release of To Try. Your whole life in one home — the fight, your bod
 
 ## URLs
 - **Privacy Policy URL** (required): `https://alfredjohn200101.github.io/ToTry/privacy.html`  ✅ verified live
-- **Support URL** (required): `https://alfredjohn200101.github.io/ToTry/`  *(or a page with a contact email — Apple just needs somewhere users can get help)*
+- **Support URL** (required): `https://alfredjohn200101.github.io/ToTry/support.html`
+  — support.html is written, deployed and answers exactly what a stuck person asks (export,
+  delete, reminders, wrong numbers) plus a contact email and Lifeline. The ROOT url was pointed
+  at here for months and it boots to the email-code sign-in screen: somebody who taps Support
+  because they cannot get in landed on the thing they could not get into.  *(or a page with a contact email — Apple just needs somewhere users can get help)*
 - **Marketing URL** (optional): `https://alfredjohn200101.github.io/ToTry/`
 
 ## App Privacy ("nutrition label")
@@ -81,7 +85,12 @@ The first release of To Try. Your whole life in one home — the fight, your bod
 > ships, and Apple cross-checks these answers against the bundled `PrivacyInfo.xcprivacy`.
 
 **The ground truth is `ios/App/App/PrivacyInfo.xcprivacy`, which is correct. Mirror it exactly.**
-Ten types, all **linked to the user**, all **App Functionality**, **none used for tracking**:
+**ELEVEN** types, and they are NOT all the same answer — the sheet said ten, all linked, all App
+Functionality, and omitted Photos entirely while the manifest has declared it since 10 Oct. Four are
+NOT linked to the user and one is Analytics rather than App Functionality, so ticking them all the
+same way over-declares three and under-declares one. Derived from the manifest on 18 Oct 2026 and
+gated by `npm run preflight`, because this is the third time one of these sheets has drifted from
+the code it describes.
 
 | App Store Connect category | Type | Why (what in the code) |
 |---|---|---|
@@ -92,9 +101,14 @@ Ten types, all **linked to the user**, all **App Functionality**, **none used fo
 | Financial Info | **Other Financial Info** | `totry_transactions`, `totry_bills`, `totry_budgets`, `totry_subscriptions`, debts |
 | Sensitive Info | **Sensitive Info** | what a person is fighting, confessions, faith tradition |
 | User Content | **Other User Content** | `totry_journal`, `totry_prayers`, `totry_examens`, evening reflections |
-| Location | **Coarse Location** | prayer times only, rounded to ~1km before use |
-| Usage Data | **Product Interaction** | GoatCounter page counts + the `app_events` feature counts |
-| Diagnostics | **Crash Data** | |
+| Location | **Coarse Location** — **NOT linked** | prayer times only, rounded to ~1km before use |
+| User Content | **Photos or Videos** — **NOT linked** | the food camera base64s a downscaled JPEG to the `ai-proxy` vision model (8 `image_base64` sites). It is not stored and not tied to the account, hence not linked — but it LEAVES THE DEVICE, which is what the question asks |
+| Usage Data | **Product Interaction** — **NOT linked**, **Analytics** | GoatCounter page counts + the `app_events` feature counts |
+| Diagnostics | **Crash Data** — **NOT linked** | |
+
+**The four that are NOT linked to the user:** Coarse Location, Photos or Videos, Product Interaction,
+Crash Data. Tick "Not linked" for those four and "Linked" for the other seven. **Product Interaction
+is the only one whose purpose is Analytics**; every other type is App Functionality.
 
 **Tracking: No.** `NSPrivacyTracking = false`, `NSPrivacyTrackingDomains` empty. No ad SDK, no data
 broker, no cross-app or cross-site profiling. That answer is true — but "no tracking" is NOT the same
@@ -104,6 +118,8 @@ as "no data collected", and the form asks both.
 - **Cycle data** (`totry_cycle`) — device-only unless she separately switches backup on; it is
   deliberately kept out of `SYNC_KEYS` at parse time (`src/app/00-boot.js:888`).
 - **Progress photos** — device-only, and `_purgeSyncedPhotos()` deletes any a previous build uploaded.
+  (This is NOT the same as "no photos collected": the FOOD CAMERA does transmit, and Photos or
+  Videos is declared above. Both statements are true and they have been read as contradictory.)
 - **Crisis-flagged journal entries** — never sent as AI context (filtered on `!e.flagged` at every
   call site that builds a prompt).
 

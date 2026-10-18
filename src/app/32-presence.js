@@ -584,7 +584,13 @@ function renderHomeQuickWins(){
   list.innerHTML = vices.map((v, i) => {
     if(v.kind === 'letgo'){
       // A letting-go struggle: healing stat + the grief door, never "clean days" / the substance flow.
-      const lgDays = v.startDate ? Math.floor((Date.now()-new Date(v.startDate).getTime())/86400000) : 0;
+      // TWO SCREENS, ONE PERSON, TWO NUMBERS. This rolled its own elapsed-24h arithmetic while
+      // getLifeState().letGoDays — read by the woven row directly ABOVE this one on the same
+      // screen — is `_calDaysSince(startDate) + 1`. Measured: Home said "day 9 of letting go"
+      // where the row above it said "letting go, day 11". Same convention now.
+      const lgDays = (v.startDate && typeof _calDaysSince==='function')
+        ? _calDaysSince(v.startDate) + 1
+        : (v.startDate ? Math.floor((Date.now()-new Date(v.startDate).getTime())/86400000) : 0);
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0' + (i>0?';border-top:1px solid var(--bd)':'') + '">' +
         '<div style="min-width:0;flex:1"><div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
         '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">day ' + lgDays + ' of letting go</div></div>' +
@@ -605,8 +611,16 @@ function renderHomeQuickWins(){
     } else if(moderate){
       stat = (v.modWithin||0) + ' times within limit';
     } else {
-      const start = v.startDate ? new Date(v.startDate) : null;
-      const cleanDays = start ? Math.floor((Date.now() - start.getTime())/86400000) : 0;
+      // AND THE HEADLINE NUMBER OF THE WHOLE PILLAR. Elapsed 24-hour blocks, where every other
+      // surface counts CALENDAR days through viceCleanDays -> _calDaysSince. The divergence
+      // depends on the HOUR the person named the fight, which is why it is invisible to anyone
+      // testing in the morning: named at 09:00 the two agree; named at 21:00 Home reads one
+      // LOWER than the Fight card, every day, for as long as the streak lasts. A 41-day streak
+      // read 40 on Home. `_calDaysSince`'s own comment says why it exists — a backdated start
+      // parses as UTC midnight and reads a day short every morning in Australia.
+      const cleanDays = (typeof viceCleanDays==='function')
+        ? viceCleanDays(v)
+        : (v.startDate ? Math.floor((Date.now() - new Date(v.startDate).getTime())/86400000) : 0);
       const wins = v.w||0;
       const slips = v.relapseCount||0;
       const bits = [cleanDays + 'd clean'];

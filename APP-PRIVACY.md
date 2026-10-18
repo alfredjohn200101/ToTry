@@ -51,7 +51,7 @@ Every claim below was checked against `index.html`, re-verified at v610.
 | Financial Info → Other Financial Info | **Yes** | Yes | No |
 | Sensitive Info | **Yes** | Yes | No |
 | User Content → Other User Content | **Yes** | Yes | No |
-| User Content → Photos or Videos | **Yes** | Yes | No |
+| User Content → Photos or Videos | **Yes** | **No** | No |
 | Identifiers → User ID | **Yes** | Yes | No |
 | Usage Data → Product Interaction | **Yes** | **No** | No |
 | Location | **Yes** (coarse) | No | No |
@@ -122,8 +122,15 @@ Journal entries, prayers, letters to a future self, and `totry_coach_history` (c
 in-app coach) all sync.
 
 **Progress photos do NOT leave the device** — `totry_progress_photos` is deliberately *not* in
-`SYNC_KEYS`. Do not tick Photos. This is worth saying plainly in the privacy policy too, because it is
-better than what most apps in this category do.
+`SYNC_KEYS`. This is worth saying plainly in the privacy policy too, because it is better than what
+most apps in this category do.
+
+⛔ **"Do not tick Photos" used to be the next sentence, and it contradicted this file's own table 71
+lines above it** (`User Content → Photos or Videos | **Yes**`). Both halves were written honestly and
+about different things: progress photos stay on the device, and the FOOD CAMERA transmits. **Photos
+or Videos IS declared** in `PrivacyInfo.xcprivacy` and must be ticked — as NOT linked, because the
+image is neither stored nor tied to the account. A sheet that argues with itself gets answered from
+whichever half you read last.
 
 ### Identifiers → User ID — collected, linked
 The Supabase auth user id. There is no advertising identifier anywhere in the app.
