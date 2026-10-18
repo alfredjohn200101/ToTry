@@ -72,7 +72,44 @@ export function seedSource() {
     S('totry_masses', [{ id: 7701, date: ago(4), eucharist: true }, { id: 7702, date: ago(11), eucharist: false }]);
     S('totry_read_plans', { pull: { d: 2, tr: 'christianity', ts: a[3], done: false } });
     S('totry_journal', [{ ts: a[2], text: 'Held the line tonight. It wanted me tired.' }]);
-    S('totry_workouts', [{ ts: a[2], kind: 'strength', name: 'Push', sets: [{ ex: 'Bench Press', w: 80, r: 6 }] }]);
+    // THE DEMO PERSON HAD TRAINED ONCE, THIRTY DAYS AGO, AND NEVER CLOSED A DAY. One workout at
+    // a[2] means getLifeState's train7 filter (03-person.js:541) returns ZERO, so sessions7 is 0
+    // and the GROW handoff row — "3 sessions, about 1,260 cal earned → fuel it" — renders EMPTY and
+    // un-classed in every screenshot, craft audit, orb audit and density audit, because all six
+    // visual instruments share this one seed. Worse, everActive = (evenings.length +
+    // workouts.length) >= 5 (03-person.js:781) was FALSE: the app classified its own demo person
+    // as somebody who has never been active, and a review of that is a review of an empty state.
+    // SHAPES COPIED FROM THE WRITERS, never invented — saveWorkoutSession (22-train-deep.js),
+    // completeEvening (23-evening.js) and the morning write (03-person.js). This file has already
+    // been burned once by seeding a vocabulary no write site produces.
+    const _au = d => d.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' });
+    const _dAgo = n => new Date(Date.now() - n * 864e5);
+    const _wk = (n, focus, exs, sets, vol, mins) => ({
+      id: Date.now() - n * 864e5, source: 'manual', ts: _dAgo(n).toISOString(),
+      date: _dAgo(n).toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', year:'numeric' }),
+      day: 160 - n, exercises: exs, completedSets: sets, totalSets: sets, volume: vol,
+      durationMin: mins, splitFocus: focus
+    });
+    S('totry_workouts', [
+      _wk(1, 'Push',  [{ name:'Bench Press', sets:[{weight:80,reps:6,done:true},{weight:80,reps:6,done:true},{weight:82.5,reps:5,done:true}] }], 12, 5940, 58),
+      _wk(3, 'Pull',  [{ name:'Barbell Row', sets:[{weight:70,reps:8,done:true},{weight:70,reps:8,done:true}] }], 11, 5320, 52),
+      _wk(5, 'Legs',  [{ name:'Back Squat',  sets:[{weight:100,reps:5,done:true},{weight:100,reps:5,done:true}] }], 13, 7100, 64),
+      _wk(30,'Push',  [{ name:'Bench Press', sets:[{weight:77.5,reps:6,done:true}] }], 9, 4180, 49)
+    ]);
+    // Four closed days in the last week, so the rituals read as lived-in and everActive is true.
+    S('totry_evenings', [1,2,4,6].map(n => ({
+      date: _au(_dAgo(n)), day: 160 - n, rating: n === 1 ? 4 : 3,
+      win: ['Trained before work', 'Said no at 11pm', 'Called Dad back', 'Walked instead of scrolling'][[1,2,4,6].indexOf(n)],
+      release: ['The thing at work I cannot fix', 'Comparing my week to his', 'Being short with the kids', 'Yesterday'][[1,2,4,6].indexOf(n)],
+      see: '', flagged: false, tasks: [], steps: null, rings: null, goalsHit: null,
+      ts: _dAgo(n).toISOString()
+    })));
+    S('totry_mornings', [1,3,5].map(n => ({
+      date: _au(_dAgo(n)), day: 160 - n,
+      gratitude: ['A quiet house before six', 'My wife made coffee', 'The rain stopped for the walk'][[1,3,5].indexOf(n)],
+      intention: ['Be where my feet are', 'One hard thing first', 'Patience with the eldest'][[1,3,5].indexOf(n)],
+      flagged: false, ts: _dAgo(n).toISOString()
+    })));
     const H = (h, m) => { const d = new Date(); d.setHours(h, m || 0, 0, 0); return d.toISOString(); };
     S('totry_nutlog', { [dayKey]: [
       { id: 1, ts: H(7, 20), name: 'Oats & whey', brand: '', serving: '80g oats + 1 scoop', qty: 1, cal: 520, pro: 38, carb: 62, fat: 11, meal: 'breakfast', source: 'Common' },
