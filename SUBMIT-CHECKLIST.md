@@ -3,37 +3,60 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 15 Oct 2026 — BUILD 10, v635. READ THIS FIRST.
+## ▶▶ CURRENT STATE — 19 Oct 2026 — BUILD 10, v643. READ THIS FIRST.
 
 **Everything below this block is HISTORY.** It still opens with "BUILD 9 — v600 — READY TO
-ARCHIVE", which was true once and has been false for 35 versions. This doc calls itself the live
+ARCHIVE", which was true once and has been false for 43 versions. This doc calls itself the live
 record, which is exactly why a stale line at the top is dangerous — the same failure this repo has
-now recorded three times.
+now recorded four times.
 
-**The live PWA is deployed.** `origin/main` served **v601** until today while all the work sat on
-`ios-native`; it is now **v635**, verified by fetching the site rather than by trusting the push
-(service worker installs and activates, 14/14 CORE assets precached, helplines on the sign-in
-screen with no account, guest door works). Everything from October reached users in that one
-push — the 57 gated crisis doors, all three risk registers, the eleven devotional false positives,
-and the union card that calls an ambulance for an overdose instead of listing only helplines.
+**The live PWA is deployed and serving v643.** `origin/main` served **v601** until 15 Oct while all
+the work sat on `ios-native`; the branches are merged and `main` is the one line of development
+again. Verified by fetching the site rather than by trusting the push. Everything from October
+reached users in those pushes — the 57-plus gated crisis doors, all three risk registers, the
+eleven devotional false positives, the union card that calls an ambulance for an overdose instead
+of listing only helplines, and the removal of six other people's plaintext email addresses from a
+bundle that downloads publicly.
 
-**The archive is BUILD 10 at v635**, not build 9:
-`~/Library/Developer/Xcode/Archives/2026-10-15/ToTry-v635-build10.{xcarchive,ipa}`.
+**The archive is BUILD 10 at v643:**
+`~/Library/Developer/Xcode/Archives/2026-10-19/ToTry-v643-build10.{xcarchive,ipa}`.
 Verified out of the IPA, never the archive — Apple Distribution: Alfred John (L4BD53PLVF),
 `get-task-allow=false`, `beta-reports-active=true`, 1.0 build 10, arm64 only, PrivacyInfo present,
-web bundle byte-identical to the repo (`3578137e88e5`). `npm run preflight` clean, **no warnings**.
+web bundle byte-identical to the repo (`61ecc44f1f47`, APP_VERSION v643), and **0 third-party email
+addresses in the binary**. `npm run preflight` reports "the 1 archive(s) stamped build 10 carry the
+current bundle" and "ready to archive", clean with **no warnings** — the first fully clean run this
+month.
 
 **Why 10 and not 9:** only App Store Connect knows whether 9 was ever uploaded, nothing local can
-tell you, a number it has already seen is a rejection, and skipping one costs nothing. The
-v625/build9 pair is in `~/Library/Developer/Xcode/ToTry-superseded-archives/`, kept not deleted.
+tell you, a number it has already seen is a rejection, and skipping one costs nothing.
 
-**Gate at this archive:** `npm test` 4225/0 · `npm run crisis` 57/57 doors dialable and 53 ordinary
-sentences left alone · `npm run personas` 566/0 · `npm run engines` 0 of 365 days forked ·
-`npm run panels` 0 failures · `npm run preflight` clean.
+**THREE SUPERSEDED ARCHIVES ARE OUT OF ORGANIZER, KEPT NOT DELETED**, in
+`~/Library/Developer/Xcode/ToTry-superseded-archives/`: v625/build9, v635/build10, v638/build10.
+Organizer never shows you which web bundle is inside an archive, so **an archive that is merely
+stale becomes a HAZARD the moment the staleness is a correctness path** — v625 predates the fuel
+plan's dead crisis gate and the seven devotional false positives. Move them; never upload by date.
 
-**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).**
+**Gate at this archive:** `npm test` **4347/0** (measured at v643) · `npm run crisis` every door
+dialable and its ordinary-sentence panel clean · `npm run personas` 566/0 · `npm run engines` 0 of
+365 days forked · `npm run panels` 0 failures · `npm run preflight` clean. Run them; this block
+deliberately does not freeze the door count, because a doc that restates a mutable number
+misleads at the worst moment.
 
-**The upload click is the owner's.** Nothing here uploads anything.
+**The store screenshots are REPRODUCIBLE for the first time.**
+`~/Desktop/ToTry-screenshots/6.9-v643/` holds four 1320×2868 captures off the real Capacitor
+build — 01-feeling-door, 02-today, 03-fight, 04-money — with `ORDER.md` naming the lead shot and
+why. `node scripts/app-shot.mjs seed` plants the demo person into WebKit's own localStorage
+(UTF-16LE, newest container wins, reads the count back and refuses to report success on a
+mismatch), so the same four shots can be re-cut after any change instead of being hand-staged.
+
+**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).** Face ID and
+local notification delivery were both driven end to end on the simulator — the notification proof
+is the app's own scheduled LOCAL notification found in iOS's `DeliveredNotifications.plist`, never
+a banner in a screenshot and never `simctl push`, which is a REMOTE payload this app has no path
+for.
+
+**The upload click is the owner's.** Nothing here uploads anything, and nothing here needs an
+issuer ID.
 
 ---
 Everything on the code side is done and **verified against a real Release archive** (Xcode 26.6,
