@@ -234,7 +234,12 @@ function _demoBanner(){
     if(!b){
       b=document.createElement('div'); b.id='demo-mode-banner';
       b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a2e2e;color:#fff;'+
-        'font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.07em;text-transform:uppercase;'+
+        // DM Mono was the last live font-family naming a face this app stopped shipping, so it rendered
+        // in the system monospace. Dev-only (#demo-mode-card is data-dev-only and gated on DEV_EMAILS),
+        // so nobody shipped a broken screen — the cost was that a sweep for the dropped face kept
+        // finding a live hit. 11px, not 9: this is a dev banner rather than a chart annotation, and
+        // the two decided exceptions to the 13px floor are the tab bar and chart labels, not this.
+        'font-family:var(--font-text);font-size:11px;letter-spacing:0.07em;text-transform:uppercase;'+
         'padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 14px rgba(0,0,0,.4)';
       b.innerHTML='<span>'+svgIcon("film")+' Demo data \u00b7 sync off</span>'+
         '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+

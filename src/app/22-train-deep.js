@@ -2399,7 +2399,7 @@ function renderExerciseProgressChart(exName){
   [maxV, mid, minV].forEach(v => {
     const yy = y(v);
     svg += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W-padR) + '" y2="' + yy.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
-    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + v + '</text>';
+    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + v + '</text>';
   });
   // area fill
   svg += '<polygon points="' + areaPts + '" fill="var(--go-bg)"/>';
@@ -2410,8 +2410,8 @@ function renderExerciseProgressChart(exName){
     svg += '<circle cx="' + x(p.ts).toFixed(1) + '" cy="' + y(p.e1rm).toFixed(1) + '" r="2.5" fill="var(--go)"/>';
   });
   // first + last date labels
-  svg += '<text x="' + padL + '" y="' + (H-6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[0].date + '</text>';
-  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
+  svg += '<text x="' + padL + '" y="' + (H-6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + points[0].date + '</text>';
+  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
   svg += '</svg>';
   
   // Summary line: change from first to last
@@ -2603,6 +2603,15 @@ function classifyExerciseMuscles(exName, exData){
 // Compute weekly volume (last 7 days) per muscle group.
 // Volume = sum of (weight × reps) for all completed sets attributed to that muscle.
 // ── MUSCLE MAP (volume heatmap on a body silhouette, last 7 days) ──
+// THE TWO LABELS IN HERE ARE DIAGRAM LABELS, NOT CHART ANNOTATIONS, AND ARE LEFT AT 10px ON
+// PURPOSE. The repo has twice decided that a CHART's own point labels are 12px (#weight-chart
+// text "12, not 10", then #nut-trend-chart text), and the seven labels in
+// renderExerciseProgressChart and showExerciseProgress were raised to match. FRONT/BACK sit on a
+// fixed-viewBox body diagram where a wider run can collide with the artwork, and nothing has
+// measured that — craft-audit reports 0 runs under 13px on Train only because its seed never
+// reaches this card, the same blind spot the nutrition trend chart had. An unmeasured change to
+// a third role would be the blanket sweep this repo fails builds over, so it is named here
+// rather than made.
 function renderMuscleHeatmap(){
   const box = document.getElementById('pt-heatmap'); if(!box) return;
   let vol = {}; try{ vol = computeWeeklyVolumeByMuscle() || {}; }catch(_){ return; }
@@ -3132,12 +3141,12 @@ function showExerciseProgress(exName){
   });
   
   const svg = '<svg aria-hidden="true" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;background:var(--bg3);border-radius:var(--rs)">' +
-    '<text x="4" y="14" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
-    '<text x="4" y="' + (h - 26) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + minOrm + 'kg</text>' +
+    '<text x="4" y="14" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
+    '<text x="4" y="' + (h - 26) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + minOrm + 'kg</text>' +
     '<path d="' + pathData + '" stroke="var(--go)" stroke-width="2" fill="none"/>' +
     points +
-    '<text x="' + padL + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
-    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + padL + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
   '</svg>';
   
   // Last 5 sessions table

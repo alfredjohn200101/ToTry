@@ -33,9 +33,6 @@ const ASSETS = [
   // looking like itself.
   'fonts/cormorant-garamond-italic.woff2',
   'fonts/cormorant-garamond.woff2',
-  'fonts/dm-mono-300.woff2',
-  'fonts/dm-mono-400.woff2',
-  'fonts/dm-mono-500.woff2',
   'fonts/outfit.woff2',
   'fonts/outfit-ext.woff2',
   // …and Outfit's latin-ext file. Added with the face itself and nearly shipped without it: the

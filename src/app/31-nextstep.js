@@ -276,7 +276,17 @@ function renderLifeWoven(){
   if(typeof nutGentle==='function' && nutGentle()){
     if(n.todayCal>0 && typeof _gentleWord==='function') bodyBits.push(_gentleWord(n.todayCal, goalCal).w.toLowerCase());
   }
-  else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
+  else if(n.todayCal!=null && goalCal
+  // A DEFAULT IS NOT SOMETHING THEY DID — the rule the _live footer guard below already states in
+  // those words, and this row is where it was half-applied. todaysNutGoals() falls back to a
+  // hardcoded {cal:2100} when totry_nut_goals has never been written, so a person who had logged
+  // nothing and set nothing read "2,100 cal left" on the card that is supposed to show THEIR life.
+  // Measured on a real first-run Home: the fight said "Yours to name" and money said "Yours to set
+  // up" — both honest — while Body invented a number against a goal nobody had chosen.
+  // The goal KEY is the signal: its presence means a person (or onboarding, on their answers) set
+  // one, so "N cal left" is a true statement about them even before they have eaten today.
+  && (n.todayCal>0 || (function(){ try{ return !!ls('totry_nut_goals'); }catch(_){ return false; } })())
+     ) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
   // AN EMPTY ROW IS NOT A FAILED ROW. For a brand-new person three of these four said the same
   // thing in three different words — "no fight named yet", "not logged yet", "not tracked yet" —

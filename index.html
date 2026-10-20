@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v644';
+const APP_VERSION = 'v645';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12588,7 +12588,22 @@ function lifeStateBrief(s){
   // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
   const _un = (typeof _unitsNote==='function') ? _unitsNote() : '';
   if(_un) lines.push(_un.replace(/^\\n/,'').replace(/^\n/,''));
-  if(t.sessions7 != null){
+  // A ZERO IS INFORMATION FOR SOMEBODY WITH HISTORY AND AN ACCUSATION FOR SOMEBODY WITHOUT IT.
+  // Measured 20 Oct 2026 by calling getLifeState() with empty storage: a brand-new person has
+  // sessions7 = 0, and `0 != null` is TRUE, so this line pushed — which made `lines` non-empty and
+  // the day-one sentence at the bottom of this function ("Not much logged yet - early days.")
+  // UNREACHABLE. The entire brief handed to the coach, the companion, the PT and the brother about
+  // somebody on their first day was 39 characters:
+  //     "Training: 0 sessions in 7 days (0 days)"
+  // So the app's first conversation about a person led with a count of what they had not done, in
+  // an app whose soul document says grace over shame and whose own vice card refuses to print
+  // "0 days clean" for exactly this reason.
+  // lastTitle is computed from the WHOLE workouts array rather than the last seven days, so it is
+  // the "has ever trained" signal. Somebody established who simply did not train this week still
+  // gets their zero, which is real information about them; somebody with nothing at all does not
+  // get a zero presented as the only thing known about them.
+  const _everTrained = t.sessions7 > 0 || t.sessions14 > 0 || !!t.lastTitle || !!t.tonnage7;
+  if(t.sessions7 != null && _everTrained){
     // One clause, not eight. _ptIntel() is the PT coach's briefing; this is the sentence every other
     // surface needs so it can speak to what the person has built instead of how often they turned up.
     let tl = 'Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:'');
@@ -36942,7 +36957,13 @@ function renderNutritionLog(){
     })();
     dateEl.textContent = dayShown;
     if(st.n >= 2){
-      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+    // THIS CHIP LIVES INSIDE .cal-date, WHICH IS nowrap + overflow:hidden + text-overflow:ellipsis.
+    // "N-day streak · log today to keep it" did not fit and never had: measured, a person on a
+    // 2-day streak read "2-day streak · l" — a dangling ellipsis exactly where the nudge to keep
+    // the streak alive should be. Raising this run from --t-mini to the 13px floor the day before
+    // hid ~15px more of it, so the fix is the TEXT, not the size: the nudge is the half worth
+    // keeping and the long form was never the half being read.
+      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -38275,16 +38296,30 @@ function renderBodySystemReport(){
 
   const html='<div class="eyebrow">Your body \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
     goalRow+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+    // minmax(0,1fr), not 1fr: a bare 1fr is minmax(AUTO,1fr), so a column whose longest unbreakable
+    // word exceeds its share grows and takes the width from its siblings. Measured at 320pt after
+    // the labels went to 13px: 97 / 80 / 75px instead of equal thirds, with the trend label broken
+    // across two lines. 320pt is what iOS Display Zoom produces on a 393pt phone.
+    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
     // GENTLE MODE REACHES THIS CARD TOO. The promise is "this person does not see calorie or macro
     // figures", and it was kept on the Nourish tab and nowhere else — this card renders on GROW, so
     // a woman who turned numbers off read "1,076 AVG CAL/DAY" on the hub. Same data, said as shape:
     // how many days she actually fuelled, which is the thing the card is really telling her.
     (_gentleCard
-      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','days fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
+      // 'days fuelled' not 'fuelled' was the GENTLE arm of this ternary, and v644b shortened only
+      // the arm beside it ('avg cal/day' -> 'cal/day') when raising these labels to the 13px floor.
+      // So at 13px/.045em the middle tile wrapped to two lines for exactly the person who turned the
+      // numbers off, and the row grew to match — a wrapping caps label, which craft-audit fails
+      // builds over, invisible to it because its seed is not in gentle mode. The value already says
+      // '/7', so the word 'days' was carrying nothing the tile did not already show.
+      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
       : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'cal/day'))+
-    stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
+    // ' wk' dropped: this card's own eyebrow reads "Your body \u00b7 last 7 days", so the suffix restated
+    // the window the header already states, and at 13px/.045em it was the difference between
+    // "\u22120.9KG" fitting an 84px column at 320pt and "\u22120.9KG WK" breaking across two lines there.
+    // 320pt is iOS Display Zoom on a 393pt phone, not a hypothetical width.
+    stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?wDelta(weekChange):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
     (wVol?wVol.toLocaleString()+'kg lifted'+arrow(wVol,pVol):'No volume logged')+
@@ -48344,7 +48379,7 @@ function renderExerciseProgressChart(exName){
   [maxV, mid, minV].forEach(v => {
     const yy = y(v);
     svg += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W-padR) + '" y2="' + yy.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
-    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + v + '</text>';
+    svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + v + '</text>';
   });
   // area fill
   svg += '<polygon points="' + areaPts + '" fill="var(--go-bg)"/>';
@@ -48355,8 +48390,8 @@ function renderExerciseProgressChart(exName){
     svg += '<circle cx="' + x(p.ts).toFixed(1) + '" cy="' + y(p.e1rm).toFixed(1) + '" r="2.5" fill="var(--go)"/>';
   });
   // first + last date labels
-  svg += '<text x="' + padL + '" y="' + (H-6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[0].date + '</text>';
-  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
+  svg += '<text x="' + padL + '" y="' + (H-6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + points[0].date + '</text>';
+  svg += '<text x="' + (W-padR) + '" y="' + (H-6) + '" text-anchor="end" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + points[points.length-1].date + '</text>';
   svg += '</svg>';
   
   // Summary line: change from first to last
@@ -48548,6 +48583,15 @@ function classifyExerciseMuscles(exName, exData){
 // Compute weekly volume (last 7 days) per muscle group.
 // Volume = sum of (weight × reps) for all completed sets attributed to that muscle.
 // ── MUSCLE MAP (volume heatmap on a body silhouette, last 7 days) ──
+// THE TWO LABELS IN HERE ARE DIAGRAM LABELS, NOT CHART ANNOTATIONS, AND ARE LEFT AT 10px ON
+// PURPOSE. The repo has twice decided that a CHART's own point labels are 12px (#weight-chart
+// text "12, not 10", then #nut-trend-chart text), and the seven labels in
+// renderExerciseProgressChart and showExerciseProgress were raised to match. FRONT/BACK sit on a
+// fixed-viewBox body diagram where a wider run can collide with the artwork, and nothing has
+// measured that — craft-audit reports 0 runs under 13px on Train only because its seed never
+// reaches this card, the same blind spot the nutrition trend chart had. An unmeasured change to
+// a third role would be the blanket sweep this repo fails builds over, so it is named here
+// rather than made.
 function renderMuscleHeatmap(){
   const box = document.getElementById('pt-heatmap'); if(!box) return;
   let vol = {}; try{ vol = computeWeeklyVolumeByMuscle() || {}; }catch(_){ return; }
@@ -49077,12 +49121,12 @@ function showExerciseProgress(exName){
   });
   
   const svg = '<svg aria-hidden="true" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;background:var(--bg3);border-radius:var(--rs)">' +
-    '<text x="4" y="14" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
-    '<text x="4" y="' + (h - 26) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + minOrm + 'kg</text>' +
+    '<text x="4" y="14" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
+    '<text x="4" y="' + (h - 26) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + minOrm + 'kg</text>' +
     '<path d="' + pathData + '" stroke="var(--go)" stroke-width="2" fill="none"/>' +
     points +
-    '<text x="' + padL + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
-    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="10" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + padL + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" style="font-family:var(--font-rounded)" font-size="12" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
   '</svg>';
   
   // Last 5 sessions table
@@ -54047,7 +54091,12 @@ function _demoBanner(){
     if(!b){
       b=document.createElement('div'); b.id='demo-mode-banner';
       b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a2e2e;color:#fff;'+
-        'font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.07em;text-transform:uppercase;'+
+        // DM Mono was the last live font-family naming a face this app stopped shipping, so it rendered
+        // in the system monospace. Dev-only (#demo-mode-card is data-dev-only and gated on DEV_EMAILS),
+        // so nobody shipped a broken screen — the cost was that a sweep for the dropped face kept
+        // finding a live hit. 11px, not 9: this is a dev banner rather than a chart annotation, and
+        // the two decided exceptions to the 13px floor are the tab bar and chart labels, not this.
+        'font-family:var(--font-text);font-size:11px;letter-spacing:0.07em;text-transform:uppercase;'+
         'padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 14px rgba(0,0,0,.4)';
       b.innerHTML='<span>'+svgIcon("film")+' Demo data \u00b7 sync off</span>'+
         '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+
@@ -57221,7 +57270,17 @@ function renderLifeWoven(){
   if(typeof nutGentle==='function' && nutGentle()){
     if(n.todayCal>0 && typeof _gentleWord==='function') bodyBits.push(_gentleWord(n.todayCal, goalCal).w.toLowerCase());
   }
-  else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
+  else if(n.todayCal!=null && goalCal
+  // A DEFAULT IS NOT SOMETHING THEY DID — the rule the _live footer guard below already states in
+  // those words, and this row is where it was half-applied. todaysNutGoals() falls back to a
+  // hardcoded {cal:2100} when totry_nut_goals has never been written, so a person who had logged
+  // nothing and set nothing read "2,100 cal left" on the card that is supposed to show THEIR life.
+  // Measured on a real first-run Home: the fight said "Yours to name" and money said "Yours to set
+  // up" — both honest — while Body invented a number against a goal nobody had chosen.
+  // The goal KEY is the signal: its presence means a person (or onboarding, on their answers) set
+  // one, so "N cal left" is a true statement about them even before they have eaten today.
+  && (n.todayCal>0 || (function(){ try{ return !!ls('totry_nut_goals'); }catch(_){ return false; } })())
+     ) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
   // AN EMPTY ROW IS NOT A FAILED ROW. For a brand-new person three of these four said the same
   // thing in three different words — "no fight named yet", "not logged yet", "not tracked yet" —

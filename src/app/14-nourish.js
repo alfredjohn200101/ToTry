@@ -4995,7 +4995,13 @@ function renderNutritionLog(){
     })();
     dateEl.textContent = dayShown;
     if(st.n >= 2){
-      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+    // THIS CHIP LIVES INSIDE .cal-date, WHICH IS nowrap + overflow:hidden + text-overflow:ellipsis.
+    // "N-day streak · log today to keep it" did not fit and never had: measured, a person on a
+    // 2-day streak read "2-day streak · l" — a dangling ellipsis exactly where the nudge to keep
+    // the streak alive should be. Raising this run from --t-mini to the 13px floor the day before
+    // hid ~15px more of it, so the fix is the TEXT, not the size: the nudge is the half worth
+    // keeping and the long form was never the half being read.
+      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -6328,16 +6334,30 @@ function renderBodySystemReport(){
 
   const html='<div class="eyebrow">Your body \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
     goalRow+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+    // minmax(0,1fr), not 1fr: a bare 1fr is minmax(AUTO,1fr), so a column whose longest unbreakable
+    // word exceeds its share grows and takes the width from its siblings. Measured at 320pt after
+    // the labels went to 13px: 97 / 80 / 75px instead of equal thirds, with the trend label broken
+    // across two lines. 320pt is what iOS Display Zoom produces on a 393pt phone.
+    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
     // GENTLE MODE REACHES THIS CARD TOO. The promise is "this person does not see calorie or macro
     // figures", and it was kept on the Nourish tab and nowhere else — this card renders on GROW, so
     // a woman who turned numbers off read "1,076 AVG CAL/DAY" on the hub. Same data, said as shape:
     // how many days she actually fuelled, which is the thing the card is really telling her.
     (_gentleCard
-      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','days fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
+      // 'days fuelled' not 'fuelled' was the GENTLE arm of this ternary, and v644b shortened only
+      // the arm beside it ('avg cal/day' -> 'cal/day') when raising these labels to the 13px floor.
+      // So at 13px/.045em the middle tile wrapped to two lines for exactly the person who turned the
+      // numbers off, and the row grew to match — a wrapping caps label, which craft-audit fails
+      // builds over, invisible to it because its seed is not in gentle mode. The value already says
+      // '/7', so the word 'days' was carrying nothing the tile did not already show.
+      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
       : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'cal/day'))+
-    stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
+    // ' wk' dropped: this card's own eyebrow reads "Your body \u00b7 last 7 days", so the suffix restated
+    // the window the header already states, and at 13px/.045em it was the difference between
+    // "\u22120.9KG" fitting an 84px column at 320pt and "\u22120.9KG WK" breaking across two lines there.
+    // 320pt is iOS Display Zoom on a 393pt phone, not a hypothetical width.
+    stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?wDelta(weekChange):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
     (wVol?wVol.toLocaleString()+'kg lifted'+arrow(wVol,pVol):'No volume logged')+

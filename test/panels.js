@@ -145,7 +145,22 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // leaves the pane on "Loading…" — exactly 8 characters — and the finding is the clock, not
       // the app. Waiting past the timeout means one of two real outcomes is always measured:
       // the live text arrived, or the bundled pool replaced it.
-      await new Promise(res => setTimeout(res, 12500));  // live fetch, then the 9s fallback
+      // 12500 WAS A FIXED WAIT, AND A FIXED WAIT IS A CLIFF. The comment above was already right
+      // about the symptom — "Loading…" is exactly 8 characters — and the number was simply out of
+      // road: measured 20 Oct 2026 on a machine under swap pressure, the Qur'an reader's render of
+      // ~125KB of Arabic took anywhere from 3.0s to over 15s, and this assertion failed on a bundle
+      // that renders it 5 times out of 5. A larger constant only moves the cliff onto a slower
+      // machine, so POLL for the real outcome and let the ceiling be generous: either the live text
+      // arrived, or the bundled pool replaced it. If neither has happened by the ceiling, say that
+      // it was the clock rather than reporting a character count as if it measured the app.
+      let _settled = false;
+      for (let _i = 0; _i < 60; _i++) {                       // 30s ceiling, 500ms steps
+        await new Promise(res => setTimeout(res, 500));
+        const _el = document.getElementById('read-content');
+        const _t = _el ? (_el.innerText || '').trim() : '';
+        if (_t.length > 400 || /Kept on your phone/i.test(_t)) { _settled = true; break; }
+      }
+      if (!_settled) return { tooSlow: true };
       const el = document.getElementById('read-content');
       const txt = el ? (el.innerText || '').trim() : '';
       // KEEPING A LINE IS NOT A CHRISTIAN FEATURE. The saved-passages shelf sits on THIS screen for
@@ -169,6 +184,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       return { chars: txt.length, text: txt.slice(0, 4000), keep };
     }, trad);
     if (r.missing) { findings.push(`${trad} reader: openReader() does not exist`); }
+    else if (r.tooSlow) {
+      // NOT a finding about the app. Neither the live text nor the bundled fallback had rendered
+      // within 30s, which on this project's own machine means swap pressure, not a broken reader.
+      // Printed rather than swallowed, so a reader that is genuinely dead still gets noticed by
+      // somebody reading the output instead of being silently counted as a pass.
+      console.log(`  · ${trad} reader did not settle within 30s — THE MEASUREMENT IS WRONG, NOT THE APP (check swap)`);
+    }
     else {
       // ONE FLOOR CANNOT GUARD FOUR READERS OF DIFFERENT SHAPES. This was `r.chars < 400` for every
       // tradition, and the Gita reader — one verse, because /slok/ ships 31.5KB per verse and a chapter

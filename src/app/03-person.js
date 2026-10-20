@@ -794,7 +794,22 @@ function lifeStateBrief(s){
   // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
   const _un = (typeof _unitsNote==='function') ? _unitsNote() : '';
   if(_un) lines.push(_un.replace(/^\\n/,'').replace(/^\n/,''));
-  if(t.sessions7 != null){
+  // A ZERO IS INFORMATION FOR SOMEBODY WITH HISTORY AND AN ACCUSATION FOR SOMEBODY WITHOUT IT.
+  // Measured 20 Oct 2026 by calling getLifeState() with empty storage: a brand-new person has
+  // sessions7 = 0, and `0 != null` is TRUE, so this line pushed — which made `lines` non-empty and
+  // the day-one sentence at the bottom of this function ("Not much logged yet - early days.")
+  // UNREACHABLE. The entire brief handed to the coach, the companion, the PT and the brother about
+  // somebody on their first day was 39 characters:
+  //     "Training: 0 sessions in 7 days (0 days)"
+  // So the app's first conversation about a person led with a count of what they had not done, in
+  // an app whose soul document says grace over shame and whose own vice card refuses to print
+  // "0 days clean" for exactly this reason.
+  // lastTitle is computed from the WHOLE workouts array rather than the last seven days, so it is
+  // the "has ever trained" signal. Somebody established who simply did not train this week still
+  // gets their zero, which is real information about them; somebody with nothing at all does not
+  // get a zero presented as the only thing known about them.
+  const _everTrained = t.sessions7 > 0 || t.sessions14 > 0 || !!t.lastTitle || !!t.tonnage7;
+  if(t.sessions7 != null && _everTrained){
     // One clause, not eight. _ptIntel() is the PT coach's briefing; this is the sentence every other
     // surface needs so it can speak to what the person has built instead of how often they turned up.
     let tl = 'Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:'');
