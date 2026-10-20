@@ -28,7 +28,13 @@ const FLOOR = 13;
 // Two exceptions, each a decision rather than a blind spot: the tab bar label (iOS draws it at 10) and
 // a chart's point annotations (caption size, 12 — what Health draws on its own charts; a 13pt number
 // sitting on every data point crowds the line it is labelling).
-const SIZE_EXEMPT = ['.nb span', '#weight-chart text'];
+// '#nut-trend-chart text' joins them for the same reason as the weight chart, and it is worth
+// saying why it was absent: that card is display:none unless food is logged on 2+ of the last 14
+// days, and the seed logged ONE, so this audit's "0 runs under the floor" was measured over a
+// card it could not see while four of its labels sat at 8px in DM Mono. The seed logs two days
+// now, which is what puts the chart inside the measurement — the exemption only keeps its
+// decided 12px from reading as a defect.
+const SIZE_EXEMPT = ['.nb span', '#weight-chart text', '#nut-trend-chart text'];
 
 const srv = http.createServer((q, r) => {
   let p = path.join(ROOT, decodeURIComponent(q.url.split('?')[0]));

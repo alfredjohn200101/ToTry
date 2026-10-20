@@ -28,6 +28,7 @@ export function seedSource() {
     const _p2 = n => String(n).padStart(2, '0');
     const _dk = d => _p2(d.getDate()) + '/' + _p2(d.getMonth() + 1) + '/' + d.getFullYear();
     const dayKey = _dk(new Date());
+    const _dkAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return _dk(d); };
     const a = [ago(9), ago(160), ago(30), ago(14)];
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     S('totry_onboarded', true); S('totry_name', 'Alfred'); S('totry_sex', 'male'); S('totry_faith_tradition', 'christianity');
@@ -120,12 +121,39 @@ export function seedSource() {
       flagged: false, ts: _dAgo(n).toISOString()
     })));
     const H = (h, m) => { const d = new Date(); d.setHours(h, m || 0, 0, 0); return d.toISOString(); };
+    // THE STAMP HAS TO AGREE WITH THE KEY IT IS FILED UNDER. H() always builds TODAY, so using it
+    // for an earlier day's entries files food under 22/10 carrying a ts that says 24/10 — and this
+    // repo's live readers resolve the day from e.ts first and e.date only as a fallback, so every
+    // one of those
+    // entries would have counted as eaten TODAY. Three days of food would have read as one enormous
+    // one, and the seeded person's whole Nourish front with it.
+    const HAgo = (n, h, m) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, m || 0, 0, 0); return d.toISOString(); };
     S('totry_nutlog', { [dayKey]: [
       { id: 1, ts: H(7, 20), name: 'Oats & whey', brand: '', serving: '80g oats + 1 scoop', qty: 1, cal: 520, pro: 38, carb: 62, fat: 11, meal: 'breakfast', source: 'Common' },
       { id: 2, ts: H(8, 5), name: 'Flat white', brand: '', serving: 'Regular', qty: 1, cal: 120, pro: 7, carb: 10, fat: 6, meal: 'breakfast', source: 'Common' },
       { id: 3, ts: H(12, 40), name: 'Chicken & rice', brand: '', serving: '200g chicken, 1 cup rice', qty: 1, cal: 730, pro: 52, carb: 81, fat: 14, meal: 'lunch', source: 'USDA' },
       { id: 4, ts: H(15, 30), name: 'Banana', brand: '', serving: '1 medium', qty: 1, cal: 105, pro: 1, carb: 27, fat: 0, meal: 'snack', source: 'Common' }
-    ] });
+    ],
+      // TWO EARLIER DAYS, AND THEY ARE NOT DECORATION. renderNutTrend() sets its card to
+      // display:none unless food is logged on 2+ of the last 14 days. With one seeded day the
+      // nutrition trend chart was display:none in EVERY craft-audit run, every panels walk and
+      // every screenshot — so "0 text runs under 13px, 0 in DM Mono" over ten screens was measured
+      // over a card nothing could see, while four of its labels sat at 8px in a face this app
+      // stopped shipping. Measured both ways before this changed: hidden on the one-day seed,
+      // visible with two. This is the recorded rule that coverage is bounded by the seed, not by
+      // the assertion count. Different totals per day on purpose, so the bars have a shape and a
+      // flat-render bug would show.
+      [_dkAgo(1)]: [
+        { id: 11, ts: HAgo(1, 7, 30), name: 'Oats & whey', brand: '', serving: '80g oats + 1 scoop', qty: 1, cal: 520, pro: 38, carb: 62, fat: 11, meal: 'breakfast', source: 'Common' },
+        { id: 12, ts: HAgo(1, 13, 0), name: 'Beef & potatoes', brand: '', serving: '200g beef, 300g potato', qty: 1, cal: 780, pro: 55, carb: 70, fat: 24, meal: 'lunch', source: 'USDA' },
+        { id: 13, ts: HAgo(1, 19, 10), name: 'Salmon & greens', brand: '', serving: '180g salmon', qty: 1, cal: 610, pro: 44, carb: 12, fat: 38, meal: 'dinner', source: 'USDA' }
+      ],
+      [_dkAgo(2)]: [
+        { id: 21, ts: HAgo(2, 8, 0), name: 'Eggs on toast', brand: '', serving: '3 eggs, 2 slices', qty: 1, cal: 470, pro: 28, carb: 38, fat: 22, meal: 'breakfast', source: 'Common' },
+        { id: 22, ts: HAgo(2, 12, 50), name: 'Chicken & rice', brand: '', serving: '200g chicken, 1 cup rice', qty: 1, cal: 730, pro: 52, carb: 81, fat: 14, meal: 'lunch', source: 'USDA' },
+        { id: 23, ts: HAgo(2, 18, 40), name: 'Stir fry & noodles', brand: '', serving: '1 bowl', qty: 1, cal: 690, pro: 34, carb: 88, fat: 20, meal: 'dinner', source: 'Common' }
+      ]
+    });
     // dayKey, NOT today. (No backticks in this comment: the whole seed is ONE template literal, so a
     // backtick here ends it and the file stops parsing — which is exactly what happened.)
     // 'today' is an ISO slice ("2026-09-29"); every writer and reader of this

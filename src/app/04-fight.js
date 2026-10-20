@@ -380,7 +380,33 @@ function viewBodyPhoto(idx){
 function exportBodyCollage(){
   const entries = bodyPhotos();
   if(!entries.length){ showToast('No photos', 'Add photos to your check-ins first.'); return; }
-  
+
+  // AWAIT THE FACES BEFORE DRAWING. A canvas does not trigger a font load, so a face that the DOM
+  // has not already pulled draws in a fallback — which is why both share-card renderers do this and
+  // why this one, which never did, could not simply be pointed at the app's own faces.
+  const draw = () => _exportBodyCollageDraw(entries);
+  if(document.fonts && document.fonts.load){
+    Promise.all([
+      document.fonts.load('italic 300 28px "Cormorant Garamond"'),
+      document.fonts.load('600 13px "Outfit"'),
+      document.fonts.load('500 11px "Outfit"'),
+    ]).then(draw).catch(draw);
+  } else { draw(); }
+}
+
+// THE COLLAGE HAD AN INVISIBLE TITLE AND INVISIBLE DATES, AND IT WAS EXPORTED THAT WAY.
+// Three of its colours were CSS custom properties, which a canvas cannot resolve — it has no
+// element and no cascade. An unparseable fillStyle is IGNORED and the previous value stands, and
+// fillStyle starts as opaque black, so measured in a browser on 19 Oct 2026:
+//   fillStyle = 'var(--bg)' -> painted #000000   (the background, black by accident)
+//   fillStyle = 'var(--go)' -> painted #000000   ("My Progress", black on that black)
+//   fillStyle = 'var(--go)' -> kept rgba(0,0,0,0.7)  (each photo's date, on its own 70%-black strip)
+// Only the "TOTRY · date" line (#777) and the weight ('white') were ever legible. This is a progress
+// collage of somebody's own body that they export to keep or to show, and its headline and every
+// date were not there.
+// It also drew in Georgia, monospace and sans-serif — none of the app's own faces, and with no
+// font await at all, which is the second half above.
+function _exportBodyCollageDraw(entries){
   // Build a single collage canvas
   const PHOTO_SIZE = 200;
   const COLS = Math.min(3, entries.length);
@@ -395,15 +421,15 @@ function exportBodyCollage(){
   const ctx = canvas.getContext('2d');
   
   // Background
-  ctx.fillStyle = 'var(--bg)';
+  ctx.fillStyle = '#0E0E11';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   // Title
-  ctx.fillStyle = 'var(--go)';
-  ctx.font = 'italic 28px Georgia';
+  ctx.fillStyle = '#D9C18C';
+  ctx.font = 'italic 300 28px "Cormorant Garamond", Georgia, serif';
   ctx.textAlign = 'center';
   ctx.fillText('My Progress', canvas.width/2, 40);
-  ctx.font = '11px monospace';
+  ctx.font = '500 11px "Outfit", sans-serif';
   ctx.fillStyle = '#777';
   ctx.fillText('TOTRY · ' + new Date().toLocaleDateString('en-AU'), canvas.width/2, 60);
   
@@ -427,12 +453,12 @@ function exportBodyCollage(){
       // Label
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(x, y + PHOTO_SIZE - 28, PHOTO_SIZE, 28);
-      ctx.fillStyle = 'var(--go)';
-      ctx.font = '10px monospace';
+      ctx.fillStyle = '#D9C18C';
+      ctx.font = '500 10px "Outfit", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(e.date, x + PHOTO_SIZE/2, y + PHOTO_SIZE - 16);
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = '600 13px "Outfit", sans-serif';
       ctx.fillText(wFmt(e.weight), x + PHOTO_SIZE/2, y + PHOTO_SIZE - 4);
       
       loaded++;

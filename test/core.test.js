@@ -16659,4 +16659,141 @@ H.section('a session nothing else counted is not skipped');
   if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
 }
 
+// ── the service worker precaches the fonts the bundle actually loads ──────────────────────────────
+// Found 19 Oct 2026. sw.js's CORE list was hand-maintained against a design that had moved, and it
+// was wrong in BOTH directions at once: it precached three DM Mono files that no @font-face
+// references (the app stopped shipping that face; four comments in src/ say so), and it omitted
+// outfit-ext.woff2, which the bundle does load — the Latin-Extended half of the body face by
+// unicode-range, so a cold offline start fell to a system fallback for exactly the people whose own
+// name needs those glyphs.
+//
+// SO THIS ASSERTS THE RELATIONSHIP, NOT A LIST. A hardcoded expected list is the thing that just
+// failed; it would have been equally green while wrong. Both sides are derived: the fonts the
+// bundle asks for come from its own @font-face src rules, the fonts CORE precaches come from sw.js,
+// and they must be the same SET. That makes adding a weight to the design a one-file change the
+// gate then demands be matched here, and it makes deleting an unused file safe — `addAll` is
+// atomic, so one stale entry 404ing rejects the whole install and precaches NOTHING.
+{
+  const fs2 = require('fs'), path2 = require('path');
+  const root2 = path2.join(__dirname, '..');
+  const idx = fs2.readFileSync(path2.join(root2, 'index.html'), 'utf8');
+  const sw2 = fs2.readFileSync(path2.join(root2, 'sw.js'), 'utf8');
+
+  // What the bundle ASKS for: every src:url() inside an @font-face block.
+  const asked = new Set();
+  for (const m of idx.matchAll(/@font-face\s*\{[^}]*\}/g)) {
+    for (const u of m[0].matchAll(/src:\s*url\(['"]?([^'")]+)['"]?\)/g)) asked.add(u[1].replace(/^\.\//, ''));
+  }
+  // What CORE precaches: only the font entries, and only from the CORE array itself — a bare grep of
+  // sw.js would also match the three filenames now NAMED IN ITS OWN COMMENT explaining their
+  // removal, which is this repo's recorded trap of a check matching the comment rather than the code.
+  const coreOpen = sw2.indexOf('const CORE');
+  const coreArr = sw2.slice(sw2.indexOf('[', coreOpen), sw2.indexOf('];', coreOpen));
+  const coreCode = coreArr.replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const cached = new Set([...coreCode.matchAll(/['"]\.\/([^'"]*\.woff2)['"]/g)].map(m => m[1]));
+
+  H.ok(asked.size >= 3, 'the bundle declares @font-face rules this check can read (' + asked.size + ' found)');
+  const missing = [...asked].filter(f => !cached.has(f));
+  const dead = [...cached].filter(f => !asked.has(f));
+  H.eq(missing.join(',') || 'none', 'none',
+    'every font the bundle loads is precached, so a cold offline start renders in the app\'s own faces');
+  H.eq(dead.join(',') || 'none', 'none',
+    'and CORE precaches no font the bundle never asks for — dead weight on install, and an atomic-addAll trap');
+
+  // Every one of them has to EXIST, in the repo and in both shipped copies, or addAll rejects and
+  // the offline shell silently stops existing. This is the half that makes the check above safe to
+  // act on: it is what lets somebody delete an unused font file without bricking the cache.
+  for (const dir of ['.', 'www', 'ios/App/App/public']) {
+    const absent = [...cached].filter(f => !fs2.existsSync(path2.join(root2, dir, f)));
+    H.eq(absent.join(',') || 'none', 'none', 'every precached font exists in ' + dir + '/ — addAll is atomic, so one 404 precaches nothing');
+  }
+
+  // ── AND CANVAS TEXT IS PIXELS, WHICH NO DOM AUDIT CAN SEE ──────────────────────────────────────
+  // The sharper half of the same defect, found the same day. The two share-card renderers in
+  // 25-soul.js draw with ctx.font, and 14 of those sites named "DM Mono" — so the card a person
+  // POSTS, whose entire job is to carry the app's look, drew its labels and numbers in the system
+  // monospace. Silent twice over: document.fonts.load() RESOLVES for an unknown family rather than
+  // rejecting, so the await succeeded and the draw proceeded; and craft-audit asks the browser for
+  // the computed family of every visible text RUN, which reported "DM Mono 38 → 0" truthfully about
+  // the DOM and structurally could not see a <canvas>.
+  //
+  // Two questions, because the second is what makes the first safe to act on. A family drawn on a
+  // canvas must (a) have an @font-face, or it silently falls back, and (b) be AWAITED in a
+  // document.fonts.load, because canvas does not trigger a font load by itself — so swapping a
+  // family without swapping the await just changes WHICH wrong face appears, intermittently, since
+  // a card drawn after the DOM already pulled that face looks correct.
+  //
+  // Comment-stripped on purpose: the fix's own explanation names the dropped face twice, and a grep
+  // that matches the comment recording a defect is this repo's most-repeated instrument failure.
+  {
+    const live = H.code(idx);
+    const families = new Set();
+    for (const m of live.matchAll(/ctx\.font\s*=\s*['"][^'"]*?"([^"]+)"/g)) families.add(m[1]);
+    for (const m of live.matchAll(/ctx\.font\s*=\s*['"][^'"]*?'([^']+)'/g)) families.add(m[1]);
+    H.ok(families.size >= 1, 'the share cards draw canvas text this check can read (' + [...families].join(', ') + ')');
+
+    const faced = new Set();
+    for (const m of live.matchAll(/@font-face\s*\{[^}]*\}/g)) {
+      const f = /font-family:\s*['"]?([^;'"}]+)/.exec(m[0]);
+      if (f) faced.add(f[1].trim());
+    }
+    const unfaced = [...families].filter(f => !faced.has(f));
+    H.eq(unfaced.join(',') || 'none', 'none',
+      'every family drawn on a canvas has an @font-face, so the share card cannot fall back to a system face');
+
+    const awaited = new Set();
+    for (const m of live.matchAll(/document\.fonts\.load\(\s*['"][^'"]*?"([^"]+)"/g)) awaited.add(m[1]);
+    const unawaited = [...families].filter(f => !awaited.has(f));
+    H.eq(unawaited.join(',') || 'none', 'none',
+      'and every one is awaited before the draw — canvas does not trigger a font load by itself');
+  }
+
+  // ── A CANVAS CANNOT RESOLVE A CSS CUSTOM PROPERTY ────────────────────────────────────────────────
+  // The worst defect of 19 Oct 2026, and it was invisible to all 4355 assertions before it. A canvas
+  // has no element and no cascade, so `var(--go)` is not a colour to it:
+  //   • ctx.fillStyle / strokeStyle / shadowColor SILENTLY IGNORE an unparseable value and keep
+  //     whatever was set before. fillStyle starts as opaque black, so exportBodyCollage painted its
+  //     background AND its "My Progress" title in #000000 — black on black — and each photo's date
+  //     in the rgba(0,0,0,0.7) of the strip behind it. Three of five text runs were invisible in an
+  //     image a person exports of their own body.
+  //   • CanvasGradient.addColorStop THROWS a SyntaxError. So renderCustomShareCard died on its
+  //     first gradient and "Generate share card" produced NOTHING — silently, because its caller
+  //     runs it as .then(draw).catch(draw) and the throw became an unhandled rejection.
+  //   • And _shareThemeColors' DARK branch — the default, `ls('totry_share_theme') || 'dark'` —
+  //     leaked two var()s while its light branch was entirely literal, which is what proved the
+  //     author already knew. Measured: _renderShareCanvas threw for ALL THREE styles in dark and
+  //     completed for all three in light. Every share card in the app was dead on a fresh install.
+  //
+  // The literal-vs-token tension is real and this is the one place the answer is "literal": the
+  // repo's "no new hardcoded ink" rule exists because a literal cannot follow the theme, and a
+  // canvas cannot follow the theme EITHER. _shareThemeColors is how that is reconciled — one
+  // function, one literal set per theme — so the rule here is about the SINK, not the value.
+  {
+    const live = H.code(idx);
+    const bad = [];
+    for (const m of live.matchAll(/ctx\s*\.\s*(?:fillStyle|strokeStyle|shadowColor)\s*=\s*(['"])((?:(?!\1).)*)\1/g)) {
+      if (/var\(\s*--/.test(m[2])) bad.push('ctx.' + m[0].split('=')[0].trim().replace(/^ctx\s*\.\s*/, '') + ' = ' + m[2]);
+    }
+    for (const m of live.matchAll(/\.addColorStop\s*\(([^)]*)\)/g)) {
+      if (/var\(\s*--/.test(m[1])) bad.push('addColorStop(' + m[1].trim().slice(0, 48) + ')');
+    }
+    H.eq(bad.join(' | ') || 'none', 'none',
+      'no canvas colour is a CSS custom property — fillStyle would ignore it and addColorStop throws');
+
+    // And the theme tables that FEED those sinks must be literal all the way down, in BOTH branches.
+    // The defect was one branch of one object, so a check on the function as a whole would have
+    // passed: the light branch's literals sat right beside the dark branch's two var()s.
+    const stc = H.code(H.extractFn('_shareThemeColors'));
+    H.ok(stc.length > 200, 'the share-card theme table was found (' + stc.length + ' chars)');
+    const leaks = (stc.match(/\w+\s*:\s*'var\(--[^']*'/g) || []);
+    H.eq(leaks.join(', ') || 'none', 'none',
+      'and every value in BOTH theme branches is a literal a canvas can parse');
+    H.ok(/'light'/.test(stc) && /#0E0E11|#F4EFE6/.test(stc), 'both branches are present to be checked');
+  }
+
+  // The DM Mono face is gone from the design; nothing may quietly ask for it again.
+  H.ok(!/dm-mono/i.test(coreCode), 'CORE does not precache DM Mono, a face this app stopped shipping');
+  H.ok(!/@font-face[^}]*dm-mono/i.test(idx), 'and nothing declares an @font-face for it either');
+}
+
 H.report();

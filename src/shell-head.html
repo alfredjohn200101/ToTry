@@ -2168,6 +2168,14 @@ input.row-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
    20% taller than they are wide: a chart that drew its own labels distorted. */
 #weight-chart text{font-family:var(--font-rounded);font-size:12px;fill:var(--tx3);font-variant-numeric:tabular-nums}
 #weight-chart .chart-empty{font-family:var(--font-text);font-size:13px}
+/* The SAME defect, on the nutrition trend chart, found 19 Oct 2026 — the comment above was written
+   when it was fixed here and that chart kept both halves of it: four labels at 8px in "DM Mono".
+   Deliberately NOT setting fill: the goal number is tinted var(--go) because it labels the goal
+   line, the day labels are var(--tx3), and one CSS fill would flatten a distinction that means
+   something. Why nothing caught it: renderNutTrend() hides its card unless food is logged on 2+ of
+   the last 14 days, and the seed logged ONE, so craft-audit's "0 runs under 13px, 0 DM Mono" was
+   measured over a card that was display:none. The seed logs two days now. */
+#nut-trend-chart text{font-family:var(--font-rounded);font-size:12px;font-variant-numeric:tabular-nums}
 /* Inside a card: the headline speaks in the app's own face, the line under it is a subheadline, and
    a footnote is a footnote — 13pt, secondary, left. Two of these were centred italics. */
 .card-display{font-family:var(--font-display);font-size:26px;font-weight:500;line-height:1.15;color:var(--tx);margin-bottom:4px}

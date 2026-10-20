@@ -6406,11 +6406,23 @@ function renderNutTrend(){
   const barW=(W-padL-padR)/days.length;
   const y=v=>padT+(1-v/maxV)*(H-padT-padB);
   
+  // The labels carry NO font-family and NO font-size of their own. They used to say
+  // font-family="DM Mono,monospace" font-size="8" — and the comment above #weight-chart text in
+  // shell-head.html describes that exact pair as a defect it had already fixed on ITS chart, in
+  // those words: "the point labels in 'DM Mono' - a face this app stopped shipping - at 8px".
+  // This chart kept both halves. Measured in a browser, all four runs rendered at 8px in system
+  // monospace, because nothing declares an @font-face for DM Mono any more. They are styled by
+  // #nut-trend-chart text now, beside the weight chart's rule, at the same 12px in the app's own
+  // rounded face. The fills STAY as attributes: the goal number is deliberately tinted and the day
+  // labels are not, so a single CSS fill would flatten a distinction that means something.
+  // It had never been looked at: renderNutTrend returns early below unless food is logged on 2+ of
+  // the last 14 days, and the repo seed logs ONE day, so the card is display:none in every
+  // craft-audit run. The seed logs two days now so this chart is inside the measurement.
   let svg='<svg aria-hidden="true" viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
   // Goal line
   const gy=y(goal);
   svg+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="var(--go)" stroke-width="1" stroke-dasharray="3,3" opacity="0.7"/>';
-  svg+='<text x="'+(padL-4)+'" y="'+(gy+3).toFixed(1)+'" text-anchor="end" font-family="DM Mono,monospace" font-size="8" fill="var(--go)">'+goal+'</text>';
+  svg+='<text x="'+(padL-4)+'" y="'+(gy+3).toFixed(1)+'" text-anchor="end" fill="var(--go)">'+goal+'</text>';
   // Bars
   days.forEach((d,i)=>{
     const x=padL+i*barW+1;
@@ -6424,7 +6436,7 @@ function renderNutTrend(){
       svg+='<rect x="'+x.toFixed(1)+'" y="'+(H-padB-2)+'" width="'+bw.toFixed(1)+'" height="2" rx="1" fill="rgba(255,255,255,0.06)"/>';
     }
     if(i===0||i===days.length-1||i===Math.floor(days.length/2)){
-      svg+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="var(--tx3)">'+d.label+'</text>';
+      svg+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" fill="var(--tx3)">'+d.label+'</text>';
     }
   });
   svg+='</svg>';

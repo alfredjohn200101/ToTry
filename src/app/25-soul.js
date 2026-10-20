@@ -829,17 +829,55 @@ function createCustomShareCard(){
   document.querySelector('.modal-bg.open')?.remove();
   
   // Build the custom share card — load the app's fonts first so it matches the app's look.
+  //
+  // THAT COMMENT WAS TRUE OF THE HEADLINE AND FALSE OF EVERYTHING ELSE UNTIL 19 Oct 2026. The small
+  // type was drawn in "DM Mono", a face this app stopped shipping — there is no @font-face for it
+  // anywhere in the bundle and no FontFace registration, so all 14 ctx.font sites across the two
+  // card renderers fell to the system `monospace`. The card is the one artefact a person POSTS, and
+  // its whole job is to carry the app's look, so the labels and the numbers on it were the system
+  // mono on somebody else's timeline.
+  //
+  // It was silent, twice over. document.fonts.load() RESOLVES for an unknown family — with an empty
+  // list of faces, not a rejection — so the await succeeded and the draw proceeded believing the
+  // font was ready. And canvas text is PIXELS, not elements: craft-audit asks the browser for the
+  // computed family of every visible text run and reported "DM Mono 38 → 0", which was true of the
+  // DOM and could never have been true of a <canvas>.
+  //
+  // THE AWAIT HAS TO MOVE WITH THE FAMILY. Canvas does not trigger a font load by itself, which is
+  // the entire reason this block exists; switching ctx.font to Outfit without switching the load
+  // would have drawn a cold card in the system SANS instead — intermittently, because a card drawn
+  // after the DOM had already pulled Outfit would look right. Outfit's @font-face is a variable file
+  // declared 300–700, so the 500 asked for here is a real weight and not a synthesised one.
   const draw = () => renderCustomShareCard(prefs);
   if(document.fonts && document.fonts.load){
     Promise.all([
       document.fonts.load('300 200px "Cormorant Garamond"'),
       document.fonts.load('italic 400 56px "Cormorant Garamond"'),
-      document.fonts.load('500 14px "DM Mono"'),
+      document.fonts.load('500 14px "Outfit"'),
     ]).then(draw).catch(draw);
   } else { draw(); }
 }
 
 function renderCustomShareCard(prefs){
+  // THIS FUNCTION DREW NOTHING AT ALL UNTIL 19 Oct 2026, AND NOTHING SAID SO.
+  // It painted with CSS custom properties — ctx.fillStyle = 'var(--go)' and friends, 15 sites. A
+  // canvas has no element and no cascade, so it cannot resolve one: fillStyle silently IGNORES an
+  // unparseable value and keeps whatever was there, and addColorStop THROWS. So the very first
+  // thing this did, the gold glow four lines below, raised
+  //   SyntaxError: Failed to execute 'addColorStop' on 'CanvasGradient'
+  // and the whole card died there. createCustomShareCard() calls this inside a
+  // .then(draw).catch(draw), so the throw became an unhandled rejection: the customizer sheet
+  // closed, no image appeared, no error was shown. "Generate share card" did nothing, silently.
+  // The signature failure this repo keeps recording — it parses, every id resolves, every handler
+  // exists, 4355 assertions were green, and the feature was dead.
+  //
+  // The literals below are the dark palette's own gold (#D9C18C) at the alphas _shareThemeColors
+  // chose for goldSoft and glowGold. Deliberately NOT converted to call _shareThemeColors(theme):
+  // every other ink in this function is a hardcoded dark literal (#E8D4A0, #F5EBD2,
+  // rgba(255,255,255,...)), so this card has never had a light theme at all. Giving it one is a
+  // visible design change, not a bug fix, and it belongs in its own pass — the defect here was that
+  // the card produced NO IMAGE. That gap is real and is left named rather than half-done: somebody
+  // who picks the light background still gets a dark custom card.
   const dayCount = getDayCount();
   const identity = ls('totry_identity') || '';
   loadV();
@@ -869,7 +907,9 @@ function renderCustomShareCard(prefs){
   ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 1080, 1080);
   
   const goldGlow = ctx.createRadialGradient(820, 220, 60, 820, 220, 700);
-  goldGlow.addColorStop(0, 'var(--go-bg)'); goldGlow.addColorStop(0.4, 'var(--go-bg)'); goldGlow.addColorStop(1, 'var(--go-bg)');
+  // Three IDENTICAL stops is a flat wash, not a glow — createShareCard's own g1 fades its
+  // glowGold out to rgba(0,0,0,0), and the comment above claims consistency with it.
+  goldGlow.addColorStop(0, 'rgba(217,193,140,0.10)'); goldGlow.addColorStop(0.4, 'rgba(217,193,140,0.04)'); goldGlow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = goldGlow; ctx.fillRect(0, 0, 1080, 1080);
   
   const purpleGlow = ctx.createRadialGradient(220, 880, 60, 220, 880, 600);
@@ -883,10 +923,10 @@ function renderCustomShareCard(prefs){
   }
   
   // Border + corners
-  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(217,193,140,0.5)'; ctx.lineWidth = 1;
   ctx.strokeRect(48, 48, 984, 984);
   if(false){
-  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(217,193,140,0.5)'; ctx.lineWidth = 2;
   const cornerSize = 20;
   [[60,60],[1020,60],[60,1020],[1020,1020]].forEach(([x,y]) => {
     ctx.beginPath();
@@ -899,7 +939,7 @@ function renderCustomShareCard(prefs){
   }
   
   // Wordmark
-  ctx.textAlign = 'center'; ctx.fillStyle = 'var(--go)';
+  ctx.textAlign = 'center'; ctx.fillStyle = '#D9C18C';
   ctx.font = '300 56px "Cormorant Garamond", Georgia, serif';
   const toW = ctx.measureText('To').width;
   ctx.font = 'italic 300 56px "Cormorant Garamond", Georgia, serif';
@@ -912,12 +952,12 @@ function renderCustomShareCard(prefs){
   ctx.fillText('Try', 540 - totalW/2 + toW + wordmarkGap, 130);
   
   ctx.textAlign = 'center';
-  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(217,193,140,0.5)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(380, 180); ctx.lineTo(440, 180);
   ctx.moveTo(640, 180); ctx.lineTo(700, 180); ctx.stroke();
   
-  ctx.fillStyle = 'var(--go)';
-  ctx.font = '500 14px "DM Mono", monospace';
+  ctx.fillStyle = '#D9C18C';
+  ctx.font = '500 14px "Outfit", sans-serif';
   const dateStr = new Date().toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long', year:'numeric'}).toUpperCase();
   ctx.fillText(dateStr, 540, 185);
   
@@ -929,11 +969,11 @@ function renderCustomShareCard(prefs){
   // Hero day count (always considered if showDay)
   if(prefs.showDay){
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '500 13px "DM Mono", monospace';
+    ctx.font = '500 13px "Outfit", sans-serif';
     ctx.fillText('· DAY OF TRYING ·', 540, y);
     y += 30;
     
-    ctx.shadowColor = 'var(--go-bd)'; ctx.shadowBlur = 50;
+    ctx.shadowColor = 'rgba(217,193,140,0.5)'; ctx.shadowBlur = 50;
     ctx.fillStyle = '#E8D4A0';
     ctx.font = '200 220px "Cormorant Garamond", Georgia, serif';
     ctx.fillText(dayCount.toString(), 540, y + 160);
@@ -958,7 +998,7 @@ function renderCustomShareCard(prefs){
       const x = startX + i * (chipW + 20);
       // Pill background
       ctx.fillStyle = 'rgba(255,255,255,0.04)';
-      ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(217,193,140,0.5)'; ctx.lineWidth = 1;
       const pillY = y - 10;
       ctx.beginPath();
       const r = 14;
@@ -978,8 +1018,8 @@ function renderCustomShareCard(prefs){
       ctx.font = '400 30px "Cormorant Garamond", Georgia, serif';
       ctx.fillText(s.big, x, pillY + 36);
       // Label
-      ctx.fillStyle = 'var(--go)';
-      ctx.font = '500 10px "DM Mono", monospace';
+      ctx.fillStyle = '#D9C18C';
+      ctx.font = '500 10px "Outfit", sans-serif';
       ctx.fillText(s.label, x, pillY + 60);
     });
     y += 100;
@@ -988,8 +1028,8 @@ function renderCustomShareCard(prefs){
   // Identity / workout / quote area
   if(prefs.showIdentity && identity){
     y += 16;
-    ctx.fillStyle = 'var(--go)';
-    ctx.font = '500 11px "DM Mono", monospace';
+    ctx.fillStyle = '#D9C18C';
+    ctx.font = '500 11px "Outfit", sans-serif';
     ctx.fillText('I AM BECOMING', 540, y);
     y += 28;
     ctx.fillStyle = '#F5EBD2';
@@ -1011,8 +1051,8 @@ function renderCustomShareCard(prefs){
   
   if(prefs.showWorkout && todayWorkout){
     y += 12;
-    ctx.fillStyle = 'var(--go)';
-    ctx.font = '500 11px "DM Mono", monospace';
+    ctx.fillStyle = '#D9C18C';
+    ctx.font = '500 11px "Outfit", sans-serif';
     ctx.fillText('TRAINED TODAY', 540, y);
     y += 24;
     ctx.fillStyle = '#F5EBD2';
@@ -1045,10 +1085,10 @@ function renderCustomShareCard(prefs){
   if(prefs.showCatchphrase){
     ctx.fillStyle = 'rgba(255,255,255,0.025)';
     ctx.fillRect(120, 880, 840, 130);
-    ctx.strokeStyle = 'var(--go-bg)'; ctx.lineWidth = 0.8;
+    ctx.strokeStyle = 'rgba(217,193,140,0.10)'; ctx.lineWidth = 0.8;
     ctx.strokeRect(120, 880, 840, 130);
     
-    ctx.fillStyle = 'var(--go-bg)';
+    ctx.fillStyle = 'rgba(217,193,140,0.10)';
     ctx.font = '400 80px "Cormorant Garamond", Georgia, serif';
     ctx.textAlign = 'left'; ctx.fillText('"', 145, 935);
     ctx.textAlign = 'right'; ctx.fillText('"', 945, 980);
@@ -1057,14 +1097,14 @@ function renderCustomShareCard(prefs){
     ctx.fillStyle = '#F5EBD2';
     ctx.font = 'italic 300 32px "Cormorant Garamond", Georgia, serif';
     ctx.fillText('The least we can do everyday,', 540, 932);
-    ctx.fillStyle = 'var(--go)';
+    ctx.fillStyle = '#D9C18C';
     ctx.font = 'italic 400 34px "Cormorant Garamond", Georgia, serif';
     ctx.fillText('is to try.', 540, 978);
   }
   
   // Signature
-  ctx.fillStyle = 'var(--go-bd)';
-  ctx.font = '500 10px "DM Mono", monospace';
+  ctx.fillStyle = 'rgba(217,193,140,0.5)';
+  ctx.font = '500 10px "Outfit", sans-serif';
   ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1055);
   
   // Output
@@ -1096,7 +1136,7 @@ function createShareCard(style){
     Promise.all([
       document.fonts.load('300 200px "Cormorant Garamond"'),
       document.fonts.load('italic 400 60px "Cormorant Garamond"'),
-      document.fonts.load('500 14px "DM Mono"'),
+      document.fonts.load('500 14px "Outfit"'),
       document.fonts.load('400 24px "Cormorant Garamond"'),
     ]).then(drawWith).catch(drawWith);
   } else { drawWith(); }
@@ -1111,11 +1151,23 @@ function _shareThemeColors(theme){
       gold:'#9A7B43', goldSoft:'rgba(154,123,67,0.5)', line:'rgba(42,38,32,0.18)',
     };
   }
+  // EVERY VALUE HERE IS A LITERAL, AND THAT IS THE WHOLE POINT OF THIS FUNCTION.
+  // A canvas has no element and no cascade, so it cannot resolve a CSS custom property: fillStyle
+  // silently IGNORES an unparseable value and keeps the previous one, and addColorStop THROWS. The
+  // light branch below was already all literals, which is what said somebody knew — and this branch
+  // leaked two, glowGold:'var(--go-bg)' and goldSoft:'var(--go-bd)'. Measured 19 Oct 2026: the theme
+  // defaults to dark when nobody has chosen, and _renderShareCanvas threw a SyntaxError on
+  // addColorStop for ALL THREE styles — milestone, scripture and identity — while every light-theme
+  // style completed. So on a fresh install every share card in the app silently produced nothing.
+  // They were also the WRONG HUE: --go-bg is rgba(64,156,255,0.16) and --go-bd is
+  // rgba(64,156,255,0.42) — the iOS blue tint. Keys named glowGold and goldSoft pointed at blue, so
+  // even a canvas that could read them would have drawn a blue glow on a gold card. The replacements
+  // mirror this branch's OWN gold (#D9C18C) at the alphas the light branch chose, 0.10 and 0.5.
   return {
     bgTop:'#0E0E11', bgMid:'#16161B', bgBot:'#0A0A0D',
-    glowGold:'var(--go-bg)', glowPurple:'rgba(140,107,182,0.10)',
+    glowGold:'rgba(217,193,140,0.10)', glowPurple:'rgba(140,107,182,0.10)',
     ink:'#F2EEE6', ink2:'rgba(255,255,255,0.72)', ink3:'rgba(255,255,255,0.42)',
-    gold:'#D9C18C', goldSoft:'var(--go-bd)', line:'rgba(255,255,255,0.16)',
+    gold:'#D9C18C', goldSoft:'rgba(217,193,140,0.5)', line:'rgba(255,255,255,0.16)',
   };
 }
 
@@ -1196,12 +1248,12 @@ function _renderShareCanvas(style, theme){
 
   // Eyebrow date
   ctx.fillStyle = C.ink3;
-  ctx.font = '500 13px "DM Mono", monospace';
+  ctx.font = '500 13px "Outfit", sans-serif';
   const dateStr = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   ctx.fillText(dateStr.split('').join('\u200a'), 540, 192);
 
   // ── STYLE BODY ──
-  const eyebrow = (txt, y) => { ctx.fillStyle=C.gold; ctx.font='500 13px "DM Mono", monospace'; ctx.fillText(txt, 540, y); };
+  const eyebrow = (txt, y) => { ctx.fillStyle=C.gold; ctx.font='500 13px "Outfit", sans-serif'; ctx.fillText(txt, 540, y); };
   const tick = (y) => { ctx.strokeStyle=C.goldSoft; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(500,y); ctx.lineTo(580,y); ctx.stroke(); };
 
   if(style === 'identity' && identity){
@@ -1212,7 +1264,7 @@ function _renderShareCanvas(style, theme){
     let y = 470 - (lines.length-1)*32;
     lines.slice(0,5).forEach(l => { ctx.fillText(l, 540, y); y += 64; });
     tick(y + 6);
-    ctx.fillStyle = C.ink3; ctx.font='500 13px "DM Mono", monospace';
+    ctx.fillStyle = C.ink3; ctx.font='500 13px "Outfit", sans-serif';
     ctx.fillText('DAY \u00b7 '+dayCount, 540, y + 50);
   }
   else if(style === 'evening' && (todayEvening || todayJournal)){
@@ -1224,7 +1276,7 @@ function _renderShareCanvas(style, theme){
     let y = 470 - (lines.length-1)*30;
     lines.slice(0,7).forEach(l => { ctx.fillText(l, 540, y); y += 56; });
     tick(y + 10);
-    ctx.fillStyle = C.ink3; ctx.font='500 13px "DM Mono", monospace';
+    ctx.fillStyle = C.ink3; ctx.font='500 13px "Outfit", sans-serif';
     ctx.fillText('DAY \u00b7 '+dayCount, 540, y + 54);
   }
   else if(style === 'scripture' && verse){
@@ -1237,7 +1289,7 @@ function _renderShareCanvas(style, theme){
     let y = 480 - (lines.length-1)*32;
     lines.slice(0,8).forEach(l => { ctx.fillText(l, 540, y); y += 60; });
     tick(y + 8);
-    if(verseRef){ ctx.fillStyle=C.gold; ctx.font='500 14px "DM Mono", monospace'; ctx.fillText(verseRef.toUpperCase(), 540, y + 50); }
+    if(verseRef){ ctx.fillStyle=C.gold; ctx.font='500 14px "Outfit", sans-serif'; ctx.fillText(verseRef.toUpperCase(), 540, y + 50); }
   }
   else if(style === 'wins' && wins > 0){
     eyebrow('\u00b7 BATTLES WON \u00b7', 300);
@@ -1249,7 +1301,7 @@ function _renderShareCanvas(style, theme){
     ctx.fillText('urge'+(wins===1?'':'s')+' faced and overcome', 540, 600);
     if(longestStreak > 0){
       tick(660);
-      ctx.fillStyle = C.ink3; ctx.font='500 13px "DM Mono", monospace';
+      ctx.fillStyle = C.ink3; ctx.font='500 13px "Outfit", sans-serif';
       ctx.fillText(longestStreak+' DAY'+(longestStreak===1?'':'S')+' \u00b7 CLEAN \u00b7 STRONGEST CURRENT', 540, 700);
     }
   }
@@ -1260,7 +1312,7 @@ function _renderShareCanvas(style, theme){
     ctx.fillText(dayCount.toString(), 540, 560);
     tick(620);
     ctx.fillStyle = C.ink2;
-    ctx.font = '500 14px "DM Mono", monospace';
+    ctx.font = '500 14px "Outfit", sans-serif';
     ctx.fillText('DAYS \u00b7 OF \u00b7 THE \u00b7 JOURNEY', 540, 668);
     // Quiet bullet list of today's substance
     const reflections = [];
@@ -1287,7 +1339,7 @@ function _renderShareCanvas(style, theme){
 
   // ── Footer wordmark ──
   ctx.fillStyle = C.ink3;
-  ctx.font = '500 11px "DM Mono", monospace';
+  ctx.font = '500 11px "Outfit", sans-serif';
   ctx.fillText('TO \u00b7 TRY \u00b7 BY \u00b7 ALFRED \u00b7 JOHN', 540, 1000);
 
   // Deliver — preview with theme toggle + download/share.

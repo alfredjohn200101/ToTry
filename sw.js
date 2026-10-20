@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v643-the-row-keeps-its-number'
+const CACHE = 'totry-v644-a-canvas-cannot-read-a-token'
 
 const CORE = [
   './',
@@ -16,12 +16,26 @@ const CORE = [
   // The brand fonts. Precached for the same reason as the SDK: without them the app opens and
   // works, but in the system serif — and the lock screen's wordmark, the only branding on that
   // screen, stops looking like the logo.
+  //
+  // THIS LIST IS EXACTLY THE FOUR FILES THE BUNDLE'S OWN @font-face RULES ASK FOR, AND A TEST HOLDS
+  // IT TO THEM. It was wrong in both directions at once until 19 Oct 2026, because it was
+  // hand-maintained against a design that had moved:
+  //   • It precached THREE DM Mono files that no @font-face references at all. The app stopped
+  //     shipping that face — four comments in src/ say so in those words — so 26kB was downloaded
+  //     on every install to be used by nothing.
+  //   • It OMITTED outfit-ext.woff2, which the bundle does load. That is the Latin-Extended half of
+  //     the body face by unicode-range (U+0100–02BA, Latin Extended Additional, and the currency
+  //     block U+20A0–20C0), so on a cold offline start the glyphs it carries fell to a system
+  //     fallback. The people that reaches are the ones whose own NAME needs it — ā ē ī ō ū, ć, ł,
+  //     ş, ž, the Vietnamese tone marks — plus ₫ ₹ ₴ ₦ ₱. In an app that opens by greeting somebody
+  //     by name, the mismatch landed on exactly the people least likely to assume it was a bug.
+  // And `addAll` is ATOMIC: one 404 rejects the whole install and NOTHING is precached, so three
+  // entries for files the app no longer needs were also a trap waiting on the day somebody deleted
+  // them from fonts/ for being unused.
   './fonts/cormorant-garamond-italic.woff2',
   './fonts/cormorant-garamond.woff2',
-  './fonts/dm-mono-300.woff2',
-  './fonts/dm-mono-400.woff2',
-  './fonts/dm-mono-500.woff2',
   './fonts/outfit.woff2',
+  './fonts/outfit-ext.woff2',
 ];
 
 // ── INSTALL — cache all core files immediately ──
