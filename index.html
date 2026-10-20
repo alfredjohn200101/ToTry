@@ -36942,7 +36942,7 @@ function renderNutritionLog(){
     })();
     dateEl.textContent = dayShown;
     if(st.n >= 2){
-      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+      dateEl.innerHTML = dayShown + ' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -37450,13 +37450,13 @@ function renderNutWeeklyDigest(){
   box.innerHTML =
     '<div class="card-hd" style="margin-bottom:8px">'+svgIcon("calendar")+' This week</div>' +
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--tx)">'+avgCal.toLocaleString()+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">avg cal/day</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--gr)">'+avgPro+'g</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">avg protein</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">'+daysLogged+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">days logged</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--tx)">'+avgCal.toLocaleString()+'</div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-transform:uppercase;letter-spacing:.045em">cal/day</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--gr)">'+avgPro+'g</div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-transform:uppercase;letter-spacing:.045em">protein</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">'+daysLogged+'</div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-transform:uppercase;letter-spacing:.045em">days</div></div>' +
     '</div>' +
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">You averaged <span style="color:'+(Math.abs(diff)<=150?'var(--gr)':'var(--go)')+'">'+avgCal.toLocaleString()+' cal</span> — '+(Math.abs(diff)<=150?'right around your '+goalCal.toLocaleString()+' goal.':(diff>0?Math.abs(diff)+' over your goal on average.':Math.abs(diff)+' under your goal on average.'))+'</div>' +
     trendLine +
-    (topFoods.length ? '<div style="margin-top:8px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">Most logged: '+topFoods.map(f=>f[0].replace(/</g,'&lt;')+' ×'+f[1]).join(' · ')+'</div>' : '');
+    (topFoods.length ? '<div style="margin-top:8px;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">Most logged: '+topFoods.map(f=>f[0].replace(/</g,'&lt;')+' ×'+f[1]).join(' · ')+'</div>' : '');
 }
 
 // Calorie-by-meal split bar (MFP's glanceable nutrition insight).
@@ -38122,7 +38122,7 @@ function renderBodySystemReport(){
   const containers = ['body-system-report-grow'].map(id=>document.getElementById(id)).filter(Boolean);
   if(!containers.length) return;
   const now = Date.now(), W = 7*86400000;
-  const stat = (val,lbl,color)=>'<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-base);color:'+(color||'var(--tx)')+'">'+val+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">'+lbl+'</div></div>';
+  const stat = (val,lbl,color)=>'<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-base);color:'+(color||'var(--tx)')+'">'+val+'</div><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-transform:uppercase;letter-spacing:.045em;margin-top:2px">'+lbl+'</div></div>';
   const arrow = (cur,prev)=> (prev==null||cur==null||prev===0) ? '' : (cur>prev*1.03?' <span style="color:var(--gr)">\u2191</span>':cur<prev*0.97?' <span style="color:var(--re)">\u2193</span>':' <span style="color:var(--tx3)">\u2192</span>');
   const inWin=(t,a,b)=>{const x=new Date(t).getTime();return x>now-a&&x<=now-b;};
 
@@ -38273,7 +38273,7 @@ function renderBodySystemReport(){
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
   else if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
 
-  const html='<div class="eyebrow">Your body, one system \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
+  const html='<div class="eyebrow">Your body \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
     goalRow+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
@@ -38283,7 +38283,7 @@ function renderBodySystemReport(){
     // how many days she actually fuelled, which is the thing the card is really telling her.
     (_gentleCard
       ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','days fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
-      : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day'))+
+      : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'cal/day'))+
     stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
@@ -38291,7 +38291,7 @@ function renderBodySystemReport(){
     (gkg!=null?' \u00b7 protein '+gkg+'g/kg'+(gkg>=1.6?' <span style="color:var(--gr)">\u2713</span>':''):'')+
     (daysLogged?' \u00b7 '+daysLogged+'/7 days logged':'')+'</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+verdict+'</div>'+
-    '<div style="font-size:var(--t-sm);line-height:1.6;margin-top:8px;padding:10px;background:var(--go-bg);border-radius:var(--rs);color:var(--tx)"><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;display:block;margin-bottom:4px">This week\'s one adjustment</span>'+adjust+'</div>'+
+    '<div style="font-size:var(--t-sm);line-height:1.6;margin-top:8px;padding:10px;background:var(--go-bg);border-radius:var(--rs);color:var(--tx)"><span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase;letter-spacing:.045em;display:block;margin-bottom:4px">This week\'s one adjustment</span>'+adjust+'</div>'+
     '<button class="btn subtle" onclick="askCoachWeekRead()" style="margin-top:10px">Deeper read from Coach</button>';
   containers.forEach(b=>{b.style.display='block';b.innerHTML=html;});
   window.__weekReadCtx={wCount,wVol,avgCal,avgPro,daysLogged,trend,weekChange,goal:goal||null,gkg,tdee:tdeeR?tdeeR.tdee:null};
@@ -38391,7 +38391,7 @@ function renderNutTrend(){
   // Average of days with data
   const avg=Math.round(days.filter(d=>d.cal>0).reduce((a,d)=>a+d.cal,0)/daysWithData);
   box.innerHTML=svg+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-mini)">'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-cap)">'+
       '<span style="color:var(--tx3)">14-day avg: <span style="color:var(--tx)">'+avg+' cal</span></span>'+
       '<span style="color:var(--tx3)">Goal: <span style="color:var(--go)">'+goal+'</span></span>'+
     '</div>';

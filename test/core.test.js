@@ -7196,8 +7196,13 @@ H.section('"numbers off" is a promise the whole app keeps, not just the Nourish 
     'the training history row asks before printing calories');
 
   // The promise must not cost a person who wants numbers anything.
-  H.ok(/stat\(\(avgCal!=null\?avgCal\.toLocaleString\(\):'\\u2014'\)\+arrow\(avgCal,pAvgCal\),'avg cal\/day'\)/.test(html),
-    'and with numbers ON the calorie tile is exactly as it was');
+  // ASSERT THE FACT, NOT THE PHRASING. This pinned the caption text 'avg cal/day' inside a check
+  // about GENTLE MODE, so shortening that caption — because at the 13px floor it no longer fitted
+  // its grid cell and wrapped — failed a test that has nothing to do with the wording. What this
+  // check is actually for is that the numbers-ON branch still prints the average AND its trend
+  // arrow, so that is what it asks; the caption is only required to exist.
+  H.ok(/stat\(\(avgCal!=null\?avgCal\.toLocaleString\(\):'\\u2014'\)\+arrow\(avgCal,pAvgCal\),'[^']+'\)/.test(html),
+    'and with numbers ON the calorie tile still prints the average and its arrow');
 }
 
 H.section('waiting is not the same as broken, and a dead end is not an answer');
