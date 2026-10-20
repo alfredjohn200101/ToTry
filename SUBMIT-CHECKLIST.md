@@ -3,60 +3,59 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 19 Oct 2026 — BUILD 10, v643. READ THIS FIRST.
+## ▶▶ CURRENT STATE — 20 Oct 2026 — v644. **THERE IS NO CURRENT ARCHIVE.** READ THIS FIRST.
 
 **Everything below this block is HISTORY.** It still opens with "BUILD 9 — v600 — READY TO
-ARCHIVE", which was true once and has been false for 43 versions. This doc calls itself the live
-record, which is exactly why a stale line at the top is dangerous — the same failure this repo has
-now recorded four times.
+ARCHIVE", true once and false for 44 versions. That is why this block exists at all.
 
-**The live PWA is deployed and serving v643.** `origin/main` served **v601** until 15 Oct while all
-the work sat on `ios-native`; the branches are merged and `main` is the one line of development
-again. Verified by fetching the site rather than by trusting the push. Everything from October
-reached users in those pushes — the 57-plus gated crisis doors, all three risk registers, the
-eleven devotional false positives, the union card that calls an ambulance for an overdose instead
-of listing only helplines, and the removal of six other people's plaintext email addresses from a
-bundle that downloads publicly.
+**⛔ ORGANIZER IS EMPTY ON PURPOSE, AND THAT IS THE MOST IMPORTANT LINE HERE.** The v643/build 10
+pair was moved to `~/Library/Developer/Xcode/ToTry-superseded-archives/` — kept, never deleted —
+because v644 fixed a **correctness** path: **every share card in the app drew nothing on a fresh
+install**, and the progress collage exported a black-on-black title with invisible dates. Organizer
+shows a name and a date and never which web bundle is inside, so uploading "ToTry-v643-build10"
+tomorrow would ship that. **Re-archive before you upload.** The superseded folder now holds four
+pairs: v625/build9, v635/build10, v638/build10, v643/build10.
 
-**The archive is BUILD 10 at v643:**
-`~/Library/Developer/Xcode/Archives/2026-10-19/ToTry-v643-build10.{xcarchive,ipa}`.
-Verified out of the IPA, never the archive — Apple Distribution: Alfred John (L4BD53PLVF),
-`get-task-allow=false`, `beta-reports-active=true`, 1.0 build 10, arm64 only, PrivacyInfo present,
-web bundle byte-identical to the repo (`61ecc44f1f47`, APP_VERSION v643), and **0 third-party email
-addresses in the binary**. `npm run preflight` reports "the 1 archive(s) stamped build 10 carry the
-current bundle" and "ready to archive", clean with **no warnings** — the first fully clean run this
-month.
+**The live PWA is deployed and serving v643**; v644 is committed on `main` and **not yet pushed**.
+`ios-native` is merged, so `main` is the one line of development again.
 
-**Why 10 and not 9:** only App Store Connect knows whether 9 was ever uploaded, nothing local can
-tell you, a number it has already seen is a rejection, and skipping one costs nothing.
+**What v644 is, in one line each** — all measured in a browser, not reasoned:
+- A canvas cannot resolve a CSS custom property. `ctx.fillStyle` silently IGNORES one and keeps the
+  previous value (initially **opaque black**); `CanvasGradient.addColorStop` **THROWS**. The share
+  theme defaults to dark, and `_renderShareCanvas` threw for all three styles in dark while
+  completing for all three in light. `renderCustomShareCard` threw unconditionally. Silent, because
+  its caller runs the draw as `.then(draw).catch(draw)`.
+- The same surface drew its small type in **DM Mono**, a face the app stopped shipping, at 14
+  `ctx.font` sites. `document.fonts.load()` RESOLVES for an unknown family rather than rejecting, so
+  the await succeeded and the draw proceeded.
+- `sw.js` precached three DM Mono files nothing references and **omitted `outfit-ext.woff2`**, which
+  the bundle does load — so a cold offline start fell back for exactly the people whose own name
+  needs those glyphs.
+- The nutrition trend chart's labels sat at 8px in that dropped face and **had never been measured**:
+  the card is `display:none` unless food is logged on 2+ of the last 14 days and the seed logged ONE.
+  Seeding three days then surfaced 13 more under-floor runs on code nobody had touched.
 
-**THREE SUPERSEDED ARCHIVES ARE OUT OF ORGANIZER, KEPT NOT DELETED**, in
-`~/Library/Developer/Xcode/ToTry-superseded-archives/`: v625/build9, v635/build10, v638/build10.
-Organizer never shows you which web bundle is inside an archive, so **an archive that is merely
-stale becomes a HAZARD the moment the staleness is a correctness path** — v625 predates the fuel
-plan's dead crisis gate and the seven devotional false positives. Move them; never upload by date.
+**Gate at v644, every suite re-run after the last edit:** `npm test` **4362/0** · `npm run crisis`
+**57 doors dialable and 53 of 53 ordinary sentences left alone** (both directions) ·
+`npm run personas` **566/0** · `npm run engines` **0 of 365 days forked** · `npm run panels`
+**RC=0, no failures** · `node scripts/craft-audit.mjs` **0 under 13px, 0 wrapping caps, 0 neighbours,
+3 greys over ten screens** — and that zero now means something, because the seed reaches the cards
+it was previously measured without · `npm run preflight` **ready to archive**.
 
-**Gate at this archive:** `npm test` **4347/0** (measured at v643) · `npm run crisis` every door
-dialable and its ordinary-sentence panel clean · `npm run personas` 566/0 · `npm run engines` 0 of
-365 days forked · `npm run panels` 0 failures · `npm run preflight` clean. Run them; this block
-deliberately does not freeze the door count, because a doc that restates a mutable number
-misleads at the worst moment.
+**To cut the next archive:** `npm run build:index && npm run build:www && npm run sync`, confirm
+`npm run preflight` says *ready to archive*, then archive and export. **Verify the IPA, never the
+archive** — the archive is Development-signed with `get-task-allow=true` by design because the
+export re-signs. The IPA must read `Apple Distribution: Alfred John (L4BD53PLVF)`,
+`get-task-allow=false`, `beta-reports-active=true`, arm64 only, PrivacyInfo present, and a web
+bundle sha byte-identical to the repo. Keep build **10**: it has never been uploaded.
 
-**The store screenshots are REPRODUCIBLE for the first time.**
-`~/Desktop/ToTry-screenshots/6.9-v643/` holds four 1320×2868 captures off the real Capacitor
-build — 01-feeling-door, 02-today, 03-fight, 04-money — with `ORDER.md` naming the lead shot and
-why. `node scripts/app-shot.mjs seed` plants the demo person into WebKit's own localStorage
-(UTF-16LE, newest container wins, reads the count back and refuses to report success on a
-mismatch), so the same four shots can be re-cut after any change instead of being hand-staged.
+**The store screenshots are reproducible** — `node scripts/app-shot.mjs seed` plants the demo person
+into WebKit's own `localstorage.sqlite3`. The four in `~/Desktop/ToTry-screenshots/6.9-v643/` predate
+v644; re-cut them from the new build before submitting.
 
-**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).** Face ID and
-local notification delivery were both driven end to end on the simulator — the notification proof
-is the app's own scheduled LOCAL notification found in iOS's `DeliveredNotifications.plist`, never
-a banner in a screenshot and never `simctl push`, which is a REMOTE payload this app has no path
-for.
+**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).**
 
-**The upload click is the owner's.** Nothing here uploads anything, and nothing here needs an
-issuer ID.
+**The upload click is the owner's.** Nothing here uploads anything, and nothing needs an issuer ID.
 
 ---
 Everything on the code side is done and **verified against a real Release archive** (Xcode 26.6,
