@@ -1,5 +1,24 @@
 # CLAUDE.md — To Try
 
+## ⚡ SKILLS — read the one that matches what you are about to do
+
+This file is 2,000 lines. It is the RECORD — every defect, with the measurement that found it —
+and that is worth keeping. But it is too long to act on at the moment you need it, which is how
+the same traps kept costing hours. The procedural half now lives in `.claude/skills/`, loaded
+only when relevant:
+
+| Before you… | Read |
+|---|---|
+| run `npm test`, `crisis`, `panels`, `personas`, `craft-audit`, `engines` — or a suite looks stuck | **`totry-gate`** |
+| write any probe, screenshot or audit — or a measurement says the app is broken | **`totry-probe`** |
+| add or change an assertion — or a test goes red on code you believe is correct | **`totry-test`** |
+| edit `src/`, build, bump a version, push, deploy, or cut an archive | **`totry-ship`** |
+
+They are short on purpose and they do not replace this file: when a skill names a rule, the full
+story and the measurement behind it are still here. If you find yourself re-deriving something
+that is already written down below, that belongs in a skill — add it there.
+
+
 > Read this first. It tells you what this project is, its soul, how it's built, the rules, and what
 > to do next. Then read SOUL-ARCHITECTURE.md and NATIVE-WRAPPER-GUIDE.md.
 
