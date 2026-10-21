@@ -1228,6 +1228,23 @@ function setQLOutcome(won){
   haptic('light');
 }
 
+
+// URGELOG IS WRITTEN IN THREE SHAPES AND WAS READ AS ONE.
+// Measured 21 Oct 2026: 04-fight.js pushes a bare ISO STRING (twice, including the line below),
+// 09-fight-deep.js pushes {ts, won}, and the seed writes {t, won}. Every reader passed the entry
+// straight to dayKeyOf() or new Date(), which is correct for the string and silently wrong for the
+// objects —
+//     dayKeyOf('2026-10-21T...')      -> '21/10/2026'
+//     dayKeyOf({ts:'2026-10-21T...'}) -> ''            (no day, so it matches nothing)
+//     new Date({ts:...}).getHours()   -> NaN           (a NaN bucket in the hard-hour histogram)
+// So an urge logged through the deep-fight path never counted in the journal's own "urges today"
+// and never reached the hard-hour detector. One normaliser, three consumers; a fourth shape added
+// later only has to be handled here.
+function _urgeTs(e){
+  if(!e) return null;
+  if(typeof e === 'string') return e;
+  return e.ts || e.t || e.date || null;
+}
 function saveQuickLog(){
   // THE GATE GOES ABOVE THE VALIDATION. The first version of this sat below the
   // `_qlOutcome === null` check, so somebody who typed something true and had not yet tapped

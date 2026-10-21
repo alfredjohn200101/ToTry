@@ -256,7 +256,9 @@ function saveEntry(){
   try{ if(typeof detectCrisis === 'function') _jCrisis = detectCrisis(text); }catch(_){ }
   // Auto-pull vice stats from today's data
   loadV();
-  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(t)===dayKeyOf()).length,0);
+  // _urgeTs, not the raw entry: an urge logged through the deep-fight path is stored as
+  // {ts, won} and dayKeyOf() returns '' for an object, so those never counted here at all.
+  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(_urgeTs(t))===dayKeyOf()).length,0);
   const todayWins=_winsOnDay();
   const entries=ls('totry_journal')||[];
   const when=_resolveEntryDate('journal-date');

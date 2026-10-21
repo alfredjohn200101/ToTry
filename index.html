@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v646';
+const APP_VERSION = 'v647';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19695,6 +19695,23 @@ function setQLOutcome(won){
   haptic('light');
 }
 
+
+// URGELOG IS WRITTEN IN THREE SHAPES AND WAS READ AS ONE.
+// Measured 21 Oct 2026: 04-fight.js pushes a bare ISO STRING (twice, including the line below),
+// 09-fight-deep.js pushes {ts, won}, and the seed writes {t, won}. Every reader passed the entry
+// straight to dayKeyOf() or new Date(), which is correct for the string and silently wrong for the
+// objects —
+//     dayKeyOf('2026-10-21T...')      -> '21/10/2026'
+//     dayKeyOf({ts:'2026-10-21T...'}) -> ''            (no day, so it matches nothing)
+//     new Date({ts:...}).getHours()   -> NaN           (a NaN bucket in the hard-hour histogram)
+// So an urge logged through the deep-fight path never counted in the journal's own "urges today"
+// and never reached the hard-hour detector. One normaliser, three consumers; a fourth shape added
+// later only has to be handled here.
+function _urgeTs(e){
+  if(!e) return null;
+  if(typeof e === 'string') return e;
+  return e.ts || e.t || e.date || null;
+}
 function saveQuickLog(){
   // THE GATE GOES ABOVE THE VALIDATION. The first version of this sat below the
   // `_qlOutcome === null` check, so somebody who typed something true and had not yet tapped
@@ -25329,7 +25346,10 @@ function renderVices(){
     // Pattern insight from urge log
     let insight='';
     if(v.urgelog&&v.urgelog.length>=3){
-      const counts={};v.urgelog.forEach(t=>{const h=new Date(t).getHours();counts[h]=(counts[h]||0)+1;});
+      // new Date({ts:...}) is Invalid Date and getHours() is NaN, so every object-shaped entry
+      // landed in one NaN bucket instead of its own hour — in the detector whose whole job is
+      // naming the hour an urge arrives. _urgeTs normalises all three stored shapes.
+      const counts={};v.urgelog.forEach(e=>{const h=new Date(_urgeTs(e)).getHours();if(isNaN(h))return;counts[h]=(counts[h]||0)+1;});
       const peak=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
       if(peak){const h=parseInt(peak[0]);const label=h<6?'late night':h<12?'morning':h<17?'afternoon':h<21?'evening':'late night';insight=' \u00b7 Peaks '+label;}
     }
@@ -30216,7 +30236,9 @@ function saveEntry(){
   try{ if(typeof detectCrisis === 'function') _jCrisis = detectCrisis(text); }catch(_){ }
   // Auto-pull vice stats from today's data
   loadV();
-  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(t)===dayKeyOf()).length,0);
+  // _urgeTs, not the raw entry: an urge logged through the deep-fight path is stored as
+  // {ts, won} and dayKeyOf() returns '' for an object, so those never counted here at all.
+  const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>dayKeyOf(_urgeTs(t))===dayKeyOf()).length,0);
   const todayWins=_winsOnDay();
   const entries=ls('totry_journal')||[];
   const when=_resolveEntryDate('journal-date');
@@ -57261,9 +57283,17 @@ function renderHomeDepthFold(){
 // somebody is honest — in an app whose soul document says a lapse is feedback, not failure. Every
 // front below is a per-day fact, so a slip costs that day and leaves the other six standing.
 //
-// The fight is bounded by `fightingSince`, NOT startDate, for the same reason: fightingSince is when
-// they took it on and does not move when they slip. Days before it are not counted as clean, because
-// a day before you were fighting is not a day you won.
+// THE FIGHT REQUIRES POSITIVE EVIDENCE, like the other three. It did not at first: a day counted
+// if no slip was logged, which made it true on every day of anybody's clean run — a free point that
+// put the floor for a "woven day" at "did one other thing" and made the integer sit high most weeks
+// for exactly the people who use this app most. The other three fronts are ACTS (you trained or
+// logged food, you kept a ritual, you slept and recorded it), and an absence is not an act.
+// So a day counts for the fight when they CAME TO IT — an urge logged, or a moment won — and not
+// when they slipped. `fightingSince` is still the bound rather than `startDate`, because startDate
+// resets on a slip and anything anchored to it erases a week of real evidence for being honest.
+// The cost, named rather than hidden: somebody holding a long clean run who does not open the Fight
+// tab sees an untended thread. The ROW underneath still says "30 days clean", which is the honest
+// counterweight, and the loom is explicitly this week's tending rather than their record.
 function wovenWeek(){
   const out = [];
   try{
@@ -57276,6 +57306,13 @@ function wovenWeek(){
     const morn= ritualLog('totry_mornings'), eve = ritualLog('totry_evenings');
     loadV();
     const vs = vices||[];
+    // POSITIVE evidence, per day: an urge logged against any vice, or a moment won. urgelog is
+    // stored in three different shapes by three different writers, so it goes through _urgeTs.
+    const tended = {};
+    vs.forEach(function(v){
+      try{ (v.urgelog||[]).forEach(function(e){ const t=_urgeTs(e); if(t) tended[dayKeyOf(t)]=1; }); }catch(_){}
+    });
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ if(m&&m.ts) tended[dayKeyOf(m.ts)]=1; }); }catch(_){}
     // every day a use was logged, from BOTH stores — the newer per-use log and the older history
     const slipped = {};
     try{ (ls('totry_vice_uses')||[]).forEach(function(u){ if(u&&u.ts) slipped[dayKeyOf(u.ts)]=1; }); }catch(_){}
@@ -57291,7 +57328,7 @@ function wovenWeek(){
     const onDay = function(arr,k){ return (arr||[]).some(function(x){ try{ return dayKeyOf(x.ts||x.date||0)===k; }catch(_){ return false; } }); };
     keys.forEach(function(k,idx){
       const d=new Date(); d.setDate(d.getDate()-(6-idx)); d.setHours(23,59,59,999);
-      const fight = !!(vs.length && since!==null && d.getTime()>=since && !slipped[k]);
+      const fight = !!(vs.length && since!==null && d.getTime()>=since && tended[k] && !slipped[k]);
       const body  = wk.some(function(w){ try{ return dayKeyOf(w.ts||w.date||0)===k; }catch(_){ return false; } }) || ((nut[k]||[]).length>0);
       const spirit= onDay(morn,k) || onDay(eve,k);
       const rest  = !!(trk[k] && trk[k].sleep);

@@ -29,13 +29,19 @@ export function seedSource() {
     const _dk = d => _p2(d.getDate()) + '/' + _p2(d.getMonth() + 1) + '/' + d.getFullYear();
     const dayKey = _dk(new Date());
     const _dkAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return _dk(d); };
+    // URGE ENTRIES IN THE SHAPES THE APP ITSELF WRITES, not a third one invented here. 04-fight.js
+    // pushes a bare ISO string and 09-fight-deep.js pushes {ts, won}; the seed used {t, won}, which
+    // no live writer produces. Alternating both real shapes means a reader that handles only one of
+    // them shows up as a missing day instead of passing.
+    const _urge = n => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(22, 10, 0, 0);
+      return n % 2 ? d.toISOString() : { ts: d.toISOString(), won: true }; };
     const a = [ago(9), ago(160), ago(30), ago(14)];
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     S('totry_onboarded', true); S('totry_name', 'Alfred'); S('totry_sex', 'male'); S('totry_faith_tradition', 'christianity');
     S('totry_identity', 'A man who is present, steady, and keeps his word.'); S('totry_why', 'So my kids get the version of me that shows up.');
     S('totry_journey_start', a[1]);
-    S('totry_v', [{ n: 'Porn', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [{ t: a[2], won: true }], t: 'late nights alone', lastConfirm: new Date().toISOString() },
-                  { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [], lastConfirm: new Date().toISOString() },
+    S('totry_v', [{ n: 'Porn', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [_urge(5), _urge(2)], t: 'late nights alone', lastConfirm: new Date().toISOString() },
+                  { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [_urge(3)], lastConfirm: new Date().toISOString() },
                   // THE MONEY HERO READ "$0 / Set weekly vice spend below" IN THE STORE SCREENSHOT,
                   // on the one card the listing copy sells as "every dollar reclaimed from a habit
                   // you dropped". totalReclaimed() sums viceMoneySaved(), which returns 0 for any

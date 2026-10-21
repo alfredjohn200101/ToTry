@@ -16897,10 +16897,17 @@ H.section('the woven week is per-day evidence, so being honest costs one day and
   const keyOf = [];                      // filled from the REAL dayKeyOf below
 
   // Stores shaped the way the APP's own writers shape them, not the way this test would like them.
-  const mk = (slipDaysAgo) => {
+  // `tended` is POSITIVE evidence — an urge logged or a moment won that day. The urgelog is stored
+  // in three shapes by three different writers, so the fixture uses all three on purpose: a bare
+  // ISO string, {ts,won} and the seed's {t,won}. If _urgeTs ever stops normalising one of them,
+  // that day silently stops counting, which is the defect this fixture exists to catch.
+  const mk = (slipDaysAgo, tendedDays) => {
+    const days = tendedDays === undefined ? [6,5,4,3,2,1,0] : tendedDays;
+    const log = days.map((n, i) => (i % 3 === 0 ? iso(n) : (i % 3 === 1 ? { ts: iso(n), won: true } : { t: iso(n), won: true })));
     const store = {
-      totry_v: [{ n: 'Porn', mode: 'quit', fightingSince: iso(300), startDate: iso(slipDaysAgo === null ? 300 : slipDaysAgo) }],
+      totry_v: [{ n: 'Porn', mode: 'quit', fightingSince: iso(300), startDate: iso(slipDaysAgo === null ? 300 : slipDaysAgo), urgelog: log }],
       totry_vice_uses: slipDaysAgo === null ? [] : [{ v: 'Porn', ts: iso(slipDaysAgo) }],
+      totry_moments_won: [],
       totry_workouts: [], totry_nutlog: {}, totry_trackers: {}, totry_mornings: [], totry_evenings: [],
     };
     return k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null);
@@ -16910,9 +16917,9 @@ H.section('the woven week is per-day evidence, so being honest costs one day and
   // outside — the first version of this used a getter plus a mutating loadV and measured 0 of 7
   // fights held on code that is correct. Bind `vices` to the value the app would have AFTER loadV
   // has run, and make loadV the no-op that then makes it.
-  const run = (slipDaysAgo) => {
-    const read = mk(slipDaysAgo);
-    const L = H.load(['wovenWeek', 'wovenDays'], {
+  const run = (slipDaysAgo, tendedDays) => {
+    const read = mk(slipDaysAgo, tendedDays);
+    const L = H.load(['wovenWeek', 'wovenDays', '_urgeTs'], {
       ls: read,
       ritualLog: () => [],
       loadV: function(){},
@@ -16921,23 +16928,33 @@ H.section('the woven week is per-day evidence, so being honest costs one day and
     return L.wovenWeek();
   };
 
-  // (1) no slip at all — every one of the seven days has the fight held.
+  // (1) came to it every day, never slipped — seven days held, across all three stored shapes.
   const clean = run(null);
   H.eq(clean.length, 7, 'the week is seven days long');
-  H.eq(clean.filter(d => d.fight).length, 7, 'with no slip logged, the fight is held on all seven days');
+  H.eq(clean.filter(d => d.fight).length, 7,
+    'a day they came to the fight and did not slip is a day held — all three urgelog shapes count');
+
+  // (1b) THE FREE POINT IS GONE, and this is the assertion that says so. No slip, but they never
+  //      came to it: an absence is not an act, and the other three fronts are all acts. Before this
+  //      rule every day of anybody's clean run counted, so the floor for a "woven day" was "did one
+  //      other thing" and the integer sat high most weeks for the people who use the app most.
+  const untended = run(null, []);
+  H.eq(untended.filter(d => d.fight).length, 0,
+    'but not slipping is NOT tending — a week with no fight activity holds no fight days');
 
   // (2) ONE slip, two days ago. THE WHOLE POINT: six days survive it.
   const slipped = run(2);
   H.eq(slipped.filter(d => d.fight).length, 6,
     'a slip two days ago costs exactly that day — the other six still show the fight held');
   H.eq(slipped[4].fight, false, 'and it costs the RIGHT day (index 4 of 0..6 is two days ago)');
+  H.ok(slipped[4].n < 4, 'that day loses a front rather than the week losing its evidence');
   H.ok(slipped[5].fight && slipped[6].fight,
     'including yesterday and today, which a streak-derived picture would have erased');
 
   // (3) a day before they ever took the fight on is not a day they won it.
   const neverFought = (() => {
     const store = { totry_v: [], totry_vice_uses: [], totry_workouts: [], totry_nutlog: {}, totry_trackers: {}, totry_mornings: [], totry_evenings: [] };
-    const L = H.load(['wovenWeek', 'wovenDays'], {
+    const L = H.load(['wovenWeek', 'wovenDays', '_urgeTs'], {
       ls: k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
       ritualLog: () => [], loadV: function(){}, vices: [],
     });

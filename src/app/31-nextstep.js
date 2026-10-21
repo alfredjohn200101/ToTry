@@ -267,9 +267,17 @@ function renderHomeDepthFold(){
 // somebody is honest — in an app whose soul document says a lapse is feedback, not failure. Every
 // front below is a per-day fact, so a slip costs that day and leaves the other six standing.
 //
-// The fight is bounded by `fightingSince`, NOT startDate, for the same reason: fightingSince is when
-// they took it on and does not move when they slip. Days before it are not counted as clean, because
-// a day before you were fighting is not a day you won.
+// THE FIGHT REQUIRES POSITIVE EVIDENCE, like the other three. It did not at first: a day counted
+// if no slip was logged, which made it true on every day of anybody's clean run — a free point that
+// put the floor for a "woven day" at "did one other thing" and made the integer sit high most weeks
+// for exactly the people who use this app most. The other three fronts are ACTS (you trained or
+// logged food, you kept a ritual, you slept and recorded it), and an absence is not an act.
+// So a day counts for the fight when they CAME TO IT — an urge logged, or a moment won — and not
+// when they slipped. `fightingSince` is still the bound rather than `startDate`, because startDate
+// resets on a slip and anything anchored to it erases a week of real evidence for being honest.
+// The cost, named rather than hidden: somebody holding a long clean run who does not open the Fight
+// tab sees an untended thread. The ROW underneath still says "30 days clean", which is the honest
+// counterweight, and the loom is explicitly this week's tending rather than their record.
 function wovenWeek(){
   const out = [];
   try{
@@ -282,6 +290,13 @@ function wovenWeek(){
     const morn= ritualLog('totry_mornings'), eve = ritualLog('totry_evenings');
     loadV();
     const vs = vices||[];
+    // POSITIVE evidence, per day: an urge logged against any vice, or a moment won. urgelog is
+    // stored in three different shapes by three different writers, so it goes through _urgeTs.
+    const tended = {};
+    vs.forEach(function(v){
+      try{ (v.urgelog||[]).forEach(function(e){ const t=_urgeTs(e); if(t) tended[dayKeyOf(t)]=1; }); }catch(_){}
+    });
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ if(m&&m.ts) tended[dayKeyOf(m.ts)]=1; }); }catch(_){}
     // every day a use was logged, from BOTH stores — the newer per-use log and the older history
     const slipped = {};
     try{ (ls('totry_vice_uses')||[]).forEach(function(u){ if(u&&u.ts) slipped[dayKeyOf(u.ts)]=1; }); }catch(_){}
@@ -297,7 +312,7 @@ function wovenWeek(){
     const onDay = function(arr,k){ return (arr||[]).some(function(x){ try{ return dayKeyOf(x.ts||x.date||0)===k; }catch(_){ return false; } }); };
     keys.forEach(function(k,idx){
       const d=new Date(); d.setDate(d.getDate()-(6-idx)); d.setHours(23,59,59,999);
-      const fight = !!(vs.length && since!==null && d.getTime()>=since && !slipped[k]);
+      const fight = !!(vs.length && since!==null && d.getTime()>=since && tended[k] && !slipped[k]);
       const body  = wk.some(function(w){ try{ return dayKeyOf(w.ts||w.date||0)===k; }catch(_){ return false; } }) || ((nut[k]||[]).length>0);
       const spirit= onDay(morn,k) || onDay(eve,k);
       const rest  = !!(trk[k] && trk[k].sleep);

@@ -702,7 +702,10 @@ function renderVices(){
     // Pattern insight from urge log
     let insight='';
     if(v.urgelog&&v.urgelog.length>=3){
-      const counts={};v.urgelog.forEach(t=>{const h=new Date(t).getHours();counts[h]=(counts[h]||0)+1;});
+      // new Date({ts:...}) is Invalid Date and getHours() is NaN, so every object-shaped entry
+      // landed in one NaN bucket instead of its own hour — in the detector whose whole job is
+      // naming the hour an urge arrives. _urgeTs normalises all three stored shapes.
+      const counts={};v.urgelog.forEach(e=>{const h=new Date(_urgeTs(e)).getHours();if(isNaN(h))return;counts[h]=(counts[h]||0)+1;});
       const peak=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
       if(peak){const h=parseInt(peak[0]);const label=h<6?'late night':h<12?'morning':h<17?'afternoon':h<21?'evening':'late night';insight=' \u00b7 Peaks '+label;}
     }
