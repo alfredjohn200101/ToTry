@@ -16879,4 +16879,117 @@ H.section('a session nothing else counted is not skipped');
   }
 }
 
+// ── the week is drawn from per-day facts, and a slip costs ONE day ───────────────────────────────
+// THE FINDING THAT MATTERS MOST FROM THE DESIGN REVIEW, and the reason this test exists at all.
+// Four directions were proposed for the whole-life card and all four were killed; three died on
+// geometry or tokens, but one died on this: `viceCleanDays` -> `viceStreakAnchor` -> `v.startDate`,
+// and 04-fight.js resets startDate to now on a logged slip. So ANY drawn object derived from a
+// streak ERASES A WEEK OF REAL EVIDENCE the moment somebody is honest about slipping — in an app
+// whose soul document says a lapse is feedback, not failure, and whose vice card already refuses to
+// print "0 days clean" for the same reason.
+// So the invariant is not "wovenWeek is correct", it is "a slip yesterday leaves the other six days
+// standing". Executed, never grepped: a grep for `fightingSince` would pass on code that then went
+// on to use startDate anyway.
+H.section('the woven week is per-day evidence, so being honest costs one day and not the week');
+{
+  const DAY = 86400000;
+  const iso = n => new Date(Date.now() - n * DAY).toISOString();
+  const keyOf = [];                      // filled from the REAL dayKeyOf below
+
+  // Stores shaped the way the APP's own writers shape them, not the way this test would like them.
+  const mk = (slipDaysAgo) => {
+    const store = {
+      totry_v: [{ n: 'Porn', mode: 'quit', fightingSince: iso(300), startDate: iso(slipDaysAgo === null ? 300 : slipDaysAgo) }],
+      totry_vice_uses: slipDaysAgo === null ? [] : [{ v: 'Porn', ts: iso(slipDaysAgo) }],
+      totry_workouts: [], totry_nutlog: {}, totry_trackers: {}, totry_mornings: [], totry_evenings: [],
+    };
+    return k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null);
+  };
+
+  // A GLOBAL PASSED TO H.load ARRIVES AS A WRAPPER PARAMETER, so loadV() cannot rebind `vices` from
+  // outside — the first version of this used a getter plus a mutating loadV and measured 0 of 7
+  // fights held on code that is correct. Bind `vices` to the value the app would have AFTER loadV
+  // has run, and make loadV the no-op that then makes it.
+  const run = (slipDaysAgo) => {
+    const read = mk(slipDaysAgo);
+    const L = H.load(['wovenWeek', 'wovenDays'], {
+      ls: read,
+      ritualLog: () => [],
+      loadV: function(){},
+      vices: read('totry_v'),
+    });
+    return L.wovenWeek();
+  };
+
+  // (1) no slip at all — every one of the seven days has the fight held.
+  const clean = run(null);
+  H.eq(clean.length, 7, 'the week is seven days long');
+  H.eq(clean.filter(d => d.fight).length, 7, 'with no slip logged, the fight is held on all seven days');
+
+  // (2) ONE slip, two days ago. THE WHOLE POINT: six days survive it.
+  const slipped = run(2);
+  H.eq(slipped.filter(d => d.fight).length, 6,
+    'a slip two days ago costs exactly that day — the other six still show the fight held');
+  H.eq(slipped[4].fight, false, 'and it costs the RIGHT day (index 4 of 0..6 is two days ago)');
+  H.ok(slipped[5].fight && slipped[6].fight,
+    'including yesterday and today, which a streak-derived picture would have erased');
+
+  // (3) a day before they ever took the fight on is not a day they won it.
+  const neverFought = (() => {
+    const store = { totry_v: [], totry_vice_uses: [], totry_workouts: [], totry_nutlog: {}, totry_trackers: {}, totry_mornings: [], totry_evenings: [] };
+    const L = H.load(['wovenWeek', 'wovenDays'], {
+      ls: k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      ritualLog: () => [], loadV: function(){}, vices: [],
+    });
+    return L.wovenWeek();
+  })();
+  H.eq(neverFought.filter(d => d.fight).length, 0,
+    'somebody who has never named a fight is not credited with winning it');
+
+  // (4) the integer is days with TWO OR MORE fronts — the one number no single-feature app can
+  //     compute, and the card's whole claim. One front is not a woven day.
+  const L2 = H.load(['wovenDays']);
+  H.eq(L2.wovenDays([{n:0},{n:1},{n:2},{n:3},{n:1},{n:4},{n:2}]), 4,
+    'a woven day is a day two or more fronts were true — one front is not one');
+  H.eq(L2.wovenDays([]), 0, 'and an empty week is zero, never NaN');
+}
+
+// ── the card is a picture, and the picture obeys the rules the review killed three designs over ──
+H.section('the woven card draws a week without text in the SVG, and keeps its four doors');
+{
+  const fn = H.code(H.extractFn('renderLifeWoven'));
+  H.ok(fn.length > 400, 'renderLifeWoven was found by name (' + fn.length + ' chars)');
+
+  // NO TEXT INSIDE THE SVG. One killed direction promised "no text under 13px, no exemption
+  // claimed" — true at exactly one viewport width, because an SVG at width:100% scales its own
+  // text with the card. The four row labels are real HTML beside the drawing instead.
+  const svg = (fn.match(/<svg[\s\S]*?<\/svg>/) || [''])[0] + (fn.match(/'<svg[\s\S]{0,4000}?\+'<\/svg>'/) || [''])[0];
+  H.ok(!/<text/.test(fn), 'nothing draws <text> inside the card\'s SVG, so no run can scale under the 13px floor');
+
+  // "NOT DONE" IS THE RECESS TOKEN, NEVER THE CARD'S OWN BORDER COLOUR. A killed direction painted
+  // its threads in --bd, which is `.card{border:1px solid var(--bd)}` — the box around the picture.
+  H.ok(/var\(--bg4\)/.test(fn), 'an untended day is drawn in --bg4, the recess token');
+  H.ok(!/stroke="var\(--bd\)"/.test(fn), 'and never in --bd, which is the card\'s own border colour');
+
+  // THE FOUR DOORS SURVIVE. Two critiques killed proposals for deleting them: they are four 44pt
+  // targets and the only place a figure like "$6,350 debt" can be said at all.
+  H.ok(/iosList\(rows\)/.test(fn), 'the four rows are still rendered, through the component');
+  H.eq((fn.match(/iosRow\(\{/g) || []).length, 4, 'and there are still exactly four of them');
+
+  // The integer is never shown at zero — the accusation this repo has already removed twice.
+  H.ok(/_wd>0\s*\?/.test(fn), 'the woven-days count is not rendered at zero');
+  // Day one says what the card IS rather than four things it is not.
+  H.ok(/All of it, in one place\./.test(fn), 'day one says the thing the card promises');
+  // The anti-engagement rung exists and is FIRST among the actions.
+  // Anchor on the LEAD LADDER, not on the whole function: go('grow') also appears in the Body ROW,
+  // which is built above the ladder, so a naive indexOf compared the rung against a row and failed
+  // on correct code. Assert the FACT (the anti-engagement rung is reached first) against the block
+  // that actually decides it.
+  const ladder = (fn.match(/let _lead = '';[\s\S]*?box\.innerHTML/) || [''])[0];
+  H.ok(ladder.length > 150, 'the lead ladder was isolated (' + ladder.length + ' chars)');
+  const iDone = ladder.indexOf('done enough today'), iAsk = ladder.indexOf('grow');
+  H.ok(iDone > -1, 'the card can reach a state where it asks for nothing more');
+  H.ok(iAsk > -1 && iDone < iAsk, 'and that rung is tested BEFORE any rung that asks for another thing');
+}
+
 H.report();

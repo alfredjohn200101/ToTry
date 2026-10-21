@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v645';
+const APP_VERSION = 'v646';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -57249,6 +57249,62 @@ function renderHomeDepthFold(){
 
 // YOUR LIFE, WOVEN — the stewardship spine. One glance across the domains a person is called to tend
 // (the fight, body, spirit, money), each a door to its depth. The thesis made visible on the home.
+// ── THE WEEK, AS PER-DAY EVIDENCE ────────────────────────────────────────────────────────────────
+// getLifeState() carries WEEK TOTALS only (sessions7, daysLogged7, nights7), and a picture of a week
+// needs to know WHICH days. This is that helper, and the rule it implements is the one thing a
+// four-way design review agreed on after killing all four of its own proposals:
+//
+//   ** NOTHING HERE MAY DERIVE FROM A STREAK. **
+//
+// viceCleanDays -> viceStreakAnchor -> v.startDate, and 04-fight.js resets startDate to now on a
+// logged slip. So any drawn object built on a streak ERASES A WEEK OF REAL EVIDENCE the moment
+// somebody is honest — in an app whose soul document says a lapse is feedback, not failure. Every
+// front below is a per-day fact, so a slip costs that day and leaves the other six standing.
+//
+// The fight is bounded by `fightingSince`, NOT startDate, for the same reason: fightingSince is when
+// they took it on and does not move when they slip. Days before it are not counted as clean, because
+// a day before you were fighting is not a day you won.
+function wovenWeek(){
+  const out = [];
+  try{
+    const today = dayKeyOf();
+    const keys = [];
+    for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); keys.push(dayKeyOf(d)); }
+    const nut = ls('totry_nutlog')||{};
+    const trk = ls('totry_trackers')||{};
+    const wk  = ls('totry_workouts')||[];
+    const morn= ritualLog('totry_mornings'), eve = ritualLog('totry_evenings');
+    loadV();
+    const vs = vices||[];
+    // every day a use was logged, from BOTH stores — the newer per-use log and the older history
+    const slipped = {};
+    try{ (ls('totry_vice_uses')||[]).forEach(function(u){ if(u&&u.ts) slipped[dayKeyOf(u.ts)]=1; }); }catch(_){}
+    vs.forEach(function(v){ try{ (v.relapseHistory||[]).forEach(function(r){ if(r&&r.date) slipped[dayKeyOf(r.date)]=1; }); }catch(_){} });
+    // the earliest day any vice was taken on
+    let since = null;
+    vs.forEach(function(v){
+      const t = v && (v.fightingSince || v.startDate);
+      if(!t) return;
+      const ms = new Date(t).getTime();
+      if(!isNaN(ms) && (since===null || ms<since)) since = ms;
+    });
+    const onDay = function(arr,k){ return (arr||[]).some(function(x){ try{ return dayKeyOf(x.ts||x.date||0)===k; }catch(_){ return false; } }); };
+    keys.forEach(function(k,idx){
+      const d=new Date(); d.setDate(d.getDate()-(6-idx)); d.setHours(23,59,59,999);
+      const fight = !!(vs.length && since!==null && d.getTime()>=since && !slipped[k]);
+      const body  = wk.some(function(w){ try{ return dayKeyOf(w.ts||w.date||0)===k; }catch(_){ return false; } }) || ((nut[k]||[]).length>0);
+      const spirit= onDay(morn,k) || onDay(eve,k);
+      const rest  = !!(trk[k] && trk[k].sleep);
+      const n = (fight?1:0)+(body?1:0)+(spirit?1:0)+(rest?1:0);
+      out.push({ key:k, today:k===today, fight:fight, body:body, spirit:spirit, rest:rest, n:n });
+    });
+  }catch(_){ }
+  return out;
+}
+// Days this week when TWO OR MORE fronts were true. The one integer no single-feature app can
+// compute, which is the card's whole claim stated as a number rather than asserted in a sentence.
+function wovenDays(week){ try{ return (week||wovenWeek()).filter(function(d){ return d.n>=2; }).length; }catch(_){ return 0; } }
+
 function renderLifeWoven(){
   const box=document.getElementById('home-woven'); if(!box) return;
   const s=(typeof getLifeState==='function')?getLifeState():null;
@@ -57363,7 +57419,86 @@ function renderLifeWoven(){
     _footer = 'You trained today, and you fuelled it.';
   else if(_cleanBest>0 && (mornDone||evenDone))
     _footer = plural(_cleanBest,'day')+' clean, and you kept today\u2019s rhythm.';
-  box.innerHTML=iosList(rows,{header:'Your life, woven', footer:_footer});
+  // ── THE PICTURE ────────────────────────────────────────────────────────────────────────────────
+  // The owner's verdict on this card was four things: "a list not a picture", "the fronts don't
+  // connect", "it doesn't lead", and buried (fixed earlier — it sits second on Home now). Four
+  // independent designs were proposed for it and all four were killed on MEASUREMENT, so what is
+  // built here is only what survived that, with every named failure avoided:
+  //   • per-day facts, never a streak (see wovenWeek's header — the finding that mattered most)
+  //   • NO TEXT INSIDE THE SVG, so nothing can scale under the 13px floor at any width; the four
+  //     row labels are real HTML beside it
+  //   • "not done" is --bg4, the RECESS token, never --bd, which is the card's own border colour
+  //   • THE FOUR ROWS STAY. Two critiques killed proposals for deleting them: they are four 44pt
+  //     doors, they are the only place "$6,350 debt" can be said, and on day one four honest states
+  //     beat four empty shapes. A micro-track inside a row was tried and rendered — it steals the
+  //     value's width and truncated to "30 days cl..." and "$6,...", which is the defect v643 fixed.
+  const _wk = wovenWeek();
+  const _wd = wovenDays(_wk);
+  const FRONTS = [['fight','Fight'],['body','Body'],['spirit','Spirit'],['rest','Rest']];
+  const _loom = (function(){
+    const W=329,H=96,COL=W/7,R=[12,36,60,84];
+    let g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" aria-hidden="true" fill="none" stroke-linecap="round">';
+    // The ties go UNDER the marks, which is how cloth is actually made: one vertical on every day
+    // two or more fronts were true. This mark cannot be drawn for a single front, so it IS the
+    // integration claim — the answer to "the fronts don't connect".
+    _wk.forEach(function(d,i){
+      if(d.n<2) return;
+      const ys=FRONTS.map(function(f,j){ return d[f[0]]?R[j]:null; }).filter(function(v){ return v!==null; });
+      const x=COL*i+COL/2;
+      g+='<line x1="'+x+'" y1="'+Math.min.apply(null,ys)+'" x2="'+x+'" y2="'+Math.max.apply(null,ys)+'" stroke="var(--go-bd)" stroke-width="2"/>';
+    });
+    FRONTS.forEach(function(f,j){
+      _wk.forEach(function(d,i){
+        const x=COL*i+COL/2, on=!!d[f[0]];
+        g+='<line x1="'+(x-11)+'" y1="'+R[j]+'" x2="'+(x+11)+'" y2="'+R[j]+'" stroke="'+(on?'var(--go)':'var(--bg4)')+'" stroke-width="'+(on?5:3)+'"/>';
+      });
+    });
+    return g+'</svg>';
+  })();
+  const _loomBlock =
+    '<div style="display:flex;gap:10px;align-items:stretch;margin:4px 0 14px">'+
+      '<div style="display:flex;flex-direction:column;justify-content:space-between;padding:2px 0">'+
+        FRONTS.map(function(f){ return '<div style="font-family:var(--font-text);font-size:13px;color:var(--tx2);line-height:1">'+f[1]+'</div>'; }).join('')+
+      '</div><div style="flex:1;min-width:0">'+_loom+'</div></div>';
+
+  // THE HEADLINE. The cross-front sentence was already computed above and already gated on being
+  // EARNED — it was simply at the bottom in footnote grey, where it is usually absent and never
+  // read. It moves to the top in the display face. On day one it says what this IS.
+  const _say = _live===0
+    ? 'All of it, in one place.'
+    : (_footer || 'Four parts of one life — here they are together.');
+  const _sayHtml = '<div style="font-family:var(--font-display);font-size:'+(_live===0?'24':'21')+'px;line-height:1.32;color:var(--tx);margin:'+(_live===0?'6px 0 12px':'8px 0 14px')+'">'+_esc(_say)+'</div>';
+
+  // THE EARNED NUMBER, never shown at zero — Money's own hero sets that precedent, and a zero on
+  // day one is the accusation this repo has now removed twice.
+  const _count = _wd>0
+    ? '<div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 2px">'+
+        '<span style="font-family:var(--font-display);font-size:52px;line-height:1;color:var(--tx)">'+_wd+'</span>'+
+        '<span style="font-family:var(--font-text);font-size:15px;color:var(--tx2)">'+(_wd===1?'woven day':'woven days')+'</span></div>'
+    : '';
+
+  // THE LEAD. Top rung is ANTI-ENGAGEMENT and that is deliberate: when today already holds two
+  // threads the card does not ask for a third, it hands the person back to their life. That is the
+  // one button no competitor ships, and it is this app's soul stated as a control.
+  const _todayD = _wk.length ? _wk[_wk.length-1] : null;
+  let _lead = '';
+  if(_live===0){
+    _lead = '<div class="ios-footnote" style="margin-top:12px">It fills in as you go — one thing today is enough.</div>';
+  } else if(_todayD && _todayD.n>=2){
+    _lead = '<button class="btn quiet" style="width:100%;margin-top:14px" onclick="_logRelease(\'woven\');showToast(\'Enough\',\'You held more than one thing today. Go and live it.\')">You’ve done enough today</button>';
+  } else if(_todayD && !_todayD.body){
+    _lead = '<button class="btn" style="width:100%;margin-top:14px" onclick="go(\'grow\')">Put one thing into today</button>';
+  } else if(_todayD && !_todayD.spirit){
+    _lead = '<button class="btn" style="width:100%;margin-top:14px" onclick="go(\'soul\')">Close the day</button>';
+  }
+
+  box.innerHTML =
+    '<div class="ios-section"><div class="card home-card" style="padding:16px">'+
+      '<div class="eyebrow">Your life, woven</div>'+
+      _count + _sayHtml + _loomBlock +
+      '<div style="margin:0 -16px">'+iosList(rows)+'</div>'+
+      _lead+
+    '</div></div>';
 }
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');
