@@ -17009,4 +17009,53 @@ H.section('the woven card draws a week without text in the SVG, and keeps its fo
   H.ok(iAsk > -1 && iDone < iAsk, 'and that rung is tested BEFORE any rung that asks for another thing');
 }
 
+// ── an affirmation may not assume a fight they never named ───────────────────────────────────────
+// Measured on a real first-run Home: TODAY'S AFFIRMATION read "I am stronger than this urge." to
+// somebody who had named no vice — one day in four, since it sat in a four-line serves-anyone pool.
+// *Which* urge? Somebody who came for their training, their money or their sleep has disclosed no
+// struggle, and the line puts one in their mouth. Same shape as the faith defect recorded beside it
+// (a secular person meeting "who God made me to be"), so the same fix: build the pool from what the
+// person has told us. EXECUTED rather than grepped — a grep for the string passes on a pool that
+// still hands it to everybody.
+H.section('an affirmation is earned, not assumed');
+{
+  // H.load extracts FUNCTIONS. The pool and the fighting-only line are module-level `const`s, so
+  // without passing them defaultAffirms throws ReferenceError and the suite CRASHES rather than
+  // failing. Read them out of the real bundle rather than retyping them here, or the test drifts
+  // from the app the first time somebody edits a line.
+  const bundle = H.code();
+  const poolSrc = (bundle.match(/const DEFAULT_AFFIRMS_ANY\s*=\s*\[([\s\S]*?)\]/) || [])[1] || '';
+  const POOL = [...poolSrc.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  const FIGHT_LINE = (bundle.match(/const AFFIRM_IF_FIGHTING\s*=\s*"([^"]+)"/) || [])[1] || '';
+  H.ok(POOL.length >= 2 && !!FIGHT_LINE,
+    'the affirmation pool and the fighting-only line were read from the bundle (' + POOL.length + ' + 1)');
+
+  const run = (hasVice, divine) => {
+    const L = H.load(['defaultAffirms'], {
+      curFaith: () => ({ divine: divine }),
+      loadV: function(){},
+      vices: hasVice ? [{ n: 'Porn', mode: 'quit' }] : [],
+      DEFAULT_AFFIRMS_ANY: POOL,
+      AFFIRM_IF_FIGHTING: FIGHT_LINE,
+    });
+    return L.defaultAffirms();
+  };
+  const URGE = FIGHT_LINE;
+
+  const fresh = run(false, null);
+  H.ok(fresh.length >= 3, 'a brand-new secular person still gets affirmations (' + fresh.length + ')');
+  H.ok(fresh.indexOf(URGE) === -1,
+    'but not one about an urge they have never named — they may have come for their training or their money');
+
+  const fighting = run(true, null);
+  H.ok(fighting.indexOf(URGE) > -1,
+    'and somebody who HAS named a fight still gets it — it is one of the truest lines in the list');
+
+  // The faith rule beside it must still hold, in both directions, or this fix broke that one.
+  H.ok(run(false, null).every(a => !/\bGod\b/.test(a)),
+    'a secular person is still never handed a line naming the divine');
+  H.ok(run(false, 'Allah').some(a => /Allah/.test(a)),
+    'and a Muslim still reads Allah rather than God');
+}
+
 H.report();

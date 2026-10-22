@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v647';
+const APP_VERSION = 'v648';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18438,15 +18438,26 @@ function renderAdaptiveMorning(){
 const DEFAULT_AFFIRMS_ANY=[
   "I am not my past. I am my choices today.",
   "Every day I try is a day I grow.",
-  "I am stronger than this urge.",
   "Progress, not perfection.",
 ];
+// AND ONE THAT ASSUMES A FIGHT THEY MAY NOT HAVE NAMED. "I am stronger than this urge." was in the
+// serves-anyone list, so it reached a brand-new person on roughly one day in four — measured on a
+// first-run Home, where it is the whole of TODAY'S AFFIRMATION. *Which* urge? Somebody who came for
+// their training, their money or their sleep has told the app about no urge at all, and the line
+// puts a struggle in their mouth that they did not disclose. It is the same shape as the faith
+// defect recorded directly above, which is why the fix is the same: build the pool from what the
+// person has actually told us rather than withholding after the fact. For anybody who HAS named a
+// fight it is one of the truest lines in the list, so it is kept and simply earned.
+const AFFIRM_IF_FIGHTING = "I am stronger than this urge.";
 function defaultAffirms(){
   let divine = null;
   try{ divine = (typeof curFaith==='function') ? curFaith().divine : 'God'; }catch(_){ divine = null; }
+  let fighting = false;
+  try{ if(typeof loadV==='function') loadV(); fighting = !!(typeof vices!=='undefined' && vices && vices.length); }catch(_){ fighting = false; }
+  const base = fighting ? DEFAULT_AFFIRMS_ANY.concat([AFFIRM_IF_FIGHTING]) : DEFAULT_AFFIRMS_ANY;
   return divine
-    ? ['I am becoming who ' + divine + ' made me to be.'].concat(DEFAULT_AFFIRMS_ANY)
-    : DEFAULT_AFFIRMS_ANY;
+    ? ['I am becoming who ' + divine + ' made me to be.'].concat(base)
+    : base;
 }
 // TWO STORES, ONE MEANING. The "Your why" page writes what a person types into `totry_affirmations`;
 // an older editor writes `totry_affirms`, and every surface that SPEAKS them back read only the latter.

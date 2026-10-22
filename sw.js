@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v647-the-fight-is-earned-not-assumed'
+const CACHE = 'totry-v648-an-affirmation-is-earned-too'
 
 const CORE = [
   './',
