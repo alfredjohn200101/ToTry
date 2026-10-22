@@ -29,6 +29,28 @@
 //    with Settings showing reminders ON. That is a shift worker or a night owl, and it is the
 //    "parses fine, tests green, does nothing" shape. The comparison is arithmetic on minutes now,
 //    with an explicit wrap.
+//
+// ── THE THIRD KIND, 22 Oct 2026: THE AWAY NUDGE ────────────────────────────────────────
+//
+// Asked for by the same person who reported the DST bug: "a reminder notification if you haven't
+// checked in for a while might be useful as well! If it gets sent during the day or sometime in the
+// arvo after work, it might be a time when people are more free to remember to use it."
+//
+// IT HAS TO LIVE HERE, and that is the whole argument. The app already notices a quiet spell in
+// checkGoneQuietWelcome — but that runs ON LAUNCH, so it can only greet somebody who came back by
+// themselves. The population it would help is by definition the population not opening the app, and
+// a PWA cannot schedule anything that survives being closed. So the only thing that can reach a
+// dormant person is the server, which means it needs to know when they were last HERE: last_seen,
+// written by syncPushSubscription() on every launch. last_morning_sent and last_evening_sent could
+// not be used for this — they advance whether or not anybody read the push, so they measure this
+// cron job's activity rather than a person's.
+//
+// AND IT STOPS. One nudge per 7 days, and none at all past 21 days quiet. Somebody who has not
+// opened the app in three weeks has decided, and tapping them on the shoulder every afternoon until
+// they uninstall is the engagement farming this product exists to refuse — CLAUDE.md puts it as
+// "anti-engagement is a feature, not a bug". So the honest shape is at most three nudges, and then
+// silence. A NULL last_seen is treated as no data and never nudged: a row written before this
+// column existed must not read as infinitely quiet.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -76,10 +98,37 @@ function localClock(nowUtc: Date, tz: string | null, offsetMinutes: number | nul
   };
 }
 
+// 17:00 local, because the request named the moment: after work, when the phone comes out and the
+// day is not yet spent. 15:00 is still at a desk and 19:00 is dinner.
+const AWAY_AT = 17 * 60;
+const AWAY_QUIET_DAYS = 4;    // genuinely drifted, not a weekend off
+const AWAY_GIVE_UP_DAYS = 21; // past this, silence — they have decided
+const AWAY_EVERY_DAYS = 7;
+
+function awayDue(s: Record<string, unknown>, nowUtc: Date, clock: { minutes: number }): boolean {
+  // The 15-minute window, same arithmetic as a reminder time so it cannot drift from them.
+  if (((clock.minutes - AWAY_AT + 1440) % 1440) >= WINDOW_MIN) return false;
+  const seen = s.last_seen ? Date.parse(String(s.last_seen)) : NaN;
+  if (!isFinite(seen)) return false;                 // no data is not the same as "gone quiet"
+  const daysQuiet = (nowUtc.getTime() - seen) / 86400000;
+  if (daysQuiet < AWAY_QUIET_DAYS || daysQuiet > AWAY_GIVE_UP_DAYS) return false;
+  const lastAway = s.last_away_sent ? Date.parse(String(s.last_away_sent)) : NaN;
+  if (isFinite(lastAway) && (nowUtc.getTime() - lastAway) / 86400000 < AWAY_EVERY_DAYS) return false;
+  return true;
+}
+
 const MORNING = [
   "Begin the day before the day begins you. A word, your gratitude, your intention, a prayer.",
   "A few quiet minutes set the whole day. Your morning is ready.",
   "Who are you becoming today? Start with the morning ritual.",
+];
+// Zero guilt, and deliberately no number in it. "It's been 6 days" is a scoreboard, and a
+// scoreboard is the thing that makes somebody who drifted not come back at all. Same register as
+// the in-app gone-quiet welcome: glad you're here, nothing owed.
+const AWAY = [
+  "No guilt, no catch-up to do — just a door that's still open whenever you want it.",
+  "Whatever this week has been, you can pick it up from wherever you are. One small thing counts.",
+  "Still here. Nothing to make up for — come back in wherever you like.",
 ];
 const EVENING = [
   "Close the day honestly — how it went, one win, one thing to release.",
@@ -107,7 +156,7 @@ Deno.serve(async (req) => {
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
   const nowUtc = new Date();
-  let sent = 0, pruned = 0, byZone = 0, byOffset = 0;
+  let sent = 0, pruned = 0, byZone = 0, byOffset = 0, away = 0;
 
   for (const s of subs ?? []) {
     try {
@@ -150,6 +199,15 @@ Deno.serve(async (req) => {
           tag: "totry-evening",
         };
         patch = { last_evening_sent: today };
+      } else if (awayDue(s as Record<string, unknown>, nowUtc, clock)) {
+        payload = {
+          title: "Good to see you whenever",
+          body: AWAY[Math.floor(Math.random() * AWAY.length)],
+          url: "./?go=home",
+          tag: "totry-away",
+        };
+        patch = { last_away_sent: nowUtc.toISOString() };
+        away++;
       }
 
       if (!payload) continue;
@@ -170,7 +228,7 @@ Deno.serve(async (req) => {
 
   // byZone / byOffset make the rollout observable: while anyone is still on the offset path their
   // reminders are only as correct as the last time they opened the app.
-  return new Response(JSON.stringify({ sent, pruned, checked: subs?.length ?? 0, byZone, byOffset }), {
+  return new Response(JSON.stringify({ sent, pruned, away, checked: subs?.length ?? 0, byZone, byOffset }), {
     headers: { "Content-Type": "application/json" },
   });
 });

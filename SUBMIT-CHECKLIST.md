@@ -3,7 +3,7 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 20 Oct 2026 — v644. **THERE IS NO CURRENT ARCHIVE.** READ THIS FIRST.
+## ▶▶ CURRENT STATE — 22 Oct 2026 — v650. **THERE IS NO CURRENT ARCHIVE.** READ THIS FIRST.
 
 **Everything below this block is HISTORY.** It still opens with "BUILD 9 — v600 — READY TO
 ARCHIVE", true once and false for 44 versions. That is why this block exists at all.
@@ -16,8 +16,44 @@ shows a name and a date and never which web bundle is inside, so uploading "ToTr
 tomorrow would ship that. **Re-archive before you upload.** The superseded folder now holds four
 pairs: v625/build9, v635/build10, v638/build10, v643/build10.
 
-**The live PWA is deployed and serving v643**; v644 is committed on `main` and **not yet pushed**.
+**The live PWA is deployed and serving v649**; v650 is committed on `main` and **not yet pushed**.
 `ios-native` is merged, so `main` is the one line of development again.
+
+**⚠ THE SERVER IS AHEAD OF THE CLIENT, DELIBERATELY, AND ONE THING IS WAITING ON A PUSH.**
+`send-push` **v23** is live and the `last_seen` / `last_away_sent` columns are applied — both had to
+go first, because the away nudge exists for people who are not opening the app and there is nowhere
+else for it to run. But `last_seen` is written by the CLIENT, so until v650 is pushed no PWA row
+advances it and no away nudge can fire. Nothing is broken by the gap; it is just inert.
+And measured against the live table, **both subscribers still hold `tz_offset_minutes: -600` with
+`tz` NULL, so their reminders are still an hour late** — v649's DST fix is correct and cannot reach
+them until the app is opened once on each device with a client that writes `tz`. An offset cannot be
+repaired by guessing: −600 is Melbourne-in-winter and also Brisbane-all-year.
+
+**What v650 is, in one line each** — driven in a browser, not reasoned:
+- The companion opened on EVERY launch behind a 90-minute throttle. A throttle is a timer with a
+  floor, not a threshold, and *"How are you, really?"* arriving because time passed is the pattern
+  this product refuses. `companionThreshold()` decides now — an unresolved urge, a slip nobody sat
+  with — and silence otherwise. Readiness and sleep are REFUSED as thresholds and a test holds it.
+- Two unbidden sheets were armed on two timers (1200ms and 2600ms) and each decided for itself, so
+  the companion's `.modal-bg.open` guard ran before the other sheet existed and in the hard hour a
+  person got BOTH. `riskWindowHit()` is a predicate now; the once-per-window stamp stays in the
+  renderer, because asking a question cannot be the same act as answering it.
+- `_urgeTs()` — the normaliser whose own comment promised three consumers — missed a bare
+  `Date.now()`, the shape `05-moment.js` writes. The journal dropped letting-go urges while a count
+  four lines away counted them, and the hard-hour histogram bucketed them at 1970.
+- The away nudge, both halves: `send-push` at 17:00 local off `last_seen` for the PWA, and three
+  local notifications at +4/+11/+18 days re-armed on every open for native. One per 7 days, none
+  past 21 days quiet — at most three, then silence.
+- `send-push` had **no test at all** after months of sending every reminder. 22 now, six fault
+  injections. `supabase/migrations/` exists for the first time.
+
+**Gate at v650, every suite re-run after the last edit:** `npm test` **4443/0** · `npm run crisis`
+**57 doors dialable and 53 of 53 ordinary sentences left alone** · `npm run personas` **566/0** ·
+`npm run test:edge` **34 + 22 + 22 passed** · `npm run engines` **0 of 365 days forked** ·
+`node scripts/craft-audit.mjs` **0 under 13px, 0 wrapping caps, 0 neighbours, 3 greys over ten
+screens** · `npm run preflight` **ready to archive**.
+
+<details><summary>The v644 block, kept because its measurements explain what the share cards were</summary>
 
 **What v644 is, in one line each** — all measured in a browser, not reasoned:
 - A canvas cannot resolve a CSS custom property. `ctx.fillStyle` silently IGNORES one and keeps the
@@ -41,6 +77,7 @@ pairs: v625/build9, v635/build10, v638/build10, v643/build10.
 **RC=0, no failures** · `node scripts/craft-audit.mjs` **0 under 13px, 0 wrapping caps, 0 neighbours,
 3 greys over ten screens** — and that zero now means something, because the seed reaches the cards
 it was previously measured without · `npm run preflight` **ready to archive**.
+</details>
 
 **To cut the next archive:** `npm run build:index && npm run build:www && npm run sync`, confirm
 `npm run preflight` says *ready to archive*, then archive and export. **Verify the IPA, never the

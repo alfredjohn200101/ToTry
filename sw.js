@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v649-an-offset-is-a-snapshot-a-zone-is-a-rule'
+const CACHE = 'totry-v650-a-threshold-not-a-timer'
 
 const CORE = [
   './',

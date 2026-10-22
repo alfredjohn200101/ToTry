@@ -729,6 +729,60 @@ function _reachBody(hi, viceName, shifted){
 
 const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
 let _reachConfirm = Promise.resolve();   // serialises the native schedule confirmations below
+// ── THE AWAY NUDGE, NATIVE HALF ───────────────────────────────────────────────────
+// `send-push` grew an afternoon away-nudge on 22 Oct, driven by `last_seen` — and that reaches the
+// PWA only, because syncPushSubscription() requires `PushManager` and the Capacitor build has no
+// push_subscriptions row at all. The build that ships to the App Store needs its own half, and the
+// two are mutually exclusive by construction: web never arms this (Notify.isNative() is false) and
+// native never writes last_seen (no PushManager), so nobody can be nudged twice.
+//
+// THERE IS NO STATE TO TRACK, which is the whole trick. A local notification fires whether or not
+// the app is ever opened again, so "they haven't been here in a while" is expressible as three
+// pending single occurrences — +4, +11 and +18 days at 17:00 — CANCELLED AND RE-ARMED on every
+// open. Somebody using the app pushes all three forward forever and none of them ever fires.
+// Somebody who stops gets one, then a week later a second, then a third, and then SILENCE, because
+// there is no fourth: the 21-day give-up the server implements with arithmetic is a thing this half
+// gets for free by not arming it. No counters, no receipts, nothing to drift.
+//
+// 17:00 because the person who asked named the moment — "sometime in the arvo after work, it might
+// be a time when people are more free" — and it goes through _receptiveTime() for the same reason
+// the hard-hour nudge does: somebody whose quiet hours cover late afternoon is a shift worker, and
+// waking them to say "no guilt" would be its own joke.
+const AWAY_IDS = 3;
+const AWAY_HOUR = 17;
+// Zero guilt and NO DAY COUNT. "It's been 6 days" is a scoreboard, and a scoreboard is what stops
+// somebody who drifted from coming back at all. Kept in step with send-push's own AWAY list.
+const AWAY_BODIES = [
+  "No guilt, no catch-up to do — just a door that’s still open whenever you want it.",
+  "Whatever this week has been, you can pick it up from wherever you are. One small thing counts.",
+  "Still here. Nothing to make up for — come back in wherever you like.",
+];
+function _cancelAwayNudges(){
+  try{ if(typeof Notify!=='undefined' && Notify.cancel){ for(let i=0;i<AWAY_IDS;i++) Notify.cancel('away_'+i); } }catch(_){}
+}
+function scheduleAwayNudges(){
+  try{
+    // Web is served by send-push. Arming here would queue into totry_notif_pending, which only
+    // delivers when the app is OPENED — i.e. never, for the one population this exists for.
+    if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return 0;
+    const on = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
+      || ls('totry_notif_enabled') || ls('totry_notif_perm') === 'granted';
+    if(!on) return _cancelAwayNudges(), 0;
+    // The same off-switch as the hard-hour reach-out: somebody who said "stop reaching out" meant it.
+    if(ls('totry_reachout_off')) return _cancelAwayNudges(), 0;
+    const rt = (typeof _receptiveTime==='function') ? _receptiveTime(AWAY_HOUR*60) : { min:AWAY_HOUR*60, shifted:0 };
+    if(!rt) return _cancelAwayNudges(), 0;     // their quiet hours swallow the whole afternoon
+    _cancelAwayNudges();
+    const d0 = new Date(); let armed = 0;
+    for(let i=0;i<AWAY_IDS;i++){
+      const t = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + 4 + i*7, Math.floor(rt.min/60), rt.min%60, 0, 0);
+      if(t.getTime() <= Date.now()) continue;
+      Notify.schedule('away_'+i, 'Good to see you whenever', AWAY_BODIES[i % AWAY_BODIES.length], t, { kind:'away' });
+      armed++;
+    }
+    return armed;
+  }catch(_){ return 0; }
+}
 function scheduleReachOut(){
   try{
     const _remindersOn = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
@@ -863,6 +917,7 @@ function saveQuietHours(){
   const e=(document.getElementById('quiet-end')||{}).value || '07:00';
   ls('totry_quiet_hours',{start:s,end:e});
   if(typeof scheduleReachOut==='function') scheduleReachOut();
+  if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();   // re-armed on every open, which IS the mechanism
   if(typeof haptic==='function') haptic('tap');
   if(typeof showToast==='function') showToast('Quiet hours saved','Nothing will reach you between '+s+' and '+e+'.');
   if(typeof renderPushSettings==='function') renderPushSettings();
@@ -995,6 +1050,7 @@ function scheduleNotifications(){
   // Reach-out-first: (re)schedule the risk-window nudges from the latest pattern data. Runs on every
   // app open so the schedule tracks how the person's hardest hours actually shift over time.
   if(typeof scheduleReachOut==='function') scheduleReachOut();
+  if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();   // re-armed on every open, which IS the mechanism
 }
 
 // THE GONE-QUIET WELCOME — the single thing the research says cures abandonment: notice when
@@ -1009,8 +1065,13 @@ function checkGoneQuietWelcome(){
     if(daysQuiet == null || daysQuiet < 3) return;
     // Only welcome once per quiet-spell: remember the last spell we greeted.
     const lastGreeted = parseInt(ls('totry_quiet_greeted')||'0', 10);
-    const lastActivityKey = Math.floor(Date.now()/86400000); // today as a day-number
-    if(lastGreeted === lastActivityKey) return; // already greeted today
+    // A UTC DAY BUCKET IS NOT A DAY. This was Math.floor(Date.now()/86400000), which rolls over at
+    // UTC midnight — 11:00 local in Melbourne — so somebody opening the app before and after lunch
+    // on the SAME local date got two different keys and was welcomed back twice before the
+    // afternoon. dayKeyOf() is the only way this repo spells a day, for exactly this reason, and it
+    // builds from local date PARTS rather than a formatter so it also agrees across engines.
+    const lastActivityKey = (typeof dayKeyOf==='function') ? dayKeyOf() : String(Math.floor(Date.now()/86400000));
+    if(String(lastGreeted) === String(lastActivityKey)) return; // already greeted today
     ls('totry_quiet_greeted', lastActivityKey);
     const name = ls('totry_name') || '';
     const hi = name ? ('Hey '+name+'.') : 'Hey.';

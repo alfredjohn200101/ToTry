@@ -3348,6 +3348,84 @@ H.section('the fixes I shipped today, checked against themselves')
   H.ok(/feel-door/.test(msc), 'the companion never opens behind the Feeling Door');
   H.ok(/modal-bg\.open/.test(msc), 'nor over any other open sheet');
 
+  // ── A THRESHOLD, NOT A TIMER ───────────────────────────────────────────────────
+  // The companion used to open on every launch behind a 90-minute throttle, so the most intimate
+  // question the app asks arrived because time had passed. The throttle survives as a floor; the
+  // REASON has to come from companionThreshold(). Asserted as the FACT — that the sheet is behind a
+  // falsy-return — rather than by naming the helper, because a check pinned to a symbol goes red on
+  // a gate that was made stronger (CLAUDE.md records four assertions that did exactly that).
+  H.ok(/if\(!th\)\s*return;/.test(msc) && /openCompanion\(th\)/.test(msc),
+    'the companion opens only when a threshold names a reason');
+  H.ok(/companionThreshold/.test(msc), 'and that reason comes from the one decider');
+  H.ok(!/_isMorningWindow/.test(msc),
+    'the morning suppression is gone — with a real threshold a 2am slip opened at 7am is what to meet');
+
+  // THE PREDICATE MAY NOT WRITE. companionThreshold() asks riskWindowHit() in order to stand down in
+  // the hard hour, so if asking consumed the once-per-window stamp the renderer would then find
+  // nothing and NO sheet would open at all — measured, exactly that, with the stamp moved inside.
+  const rwh = fnBody('riskWindowHit');
+  H.ok(/totry_riskgreet_/.test(rwh), 'riskWindowHit computes the once-per-window key');
+  H.ok(!/\bls\(\s*hit\.key\s*,/.test(H.code(rwh)), 'and does NOT stamp it — asking is not answering');
+  const mrwg = fnBody('_maybeRiskWindowGreeting');
+  H.ok(/ls\(hit\.key,\s*hit\.stamp\)/.test(mrwg), 'the renderer is what stamps');
+  // The other unbidden launch sheet had none of the companion's guards, so it could append itself
+  // over the Feeling Door, over an open sheet, or over the sign-in screen.
+  ['auth-container', 'onboard', 'feel-door', 'modal-bg\\.open', 'companion-overlay\\.open'].forEach(g => {
+    H.ok(new RegExp(g).test(mrwg), 'the hard-hour sheet refuses to open over ' + g.replace(/\\/g, ''));
+  });
+  const cth = fnBody('companionThreshold');
+  H.ok(/riskWindowHit\(\)\)\s*return null/.test(cth.replace(/\s+/g, ' ')),
+    'and the companion stands down when the hard-hour sheet is the better surface');
+  // Readiness/sleep are deliberately NOT thresholds: somebody with no wearable reads a flat 50/100
+  // forever, which is the absence of a signal, not a signal.
+  H.ok(!/computeReadiness|readiness|\.sleep\b/.test(cth),
+    'and never opens on a flat readiness score');
+
+  // ── THE AWAY NUDGE, AND WHY IT IS TWO IMPLEMENTATIONS ─────────────────────────────────
+  // send-push reaches the PWA through last_seen; the Capacitor build has no push_subscriptions row
+  // at all (syncPushSubscription requires PushManager), so it needs local notifications. The two
+  // must stay MUTUALLY EXCLUSIVE or a person gets nudged twice, and that is structural rather than
+  // careful: web fails the isNative gate, native fails the PushManager gate.
+  const san = fnBody('scheduleAwayNudges');
+  H.ok(/Notify\.isNative/.test(san), 'the local away nudge arms on native only');
+  H.ok(/totry_reachout_off/.test(san),
+    '"stop reaching out" is honoured — the same off-switch as the hard-hour nudge');
+  H.ok(/_receptiveTime/.test(san), 'and it goes through the quiet-hours shift rather than waking a shift worker');
+  H.ok(/PushManager/.test(fnBody('syncPushSubscription')), 'while the server half is gated on PushManager, which native lacks');
+  H.ok(/last_seen/.test(fnBody('syncPushSubscription')),
+    'and last_seen is written on every launch — the only honest "they were here" signal the server has');
+  // THE 21-DAY GIVE-UP IS A NOTIFICATION NEVER ARMED, so the only thing to assert is the count.
+  H.eq((H.code(san).match(/AWAY_IDS/g) || []).length >= 1, true, 'the arm loop is bounded by AWAY_IDS');
+  H.ok(/const AWAY_IDS = 3;/.test(H.code()), 'and that bound is three — at most three nudges, then silence');
+  // Every open re-arms, which IS the mechanism: somebody using the app pushes all three forward and
+  // none ever fires. If it were armed in fewer places than scheduleReachOut, a launch path would
+  // leave a stale nudge pointing at a date they have already come back from.
+  const reachSites = (H.code().match(/scheduleReachOut\(\);/g) || []).length;
+  const awaySites = (H.code().match(/scheduleAwayNudges\(\);/g) || []).length;
+  H.eq(awaySites, reachSites, 'the away nudge is re-armed everywhere the hard-hour nudge is (' + reachSites + ' sites)');
+  // Zero guilt, and no day count: "it's been 6 days" is a scoreboard, and a scoreboard is what stops
+  // somebody who drifted from coming back at all. Both copies, kept in step.
+  const bodies = (H.code().match(/const AWAY_BODIES = \[([\s\S]*?)\];/) || [])[1] || '';
+  H.ok(bodies.length > 100, 'the away bodies are real copy');
+  H.ok(!/\d/.test(bodies) && !/\bdays?\b/i.test(bodies), 'and carry no number and no day count');
+
+  // ── THE URGE NORMALISER MISSED ONE OF THE THREE SHAPES IT EXISTS FOR ────────────────────
+  // EXECUTED, not grepped: urgelog carries an ISO string, a bare Date.now() and {ts,won} across the
+  // app's history, and a NUMBER fell through to `e.ts || e.t || e.date` — undefined on a number — so
+  // _urgeTs returned null. The journal's "urges today" dropped it while the count that reads urgelog
+  // raw counted it, the woven card never saw a letting-go urge, and the hard-hour histogram bucketed
+  // it at new Date(null).getHours(). Found by driving companionThreshold() over all three shapes.
+  {
+    const U = H.load(['_urgeTs']);
+    const now = Date.now();
+    H.eq(U._urgeTs(now), now, '_urgeTs passes a bare Date.now() through');
+    H.eq(U._urgeTs('2026-10-22T06:00:00.000Z'), '2026-10-22T06:00:00.000Z', 'an ISO string through');
+    H.eq(U._urgeTs({ ts: '2026-10-22T06:00:00.000Z', won: true }), '2026-10-22T06:00:00.000Z', 'and {ts,won} through');
+    H.eq(U._urgeTs(null), null, 'null stays null');
+    H.eq(U._urgeTs(0), null, 'and so does a zero timestamp, which is not a 1970 urge');
+    H.eq(U._urgeTs(NaN), null, 'a NaN is refused rather than passed to new Date()');
+  }
+
   // brotherSys() appends faithVoiceNote(); the explicit one at this call site became a duplicate.
   H.ok(!/brotherSys\(\)\s*\+\s*faithVoiceNote\(\)/.test(code.replace(/\s+/g, ' ')),
     'no prompt carries the tradition guidance twice');

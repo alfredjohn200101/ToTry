@@ -77,7 +77,8 @@ function reinitNativeReminders(){
   try{
     if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
     const prefs = _pushPrefs();
-    if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+    if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
     if(prefs && prefs.enabled && typeof scheduleBillReminders==='function') scheduleBillReminders();
   }catch(_){}
 }
@@ -104,6 +105,7 @@ async function enablePushReminders(){
       const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
       _scheduleNativeReminders(prefs);
       if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();
       if(typeof haptic==='function') haptic('success');
       if(typeof logEvent==='function') logEvent('reminders_on');
       showToast('Reminders on ✓','Morning '+prefs.morning+' · Evening '+prefs.evening+' — even when the app is closed.');
@@ -137,7 +139,8 @@ async function enablePushReminders(){
       tz: _deviceZone(),
       tz_offset_minutes: new Date().getTimezoneOffset(),   // kept as the server's fallback
       remind_morning: prefs.morning,
-      remind_evening: prefs.evening
+      remind_evening: prefs.evening,
+      last_seen: new Date().toISOString()   // explicit, not leaning on the column default
     });
     if(error) throw error;
     prefs.enabled = true; ls('totry_push_prefs', prefs);   // only now is it true
@@ -227,7 +230,13 @@ async function syncPushSubscription(){
       tz: _deviceZone(),
       tz_offset_minutes: new Date().getTimezoneOffset(),
       remind_morning: prefs.morning,
-      remind_evening: prefs.evening
+      remind_evening: prefs.evening,
+      // THE ONLY HONEST "THEY OPENED THE APP" SIGNAL ON THE SERVER. last_morning_sent and
+      // last_evening_sent advance whether or not anybody read the push, so they measure the cron
+      // job's activity and not the person's — which is why the away nudge could not be built on
+      // them. This function already runs 1500ms after every launch to keep the row fresh, so it is
+      // exactly the right place: a write here means a human opened the app on this device.
+      last_seen: new Date().toISOString()
     }).eq('user_id', currentUser.id);
     // supabase-js RETURNS {error} rather than throwing, and this swallowed it, so an RLS or network
     // refusal was indistinguishable from success — which is why nobody noticed this had never once
@@ -338,7 +347,8 @@ function toggleReachOut(){
   ls('totry_reachout_off', turningOff);
   try{
     if(turningOff){ _cancelReachOuts(); _setReachState({ next:null, hold:'you turned this off' }); }
-    else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+    else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
   }catch(_){}
   if(typeof haptic==='function') haptic('tap');
   if(typeof renderPushSettings==='function') renderPushSettings();
@@ -720,11 +730,18 @@ async function initApp(){
   }
   // App is interactive — fade out the instant boot splash.
   if(typeof _clearBootSplash==='function') _clearBootSplash();
-  // THE FRONT DOOR: after the app settles, the companion checks in. Time-aware
-  // (morning defers to the day), throttled, one-tap dismiss — so it becomes the
-  // reflex you reach for before the slip. This is the keystone of the whole app.
-  // On open: if they've been away a few days, a warm welcome takes precedence (gentler than the
-  // urge check-in). Otherwise the companion checks in. Never both — that would be overbearing.
+  // THE FRONT DOOR, and it is a THRESHOLD now, not a timer. Three unbidden surfaces could reach a
+  // person at launch and each one decided for itself, on its own setTimeout, whether to open — so
+  // in the hard hour two of them did. The order of precedence is explicit here instead:
+  //   • been away 3+ days  → the gone-quiet welcome, a TOAST, which is the gentler surface and the
+  //                         only one the research says cures abandonment. It wins outright.
+  //   • otherwise          → maybeShowCompanion(), which now opens ONLY if companionThreshold()
+  //                         names a reason (an unresolved urge, a slip nobody sat with) and
+  //                         returns null when the hard hour means _maybeRiskWindowGreeting — the
+  //                         more specific sheet, armed on 2600ms above — is the right one.
+  // So at most one sheet arrives, and on an ordinary open NOTHING does. That is the point: the orb
+  // is on every screen, so silence costs the person nothing and buys back the one thing an
+  // unbidden sheet spends, which is their willingness to read it when it does appear.
   try{
     const life = (typeof getLifeState==='function') ? getLifeState() : null;
     const quiet = life && life.activity && life.activity.daysQuiet != null && life.activity.daysQuiet >= 3;

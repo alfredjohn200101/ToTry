@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v649';
+const APP_VERSION = 'v650';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11078,6 +11078,60 @@ function _reachBody(hi, viceName, shifted){
 
 const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
 let _reachConfirm = Promise.resolve();   // serialises the native schedule confirmations below
+// ── THE AWAY NUDGE, NATIVE HALF ───────────────────────────────────────────────────
+// `send-push` grew an afternoon away-nudge on 22 Oct, driven by `last_seen` — and that reaches the
+// PWA only, because syncPushSubscription() requires `PushManager` and the Capacitor build has no
+// push_subscriptions row at all. The build that ships to the App Store needs its own half, and the
+// two are mutually exclusive by construction: web never arms this (Notify.isNative() is false) and
+// native never writes last_seen (no PushManager), so nobody can be nudged twice.
+//
+// THERE IS NO STATE TO TRACK, which is the whole trick. A local notification fires whether or not
+// the app is ever opened again, so "they haven't been here in a while" is expressible as three
+// pending single occurrences — +4, +11 and +18 days at 17:00 — CANCELLED AND RE-ARMED on every
+// open. Somebody using the app pushes all three forward forever and none of them ever fires.
+// Somebody who stops gets one, then a week later a second, then a third, and then SILENCE, because
+// there is no fourth: the 21-day give-up the server implements with arithmetic is a thing this half
+// gets for free by not arming it. No counters, no receipts, nothing to drift.
+//
+// 17:00 because the person who asked named the moment — "sometime in the arvo after work, it might
+// be a time when people are more free" — and it goes through _receptiveTime() for the same reason
+// the hard-hour nudge does: somebody whose quiet hours cover late afternoon is a shift worker, and
+// waking them to say "no guilt" would be its own joke.
+const AWAY_IDS = 3;
+const AWAY_HOUR = 17;
+// Zero guilt and NO DAY COUNT. "It's been 6 days" is a scoreboard, and a scoreboard is what stops
+// somebody who drifted from coming back at all. Kept in step with send-push's own AWAY list.
+const AWAY_BODIES = [
+  "No guilt, no catch-up to do — just a door that’s still open whenever you want it.",
+  "Whatever this week has been, you can pick it up from wherever you are. One small thing counts.",
+  "Still here. Nothing to make up for — come back in wherever you like.",
+];
+function _cancelAwayNudges(){
+  try{ if(typeof Notify!=='undefined' && Notify.cancel){ for(let i=0;i<AWAY_IDS;i++) Notify.cancel('away_'+i); } }catch(_){}
+}
+function scheduleAwayNudges(){
+  try{
+    // Web is served by send-push. Arming here would queue into totry_notif_pending, which only
+    // delivers when the app is OPENED — i.e. never, for the one population this exists for.
+    if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return 0;
+    const on = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
+      || ls('totry_notif_enabled') || ls('totry_notif_perm') === 'granted';
+    if(!on) return _cancelAwayNudges(), 0;
+    // The same off-switch as the hard-hour reach-out: somebody who said "stop reaching out" meant it.
+    if(ls('totry_reachout_off')) return _cancelAwayNudges(), 0;
+    const rt = (typeof _receptiveTime==='function') ? _receptiveTime(AWAY_HOUR*60) : { min:AWAY_HOUR*60, shifted:0 };
+    if(!rt) return _cancelAwayNudges(), 0;     // their quiet hours swallow the whole afternoon
+    _cancelAwayNudges();
+    const d0 = new Date(); let armed = 0;
+    for(let i=0;i<AWAY_IDS;i++){
+      const t = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + 4 + i*7, Math.floor(rt.min/60), rt.min%60, 0, 0);
+      if(t.getTime() <= Date.now()) continue;
+      Notify.schedule('away_'+i, 'Good to see you whenever', AWAY_BODIES[i % AWAY_BODIES.length], t, { kind:'away' });
+      armed++;
+    }
+    return armed;
+  }catch(_){ return 0; }
+}
 function scheduleReachOut(){
   try{
     const _remindersOn = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
@@ -11212,6 +11266,7 @@ function saveQuietHours(){
   const e=(document.getElementById('quiet-end')||{}).value || '07:00';
   ls('totry_quiet_hours',{start:s,end:e});
   if(typeof scheduleReachOut==='function') scheduleReachOut();
+  if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();   // re-armed on every open, which IS the mechanism
   if(typeof haptic==='function') haptic('tap');
   if(typeof showToast==='function') showToast('Quiet hours saved','Nothing will reach you between '+s+' and '+e+'.');
   if(typeof renderPushSettings==='function') renderPushSettings();
@@ -11344,6 +11399,7 @@ function scheduleNotifications(){
   // Reach-out-first: (re)schedule the risk-window nudges from the latest pattern data. Runs on every
   // app open so the schedule tracks how the person's hardest hours actually shift over time.
   if(typeof scheduleReachOut==='function') scheduleReachOut();
+  if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();   // re-armed on every open, which IS the mechanism
 }
 
 // THE GONE-QUIET WELCOME — the single thing the research says cures abandonment: notice when
@@ -11358,8 +11414,13 @@ function checkGoneQuietWelcome(){
     if(daysQuiet == null || daysQuiet < 3) return;
     // Only welcome once per quiet-spell: remember the last spell we greeted.
     const lastGreeted = parseInt(ls('totry_quiet_greeted')||'0', 10);
-    const lastActivityKey = Math.floor(Date.now()/86400000); // today as a day-number
-    if(lastGreeted === lastActivityKey) return; // already greeted today
+    // A UTC DAY BUCKET IS NOT A DAY. This was Math.floor(Date.now()/86400000), which rolls over at
+    // UTC midnight — 11:00 local in Melbourne — so somebody opening the app before and after lunch
+    // on the SAME local date got two different keys and was welcomed back twice before the
+    // afternoon. dayKeyOf() is the only way this repo spells a day, for exactly this reason, and it
+    // builds from local date PARTS rather than a formatter so it also agrees across engines.
+    const lastActivityKey = (typeof dayKeyOf==='function') ? dayKeyOf() : String(Math.floor(Date.now()/86400000));
+    if(String(lastGreeted) === String(lastActivityKey)) return; // already greeted today
     ls('totry_quiet_greeted', lastActivityKey);
     const name = ls('totry_name') || '';
     const hi = name ? ('Hey '+name+'.') : 'Hey.';
@@ -19718,8 +19779,25 @@ function setQLOutcome(won){
 // So an urge logged through the deep-fight path never counted in the journal's own "urges today"
 // and never reached the hard-hour detector. One normaliser, three consumers; a fourth shape added
 // later only has to be handled here.
+// AND THE NORMALISER MISSED THE THIRD REAL SHAPE — a bare Date.now(). `05-moment.js:456` writes
+// `v.urgelog.push(Date.now())` for a letting-go urge, and a NUMBER fell straight through to
+// `e.ts || e.t || e.date`, which on a number is undefined, so this returned null. Every consumer
+// then dropped it: the journal's "urges today" (12-journal.js:261) skipped it while the count four
+// lines of history above it, which reads urgelog RAW, counted it — the same data, two different
+// answers on one screen; the woven card's tended-day evidence (31-nextstep.js) never saw a
+// letting-go urge at all; and the hard-hour histogram (09-fight-deep.js) fed it to
+// `new Date(null).getHours()`, bucketing a 2026 urge at 1970's local hour. Found by DRIVING
+// companionThreshold() over all three shapes, not by reading — the function's own comment already
+// promised three consumers and "a fourth shape added later only has to be handled here", which is
+// exactly the half-applied shape: the normaliser was written, and one of the shapes it existed to
+// normalise was not in it.
+// `!e` rather than a null check, deliberately: the original refused every falsy value and a 0 is
+// epoch 1970, not an urge somebody logged. Widening the guard to `=== null` while adding the number
+// branch quietly started passing 0 through, which the new assertion caught — a rewrite that fixes
+// one shape must not change the answer for another.
 function _urgeTs(e){
   if(!e) return null;
+  if(typeof e === 'number') return isFinite(e) ? e : null;
   if(typeof e === 'string') return e;
   return e.ts || e.t || e.date || null;
 }
@@ -20978,29 +21056,82 @@ let _compManualMechanism = null;
 // check-in (a waking person isn't usually fighting a vice); it leads to the day.
 // Midday/general opens → the companion check-in. Evening handled by reflection.
 function _userHour(){ return new Date().getHours(); }
-function _isMorningWindow(){
-  // Use the user's existing morning reminder time if they set one (no new setup needed); else 5–11am.
-  let wake = parseInt(ls('totry_wake_hour')||'',10);   // never written today; kept for forward compat
-  if(isNaN(wake)){
-    try{ const rt = ls('totry_reminder_times')||{}; if(rt.morning){ const h=parseInt(String(rt.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
-  }
-  // The LIVE settings UI (savePushTimes) writes totry_push_prefs, not totry_reminder_times — so for
-  // anyone who set their morning time there this fell through to the 5am default and silenced the urge
-  // check-in from 5:00 to 11:00. A late riser or shift worker got nothing through the hours they were
-  // actually awake, and someone up at 4am got the check-in instead of the morning.
-  if(isNaN(wake)){
-    try{ const pp=(typeof _pushPrefs==='function')?_pushPrefs():(ls('totry_push_prefs')||{});
-         if(pp && pp.morning){ const h=parseInt(String(pp.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
-  }
-  if(isNaN(wake)) wake = 5;
-  const h = _userHour();
-  // Morning window = from wake until ~11am (the day leads here, not the urge check-in).
-  return h >= wake && h < 11;
+
+// ── THE THRESHOLD, NOT THE TIMER ─────────────────────────────────────────────────
+// The companion used to open on EVERY launch, gated only by a 90-minute throttle — so the most
+// intimate question this app asks ("How are you, really?") arrived because TIME had passed, not
+// because anything was true. That is a timer wearing a threshold's clothes, and it is the one
+// pattern this product exists to refuse: CLAUDE.md's first line about the soul is that the app
+// "speaks at thresholds (about to cross a line) ... Quiet by default, there and ever-present,
+// never overbearing", and a sheet that opens whenever you have not seen it for ninety minutes is
+// farming the open, not meeting the person. Worse, it taught the wrong reflex — a question you
+// are asked on a schedule is one you learn to tap past.
+//
+// So the launch asks something with an answer instead: is a threshold TRUE right now? Three are,
+// and each is a moment where the companion is the right surface and no other surface is watching:
+//   1 · the hard hour — DEFERRED, because _maybeRiskWindowGreeting is strictly better there: it
+//       names the vice, names the trigger and offers that vice's own door. MEASURED, so the claim
+//       is the right size: the double sheet is prevented by the guards that sheet now carries (it
+//       had none), and what this defer decides is WHICH surface a person gets. Neutered, a launch
+//       in the hard hour opens the generic "How are you, really?" instead of the sheet that knows
+//       what is actually happening — one unbidden surface either way, but the wrong one.
+//   2 · an urge logged and never resolved — they felt it, tapped, and the app never learned how it
+//       went. One check-in per urge, ever: openCompanion() stamps totry_companion_last, which is
+//       part of the condition, so the question cannot repeat itself at the next launch.
+//   3 · a slip nobody sat with — a lapse is feedback, not failure, and the companion is the only
+//       surface that can say so without a scoreboard in the way. Also one check-in per slip.
+// Everything else gets SILENCE. Nothing is taken away by not being asked: the orb (#need-talk-btn)
+// is on every screen but Coach, so the door is always one tap away.
+//
+// WHAT IS DELIBERATELY NOT A THRESHOLD, because this repo already knows what a flat number costs:
+// readiness and sleep. Somebody with no wearable reads 50/100 forever — that is the absence of a
+// signal, not a signal, and opening a sheet on it would be the timer again with a number painted
+// on it. Nor the morning window, which used to SUPPRESS the check-in from wake until 11am: that
+// guard existed because the trigger was a timer and "what's pulling at you?" is the wrong thing to
+// say to somebody waking up. With a real threshold it inverts — a 2am slip opened at 7am is
+// exactly what to meet — so it is gone, and `_isMorningWindow` with it. (If a wake-hour window is
+// ever needed again: read `totry_push_prefs`, which is what the live settings UI writes, NOT
+// `totry_reminder_times`, which nothing has written for versions.)
+function companionThreshold(){
+  try{
+    // 1 · DEFER TO THE MORE SPECIFIC SHEET. riskWindowHit() is deliberately side-effect free, so
+    // asking it here does not consume the once-per-window stamp the renderer still owns.
+    if(typeof riskWindowHit==='function' && riskWindowHit()) return null;
+
+    if(typeof loadV==='function') loadV();
+    const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
+    if(!vs.length) return null;
+    const now=Date.now();
+    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime(); return isNaN(d)?0:d; };
+
+    // When was this person last MET about the fight? A moment won, or a fight logged as a WIN. A
+    // loss is emphatically not being met — it is the thing that needs meeting — so `won===false`
+    // entries are excluded here on purpose; including them would make threshold 3 unreachable,
+    // since a slip IS a fight-log row.
+    let met=0;
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; }); }catch(_){}
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e&&e.won){ const t=_at(e.ts); if(t>met) met=t; } }); }catch(_){}
+    const lastComp=parseInt(ls('totry_companion_last')||'0',10)||0;
+
+    // 2 · AN URGE NOBODY HEARD THE END OF. urgelog carries three real shapes across the app's
+    // history (an ISO string, a bare Date.now(), and {ts,won}), which is what _urgeTs normalises.
+    let urge=0;
+    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){ const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
+    if(urge && (now-urge) < 3*3600*1000 && met < urge && lastComp < urge) return {kind:'urge', since:urge};
+
+    // 3 · A SLIP NOBODY SAT WITH. Twelve hours, because the honest window for this is "before the
+    // day turns over", and a slip at 1am should still be met when they open the app at noon.
+    let slip=0;
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e && e.won===false){ const t=_at(e.ts); if(t>slip) slip=t; } }); }catch(_){}
+    if(slip && (now-slip) < 12*3600*1000 && met < slip && lastComp < slip) return {kind:'slip', since:slip};
+
+    return null;
+  }catch(_){ return null; }
 }
 
-// Should the companion check-in show on this open? Every open, EXCEPT:
-//  • not during onboarding/auth, • not more than once per ~90 min (so re-opens
-//    in a session aren't naggy), • morning window defers to the day instead.
+// Should the companion check-in show on this open? Only when companionThreshold() names a reason,
+// and then never during onboarding/auth, behind the Feeling Door, over another sheet, or inside
+// 90 minutes of the last one.
 function maybeShowCompanion(){
   try{
     // Never during auth or onboarding.
@@ -21022,17 +21153,24 @@ function maybeShowCompanion(){
     if(!isSetUpPerson()) return;
     // And never in the same session onboarding just completed (avoids an abrupt first experience).
     try{ if(sessionStorage.getItem('totry_just_onboarded')) return; }catch(_){}
-    // Throttle: at most once per 90 minutes so it forms a reflex without nagging.
+    // The throttle survives as a FLOOR — it is no longer the reason to open, only a bound on how
+    // often an unbidden sheet may arrive at all.
     const last = parseInt(ls('totry_companion_last')||'0',10);
     if(Date.now() - last < 90*60*1000) return;
-    // Morning window → the day leads, not the urge check-in. (Still reachable manually.)
-    if(_isMorningWindow()) return;
-    openCompanion();
+    // AND THE REASON IS A THRESHOLD. No threshold, no sheet — the orb is still right there.
+    const th = (typeof companionThreshold==='function') ? companionThreshold() : null;
+    if(!th) return;
+    openCompanion(th);
   }catch(_){ }
 }
 
 let _compReturnFocus = null;
-function openCompanion(){
+// `th` is companionThreshold()'s answer when the sheet arrived unbidden, and absent when a person
+// reached for the orb themselves. It changes ONLY the sub-line, never the greeting: the question
+// stays "How are you, really?" because that is the question in all three cases. What changes is
+// whether the app admits why it is here. Arriving on a threshold and saying "No wrong answer" is
+// the app pretending it just happened to drop by, and somebody who slipped four hours ago can tell.
+function openCompanion(th){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
   // The same sheet should feel the same however it is reached — and an unbidden arrival should be
@@ -21052,7 +21190,13 @@ function openCompanion(){
     // you, really?" read as two broken halves of one question. (.comp-greeting is white-space:pre-line.)
     greetEl.textContent = (h >= 21 || h < 5) ? (hi+'\nHow are you tonight, really?') : (hi+'\nHow are you, really?');
   }
-  if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
+  if(subEl){
+    const kind = (th && th.kind) || '';
+    // Grace first, always. Not "you slipped" — the app knows, and saying it back is a scoreboard.
+    if(kind === 'slip')      subEl.textContent = "I know something gave way. Whatever happened, you came back — that is the part that counts.";
+    else if(kind === 'urge') subEl.textContent = "You felt something earlier and I never heard how it went. No wrong answer.";
+    else                     subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
+  }
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
   // Move the reader INTO the sheet, and remember where to put them back. Without this a screen-reader
   // user opening the companion stayed in the page behind it, with the whole app still swipeable and
@@ -27623,27 +27767,56 @@ function _momentWin(i){
 // the moment he opens it inside his known risk window — the hour the pattern engine learned is
 // hardest for him. This is "before it takes over" made proactive, and it works in the PWA today.
 // Quiet by default: it OFFERS the door, never forces it, and never nags — once per window, per day.
-function _maybeRiskWindowGreeting(){
+// THE PREDICATE, SPLIT OUT OF THE RENDERER. Two unbidden sheets used to be scheduled at launch on
+// two bare timers — maybeShowCompanion at 1200ms and this at 2600ms — and each decided for itself
+// whether to open. The companion's `.modal-bg.open` guard ran 1400ms BEFORE this one appended its
+// modal, so the guard could not see a sheet that did not exist yet. Asking a question cannot be the
+// same act as answering it, so the decision is a function anybody can call — companionThreshold()
+// calls it to stand down in the hard hour — and the WRITE stays here: a predicate that stamps is a
+// predicate nobody can ask twice, and asking it would consume the once-per-window mark so the
+// renderer would then find nothing. (Fault-injected: with the stamp moved in here, a launch in the
+// hard hour shows no sheet at all.)
+function riskWindowHit(){
   try{
     if(typeof loadV==='function') loadV();
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
-    if(!vs.length) return;
+    if(!vs.length) return null;
     const nowBlock=_viceBlockLabel(new Date().getHours());
     const today=_todayLocalISO();
     // Don't intrude right after he just handled a moment — he's already met.
     const lastWon=(ls('totry_moments_won')||[])[0];
-    if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return;
+    if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return null;
     // Find a vice whose learned hard hour is NOW.
     let hit=null;
     vs.forEach(v=>{
       const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null;
       if(p && p.riskWindow===nowBlock){ if(!hit || (p.total>hit.p.total)) hit={v, p, idx:vices.indexOf(v)}; }
     });
+    if(!hit) return null;
+    // Once per window, per day — asked here, stamped by the renderer.
+    hit.key='totry_riskgreet_'+_hashId(hit.v.n);
+    hit.stamp=today+'|'+nowBlock;
+    if(ls(hit.key)===hit.stamp) return null;
+    return hit;
+  }catch(_){ return null; }
+}
+function _maybeRiskWindowGreeting(){
+  try{
+    // THE GUARDS THIS SHEET NEVER HAD. maybeShowCompanion has refused to open over the sign-in
+    // screen, over onboarding, behind the Feeling Door or on top of another sheet since v464. This
+    // one — the other unbidden launch sheet — had none of them, so it could append itself over any
+    // of those, including the auth screen of somebody who had not signed in yet.
+    const auth=document.getElementById('auth-container');
+    if(auth && getComputedStyle(auth).display!=='none') return;
+    const onboard=document.getElementById('onboard');
+    if(onboard && getComputedStyle(onboard).display!=='none') return;
+    const door=document.getElementById('feel-door');
+    if(door && door.classList.contains('open')) return;
+    if(document.querySelector('.modal-bg.open')) return;
+    if(document.querySelector('.companion-overlay.open')) return;
+    const hit=riskWindowHit();
     if(!hit) return;
-    // Once per window, per day.
-    const key='totry_riskgreet_'+_hashId(hit.v.n);
-    if(ls(key)===today+'|'+nowBlock) return;
-    ls(key, today+'|'+nowBlock);
+    ls(hit.key, hit.stamp);
     const first=(ls('totry_name')||'').trim().split(' ')[0];
     const hi=first?first+', ':'';
     const trig=hit.p.topTrigger?(' It’s often '+hit.p.topTrigger+' that starts it.'):'';
@@ -55351,7 +55524,8 @@ function reinitNativeReminders(){
   try{
     if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
     const prefs = _pushPrefs();
-    if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+    if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
     if(prefs && prefs.enabled && typeof scheduleBillReminders==='function') scheduleBillReminders();
   }catch(_){}
 }
@@ -55378,6 +55552,7 @@ async function enablePushReminders(){
       const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
       _scheduleNativeReminders(prefs);
       if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges();
       if(typeof haptic==='function') haptic('success');
       if(typeof logEvent==='function') logEvent('reminders_on');
       showToast('Reminders on ✓','Morning '+prefs.morning+' · Evening '+prefs.evening+' — even when the app is closed.');
@@ -55411,7 +55586,8 @@ async function enablePushReminders(){
       tz: _deviceZone(),
       tz_offset_minutes: new Date().getTimezoneOffset(),   // kept as the server's fallback
       remind_morning: prefs.morning,
-      remind_evening: prefs.evening
+      remind_evening: prefs.evening,
+      last_seen: new Date().toISOString()   // explicit, not leaning on the column default
     });
     if(error) throw error;
     prefs.enabled = true; ls('totry_push_prefs', prefs);   // only now is it true
@@ -55501,7 +55677,13 @@ async function syncPushSubscription(){
       tz: _deviceZone(),
       tz_offset_minutes: new Date().getTimezoneOffset(),
       remind_morning: prefs.morning,
-      remind_evening: prefs.evening
+      remind_evening: prefs.evening,
+      // THE ONLY HONEST "THEY OPENED THE APP" SIGNAL ON THE SERVER. last_morning_sent and
+      // last_evening_sent advance whether or not anybody read the push, so they measure the cron
+      // job's activity and not the person's — which is why the away nudge could not be built on
+      // them. This function already runs 1500ms after every launch to keep the row fresh, so it is
+      // exactly the right place: a write here means a human opened the app on this device.
+      last_seen: new Date().toISOString()
     }).eq('user_id', currentUser.id);
     // supabase-js RETURNS {error} rather than throwing, and this swallowed it, so an RLS or network
     // refusal was indistinguishable from success — which is why nobody noticed this had never once
@@ -55612,7 +55794,8 @@ function toggleReachOut(){
   ls('totry_reachout_off', turningOff);
   try{
     if(turningOff){ _cancelReachOuts(); _setReachState({ next:null, hold:'you turned this off' }); }
-    else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+    else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
   }catch(_){}
   if(typeof haptic==='function') haptic('tap');
   if(typeof renderPushSettings==='function') renderPushSettings();
@@ -55994,11 +56177,18 @@ async function initApp(){
   }
   // App is interactive — fade out the instant boot splash.
   if(typeof _clearBootSplash==='function') _clearBootSplash();
-  // THE FRONT DOOR: after the app settles, the companion checks in. Time-aware
-  // (morning defers to the day), throttled, one-tap dismiss — so it becomes the
-  // reflex you reach for before the slip. This is the keystone of the whole app.
-  // On open: if they've been away a few days, a warm welcome takes precedence (gentler than the
-  // urge check-in). Otherwise the companion checks in. Never both — that would be overbearing.
+  // THE FRONT DOOR, and it is a THRESHOLD now, not a timer. Three unbidden surfaces could reach a
+  // person at launch and each one decided for itself, on its own setTimeout, whether to open — so
+  // in the hard hour two of them did. The order of precedence is explicit here instead:
+  //   • been away 3+ days  → the gone-quiet welcome, a TOAST, which is the gentler surface and the
+  //                         only one the research says cures abandonment. It wins outright.
+  //   • otherwise          → maybeShowCompanion(), which now opens ONLY if companionThreshold()
+  //                         names a reason (an unresolved urge, a slip nobody sat with) and
+  //                         returns null when the hard hour means _maybeRiskWindowGreeting — the
+  //                         more specific sheet, armed on 2600ms above — is the right one.
+  // So at most one sheet arrives, and on an ordinary open NOTHING does. That is the point: the orb
+  // is on every screen, so silence costs the person nothing and buys back the one thing an
+  // unbidden sheet spends, which is their willingness to read it when it does appear.
   try{
     const life = (typeof getLifeState==='function') ? getLifeState() : null;
     const quiet = life && life.activity && life.activity.daysQuiet != null && life.activity.daysQuiet >= 3;

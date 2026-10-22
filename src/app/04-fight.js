@@ -1240,8 +1240,25 @@ function setQLOutcome(won){
 // So an urge logged through the deep-fight path never counted in the journal's own "urges today"
 // and never reached the hard-hour detector. One normaliser, three consumers; a fourth shape added
 // later only has to be handled here.
+// AND THE NORMALISER MISSED THE THIRD REAL SHAPE — a bare Date.now(). `05-moment.js:456` writes
+// `v.urgelog.push(Date.now())` for a letting-go urge, and a NUMBER fell straight through to
+// `e.ts || e.t || e.date`, which on a number is undefined, so this returned null. Every consumer
+// then dropped it: the journal's "urges today" (12-journal.js:261) skipped it while the count four
+// lines of history above it, which reads urgelog RAW, counted it — the same data, two different
+// answers on one screen; the woven card's tended-day evidence (31-nextstep.js) never saw a
+// letting-go urge at all; and the hard-hour histogram (09-fight-deep.js) fed it to
+// `new Date(null).getHours()`, bucketing a 2026 urge at 1970's local hour. Found by DRIVING
+// companionThreshold() over all three shapes, not by reading — the function's own comment already
+// promised three consumers and "a fourth shape added later only has to be handled here", which is
+// exactly the half-applied shape: the normaliser was written, and one of the shapes it existed to
+// normalise was not in it.
+// `!e` rather than a null check, deliberately: the original refused every falsy value and a 0 is
+// epoch 1970, not an urge somebody logged. Widening the guard to `=== null` while adding the number
+// branch quietly started passing 0 through, which the new assertion caught — a rewrite that fixes
+// one shape must not change the answer for another.
 function _urgeTs(e){
   if(!e) return null;
+  if(typeof e === 'number') return isFinite(e) ? e : null;
   if(typeof e === 'string') return e;
   return e.ts || e.t || e.date || null;
 }
@@ -2500,29 +2517,82 @@ let _compManualMechanism = null;
 // check-in (a waking person isn't usually fighting a vice); it leads to the day.
 // Midday/general opens → the companion check-in. Evening handled by reflection.
 function _userHour(){ return new Date().getHours(); }
-function _isMorningWindow(){
-  // Use the user's existing morning reminder time if they set one (no new setup needed); else 5–11am.
-  let wake = parseInt(ls('totry_wake_hour')||'',10);   // never written today; kept for forward compat
-  if(isNaN(wake)){
-    try{ const rt = ls('totry_reminder_times')||{}; if(rt.morning){ const h=parseInt(String(rt.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
-  }
-  // The LIVE settings UI (savePushTimes) writes totry_push_prefs, not totry_reminder_times — so for
-  // anyone who set their morning time there this fell through to the 5am default and silenced the urge
-  // check-in from 5:00 to 11:00. A late riser or shift worker got nothing through the hours they were
-  // actually awake, and someone up at 4am got the check-in instead of the morning.
-  if(isNaN(wake)){
-    try{ const pp=(typeof _pushPrefs==='function')?_pushPrefs():(ls('totry_push_prefs')||{});
-         if(pp && pp.morning){ const h=parseInt(String(pp.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
-  }
-  if(isNaN(wake)) wake = 5;
-  const h = _userHour();
-  // Morning window = from wake until ~11am (the day leads here, not the urge check-in).
-  return h >= wake && h < 11;
+
+// ── THE THRESHOLD, NOT THE TIMER ─────────────────────────────────────────────────
+// The companion used to open on EVERY launch, gated only by a 90-minute throttle — so the most
+// intimate question this app asks ("How are you, really?") arrived because TIME had passed, not
+// because anything was true. That is a timer wearing a threshold's clothes, and it is the one
+// pattern this product exists to refuse: CLAUDE.md's first line about the soul is that the app
+// "speaks at thresholds (about to cross a line) ... Quiet by default, there and ever-present,
+// never overbearing", and a sheet that opens whenever you have not seen it for ninety minutes is
+// farming the open, not meeting the person. Worse, it taught the wrong reflex — a question you
+// are asked on a schedule is one you learn to tap past.
+//
+// So the launch asks something with an answer instead: is a threshold TRUE right now? Three are,
+// and each is a moment where the companion is the right surface and no other surface is watching:
+//   1 · the hard hour — DEFERRED, because _maybeRiskWindowGreeting is strictly better there: it
+//       names the vice, names the trigger and offers that vice's own door. MEASURED, so the claim
+//       is the right size: the double sheet is prevented by the guards that sheet now carries (it
+//       had none), and what this defer decides is WHICH surface a person gets. Neutered, a launch
+//       in the hard hour opens the generic "How are you, really?" instead of the sheet that knows
+//       what is actually happening — one unbidden surface either way, but the wrong one.
+//   2 · an urge logged and never resolved — they felt it, tapped, and the app never learned how it
+//       went. One check-in per urge, ever: openCompanion() stamps totry_companion_last, which is
+//       part of the condition, so the question cannot repeat itself at the next launch.
+//   3 · a slip nobody sat with — a lapse is feedback, not failure, and the companion is the only
+//       surface that can say so without a scoreboard in the way. Also one check-in per slip.
+// Everything else gets SILENCE. Nothing is taken away by not being asked: the orb (#need-talk-btn)
+// is on every screen but Coach, so the door is always one tap away.
+//
+// WHAT IS DELIBERATELY NOT A THRESHOLD, because this repo already knows what a flat number costs:
+// readiness and sleep. Somebody with no wearable reads 50/100 forever — that is the absence of a
+// signal, not a signal, and opening a sheet on it would be the timer again with a number painted
+// on it. Nor the morning window, which used to SUPPRESS the check-in from wake until 11am: that
+// guard existed because the trigger was a timer and "what's pulling at you?" is the wrong thing to
+// say to somebody waking up. With a real threshold it inverts — a 2am slip opened at 7am is
+// exactly what to meet — so it is gone, and `_isMorningWindow` with it. (If a wake-hour window is
+// ever needed again: read `totry_push_prefs`, which is what the live settings UI writes, NOT
+// `totry_reminder_times`, which nothing has written for versions.)
+function companionThreshold(){
+  try{
+    // 1 · DEFER TO THE MORE SPECIFIC SHEET. riskWindowHit() is deliberately side-effect free, so
+    // asking it here does not consume the once-per-window stamp the renderer still owns.
+    if(typeof riskWindowHit==='function' && riskWindowHit()) return null;
+
+    if(typeof loadV==='function') loadV();
+    const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
+    if(!vs.length) return null;
+    const now=Date.now();
+    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime(); return isNaN(d)?0:d; };
+
+    // When was this person last MET about the fight? A moment won, or a fight logged as a WIN. A
+    // loss is emphatically not being met — it is the thing that needs meeting — so `won===false`
+    // entries are excluded here on purpose; including them would make threshold 3 unreachable,
+    // since a slip IS a fight-log row.
+    let met=0;
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; }); }catch(_){}
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e&&e.won){ const t=_at(e.ts); if(t>met) met=t; } }); }catch(_){}
+    const lastComp=parseInt(ls('totry_companion_last')||'0',10)||0;
+
+    // 2 · AN URGE NOBODY HEARD THE END OF. urgelog carries three real shapes across the app's
+    // history (an ISO string, a bare Date.now(), and {ts,won}), which is what _urgeTs normalises.
+    let urge=0;
+    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){ const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
+    if(urge && (now-urge) < 3*3600*1000 && met < urge && lastComp < urge) return {kind:'urge', since:urge};
+
+    // 3 · A SLIP NOBODY SAT WITH. Twelve hours, because the honest window for this is "before the
+    // day turns over", and a slip at 1am should still be met when they open the app at noon.
+    let slip=0;
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e && e.won===false){ const t=_at(e.ts); if(t>slip) slip=t; } }); }catch(_){}
+    if(slip && (now-slip) < 12*3600*1000 && met < slip && lastComp < slip) return {kind:'slip', since:slip};
+
+    return null;
+  }catch(_){ return null; }
 }
 
-// Should the companion check-in show on this open? Every open, EXCEPT:
-//  • not during onboarding/auth, • not more than once per ~90 min (so re-opens
-//    in a session aren't naggy), • morning window defers to the day instead.
+// Should the companion check-in show on this open? Only when companionThreshold() names a reason,
+// and then never during onboarding/auth, behind the Feeling Door, over another sheet, or inside
+// 90 minutes of the last one.
 function maybeShowCompanion(){
   try{
     // Never during auth or onboarding.
@@ -2544,17 +2614,24 @@ function maybeShowCompanion(){
     if(!isSetUpPerson()) return;
     // And never in the same session onboarding just completed (avoids an abrupt first experience).
     try{ if(sessionStorage.getItem('totry_just_onboarded')) return; }catch(_){}
-    // Throttle: at most once per 90 minutes so it forms a reflex without nagging.
+    // The throttle survives as a FLOOR — it is no longer the reason to open, only a bound on how
+    // often an unbidden sheet may arrive at all.
     const last = parseInt(ls('totry_companion_last')||'0',10);
     if(Date.now() - last < 90*60*1000) return;
-    // Morning window → the day leads, not the urge check-in. (Still reachable manually.)
-    if(_isMorningWindow()) return;
-    openCompanion();
+    // AND THE REASON IS A THRESHOLD. No threshold, no sheet — the orb is still right there.
+    const th = (typeof companionThreshold==='function') ? companionThreshold() : null;
+    if(!th) return;
+    openCompanion(th);
   }catch(_){ }
 }
 
 let _compReturnFocus = null;
-function openCompanion(){
+// `th` is companionThreshold()'s answer when the sheet arrived unbidden, and absent when a person
+// reached for the orb themselves. It changes ONLY the sub-line, never the greeting: the question
+// stays "How are you, really?" because that is the question in all three cases. What changes is
+// whether the app admits why it is here. Arriving on a threshold and saying "No wrong answer" is
+// the app pretending it just happened to drop by, and somebody who slipped four hours ago can tell.
+function openCompanion(th){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
   // The same sheet should feel the same however it is reached — and an unbidden arrival should be
@@ -2574,7 +2651,13 @@ function openCompanion(){
     // you, really?" read as two broken halves of one question. (.comp-greeting is white-space:pre-line.)
     greetEl.textContent = (h >= 21 || h < 5) ? (hi+'\nHow are you tonight, really?') : (hi+'\nHow are you, really?');
   }
-  if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
+  if(subEl){
+    const kind = (th && th.kind) || '';
+    // Grace first, always. Not "you slipped" — the app knows, and saying it back is a scoreboard.
+    if(kind === 'slip')      subEl.textContent = "I know something gave way. Whatever happened, you came back — that is the part that counts.";
+    else if(kind === 'urge') subEl.textContent = "You felt something earlier and I never heard how it went. No wrong answer.";
+    else                     subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
+  }
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
   // Move the reader INTO the sheet, and remember where to put them back. Without this a screen-reader
   // user opening the companion stayed in the page behind it, with the whole app still swipeable and

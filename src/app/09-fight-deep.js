@@ -2968,27 +2968,56 @@ function _momentWin(i){
 // the moment he opens it inside his known risk window — the hour the pattern engine learned is
 // hardest for him. This is "before it takes over" made proactive, and it works in the PWA today.
 // Quiet by default: it OFFERS the door, never forces it, and never nags — once per window, per day.
-function _maybeRiskWindowGreeting(){
+// THE PREDICATE, SPLIT OUT OF THE RENDERER. Two unbidden sheets used to be scheduled at launch on
+// two bare timers — maybeShowCompanion at 1200ms and this at 2600ms — and each decided for itself
+// whether to open. The companion's `.modal-bg.open` guard ran 1400ms BEFORE this one appended its
+// modal, so the guard could not see a sheet that did not exist yet. Asking a question cannot be the
+// same act as answering it, so the decision is a function anybody can call — companionThreshold()
+// calls it to stand down in the hard hour — and the WRITE stays here: a predicate that stamps is a
+// predicate nobody can ask twice, and asking it would consume the once-per-window mark so the
+// renderer would then find nothing. (Fault-injected: with the stamp moved in here, a launch in the
+// hard hour shows no sheet at all.)
+function riskWindowHit(){
   try{
     if(typeof loadV==='function') loadV();
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
-    if(!vs.length) return;
+    if(!vs.length) return null;
     const nowBlock=_viceBlockLabel(new Date().getHours());
     const today=_todayLocalISO();
     // Don't intrude right after he just handled a moment — he's already met.
     const lastWon=(ls('totry_moments_won')||[])[0];
-    if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return;
+    if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return null;
     // Find a vice whose learned hard hour is NOW.
     let hit=null;
     vs.forEach(v=>{
       const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null;
       if(p && p.riskWindow===nowBlock){ if(!hit || (p.total>hit.p.total)) hit={v, p, idx:vices.indexOf(v)}; }
     });
+    if(!hit) return null;
+    // Once per window, per day — asked here, stamped by the renderer.
+    hit.key='totry_riskgreet_'+_hashId(hit.v.n);
+    hit.stamp=today+'|'+nowBlock;
+    if(ls(hit.key)===hit.stamp) return null;
+    return hit;
+  }catch(_){ return null; }
+}
+function _maybeRiskWindowGreeting(){
+  try{
+    // THE GUARDS THIS SHEET NEVER HAD. maybeShowCompanion has refused to open over the sign-in
+    // screen, over onboarding, behind the Feeling Door or on top of another sheet since v464. This
+    // one — the other unbidden launch sheet — had none of them, so it could append itself over any
+    // of those, including the auth screen of somebody who had not signed in yet.
+    const auth=document.getElementById('auth-container');
+    if(auth && getComputedStyle(auth).display!=='none') return;
+    const onboard=document.getElementById('onboard');
+    if(onboard && getComputedStyle(onboard).display!=='none') return;
+    const door=document.getElementById('feel-door');
+    if(door && door.classList.contains('open')) return;
+    if(document.querySelector('.modal-bg.open')) return;
+    if(document.querySelector('.companion-overlay.open')) return;
+    const hit=riskWindowHit();
     if(!hit) return;
-    // Once per window, per day.
-    const key='totry_riskgreet_'+_hashId(hit.v.n);
-    if(ls(key)===today+'|'+nowBlock) return;
-    ls(key, today+'|'+nowBlock);
+    ls(hit.key, hit.stamp);
     const first=(ls('totry_name')||'').trim().split(' ')[0];
     const hi=first?first+', ':'';
     const trig=hit.p.topTrigger?(' It’s often '+hit.p.topTrigger+' that starts it.'):'';

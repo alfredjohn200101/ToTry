@@ -62,7 +62,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v635**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v650**. Bump it AND `CACHE` in sw.js together, always.
   (This line restates a mutable fact, which this file records as its own failure mode — `grep APP_VERSION
   src/app/00-boot.js` is the source of truth if it has drifted again.)
 
@@ -1704,6 +1704,101 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      took, and the fault injection runs INLINE. Proven by reverting the correction under TZ=UTC:
      4217 passed / 1 failed, where the old test stayed green.
      **Never derive a test's timezone from the host it happens to run on.**
+   - **AND THE COMPANION WAS A TIMER WEARING A THRESHOLD'S CLOTHES (22 Oct 2026).** The soul document
+     says this app "speaks at thresholds (about to cross a line) ... Quiet by default, there and
+     ever-present, never overbearing." `maybeShowCompanion()` opened on EVERY launch behind a
+     90-minute throttle — so the most intimate question the app asks ("How are you, really?") arrived
+     because TIME had passed, and a question asked on a schedule is one people learn to tap past.
+     It is `companionThreshold()` now: an unresolved urge, or a slip nobody sat with, and SILENCE
+     otherwise — driven in a browser over 12 seeded states, 4 that must fire and 8 that must not.
+     Readiness and sleep were REFUSED as thresholds and a test holds that: somebody with no wearable
+     reads a flat 50/100 forever, which is the absence of a signal, not a signal.
+     **TWO UNBIDDEN SHEETS WERE SCHEDULED AT LAUNCH AND EACH DECIDED FOR ITSELF.**
+     `maybeShowCompanion` at 1200ms, `_maybeRiskWindowGreeting` at 2600ms — and the companion's
+     `.modal-bg.open` guard ran 1400ms BEFORE the other sheet existed, so it could not see it. In the
+     hard hour a person got both, and dismissing one revealed the other. The risk sheet had **none**
+     of the companion's guards (auth, onboarding, the Feeling Door, another sheet), so it could also
+     append itself over the sign-in screen. Fixed by splitting `riskWindowHit()` out as a PREDICATE
+     the companion can ask in order to stand down — **and the stamp had to stay in the renderer**:
+     fault-injected, a predicate that writes consumes the once-per-window mark, the renderer then
+     finds nothing, and a launch in the hard hour shows NO sheet at all.
+     **MY FIRST FAULT INJECTION REPORTED A CLEAN PASS BECAUSE THE SEED HAD NO SECOND REASON.**
+     Neutering the defer left one sheet on screen — not because the defer works, but because the
+     hard-hour seed had no urge and no recent slip, so the threshold returned null anyway. The state
+     that actually stacks is hard hour AND an unresolved urge. Re-measured there, the honest finding
+     is smaller than the comment I first wrote: **the guards prevent the double sheet; the defer
+     decides WHICH sheet a person gets** (without it, the generic "How are you, really?" replaces the
+     one that names their vice and their trigger). The comment was corrected to that. A fault
+     injection has to reproduce the DEFECT, and a seed that cannot express the defect certifies it.
+   - **AND THE URGE NORMALISER MISSED ONE OF THE THREE SHAPES IT EXISTED FOR (22 Oct 2026).**
+     `_urgeTs()` was written as the one place urgelog's history gets normalised, with a comment
+     naming three consumers and promising "a fourth shape added later only has to be handled here".
+     It handled a string and an object and **not a bare `Date.now()`** — which `05-moment.js:456`
+     writes for a letting-go urge — so a NUMBER fell through to `e.ts || e.t || e.date`, undefined on
+     a number, and it returned null. Every consumer then dropped it: the journal's "urges today"
+     skipped it **while the count a few lines away, which reads urgelog RAW, counted it** — the same
+     data, two answers on one screen; the woven card never saw a letting-go urge as a tended day; and
+     the hard-hour histogram fed it to `new Date(null).getHours()`, bucketing a 2026 urge at 1970's
+     local hour. The normaliser was written and one of the shapes it existed to normalise was not in
+     it. Found by DRIVING `companionThreshold()` over all three shapes, not by reading.
+     **And my own new assertion caught a behaviour change I had made inadvertently**: widening the
+     guard from `!e` to `=== null` while adding the number branch started passing **0** through, and
+     0 is epoch 1970, not an urge. A rewrite that fixes one shape must not change the answer for
+     another, and the only reason I know it did is that the test asked.
+   - **AND `send-push` HAD NO TEST AT ALL, AFTER SENDING EVERY REMINDER FOR MONTHS (22 Oct 2026).**
+     v649 recorded "four production functions had no backup"; the missing half was that nothing ever
+     RAN this one. `test/sendpush.test.mjs` drives the real function body with Deno, web-push and
+     Supabase stubbed through a module-resolve hook, on a pinned clock — 22 assertions, and six fault
+     injections that each reproduce a real defect: the offset-as-a-rule DST bug, the lexical window
+     that could not cross midnight, a NULL `last_seen` read as infinite quiet, the missing 21-day
+     give-up, the missing 7-day spacing, and the away nudge outranking a reminder the person asked
+     for. `npm run test:edge` runs it.
+     **THE AWAY NUDGE HAS TO BE SERVER-SIDE, and that is the whole argument.** The app already
+     notices a quiet spell in `checkGoneQuietWelcome`, but that runs ON LAUNCH — so it can only greet
+     somebody who came back by themselves, and the population it would help is by definition the
+     population not opening the app. `last_morning_sent` could not measure "they were here" either:
+     it advances whether or not anybody read the push, so it measures the cron job's activity rather
+     than a person's. Hence `last_seen`, written by `syncPushSubscription()` on every launch.
+     **AND IT STOPS** — one per 7 days, none past 21 days quiet, so at most three and then silence.
+     A NULL `last_seen` is no data and is never nudged, because a row written before the column
+     existed must not read as infinitely quiet.
+   - **AND THE DST FIX IS DEPLOYED AND CANNOT REACH THE TWO PEOPLE IT WAS WRITTEN FOR (22 Oct
+     2026).** Measured against the live table, not inferred: both `push_subscriptions` rows hold
+     `tz_offset_minutes: -600` with **`tz` NULL**, so the reconstructed clock reads 20:57 while
+     Melbourne reads 21:57 — **their reminders are still exactly one hour late.** v649's fix is
+     live and correct; `tz` is only written when `syncPushSubscription()` runs, which needs the app
+     to be opened on that device with v650's client. So the repair requires the action whose absence
+     is the symptom, which is the shape a refuter named during this work: **the broken-reminder
+     population IS the dormant population.** An offset cannot be repaired from the server by
+     guessing — −600 is Melbourne-in-winter and ALSO Brisbane-all-year, and nothing in the row
+     separates them, so inferring a zone would move a correct reminder for half of them. Left alone
+     deliberately. The one good property: the away nudge reaches somebody at 4 days quiet and
+     opening it rewrites `tz`, so the nudge is the self-healing path for exactly that population.
+   - **AND THE SCHEMA HAD NO VERSION CONTROL EITHER.** v649 recorded four production edge functions
+     with no backup; `supabase/migrations/` did not exist at all, so the only record of a column
+     added to a live table would have been a tool call in a chat transcript. It exists now.
+     **And the migration's own backfill was a no-op, measured after the fact:** Postgres backfills
+     existing rows when a column is added WITH a default, so `last_seen` was already `now()` and the
+     `coalesce(last_seen, created_at, now())` never saw a null. The accident is in the safe
+     direction — every existing row reads as "just seen" rather than six weeks quiet, so nobody was
+     nudged on the first run — but it meant the file claimed an anchor that was never applied. The
+     claim is struck through in words rather than deleted, because a migration file is a record of
+     what happened and not a description of what you meant.
+   - **AND I DEPLOYED THE LITERAL STRING "PLACEHOLDER" AS A LIVE PRODUCTION FUNCTION BODY (22 Oct
+     2026).** Not a typo in the code — the whole file. `deploy_edge_function` takes the content as an
+     argument, I sent a stand-in intending to paste the real thing, and v22 went ACTIVE on the
+     function that sends every reminder to every live subscriber. It was live **55.8 seconds**
+     (10:41:09–10:42:05Z) and the pg_cron job fires at `*/15`, so no run fell inside the window.
+     **That was luck, not care.** The repair is verifiable rather than hopeful: v23 carries the real
+     file, a wrong-secret POST returns `403 forbidden` — which only real code can do, since a
+     placeholder fails at boot — and the deployed source was read back and compared. **Never hand a
+     deploy tool a body you typed; read the file and pass its bytes, then read it back.**
+   - **AND `git checkout <file>` TO UNDO A FAULT INJECTION WIPED THE UNCOMMITTED WORK IN IT.**
+     Three injections used a `cp` backup and the fourth used `git checkout src/app/09-fight-deep.js`,
+     which restores from HEAD — taking the `riskWindowHit` split with it. It was invisible for one
+     command, because the suite still passed: the split's absence does not break anything, it just
+     un-does the fix. `grep -c` on the new function name is what caught it. Back up with `cp` before
+     injecting, and never reach for git to undo an edit in a file that also holds work you want.
    - `npm run personas` — 566 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
