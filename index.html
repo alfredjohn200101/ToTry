@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v648';
+const APP_VERSION = 'v649';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -55283,6 +55283,23 @@ function _b64uToU8(b){const p='='.repeat((4-b.length%4)%4);const r=atob((b+p).re
 // two can never drift apart again (they already had: only one of them was ever going to get fixed).
 function _isStandalone(){ return (typeof isStandalone==='function') ? isStandalone()
   : (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true); }
+// THE ZONE, NOT AN OFFSET. `new Date().getTimezoneOffset()` is a snapshot of one instant; the server
+// then reconstructed local time from it arithmetically, so when Melbourne moved AEST(-600) ->
+// AEDT(-660) on 4 Oct 2026 every reminder for an affected subscriber began arriving an hour late —
+// measured in the live table 18 days on: a 06:30 wake-up at 07:30, a 23:00 wind-down at 00:00. The
+// person who reported it said the times "have to be changed manually", and that was exactly right:
+// re-saving a time is the only thing that rewrote the offset.
+// An IANA name carries the RULE rather than one evaluation of it, so send-push can apply that zone's
+// own DST for someone who never opens the app again — which matters because the people with wrong
+// reminders are largely the people who stopped opening it.
+// Returns null rather than guessing if Intl cannot answer; the server keeps tz_offset_minutes as the
+// fallback, so nothing breaks for a row written by an older client.
+function _deviceZone(){
+  try{
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return (typeof z === 'string' && z.indexOf('/') > 0) ? z : null;
+  }catch(_){ return null; }
+}
 function _pushPrefs(){return ls('totry_push_prefs')||{enabled:false,morning:'07:30',evening:'21:00'};}
 
 // WS-J: generate the user's personalized notification message sets and store them on their
@@ -55391,7 +55408,8 @@ async function enablePushReminders(){
     const { error } = await sb.from('push_subscriptions').insert({
       user_id: currentUser.id,
       subscription: sub.toJSON(),
-      tz_offset_minutes: new Date().getTimezoneOffset(),
+      tz: _deviceZone(),
+      tz_offset_minutes: new Date().getTimezoneOffset(),   // kept as the server's fallback
       remind_morning: prefs.morning,
       remind_evening: prefs.evening
     });
@@ -55456,7 +55474,7 @@ async function savePushTimes(){
   const ev = document.getElementById('push-time-evening')?.value || '21:00';
   const prefs=_pushPrefs(); prefs.morning=m; prefs.evening=ev; ls('totry_push_prefs',prefs);
   if(sb && currentUser){
-    await sb.from('push_subscriptions').update({ remind_morning:m, remind_evening:ev, tz_offset_minutes:new Date().getTimezoneOffset() }).eq('user_id', currentUser.id);
+    await sb.from('push_subscriptions').update({ remind_morning:m, remind_evening:ev, tz:_deviceZone(), tz_offset_minutes:new Date().getTimezoneOffset() }).eq('user_id', currentUser.id);
   }
   haptic('tick'); showToast('Times saved \u2713','Morning ' + m + ' \u00b7 Evening ' + ev + '.');
 }
@@ -55470,8 +55488,25 @@ async function syncPushSubscription(){
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if(!sub) return;
-    await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id);
-    await sb.from('push_subscriptions').insert({ user_id:currentUser.id, subscription:sub.toJSON(), tz_offset_minutes:new Date().getTimezoneOffset(), remind_morning:prefs.morning, remind_evening:prefs.evening });
+    // AN UPDATE, NOT A DELETE + INSERT. This function exists to keep the row fresh as the timezone
+    // moves, and the obvious way to make it reliable would have made it destructive: the row has
+    // eleven columns and the re-insert wrote five, so every launch would have wiped
+    // `ai_morning_messages` / `ai_evening_messages` — the personalised anti-nagging lines, built once
+    // from the person's own name and tradition and rebuilt at most weekly — and reset
+    // `last_morning_sent` / `last_evening_sent`, the per-day receipts that stop a second push. On the
+    // DST changeover morning that would have sent the morning nudge twice, an hour apart, on the one
+    // day the person is already confused about the timing.
+    const { error } = await sb.from('push_subscriptions').update({
+      subscription: sub.toJSON(),
+      tz: _deviceZone(),
+      tz_offset_minutes: new Date().getTimezoneOffset(),
+      remind_morning: prefs.morning,
+      remind_evening: prefs.evening
+    }).eq('user_id', currentUser.id);
+    // supabase-js RETURNS {error} rather than throwing, and this swallowed it, so an RLS or network
+    // refusal was indistinguishable from success — which is why nobody noticed this had never once
+    // landed for either live subscriber.
+    if(error) console.warn('push sync failed', error.message || error);
   }catch(e){ console.warn('push sync skipped', e); }
 }
 

@@ -17058,4 +17058,49 @@ H.section('an affirmation is earned, not assumed');
     'and a Muslim still reads Allah rather than God');
 }
 
+// ── reminders carry the zone, and the refresh may not destroy the row ────────────────────────────
+// Reported by a real PWA user: "the daylight savings time doesn't change based on where you are ...
+// the timings have to be changed manually." Measured in the live table 18 days after Melbourne moved
+// to AEDT: every row still held the pre-transition offset, so a 06:30 wake-up arrived at 07:30 and a
+// 23:00 wind-down at 00:00. The server reconstructed local time arithmetically from
+// tz_offset_minutes, a single integer captured by the browser at one instant. An offset is a
+// snapshot; an IANA zone is the rule, and the server can apply it for somebody who never opens the
+// app again — which matters because the people with wrong reminders are largely the people who
+// stopped opening it.
+H.section('a reminder time means the same wall clock after the clocks change');
+{
+  const code = H.code();
+
+  // EVERY write of the offset must now carry the zone beside it. Asserting the pair rather than
+  // counting either alone: a fourth write site added later with only the offset is the half-applied
+  // shape this repo fails builds over.
+  const offsetWrites = (code.match(/tz_offset_minutes\s*:/g) || []).length;
+  const zoneWrites = (code.match(/tz\s*:\s*_deviceZone\(\)/g) || []).length;
+  H.ok(offsetWrites >= 3, 'the client still writes the offset as the server-side fallback (' + offsetWrites + ')');
+  H.eq(zoneWrites, offsetWrites,
+    'and every one of those writes carries the IANA zone beside it — an offset alone is a snapshot');
+
+  // The reader must REFUSE rather than guess. A bare string like "UTC" or a failure inside Intl is
+  // not a zone whose DST rules the server can apply.
+  const L = H.load(['_deviceZone']);
+  const z = L._deviceZone();
+  H.ok(z === null || /^[A-Za-z_]+\/[A-Za-z_\/+-]+$/.test(z),
+    '_deviceZone returns an IANA name or null, never a guess (' + JSON.stringify(z) + ')');
+
+  // THE DESTRUCTIVE SHAPE MUST NOT COME BACK. The row has eleven columns; the old refresh wrote
+  // five, so making it reliable would have wiped the personalised AI message sets and reset the
+  // per-day receipts that stop a second push — sending the morning nudge twice, an hour apart, on
+  // the DST changeover morning itself.
+  let sync = '';
+  try { sync = H.code(H.extractFn('syncPushSubscription')); } catch (e) { sync = ''; }
+  H.ok(sync.length > 100, 'syncPushSubscription was found by name (' + sync.length + ' chars)');
+  if (sync) {
+    H.ok(!/\.delete\(\)/.test(sync),
+      'the refresh does not delete the row — a re-insert drops ai_morning_messages and the last_*_sent receipts');
+    H.ok(/\.update\(/.test(sync), 'it updates in place');
+    H.ok(/if\s*\(\s*error\s*\)/.test(sync),
+      'and it reports its own failure — supabase-js returns {error} rather than throwing, and swallowing it is why this never once landed');
+  }
+}
+
 H.report();
