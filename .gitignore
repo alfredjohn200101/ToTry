@@ -32,3 +32,9 @@ test/_*.tmp.mjs
 # Review-agent scratch. Agents work in the repo, not a sandbox — this directory
 # exists so `git add -A` cannot sweep their probes into a commit again.
 .tmp-review/
+
+# Agent scratch. Three separate review rounds have written throwaway files into this repo
+# (test/_probe39.js, .tmp-review/, x/fns.ts) and `git add -A` swept two of them into commits whose
+# subject was something else. A rule nobody can forget beats a rule written down three times.
+x/
+.tmp-review/

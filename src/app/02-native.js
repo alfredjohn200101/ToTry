@@ -882,7 +882,7 @@ function _reachOutRowHTML(){
         const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
         status = _native
           ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
-          : 'Ready when you install ToTry as an app \u2014 a browser cannot wake itself at your hard hour.';
+          : 'Your hard hour needs the app installed \u2014 a browser cannot wake itself. If you go quiet a few days I can still check in once, in the afternoon.';
       }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
@@ -894,7 +894,7 @@ function _reachOutRowHTML(){
   return '<div class="ios-section"><div class="ios-list">'+
       iosRow({ tag:'label', title:'Reach out to me first', sub: status, trailing: sw })+
     '</div>'+
-    '<div class="ios-footnote">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here.</div>'+
+    '<div class="ios-footnote">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here. This switch also covers the one afternoon check-in I’d send if you went quiet for a few days.</div>'+
   '</div>'+
   // Two time fields as two rows, then Save as a row of its own. On a 402pt iPhone the old side-by-side
   // version overflowed and clipped Save off the right edge: <input type="time"> has a large intrinsic
@@ -1064,7 +1064,16 @@ function checkGoneQuietWelcome(){
     const daysQuiet = life && life.activity ? life.activity.daysQuiet : null;
     if(daysQuiet == null || daysQuiet < 3) return;
     // Only welcome once per quiet-spell: remember the last spell we greeted.
-    const lastGreeted = parseInt(ls('totry_quiet_greeted')||'0', 10);
+    // READ IT AS WHAT IS STORED. This was `parseInt(ls(...)||'0', 10)`, unchanged since v479 — and
+    // v650 changed the WRITE below from a day NUMBER to dayKeyOf()'s day STRING. parseInt stops at
+    // the first slash, so `String(25) === String('25/10/2026')` is false on every launch of every
+    // day: measured, 0 of 365 days of 2026 can satisfy it, and the welcome fired on every cold open
+    // for the whole quiet spell. The `String()` on both sides of the comparison is the tell — the
+    // author knew the stored type had changed and type-proofed the comparison while leaving the one
+    // call that destroys the string above it, which is why it read as deliberate and survived.
+    // Kept as a bare read so the surviving String() coercion still migrates a legacy NUMBER from a
+    // v649 device correctly (measured: one greeting on the first post-update launch, none after).
+    const lastGreeted = ls('totry_quiet_greeted') || '';
     // A UTC DAY BUCKET IS NOT A DAY. This was Math.floor(Date.now()/86400000), which rolls over at
     // UTC midnight — 11:00 local in Melbourne — so somebody opening the app before and after lunch
     // on the SAME local date got two different keys and was welcomed back twice before the

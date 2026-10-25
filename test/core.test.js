@@ -3392,17 +3392,61 @@ H.section('the fixes I shipped today, checked against themselves')
     '"stop reaching out" is honoured — the same off-switch as the hard-hour nudge');
   H.ok(/_receptiveTime/.test(san), 'and it goes through the quiet-hours shift rather than waking a shift worker');
   H.ok(/PushManager/.test(fnBody('syncPushSubscription')), 'while the server half is gated on PushManager, which native lacks');
-  H.ok(/last_seen/.test(fnBody('syncPushSubscription')),
-    'and last_seen is written on every launch — the only honest "they were here" signal the server has');
+  // A USABLE TIMESTAMP, not the identifier. `/last_seen/.test(body)` passes when the value
+  // written is null -- and awayDue() refuses a null last_seen, so that spelling would kill the
+  // away nudge for every PWA subscriber while the gate stayed green. Ask what it ASSIGNS.
+  H.ok(/last_seen:\s*new Date\(\)\.toISOString\(\)/.test(H.code(fnBody('syncPushSubscription'))),
+    'and last_seen is written as a real ISO timestamp on every launch, not merely mentioned');
   // THE 21-DAY GIVE-UP IS A NOTIFICATION NEVER ARMED, so the only thing to assert is the count.
-  H.eq((H.code(san).match(/AWAY_IDS/g) || []).length >= 1, true, 'the arm loop is bounded by AWAY_IDS');
+  // THE BOUND, NOT THE SYMBOL. This was `(match(/AWAY_IDS/g)||[]).length >= 1` -- a presence
+  // grep that stays green while the loop arms ten, which is the one thing the 21-day give-up
+  // rests on. EXECUTED instead: stub the transport and count what the real function arms.
+  {
+    // H.load EXTRACTS FUNCTIONS ONLY, so AWAY_IDS / AWAY_HOUR / AWAY_BODIES -- which are `const`
+    // declarations -- arrive undefined and the loop bound becomes `i < undefined`, which arms
+    // nothing and reads exactly like a broken app. They are read out of the real source and passed
+    // as globals, so the function executes against the APP'S OWN numbers rather than mine.
+    const armed = [];
+    const _code = H.code();
+    const _num = (n) => { const m = _code.match(new RegExp('const ' + n + ' = ([^;]+);')); return m ? eval(m[1]) : undefined; };
+    const _AWAY_IDS = _num('AWAY_IDS'), _AWAY_HOUR = _num('AWAY_HOUR');
+    H.eq(_AWAY_IDS, 3, 'AWAY_IDS is three -- at most three nudges, then silence');
+    H.eq(_AWAY_HOUR, 17, 'and the hour is 17:00, the after-work moment that was asked for');
+    const A = H.load(['scheduleAwayNudges', '_cancelAwayNudges'], {
+      ls: (k) => (k === 'totry_notif_enabled' ? true : null),
+      _pushPrefs: () => ({ enabled: true }),
+      _receptiveTime: (m) => ({ min: m, shifted: 0 }),
+      AWAY_IDS: _AWAY_IDS, AWAY_HOUR: _AWAY_HOUR,
+      AWAY_BODIES: ['a', 'b', 'c'],
+      Notify: { isNative: () => true, schedule: (id) => { armed.push(id); return true; }, cancel: () => {} },
+    });
+    const n = A.scheduleAwayNudges();
+    H.eq(n, 3, 'the arm loop arms exactly three, measured by running it');
+    H.eq(armed.length, 3, 'and three ids reached the transport (' + armed.join(',') + ')');
+    H.eq(new Set(armed).size, 3, 'each with its own id, so one firing cannot cancel the rest');
+  }
   H.ok(/const AWAY_IDS = 3;/.test(H.code()), 'and that bound is three — at most three nudges, then silence');
   // Every open re-arms, which IS the mechanism: somebody using the app pushes all three forward and
   // none ever fires. If it were armed in fewer places than scheduleReachOut, a launch path would
   // leave a stale nudge pointing at a date they have already come back from.
   const reachSites = (H.code().match(/scheduleReachOut\(\);/g) || []).length;
   const awaySites = (H.code().match(/scheduleAwayNudges\(\);/g) || []).length;
-  H.eq(awaySites, reachSites, 'the away nudge is re-armed everywhere the hard-hour nudge is (' + reachSites + ' sites)');
+  // A COUNT CANNOT SAY WHICH SITE WENT MISSING, which is the one thing this needs to know --
+  // its own comment names the hazard (a launch path that leaves a stale nudge armed) and a
+  // global tally is blind to it. Assert the SITES, by the function each call sits in.
+  const armSites = (fn) => {
+    const body = H.code(fnBody(fn) || '');
+    return { reach: /scheduleReachOut\(\);/.test(body), away: /scheduleAwayNudges\(\);/.test(body) };
+  };
+  ['reinitNativeReminders', 'initNotifications', 'scheduleNotifications'].forEach(fn => {
+    const a = armSites(fn);
+    if (a.reach) H.ok(a.away, fn + ' arms the away nudge wherever it arms the hard-hour one');
+    // Note what this cannot see: a call left in place and neutered. Measured -- injecting
+    // `if(false) scheduleAwayNudges();` keeps the text and keeps this green, while DELETING the
+    // call turns it red. The behavioural half (both off-switches really cancel) is driven in a
+    // browser, because no read of the source can establish it.
+  });
+  H.eq(awaySites, reachSites, 'and the totals agree (' + reachSites + ' sites)');
   // Zero guilt, and no day count: "it's been 6 days" is a scoreboard, and a scoreboard is what stops
   // somebody who drifted from coming back at all. Both copies, kept in step.
   const bodies = (H.code().match(/const AWAY_BODIES = \[([\s\S]*?)\];/) || [])[1] || '';
@@ -3423,7 +3467,19 @@ H.section('the fixes I shipped today, checked against themselves')
     H.eq(U._urgeTs({ ts: '2026-10-22T06:00:00.000Z', won: true }), '2026-10-22T06:00:00.000Z', 'and {ts,won} through');
     H.eq(U._urgeTs(null), null, 'null stays null');
     H.eq(U._urgeTs(0), null, 'and so does a zero timestamp, which is not a 1970 urge');
-    H.eq(U._urgeTs(NaN), null, 'a NaN is refused rather than passed to new Date()');
+    // NOT NaN. `_urgeTs`'s first line is `if(!e) return null;` and `!NaN` is true, so NaN
+    // returns there and the isFinite branch this used to name is unreachable for it -- a
+    // duplicate of the 0 case on the line above, dressed as a second guard. What isFinite
+    // actually protects against is a NUMBER that is not finite, so that is what is asked.
+    // H.eq COMPARES WITH JSON.stringify, AND JSON.stringify(Infinity) IS THE STRING "null" -- so
+    // H.eq(Infinity, null, ...) can NEVER fail. The first version of this check used it and was
+    // therefore exactly the unfailable assertion it replaced; only the fault injection found that
+    // (with isFinite removed, _urgeTs(Infinity) returns Infinity and the suite stayed green at
+    // 4450). H.ok takes a real strict comparison, which no serialiser can flatten. Same trap for
+    // NaN, -0 and undefined: never hand any of them to H.eq.
+    H.ok(U._urgeTs(Infinity) === null, 'a non-finite NUMBER is refused rather than passed to new Date()');
+    H.ok(U._urgeTs(-Infinity) === null, 'in both directions');
+    H.ok(U._urgeTs(NaN) === null, 'and NaN, which returns at the !e guard rather than at isFinite');
   }
 
   // brotherSys() appends faithVoiceNote(); the explicit one at this call site became a duplicate.

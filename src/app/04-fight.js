@@ -2563,22 +2563,52 @@ function companionThreshold(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
     if(!vs.length) return null;
     const now=Date.now();
-    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime(); return isNaN(d)?0:d; };
+    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime();
+      if(isNaN(d)) return 0;
+      return d > now ? 0 : d; };
 
-    // When was this person last MET about the fight? A moment won, or a fight logged as a WIN. A
-    // loss is emphatically not being met — it is the thing that needs meeting — so `won===false`
-    // entries are excluded here on purpose; including them would make threshold 3 unreachable,
-    // since a slip IS a fight-log row.
-    let met=0;
-    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; }); }catch(_){}
-    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e&&e.won){ const t=_at(e.ts); if(t>met) met=t; } }); }catch(_){}
+    // TWO QUESTIONS, TWO VARIABLES. One `met` used to serve both thresholds and they do not ask the
+    // same thing, which produced a false sentence at the worst moment:
+    //   • `met` — when was this person last MET about the fight? A moment won, or a fight logged as
+    //     a WIN. A loss is emphatically not being met; it is the thing that needs meeting. So
+    //     `won===false` is excluded here on purpose, or threshold 3 would be unreachable.
+    //   • `heard` — when did the app last HEAR an outcome of any kind, win OR loss. Threshold 2 is
+    //     about an urge whose END nobody heard, and a LOSS is an end. Asking `met` there meant the
+    //     app could not tell "I do not know how that went" from "I know, and it went badly".
+    // Measured: both live slip paths write an urgelog row and the won:false row in ONE user action
+    // (saveQuickLog 0ms apart; startLiveIntervention + logLoss ~2ms), so for the first three hours
+    // a person who had just logged a slip was asked "You felt something earlier and I never heard
+    // how it went" instead of the line written for exactly them — "I know something gave way.
+    // Whatever happened, you came back — that is the part that counts."
+    // THE FIX IS NOT TO REORDER THE THRESHOLDS, and that was measured too: a slip 5h ago plus a
+    // separate live urge 1h ago correctly answers 'urge', and swapping them would hand that person
+    // a grace line about a slip they already dealt with while the live urge went unasked.
+    let met=0, heard=0;
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; if(t>heard) heard=t; }); }catch(_){}
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(!e) return; const t=_at(e.ts);
+      if(e.won && t>met) met=t;
+      if((e.won===true || e.won===false) && t>heard) heard=t; }); }catch(_){}
     const lastComp=parseInt(ls('totry_companion_last')||'0',10)||0;
 
     // 2 · AN URGE NOBODY HEARD THE END OF. urgelog carries three real shapes across the app's
     // history (an ISO string, a bare Date.now(), and {ts,won}), which is what _urgeTs normalises.
+    //
+    // AND A ROW THAT RECORDS ITS OWN OUTCOME IS NOT UNRESOLVED. `_momentWin` — the moment door's
+    // own primary button, "The wave's passing — I'm good" — pushes `{ts, won:true}`, and the whole
+    // point of that row is that the app DID hear. Timestamps alone could not see it: `heard` is
+    // stamped seven lines before the urge row with an `ls()` write of up to 300 rows in between, so
+    // whether the win silenced the sheet came down to a ONE-MILLISECOND race. Measured at 46 of 100
+    // for somebody at the app's own 300-row banked-wins cap and 6 of 100 for a beginner — the same
+    // tap nagging the person with the longest history and sparing the newcomer, and two identical
+    // wins giving two different answers. So the outcome is read from the row itself, which is
+    // timing-free. ONLY an explicit `won === true` counts: the other three urgelog writers push a
+    // bare string or number at the moment the urge ARRIVES, and reading a MISSING `won` as answered
+    // would silence the SOS path's genuinely unheard urges.
     let urge=0;
-    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){ const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
-    if(urge && (now-urge) < 3*3600*1000 && met < urge && lastComp < urge) return {kind:'urge', since:urge};
+    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){
+      if(e && typeof e === 'object' && e.won === true) return;   // this row carries its own ending
+      const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
+    if(urge && (now-urge) < 3*3600*1000 && heard < urge && lastComp < urge) return {kind:'urge', since:urge};
 
     // 3 · A SLIP NOBODY SAT WITH. Twelve hours, because the honest window for this is "before the
     // day turns over", and a slip at 1am should still be met when they open the app at noon.

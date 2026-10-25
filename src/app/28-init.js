@@ -171,6 +171,18 @@ async function disablePushReminders(){
         _cancelReachOuts();
         // Bills and debts are reminders too, and were the only ones this never took down.
         try{ if(typeof _cancelBillReminders==='function') _cancelBillReminders(); }catch(_){}
+        // AND THE AWAY NUDGES, which v650 armed and nothing could take down. The self-heal is
+        // structurally unreachable from here: `reinitNativeReminders()` only calls
+        // scheduleAwayNudges() inside `if(prefs && prefs.enabled)`, and the line above has just
+        // falsified that — so the one gate that would have cancelled them (`if(!on) return
+        // _cancelAwayNudges(), 0;`) is never reached again. Worse, `renderPushSettings()` emits the
+        // whole reach-out row only when reminders are enabled, so the two switches that could still
+        // have reached that function disappear from the screen with the same tap. Measured: three
+        // notifications at 17:00 on +4, +11 and +18 days, from a channel the person switched off,
+        // with no in-app route to stop them. The fix belongs HERE and not in the gate, because the
+        // gate is a three-way OR whose `totry_notif_enabled` leg is in SYNC_KEYS — a cloud-restored
+        // truthy value would re-arm them with reminders off.
+        try{ if(typeof _cancelAwayNudges==='function') _cancelAwayNudges(); }catch(_){}
       }
     }catch(_){}
     showToast('Reminders off','Your mornings are your own. Re-enable anytime.');
@@ -231,6 +243,16 @@ async function syncPushSubscription(){
       tz_offset_minutes: new Date().getTimezoneOffset(),
       remind_morning: prefs.morning,
       remind_evening: prefs.evening,
+      // CONSENT HAS TO CROSS THE BOUNDARY TOO. v650 gated the native away nudge on
+      // `totry_reachout_off` under a comment saying "somebody who said 'stop reaching out' meant
+      // it" — and that flag is localStorage, which send-push cannot read. Measured against the live
+      // table: 0 of 9 candidate "off" states stopped the web nudge, and the only thing that did was
+      // deleting the row, i.e. giving up the morning and evening reminders they actually asked for.
+      // So the switch is mirrored into a column, and the quiet hours with it, because the native
+      // half shifts an away nudge out of them via _receptiveTime() and the server could not.
+      away_optout: !!ls('totry_reachout_off'),
+      quiet_start: (typeof quietHours==='function' ? (quietHours().start || null) : null),
+      quiet_end:   (typeof quietHours==='function' ? (quietHours().end   || null) : null),
       // THE ONLY HONEST "THEY OPENED THE APP" SIGNAL ON THE SERVER. last_morning_sent and
       // last_evening_sent advance whether or not anybody read the push, so they measure the cron
       // job's activity and not the person's — which is why the away nudge could not be built on
@@ -346,10 +368,23 @@ function toggleReachOut(){
   const turningOff = !ls('totry_reachout_off');
   ls('totry_reachout_off', turningOff);
   try{
-    if(turningOff){ _cancelReachOuts(); _setReachState({ next:null, hold:'you turned this off' }); }
+    // CANCEL ON THE TAP, not on a later launch. This did self-heal — the next open reaches
+    // scheduleAwayNudges(), whose first gate honours totry_reachout_off — but a local notification
+    // fires whether or not the app is ever reopened, and the away nudge's whole population is the
+    // one that is not opening it. So the person who says stop is owed it immediately.
+    if(turningOff){ _cancelReachOuts(); try{ if(typeof _cancelAwayNudges==='function') _cancelAwayNudges(); }catch(_){}
+      _setReachState({ next:null, hold:'you turned this off' }); }
     else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut();
       if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
   }catch(_){}
+  // AND TELL THE SERVER NOW, not at the next launch. The away nudge's whole population is the one
+  // that is not opening the app, so a consent change that waits for a launch is a consent change
+  // that never lands for the people it governs.
+  try{
+    if(sb && currentUser) sb.from('push_subscriptions')
+      .update({ away_optout: !!ls('totry_reachout_off') }).eq('user_id', currentUser.id)
+      .then(function(r){ if(r && r.error) console.warn('away_optout sync failed', r.error.message||r.error); });
+  }catch(_){ }
   if(typeof haptic==='function') haptic('tap');
   if(typeof renderPushSettings==='function') renderPushSettings();
   showToast(turningOff?'Reach-out off':'Reach-out on', turningOff?'I won’t message you at your risk window.':'I’ll check in before your hardest hour — at most 3 times a week, never in your quiet hours.');

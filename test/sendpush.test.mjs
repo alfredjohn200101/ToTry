@@ -9,18 +9,22 @@
 // made any reminder time from 23:45 to 23:59 unsatisfiable and therefore silent forever.
 //
 // It is now tested by DRIVING it: a fake clock, fake subscriber rows, and an assertion on what came
-// out of webpush.sendNotification. Both defects are fault-injected at the bottom, so the panel has
+// out of webpush.sendNotification. The header used to claim six fault injections were "at the
+// bottom" of this file; they were run by hand through the shell and the sentence was written as
+// though they lived here. An injection nobody can re-run is a claim, not a test, so they are
+// real now: `node --experimental-strip-types test/sendpush.test.mjs --faults` neuters each
+// guard in a COPY of the source and requires this panel to go RED.
 // been seen to fail rather than assumed to work.
 let handler = null;
 const ENV = { CRON_SECRET: 'sh', VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' };
 globalThis.Deno = { serve: (h) => { handler = h; }, env: { get: (k) => ENV[k] } };
 
 // ── the stubs. One module registry, so the function's own imports resolve to these. ──────────────
-let ROWS = [], SENT = [], PATCHED = [], DELETED = [];
+let ROWS = [], SENT = [], PATCHED = [], DELETED = [], updateError = null;
 const sb = {
   from: () => ({
     select: async () => ({ data: ROWS, error: null }),
-    update: (patch) => ({ eq: async (_c, id) => { PATCHED.push({ id, patch }); return { error: null }; } }),
+    update: (patch) => ({ eq: async (_c, id) => { PATCHED.push({ id, patch }); return { error: updateError }; } }),
     delete: () => ({ eq: async (_c, id) => { DELETED.push(id); return { error: null }; } }),
   }),
 };
@@ -41,6 +45,14 @@ globalThis.__SENDPUSH_STUBS__ = { sb, webpush };
 
 await import('../supabase/functions/send-push/index.ts');
 
+// Read the real AWAY list out of the source, so "all three" means the app's three rather than
+// whichever one a single send happened to pick.
+import { readFileSync } from 'node:fs';
+const awayBodies = () => {
+  const src = readFileSync(new URL('../supabase/functions/send-push/index.ts', import.meta.url), 'utf8');
+  const m = src.match(/const AWAY = \[([\s\S]*?)\];/);
+  return m ? (m[1].match(/"[^"]*"/g) || []).map(x => x.slice(1, -1)) : [];
+};
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail++; console.log('  ✗ ' + m); } };
 
@@ -102,9 +114,18 @@ console.log('\n── the away nudge ──');
 
   const r = await run(at, [away(daysAgo(at, 6), null)]);
   ok(r.sent.length === 1 && r.sent[0].payload.tag === 'totry-away', '6 days quiet at 17:00 local gets ONE away nudge');
-  ok(!/\b6\b|\bdays?\b/.test(r.sent[0].payload.body), 'and its copy carries no day count — a number is a scoreboard');
+  // EVERY BODY, AND THE TITLE. This read payload.body of whatever Math.random() picked, so a
+  // day-count scoreboard shipped green roughly two runs in three, and it never read the title
+  // at all. The server cycles its three now, so all three are reachable and all three asserted.
+  const bodies = awayBodies();
+  ok(bodies.length === 3, 'the server carries three away bodies (' + bodies.length + ')');
+  ok(bodies.every(b => !/[0-9]/.test(b)), 'and NONE of the three carries a digit: a number is a scoreboard');
+  ok(bodies.every(b => !/\bdays?\b/i.test(b)), 'nor the word day');
+  ok(!/[0-9]|\bdays?\b/i.test(r.sent[0].payload.title), 'and neither does the title');
   ok(r.body.away === 1, 'reported separately from the reminders so the rollout is observable');
-  ok(typeof r.patched[0]?.patch?.last_away_sent === 'string', 'and the delivery is stamped');
+  const stamp = r.patched[0]?.patch?.last_away_sent;
+  ok(typeof stamp === 'string' && isFinite(Date.parse(stamp)),
+    'and the delivery is stamped with something Date.parse can READ: a bare typeof-string passed a value that disables the 7-day spacing (' + stamp + ')');
 
   ok((await run('2026-10-22T02:00:00Z', [away(daysAgo(at, 6), null)])).sent.length === 0,
     'nothing at 13:00 local — the request was after work, not during it');
@@ -123,6 +144,30 @@ console.log('\n── the away nudge ──');
     'a reminder set FOR 17:00 wins over the away nudge — one push, and it is the one they asked for');
 }
 
+console.log('');
+console.log('-- the away nudge consent gates --');
+{
+  const at2 = '2026-10-22T06:00:00Z';   // 17:00 Australia/Melbourne
+  const base = (o) => row({ tz: 'Australia/Melbourne', last_seen: daysAgo(at2, 6), ...o });
+  ok((await run(at2, [base({})])).sent.length === 1, 'due, and with no objection recorded it sends');
+  ok((await run(at2, [base({ away_optout: true })])).sent.length === 0,
+    'Reach out to me first OFF stops it: the switch the native half honoured and the server could not see');
+  ok((await run(at2, [base({ away_optout: false })])).sent.length === 1,
+    'and an explicit false is not an opt-out');
+  ok((await run(at2, [base({ quiet_start: '16:00', quiet_end: '23:30' })])).sent.length === 0,
+    'quiet hours that cover 17:00 stand it down rather than waking them');
+  ok((await run(at2, [base({ quiet_start: '22:00', quiet_end: '07:00' })])).sent.length === 1,
+    'and ordinary night-time quiet hours do not block the afternoon (a window that crosses midnight)');
+  ok((await run(at2, [base({ quiet_start: null, quiet_end: null })])).sent.length === 1,
+    'quiet hours UNSET is not all-day');
+
+  // The receipt write is the away branch's ONLY throttle, so a swallowed {error} meant a nudge
+  // every afternoon instead of one a week. It is reported now.
+  updateError = { message: 'rls denied' };
+  const rr = await run(at2, [base({})]);
+  updateError = null;
+  ok(rr.body.failedReceipts === 1, 'a failed receipt write is REPORTED, not swallowed (' + rr.body.failedReceipts + ')');
+}
 console.log('\n── the rest of the contract ──');
 {
   const at = '2026-10-22T19:30:00Z';

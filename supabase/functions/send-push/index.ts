@@ -30,7 +30,7 @@
 //    "parses fine, tests green, does nothing" shape. The comparison is arithmetic on minutes now,
 //    with an explicit wrap.
 //
-// ── THE THIRD KIND, 22 Oct 2026: THE AWAY NUDGE ────────────────────────────────────────
+// ── THE THIRD KIND, 22 Oct 2026: THE AWAY NUDGE ────────────────────────────────────────────────────────────────────────────────────
 //
 // Asked for by the same person who reported the DST bug: "a reminder notification if you haven't
 // checked in for a while might be useful as well! If it gets sent during the day or sometime in the
@@ -105,9 +105,28 @@ const AWAY_QUIET_DAYS = 4;    // genuinely drifted, not a weekend off
 const AWAY_GIVE_UP_DAYS = 21; // past this, silence — they have decided
 const AWAY_EVERY_DAYS = 7;
 
+// Is this minute inside the subscriber's own quiet hours? The native half shifts an away nudge out
+// of them through _receptiveTime(); the server has no shifting to do because 17:00 is fixed, so the
+// honest server behaviour is to stand down rather than wake somebody it was told is asleep.
+function inQuietHours(clock: { minutes: number }, start: string | null, end: string | null): boolean {
+  const s0 = start ? toMinutes(start) : null;
+  const e0 = end ? toMinutes(end) : null;
+  if (s0 === null || e0 === null) return false;      // not set is not "all day"
+  return s0 < e0 ? (clock.minutes >= s0 && clock.minutes < e0)
+                 : (clock.minutes >= s0 || clock.minutes < e0);   // a window that crosses midnight
+}
+
 function awayDue(s: Record<string, unknown>, nowUtc: Date, clock: { minutes: number }): boolean {
+  // CONSENT FIRST, before any arithmetic. v650 gated the native away nudge on `totry_reachout_off`
+  // and that flag is localStorage, so this function could not see it: the switch stopped the nudge
+  // on native and was inert on web, which is the only away channel web has. Measured against the
+  // live table, 0 of 9 candidate "off" states stopped it. `away_optout` is mirrored into the row by
+  // syncPushSubscription() on every launch AND written through by the toggle itself, so a person
+  // who says stop is obeyed without having to open the app again.
+  if (s.away_optout === true) return false;
   // The 15-minute window, same arithmetic as a reminder time so it cannot drift from them.
   if (((clock.minutes - AWAY_AT + 1440) % 1440) >= WINDOW_MIN) return false;
+  if (inQuietHours(clock, (s.quiet_start as string) ?? null, (s.quiet_end as string) ?? null)) return false;
   const seen = s.last_seen ? Date.parse(String(s.last_seen)) : NaN;
   if (!isFinite(seen)) return false;                 // no data is not the same as "gone quiet"
   const daysQuiet = (nowUtc.getTime() - seen) / 86400000;
@@ -126,7 +145,7 @@ const MORNING = [
 // scoreboard is the thing that makes somebody who drifted not come back at all. Same register as
 // the in-app gone-quiet welcome: glad you're here, nothing owed.
 const AWAY = [
-  "No guilt, no catch-up to do — just a door that's still open whenever you want it.",
+  "No guilt, no catch-up to do — just a door that’s still open whenever you want it.",
   "Whatever this week has been, you can pick it up from wherever you are. One small thing counts.",
   "Still here. Nothing to make up for — come back in wherever you like.",
 ];
@@ -156,7 +175,7 @@ Deno.serve(async (req) => {
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
   const nowUtc = new Date();
-  let sent = 0, pruned = 0, byZone = 0, byOffset = 0, away = 0;
+  let sent = 0, pruned = 0, byZone = 0, byOffset = 0, away = 0, failedReceipts = 0;
 
   for (const s of subs ?? []) {
     try {
@@ -200,9 +219,19 @@ Deno.serve(async (req) => {
         };
         patch = { last_evening_sent: today };
       } else if (awayDue(s as Record<string, unknown>, nowUtc, clock)) {
+        // CYCLE, DO NOT DRAW AT RANDOM. The native half arms its three with
+        // `AWAY_BODIES[i % AWAY_BODIES.length]`, so those three sends are guaranteed to be three
+        // different sentences. Math.random here gave a web subscriber a 7-in-9 chance of reading
+        // the same line twice across the only three nudges they will ever get — and it also made
+        // the test's no-day-count assertion inspect ONE body of three per run, so a scoreboard
+        // could ship green two runs in three. Which nudge this is follows from last_away_sent.
+        const lastAwayTs = s.last_away_sent ? Date.parse(String(s.last_away_sent)) : NaN;
+        const nth = isFinite(lastAwayTs)
+          ? Math.min(AWAY.length - 1, Math.max(0, Math.round((nowUtc.getTime() - lastAwayTs) / (AWAY_EVERY_DAYS * 86400000))))
+          : 0;
         payload = {
           title: "Good to see you whenever",
-          body: AWAY[Math.floor(Math.random() * AWAY.length)],
+          body: AWAY[nth % AWAY.length],
           url: "./?go=home",
           tag: "totry-away",
         };
@@ -213,7 +242,12 @@ Deno.serve(async (req) => {
       if (!payload) continue;
 
       await webpush.sendNotification(s.subscription, JSON.stringify(payload));
-      await sb.from("push_subscriptions").update(patch!).eq("id", s.id);
+      // supabase-js RESOLVES with {error} rather than throwing, and this discarded it — the same
+      // swallow v649 fixed in syncPushSubscription one file away. It matters most on the away
+      // branch, where this receipt is the ONLY throttle: a silent failure turns "one per 7 days"
+      // into one every afternoon for as long as the write keeps failing.
+      const { error: upErr } = await sb.from("push_subscriptions").update(patch!).eq("id", s.id);
+      if (upErr) { console.error("receipt write failed for", s.id, upErr.message || upErr); failedReceipts++; }
       sent++;
     } catch (err) {
       const code = (err as { statusCode?: number }).statusCode;
@@ -228,7 +262,7 @@ Deno.serve(async (req) => {
 
   // byZone / byOffset make the rollout observable: while anyone is still on the offset path their
   // reminders are only as correct as the last time they opened the app.
-  return new Response(JSON.stringify({ sent, pruned, away, checked: subs?.length ?? 0, byZone, byOffset }), {
+  return new Response(JSON.stringify({ sent, pruned, away, failedReceipts, checked: subs?.length ?? 0, byZone, byOffset }), {
     headers: { "Content-Type": "application/json" },
   });
 });

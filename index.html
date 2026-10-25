@@ -8740,7 +8740,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v650';
+const APP_VERSION = 'v651';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11231,7 +11231,7 @@ function _reachOutRowHTML(){
         const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
         status = _native
           ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
-          : 'Ready when you install ToTry as an app \u2014 a browser cannot wake itself at your hard hour.';
+          : 'Your hard hour needs the app installed \u2014 a browser cannot wake itself. If you go quiet a few days I can still check in once, in the afternoon.';
       }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
@@ -11243,7 +11243,7 @@ function _reachOutRowHTML(){
   return '<div class="ios-section"><div class="ios-list">'+
       iosRow({ tag:'label', title:'Reach out to me first', sub: status, trailing: sw })+
     '</div>'+
-    '<div class="ios-footnote">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here.</div>'+
+    '<div class="ios-footnote">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here. This switch also covers the one afternoon check-in I’d send if you went quiet for a few days.</div>'+
   '</div>'+
   // Two time fields as two rows, then Save as a row of its own. On a 402pt iPhone the old side-by-side
   // version overflowed and clipped Save off the right edge: <input type="time"> has a large intrinsic
@@ -11413,7 +11413,16 @@ function checkGoneQuietWelcome(){
     const daysQuiet = life && life.activity ? life.activity.daysQuiet : null;
     if(daysQuiet == null || daysQuiet < 3) return;
     // Only welcome once per quiet-spell: remember the last spell we greeted.
-    const lastGreeted = parseInt(ls('totry_quiet_greeted')||'0', 10);
+    // READ IT AS WHAT IS STORED. This was `parseInt(ls(...)||'0', 10)`, unchanged since v479 — and
+    // v650 changed the WRITE below from a day NUMBER to dayKeyOf()'s day STRING. parseInt stops at
+    // the first slash, so `String(25) === String('25/10/2026')` is false on every launch of every
+    // day: measured, 0 of 365 days of 2026 can satisfy it, and the welcome fired on every cold open
+    // for the whole quiet spell. The `String()` on both sides of the comparison is the tell — the
+    // author knew the stored type had changed and type-proofed the comparison while leaving the one
+    // call that destroys the string above it, which is why it read as deliberate and survived.
+    // Kept as a bare read so the surviving String() coercion still migrates a legacy NUMBER from a
+    // v649 device correctly (measured: one greeting on the first post-update launch, none after).
+    const lastGreeted = ls('totry_quiet_greeted') || '';
     // A UTC DAY BUCKET IS NOT A DAY. This was Math.floor(Date.now()/86400000), which rolls over at
     // UTC midnight — 11:00 local in Melbourne — so somebody opening the app before and after lunch
     // on the SAME local date got two different keys and was welcomed back twice before the
@@ -21102,22 +21111,52 @@ function companionThreshold(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
     if(!vs.length) return null;
     const now=Date.now();
-    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime(); return isNaN(d)?0:d; };
+    const _at=function(t){ if(t===null||t===undefined) return 0; const d=new Date(t).getTime();
+      if(isNaN(d)) return 0;
+      return d > now ? 0 : d; };
 
-    // When was this person last MET about the fight? A moment won, or a fight logged as a WIN. A
-    // loss is emphatically not being met — it is the thing that needs meeting — so `won===false`
-    // entries are excluded here on purpose; including them would make threshold 3 unreachable,
-    // since a slip IS a fight-log row.
-    let met=0;
-    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; }); }catch(_){}
-    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(e&&e.won){ const t=_at(e.ts); if(t>met) met=t; } }); }catch(_){}
+    // TWO QUESTIONS, TWO VARIABLES. One `met` used to serve both thresholds and they do not ask the
+    // same thing, which produced a false sentence at the worst moment:
+    //   • `met` — when was this person last MET about the fight? A moment won, or a fight logged as
+    //     a WIN. A loss is emphatically not being met; it is the thing that needs meeting. So
+    //     `won===false` is excluded here on purpose, or threshold 3 would be unreachable.
+    //   • `heard` — when did the app last HEAR an outcome of any kind, win OR loss. Threshold 2 is
+    //     about an urge whose END nobody heard, and a LOSS is an end. Asking `met` there meant the
+    //     app could not tell "I do not know how that went" from "I know, and it went badly".
+    // Measured: both live slip paths write an urgelog row and the won:false row in ONE user action
+    // (saveQuickLog 0ms apart; startLiveIntervention + logLoss ~2ms), so for the first three hours
+    // a person who had just logged a slip was asked "You felt something earlier and I never heard
+    // how it went" instead of the line written for exactly them — "I know something gave way.
+    // Whatever happened, you came back — that is the part that counts."
+    // THE FIX IS NOT TO REORDER THE THRESHOLDS, and that was measured too: a slip 5h ago plus a
+    // separate live urge 1h ago correctly answers 'urge', and swapping them would hand that person
+    // a grace line about a slip they already dealt with while the live urge went unasked.
+    let met=0, heard=0;
+    try{ (ls('totry_moments_won')||[]).forEach(function(m){ const t=_at(m&&m.ts); if(t>met) met=t; if(t>heard) heard=t; }); }catch(_){}
+    try{ (ls('totry_fight_log')||[]).forEach(function(e){ if(!e) return; const t=_at(e.ts);
+      if(e.won && t>met) met=t;
+      if((e.won===true || e.won===false) && t>heard) heard=t; }); }catch(_){}
     const lastComp=parseInt(ls('totry_companion_last')||'0',10)||0;
 
     // 2 · AN URGE NOBODY HEARD THE END OF. urgelog carries three real shapes across the app's
     // history (an ISO string, a bare Date.now(), and {ts,won}), which is what _urgeTs normalises.
+    //
+    // AND A ROW THAT RECORDS ITS OWN OUTCOME IS NOT UNRESOLVED. `_momentWin` — the moment door's
+    // own primary button, "The wave's passing — I'm good" — pushes `{ts, won:true}`, and the whole
+    // point of that row is that the app DID hear. Timestamps alone could not see it: `heard` is
+    // stamped seven lines before the urge row with an `ls()` write of up to 300 rows in between, so
+    // whether the win silenced the sheet came down to a ONE-MILLISECOND race. Measured at 46 of 100
+    // for somebody at the app's own 300-row banked-wins cap and 6 of 100 for a beginner — the same
+    // tap nagging the person with the longest history and sparing the newcomer, and two identical
+    // wins giving two different answers. So the outcome is read from the row itself, which is
+    // timing-free. ONLY an explicit `won === true` counts: the other three urgelog writers push a
+    // bare string or number at the moment the urge ARRIVES, and reading a MISSING `won` as answered
+    // would silence the SOS path's genuinely unheard urges.
     let urge=0;
-    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){ const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
-    if(urge && (now-urge) < 3*3600*1000 && met < urge && lastComp < urge) return {kind:'urge', since:urge};
+    vs.forEach(function(v){ try{ (v.urgelog||[]).forEach(function(e){
+      if(e && typeof e === 'object' && e.won === true) return;   // this row carries its own ending
+      const t=_at(_urgeTs(e)); if(t>urge) urge=t; }); }catch(_){} });
+    if(urge && (now-urge) < 3*3600*1000 && heard < urge && lastComp < urge) return {kind:'urge', since:urge};
 
     // 3 · A SLIP NOBODY SAT WITH. Twelve hours, because the honest window for this is "before the
     // day turns over", and a slip at 1am should still be met when they open the app at noon.
@@ -55618,6 +55657,18 @@ async function disablePushReminders(){
         _cancelReachOuts();
         // Bills and debts are reminders too, and were the only ones this never took down.
         try{ if(typeof _cancelBillReminders==='function') _cancelBillReminders(); }catch(_){}
+        // AND THE AWAY NUDGES, which v650 armed and nothing could take down. The self-heal is
+        // structurally unreachable from here: `reinitNativeReminders()` only calls
+        // scheduleAwayNudges() inside `if(prefs && prefs.enabled)`, and the line above has just
+        // falsified that — so the one gate that would have cancelled them (`if(!on) return
+        // _cancelAwayNudges(), 0;`) is never reached again. Worse, `renderPushSettings()` emits the
+        // whole reach-out row only when reminders are enabled, so the two switches that could still
+        // have reached that function disappear from the screen with the same tap. Measured: three
+        // notifications at 17:00 on +4, +11 and +18 days, from a channel the person switched off,
+        // with no in-app route to stop them. The fix belongs HERE and not in the gate, because the
+        // gate is a three-way OR whose `totry_notif_enabled` leg is in SYNC_KEYS — a cloud-restored
+        // truthy value would re-arm them with reminders off.
+        try{ if(typeof _cancelAwayNudges==='function') _cancelAwayNudges(); }catch(_){}
       }
     }catch(_){}
     showToast('Reminders off','Your mornings are your own. Re-enable anytime.');
@@ -55678,6 +55729,16 @@ async function syncPushSubscription(){
       tz_offset_minutes: new Date().getTimezoneOffset(),
       remind_morning: prefs.morning,
       remind_evening: prefs.evening,
+      // CONSENT HAS TO CROSS THE BOUNDARY TOO. v650 gated the native away nudge on
+      // `totry_reachout_off` under a comment saying "somebody who said 'stop reaching out' meant
+      // it" — and that flag is localStorage, which send-push cannot read. Measured against the live
+      // table: 0 of 9 candidate "off" states stopped the web nudge, and the only thing that did was
+      // deleting the row, i.e. giving up the morning and evening reminders they actually asked for.
+      // So the switch is mirrored into a column, and the quiet hours with it, because the native
+      // half shifts an away nudge out of them via _receptiveTime() and the server could not.
+      away_optout: !!ls('totry_reachout_off'),
+      quiet_start: (typeof quietHours==='function' ? (quietHours().start || null) : null),
+      quiet_end:   (typeof quietHours==='function' ? (quietHours().end   || null) : null),
       // THE ONLY HONEST "THEY OPENED THE APP" SIGNAL ON THE SERVER. last_morning_sent and
       // last_evening_sent advance whether or not anybody read the push, so they measure the cron
       // job's activity and not the person's — which is why the away nudge could not be built on
@@ -55793,10 +55854,23 @@ function toggleReachOut(){
   const turningOff = !ls('totry_reachout_off');
   ls('totry_reachout_off', turningOff);
   try{
-    if(turningOff){ _cancelReachOuts(); _setReachState({ next:null, hold:'you turned this off' }); }
+    // CANCEL ON THE TAP, not on a later launch. This did self-heal — the next open reaches
+    // scheduleAwayNudges(), whose first gate honours totry_reachout_off — but a local notification
+    // fires whether or not the app is ever reopened, and the away nudge's whole population is the
+    // one that is not opening it. So the person who says stop is owed it immediately.
+    if(turningOff){ _cancelReachOuts(); try{ if(typeof _cancelAwayNudges==='function') _cancelAwayNudges(); }catch(_){}
+      _setReachState({ next:null, hold:'you turned this off' }); }
     else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut();
       if(typeof scheduleAwayNudges==='function') scheduleAwayNudges(); }
   }catch(_){}
+  // AND TELL THE SERVER NOW, not at the next launch. The away nudge's whole population is the one
+  // that is not opening the app, so a consent change that waits for a launch is a consent change
+  // that never lands for the people it governs.
+  try{
+    if(sb && currentUser) sb.from('push_subscriptions')
+      .update({ away_optout: !!ls('totry_reachout_off') }).eq('user_id', currentUser.id)
+      .then(function(r){ if(r && r.error) console.warn('away_optout sync failed', r.error.message||r.error); });
+  }catch(_){ }
   if(typeof haptic==='function') haptic('tap');
   if(typeof renderPushSettings==='function') renderPushSettings();
   showToast(turningOff?'Reach-out off':'Reach-out on', turningOff?'I won’t message you at your risk window.':'I’ll check in before your hardest hour — at most 3 times a week, never in your quiet hours.');

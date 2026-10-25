@@ -1799,6 +1799,124 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      command, because the suite still passed: the split's absence does not break anything, it just
      un-does the fix. `grep -c` on the new function name is what caught it. Back up with `cp` before
      injecting, and never reach for git to undo an edit in a file that also holds work you want.
+   - **AND THE REVIEW OF v650 RETURNED 23 FINDINGS, NINE HIGH, AND FIVE WERE LIVE (25 Oct 2026).**
+     Rule 4 again, and the yield did not fall off: 56 agents, six lenses, every finding sent to two
+     refuters told to default to refuted — 23 survived with 2 live verdicts each, 2 refuted, **0
+     unrefuted**, so the denominator held this time and nothing was certified by a dead agent.
+     **A WON URGE WAS READ AS AN UNRESOLVED ONE, AND THE TRIGGER WAS A MILLISECOND.** `_momentWin`
+     — the moment door's own primary button, *"The wave's passing — I'm good"* — writes
+     `{ts, won:true}` into urgelog, and `companionThreshold()` compared TIMESTAMPS instead of
+     reading that flag. `moments_won` is stamped seven lines earlier with an `ls()` write of up to
+     300 rows in between, so whether the win silenced the sheet came down to a race: measured **46
+     of 100 for somebody at the app's own 300-row banked-wins cap and 6 of 100 for a beginner** —
+     the same tap nagging the person with the longest history and sparing the newcomer, and two
+     identical wins giving two different answers. A row that records its own ending is not
+     unresolved, so the outcome is read from the row, which is timing-free. **Only an explicit
+     `won === true` counts**: the other three urgelog writers push a bare string or number at the
+     moment the urge ARRIVES, and reading a MISSING `won` as answered would silence the SOS path's
+     genuinely unheard urges.
+     **AND ONE `met` SERVED TWO QUESTIONS, SO A SLIP GOT THE LINE THAT SAYS NOBODY HEARD.** Both
+     live slip paths write an urgelog row and the `won:false` row in ONE user action (`saveQuickLog`
+     0ms apart, `startLiveIntervention` + `logLoss` ~2ms), and threshold 2 asked `met`, which counts
+     WINS only — so it could not tell "I do not know how that went" from "I know, and it went
+     badly". For three hours a person who had just logged a slip was told *"You felt something
+     earlier and I never heard how it went"* instead of the line written for exactly them. There are
+     two variables now: `met` (wins, for threshold 3) and `heard` (any outcome, for threshold 2).
+     **THE FIX WAS NOT TO REORDER THE THRESHOLDS**, and that was measured: a slip 5h ago plus a
+     separate live urge 1h ago correctly answers 'urge', and swapping them would hand that person a
+     grace line about a slip they had already dealt with while the live urge went unasked.
+     **AND THE GONE-QUIET GUARD WAS DEAD, FROM v650's OWN FIX.** v650 changed what
+     `checkGoneQuietWelcome` WRITES to `totry_quiet_greeted` from a day NUMBER to `dayKeyOf()`'s day
+     STRING, and added `String()` to both sides of the comparison — and left the
+     `parseInt(ls(...)||'0', 10)` READ one line above. `parseInt` stops at the first slash, so
+     `String(25) === String('25/10/2026')` is false on every launch of every day: **0 of 365 days of
+     2026 can satisfy it**, and the app's one anti-abandonment gesture fired on every cold open for
+     the whole quiet spell. **The `String()` wrapper is the tell** — the author knew the stored type
+     had changed and type-proofed the comparison while leaving the one call that destroys the string
+     above it, which is why it read as deliberate and survived review.
+     **AND TURNING REMINDERS OFF LEFT THREE NOTIFICATIONS ARMED, WITH NO WAY TO STOP THEM.**
+     `disablePushReminders()` cancelled morning, evening, the reach-outs and the bills, and not the
+     away nudges. The self-heal was structurally unreachable: `reinitNativeReminders()` only calls
+     `scheduleAwayNudges()` inside `if(prefs && prefs.enabled)`, which that tap had just falsified,
+     so the gate that would have cancelled them was never reached again — and
+     `renderPushSettings()` emits the whole reach-out row only when reminders are enabled, so the
+     two switches that could still have reached it **disappear from the screen with the same tap**.
+     Three notifications at 17:00 on +4, +11 and +18 days from a channel the person switched off.
+     The fix belongs in the teardown and NOT in the gate, because the gate is a three-way OR whose
+     `totry_notif_enabled` leg is in SYNC_KEYS — a cloud-restored truthy value would re-arm them.
+     **AND THE SERVER HALF HAD NO CONSENT PREDICATE AT ALL.** v650 shipped the away nudge as two
+     implementations over two state stores and carried consent to only one: `totry_reachout_off` is
+     localStorage, so `send-push` could not read it. Measured against the live table, **0 of 9
+     candidate "off" states stopped the web nudge**; the only thing that did was deleting the row,
+     i.e. giving up the morning and evening reminders Settings offers as a separate switch. And the
+     row said something false in BOTH positions — "Off. Nothing is scheduled." when the server still
+     sent, and "a browser cannot wake itself at your hard hour" when the server reached them at
+     17:00. `away_optout` plus the quiet hours are columns now, written by
+     `syncPushSubscription()` AND written through by the toggle itself, because the away nudge's
+     whole population is the one not opening the app — a consent change that waits for a launch
+     never lands for the people it governs.
+     **AND THE CHECKLIST'S CLAIM THAT NOTHING COULD FIRE YET WAS FALSE.** `SUBMIT-CHECKLIST.md` said
+     no away nudge could fire until v650 was pushed, because the client writes `last_seen`. Measured:
+     both live rows held `last_seen = 2026-10-22 10:35:25.189842+00`, **identical to the microsecond**
+     — the migration's own `default now()` backfill, never a launch. They crossed 4 days quiet on
+     26 Oct with the first 17:00-local window on **27 Oct**, which is how a two-day deadline appeared
+     out of a sentence that read like reassurance. A column default is a value, and a value is
+     evidence to something that only asks whether the field is set.
+   - **AND FOUR OF v650's OWN ASSERTIONS COULD NOT FAIL (25 Oct 2026).** The review's sharpest lens
+     was the one pointed at the tests, and every one of these was mine, written the day before:
+     `'the arm loop is bounded by AWAY_IDS'` was `(match(/AWAY_IDS/g)||[]).length >= 1` — a symbol
+     grep that stays green while the loop arms ten, which is the one thing the 21-day give-up rests
+     on. `'last_seen is written on every launch'` greps the IDENTIFIER, so it passes when the value
+     written is `null` — and `awayDue()` refuses a null `last_seen`, so that spelling would have
+     killed the away nudge for every PWA subscriber with the gate green. The no-day-count guard read
+     `payload.body` of whatever `Math.random()` picked, so a scoreboard could ship green **two runs
+     in three**, and it never read the title at all. And `last_away_sent` was asserted as
+     `typeof === 'string'` — any string passes, including one `Date.parse` cannot read, which is the
+     single input that disables the 7-day throttle.
+     **AND THE REPLACEMENT FOR THE NaN ONE WAS ALSO UNFAILABLE, WHICH ONLY THE INJECTION FOUND.**
+     `_urgeTs(NaN)` returns at `if(!e) return null;`, so the `isFinite` branch it named is
+     unreachable for NaN and the check was a duplicate of the 0 case above it. I replaced it with
+     `H.eq(U._urgeTs(Infinity), null, ...)` — and **`H.eq` compares with `JSON.stringify`, where
+     `JSON.stringify(Infinity)` is the string `"null"`**. So the new assertion could never fail
+     either: with `isFinite` removed, `_urgeTs(Infinity)` returned Infinity and the suite stayed
+     green at 4450. `H.ok` with a strict `===` is the only safe form for Infinity, NaN, -0 and
+     undefined. **I fixed an unfailable assertion with an unfailable assertion, and the fault
+     injection is the only reason I know.**
+     **AND A SOURCE-TEXT ASSERTION CANNOT SEE A NEUTERED CALL.** The per-site away-arm check goes red
+     when the call is DELETED and stays green when it is left in place as `if(false) …`, which my
+     first injection did — so the injection reported a clean pass. A fault injection has to
+     reproduce what was MISSING, and the limitation is now written beside the assertion rather than
+     implied by it: the behavioural half is driven in a browser, because no read of the source can
+     establish it.
+   - **AND `test/sendpush.test.mjs` CLAIMED SIX FAULT INJECTIONS "AT THE BOTTOM" OF A FILE WITH
+     NONE.** They were run by hand through the shell and the header was written as though they lived
+     in the file. Same shape as the `safetyNote` ceiling this document already records: a claim about
+     a test, standing in for the test. An injection nobody can re-run is a claim.
+   - **AND A `cp` BACKUP RESTORES TO THE MOMENT IT WAS TAKEN (25 Oct 2026).** This file records
+     `git checkout` wiping uncommitted work while undoing a fault injection; the same thing happened
+     through the fix for it. The injection loop took `cp` backups of three modules, and I then did
+     forty minutes of NEW work on two of them before the loop's final restore put them back —
+     silently reverting the consent writes and a copy fix, with the suite still green because losing
+     a fix breaks nothing. The tell was the build sha going backwards. **Re-take the backup after
+     every new edit, or inject in a loop that touches nothing you are still editing.**
+   - **AND MY MEASUREMENT LIED FIVE TIMES IN ONE HOUR, ALL IN THE SAME DIRECTION (25 Oct 2026).**
+     Every one said the fix was broken when it worked. In order: the seed put a journal entry **9
+     days old** while `journal7` is the last SEVEN days, so `lastActivity` was 0, `daysQuiet` was
+     null and the welcome correctly returned at its own guard. The assertion tested `{won:false}`, a
+     shape **no urgelog writer produces** — asserting behaviour over data the app never creates.
+     The detection read `innerText`, which excludes text that is not currently rendered, against a
+     toast on a `setTimeout`. Then `document.body.textContent` — and **index.html carries the whole
+     bundle as inline script, so that is 4.4MB INCLUDING every string literal in the source**, among
+     them the away nudge's own title, so any needle drawn from the app's own copy matches on every
+     launch. And the needle `/Good to see you/` occurs at **three** sites: the away title, the
+     gone-quiet welcome and `initApp`'s own standalone toast. Scope a text read to the element
+     (`.milestone-toast`), never to `document.body`, and never anchor on a string the app also
+     prints somewhere else.
+   - **AND THE ANCHOR FORM IS NOT GUESSABLE IN THIS REPO.** Four edits in a row failed their
+     assertion because `src/app/02-native.js` stores the literal escape `\u2014` while my probe file
+     stored the em-dash CHARACTER, and I guessed wrong each time in alternating directions. Anchor by
+     LINE NUMBER, or on an ASCII-only substring you have copied out of the file — never on a string
+     containing a character you typed yourself.
    - `npm run personas` — 566 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
