@@ -4093,15 +4093,20 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        draws a welcome screen: a tinted glyph, a headline, the line under it. -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title">One life, to tend well.</div>
-    <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
-    <div class="ob-features">
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="ob-feature-t">The fight</div><div class="ob-feature-s">Vices, urges, streaks — met with grace, not shame.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><div><div class="ob-feature-t">Your money</div><div class="ob-feature-s">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><div class="ob-feature-t">Your spirit</div><div class="ob-feature-s">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="ob-feature-t">One coach who sees all of it</div><div class="ob-feature-s">Not five apps — one that remembers your whole story and speaks to it.</div></div></div>
-    </div>
-    <button class="btn primary" onclick="obNextToApps()">I’m in &#8594;</button>
+    <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. This is the screen you’ll come back to.</div>
+    <!-- THE HOOK, SHOWN RATHER THAN DESCRIBED. This held five hand-written .ob-feature rows that
+         NAMED the fronts in 627 characters of prose — "These are the parts you’ll tend: The fight /
+         Your body / Your money / Your spirit". The app can render the real thing now, and its
+         day-one state is exactly the sentence this tour was trying to say: "All of it, in one
+         place", with each part carrying an honest empty value (Yours to name / Open / Yours to set
+         up) and a closing line that refuses to push — "It fills in as you go, one thing today is
+         enough." 191 characters instead of 627, and it is the surface they will actually land on.
+         Filled by obNext() when this step opens; aria-hidden because the rows are inert here and
+         four dead buttons is not what a screen reader should be handed — the sentence below says
+         the same thing in words. -->
+    <div id="ob-woven" aria-hidden="true" style="margin:4px 0 14px"></div>
+    <div class="ob-desc" style="margin-bottom:18px">Four parts of one life, and one coach who sees all of it — not five apps that each see a sliver.</div>
+    <button class="btn primary" onclick="obNext('ob-fork')">I’m in &#8594;</button>
   </div>
   <div class="ob-step" id="ob2">
     <div class="ob-title">What’s your name?</div>
@@ -4122,59 +4127,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
   <!-- Apps you already use. The group labels were 12px capitals — one of them in DM Mono, a face this
        app stopped shipping — and a chosen app LOOKED unchosen, because the capsule fill outranked it. -->
-  <div class="ob-step" id="ob-apps">
-    <div class="ob-title">Already track in another app?</div>
-    <div class="ob-desc">If you use one of these, we&rsquo;ll link to it instead of asking you to switch. Optional — skip if you&rsquo;d rather start fresh.</div>
-
-    <div class="ios-header ob-hd">Training</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
-    </div>
-
-    <!-- Hevy free/pro follow-up — appears when Hevy is selected. Free/Pro is a segmented control;
-         selectHevyTier() paints BLACK ink on the tint before this. -->
-    <div id="ob-hevy-followup" class="card ob-followup" style="display:none">
-      <div class="card-body">Which Hevy do you have? This decides how we sync your workouts.</div>
-      <div class="seg">
-        <button class="fst" id="ob-hevy-free" onclick="selectHevyTier(&apos;free&apos;)">Free</button>
-        <button class="fst" id="ob-hevy-pro" onclick="selectHevyTier(&apos;pro&apos;)">Pro</button>
-      </div>
-      <div id="ob-hevy-free-msg" class="card-foot" style="display:none">No problem — Hevy free doesn&rsquo;t allow live sync, but you can import your full history anytime. After setup: Track → connect Hevy → Import CSV (export from Hevy → Settings → Export Data). Your whole training history comes straight in.</div>
-      <div id="ob-hevy-pro-msg" style="display:none">
-        <div class="card-foot">Perfect — Pro gives you live sync. Paste your API key from hevy.com/settings?developer and your workouts will flow in automatically.</div>
-        <input type="text" id="ob-hevy-key" placeholder="Paste Hevy API key (optional now)">
-        <div class="card-foot">You can also do this later in Track. No rush.</div>
-      </div>
-    </div>
-
-    <div class="ios-header ob-hd">Nutrition</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;myfitnesspal&apos;)">MyFitnessPal</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;cronometer&apos;)">Cronometer</div>
-    </div>
-    <!-- Nutrition CSV note — appears when a food app is selected -->
-    <div id="ob-food-followup" class="card ob-followup" style="display:none">
-      <div class="card-body">Bring your food history in right now — export a CSV from your app (MyFitnessPal: myfitnesspal.com &rarr; Settings &rarr; Export Data), then:</div>
-      <button class="btn" onclick="document.getElementById('food-csv-input').click()">Import my CSV now</button>
-      <div class="card-foot">Don&rsquo;t have the file yet? Skip — the import lives in Nourish whenever you&rsquo;re ready.</div>
-    </div>
-
-    <div class="ios-header ob-hd">Health</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
-    </div>
-
-    <div class="ob-actions">
-      <button class="btn primary" onclick="finishAppsStep()">Continue &#8594;</button>
-      <button class="btn quiet" onclick="skipAppsStep()">Skip — I don&rsquo;t use any</button>
-    </div>
-  </div>
-  <!-- FORK: let people into the app fast, or set the deeper foundation now. Either way the
-       firstrun-card on Home guides them through identity / vices / habits / coach over the first days. -->
   <div class="ob-step" id="ob-fork">
     <div class="ob-title">You&rsquo;re in.</div>
     <div class="ob-desc">You can start right now and shape the deeper stuff as you go — or take two minutes to set your foundation first. There&rsquo;s no wrong answer.</div>

@@ -4093,15 +4093,20 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        draws a welcome screen: a tinted glyph, a headline, the line under it. -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title">One life, to tend well.</div>
-    <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
-    <div class="ob-features">
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="ob-feature-t">The fight</div><div class="ob-feature-s">Vices, urges, streaks — met with grace, not shame.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M6.5 4.5v15M2.5 8.5v7M17.5 4.5v15M21.5 8.5v7M6.5 12h11"/></svg><div><div class="ob-feature-t">Your body</div><div class="ob-feature-s">Train, eat, and rest with intention — synced to the apps you already use.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><div><div class="ob-feature-t">Your money</div><div class="ob-feature-s">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><div class="ob-feature-t">Your spirit</div><div class="ob-feature-s">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div></div>
-      <div class="ob-feature"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="ob-feature-t">One coach who sees all of it</div><div class="ob-feature-s">Not five apps — one that remembers your whole story and speaks to it.</div></div></div>
-    </div>
-    <button class="btn primary" onclick="obNextToApps()">I’m in &#8594;</button>
+    <div class="ob-desc">You’ve been given a whole life to look after — not one corner of it. This is the screen you’ll come back to.</div>
+    <!-- THE HOOK, SHOWN RATHER THAN DESCRIBED. This held five hand-written .ob-feature rows that
+         NAMED the fronts in 627 characters of prose — "These are the parts you’ll tend: The fight /
+         Your body / Your money / Your spirit". The app can render the real thing now, and its
+         day-one state is exactly the sentence this tour was trying to say: "All of it, in one
+         place", with each part carrying an honest empty value (Yours to name / Open / Yours to set
+         up) and a closing line that refuses to push — "It fills in as you go, one thing today is
+         enough." 191 characters instead of 627, and it is the surface they will actually land on.
+         Filled by obNext() when this step opens; aria-hidden because the rows are inert here and
+         four dead buttons is not what a screen reader should be handed — the sentence below says
+         the same thing in words. -->
+    <div id="ob-woven" aria-hidden="true" style="margin:4px 0 14px"></div>
+    <div class="ob-desc" style="margin-bottom:18px">Four parts of one life, and one coach who sees all of it — not five apps that each see a sliver.</div>
+    <button class="btn primary" onclick="obNext('ob-fork')">I’m in &#8594;</button>
   </div>
   <div class="ob-step" id="ob2">
     <div class="ob-title">What’s your name?</div>
@@ -4122,59 +4127,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
   <!-- Apps you already use. The group labels were 12px capitals — one of them in DM Mono, a face this
        app stopped shipping — and a chosen app LOOKED unchosen, because the capsule fill outranked it. -->
-  <div class="ob-step" id="ob-apps">
-    <div class="ob-title">Already track in another app?</div>
-    <div class="ob-desc">If you use one of these, we&rsquo;ll link to it instead of asking you to switch. Optional — skip if you&rsquo;d rather start fresh.</div>
-
-    <div class="ios-header ob-hd">Training</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
-    </div>
-
-    <!-- Hevy free/pro follow-up — appears when Hevy is selected. Free/Pro is a segmented control;
-         selectHevyTier() paints BLACK ink on the tint before this. -->
-    <div id="ob-hevy-followup" class="card ob-followup" style="display:none">
-      <div class="card-body">Which Hevy do you have? This decides how we sync your workouts.</div>
-      <div class="seg">
-        <button class="fst" id="ob-hevy-free" onclick="selectHevyTier(&apos;free&apos;)">Free</button>
-        <button class="fst" id="ob-hevy-pro" onclick="selectHevyTier(&apos;pro&apos;)">Pro</button>
-      </div>
-      <div id="ob-hevy-free-msg" class="card-foot" style="display:none">No problem — Hevy free doesn&rsquo;t allow live sync, but you can import your full history anytime. After setup: Track → connect Hevy → Import CSV (export from Hevy → Settings → Export Data). Your whole training history comes straight in.</div>
-      <div id="ob-hevy-pro-msg" style="display:none">
-        <div class="card-foot">Perfect — Pro gives you live sync. Paste your API key from hevy.com/settings?developer and your workouts will flow in automatically.</div>
-        <input type="text" id="ob-hevy-key" placeholder="Paste Hevy API key (optional now)">
-        <div class="card-foot">You can also do this later in Track. No rush.</div>
-      </div>
-    </div>
-
-    <div class="ios-header ob-hd">Nutrition</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;myfitnesspal&apos;)">MyFitnessPal</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;cronometer&apos;)">Cronometer</div>
-    </div>
-    <!-- Nutrition CSV note — appears when a food app is selected -->
-    <div id="ob-food-followup" class="card ob-followup" style="display:none">
-      <div class="card-body">Bring your food history in right now — export a CSV from your app (MyFitnessPal: myfitnesspal.com &rarr; Settings &rarr; Export Data), then:</div>
-      <button class="btn" onclick="document.getElementById('food-csv-input').click()">Import my CSV now</button>
-      <div class="card-foot">Don&rsquo;t have the file yet? Skip — the import lives in Nourish whenever you&rsquo;re ready.</div>
-    </div>
-
-    <div class="ios-header ob-hd">Health</div>
-    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips">
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
-      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
-    </div>
-
-    <div class="ob-actions">
-      <button class="btn primary" onclick="finishAppsStep()">Continue &#8594;</button>
-      <button class="btn quiet" onclick="skipAppsStep()">Skip — I don&rsquo;t use any</button>
-    </div>
-  </div>
-  <!-- FORK: let people into the app fast, or set the deeper foundation now. Either way the
-       firstrun-card on Home guides them through identity / vices / habits / coach over the first days. -->
   <div class="ob-step" id="ob-fork">
     <div class="ob-title">You&rsquo;re in.</div>
     <div class="ob-desc">You can start right now and shape the deeper stuff as you go — or take two minutes to set your foundation first. There&rsquo;s no wrong answer.</div>
@@ -8740,7 +8692,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v651';
+const APP_VERSION = 'v652';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8903,8 +8855,6 @@ async function proceedAfterAuth(user){
       // Paint the progress row for screen one. The observer covers every transition AFTER this, but
       // the first screen is not a transition, so without this the row is empty until you move.
       try{ if(typeof obDots === 'function') obDots(); }catch(_){ }
-      try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
-        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
     }
     startSyncLoop();
     haptic('celebrate');
@@ -11729,8 +11679,6 @@ async function checkAuthAndStart(){
           }
           if(typeof obDots === 'function') obDots();
         }catch(_){ }
-        try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
-        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
       
       startSyncLoop();
@@ -15113,45 +15061,8 @@ document.addEventListener('keydown', function(e){
 });
 
 // ─── ONBOARDING: APPS STEP ────────────────────────────────────
-let _selectedApps = [];
-let _hevyTier = null;
 
-function toggleAppChip(el, appId){
-  el.classList.toggle('app-on');
-  try{ el.setAttribute('aria-checked', el.classList.contains('app-on') ? 'true' : 'false'); }catch(_){ }
-  if(el.classList.contains('app-on')){
-    if(!_selectedApps.includes(appId)) _selectedApps.push(appId);
-  } else {
-    _selectedApps = _selectedApps.filter(a => a !== appId);
-  }
-  // Reveal Hevy free/pro follow-up when Hevy is toggled
-  if(appId === 'hevy'){
-    const fu = document.getElementById('ob-hevy-followup');
-    if(fu) fu.style.display = _selectedApps.includes('hevy') ? 'block' : 'none';
-  }
-  // Reveal nutrition CSV note when a food app is toggled
-  if(appId === 'myfitnesspal' || appId === 'cronometer'){
-    const ff = document.getElementById('ob-food-followup');
-    const anyFood = _selectedApps.includes('myfitnesspal') || _selectedApps.includes('cronometer');
-    if(ff) ff.style.display = anyFood ? 'block' : 'none';
-  }
-  haptic('light');
-}
 
-function selectHevyTier(tier){
-  _hevyTier = tier;
-  const freeBtn = document.getElementById('ob-hevy-free');
-  const proBtn = document.getElementById('ob-hevy-pro');
-  const freeMsg = document.getElementById('ob-hevy-free-msg');
-  const proMsg = document.getElementById('ob-hevy-pro-msg');
-  // The chosen half of a segmented control. This painted BLACK ink onto the tint by hand — and the
-  // .btn rule's !important fill won anyway, so neither Free nor Pro ever looked chosen.
-  if(freeBtn) freeBtn.classList.toggle('active', tier === 'free');
-  if(proBtn) proBtn.classList.toggle('active', tier === 'pro');
-  if(freeMsg) freeMsg.style.display = tier === 'free' ? 'block' : 'none';
-  if(proMsg) proMsg.style.display = tier === 'pro' ? 'block' : 'none';
-  haptic('tap');
-}
 
 // ── THE FIRST FELT MOMENT ─────────────────────────────────────────────────────
 // The signed-up path's aha. The name step earns its place because it changes THIS screen — nothing
@@ -15167,7 +15078,19 @@ function selectHevyTier(tier){
 // ob-moment ran the progress bar BACKWARDS, 4 dots to 2, on a forward tap \u2014 and obBack(), which
 // walks this same list, then offered to return someone to ob2, a screen they had never seen.
 // Verified by driving every step's own buttons, which is the only thing that could have shown it.
-const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// AN INTEGRATION WIZARD IS NOT AN ONBOARDING STEP. `ob-apps` sat at position 5 of 12 and was the
+// heaviest screen in the tour -- 1010 characters, a fifth of everything a new person reads, about a
+// THIRD-PARTY APP'S EXPORT MENU ("Track -> connect Hevy -> Import CSV (export from Hevy ->
+// Settings -> Export Data)") plus a paste-your-API-key field -- and it was asked BEFORE the person
+// had said who they are becoming, why it matters, or what they are fighting. That is the "feels
+// like a form" complaint, and the step's own copy already called itself optional.
+// Nothing is stranded: `offerHevyConnect()` in 36-google-health.js is documented as "the single
+// Hevy connect flow", 34-settings-apps.js owns the connected-apps panel, every reader of
+// `totry_apps_used` does `|| []`, and 37-hevy.js adds 'hevy' to that list itself when a key is
+// really connected. Measured: 12 steps -> 11, first-run copy 4965 -> 3955 characters.
+// AND THIS LIST IS THE FLOW'S OWN RECORD OF ITSELF -- obBack() and the dots both walk it, so it
+// must match what the buttons actually do. ob-what's button goes to ob-fork now.
+const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
 // A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
 // gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
 // fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
@@ -15300,43 +15223,7 @@ function obSkipMoment(){
   document.getElementById('ob-what').classList.add('active');
   window.scrollTo(0,0);
 }
-function obNextToApps(){
-  // Save name first
-  const n = document.getElementById('ob-name')?.value.trim();
-  if(!n){
-    document.getElementById('ob-name').style.borderColor = 'var(--re)';
-    return;
-  }
-  userName = n;
-  ls('totry_name', n);
-  
-  // Hide step 2, show apps step
-  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ob-apps').classList.add('active');
-  window.scrollTo(0, 0);
-}
 
-function finishAppsStep(){
-  ls('totry_apps_used', _selectedApps);
-  // Persist Hevy tier choice if they made one
-  if(_selectedApps.includes('hevy') && _hevyTier){
-    ls('totry_hevy_tier', _hevyTier);
-    // If they pasted a Pro API key, save it and kick off the first sync
-    if(_hevyTier === 'pro'){
-      const key = document.getElementById('ob-hevy-key')?.value.trim();
-      if(key){
-        ls('totry_hevy_api_key', key);
-        if(typeof syncHevyWorkouts === 'function') setTimeout(syncHevyWorkouts, 500);
-      }
-    }
-  }
-  // Continue to the fork (jump in now, or set foundation)
-  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ob-fork').classList.add('active');
-  // Update progress dots
-  obDots('ob3');
-  window.scrollTo(0, 0);
-}
 
 // Fork: jump straight into the app. The firstrun-card on Home drips identity/vices/habits/coach.
 async function obQuickFinish(){
@@ -15352,10 +15239,6 @@ function obStartFoundation(){
   window.scrollTo(0, 0);
 }
 
-function skipAppsStep(){
-  ls('totry_apps_used', []);
-  finishAppsStep();
-}
 
 
 // ─── ONBOARDING: WHY STEP ─────────────────────────────────────
@@ -15453,6 +15336,22 @@ function obNext(step){
   // which silently assumed position N-1 always holds 'obN' — it does not, and obNext(5) lit the
   // dot for ob-apps. The target id is already resolved two lines above; use it.
   obDots(targetId);
+  // THE HOOK. ob-what used to DESCRIBE the four parts of a life in 627 characters; it shows them
+  // now, by rendering the real woven card in its day-one state ("All of it, in one place", each
+  // part carrying an honest empty value). Rendered on arrival rather than at boot, because
+  // getLifeState() has to read the name and the feeling the person has just given.
+  if(targetId === 'ob-what'){
+    try{
+      if(typeof renderLifeWoven === 'function') renderLifeWoven('ob-woven');
+      // INERT. These rows are iosRows carrying go('fight') / go('grow') / go('soul') / go('money'),
+      // and a tap mid-tour would leave onboarding with no route back into it. The handler is
+      // REMOVED rather than suppressed with pointer-events alone, so neither a tap nor a keyboard
+      // activation can fire it, and tabindex -1 keeps four do-nothing buttons out of the tab order.
+      document.querySelectorAll('#ob-woven [onclick]').forEach(function(el){
+        el.removeAttribute('onclick'); el.setAttribute('tabindex','-1'); el.style.pointerEvents='none';
+      });
+    }catch(_){ }
+  }
   window.scrollTo(0,0);
 }
 
@@ -57652,8 +57551,8 @@ function wovenWeek(){
 // compute, which is the card's whole claim stated as a number rather than asserted in a sentence.
 function wovenDays(week){ try{ return (week||wovenWeek()).filter(function(d){ return d.n>=2; }).length; }catch(_){ return 0; } }
 
-function renderLifeWoven(){
-  const box=document.getElementById('home-woven'); if(!box) return;
+function renderLifeWoven(boxId){
+  const box=document.getElementById(boxId||'home-woven'); if(!box) return;
   const s=(typeof getLifeState==='function')?getLifeState():null;
   if(!s){ box.innerHTML=''; return; }
   const today=dayKeyOf(); const h=new Date().getHours();
@@ -59953,7 +59852,8 @@ function disconnectStrava(){
 }
 
 function manageHevyConnection(){
-  const tier = ls('totry_hevy_tier') || 'pro';
+  // (The Hevy tier read that used to sit here was never consumed -- `tier` appeared on its own
+  //  declaration line and nowhere else, and its only writer was the onboarding apps step, now gone.)
   const workouts = (ls('totry_workouts') || []).filter(w => w.source === 'hevy' || w.source === 'hevy-csv');
   const lastSynced = ls('totry_hevy_synced_once');
   const m = document.createElement('div');

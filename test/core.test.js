@@ -1330,9 +1330,6 @@ H.section('promises the code must keep');
   //    URI becomes capacitor://localhost/, which a Google web client rejects.
   H.ok(/id !== 'googlehealth' \|\| !\(typeof isNativeApp==='function' && isNativeApp\(\)\)/.test(H.html),
     'the app picker hides Google Health in the native build');
-  const ghChip = (H.html.match(/<div[^>]*id="ob-chip-googlehealth"[^>]*>/) || [''])[0];
-  H.ok(/display:none/.test(ghChip), 'the onboarding Google Health chip fails closed (hidden until proven safe)');
-  H.ok(/ob-chip-googlehealth'\);\s*if\(gh && !\(typeof isNativeApp/.test(H.html), 'and is revealed only off-native');
 }
 
 H.section('native reach — things the wrapper unlocks must actually be used');

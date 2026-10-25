@@ -326,8 +326,8 @@ function wovenWeek(){
 // compute, which is the card's whole claim stated as a number rather than asserted in a sentence.
 function wovenDays(week){ try{ return (week||wovenWeek()).filter(function(d){ return d.n>=2; }).length; }catch(_){ return 0; } }
 
-function renderLifeWoven(){
-  const box=document.getElementById('home-woven'); if(!box) return;
+function renderLifeWoven(boxId){
+  const box=document.getElementById(boxId||'home-woven'); if(!box) return;
   const s=(typeof getLifeState==='function')?getLifeState():null;
   if(!s){ box.innerHTML=''; return; }
   const today=dayKeyOf(); const h=new Date().getHours();

@@ -844,7 +844,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v651';
+const APP_VERSION = 'v652';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -1007,8 +1007,6 @@ async function proceedAfterAuth(user){
       // Paint the progress row for screen one. The observer covers every transition AFTER this, but
       // the first screen is not a transition, so without this the row is empty until you move.
       try{ if(typeof obDots === 'function') obDots(); }catch(_){ }
-      try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
-        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
     }
     startSyncLoop();
     haptic('celebrate');

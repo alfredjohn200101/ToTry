@@ -1380,8 +1380,6 @@ async function checkAuthAndStart(){
           }
           if(typeof obDots === 'function') obDots();
         }catch(_){ }
-        try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
-        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
       
       startSyncLoop();

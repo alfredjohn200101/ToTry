@@ -3249,45 +3249,8 @@ document.addEventListener('keydown', function(e){
 });
 
 // ─── ONBOARDING: APPS STEP ────────────────────────────────────
-let _selectedApps = [];
-let _hevyTier = null;
 
-function toggleAppChip(el, appId){
-  el.classList.toggle('app-on');
-  try{ el.setAttribute('aria-checked', el.classList.contains('app-on') ? 'true' : 'false'); }catch(_){ }
-  if(el.classList.contains('app-on')){
-    if(!_selectedApps.includes(appId)) _selectedApps.push(appId);
-  } else {
-    _selectedApps = _selectedApps.filter(a => a !== appId);
-  }
-  // Reveal Hevy free/pro follow-up when Hevy is toggled
-  if(appId === 'hevy'){
-    const fu = document.getElementById('ob-hevy-followup');
-    if(fu) fu.style.display = _selectedApps.includes('hevy') ? 'block' : 'none';
-  }
-  // Reveal nutrition CSV note when a food app is toggled
-  if(appId === 'myfitnesspal' || appId === 'cronometer'){
-    const ff = document.getElementById('ob-food-followup');
-    const anyFood = _selectedApps.includes('myfitnesspal') || _selectedApps.includes('cronometer');
-    if(ff) ff.style.display = anyFood ? 'block' : 'none';
-  }
-  haptic('light');
-}
 
-function selectHevyTier(tier){
-  _hevyTier = tier;
-  const freeBtn = document.getElementById('ob-hevy-free');
-  const proBtn = document.getElementById('ob-hevy-pro');
-  const freeMsg = document.getElementById('ob-hevy-free-msg');
-  const proMsg = document.getElementById('ob-hevy-pro-msg');
-  // The chosen half of a segmented control. This painted BLACK ink onto the tint by hand — and the
-  // .btn rule's !important fill won anyway, so neither Free nor Pro ever looked chosen.
-  if(freeBtn) freeBtn.classList.toggle('active', tier === 'free');
-  if(proBtn) proBtn.classList.toggle('active', tier === 'pro');
-  if(freeMsg) freeMsg.style.display = tier === 'free' ? 'block' : 'none';
-  if(proMsg) proMsg.style.display = tier === 'pro' ? 'block' : 'none';
-  haptic('tap');
-}
 
 // ── THE FIRST FELT MOMENT ─────────────────────────────────────────────────────
 // The signed-up path's aha. The name step earns its place because it changes THIS screen — nothing
@@ -3303,7 +3266,19 @@ function selectHevyTier(tier){
 // ob-moment ran the progress bar BACKWARDS, 4 dots to 2, on a forward tap \u2014 and obBack(), which
 // walks this same list, then offered to return someone to ob2, a screen they had never seen.
 // Verified by driving every step's own buttons, which is the only thing that could have shown it.
-const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// AN INTEGRATION WIZARD IS NOT AN ONBOARDING STEP. `ob-apps` sat at position 5 of 12 and was the
+// heaviest screen in the tour -- 1010 characters, a fifth of everything a new person reads, about a
+// THIRD-PARTY APP'S EXPORT MENU ("Track -> connect Hevy -> Import CSV (export from Hevy ->
+// Settings -> Export Data)") plus a paste-your-API-key field -- and it was asked BEFORE the person
+// had said who they are becoming, why it matters, or what they are fighting. That is the "feels
+// like a form" complaint, and the step's own copy already called itself optional.
+// Nothing is stranded: `offerHevyConnect()` in 36-google-health.js is documented as "the single
+// Hevy connect flow", 34-settings-apps.js owns the connected-apps panel, every reader of
+// `totry_apps_used` does `|| []`, and 37-hevy.js adds 'hevy' to that list itself when a key is
+// really connected. Measured: 12 steps -> 11, first-run copy 4965 -> 3955 characters.
+// AND THIS LIST IS THE FLOW'S OWN RECORD OF ITSELF -- obBack() and the dots both walk it, so it
+// must match what the buttons actually do. ob-what's button goes to ob-fork now.
+const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
 // A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
 // gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
 // fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
@@ -3436,43 +3411,7 @@ function obSkipMoment(){
   document.getElementById('ob-what').classList.add('active');
   window.scrollTo(0,0);
 }
-function obNextToApps(){
-  // Save name first
-  const n = document.getElementById('ob-name')?.value.trim();
-  if(!n){
-    document.getElementById('ob-name').style.borderColor = 'var(--re)';
-    return;
-  }
-  userName = n;
-  ls('totry_name', n);
-  
-  // Hide step 2, show apps step
-  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ob-apps').classList.add('active');
-  window.scrollTo(0, 0);
-}
 
-function finishAppsStep(){
-  ls('totry_apps_used', _selectedApps);
-  // Persist Hevy tier choice if they made one
-  if(_selectedApps.includes('hevy') && _hevyTier){
-    ls('totry_hevy_tier', _hevyTier);
-    // If they pasted a Pro API key, save it and kick off the first sync
-    if(_hevyTier === 'pro'){
-      const key = document.getElementById('ob-hevy-key')?.value.trim();
-      if(key){
-        ls('totry_hevy_api_key', key);
-        if(typeof syncHevyWorkouts === 'function') setTimeout(syncHevyWorkouts, 500);
-      }
-    }
-  }
-  // Continue to the fork (jump in now, or set foundation)
-  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ob-fork').classList.add('active');
-  // Update progress dots
-  obDots('ob3');
-  window.scrollTo(0, 0);
-}
 
 // Fork: jump straight into the app. The firstrun-card on Home drips identity/vices/habits/coach.
 async function obQuickFinish(){
@@ -3488,10 +3427,6 @@ function obStartFoundation(){
   window.scrollTo(0, 0);
 }
 
-function skipAppsStep(){
-  ls('totry_apps_used', []);
-  finishAppsStep();
-}
 
 
 // ─── ONBOARDING: WHY STEP ─────────────────────────────────────
@@ -3589,6 +3524,22 @@ function obNext(step){
   // which silently assumed position N-1 always holds 'obN' — it does not, and obNext(5) lit the
   // dot for ob-apps. The target id is already resolved two lines above; use it.
   obDots(targetId);
+  // THE HOOK. ob-what used to DESCRIBE the four parts of a life in 627 characters; it shows them
+  // now, by rendering the real woven card in its day-one state ("All of it, in one place", each
+  // part carrying an honest empty value). Rendered on arrival rather than at boot, because
+  // getLifeState() has to read the name and the feeling the person has just given.
+  if(targetId === 'ob-what'){
+    try{
+      if(typeof renderLifeWoven === 'function') renderLifeWoven('ob-woven');
+      // INERT. These rows are iosRows carrying go('fight') / go('grow') / go('soul') / go('money'),
+      // and a tap mid-tour would leave onboarding with no route back into it. The handler is
+      // REMOVED rather than suppressed with pointer-events alone, so neither a tap nor a keyboard
+      // activation can fire it, and tabindex -1 keeps four do-nothing buttons out of the tab order.
+      document.querySelectorAll('#ob-woven [onclick]').forEach(function(el){
+        el.removeAttribute('onclick'); el.setAttribute('tabindex','-1'); el.style.pointerEvents='none';
+      });
+    }catch(_){ }
+  }
   window.scrollTo(0,0);
 }
 

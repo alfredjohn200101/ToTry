@@ -295,7 +295,8 @@ function disconnectStrava(){
 }
 
 function manageHevyConnection(){
-  const tier = ls('totry_hevy_tier') || 'pro';
+  // (The Hevy tier read that used to sit here was never consumed -- `tier` appeared on its own
+  //  declaration line and nowhere else, and its only writer was the onboarding apps step, now gone.)
   const workouts = (ls('totry_workouts') || []).filter(w => w.source === 'hevy' || w.source === 'hevy-csv');
   const lastSynced = ls('totry_hevy_synced_once');
   const m = document.createElement('div');
