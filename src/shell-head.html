@@ -1762,8 +1762,27 @@ body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::bef
 .logo-main,.ob-logo{color:var(--tx)}
 .logo-sub{display:none !important}
 .day-chip{display:flex !important;align-items:baseline;gap:4px;text-align:right}
-.day-n{font-family:var(--font-text) !important;font-size:15px !important;font-weight:600 !important;color:var(--tx2) !important;letter-spacing:-0.004em !important;line-height:1.3 !important}
-.day-l{display:inline !important;font-family:var(--font-text) !important;font-size:15px !important;font-weight:400 !important;text-transform:none !important;letter-spacing:-0.004em !important;color:var(--tx2) !important;margin:0 !important;line-height:1.3 !important}
+/* THE EARNED COUNT GOT ITS TREATMENT BACK. The Liquid Glass pass forced this to
+   font-family:var(--font-text);font-size:15px;color:var(--tx2) !important -- so the one number a
+   person has actually EARNED rendered as a 15px grey label beside a 44px Cormorant wordmark, which
+   is what the owner meant by "lost its earned-count treatment to the Liquid Glass nav override".
+   docs/DESIGN.md is explicit: --font-display is "headlines and the counts a person EARNS";
+   --font-text is rows, labels, buttons and data numbers. A day count is the earned count.
+   THE INK IS MEASURED, not assumed. CLAUDE.md records the tab bar's ink being --tx2 by measurement
+   because tint on a tint-coloured ground is the one pairing a material cannot rescue -- but that is
+   the floating CAPSULE, which amplifies whatever scrolls beneath it. This bar paints a SOLID
+   background (rgb(0,0,0) dark, rgb(242,242,247) light), and --go on it measures 7.42:1 in dark and
+   5.20:1 in light: AA in both, with a calibrated probe (21:1 -> 21, 4.54:1 -> 4.54) run first.
+   AND NOT THE BRAND GOLD, measured rather than assumed. --brand (#C8A96E) is this app's earned
+   colour and it reads 9.36:1 in dark -- but 4.36:1 in LIGHT, which clears AA-large (3:1, and 26px
+   qualifies) and fails AA-normal. --go is also exactly what the pre-Liquid-Glass rule at line 269
+   used, so this restores the original ink rather than inventing one, and blue is the honest signal
+   for a chip that IS tappable (openYourRecord). If the gold is ever wanted here it needs a
+   light-appearance variant first; the number is the measurement, not the preference.
+   The NUMBER is the earned count and takes the display face; the WORD stays a label in Outfit at
+   the 13px footnote floor, in the third of the three greys this app allows itself. */
+.day-n{font-family:var(--font-display) !important;font-size:26px !important;font-weight:500 !important;color:var(--go) !important;letter-spacing:0 !important;line-height:1 !important}
+.day-l{display:inline !important;font-family:var(--font-text) !important;font-size:13px !important;font-weight:400 !important;text-transform:none !important;letter-spacing:-0.004em !important;color:var(--tx3) !important;margin:0 !important;line-height:1.3 !important}
 .hdr button[aria-label="Settings"]{color:var(--go) !important}
 .hdr button[aria-label="Settings"] svg{width:24px;height:24px;stroke-width:1.8}
 /* …except on Settings itself. iOS nav bar items act on the current screen or leave it; they never
@@ -7723,7 +7742,7 @@ Amen.</div></div>
 </div>
 
 <!-- PAYDAY MODAL -->
-<div class="modal-bg" id="payday-modal">
+<div class="modal-bg" data-sheet="static" id="payday-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>You just got paid.</h3>
@@ -7735,7 +7754,7 @@ Amen.</div></div>
 </div>
 
 <!-- JOURNAL MODAL -->
-<div class="modal-bg" id="journal-modal">
+<div class="modal-bg" data-sheet="static" id="journal-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>Today’s entry</h3>
@@ -7762,7 +7781,7 @@ Amen.</div></div>
 </div>
 
 <!-- SERVING SIZE MODAL -->
-<div class="modal-bg" id="serving-modal">
+<div class="modal-bg" data-sheet="static" id="serving-modal">
   <div class="serving-modal">
     <div class="modal-handle"></div>
     <div style="font-size:var(--t-md);font-weight:500;color:var(--tx);margin-bottom:4px" id="sm-food-name"></div>

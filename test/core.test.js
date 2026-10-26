@@ -3339,6 +3339,120 @@ H.section('the fixes I shipped today, checked against themselves')
   H.ok(/b\.weight != null/.test(pf), 'the TDEE weight prefill reads the field that exists');
   H.ok(!/b\.w != null/.test(pf), 'not the one I invented');
 
+  // ── ONE CSV PARSER, AND A FILE WE CANNOT READ IS REFUSED ──────────────────────────
+  // handleCSVFile had its own splitter: /\r?\n/ plus _parseCSVLine, comma-only and no BOM strip,
+  // while parseCSV (39-import-export.js) sniffs the delimiter, handles ';' and tabs and strips the
+  // BOM -- and is the one the food, workout and scale importers use. Measured on a European
+  // semicolon export: "6 income (+€36,856,823,698.22)" and a €3.7bn tithe suggestion, because the
+  // whole line arrived as one field and the balance digits became the amount. And its no-header
+  // fallback assumed {date:0,desc:1,amount:2}, while every real headerless export with a running
+  // balance puts the amount SECOND -- so _csvAmount was handed a merchant name and returned the
+  // street number as income, which is the figure the tithe screen takes a percentage OF.
+  {
+    const h = H.code(fnBody('handleCSVFile') || '');
+    H.ok(/parseCSV\(text\)/.test(h), 'the money importer uses the tested parseCSV');
+    H.ok(!/text\.split\(\/\\r\?\\n\//.test(h), 'and not its own line splitter');
+    H.ok(!/cols = \{date:0, desc:1, amount:2/.test(h),
+      'the positional no-header guess is gone');
+    H.ok(/will not guess which column/.test(h),
+      'and an unreadable file is REFUSED with a reason rather than guessed at');
+    // A TRANSFER IS A TRANSFER IN BOTH DIRECTIONS. The test used to sit inside the `amt >= 0`
+    // branch, so "FROM SAVINGS" was neutral and "TRANSFER TO SAVINGS" became the biggest expense
+    // the person had. It must be decided before the sign is consulted.
+    H.ok(/const _isTransfer =/.test(h), 'the transfer test is computed once');
+    H.ok(/type: _isTransfer \? 'transfer'/.test(h) && /category: _isTransfer \? 'Transfer'/.test(h),
+      'and decides type AND category for a debit as well as a credit');
+  }
+
+  // ── A CATEGORY KEYWORD IS A WORD, NOT A SUBSTRING ──────────────────────────────
+  // EXECUTED, not grepped. 'rent' is in the Bills list and is a substring of "PARENTHOOD", so
+  // "PLANNED PARENTHOOD DONATION" filed under Bills -- the word-prefix collision this file already
+  // records for "better off without ME-dication" and 'plan' inside 'planet', arriving in the money
+  // categoriser. The two hand-rolled boundary hacks in the lists ('bar ', 'bp ') were the tell.
+  {
+    const C = H.load(['_autoCategory'], { VICE_MERCHANTS: {
+      gambling: ['sportsbet'], tobacco: ['tobacconist'], alcohol: ['bws','liquor'] } });
+    const cat = (s) => C._autoCategory(s);
+    H.eq(cat('PLANNED PARENTHOOD DONATION'), 'Giving', 'a parish donation is Giving, not Bills');
+    H.eq(cat('RENT 14B HAWTHORN RD'), 'Bills', 'and the real rent is still Bills');
+    H.eq(cat('ST VINCENT DE PAUL PARISH'), 'Giving', 'so is a Vinnies parish');
+    H.ok(cat('PERSONAL TRAINING STUDIO') !== 'Transport', '"TRAINING" is not a train');
+    H.ok(cat('WATERSTONES BOOKS') !== 'Bills', '"WATERSTONES" is not a water bill');
+    H.ok(cat('BARBER SHOP CARLTON') !== 'Eating out', 'and a BARBER is not a bar');
+    H.eq(cat('SPORTSBET PTY LTD'), 'Gambling', 'while the vice lists still match');
+    H.eq(cat('WOOLWORTHS METRO 3121'), 'Groceries', 'and groceries beat transport on a METRO store');
+  }
+
+  // ── THE TWO COPIES OF THE STATEMENT-IMPORT PROMISE MUST AGREE ──────────────────────
+  // The Money empty-state card SELLS the import and the modal IMPLEMENTS it, and they made two
+  // different promises about the same bytes one tap apart: the card said "parsed on your phone and
+  // goes nowhere" while totry_transactions is in SYNC_KEYS, confirmCSVImport stores the verbatim
+  // bank narrative as `note: p.desc`, and syncToCloud() runs on the next line -- so every merchant
+  // line is upserted into user_data.data_value in plaintext. CLAUDE.md records the same class once
+  // already: an enumeration in user-facing copy is an artefact the gate can COMPARE, not prose to
+  // be trusted. Both copies must now carry the sync clause, and neither may claim it goes nowhere.
+  {
+    const card = H.code(fnBody('renderMoneyGate') || '');
+    const modal = H.code(fnBody('openCSVImport') || '');
+    H.ok(/never uploaded/.test(card) && /never uploaded/.test(modal),
+      'both copies say the FILE is never uploaded');
+    H.ok(/syncs to your account/.test(card) && /syncs to your account/.test(modal),
+      'and both say what you SAVE syncs if you are signed in');
+    H.ok(!/goes nowhere/.test(card) && !/goes nowhere/.test(modal),
+      'and neither promises the money data goes nowhere, because it does not');
+    // The claim is only honest while the store is actually synced -- if it ever stops being, the
+    // copy is wrong in the other direction, so pin the fact the sentence rests on.
+    H.ok(/'totry_transactions'/.test(H.code()), 'and totry_transactions is a real synced store');
+  }
+
+  // ── THE SHELL'S OWN SHEETS ARE CLOSED, NOT DESTROYED ──────────────────────────────
+  // closeModal was `if(m) m.remove()`, and all three universal dismiss gestures route through it --
+  // a backdrop tap, a grab-handle tap and Escape. Three sheets exist only as literal shell markup
+  // and are never recreated, so one stray thumb killed the journal composer, the payday planner and
+  // all nine food-logging paths for the rest of the session, and took the paragraph the person had
+  // just typed with it. Measured 9 of 9 before the fix; 0 of 9 after.
+  // ASSERTED AS A PROPERTY OF THE SHEET, not a list of three ids -- a hardcoded set is what went
+  // stale for preflight's usage descriptions, so the shell MARKS them and the gate checks that
+  // every literal .modal-bg it ships carries the mark.
+  {
+    const shellSheets = (H.shell || H.html).match(/<div[^>]*class="modal-bg"[^>]*>/g) || [];
+    H.ok(shellSheets.length >= 3, 'the shell ships its static sheets (' + shellSheets.length + ')');
+    const unmarked = shellSheets.filter(t => !/data-sheet="static"/.test(t));
+    H.eq(unmarked.length, 0,
+      'and every one of them is marked data-sheet="static" so closeModal will not destroy it' +
+      (unmarked.length ? ' — unmarked: ' + unmarked.join(' ') : ''));
+    const cm = H.code(fnBody('closeModal') || '');
+    H.ok(/dataset\s*&&\s*m\.dataset\.sheet === 'static'|dataset\.sheet === 'static'/.test(cm),
+      'closeModal honours the mark');
+    H.ok(/classList\.remove\('open'\)/.test(cm), 'by closing it');
+    H.ok(/m\.remove\(\)/.test(cm),
+      'while a sheet the app APPENDED is still destroyed — the behaviour this must not break');
+    H.ok(/closeServingModal/.test(cm),
+      'and the serving sheet goes through its own closer, so a dismissed barcode trolley is accounted for');
+  }
+
+  // ── THE EARNED COUNT KEEPS ITS FACE ───────────────────────────────────────────
+  // docs/DESIGN.md: --font-display is "headlines and the counts a person EARNS"; --font-text is
+  // rows, labels, buttons and data numbers. The Liquid Glass pass forced the masthead day count to
+  // font-family:var(--font-text);font-size:15px;color:var(--tx2) with !important, so the one number
+  // a person has actually earned rendered as a 15px grey LABEL beside a 44px Cormorant wordmark.
+  // It happened once by a cascade accident and can happen again, so the rule is pinned. Asserted on
+  // the WINNING declaration (the !important one in the Liquid Glass block), not on any .day-n rule,
+  // because the base rule at line 269 legitimately still names --font-text and a loose grep would
+  // pass on the overridden state.
+  {
+    const dayN = (H.html.match(/\.day-n\{[^}]*!important[^}]*\}/g) || []);
+    H.ok(dayN.length >= 1, 'the masthead day count has a winning !important rule');
+    const win = dayN[dayN.length - 1] || '';
+    H.ok(/font-family:\s*var\(--font-display\)/.test(win),
+      'and it sets the DISPLAY face — the count a person earns is not a label');
+    H.ok(!/font-family:\s*var\(--font-text\)/.test(win),
+      'not the interface face');
+    const px = (win.match(/font-size:\s*(\d+)px/) || [])[1];
+    H.ok(px && Number(px) >= 22,
+      'and it is sized as a count rather than a label (' + px + 'px)');
+  }
+
   // The companion opened UNDER the Feeling Door for a brand-new guest: the door is on a 320ms timer and
   // the companion on 1200ms, and v464 correctly made a guest count as set up.
   const msc = fnBody('maybeShowCompanion');

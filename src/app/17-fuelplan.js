@@ -1602,8 +1602,27 @@ function _autoCategory(desc){
     ['Tobacco', VICE_MERCHANTS.tobacco],
     ['Alcohol', VICE_MERCHANTS.alcohol],
     ['Income', ['salary','payroll','wage','deposit','centrelink']],
+    // GIVING GETS ITS OWN LINE, for the same reason the vices do. This app has a giving ledger, a
+    // pledge and a zakat screen (totry_giving, totry_giving_pledge, totry_zakat, renderGiving) --
+    // and an imported parish donation was landing in 'Other', so the one category a faith-rooted
+    // app would most want to SEE was the one it could not. Not in _DISCRETIONARY on purpose:
+    // giving is not discretionary spending in this app's worldview.
+    ['Giving', ['parish','church','mosque','temple','synagogue','vinnies','st vincent','salvation army','red cross','unicef','charity','donation','tithe','offering','oxfam','world vision']],
   ];
-  for(const [cat, kws] of rules){ if(kws.some(k => d.includes(k))) return cat; }
+  // A WORD, NOT A SUBSTRING. This was `d.includes(k)`, so 'rent' in the Bills list matched inside
+  // "PLANNED PAREN(THOOD)" -- measured, "PLANNED PARENTHOOD DONATION" filed under Bills -- and
+  // 'train' would take "TRAINING", 'pub' would take "REPUBLIC" and 'water' would take
+  // "WATERSTONES". It is the word-prefix collision CLAUDE.md already records for "better off
+  // without ME-dication" and 'plan' inside 'planet', arriving in the money categoriser. The two
+  // hand-rolled boundary hacks in the lists above -- 'bar ' and 'bp ', with their trailing spaces --
+  // are the tell that the author already knew; they are trimmed now because \b does it properly
+  // (\bbar\b does not match "BARBER").
+  const _word = function(k){
+    const t = String(k).trim(); if(!t) return false;
+    try{ return new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, function(c){ return '\\' + c; }) + '\\b', 'i').test(d); }
+    catch(_){ return d.includes(t); }
+  };
+  for(const [cat, kws] of rules){ if(kws.some(_word)) return cat; }
   return 'Other';
 }
 // Parse a CSV line respecting simple quoted fields.
@@ -1706,20 +1725,42 @@ function handleCSVFile(ev){
   reader.onload = () => {
     try{
       const text = String(reader.result || '');
-      const rows = text.split(/\r?\n/).filter(r => r.trim());
-      if(rows.length < 2){ showToast('Empty file','That CSV had no rows to import.'); return; }
-      // Detect columns from the header; if no recognizable header, assume date,desc,amount.
-      let cols = _detectCSVColumns(_parseCSVLine(rows[0]));
-      let startRow = 1;
-      if(cols.date < 0 && cols.amount < 0 && cols.debit < 0){ cols = {date:0, desc:1, amount:2, credit:-1, debit:-1}; startRow = 0; }
+      // ONE CSV PARSER, NOT TWO. This split on /\r?\n/ and fed each line to `_parseCSVLine`, which is
+      // comma-only and does not strip the UTF-8 BOM — while `parseCSV` (39-import-export.js) sniffs
+      // the delimiter from the header, handles ';' and tabs, and strips the BOM, and is the one the
+      // food, workout and scale importers use and the suite covers. Measured on a European
+      // semicolon export of six debits, the money importer reported
+      // "6 new: 0 expenses (−€0.00), 6 income (+€36,856,823,698.22)" and offered a €3.7bn tithe,
+      // because the whole line arrived as ONE field and the balance digits became the amount.
+      // No `typeof parseCSV === 'function'` guard: it is a hoisted function declaration in this same
+      // shared top-level scope, so it is always defined, and a guard that cannot fire is worse than
+      // no guard.
+      const grid = parseCSV(text).filter(function(r){ return r && r.some(function(c){ return String(c||'').trim(); }); });
+      if(grid.length < 2){ showToast('Empty file','That CSV had no rows to import.'); return; }
+      const cols = _detectCSVColumns(grid[0]);
+      const startRow = 1;
+      // AND A FILE WE CANNOT READ IS REFUSED, NOT GUESSED AT. This fell back to
+      // `{date:0, desc:1, amount:2}` whenever no header was recognised — but every real headerless
+      // export that carries a running balance puts the AMOUNT second and the DESCRIPTION third, so
+      // description and amount were swapped. `_csvAmount` was then handed a merchant name, stripped
+      // every non-digit and returned whatever number happened to be in it: measured on the same ten
+      // rows, the headered file imported "8 expenses (−$2727.51), 2 income (+$8240.00)" and the
+      // headerless one imported "0 expenses, 4 income (+$7665.00)" — income invented out of store
+      // numbers and street numbers, which is the figure the tithe and giving screens take a
+      // percentage OF. Refusing is the honest answer, and it is what the tested importer does.
+      if(cols.date < 0 && cols.amount < 0 && cols.debit < 0){
+        showToast('I can\u2019t read that file',
+          'I need a header row naming the date, the description and the amount. Export again with headers on, or add them — I will not guess which column is which.');
+        return;
+      }
       const parsed = [];
       // One decision for the whole file — a statement does not change date order halfway through.
-      const __csvDayFirst = _csvDayFirst(rows.slice(startRow, startRow + 200).map(function(r){
-        const ff = _parseCSVLine(r); return cols.date >= 0 ? (ff[cols.date] || '') : '';
+      const __csvDayFirst = _csvDayFirst(grid.slice(startRow, startRow + 200).map(function(ff){
+        return cols.date >= 0 ? (ff[cols.date] || '') : '';
       }));
-      for(let i=startRow;i<rows.length;i++){
-        const f = _parseCSVLine(rows[i]);
-        if(f.length < 2) continue;
+      for(let i=startRow;i<grid.length;i++){
+        const f = grid[i];
+        if(!f || f.length < 2) continue;
         const desc = cols.desc>=0 ? (f[cols.desc]||'') : (f[1]||'');
         let amt = 0, _fromAmountCol = false;
         if(cols.amount>=0 && f[cols.amount]){ amt = _csvAmount(f[cols.amount]); _fromAmountCol = !!amt; }
@@ -1736,6 +1777,13 @@ function handleCSVFile(ev){
         const dateStr = cols.date>=0 ? (f[cols.date]||'') : '';
         const when = dateStr ? (_csvDate(dateStr, __csvDayFirst) || new Date()) : new Date();
         const validWhen = isNaN(when.getTime()) ? new Date() : when;
+        // A TRANSFER IS A TRANSFER IN BOTH DIRECTIONS. This test was consulted only on the
+        // `amt >= 0` branch, so it caught a transfer ARRIVING as a credit and missed the identical
+        // description LEAVING as a debit: measured, "FROM SAVINGS" booked correctly as a transfer
+        // while "TRANSFER TO SAVINGS" became type:'expense' category:'Other' — so moving $500 into
+        // savings was reported as the biggest thing the person spends money on, and the preview's
+        // own count contradicted the file. One decision, before the sign is consulted.
+        const _isTransfer = /\b(transfer|from savings|to savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||''));
         parsed.push({
           desc: desc.slice(0,60),
           amount: Math.abs(amt),
@@ -1743,8 +1791,8 @@ function handleCSVFile(ev){
       // positive amounts, and every one of them was booked as income — which inflates the figure the
       // tithe and giving screens take a percentage OF. Someone is then told to give ten percent of
       // money they already had. Self-transfers become a neutral type the income totals ignore.
-      type: amt < 0 ? 'expense' : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
-          category: amt < 0 ? _autoCategory(desc) : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'Transfer' : 'Income'),
+      type: _isTransfer ? 'transfer' : (amt < 0 ? 'expense' : 'income'),
+          category: _isTransfer ? 'Transfer' : (amt < 0 ? _autoCategory(desc) : 'Income'),
           ts: validWhen.toISOString(),
           date: dayKeyOf(validWhen),
         });

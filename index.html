@@ -1762,8 +1762,27 @@ body::before,.hdr::before,.home-hero::before,.score-hero::before,.sob-clock::bef
 .logo-main,.ob-logo{color:var(--tx)}
 .logo-sub{display:none !important}
 .day-chip{display:flex !important;align-items:baseline;gap:4px;text-align:right}
-.day-n{font-family:var(--font-text) !important;font-size:15px !important;font-weight:600 !important;color:var(--tx2) !important;letter-spacing:-0.004em !important;line-height:1.3 !important}
-.day-l{display:inline !important;font-family:var(--font-text) !important;font-size:15px !important;font-weight:400 !important;text-transform:none !important;letter-spacing:-0.004em !important;color:var(--tx2) !important;margin:0 !important;line-height:1.3 !important}
+/* THE EARNED COUNT GOT ITS TREATMENT BACK. The Liquid Glass pass forced this to
+   font-family:var(--font-text);font-size:15px;color:var(--tx2) !important -- so the one number a
+   person has actually EARNED rendered as a 15px grey label beside a 44px Cormorant wordmark, which
+   is what the owner meant by "lost its earned-count treatment to the Liquid Glass nav override".
+   docs/DESIGN.md is explicit: --font-display is "headlines and the counts a person EARNS";
+   --font-text is rows, labels, buttons and data numbers. A day count is the earned count.
+   THE INK IS MEASURED, not assumed. CLAUDE.md records the tab bar's ink being --tx2 by measurement
+   because tint on a tint-coloured ground is the one pairing a material cannot rescue -- but that is
+   the floating CAPSULE, which amplifies whatever scrolls beneath it. This bar paints a SOLID
+   background (rgb(0,0,0) dark, rgb(242,242,247) light), and --go on it measures 7.42:1 in dark and
+   5.20:1 in light: AA in both, with a calibrated probe (21:1 -> 21, 4.54:1 -> 4.54) run first.
+   AND NOT THE BRAND GOLD, measured rather than assumed. --brand (#C8A96E) is this app's earned
+   colour and it reads 9.36:1 in dark -- but 4.36:1 in LIGHT, which clears AA-large (3:1, and 26px
+   qualifies) and fails AA-normal. --go is also exactly what the pre-Liquid-Glass rule at line 269
+   used, so this restores the original ink rather than inventing one, and blue is the honest signal
+   for a chip that IS tappable (openYourRecord). If the gold is ever wanted here it needs a
+   light-appearance variant first; the number is the measurement, not the preference.
+   The NUMBER is the earned count and takes the display face; the WORD stays a label in Outfit at
+   the 13px footnote floor, in the third of the three greys this app allows itself. */
+.day-n{font-family:var(--font-display) !important;font-size:26px !important;font-weight:500 !important;color:var(--go) !important;letter-spacing:0 !important;line-height:1 !important}
+.day-l{display:inline !important;font-family:var(--font-text) !important;font-size:13px !important;font-weight:400 !important;text-transform:none !important;letter-spacing:-0.004em !important;color:var(--tx3) !important;margin:0 !important;line-height:1.3 !important}
 .hdr button[aria-label="Settings"]{color:var(--go) !important}
 .hdr button[aria-label="Settings"] svg{width:24px;height:24px;stroke-width:1.8}
 /* …except on Settings itself. iOS nav bar items act on the current screen or leave it; they never
@@ -7723,7 +7742,7 @@ Amen.</div></div>
 </div>
 
 <!-- PAYDAY MODAL -->
-<div class="modal-bg" id="payday-modal">
+<div class="modal-bg" data-sheet="static" id="payday-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>You just got paid.</h3>
@@ -7735,7 +7754,7 @@ Amen.</div></div>
 </div>
 
 <!-- JOURNAL MODAL -->
-<div class="modal-bg" id="journal-modal">
+<div class="modal-bg" data-sheet="static" id="journal-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>Today’s entry</h3>
@@ -7762,7 +7781,7 @@ Amen.</div></div>
 </div>
 
 <!-- SERVING SIZE MODAL -->
-<div class="modal-bg" id="serving-modal">
+<div class="modal-bg" data-sheet="static" id="serving-modal">
   <div class="serving-modal">
     <div class="modal-handle"></div>
     <div style="font-size:var(--t-md);font-weight:500;color:var(--tx);margin-bottom:4px" id="sm-food-name"></div>
@@ -8692,7 +8711,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v652';
+const APP_VERSION = 'v653';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -39888,7 +39907,7 @@ function renderMoneyGate(){
     readCard.innerHTML = '';
     gate.innerHTML = '<div class="card">'+
       '<div class="say">I don’t know anything about your money yet.</div>'+
-      '<div class="say-body">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<div class="say-body">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. The file itself is never uploaded — it’s read on your phone; what you save is stored with the rest of your data and syncs to your account if you’re signed in.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
       '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
     '</div>';
@@ -41764,8 +41783,27 @@ function _autoCategory(desc){
     ['Tobacco', VICE_MERCHANTS.tobacco],
     ['Alcohol', VICE_MERCHANTS.alcohol],
     ['Income', ['salary','payroll','wage','deposit','centrelink']],
+    // GIVING GETS ITS OWN LINE, for the same reason the vices do. This app has a giving ledger, a
+    // pledge and a zakat screen (totry_giving, totry_giving_pledge, totry_zakat, renderGiving) --
+    // and an imported parish donation was landing in 'Other', so the one category a faith-rooted
+    // app would most want to SEE was the one it could not. Not in _DISCRETIONARY on purpose:
+    // giving is not discretionary spending in this app's worldview.
+    ['Giving', ['parish','church','mosque','temple','synagogue','vinnies','st vincent','salvation army','red cross','unicef','charity','donation','tithe','offering','oxfam','world vision']],
   ];
-  for(const [cat, kws] of rules){ if(kws.some(k => d.includes(k))) return cat; }
+  // A WORD, NOT A SUBSTRING. This was `d.includes(k)`, so 'rent' in the Bills list matched inside
+  // "PLANNED PAREN(THOOD)" -- measured, "PLANNED PARENTHOOD DONATION" filed under Bills -- and
+  // 'train' would take "TRAINING", 'pub' would take "REPUBLIC" and 'water' would take
+  // "WATERSTONES". It is the word-prefix collision CLAUDE.md already records for "better off
+  // without ME-dication" and 'plan' inside 'planet', arriving in the money categoriser. The two
+  // hand-rolled boundary hacks in the lists above -- 'bar ' and 'bp ', with their trailing spaces --
+  // are the tell that the author already knew; they are trimmed now because \b does it properly
+  // (\bbar\b does not match "BARBER").
+  const _word = function(k){
+    const t = String(k).trim(); if(!t) return false;
+    try{ return new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, function(c){ return '\\' + c; }) + '\\b', 'i').test(d); }
+    catch(_){ return d.includes(t); }
+  };
+  for(const [cat, kws] of rules){ if(kws.some(_word)) return cat; }
   return 'Other';
 }
 // Parse a CSV line respecting simple quoted fields.
@@ -41868,20 +41906,42 @@ function handleCSVFile(ev){
   reader.onload = () => {
     try{
       const text = String(reader.result || '');
-      const rows = text.split(/\r?\n/).filter(r => r.trim());
-      if(rows.length < 2){ showToast('Empty file','That CSV had no rows to import.'); return; }
-      // Detect columns from the header; if no recognizable header, assume date,desc,amount.
-      let cols = _detectCSVColumns(_parseCSVLine(rows[0]));
-      let startRow = 1;
-      if(cols.date < 0 && cols.amount < 0 && cols.debit < 0){ cols = {date:0, desc:1, amount:2, credit:-1, debit:-1}; startRow = 0; }
+      // ONE CSV PARSER, NOT TWO. This split on /\r?\n/ and fed each line to `_parseCSVLine`, which is
+      // comma-only and does not strip the UTF-8 BOM — while `parseCSV` (39-import-export.js) sniffs
+      // the delimiter from the header, handles ';' and tabs, and strips the BOM, and is the one the
+      // food, workout and scale importers use and the suite covers. Measured on a European
+      // semicolon export of six debits, the money importer reported
+      // "6 new: 0 expenses (−€0.00), 6 income (+€36,856,823,698.22)" and offered a €3.7bn tithe,
+      // because the whole line arrived as ONE field and the balance digits became the amount.
+      // No `typeof parseCSV === 'function'` guard: it is a hoisted function declaration in this same
+      // shared top-level scope, so it is always defined, and a guard that cannot fire is worse than
+      // no guard.
+      const grid = parseCSV(text).filter(function(r){ return r && r.some(function(c){ return String(c||'').trim(); }); });
+      if(grid.length < 2){ showToast('Empty file','That CSV had no rows to import.'); return; }
+      const cols = _detectCSVColumns(grid[0]);
+      const startRow = 1;
+      // AND A FILE WE CANNOT READ IS REFUSED, NOT GUESSED AT. This fell back to
+      // `{date:0, desc:1, amount:2}` whenever no header was recognised — but every real headerless
+      // export that carries a running balance puts the AMOUNT second and the DESCRIPTION third, so
+      // description and amount were swapped. `_csvAmount` was then handed a merchant name, stripped
+      // every non-digit and returned whatever number happened to be in it: measured on the same ten
+      // rows, the headered file imported "8 expenses (−$2727.51), 2 income (+$8240.00)" and the
+      // headerless one imported "0 expenses, 4 income (+$7665.00)" — income invented out of store
+      // numbers and street numbers, which is the figure the tithe and giving screens take a
+      // percentage OF. Refusing is the honest answer, and it is what the tested importer does.
+      if(cols.date < 0 && cols.amount < 0 && cols.debit < 0){
+        showToast('I can\u2019t read that file',
+          'I need a header row naming the date, the description and the amount. Export again with headers on, or add them — I will not guess which column is which.');
+        return;
+      }
       const parsed = [];
       // One decision for the whole file — a statement does not change date order halfway through.
-      const __csvDayFirst = _csvDayFirst(rows.slice(startRow, startRow + 200).map(function(r){
-        const ff = _parseCSVLine(r); return cols.date >= 0 ? (ff[cols.date] || '') : '';
+      const __csvDayFirst = _csvDayFirst(grid.slice(startRow, startRow + 200).map(function(ff){
+        return cols.date >= 0 ? (ff[cols.date] || '') : '';
       }));
-      for(let i=startRow;i<rows.length;i++){
-        const f = _parseCSVLine(rows[i]);
-        if(f.length < 2) continue;
+      for(let i=startRow;i<grid.length;i++){
+        const f = grid[i];
+        if(!f || f.length < 2) continue;
         const desc = cols.desc>=0 ? (f[cols.desc]||'') : (f[1]||'');
         let amt = 0, _fromAmountCol = false;
         if(cols.amount>=0 && f[cols.amount]){ amt = _csvAmount(f[cols.amount]); _fromAmountCol = !!amt; }
@@ -41898,6 +41958,13 @@ function handleCSVFile(ev){
         const dateStr = cols.date>=0 ? (f[cols.date]||'') : '';
         const when = dateStr ? (_csvDate(dateStr, __csvDayFirst) || new Date()) : new Date();
         const validWhen = isNaN(when.getTime()) ? new Date() : when;
+        // A TRANSFER IS A TRANSFER IN BOTH DIRECTIONS. This test was consulted only on the
+        // `amt >= 0` branch, so it caught a transfer ARRIVING as a credit and missed the identical
+        // description LEAVING as a debit: measured, "FROM SAVINGS" booked correctly as a transfer
+        // while "TRANSFER TO SAVINGS" became type:'expense' category:'Other' — so moving $500 into
+        // savings was reported as the biggest thing the person spends money on, and the preview's
+        // own count contradicted the file. One decision, before the sign is consulted.
+        const _isTransfer = /\b(transfer|from savings|to savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||''));
         parsed.push({
           desc: desc.slice(0,60),
           amount: Math.abs(amt),
@@ -41905,8 +41972,8 @@ function handleCSVFile(ev){
       // positive amounts, and every one of them was booked as income — which inflates the figure the
       // tithe and giving screens take a percentage OF. Someone is then told to give ten percent of
       // money they already had. Self-transfers become a neutral type the income totals ignore.
-      type: amt < 0 ? 'expense' : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
-          category: amt < 0 ? _autoCategory(desc) : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'Transfer' : 'Income'),
+      type: _isTransfer ? 'transfer' : (amt < 0 ? 'expense' : 'income'),
+          category: _isTransfer ? 'Transfer' : (amt < 0 ? _autoCategory(desc) : 'Income'),
           ts: validWhen.toISOString(),
           date: dayKeyOf(validWhen),
         });
@@ -53442,7 +53509,38 @@ function showToast(title,msg,onTap){
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
-function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
+// CLOSE WHAT THE SHELL OWNS; DESTROY ONLY WHAT WAS APPENDED.
+// This was `if(m) m.remove()`, and the three universal dismiss gestures all route through here --
+// a backdrop tap, a grab-handle tap and Escape. Three of the app's sheets exist ONLY as literal
+// markup in the shell and are never recreated: #payday-modal, #journal-modal and #serving-modal.
+// Measured 9 of 9 (three sheets x three gestures): the node was gone, and the next call to its
+// opener threw on its own first line -- "Cannot set properties of null (setting 'value')" in
+// openJournal, "(reading 'classList')" in openPayday, "(setting 'textContent')" in
+// openServingModal. So one stray thumb 40px below the header killed the journal composer, the
+// payday planner and ALL NINE food-logging paths for the rest of the session, and took the
+// paragraph the person had just typed with it -- no "discard?", no draft key. Only killing the app
+// restored them.
+// THE SHEETS' OWN CANCEL BUTTONS ARE THE PROOF IT WAS UNINTENDED: each of the three closes
+// non-destructively from its own button (classList.remove('open'), or closeServingModal()), so the
+// same sheet survived one exit route and was destroyed by the other three. And the Escape handler's
+// own comment below NAMES these three as "STATIC markup that is always present and merely hidden"
+// -- and then handed them here.
+// MARKED, NOT LISTED. The shell tags them `data-sheet="static"` so this is a property of the sheet
+// and a fourth one added later inherits the behaviour; a hardcoded set of three ids is the shape
+// that went stale for preflight's usage descriptions. A test asserts every literal .modal-bg in the
+// shell carries the attribute.
+function closeModal(el){
+  const m = el.closest('.modal-bg'); if(!m) return;
+  if(m.dataset && m.dataset.sheet === 'static'){
+    // The serving sheet has real bookkeeping on the way out -- closeServingModal() also runs
+    // _bcAbandonQueue(), so a barcode trolley that is dismissed rather than finished is accounted
+    // for instead of silently stranded. Going through the named closer is what keeps that honest.
+    if(m.id === 'serving-modal' && typeof closeServingModal === 'function'){ closeServingModal(); return; }
+    m.classList.remove('open');
+    return;
+  }
+  m.remove();
+}
 
 // ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
 // Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a

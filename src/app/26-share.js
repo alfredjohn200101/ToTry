@@ -245,7 +245,38 @@ function showToast(title,msg,onTap){
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
-function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
+// CLOSE WHAT THE SHELL OWNS; DESTROY ONLY WHAT WAS APPENDED.
+// This was `if(m) m.remove()`, and the three universal dismiss gestures all route through here --
+// a backdrop tap, a grab-handle tap and Escape. Three of the app's sheets exist ONLY as literal
+// markup in the shell and are never recreated: #payday-modal, #journal-modal and #serving-modal.
+// Measured 9 of 9 (three sheets x three gestures): the node was gone, and the next call to its
+// opener threw on its own first line -- "Cannot set properties of null (setting 'value')" in
+// openJournal, "(reading 'classList')" in openPayday, "(setting 'textContent')" in
+// openServingModal. So one stray thumb 40px below the header killed the journal composer, the
+// payday planner and ALL NINE food-logging paths for the rest of the session, and took the
+// paragraph the person had just typed with it -- no "discard?", no draft key. Only killing the app
+// restored them.
+// THE SHEETS' OWN CANCEL BUTTONS ARE THE PROOF IT WAS UNINTENDED: each of the three closes
+// non-destructively from its own button (classList.remove('open'), or closeServingModal()), so the
+// same sheet survived one exit route and was destroyed by the other three. And the Escape handler's
+// own comment below NAMES these three as "STATIC markup that is always present and merely hidden"
+// -- and then handed them here.
+// MARKED, NOT LISTED. The shell tags them `data-sheet="static"` so this is a property of the sheet
+// and a fourth one added later inherits the behaviour; a hardcoded set of three ids is the shape
+// that went stale for preflight's usage descriptions. A test asserts every literal .modal-bg in the
+// shell carries the attribute.
+function closeModal(el){
+  const m = el.closest('.modal-bg'); if(!m) return;
+  if(m.dataset && m.dataset.sheet === 'static'){
+    // The serving sheet has real bookkeeping on the way out -- closeServingModal() also runs
+    // _bcAbandonQueue(), so a barcode trolley that is dismissed rather than finished is accounted
+    // for instead of silently stranded. Going through the named closer is what keeps that honest.
+    if(m.id === 'serving-modal' && typeof closeServingModal === 'function'){ closeServingModal(); return; }
+    m.classList.remove('open');
+    return;
+  }
+  m.remove();
+}
 
 // ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
 // Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a

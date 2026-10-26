@@ -237,7 +237,7 @@ function renderMoneyGate(){
     readCard.innerHTML = '';
     gate.innerHTML = '<div class="card">'+
       '<div class="say">I don’t know anything about your money yet.</div>'+
-      '<div class="say-body">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<div class="say-body">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. The file itself is never uploaded — it’s read on your phone; what you save is stored with the rest of your data and syncs to your account if you’re signed in.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
       '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
     '</div>';
