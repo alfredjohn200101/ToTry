@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v656-nobody-is-offered-another-tradition'
+const CACHE = 'totry-v657-the-gate-stops-writing-to-production'
 
 const CORE = [
   './',

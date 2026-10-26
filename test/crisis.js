@@ -757,6 +757,11 @@ const PROBE = `(() => {
 (async () => {
   const server = await serve();
   const browser = await chromium.launch({ headless:true });
+  // THE GATE WAS WRITING TO PRODUCTION. Every one of the 169 rows in the live `feedback`
+  // table was this gate's own panel strings, and 86% of `app_events` was panels' own
+  // network-cut check. Wrapped at the BROWSER so every context inherits it, including
+  // ones added later — there are 20+ newContext calls in these three files.
+  require('./no-production-writes.js').installNoProductionWrites(browser);
   const findings = [];
   let checks = 0;
 
@@ -1124,6 +1129,7 @@ const PROBE = `(() => {
 
   await browser.close(); server.close();
   console.log('');
+  require('./no-production-writes.js').reportNoProductionWrites('crisis');
   if (findings.length) { findings.forEach(f => console.log('  ✗ ' + f)); console.log(`\n✗ ${findings.length} finding(s)\n`); process.exit(1); }
   console.log(`✓ a real helpline is visible and dialable at all ${checks - DOORS.length} crisis doors\n`);
   console.log(`  and the card renders every route in the kind set at ${cardChecks} kinds \u2014 an overdose beside a hopelessness clause used to return seven helplines and no ambulance`);

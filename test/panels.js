@@ -51,6 +51,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
 (async()=>{
   const server=await serve();
   const browser=await chromium.launch({headless:true});
+  // THE GATE WAS WRITING TO PRODUCTION. Every one of the 169 rows in the live `feedback`
+  // table was this gate's own panel strings, and 86% of `app_events` was panels' own
+  // network-cut check. Wrapped at the BROWSER so every context inherits it, including
+  // ones added later — there are 20+ newContext calls in these three files.
+  require('./no-production-writes.js').installNoProductionWrites(browser);
   const findings=[];
   // A THIRD PERSON, WHOSE DATA IS THE KIND THAT ACTUALLY BREAKS THINGS. The two above hold plausible
   // data and have missed every input-shaped defect of the last three sweeps: apostrophes killing
@@ -5283,5 +5288,6 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     real.forEach(f => console.log('  \u2717 ' + f));
   }
   console.log(`\n${real.length ? '\u2717' : '\u2713'} ${real.length ? real.length + ' findings' : 'all panels render for both people'}\n`);
+  require('./no-production-writes.js').reportNoProductionWrites('panels');
   process.exit(real.length ? 1 : 0);
 })();

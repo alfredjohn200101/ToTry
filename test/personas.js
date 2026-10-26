@@ -175,6 +175,11 @@ const serve = () => new Promise(res => {
   }
   const server = await serve();
   const browser = await chromium.launch({ headless: true });
+  // THE GATE WAS WRITING TO PRODUCTION. Every one of the 169 rows in the live `feedback`
+  // table was this gate's own panel strings, and 86% of `app_events` was panels' own
+  // network-cut check. Wrapped at the BROWSER so every context inherits it, including
+  // ones added later — there are 20+ newContext calls in these three files.
+  require('./no-production-writes.js').installNoProductionWrites(browser);
 
   for (const p of PERSONAS) {
     const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
@@ -477,5 +482,7 @@ const serve = () => new Promise(res => {
     failures.forEach(f => console.log('  ✗ ' + f));
   }
   console.log(`\n${fail ? '✗' : '✓'} ${pass} passed, ${fail} failed\n`);
+  require('./no-production-writes.js').reportNoProductionWrites('personas');
   process.exit(fail ? 1 : 0);
+
 })();
