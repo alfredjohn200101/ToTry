@@ -1797,7 +1797,10 @@ function bridgeToRealHelp(reason){
         '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Real people who can help</div>'+
         '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.9">'+
           '\u2022 <b style="color:var(--tx)">Someone you trust</b> \u2014 a sibling, a friend, a mentor. Even just saying it out loud to one person breaks its power.<br>'+
-          '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
+          // FAITH-SWAPPED, and ABSENT for a secular person rather than replaced \u2014 the two rows
+          // either side already name a friend and a counsellor, so there is nothing missing.
+          ((function(){ const g = (typeof faithGuide==='function') ? faithGuide() : null;
+            return g ? '\u2022 <b style="color:var(--tx)">' + _esc(g.label) + '</b> \u2014 ' + g.note + '<br>' : ''; })())+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
           // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`

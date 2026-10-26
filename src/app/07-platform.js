@@ -130,11 +130,16 @@ function _lockOverlay(){
     // It sits at the FOOT now rather than floating mid-screen — where a person looks for help.
     '<div style="padding-top:14px;border-top:1px solid var(--bd);max-width:320px;width:100%">' +
       '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
+      // AND IT RENDERS FROM CRISIS_LINES, because three hardcoded numbers is how a list drifts in
+      // its LENGTH rather than its values. This strip carried Lifeline, 988 and 116 123 and was
+      // therefore missing the Suicide Call Back Service and 13YARN — the Aboriginal & Torres Strait
+      // Islander line — on a surface shown to somebody whose face the phone would not read at 2am.
+      // `_bridgeLines()` is the same renderer the bridge-to-real-help uses, it carries its own
+      // tested fallback, and 04-fight.js loads before this module in the fixed order, so the call
+      // is safe at call time. One list, four surfaces, no fourth copy to forget.
       '<div style="font-size:var(--t-sm);line-height:1.9;color:var(--tx3)">' +
-        '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
-        '&#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&#183;&nbsp; ' +
-        '&#127468;&#127463; <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>' +
-        '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world' +
+        ((typeof _bridgeLines === 'function') ? _bridgeLines()
+          : 'Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a>') +
       '</div>' +
     '</div>';
   document.body.appendChild(el);

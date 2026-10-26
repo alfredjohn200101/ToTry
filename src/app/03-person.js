@@ -3787,6 +3787,30 @@ const FAITHS = {
 function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
 function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
 
+// THE HUMAN BEYOND ME, IN THIS PERSON'S OWN TRADITION. `bridgeToRealHelp` — the surface shown by
+// seven callers including three Feeling Door paths and the eating-disorder card — hardcoded
+// "A priest — confession and a real conversation" with no faith branching at all, so a Muslim, a
+// Hindu, a Buddhist and a secular person were each offered confession as if it were theirs. Its
+// SIBLING `openRecoveryBridge` was already faith-aware, which is what makes this the half-applied
+// shape this repo keeps paying for: the fix reached one bridge and not the one beside it.
+// The per-tradition wording is not new — `_planClose` already had exactly this map as a local
+// const, so this hoists the app's own language rather than inventing a second copy.
+// Returns null when there is nothing honest to offer: a SECULAR person has no spiritual guide and
+// the rows above already name a friend and a counsellor, and a person who has dialled faith down to
+// 'light' has asked not to be addressed this way. An absent row beats a wrong one.
+function faithGuide(){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return null;
+    const t = faithTradition();
+    return {
+      christianity: {label:'A priest', note:'confession and a real conversation. Grace you can\u2019t get from a screen.', beyond:'a priest, or one person who\u2019ll pray it with you'},
+      islam:        {label:'Your imam', note:'someone who knows the tradition and has sat with people in exactly this.', beyond:'your imam, or one person who\u2019ll make du\u2019a with you'},
+      hinduism:     {label:'A teacher', note:'a guru or an elder who has walked this further than you have.', beyond:'a teacher, or one person who\u2019ll sit with you'},
+      buddhism:     {label:'A teacher, or your sangha', note:'someone further down the path, and a community that does not flinch.', beyond:'a teacher, or a sangha \u2014 someone further down the path'}
+    }[t] || null;
+  }catch(_){ return null; }
+}
+
 // ── THE VOCABULARY OF A NUDGE ───────────────────────────────────────────────────────────────────
 // The registry has carried per-tradition words since the multi-faith turnaround, and the screens
 // that were BUILT multi-faith use them. The ones that predate it never did, so the app's own nudges
@@ -5352,7 +5376,8 @@ function _planClose(id,i,finished){
   const el=document.getElementById('plans-content'); if(!el) return;
   const p=_planById(id); if(!p) return;
   const days=_planDays(p), f=curFaith(), t=faithTradition();
-  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha — someone further down the path',secular:'one person who’ll actually hear it — a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
+  const _fg = (typeof faithGuide === 'function') ? faithGuide() : null;
+  const beyond = (_fg && _fg.beyond) || 'one person who’ll actually hear it — a friend, or a counsellor';
   // A completion is the one place a screen may centre: the empty-state component, with its title in the
   // ToTry face at the greeting's size. The "take it past the app" card beneath it reads left to right,
   // like every card. Every line here was 15px in a hand-set colour, the title a fake 700.

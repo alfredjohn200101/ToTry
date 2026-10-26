@@ -4994,7 +4994,14 @@ function renderNutritionLog(){
       catch(_){ return today; }
     })();
     dateEl.textContent = dayShown;
-    if(st.n >= 2){
+    // AND GENTLE MODE DOES NOT GET A STREAK. The streak and the flame are kept on purpose — the
+    // owner's call, 26 Oct 2026 — but `nutGentle()` is the mode somebody turns ON because counting
+    // was the thing that hurt them, and it already hides the numbers everywhere else on this screen.
+    // Showing them a flame and "keep it" is the one place the streak becomes the pressure they
+    // asked to be free of, and `celebrateNutMilestone` fires a haptic on top of it. Keeping the
+    // streak globally and suppressing it here is not a contradiction: it is the same mechanic
+    // honouring a setting the person chose.
+    if(st.n >= 2 && !(typeof nutGentle === 'function' && nutGentle())){
     // THIS CHIP LIVES INSIDE .cal-date, WHICH IS nowrap + overflow:hidden + text-overflow:ellipsis.
     // "N-day streak · log today to keep it" did not fit and never had: measured, a person on a
     // 2-day streak read "2-day streak · l" — a dangling ellipsis exactly where the nudge to keep

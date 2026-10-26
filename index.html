@@ -4046,6 +4046,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="ios-list">
         <a class="ios-row" href="tel:131114"><span class="ios-row-body"><span class="ios-row-title">Lifeline</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">13 11 14</span></a>
         <a class="ios-row" href="tel:1300224636"><span class="ios-row-body"><span class="ios-row-title">Beyond Blue</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">1300 22 4636</span></a>
+        <a class="ios-row" href="tel:1300659467"><span class="ios-row-body"><span class="ios-row-title">Suicide Call Back Service</span><span class="ios-row-sub">Australia &middot; phone &amp; online chat</span></span><span class="ios-row-value">1300 659 467</span></a>
+        <a class="ios-row" href="tel:139276"><span class="ios-row-body"><span class="ios-row-title">13YARN</span><span class="ios-row-sub">Aboriginal &amp; Torres Strait Islander</span></span><span class="ios-row-value">13 92 76</span></a>
         <a class="ios-row" href="tel:988"><span class="ios-row-body"><span class="ios-row-title">988 Lifeline</span><span class="ios-row-sub">United States</span></span><span class="ios-row-value">988</span></a>
         <a class="ios-row" href="tel:116123"><span class="ios-row-body"><span class="ios-row-title">Samaritans</span><span class="ios-row-sub">United Kingdom</span></span><span class="ios-row-value">116 123</span></a>
         <a class="ios-row" href="https://findahelpline.com" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title">findahelpline.com</span><span class="ios-row-sub">Anywhere in the world</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></a>
@@ -4085,6 +4087,8 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="ios-list">
         <a class="ios-row" href="tel:131114"><span class="ios-row-body"><span class="ios-row-title">Lifeline</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">13 11 14</span></a>
         <a class="ios-row" href="tel:1300224636"><span class="ios-row-body"><span class="ios-row-title">Beyond Blue</span><span class="ios-row-sub">Australia</span></span><span class="ios-row-value">1300 22 4636</span></a>
+        <a class="ios-row" href="tel:1300659467"><span class="ios-row-body"><span class="ios-row-title">Suicide Call Back Service</span><span class="ios-row-sub">Australia &middot; phone &amp; online chat</span></span><span class="ios-row-value">1300 659 467</span></a>
+        <a class="ios-row" href="tel:139276"><span class="ios-row-body"><span class="ios-row-title">13YARN</span><span class="ios-row-sub">Aboriginal &amp; Torres Strait Islander</span></span><span class="ios-row-value">13 92 76</span></a>
         <a class="ios-row" href="tel:988"><span class="ios-row-body"><span class="ios-row-title">988 Lifeline</span><span class="ios-row-sub">United States</span></span><span class="ios-row-value">988</span></a>
         <a class="ios-row" href="tel:116123"><span class="ios-row-body"><span class="ios-row-title">Samaritans</span><span class="ios-row-sub">United Kingdom</span></span><span class="ios-row-value">116 123</span></a>
         <a class="ios-row" href="https://findahelpline.com" target="_blank" rel="noopener"><span class="ios-row-body"><span class="ios-row-title">findahelpline.com</span><span class="ios-row-sub">Anywhere in the world</span></span><span class="ios-row-chevron"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="14" height="14"><polyline points="9,4 17,12 9,20"/></svg></span></a>
@@ -7164,6 +7168,14 @@ Amen.</div></div>
     <div class="crisis-title"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> If you need real help right now</div>
     <div class="crisis-line"><span class="crisis-name">Lifeline</span><a href="tel:131114">13 11 14</a></div>
     <div class="crisis-line"><span class="crisis-name">Beyond Blue</span><a href="tel:1300224636">1300 22 4636</a></div>
+    <div class="crisis-line"><span class="crisis-name">Suicide Call Back Service</span><a href="tel:1300659467">1300 659 467</a></div>
+    <!-- 13YARN was absent from all four static crisis surfaces while CRISIS_LINES has carried it
+         since 12 Oct. An Aboriginal or Torres Strait Islander person who opens this app at their
+         worst moment and does not sign in was shown four numbers and none of them was the line
+         built for them — on the screens that exist for exactly that person. A list that cannot
+         drift in its NUMBERS can still drift in its LENGTH, and the static shell cannot call a
+         function, so these are inlined literals held to CRISIS_LINES by a test. -->
+    <div class="crisis-line"><span class="crisis-name">13YARN</span><a href="tel:139276">13 92 76</a></div>
     <!-- LIFELINE TEXT, 0477 13 11 14, CHECKED AGAINST LIFELINE'S OWN SITE (18 Sep 2026: "Text us —
          0477 13 11 14"). This row read "Crisis Text / Text HOME to / 0477 01 3755": a number that is
          published nowhere, carrying the keyword of Crisis Text Line, which is a US service on 741741.
@@ -8735,7 +8747,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v655';
+const APP_VERSION = 'v656';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15642,6 +15654,30 @@ const FAITHS = {
 function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
 function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
 
+// THE HUMAN BEYOND ME, IN THIS PERSON'S OWN TRADITION. `bridgeToRealHelp` — the surface shown by
+// seven callers including three Feeling Door paths and the eating-disorder card — hardcoded
+// "A priest — confession and a real conversation" with no faith branching at all, so a Muslim, a
+// Hindu, a Buddhist and a secular person were each offered confession as if it were theirs. Its
+// SIBLING `openRecoveryBridge` was already faith-aware, which is what makes this the half-applied
+// shape this repo keeps paying for: the fix reached one bridge and not the one beside it.
+// The per-tradition wording is not new — `_planClose` already had exactly this map as a local
+// const, so this hoists the app's own language rather than inventing a second copy.
+// Returns null when there is nothing honest to offer: a SECULAR person has no spiritual guide and
+// the rows above already name a friend and a counsellor, and a person who has dialled faith down to
+// 'light' has asked not to be addressed this way. An absent row beats a wrong one.
+function faithGuide(){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return null;
+    const t = faithTradition();
+    return {
+      christianity: {label:'A priest', note:'confession and a real conversation. Grace you can\u2019t get from a screen.', beyond:'a priest, or one person who\u2019ll pray it with you'},
+      islam:        {label:'Your imam', note:'someone who knows the tradition and has sat with people in exactly this.', beyond:'your imam, or one person who\u2019ll make du\u2019a with you'},
+      hinduism:     {label:'A teacher', note:'a guru or an elder who has walked this further than you have.', beyond:'a teacher, or one person who\u2019ll sit with you'},
+      buddhism:     {label:'A teacher, or your sangha', note:'someone further down the path, and a community that does not flinch.', beyond:'a teacher, or a sangha \u2014 someone further down the path'}
+    }[t] || null;
+  }catch(_){ return null; }
+}
+
 // ── THE VOCABULARY OF A NUDGE ───────────────────────────────────────────────────────────────────
 // The registry has carried per-tradition words since the multi-faith turnaround, and the screens
 // that were BUILT multi-faith use them. The ones that predate it never did, so the app's own nudges
@@ -17207,7 +17243,8 @@ function _planClose(id,i,finished){
   const el=document.getElementById('plans-content'); if(!el) return;
   const p=_planById(id); if(!p) return;
   const days=_planDays(p), f=curFaith(), t=faithTradition();
-  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha — someone further down the path',secular:'one person who’ll actually hear it — a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
+  const _fg = (typeof faithGuide === 'function') ? faithGuide() : null;
+  const beyond = (_fg && _fg.beyond) || 'one person who’ll actually hear it — a friend, or a counsellor';
   // A completion is the one place a screen may centre: the empty-state component, with its title in the
   // ToTry face at the greeting's size. The "take it past the app" card beneath it reads left to right,
   // like every card. Every line here was 15px in a hand-set colour, the title a fake 700.
@@ -20287,7 +20324,10 @@ function bridgeToRealHelp(reason){
         '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Real people who can help</div>'+
         '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.9">'+
           '\u2022 <b style="color:var(--tx)">Someone you trust</b> \u2014 a sibling, a friend, a mentor. Even just saying it out loud to one person breaks its power.<br>'+
-          '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
+          // FAITH-SWAPPED, and ABSENT for a secular person rather than replaced \u2014 the two rows
+          // either side already name a friend and a counsellor, so there is nothing missing.
+          ((function(){ const g = (typeof faithGuide==='function') ? faithGuide() : null;
+            return g ? '\u2022 <b style="color:var(--tx)">' + _esc(g.label) + '</b> \u2014 ' + g.note + '<br>' : ''; })())+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
           // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`
@@ -24077,11 +24117,16 @@ function _lockOverlay(){
     // It sits at the FOOT now rather than floating mid-screen — where a person looks for help.
     '<div style="padding-top:14px;border-top:1px solid var(--bd);max-width:320px;width:100%">' +
       '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
+      // AND IT RENDERS FROM CRISIS_LINES, because three hardcoded numbers is how a list drifts in
+      // its LENGTH rather than its values. This strip carried Lifeline, 988 and 116 123 and was
+      // therefore missing the Suicide Call Back Service and 13YARN — the Aboriginal & Torres Strait
+      // Islander line — on a surface shown to somebody whose face the phone would not read at 2am.
+      // `_bridgeLines()` is the same renderer the bridge-to-real-help uses, it carries its own
+      // tested fallback, and 04-fight.js loads before this module in the fixed order, so the call
+      // is safe at call time. One list, four surfaces, no fourth copy to forget.
       '<div style="font-size:var(--t-sm);line-height:1.9;color:var(--tx3)">' +
-        '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
-        '&#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&#183;&nbsp; ' +
-        '&#127468;&#127463; <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>' +
-        '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world' +
+        ((typeof _bridgeLines === 'function') ? _bridgeLines()
+          : 'Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a>') +
       '</div>' +
     '</div>';
   document.body.appendChild(el);
@@ -37143,7 +37188,14 @@ function renderNutritionLog(){
       catch(_){ return today; }
     })();
     dateEl.textContent = dayShown;
-    if(st.n >= 2){
+    // AND GENTLE MODE DOES NOT GET A STREAK. The streak and the flame are kept on purpose — the
+    // owner's call, 26 Oct 2026 — but `nutGentle()` is the mode somebody turns ON because counting
+    // was the thing that hurt them, and it already hides the numbers everywhere else on this screen.
+    // Showing them a flame and "keep it" is the one place the streak becomes the pressure they
+    // asked to be free of, and `celebrateNutMilestone` fires a haptic on top of it. Keeping the
+    // streak globally and suppressing it here is not a contradiction: it is the same mechanic
+    // honouring a setting the person chose.
+    if(st.n >= 2 && !(typeof nutGentle === 'function' && nutGentle())){
     // THIS CHIP LIVES INSIDE .cal-date, WHICH IS nowrap + overflow:hidden + text-overflow:ellipsis.
     // "N-day streak · log today to keep it" did not fit and never had: measured, a person on a
     // 2-day streak read "2-day streak · l" — a dangling ellipsis exactly where the nudge to keep

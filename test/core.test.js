@@ -13057,6 +13057,120 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   }
 }
 
+// ══ NOBODY IS OFFERED ANOTHER TRADITION'S HUMAN ════════════════════════════════════════════
+// `bridgeToRealHelp` hardcoded "A priest \u2014 confession and a real conversation" with ZERO faith
+// branching, on a surface with seven callers (three Feeling Door paths, the eating-disorder card,
+// three fuel-plan fallbacks). Its sibling `openRecoveryBridge` was already faith-aware, which makes
+// this the half-applied shape: the fix reached one bridge and not the one beside it. Measured
+// 26 Oct 2026, and this repo had already recorded the identical defect once \u2014 "the app offered a
+// Muslim a Confession tracker as if it were his."
+// EXECUTED across all five traditions, because a grep for `faithGuide(` passes on a wrong mapping.
+{
+  H.section('nobody is offered another tradition\u2019s human');
+  let TRAD = 'secular', LEVEL = 'full';
+  const F = H.load(['faithGuide','faithTradition','faithLevel'], {
+    ls: (k) => k === 'totry_faith_tradition' ? TRAD : (k === 'totry_faith_level' ? LEVEL : null),
+  });
+  const expect = { christianity:/priest/i, islam:/imam/i, hinduism:/teacher/i, buddhism:/teacher|sangha/i };
+  // Only EXCLUSIVE words cross-check: "teacher" is shared by hinduism and buddhism honestly, and a
+  // first version of this flagged that as a collision and reported the app broken when it was the
+  // measurement that was wrong.
+  const exclusive = { priest:'christianity', imam:'islam', sangha:'buddhism', confession:'christianity' };
+  ['christianity','islam','hinduism','buddhism'].forEach(t => {
+    TRAD = t; LEVEL = 'full';
+    const g = F.faithGuide();
+    H.ok(!!(g && expect[t].test(g.label)),
+      t + ' is offered its own human (' + (g ? g.label : 'NONE') + ')');
+    const foreign = Object.entries(exclusive)
+      .filter(([w, owner]) => owner !== t && new RegExp(w, 'i').test((g ? g.label + ' ' + g.note : '')));
+    H.ok(foreign.length === 0,
+      '  ...and none of anyone else\u2019s' + (foreign.length ? ' \u2192 carries ' + foreign.map(f => f[0]).join(', ') : ''));
+  });
+  // A SECULAR PERSON GETS NO ROW AT ALL, which is the decision rather than an oversight: the rows
+  // either side already name a friend and a counsellor, so an absent row beats a wrong one.
+  TRAD = 'secular'; LEVEL = 'full';
+  H.ok(F.faithGuide() === null, 'a secular person is offered no spiritual guide row');
+  // And a person who dialled faith down to 'light' has asked not to be addressed this way.
+  TRAD = 'christianity'; LEVEL = 'light';
+  H.ok(F.faithGuide() === null, 'faith on light suppresses the row even for a Christian');
+
+  // ONE SOURCE, not a second copy — the defect this repo pays for most is the map duplicated at a
+  // call site and then half-updated. Comment-stripped, because the explanation above names them.
+  const code = H.code(H.html);
+  H.ok((code.match(/faithGuide\(\)/g) || []).length >= 3,
+    'faithGuide() has the declaration plus at least two consumers (bridgeToRealHelp and _planClose)');
+  H.ok(!/A priest<\/b>/.test(code),
+    'and no hardcoded "A priest" label survives in the bundle');
+}
+
+// ══ THE STATIC CRISIS SURFACES CARRY THE WHOLE LIST ═════════════════════════════════════════
+// `bridgeToRealHelp` was fixed on 12 Oct to render from CRISIS_LINES, under the finding that "a list
+// that cannot drift in its NUMBERS can still drift in its LENGTH". The sweep stopped there. Measured
+// 26 Oct 2026: `13YARN|139276` returned ZERO hits in src/shell-head.html while CRISIS_LINES had
+// carried 13YARN for two weeks. The sign-in screen, the auth-error screen and the Settings crisis
+// card each dialled four numbers — Lifeline, Beyond Blue, 988, Samaritans — so an Aboriginal or
+// Torres Strait Islander person who opened this app at their worst moment and did not sign in was
+// shown four numbers and NONE of them was the line built for them, on the screens whose own comment
+// says "crisis help must never sit behind a login".
+// The static shell cannot call a function, so these are inlined literals — the same duplication
+// svgIcon()'s literals have, made safe the same way: by a test that holds them to the one source.
+{
+  H.section('the static crisis surfaces carry every Australian line in CRISIS_LINES');
+
+  // Bracket-match the array; never slice a fixed window. A 2600-char slice once ran off the end of
+  // CRISIS_LINES into MEDICAL_LINES, which legitimately carries 111 — the NHS non-emergency line,
+  // right on a medical card and wrong on a suicide one — and absorbed a planted 111 as verified.
+  const ci = H.html.indexOf('const CRISIS_LINES = [');
+  const cj = H.html.indexOf('];', ci);
+  H.ok(ci > 0 && cj > ci, 'CRISIS_LINES located by bracket match');
+  const LINES = new Function(H.html.slice(ci, cj + 2) + '\nreturn CRISIS_LINES;')();
+  const auPhones = LINES.filter(r => r.region === 'Australia')
+                        .map(r => ({ name: r.name, digits: String(r.contact).replace(/\D/g, '') }))
+                        .filter(r => r.digits.length >= 3);
+  H.ok(auPhones.length >= 4,
+    'CRISIS_LINES carries ' + auPhones.length + ' Australian phone lines (' +
+    auPhones.map(r => r.name).join(', ') + ')');
+
+  // Each block is bounded by its own findahelpline row — a SEMANTIC anchor. And HTML comments are
+  // stripped first, because the comment this fix added NAMES 13YARN: an unstripped grep would pass
+  // on correct code and keep passing with the markup row deleted. That exact trap cost a run when
+  // an aria-label was guarded by a check that matched the comment explaining it.
+  const blocks = [];
+  for (const marker of ['class="auth-help"', 'class="crisis-card"']) {
+    let i = 0;
+    while (true) {
+      i = H.html.indexOf(marker, i);
+      if (i < 0) break;
+      const end = H.html.indexOf('findahelpline', i);
+      blocks.push({ marker, body: H.html.slice(i, end > i ? end : i + 4000).replace(/<!--[\s\S]*?-->/g, '') });
+      i += 1;
+    }
+  }
+  H.ok(blocks.length === 3,
+    'found the three static crisis blocks (2 auth-help + 1 crisis-card), got ' + blocks.length);
+
+  let missing = [];
+  blocks.forEach((b, n) => {
+    auPhones.forEach(r => {
+      if (b.body.replace(/\D/g, '').indexOf(r.digits) < 0) missing.push('block ' + (n + 1) + ' (' + b.marker + ') is missing ' + r.name);
+    });
+  });
+  H.ok(missing.length === 0,
+    'every Australian line in CRISIS_LINES is dialable on all three static surfaces' +
+    (missing.length ? ' → ' + missing.join('; ') : ''));
+
+  // 13YARN by name, because the digits alone would pass if the row were unlabelled — a person
+  // scanning for the line that is theirs needs to SEE that it is theirs.
+  const named = blocks.filter(b => /13YARN/.test(b.body)).length;
+  H.ok(named === 3, '13YARN is named, not just dialled, on all three (named on ' + named + ')');
+
+  // And the lock overlay — the fourth surface — renders from the list rather than a fourth copy.
+  const lock = H.code(H.html).match(/function (?:createAppLock|_appLockEl)[\s\S]{0,3000}/);
+  H.ok(/_bridgeLines\(\)/.test(H.code(H.html).slice(
+    H.code(H.html).indexOf('app-lock-msg'), H.code(H.html).indexOf('app-lock-msg') + 3000)),
+    'the Face ID lock overlay renders its helplines from CRISIS_LINES via _bridgeLines()');
+}
+
 // ══ THE NET UNDER THE MODEL ═══════════════════════════════════════════════════════════════════
 // `node scripts/voice-probe.mjs chain` measured the SAME prompt across the fallback chain, nine
 // samples per provider. Gemini handed over 9 of 9. CLOUDFLARE — the last free link — handed over
