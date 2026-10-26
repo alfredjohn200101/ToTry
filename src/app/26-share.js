@@ -278,6 +278,32 @@ function closeModal(el){
   m.remove();
 }
 
+// CLOSE WHATEVER IS OPEN, WITHOUT DESTROYING A SHEET THAT CANNOT BE REBUILT.
+// v653 fixed `closeModal` to honour data-sheet="static" and stopped there — and 137 call sites
+// never go through closeModal. They ran `closeOpenSheets()` or
+// the forEach form directly, across 24 modules, which is the SAME permanent destruction v653
+// repaired: #payday-modal, #journal-modal and #serving-modal exist only as literal markup in the
+// shell and nothing recreates them.
+// AND DOCUMENT ORDER MAKES IT SILENT. The three static sheets are children of `div.app`; every
+// appended sheet is `document.body.appendChild(m)`, so the static ones always come FIRST and
+// `querySelector('.modal-bg.open')` returns the STATIC one. The ubiquitous "close whatever is open,
+// then open mine" one-liner therefore deleted the static sheet and left the appended one on screen
+// — so the screen still looked right and the damage showed up later, as
+// "Cannot set properties of null (setting 'value')" the next time openJournal() ran. Five real
+// users hit that on 25 Oct 2026.
+// It REUSES closeModal's predicate rather than inventing a second one, because two predicates for
+// one rule is how the halves drift apart.
+function closeOpenSheets(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){
+    if(m && m.dataset && m.dataset.sheet === 'static'){
+      if(m.id === 'serving-modal' && typeof closeServingModal === 'function'){ closeServingModal(); return; }
+      m.classList.remove('open');
+      return;
+    }
+    if(m) m.remove();
+  });
+}
+
 // ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
 // Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a
 // system dialog titled with the page ORIGIN — so the most consequential moments in the whole app
@@ -592,7 +618,7 @@ function openSupportPage(){
   catch(_){ try{ location.href = 'support.html'; }catch(__){ } }
 }
 function openFeedback(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
@@ -811,7 +837,7 @@ async function submitFeedback(){
     }catch(e){ /* fall through to email */ }
   }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   if(sent){
     showToast('Thank you', 'Your feedback came through. It genuinely helps.');

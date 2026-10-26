@@ -118,7 +118,7 @@ function importEufyCSV(event){
       existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
       ls('totry_body', existing.slice(0, 1000));
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       if(typeof renderBody==='function') renderBody();
       if(typeof renderWeightHistory==='function') renderWeightHistory();
       if(typeof adjustCaloriesFromWeightTrend==='function') adjustCaloriesFromWeightTrend();
@@ -235,7 +235,7 @@ function saveScaleScreenshotEntry(){
   entries.sort((a,b) => new Date(b.ts) - new Date(a.ts));
   ls('totry_body', entries.slice(0,1000));
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderBody==='function') renderBody();
   if(typeof renderWeightHistory==='function') renderWeightHistory();
   if(typeof adjustCaloriesFromWeightTrend==='function') adjustCaloriesFromWeightTrend();
@@ -308,7 +308,7 @@ function importHevyCSV(event){
       _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
       ls('totry_workouts', _capWorkouts(_merged));
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       showToast('Imported', imported + ' workout' + (imported>1?'s':'') + ' from your CSV.');
       haptic('celebrate');
       if(typeof renderUnifiedTraining === 'function') renderUnifiedTraining();
@@ -551,7 +551,7 @@ function importFoodCSV(event){
       ls('totry_food_imported', true);
       if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       showToast('Welcome \u2014 your history is here \u2713',
         imported + ' entries imported.' + (_unparsed ? ' ' + _unparsed + ' row' + (_unparsed>1?'s':'') + ' had a date I could not read and were left out.' : ' No re-logging needed.'));
       haptic('celebrate');

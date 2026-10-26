@@ -573,7 +573,7 @@ function saveHabitAnchor(hi){
   habits[hi].a=val;
   if(_pwRaw) habits[hi].pw=Math.round(Number(_pwRaw)); else delete habits[hi].pw;
   saveH();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _anchorRefresh();
   try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
   if(typeof haptic==='function') haptic('success');
@@ -582,7 +582,7 @@ function saveHabitAnchor(hi){
 function clearHabitAnchor(hi){
   loadH(); if(!habits[hi]) return;
   delete habits[hi].a; saveH();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _anchorRefresh();
   if(typeof haptic==='function') haptic('light');
 }

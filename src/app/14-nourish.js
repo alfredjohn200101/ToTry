@@ -600,7 +600,7 @@ function quickAddLog(){
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   ls('totry_nutlog', log);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog==='function') renderNutritionLog();
   if(typeof autoTickHabits==='function') autoTickHabits();
   if(typeof haptic==='function') haptic('success');
@@ -1118,7 +1118,7 @@ function saveCustomFood(){
     if(_pending && typeof barcodeRemember === 'function') barcodeRemember(_pending, food);
     if(typeof window !== 'undefined') window.__bcPending = '';
   }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // Log it straight to today via the serving modal (so quantity can be adjusted)
   if(typeof openServingModal==='function'){
     openServingModal({...food, servings:[{name:food.serving,cal:food.cal,pro:food.pro,carb:food.carb,fat:food.fat}]});
@@ -1783,7 +1783,7 @@ function renderHungerNudge(){
   '</div>';
 }
 function openHungerCheck(){
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
@@ -1799,7 +1799,7 @@ function openHungerCheck(){
 function _hungerCount7(id){ try{ const wk=Date.now()-7*86400000; return (ls('totry_hunger_log')||[]).filter(e=>e && e.id===id && e.ts>=wk).length; }catch(_){ return 0; } }
 function _hungerPick(id){
   try{ const log=ls('totry_hunger_log')||[]; log.unshift({id, ts:Date.now()}); ls('totry_hunger_log', log.slice(0,300)); if(typeof logEvent==='function') logEvent('hunger_check'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   if(id==='hungry'){ if(typeof showToast==='function') showToast('Good','Real hunger — fuel up well.'); return; }
   if(id==='social'){ if(typeof showToast==='function') showToast('Enjoy it','Eating for joy, together, is part of a good life — be present.'); return; }
   const R={
@@ -2849,7 +2849,7 @@ function closeBarcodeScanner(){
   // typed into the recipe so far.
   const m = document.getElementById('barcode-scanner-modal');
   if(m){ m.remove(); return; }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
 }
 
 // ONE CARD, BOTH PATHS. The remembered hit and the fresh lookup must look identical — a person
@@ -3097,7 +3097,7 @@ function openRecipeBuilder(){
 }
 
 function newRecipe(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   editRecipe(-1);
 }
 
@@ -3106,7 +3106,7 @@ function newRecipe(){
 // URL: text parsing is what the model is reliably good at, and it can't fail on a paywalled or
 // unreachable page. The result is always an EDITABLE draft, so a wrong number is a tweak, not a trap.
 function openPasteRecipe(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div id="paste-recipe-crisis"></div>'+
@@ -3150,7 +3150,7 @@ function _recipeDraftGuard(recipe, crisisElId){
 }
 
 function _recipeDraft(recipe){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   editRecipe(-1, recipe);
   if(typeof haptic === 'function') haptic('success');
   if(typeof showToast === 'function') showToast('Recipe drafted', recipe.ingredients.length + ' ingredients \u2014 review, tweak anything, then save.');
@@ -3297,7 +3297,7 @@ function _recipeFromSearch(){
       return;
     }
     window.__recipeSearch = true;
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     const el = document.getElementById('nut-search-in');
     if(el){ try{ el.focus(); el.scrollIntoView({ block:'center' }); }catch(_){ } }
     if(typeof showToast === 'function') showToast('Pick an ingredient', 'The next food you add goes into your recipe, not today\u2019s log.');
@@ -3493,7 +3493,7 @@ function saveCurrentRecipe(){
   else recipes.unshift(r);
   ls('totry_recipes', recipes);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Recipe saved', r.name);
   haptic('success');
   openRecipeBuilder();
@@ -3504,7 +3504,7 @@ async function deleteRecipe(i){
   const recipes = ls('totry_recipes') || [];
   recipes.splice(i, 1);
   ls('totry_recipes', recipes);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   openRecipeBuilder();
 }
 
@@ -3554,7 +3554,7 @@ async function logRecipeAsMeal(i){
   });
   ls('totry_nutlog', log);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
   showToast('Logged', r.name + ' · ' + Math.round(_rRow.cal||0) + ' cal');
   haptic('success');
@@ -3672,7 +3672,7 @@ function confirmRepeatYesterday(){
   });
   ls('totry_nutlog', log);
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
   // "today" was a lie whenever the diary was day-navigated — the copy lands on the VIEWED day.
   const _dayWord = (typeof nutDayLabel==='function') ? nutDayLabel() : 'today';
@@ -4392,15 +4392,28 @@ function renderRecentFoods(){
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
-      // The three consumers below interpolate `safe` into onclick attributes delimited by DOUBLE
-      // quotes, so a double quote in a food name closed the attribute and killed every button on
-      // the card. Escaped as an entity: the attribute survives and the name still reads correctly.
-      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      // TWO POSITIONS, TWO ESCAPES — and the hand-rolled chain that used to serve both was the
+      // live remnant of the inline-handler SyntaxErrors real users hit at `#nourish:1`.
+      // It escaped `'`, `<` and `"` and NOT backslash and NOT newline, so measured over 9 real
+      // name shapes it BROKE ON 3, each matching a reported production error:
+      //   "Line\nBreak Bar"  a raw newline inside a JS string literal  -> Invalid or unexpected token
+      //   "Trailing\"        a trailing backslash escapes its own quote -> unterminated string
+      //   "a&apos;b"         the parser decodes the entity to `'` BEFORE the JS compiles, so the
+      //                      string terminates early                    -> missing ) after argument list
+      // `_jsAttr` is the repo's helper for exactly this position — a JS string inside an attribute
+      // — and it escapes `&` FIRST, which is why a person who types `&apos;` reads it back instead
+      // of having it decode into a quote. Measured: 0 of 9 broken.
+      // It is WRONG for the aria-labels below, which are a TEXT position: _jsAttr emits `Mum\'s`
+      // and a screen reader reads the backslash aloud. Those take `_escFew`.
+      const safe  = (typeof _jsAttr === 'function')
+        ? _jsAttr(f.name)
+        : String(f.name).replace(/[\\'"]/g,'');
+      const label = (typeof _escFew === 'function') ? _escFew(f.name) : String(f.name).replace(/</g,'&lt;');
       // The serving the (+) button will log — the same source of truth quickLogRecent uses.
       const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +
         '<div style="flex:1;cursor:pointer;min-width:0" onclick="logRecentFood(&apos;' + safe + '&apos;)">' +
-          '<div class="fr-name">' + f.name.replace(/</g,'&lt;') + '</div>' +
+          '<div class="fr-name">' + label + '</div>' +
           // SHOW WHAT THE (+) WILL ACTUALLY LOG. This printed f.cal — which for a scanned product is
           // the per-100g figure — while the (+) beside it logs _quickServing(f), the real serving. A
           // 50g bar read "488 cal" and logged 244. Someone at 1,900 of a 2,100 target decides they
@@ -4416,8 +4429,8 @@ function renderRecentFoods(){
         '</div>' +
         // A bare ★/☆ with no accessible name: a screen reader read "white medium star" and nothing
         // about which food it belonged to or what tapping it would do.
-        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + safe + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
-        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + safe + '">' + svgIcon('plus',18) + '</button>' +
+        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + label + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
+        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + label + '">' + svgIcon('plus',18) + '</button>' +
       '</div>';
     }).join('');
 }
@@ -6733,7 +6746,7 @@ function showLowCalorieCare(){
   document.body.appendChild(m);
 }
 function showEDSupport(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';

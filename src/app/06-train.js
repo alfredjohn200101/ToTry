@@ -325,7 +325,7 @@ function _morningLightGo(){
   try{ ls('totry_morning_light_last', _sleepDayKey()); }catch(_){}
   try{ renderMorningLightCard(); }catch(_){}
   if(typeof logEvent==='function') logEvent('morning_light');
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
   if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
 }

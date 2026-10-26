@@ -228,7 +228,7 @@ function _fuelElicitSave(){
             saveMealPrefs(Object.assign(_prev, _safe, { restrictions: _keep }));
           }
         }catch(_){ }
-        document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+        closeOpenSheets();
         // THE SAME CARD AS THE OTHER 38 DOORS. This used to call bridgeToRealHelp('heavy'), which
         // does show three tappable helplines — but it is a DIFFERENT surface: it carries no
         // `aria-label="Urgent: real people you can contact right now"`, so it sits outside the
@@ -1720,7 +1720,7 @@ function openCSVImport(){
 function handleCSVFile(ev){
   const file = ev.target && ev.target.files && ev.target.files[0];
   if(!file) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const reader = new FileReader();
   reader.onload = () => {
     try{
@@ -1881,7 +1881,7 @@ function confirmCSVImport(){
   if(typeof syncToCloud==='function') syncToCloud();
   const n = _csvPending.length;
   _csvPending = [];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderTransactions();
   try{ renderFinance(); }catch(_){}
   haptic('success');

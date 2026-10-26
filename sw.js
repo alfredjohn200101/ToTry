@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v658-two-dead-doors-on-the-recovery-bridge'
+const CACHE = 'totry-v659-the-sink-was-fixed-and-138-call-sites-were-not'
 
 const CORE = [
   './',

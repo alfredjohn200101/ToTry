@@ -3117,7 +3117,7 @@ function restartJourney(){
     ls('totry_journey_start', new Date().toISOString());
     ls('totry_restarts', restartCount() + 1);
     try{ if(typeof syncToCloud==='function'){ syncToCloud('totry_journey_start', ls('totry_journey_start')); syncToCloud('totry_first_start', ls('totry_first_start')); syncToCloud('totry_restarts', ls('totry_restarts')); } }catch(_){}
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     if(typeof renderDayCounter==='function') renderDayCounter();
     if(typeof initSettingsTab==='function') initSettingsTab();
     if(typeof go==='function') go('home');
@@ -3172,7 +3172,7 @@ function saveJourneyStart(){
   const picked = new Date(val + 'T12:00:00');
   if(isNaN(picked) || picked > new Date()){ showToast('Invalid date','That date is in the future.'); return; }
   ls('totry_journey_start', picked.toISOString());
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
   showToast('Saved', 'Day ' + getDayCount() + ' of your journey.');
@@ -3185,7 +3185,7 @@ function resetJourneyStart(){
   const _prev = ls('totry_journey_start');
   localStorage.removeItem('totry_journey_start');
   if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', null);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
   // NO TOAST BESIDE THE UNDO. The toast is 76px tall at z-index 1200 and the undo snack is 54px at

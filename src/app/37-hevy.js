@@ -57,7 +57,7 @@ function mapToHevyTemplate(name, templates){
 async function importHevyRoutines(){
   const key = ls('totry_hevy_api_key');
   if(!key){ showToast('Not connected', 'Connect Hevy first.'); return; }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Importing', 'Pulling your Hevy routines...');
   
   try{
@@ -118,7 +118,7 @@ async function importHevyRoutines(){
 
 // ── PUSH ToTry ROUTINE → HEVY ─────────────────────────────────
 async function openPushRoutineToHevy(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const routines = ls('totry_routines') || [];
   // Only routines NOT already from Hevy make sense to push
   const pushable = routines.filter(r => !r.hevyRoutineId);
@@ -150,7 +150,7 @@ async function pushRoutineToHevy(routineIdx){
   const routine = routines[routineIdx];
   if(!routine){ showToast('Not found', 'Routine missing.'); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Mapping exercises', 'Matching to Hevy\'s library...');
   
   // Get Hevy templates so we can resolve exercise IDs
@@ -233,7 +233,7 @@ async function pushLastWorkoutToHevy(){
   const native = workouts.find(w => w.source !== 'hevy' && w.source !== 'hevy-csv' && !w.pushedToHevy && (w.exercises||[]).length);
   if(!native){ showToast('Nothing to push', 'No new ToTry workout to log to Hevy.'); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Mapping exercises', 'Matching to Hevy\'s library...');
   const templates = await ensureHevyTemplates();
   if(!templates){ showToast('Push failed', 'Couldn\'t load Hevy exercise list.'); return; }
@@ -314,7 +314,7 @@ async function saveHevyKey(){
   if(!used.includes('hevy')){ used.push('hevy'); ls('totry_apps_used', used); }
   if(typeof syncToCloud === 'function') syncToCloud('totry_hevy_api_key', key);
 
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Hevy key saved ✓', 'Trying to pull your workouts...');
   haptic('celebrate');
 

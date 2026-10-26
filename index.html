@@ -8747,7 +8747,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v658';
+const APP_VERSION = 'v659';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14984,7 +14984,7 @@ function restartJourney(){
     ls('totry_journey_start', new Date().toISOString());
     ls('totry_restarts', restartCount() + 1);
     try{ if(typeof syncToCloud==='function'){ syncToCloud('totry_journey_start', ls('totry_journey_start')); syncToCloud('totry_first_start', ls('totry_first_start')); syncToCloud('totry_restarts', ls('totry_restarts')); } }catch(_){}
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     if(typeof renderDayCounter==='function') renderDayCounter();
     if(typeof initSettingsTab==='function') initSettingsTab();
     if(typeof go==='function') go('home');
@@ -15039,7 +15039,7 @@ function saveJourneyStart(){
   const picked = new Date(val + 'T12:00:00');
   if(isNaN(picked) || picked > new Date()){ showToast('Invalid date','That date is in the future.'); return; }
   ls('totry_journey_start', picked.toISOString());
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
   showToast('Saved', 'Day ' + getDayCount() + ' of your journey.');
@@ -15052,7 +15052,7 @@ function resetJourneyStart(){
   const _prev = ls('totry_journey_start');
   localStorage.removeItem('totry_journey_start');
   if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', null);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
   // NO TOAST BESIDE THE UNDO. The toast is 76px tall at z-index 1200 and the undo snack is 54px at
@@ -18757,7 +18757,7 @@ function saveSplitDay(dayIdx){
   // nothing to undo it.
   split[dayIdx]={...(split[dayIdx]||{}), focus, routine:routine||null};
   ls('totry_split',split);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSplitOverview();
   // AND THE CARD ABOVE IT. renderSplitOverview() repaints the day list; the today card is written
   // by loadTodaySplitCard() and was left alone — so assigning a routine to today updated the list
@@ -18851,7 +18851,7 @@ function applyRecommendedSplit(){
     return { focus:d.focus, routine:null, exercises:ex, detail:ex.length?ex.join(', '):'' };
   });
   ls('totry_split',split);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSplitOverview();
   const _n=split.reduce(function(a,d){ return a+((d.exercises||[]).length?1:0); },0);
   showToast('Split saved', _n
@@ -19337,7 +19337,7 @@ function openViceStage(i){
 function setViceStage(i, k){
   loadV(); const v=vices[i]; if(!v || !VICE_STAGES[k]) return;
   v.stage=k; v.stageAt=new Date().toISOString(); saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
   try{ if(typeof logEvent==='function') logEvent('vice_stage'); }catch(_){}
   if(typeof haptic==='function') haptic('success');
@@ -19684,7 +19684,7 @@ function fightVice(i){
 function startLiveIntervention(i){
   // fightVice buzzes one tap earlier; the door it opens should acknowledge the tap too.
   try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   loadV();
   curVice=i;
   // ONE URGE, ONE BATTLE. This incremented `total` here AND the win path increments it again when
@@ -19721,7 +19721,7 @@ function startLiveIntervention(i){
 
 // Path 2: Quick log of a past fight (replaces craving log)
 function startQuickLog(i){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   loadV();
   curVice=i;
   const v=vices[i];
@@ -19922,7 +19922,7 @@ function saveQuickLog(){
   ls('totry_fight_log', fightLog.slice(0, 200));
   
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const _wasRelapse = (_qlOutcome === false);
   _qlOutcome = null;
   renderVices();
@@ -20194,7 +20194,7 @@ function setUserSex(sex){
 // treatment whose final instruction is to put the phone down and leave the room, and morning light
 // is worth 10-50x avoiding evening screens for resetting the clock. No sleep score, ever.
 function openWindDown(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const t=(typeof faithTradition==='function')?faithTradition():'secular';
   const soft=(typeof faithLevel==='function') && faithLevel()==='light';
   const close={christianity:'Commend the day to God \u2014 the good and the botched \u2014 and let Him hold it while you sleep.',
@@ -20229,7 +20229,7 @@ function openWindDown(){
 // different ones — the CHOICE itself is the autonomy that predicts follow-through (SDT). Never
 // ranked, never "the app failed you", and the faith-based option only surfaces when faith is on.
 function openRecoveryBridge(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const faithOn = (typeof faithLevel!=='function') || faithLevel()!=='light';
   const tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const opts = [
@@ -20292,7 +20292,7 @@ const _SERVICE_ACTS = [
   ['heart','Hold someone else for a minute','Someone you know is having a harder week than you. Carry them for sixty seconds.']
 ];
 function openServiceExit(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const day=(typeof getDayCount==='function')?getDayCount():0;
   const a=_SERVICE_ACTS[day%_SERVICE_ACTS.length];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -20531,7 +20531,7 @@ function renderFeelingWinsMomentum(){
     '</div>';
 }
 function openFeelingNow(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.id='feelingnow-modal';
@@ -20676,7 +20676,7 @@ function _feelingNowSaveWhy(){
   // early, so without this the card renders UNDERNEATH the open sheet — in the document and
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
-    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    try{ closeOpenSheets(); }catch(_){ }
     setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
@@ -21393,7 +21393,7 @@ function _feelThePull(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):((ls('totry_v')||[]).filter(v=>v&&v.n));
     if(!vs.length){ openCompanionForUrge(); return; }
     if(vs.length===1){ const _only=vs[0]; if(_only.kind==='letgo'){ openLettingGo(); return; } openMomentStakes(vices.indexOf(_only)); return; }
-    document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+    closeOpenSheets();
     // A sheet from the bottom, a title in the app's face, and the fights as rows. It was a centred card
     // with an italic reading-serif title, a centred italic note, and each name in a grey slab whose
     // text-align:left the flex button silently ignored. iosRow escapes the name.
@@ -21482,17 +21482,17 @@ function _saveIfThenFromModal(feeling){
   // saved — this store has no `flagged` field to keep it out of later reads.
   const _ifCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(raw) : null;
   if(_ifCrisis){
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis, null, { saved: false })) return;
   }
   saveIfThen(feeling, raw);
   if(!ok) return;                                   // nothing saved → leave the plan modal open
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   setTimeout(function(){ try{ if(typeof _feelMove==='function') _feelMove(feeling); }catch(_){} }, 180);
 }
 function _lockItIn(feeling){
   const existing=getIfThen(feeling); const preset=existing?existing.action:(_FEEL_PLAN[feeling]||''); const label=_FEEL_LABELS[feeling]||feeling;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
     '<div class="eyebrow">A plan for next time</div>'+
@@ -21638,7 +21638,7 @@ function _startSmallestThing(){
 // neutral throughout ("them", never assumes who left whom). And every path ENDS — theRelease — because
 // the whole point of a dopamine detox is an app that hands you back to your life instead of holding you.
 function openLettingGo(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // The heartache path, rebuilt like the other feelings' sheets: a title in the app's face, the message
   // as body text, the one hard fact on a card of its own (it was an 11px tint caps label in a grey
   // panel), one move, and the other ways through as rows instead of four differently-painted slabs.
@@ -21668,7 +21668,7 @@ function _letGoSurf(){ openBreath('settle', {reason:'letgo', onClose:()=>setTime
 // A grief-prompted journal that beats Notes at the moment: a real prompt, saved to your journal (day +
 // mood + tagged), and it ENDS by handing you back to your life. Notes just stores; this processes.
 function _letGoJournal(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   // "LET IT OUT \u00b7 NOT IN THEIR FEED" was a sentence in 11px tint capitals joined by a middot. The label
   // is two words; the rest is already what the paragraph under the title says.
@@ -21695,7 +21695,7 @@ function _letGoSaveJournal(){
     ls('totry_journal', entries.slice(0,1200));
     if(typeof renderJournal==='function') renderJournal();
   }catch(_){}
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(journalMeetCrisis(_lgCrisis)) return;   // saved above; met here rather than released
   if(typeof haptic==='function') haptic('success');
   theRelease({did:'You put it into words \u2014 and set it down. That\u2019s processing it, not feeding it.'});
@@ -21703,7 +21703,7 @@ function _letGoSaveJournal(){
 // Behavioral activation — the evidence-based antidote to rumination is ONE valued real action (not
 // avoidance, not numbing). Pick one, then the app closes and you go do it.
 function _letGoAct(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const acts=[
     ['walk','Walk \u2014 10 minutes, outside, phone in your pocket'],
     ['phone','Message ONE real person who loves you'],
@@ -21727,7 +21727,7 @@ function _letGoAct(){
 // For anyone carrying this longer than a moment — name it, and it becomes something the Fight helps with
 // every day: same urge support, a healing goal, grace on going back. Optional label, gender-free.
 function _letGoName(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof openFormModal==='function'){
     openFormModal('Make this something you\u2019re letting go of','You don\u2019t have to name them \u2014 a word is enough, or leave it blank. I\u2019ll keep it in your Fight with a healing goal (no shame clock), and meet you in the urge whenever it pulls.',[{id:'who',label:'',type:'text',placeholder:'e.g. my ex, someone, a name \u2014 optional'}],'Add it to my Fight',(vals)=>{ createLetGo((vals.who||'').trim()); return true; });
   } else { createLetGo(''); }
@@ -21756,7 +21756,7 @@ function createLetGo(who){
 // The grace-log for a named letting-go struggle: reaching back is part of the process, nothing resets.
 function _letGoWentBack(i){
   try{ if(typeof loadV==='function') loadV(); const v=vices[i]; if(v){ v.urgelog=v.urgelog||[]; v.urgelog.push(Date.now()); if(typeof saveV==='function') saveV(); } }catch(_){}
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-size:var(--t-title1);margin-bottom:8px">🕊️</div>'+
@@ -21780,7 +21780,7 @@ function theRelease(opts){
   opts = opts || {};
   // The Release ends the session — nothing should still be talking after it.
   try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   document.querySelectorAll('.breath-overlay').forEach(o=>o.remove());
   _logRelease(opts.did||'');
   const name = ls('totry_name') || '';
@@ -21837,7 +21837,7 @@ function theRelease(opts){
 // lecture: money stress already eats the mental bandwidth good decisions need.
 function _holds(){ try{ const a=ls('totry_impulse_holds'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
 function openImpulsePause(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   openFormModal('Before you buy','No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?',
     [{id:'what',label:'',type:'text',placeholder:'What is it?'},
@@ -21858,7 +21858,7 @@ const _IMPULSE_FEELINGS = [
   ['🤷','I want it and I don’t know why','That’s the honest answer, and it’s the most common one. Hold it a day and see if the wanting is still there.']
 ];
 function _impulseFeeling(what, amt){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const safe=_jsAttr(what);          // for the onclick attribute — see _jsAttr in 00-boot
   const shown=_escFew(what);         // for anything the person reads
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -21872,7 +21872,7 @@ function _impulseFeeling(what, amt){
   if(typeof haptic==='function') haptic('tap');
 }
 function _impulseHold(what, amt, fi){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const f=_IMPULSE_FEELINGS[fi]||_IMPULSE_FEELINGS[4];
   const safe=String(what).replace(/</g,'&lt;');
   const why=(ls('totry_why')||'').trim();
@@ -21902,7 +21902,7 @@ function _impulseSaveHold(what, amt){
   // "That's the whole move" on top of what they just said would be the app talking over them.
   const _ihC = (typeof crisisInAny==='function') ? crisisInAny([what]) : null;
   try{ const h=_holds(); h.unshift({what:_ihC?'':String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(_ihC){
     try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
     if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC, null, { saved: false });
@@ -21917,7 +21917,7 @@ function dueImpulseHold(){
 }
 function _resolveHold(ts, bought){
   try{ const h=_holds(); const i=h.findIndex(function(x){ return x && x.ts===ts; }); if(i>=0){ h[i].done=true; h[i].bought=!!bought; ls('totry_impulse_holds', h); } }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(!bought){
     let saved=0; try{ saved=_holds().filter(function(x){ return x.done && !x.bought; }).reduce(function(a,x){ return a+(x.amt||0); },0); }catch(_){}
     try{ showToast('Still yours', saved>0 ? ('That’s about '+curSym()+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
@@ -22075,7 +22075,7 @@ function _tkSuggest(){
   return '';
 }
 function openToolkit(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const sug=_tkSuggest();
   const myLine=(_tkStore().myLine||'').trim();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -22100,7 +22100,7 @@ function openToolkit(){
 }
 function openLesson(id){
   const l=_tkLesson(id); if(!l) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const again=_tkSeen(id);
   const faithOn=(typeof faithLevel!=='function')||faithLevel()!=='light';
   const tr=(typeof faithTradition==='function')?faithTradition():'secular';
@@ -22133,7 +22133,7 @@ function openLesson(id){
 }
 function _tkPractice(id){
   const l=_tkLesson(id); if(!l) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   // Two lessons hand straight to a tool that already exists rather than describing one.
   if(l.pracFn==='_tkMyLine'){ _tkMyLine(); return; }
   if(l.pracFn==='openHALT' || l.pracFn==='_letGoAct'){ _tkMark(id); try{ window[l.pracFn](); }catch(_){} return; }
@@ -22176,7 +22176,7 @@ function _tkMyLine(){
 function _tkDone(id){
   const l=_tkLesson(id);
   _tkMark(id);
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof haptic==='function') haptic('success');
   try{ if(typeof logEvent==='function') logEvent('lesson_done'); }catch(_){}
   const did='You learned '+((l&&l.t)?l.t.charAt(0).toLowerCase()+l.t.slice(1):'a skill')+' while nothing was going wrong \u2014 which is the only time anybody ever really learns anything. It\u2019ll be there when you need it.';
@@ -22204,7 +22204,7 @@ const _HALT = [
     cta:'Wind down', act:"openBreath('sleep',{reason:'halt'})" }
 ];
 function openHALT(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
@@ -22220,7 +22220,7 @@ function openHALT(){
 }
 function _haltPick(k){
   const h=_HALT.find(function(x){ return x.k===k; }); if(!h) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-size:var(--t-2xl);margin-bottom:8px">'+h.icon+'</div>'+
@@ -22241,7 +22241,7 @@ function _haltPick(k){
 // it's too small to trigger it, then start a VISIBLE two minutes. Written for anyone having a low-
 // capacity day; it happens to name exactly how an ADHD brain gets stuck, without diagnosing anyone.
 function openCantStart(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal==='function'){
     openFormModal('What can’t you start?','Name it in a few words. Naming it is already the first inch.',
       [{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the washing, the call'}],'Make it smaller',
@@ -22277,7 +22277,7 @@ const _SHRINK = [
   function(t){ return 'Then just this: sit where you’d do it, for two minutes, doing nothing. Starting is allowed to be that small.'; }
 ];
 function _shrinkIt(thing, level){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   // CLAMPED, because `Math.min(undefined, 3)` is NaN and `_SHRINK[NaN]` is undefined, so the next
   // line throws "_SHRINK[lv] is not a function" — which four real users hit on 1 Oct 2026
   // (app_events jserror, 4 distinct anon_ids). A negative level does the same. Every call site in
@@ -22318,7 +22318,7 @@ function _startTwoMin(thing, round){
   //   · ONE extension only. Body doubling is a push-off, not a place to live; an infinite "keep going"
   //     loop would be the dependence CLAUDE.md forbids.
   //   · It ends in theRelease(), off the phone, like every other real exit here.
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   document.querySelectorAll('.tm-overlay').forEach(function(o){ o.remove(); });
   const r = round || 1;
   const ov=document.createElement('div');
@@ -22413,7 +22413,7 @@ const _LOOK_UP_PROMPTS = [
   'a building or hill older than everyone you know'
 ];
 function openLookUp(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const day = (typeof getDayCount==='function') ? getDayCount() : 0;
   const what = _LOOK_UP_PROMPTS[day % _LOOK_UP_PROMPTS.length];
   // A centred 28px bold title under a lone icon, a centred paragraph, and its second paragraph in the
@@ -22481,7 +22481,7 @@ function blessLastLine(){
 }
 let _blessS = null;
 function openBlessing(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const few=(typeof getYourFew==='function')?getYourFew():[];
   _blessS={ step:0, few:few, lovedIdx:(few.length?0:-1), loved:'', neutral:'', hard:'', reach:'', cands:[] };
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='bless-modal'; m.style.alignItems='center';
@@ -22629,7 +22629,7 @@ function getValues(){ try{ const o=ls('totry_values'); return (o && Array.isArra
 function topValue(){ const o=getValues(); return o?valLabel(o.v[0]):null; }
 let _vsS=null;
 function openValuesSort(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const cur=getValues();
   _vsS={ phase:1, picked: cur?cur.v.slice(0,5):[], why: cur?(cur.why||''):'' };
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='values-modal';
@@ -22664,14 +22664,14 @@ function _vsSave(){
   // early, so without this the card renders UNDERNEATH the open sheet — in the document and
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
-    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    try{ closeOpenSheets(); }catch(_){ }
     setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   try{ ls('totry_values', { v:s.picked.slice(0,5), why:String(w?w.value:(s.why||'')).trim().slice(0,160), ts:new Date().toISOString() }); }catch(_){}
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   try{ showToast('Held','I\u2019ll hold you to your own words, not mine.'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   try{ renderValuesCard(); }catch(_){}
 }
 function _vsRender(){
@@ -23089,7 +23089,7 @@ function _walkBackAtThreshold(v){
 function openWalkBack(i){
   if(typeof loadV==='function') loadV();
   const v=vices[i]; if(!v) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   const _L=walkBackLinks(v);
   const _prev=_L ? ('\n\nLast time you traced it: “'+String(_L.last.chain||'').slice(0,180)+'”'+(_L.last.catch?(' — and the link you named was: '+_L.last.catch):'')) : '';
@@ -23127,7 +23127,7 @@ function openCBA(i){
   if(typeof loadV==='function') loadV();
   const v=vices[i]; if(!v) return;
   const c=v.cba||{};
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   openFormModal('The honest ledger',
     'Both columns, honestly \u2014 including what it genuinely gives you. A list that pretends it does nothing for you is a list you won\u2019t believe at 11pm.',
@@ -23173,7 +23173,7 @@ const _DEADS=[
   ['repeat','Substitute','Give the need what it actually wants. Tired \u2192 rest. Lonely \u2192 a person. Bored \u2192 something real.']
 ];
 function openDEADS(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">Five ways through.</div>'+
@@ -23300,7 +23300,7 @@ function _planCardHTML(i){
 // worked (move, breath) went somewhere. These three now do too.
 function _pickHigh(type){
   try{ if(typeof logEvent==='function') logEvent('natural_high'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   if(type==='move'){ if(typeof go==='function') go('train'); }
   else if(type==='breath'){ if(typeof openBreath==='function') openBreath('energize'); }
   else if(type==='sun'){ if(typeof openLookUp==='function') openLookUp(); else if(typeof go==='function') go('home'); }
@@ -23872,7 +23872,7 @@ function _morningLightGo(){
   try{ ls('totry_morning_light_last', _sleepDayKey()); }catch(_){}
   try{ renderMorningLightCard(); }catch(_){}
   if(typeof logEvent==='function') logEvent('morning_light');
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
   if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
 }
@@ -25139,7 +25139,7 @@ function commitMassAddLosses(){
   });
   saveV();
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices(); renderScoreboard(); renderDayCounter();
   if(typeof renderHomeQuickWins==='function') renderHomeQuickWins();
   if(typeof renderHomeHabits==='function') renderHomeHabits();
@@ -26281,7 +26281,7 @@ function addVice(){
   haptic('success');
   // Right after naming it, ask HOW they want to handle it — the plan is the first conversation, not
   // an afterthought buried in a settings sheet. Meet them at the goal the moment they name the fight.
-  try{ const _ni=vices.length-1; if(_ni>=0 && typeof openVicePlan==='function') setTimeout(function(){ try{ document.querySelectorAll('.modal-bg.open').forEach(function(x){x.remove();}); }catch(_){} try{ openVicePlan(_ni); }catch(_){} }, 220); }catch(_){}
+  try{ const _ni=vices.length-1; if(_ni>=0 && typeof openVicePlan==='function') setTimeout(function(){ try{ closeOpenSheets(); }catch(_){} try{ openVicePlan(_ni); }catch(_){} }, 220); }catch(_){}
 }
 
 // Get clean days for a vice based on startDate (the streak counter)
@@ -27232,7 +27232,7 @@ function applyViceMode(i, mode){
     v.startDate = new Date().toISOString();
   }
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   if(typeof renderHomeQuickWins==='function') renderHomeQuickWins();
   haptic('success');
@@ -27343,7 +27343,7 @@ function saveViceStart(i){
   if(picked.getTime() > Date.now()) picked.setTime(Date.now());
   vices[i].startDate = picked.toISOString();
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   renderDayCounter();
   const days = viceCleanDays(vices[i]);
@@ -27431,7 +27431,7 @@ function saveViceUse(i){
     v.lastModCheck = new Date().toISOString();
   }
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   try{ renderVices(); if(typeof renderScoreboard==='function') renderScoreboard(); if(typeof renderFinance==='function') renderFinance(); }catch(_){}
   try{ if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('tap'); }catch(_){}
   if(typeof showToast==='function') showToast('Logged','Thank you for being honest. That’s the part that actually moves things.');
@@ -27646,7 +27646,7 @@ function _reframeHTML(){
 function openGambleMoment(i){
   loadV(); const v=vices[i]; if(!v) return;
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const bank=viceSpendFromBank('gambling');
   const lost = bank && bank.total>0 ? bank.total : null;
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -27675,7 +27675,7 @@ function openGambleMoment(i){
 function _gambleStakes(i){
   const cash=parseFloat(document.getElementById('gm-cash')?.value||'')||0;
   if(cash<=0){ showToast('Just a number','However much it is — that’s the honest start. No wrong answer.'); return; }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   loadF();
   const stakes=stakesForAmount(cash);
@@ -27712,7 +27712,7 @@ function _gambleWin(i, cash){
     _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   const kept=cash>0?(curSym()+Math.round(cash).toLocaleString()+' still yours. '):'';
   showToast('That’s a win — a real one', kept+'The urge passes. What you did here is what changes the number.');
@@ -27722,7 +27722,7 @@ function _gambleWin(i, cash){
 // the real ledger, so the freedom date he just earned shows up the next time he looks.
 function _bookRedirect(i, cash, target){
   const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
   m.innerHTML='<div class="modal" style="text-align:center">'+
@@ -27766,7 +27766,7 @@ function openMomentStakes(i){
   const kind=_viceStakeKind(v);
   if(kind==='gambling'){ openGambleMoment(i); return; }
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   // Only an abstinence goal HAS a clean streak — see viceIsAbstinence. Watch mode has made no
   // promise, so there is nothing here to keep or end, and saying otherwise is the one thing that
   // mode exists to prevent.
@@ -27827,7 +27827,7 @@ function _momentWin(i){
     _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   // The win isn't a toast you scroll past — it's a door OUT. You turned away; now go live.
   theRelease({did:'The wave passed — and you didn’t. Not falling was the whole thing; the feeling goes, this is what stays.'});
@@ -27925,7 +27925,7 @@ function _riskGreetSteady(i){
     window.__momentOpenedAt=Date.now(); _recordFightMoment(v.n, true);
     v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString(); saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   showToast('Good', 'Standing steady through your hard hour is its own kind of strong. I’ll be here.');
 }
@@ -27991,7 +27991,7 @@ function saveViceCost(i){
   }
   vices[i].owed = (owed>0) ? owed : 0;
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   const saved = viceMoneySaved(vices[i]);
   showToast('Saved', saved>0 ? (curSym()+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
@@ -28001,7 +28001,7 @@ function clearViceCost(i){
   loadV();
   delete vices[i].costAmount; delete vices[i].costPer; delete vices[i].costUses;
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   showToast('Removed','Cost tracking off for this one.');
 }
@@ -28581,7 +28581,7 @@ function saveHabitAnchor(hi){
   habits[hi].a=val;
   if(_pwRaw) habits[hi].pw=Math.round(Number(_pwRaw)); else delete habits[hi].pw;
   saveH();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _anchorRefresh();
   try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
   if(typeof haptic==='function') haptic('success');
@@ -28590,7 +28590,7 @@ function saveHabitAnchor(hi){
 function clearHabitAnchor(hi){
   loadH(); if(!habits[hi]) return;
   delete habits[hi].a; saveH();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _anchorRefresh();
   if(typeof haptic==='function') haptic('light');
 }
@@ -30265,7 +30265,7 @@ let _qjMood = '\u{1F642}';
 function openQuickJournal(){
   try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }   // parity with the chip beside it
   _qjMood = '\u{1F642}';
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const moods = ['\u{1F60A}','\u{1F642}','\u{1F610}','\u{1F614}','\u{1F62D}','\u{1F621}','\u{1F914}','\u{1F525}'];
   
@@ -30356,7 +30356,7 @@ function saveQuickJournal(){
   });
   ls('totry_journal', entries.slice(0, 1200)); // was an inconsistent 90 here vs 365 elsewhere — unified to a years-long cap
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderJournal === 'function') renderJournal();
   // Saved first, above \u2014 then met. Never celebrate over a disclosure.
   // Tell them their words were cut BEFORE the bridge takes over the screen. The crisis return sits above
@@ -31398,7 +31398,7 @@ function saveGoalWeight(){
   // the AI prompt all came back 164.9 - while a WEIGH-IN of the same 165 in this same file round-trips
   // exactly, through the same helpers, because it stores dispToKg(v) untouched.
   ls('totry_goal_weight', kg);
-  try{ closeModal(el); }catch(_){ document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); }); }
+  try{ closeModal(el); }catch(_){ closeOpenSheets(); }
   renderBodyGoalCard();
   if(typeof haptic === 'function') haptic('success');
   if(typeof syncToCloud === 'function') try{ syncToCloud(); }catch(_){ }
@@ -31406,7 +31406,7 @@ function saveGoalWeight(){
 
 function clearGoalWeight(){
   ls('totry_goal_weight', null);
-  document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); });
+  closeOpenSheets();
   renderBodyGoalCard();
 }
 
@@ -31875,7 +31875,7 @@ function saveQuickWeight(){
     });
   }
   ls('totry_body', entries);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBody();
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.weight(w); }catch(_){}
   // v568 made this modal unit-aware and counted two display strings; there were three. The person
@@ -31952,7 +31952,7 @@ function saveMeasurement(){
   const list = ls('totry_measurements') || [];
   list.unshift(entry);
   ls('totry_measurements', list.slice(0, 200));
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderMeasurements();
   showToast('Saved', 'Measurement snapshot logged.');
   haptic('success');
@@ -32144,7 +32144,7 @@ async function deleteProgressPhoto(id){
   if(!(await askConfirm('Delete this progress photo? Cannot be undone.'))) return;
   const photos = ls('totry_progress_photos') || [];
   ls('totry_progress_photos', photos.filter(p => p.id !== id));
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderProgressPhotos();
 }
 // Confirm the daily logs (weight + sleep). They already persist on entry; this gives a clear
@@ -32839,7 +32839,7 @@ function quickAddLog(){
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   ls('totry_nutlog', log);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog==='function') renderNutritionLog();
   if(typeof autoTickHabits==='function') autoTickHabits();
   if(typeof haptic==='function') haptic('success');
@@ -33357,7 +33357,7 @@ function saveCustomFood(){
     if(_pending && typeof barcodeRemember === 'function') barcodeRemember(_pending, food);
     if(typeof window !== 'undefined') window.__bcPending = '';
   }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // Log it straight to today via the serving modal (so quantity can be adjusted)
   if(typeof openServingModal==='function'){
     openServingModal({...food, servings:[{name:food.serving,cal:food.cal,pro:food.pro,carb:food.carb,fat:food.fat}]});
@@ -34022,7 +34022,7 @@ function renderHungerNudge(){
   '</div>';
 }
 function openHungerCheck(){
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
@@ -34038,7 +34038,7 @@ function openHungerCheck(){
 function _hungerCount7(id){ try{ const wk=Date.now()-7*86400000; return (ls('totry_hunger_log')||[]).filter(e=>e && e.id===id && e.ts>=wk).length; }catch(_){ return 0; } }
 function _hungerPick(id){
   try{ const log=ls('totry_hunger_log')||[]; log.unshift({id, ts:Date.now()}); ls('totry_hunger_log', log.slice(0,300)); if(typeof logEvent==='function') logEvent('hunger_check'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   if(id==='hungry'){ if(typeof showToast==='function') showToast('Good','Real hunger — fuel up well.'); return; }
   if(id==='social'){ if(typeof showToast==='function') showToast('Enjoy it','Eating for joy, together, is part of a good life — be present.'); return; }
   const R={
@@ -35088,7 +35088,7 @@ function closeBarcodeScanner(){
   // typed into the recipe so far.
   const m = document.getElementById('barcode-scanner-modal');
   if(m){ m.remove(); return; }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
 }
 
 // ONE CARD, BOTH PATHS. The remembered hit and the fresh lookup must look identical — a person
@@ -35336,7 +35336,7 @@ function openRecipeBuilder(){
 }
 
 function newRecipe(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   editRecipe(-1);
 }
 
@@ -35345,7 +35345,7 @@ function newRecipe(){
 // URL: text parsing is what the model is reliably good at, and it can't fail on a paywalled or
 // unreachable page. The result is always an EDITABLE draft, so a wrong number is a tweak, not a trap.
 function openPasteRecipe(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div id="paste-recipe-crisis"></div>'+
@@ -35389,7 +35389,7 @@ function _recipeDraftGuard(recipe, crisisElId){
 }
 
 function _recipeDraft(recipe){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   editRecipe(-1, recipe);
   if(typeof haptic === 'function') haptic('success');
   if(typeof showToast === 'function') showToast('Recipe drafted', recipe.ingredients.length + ' ingredients \u2014 review, tweak anything, then save.');
@@ -35536,7 +35536,7 @@ function _recipeFromSearch(){
       return;
     }
     window.__recipeSearch = true;
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     const el = document.getElementById('nut-search-in');
     if(el){ try{ el.focus(); el.scrollIntoView({ block:'center' }); }catch(_){ } }
     if(typeof showToast === 'function') showToast('Pick an ingredient', 'The next food you add goes into your recipe, not today\u2019s log.');
@@ -35732,7 +35732,7 @@ function saveCurrentRecipe(){
   else recipes.unshift(r);
   ls('totry_recipes', recipes);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Recipe saved', r.name);
   haptic('success');
   openRecipeBuilder();
@@ -35743,7 +35743,7 @@ async function deleteRecipe(i){
   const recipes = ls('totry_recipes') || [];
   recipes.splice(i, 1);
   ls('totry_recipes', recipes);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   openRecipeBuilder();
 }
 
@@ -35793,7 +35793,7 @@ async function logRecipeAsMeal(i){
   });
   ls('totry_nutlog', log);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
   showToast('Logged', r.name + ' · ' + Math.round(_rRow.cal||0) + ' cal');
   haptic('success');
@@ -35911,7 +35911,7 @@ function confirmRepeatYesterday(){
   });
   ls('totry_nutlog', log);
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
   // "today" was a lie whenever the diary was day-navigated — the copy lands on the VIEWED day.
   const _dayWord = (typeof nutDayLabel==='function') ? nutDayLabel() : 'today';
@@ -36631,15 +36631,28 @@ function renderRecentFoods(){
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
-      // The three consumers below interpolate `safe` into onclick attributes delimited by DOUBLE
-      // quotes, so a double quote in a food name closed the attribute and killed every button on
-      // the card. Escaped as an entity: the attribute survives and the name still reads correctly.
-      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      // TWO POSITIONS, TWO ESCAPES — and the hand-rolled chain that used to serve both was the
+      // live remnant of the inline-handler SyntaxErrors real users hit at `#nourish:1`.
+      // It escaped `'`, `<` and `"` and NOT backslash and NOT newline, so measured over 9 real
+      // name shapes it BROKE ON 3, each matching a reported production error:
+      //   "Line\nBreak Bar"  a raw newline inside a JS string literal  -> Invalid or unexpected token
+      //   "Trailing\"        a trailing backslash escapes its own quote -> unterminated string
+      //   "a&apos;b"         the parser decodes the entity to `'` BEFORE the JS compiles, so the
+      //                      string terminates early                    -> missing ) after argument list
+      // `_jsAttr` is the repo's helper for exactly this position — a JS string inside an attribute
+      // — and it escapes `&` FIRST, which is why a person who types `&apos;` reads it back instead
+      // of having it decode into a quote. Measured: 0 of 9 broken.
+      // It is WRONG for the aria-labels below, which are a TEXT position: _jsAttr emits `Mum\'s`
+      // and a screen reader reads the backslash aloud. Those take `_escFew`.
+      const safe  = (typeof _jsAttr === 'function')
+        ? _jsAttr(f.name)
+        : String(f.name).replace(/[\\'"]/g,'');
+      const label = (typeof _escFew === 'function') ? _escFew(f.name) : String(f.name).replace(/</g,'&lt;');
       // The serving the (+) button will log — the same source of truth quickLogRecent uses.
       const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +
         '<div style="flex:1;cursor:pointer;min-width:0" onclick="logRecentFood(&apos;' + safe + '&apos;)">' +
-          '<div class="fr-name">' + f.name.replace(/</g,'&lt;') + '</div>' +
+          '<div class="fr-name">' + label + '</div>' +
           // SHOW WHAT THE (+) WILL ACTUALLY LOG. This printed f.cal — which for a scanned product is
           // the per-100g figure — while the (+) beside it logs _quickServing(f), the real serving. A
           // 50g bar read "488 cal" and logged 244. Someone at 1,900 of a 2,100 target decides they
@@ -36655,8 +36668,8 @@ function renderRecentFoods(){
         '</div>' +
         // A bare ★/☆ with no accessible name: a screen reader read "white medium star" and nothing
         // about which food it belonged to or what tapping it would do.
-        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + safe + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
-        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + safe + '">' + svgIcon('plus',18) + '</button>' +
+        '<button class="fr-fav" onclick="toggleFavFood(&apos;' + safe + '&apos;)" aria-label="' + (f.fav ? 'Remove ' : 'Add ') + label + (f.fav ? ' from favourites' : ' to favourites') + '" style="color:' + starColor + '">' + star + '</button>' +
+        '<button class="fr-add" style="margin-right:0" onclick="quickLogRecent(&apos;' + safe + '&apos;)" aria-label="Log ' + label + '">' + svgIcon('plus',18) + '</button>' +
       '</div>';
     }).join('');
 }
@@ -38972,7 +38985,7 @@ function showLowCalorieCare(){
   document.body.appendChild(m);
 }
 function showEDSupport(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
@@ -39516,7 +39529,7 @@ function openSeasonPicker(){
   document.body.appendChild(m);
 }
 function pickSeason(id){
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   if(id === 'auto'){ ls('totry_fast_season',{choice:'auto',shift:0}); if(typeof syncToCloud==='function') syncToCloud(); renderFastSeason(); haptic('success'); return; }
   const p = FAST_SEASONS[id]; if(!p) return;
   const d = new Date(), iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -40547,7 +40560,7 @@ function _fuelElicitSave(){
             saveMealPrefs(Object.assign(_prev, _safe, { restrictions: _keep }));
           }
         }catch(_){ }
-        document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+        closeOpenSheets();
         // THE SAME CARD AS THE OTHER 38 DOORS. This used to call bridgeToRealHelp('heavy'), which
         // does show three tappable helplines — but it is a DIFFERENT surface: it carries no
         // `aria-label="Urgent: real people you can contact right now"`, so it sits outside the
@@ -42039,7 +42052,7 @@ function openCSVImport(){
 function handleCSVFile(ev){
   const file = ev.target && ev.target.files && ev.target.files[0];
   if(!file) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const reader = new FileReader();
   reader.onload = () => {
     try{
@@ -42200,7 +42213,7 @@ function confirmCSVImport(){
   if(typeof syncToCloud==='function') syncToCloud();
   const n = _csvPending.length;
   _csvPending = [];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderTransactions();
   try{ renderFinance(); }catch(_){}
   haptic('success');
@@ -42512,7 +42525,7 @@ function saveTransaction(){
     date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderTransactions();
   // The quick-spend path (line ~123) already formats to two decimals. The same £12 logged through
   // this door read "−$12" there and "−$12.00" here, so the app looked like it had recorded two
@@ -42754,7 +42767,7 @@ function saveSubscription(){
   const list = ls('totry_subscriptions') || [];
   list.unshift({id: Date.now(), name, amount, period, note, addedAt: new Date().toISOString()});
   ls('totry_subscriptions', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSubscriptions();
   showToast('Subscription tracked', name);
   haptic('success');
@@ -43377,7 +43390,7 @@ function saveBill(){
   const list = ls('totry_bills') || [];
   list.push({id: Date.now(), name, amount, due, paid: false});
   ls('totry_bills', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBills();
   try{ scheduleBillReminders(); }catch(_){ }
   showToast('Bill tracked', name);
@@ -43517,7 +43530,7 @@ function saveBudgets(){
     if(v > 0) out[cat] = v;
   });
   ls('totry_budgets', out);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBudgets();
   showToast('Budgets saved', Object.keys(out).length + ' categor' + (Object.keys(out).length === 1 ? 'y' : 'ies') + ' tracked.');
   haptic('success');
@@ -43613,7 +43626,7 @@ function saveAsset(){
   const list = ls('totry_assets') || [];
   list.unshift({id: Date.now(), name, value, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString()});
   ls('totry_assets', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderNetWorth();
   showToast('Asset added', name);
   haptic('success');
@@ -44402,7 +44415,7 @@ function saveMobilityAssessment(){
   ls('totry_mobility_profile', prof);
   if(typeof syncToCloud==='function') syncToCloud();
   _mobPick = {};
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   haptic('success'); showToast('Saved', 'Your mobility profile is set. Warm-ups will target your tight areas.');
   if(typeof renderMobilityPanel==='function') renderMobilityPanel();
 }
@@ -48437,7 +48450,7 @@ function openRoutineBuilder(){
 }
 
 function showRoutineBuilderModal(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const r = _builderRoutine;
   if(!r || !Array.isArray(r.exercises)){ return; }   // nothing to build — don't crash
   const m = document.createElement('div');
@@ -48586,7 +48599,7 @@ function saveBuilderRoutine(){
   else routines.unshift(routine);
   ls('totry_routines', routines.slice(0, 20));
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _builderRoutine = null;
   if(typeof renderRoutines === 'function') renderRoutines();
   showToast('Routine saved', name + ' · ' + r.exercises.length + ' exercise' + (r.exercises.length===1?'':'s'));
@@ -48675,7 +48688,7 @@ function saveAllGoalRoutineDays(){
   ls('totry_routines',routines.slice(0,20));
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof renderRoutines==='function') renderRoutines();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   haptic('success'); showToast('Routines saved', plan.days.length+' routines added. Find them in Saved routines.');
 }
 
@@ -48902,9 +48915,20 @@ function renderWorkoutHistory(){
         '<h3>'+_escFew(_focus)+'</h3>'+
         '<div class="tr-sheet-sub">'+_escFew(_when)+(_vol?' \u00b7 '+_vol.toLocaleString()+'kg volume'+(ls('totry_bw_volume')?' (incl. bodyweight)':''):'')+'</div>'+
         '<div class="tr-sheet-scroll">'+exList+'</div>'+
-        '<div class="tr-session-actions"><button class="btn primary" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button>'+
+        // THE ID IS A STRING AND THIS PASSED IT AS AN IDENTIFIER. `totry_workouts` ids come from
+        // five producers and every one of them is a STRING: 'manual_'+Date.now() (1622),
+        // 'health_'+wid (02-native:321), 'strava_'+a.id (03-person:536), 'hevy_'+w.id
+        // (21-content-engine:99) and 'stravahevy_'+a.id. Unquoted, `reloadSession('+s.id+')`
+        // compiles to `reloadSession(health_abc)` — a bare identifier, in global scope, naming
+        // nothing — so "Repeat session" and "Delete this session" threw ReferenceError for EVERY
+        // session except one with a bare numeric id. Measured: 5 of 6 real id shapes broken.
+        // This is the live remnant of the `d0 is not defined @ #money:1` family that 16 real users
+        // hit on 4 Sep; c31c24b fixed the money and nourish call sites with
+        // `_jsCode(JSON.stringify(...))` and left these two. Both receivers compare with `==`
+        // (2533, 2553), so a string literal is correct for a numeric id too.
+        '<div class="tr-session-actions"><button class="btn primary" onclick="reloadSession('+_jsCode(JSON.stringify(s.id))+');this.closest(\'.modal-bg\').remove()">Repeat session</button>'+
         '<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>'+
-        '<button class="btn quiet tr-delete" onclick="deleteWorkoutFromHistory('+s.id+')">Delete this session</button></div>';
+        '<button class="btn quiet tr-delete" onclick="deleteWorkoutFromHistory('+_jsCode(JSON.stringify(s.id))+')">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -48917,7 +48941,7 @@ async function deleteWorkoutFromHistory(id){
   const _kept = history.filter(s => s.id != id);
   tombstoneRemoved('totry_workouts', history, _kept);   // the OTHER workout delete — see deleteTraining
   ls('totry_workouts', _kept);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
   // AND REDRAW THE LIST THE ROW IS IN. renderUnifiedTraining() paints the analytics above, not
   // #pt-history-list, so the deleted session stayed on screen with its "Repeat session" button —
@@ -49370,7 +49394,7 @@ function openRoutineTemplates(){
 function previewTemplate(idx){
   const t = STARTER_TEMPLATES[idx];
   if(!t) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -49429,7 +49453,7 @@ function importTemplate(idx){
   }
   ls('totry_split', split);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Template imported', t.name + ' — your full week is set.');
   haptic('celebrate');
   
@@ -50119,7 +50143,7 @@ function showExamenStep(idx){
   const step = examenStepFor(EXAMEN_STEPS[idx]);
   if(!step){ saveExamen(); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   
@@ -50179,7 +50203,7 @@ function saveExamen(){
   // Saved first — their words are never lost — then meet them, instead of celebrating.
   if(typeof journalMeetCrisis === 'function' && journalMeetCrisis(_exCrisis)) return;
   if(typeof updateExamenCount === 'function') updateExamenCount();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Show closing prayer
   const m = document.createElement('div');
@@ -50205,7 +50229,7 @@ function saveExamen(){
 // ── EXAMEN HISTORY VIEWER ──────────────────────────────────────
 function showExamenHistory(){
   const log = ls('totry_examens') || [];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -50246,7 +50270,7 @@ function showExamenDetail(idx){
   const log = ls('totry_examens') || [];
   const e = log[idx];
   if(!e) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const labels = {
     gratitude: 'Gratitude',
@@ -50512,7 +50536,7 @@ function showDayActivityDetail(dateKey){
     items.push({kind: 'Trackers', text: parts.join(' · ')});
   }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   
@@ -50668,7 +50692,7 @@ function _tgtTellThem(){
   const msg = who
     ? (who+' — just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.')
     : ('Just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.');
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   // The sheet title role, left like every sheet — it was a centred 22px display headline at weight
   // 700, a fake bold, over a paragraph in the tertiary grey.
@@ -50689,7 +50713,7 @@ function _tgtCopyAndDone(){
   saveTGT({told:true});
   const who=((getTGT()||{}).person||'').trim();
   if(who && typeof logReachOut==='function'){ try{ logReachOut(who); }catch(_){} }
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
   try{ showToast('Copied','Now go send it. That one message is worth more than the whole list.'); }catch(_){}
   try{ renderTGT(); }catch(_){}
@@ -51758,7 +51782,7 @@ function checkYearInReviewPrompt(){
 
 function showSynthesisHistory(){
   const syntheses=ls('totry_syntheses')||[];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div');
   m.className='modal-bg open';
   
@@ -51802,7 +51826,7 @@ function showSynthesisHistory(){
 }
 
 function viewSingleSynthesis(idx){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const syntheses=ls('totry_syntheses')||[];
   const s=syntheses[idx];
   if(!s)return;
@@ -52795,7 +52819,7 @@ function generateShareCard(){
 
 // ── SHARE CARD CUSTOMIZER — pick exactly which fields go public ─────
 function openShareCustomizer(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Load saved preferences (default: most things on, some off for privacy)
   const prefs = ls('totry_share_prefs') || {
@@ -52893,7 +52917,7 @@ function createCustomShareCard(){
   ls('totry_share_prefs', prefs);
   
   // Close customizer
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Build the custom share card — load the app's fonts first so it matches the app's look.
   //
@@ -53193,7 +53217,7 @@ function renderCustomShareCard(prefs){
 }
 
 function createShareCard(style){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // Theme: respect the user's last choice; default dark.
   const theme = (ls('totry_share_theme')) || 'dark';
   // Ensure the app's real fonts are loaded before drawing, so the card matches the app
@@ -53735,6 +53759,32 @@ function closeModal(el){
   m.remove();
 }
 
+// CLOSE WHATEVER IS OPEN, WITHOUT DESTROYING A SHEET THAT CANNOT BE REBUILT.
+// v653 fixed `closeModal` to honour data-sheet="static" and stopped there — and 137 call sites
+// never go through closeModal. They ran `closeOpenSheets()` or
+// the forEach form directly, across 24 modules, which is the SAME permanent destruction v653
+// repaired: #payday-modal, #journal-modal and #serving-modal exist only as literal markup in the
+// shell and nothing recreates them.
+// AND DOCUMENT ORDER MAKES IT SILENT. The three static sheets are children of `div.app`; every
+// appended sheet is `document.body.appendChild(m)`, so the static ones always come FIRST and
+// `querySelector('.modal-bg.open')` returns the STATIC one. The ubiquitous "close whatever is open,
+// then open mine" one-liner therefore deleted the static sheet and left the appended one on screen
+// — so the screen still looked right and the damage showed up later, as
+// "Cannot set properties of null (setting 'value')" the next time openJournal() ran. Five real
+// users hit that on 25 Oct 2026.
+// It REUSES closeModal's predicate rather than inventing a second one, because two predicates for
+// one rule is how the halves drift apart.
+function closeOpenSheets(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){
+    if(m && m.dataset && m.dataset.sheet === 'static'){
+      if(m.id === 'serving-modal' && typeof closeServingModal === 'function'){ closeServingModal(); return; }
+      m.classList.remove('open');
+      return;
+    }
+    if(m) m.remove();
+  });
+}
+
 // ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
 // Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a
 // system dialog titled with the page ORIGIN — so the most consequential moments in the whole app
@@ -54049,7 +54099,7 @@ function openSupportPage(){
   catch(_){ try{ location.href = 'support.html'; }catch(__){ } }
 }
 function openFeedback(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
@@ -54268,7 +54318,7 @@ async function submitFeedback(){
     }catch(e){ /* fall through to email */ }
   }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   if(sent){
     showToast('Thank you', 'Your feedback came through. It genuinely helps.');
@@ -55304,7 +55354,7 @@ function openUniversalSearch(){
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
   // where it costs nothing and cannot be missed.
   try{ if(typeof _syncExamenNounLabels==='function') _syncExamenNounLabels(); }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
@@ -55567,7 +55617,7 @@ function restoreFullBackup(event){
 
 function confirmRestore(){
   const data = window.__pendingRestore;
-  if(!data){ document.querySelector('.modal-bg.open')?.remove(); return; }
+  if(!data){ closeOpenSheets(); return; }
   // FILTERED, like importAllData (restoreKeys does the filtering for both). v430 closed this on export
   // and on the secondary import path, but this is the restore half of the prominent Settings pair and it
   // wrote every key in the file verbatim — including totry_auth_session. Restoring someone else's backup
@@ -55576,7 +55626,7 @@ function confirmRestore(){
   // landed in localStorage.
   const r = restoreKeys(data);
   window.__pendingRestore = null;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const rep = restoreReport(r);
   showToast(r.failed.length ? rep.title : 'Restored ✓', rep.body);
   haptic(r.failed.length ? 'warning' : 'celebrate');
@@ -56519,7 +56569,7 @@ async function deleteJournalEntry(ts){
 // silently-corrected number, just an honest reason and a real person to take it to.
 function showUnderageFuelNote(){
   try{
-    document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+    closeOpenSheets();
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+
@@ -56789,7 +56839,7 @@ function saveGoalEdit(level){
     return;
   }
   setGoal(level, text);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderGoals();
   showToast('Saved', 'Goal updated.');
   haptic('success');
@@ -57326,7 +57376,7 @@ function checkChangelog(){
 }
 function ackChangelog(){
   ls('totry_changelog_seen', APP_VERSION);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
 }
 
 // One-time "what's possible" tour for brand-new users — shows the breadth of the app
@@ -57430,7 +57480,7 @@ function checkPostRelapse(){
 }
 
 function showAppPreview(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
 
@@ -60026,7 +60076,7 @@ function offerHevyConnect(){
 
 
 function openLinkedAppDirect(appId){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const app = APP_REGISTRY[appId];
   if(!app) return;
   if(app.scheme) window.location.href = app.scheme;
@@ -60097,7 +60147,7 @@ function addLinkedApp(appId){
     used.push(appId);
     ls('totry_apps_used', used);
   }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderConnectedApps();
   // For apps that need authentication, launch their connect flow straight away
   // instead of just adding a dead row the user then has to figure out.
@@ -60137,7 +60187,7 @@ function manageStravaConnection(){
 function disconnectStrava(){
   localStorage.removeItem('totry_strava_token');
   if(typeof syncToCloud === 'function') syncToCloud('totry_strava_token', null);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Strava disconnected', 'Reconnect anytime from Settings.');
   if(typeof renderConnectedApps === 'function') renderConnectedApps();
 }
@@ -60171,7 +60221,7 @@ function manageHevyConnection(){
 }
 function changeHevyKey(){
   // Clearing the key sends them back through the connect flow (used after rotating the key)
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   offerHevyConnect();
 }
 function disconnectHevy(){
@@ -60180,7 +60230,7 @@ function disconnectHevy(){
   if(typeof syncToCloud === 'function'){ syncToCloud('totry_hevy_api_key', null); syncToCloud('totry_hevy_synced_once', null); }
   const used = (ls('totry_apps_used') || []).filter(a => a !== 'hevy');
   ls('totry_apps_used', used);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Hevy disconnected', 'Your imported workouts stay. Reconnect anytime.');
   if(typeof renderConnectedApps === 'function') renderConnectedApps();
 }
@@ -60244,7 +60294,7 @@ function mapToHevyTemplate(name, templates){
 async function importHevyRoutines(){
   const key = ls('totry_hevy_api_key');
   if(!key){ showToast('Not connected', 'Connect Hevy first.'); return; }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Importing', 'Pulling your Hevy routines...');
   
   try{
@@ -60305,7 +60355,7 @@ async function importHevyRoutines(){
 
 // ── PUSH ToTry ROUTINE → HEVY ─────────────────────────────────
 async function openPushRoutineToHevy(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const routines = ls('totry_routines') || [];
   // Only routines NOT already from Hevy make sense to push
   const pushable = routines.filter(r => !r.hevyRoutineId);
@@ -60337,7 +60387,7 @@ async function pushRoutineToHevy(routineIdx){
   const routine = routines[routineIdx];
   if(!routine){ showToast('Not found', 'Routine missing.'); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Mapping exercises', 'Matching to Hevy\'s library...');
   
   // Get Hevy templates so we can resolve exercise IDs
@@ -60420,7 +60470,7 @@ async function pushLastWorkoutToHevy(){
   const native = workouts.find(w => w.source !== 'hevy' && w.source !== 'hevy-csv' && !w.pushedToHevy && (w.exercises||[]).length);
   if(!native){ showToast('Nothing to push', 'No new ToTry workout to log to Hevy.'); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Mapping exercises', 'Matching to Hevy\'s library...');
   const templates = await ensureHevyTemplates();
   if(!templates){ showToast('Push failed', 'Couldn\'t load Hevy exercise list.'); return; }
@@ -60501,7 +60551,7 @@ async function saveHevyKey(){
   if(!used.includes('hevy')){ used.push('hevy'); ls('totry_apps_used', used); }
   if(typeof syncToCloud === 'function') syncToCloud('totry_hevy_api_key', key);
 
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Hevy key saved ✓', 'Trying to pull your workouts...');
   haptic('celebrate');
 
@@ -60964,7 +61014,7 @@ function importEufyCSV(event){
       existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
       ls('totry_body', existing.slice(0, 1000));
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       if(typeof renderBody==='function') renderBody();
       if(typeof renderWeightHistory==='function') renderWeightHistory();
       if(typeof adjustCaloriesFromWeightTrend==='function') adjustCaloriesFromWeightTrend();
@@ -61081,7 +61131,7 @@ function saveScaleScreenshotEntry(){
   entries.sort((a,b) => new Date(b.ts) - new Date(a.ts));
   ls('totry_body', entries.slice(0,1000));
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderBody==='function') renderBody();
   if(typeof renderWeightHistory==='function') renderWeightHistory();
   if(typeof adjustCaloriesFromWeightTrend==='function') adjustCaloriesFromWeightTrend();
@@ -61154,7 +61204,7 @@ function importHevyCSV(event){
       _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
       ls('totry_workouts', _capWorkouts(_merged));
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       showToast('Imported', imported + ' workout' + (imported>1?'s':'') + ' from your CSV.');
       haptic('celebrate');
       if(typeof renderUnifiedTraining === 'function') renderUnifiedTraining();
@@ -61397,7 +61447,7 @@ function importFoodCSV(event){
       ls('totry_food_imported', true);
       if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
-      document.querySelector('.modal-bg.open')?.remove();
+      closeOpenSheets();
       showToast('Welcome \u2014 your history is here \u2713',
         imported + ' entries imported.' + (_unparsed ? ' ' + _unparsed + ' row' + (_unparsed>1?'s':'') + ' had a date I could not read and were left out.' : ' No re-logging needed.'));
       haptic('celebrate');

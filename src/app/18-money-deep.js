@@ -185,7 +185,7 @@ function saveTransaction(){
     date: dayKeyOf()
   });
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderTransactions();
   // The quick-spend path (line ~123) already formats to two decimals. The same £12 logged through
   // this door read "−$12" there and "−$12.00" here, so the app looked like it had recorded two
@@ -427,7 +427,7 @@ function saveSubscription(){
   const list = ls('totry_subscriptions') || [];
   list.unshift({id: Date.now(), name, amount, period, note, addedAt: new Date().toISOString()});
   ls('totry_subscriptions', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSubscriptions();
   showToast('Subscription tracked', name);
   haptic('success');
@@ -1050,7 +1050,7 @@ function saveBill(){
   const list = ls('totry_bills') || [];
   list.push({id: Date.now(), name, amount, due, paid: false});
   ls('totry_bills', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBills();
   try{ scheduleBillReminders(); }catch(_){ }
   showToast('Bill tracked', name);
@@ -1190,7 +1190,7 @@ function saveBudgets(){
     if(v > 0) out[cat] = v;
   });
   ls('totry_budgets', out);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBudgets();
   showToast('Budgets saved', Object.keys(out).length + ' categor' + (Object.keys(out).length === 1 ? 'y' : 'ies') + ' tracked.');
   haptic('success');
@@ -1286,7 +1286,7 @@ function saveAsset(){
   const list = ls('totry_assets') || [];
   list.unshift({id: Date.now(), name, value, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString()});
   ls('totry_assets', list);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderNetWorth();
   showToast('Asset added', name);
   haptic('success');

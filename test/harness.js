@@ -44,6 +44,16 @@ function extractFn(name){
 // an extract does not throw — the migration silently moves NOTHING and the run reports a clean
 // no-op. That is a harness lying in the direction of "already fixed", which is the worst direction.
 const DAY_PRIMITIVES = ['dayKeyNorm', 'dayKeyOf', '_dayKeyEnginePads'];
+// AND `closeOpenSheets` IS NOW A PRIMITIVE TOO. v659 replaced 138 inline
+// `document.querySelector('.modal-bg.open')?.remove()` expressions with one static-aware sink, so
+// 136 functions across 25 modules now CALL it. H.load extracts functions by NAME, so every one of
+// those became unloadable unless each call site's test remembered to name it — and the failure is
+// a bare "closeOpenSheets is not defined" from inside the function under test, which reads like the
+// app being broken. Prepended here for the same reason the day primitives are: it is reached by
+// too many functions to name per test.
+// It touches `document`, so a test that stubs `document` must offer querySelectorAll; the stub
+// below is only used when a test passes no document at all.
+const SHEET_PRIMITIVES = ['closeOpenSheets'];
 // Define the named functions (+ any provided globals/stubs) in one scope and return them.
 function load(names, globals){
   // A STUB FOR A DAY PRIMITIVE IS SILENTLY IGNORED, SO REFUSE IT. The primitives are prepended as
@@ -56,7 +66,7 @@ function load(names, globals){
   if(_shadowed.length) throw new Error('H.load: cannot stub ' + _shadowed.join(', ') +
     ' — the real source is prepended as a function declaration and shadows the parameter, so the ' +
     'stub never runs. Name it in `names` to get the REAL one back and derive expectations from it.');
-  const src = DAY_PRIMITIVES.concat(names).map(extractFn).join('\n\n');
+  const src = DAY_PRIMITIVES.concat(SHEET_PRIMITIVES).concat(names).map(extractFn).join('\n\n');
   const provided = Object.assign({
     Math, Date, JSON, Array, Object, isNaN, parseFloat, parseInt, String, Number, RegExp, console
   }, globals || {});

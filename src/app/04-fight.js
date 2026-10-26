@@ -230,7 +230,7 @@ function saveSplitDay(dayIdx){
   // nothing to undo it.
   split[dayIdx]={...(split[dayIdx]||{}), focus, routine:routine||null};
   ls('totry_split',split);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSplitOverview();
   // AND THE CARD ABOVE IT. renderSplitOverview() repaints the day list; the today card is written
   // by loadTodaySplitCard() and was left alone — so assigning a routine to today updated the list
@@ -324,7 +324,7 @@ function applyRecommendedSplit(){
     return { focus:d.focus, routine:null, exercises:ex, detail:ex.length?ex.join(', '):'' };
   });
   ls('totry_split',split);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderSplitOverview();
   const _n=split.reduce(function(a,d){ return a+((d.exercises||[]).length?1:0); },0);
   showToast('Split saved', _n
@@ -810,7 +810,7 @@ function openViceStage(i){
 function setViceStage(i, k){
   loadV(); const v=vices[i]; if(!v || !VICE_STAGES[k]) return;
   v.stage=k; v.stageAt=new Date().toISOString(); saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
   try{ if(typeof logEvent==='function') logEvent('vice_stage'); }catch(_){}
   if(typeof haptic==='function') haptic('success');
@@ -1157,7 +1157,7 @@ function fightVice(i){
 function startLiveIntervention(i){
   // fightVice buzzes one tap earlier; the door it opens should acknowledge the tap too.
   try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   loadV();
   curVice=i;
   // ONE URGE, ONE BATTLE. This incremented `total` here AND the win path increments it again when
@@ -1194,7 +1194,7 @@ function startLiveIntervention(i){
 
 // Path 2: Quick log of a past fight (replaces craving log)
 function startQuickLog(i){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   loadV();
   curVice=i;
   const v=vices[i];
@@ -1395,7 +1395,7 @@ function saveQuickLog(){
   ls('totry_fight_log', fightLog.slice(0, 200));
   
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const _wasRelapse = (_qlOutcome === false);
   _qlOutcome = null;
   renderVices();
@@ -1667,7 +1667,7 @@ function setUserSex(sex){
 // treatment whose final instruction is to put the phone down and leave the room, and morning light
 // is worth 10-50x avoiding evening screens for resetting the clock. No sleep score, ever.
 function openWindDown(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const t=(typeof faithTradition==='function')?faithTradition():'secular';
   const soft=(typeof faithLevel==='function') && faithLevel()==='light';
   const close={christianity:'Commend the day to God \u2014 the good and the botched \u2014 and let Him hold it while you sleep.',
@@ -1702,7 +1702,7 @@ function openWindDown(){
 // different ones — the CHOICE itself is the autonomy that predicts follow-through (SDT). Never
 // ranked, never "the app failed you", and the faith-based option only surfaces when faith is on.
 function openRecoveryBridge(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const faithOn = (typeof faithLevel!=='function') || faithLevel()!=='light';
   const tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const opts = [
@@ -1765,7 +1765,7 @@ const _SERVICE_ACTS = [
   ['heart','Hold someone else for a minute','Someone you know is having a harder week than you. Carry them for sixty seconds.']
 ];
 function openServiceExit(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const day=(typeof getDayCount==='function')?getDayCount():0;
   const a=_SERVICE_ACTS[day%_SERVICE_ACTS.length];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -2004,7 +2004,7 @@ function renderFeelingWinsMomentum(){
     '</div>';
 }
 function openFeelingNow(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.id='feelingnow-modal';
@@ -2149,7 +2149,7 @@ function _feelingNowSaveWhy(){
   // early, so without this the card renders UNDERNEATH the open sheet — in the document and
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
-    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    try{ closeOpenSheets(); }catch(_){ }
     setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }

@@ -843,7 +843,7 @@ async function deleteJournalEntry(ts){
 // silently-corrected number, just an honest reason and a real person to take it to.
 function showUnderageFuelNote(){
   try{
-    document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+    closeOpenSheets();
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+

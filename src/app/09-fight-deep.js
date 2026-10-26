@@ -269,7 +269,7 @@ function commitMassAddLosses(){
   });
   saveV();
   if(typeof syncToCloud==='function') syncToCloud();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices(); renderScoreboard(); renderDayCounter();
   if(typeof renderHomeQuickWins==='function') renderHomeQuickWins();
   if(typeof renderHomeHabits==='function') renderHomeHabits();
@@ -1411,7 +1411,7 @@ function addVice(){
   haptic('success');
   // Right after naming it, ask HOW they want to handle it — the plan is the first conversation, not
   // an afterthought buried in a settings sheet. Meet them at the goal the moment they name the fight.
-  try{ const _ni=vices.length-1; if(_ni>=0 && typeof openVicePlan==='function') setTimeout(function(){ try{ document.querySelectorAll('.modal-bg.open').forEach(function(x){x.remove();}); }catch(_){} try{ openVicePlan(_ni); }catch(_){} }, 220); }catch(_){}
+  try{ const _ni=vices.length-1; if(_ni>=0 && typeof openVicePlan==='function') setTimeout(function(){ try{ closeOpenSheets(); }catch(_){} try{ openVicePlan(_ni); }catch(_){} }, 220); }catch(_){}
 }
 
 // Get clean days for a vice based on startDate (the streak counter)
@@ -2362,7 +2362,7 @@ function applyViceMode(i, mode){
     v.startDate = new Date().toISOString();
   }
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   if(typeof renderHomeQuickWins==='function') renderHomeQuickWins();
   haptic('success');
@@ -2473,7 +2473,7 @@ function saveViceStart(i){
   if(picked.getTime() > Date.now()) picked.setTime(Date.now());
   vices[i].startDate = picked.toISOString();
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   renderDayCounter();
   const days = viceCleanDays(vices[i]);
@@ -2561,7 +2561,7 @@ function saveViceUse(i){
     v.lastModCheck = new Date().toISOString();
   }
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   try{ renderVices(); if(typeof renderScoreboard==='function') renderScoreboard(); if(typeof renderFinance==='function') renderFinance(); }catch(_){}
   try{ if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('tap'); }catch(_){}
   if(typeof showToast==='function') showToast('Logged','Thank you for being honest. That’s the part that actually moves things.');
@@ -2776,7 +2776,7 @@ function _reframeHTML(){
 function openGambleMoment(i){
   loadV(); const v=vices[i]; if(!v) return;
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const bank=viceSpendFromBank('gambling');
   const lost = bank && bank.total>0 ? bank.total : null;
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -2805,7 +2805,7 @@ function openGambleMoment(i){
 function _gambleStakes(i){
   const cash=parseFloat(document.getElementById('gm-cash')?.value||'')||0;
   if(cash<=0){ showToast('Just a number','However much it is — that’s the honest start. No wrong answer.'); return; }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   loadF();
   const stakes=stakesForAmount(cash);
@@ -2842,7 +2842,7 @@ function _gambleWin(i, cash){
     _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   const kept=cash>0?(curSym()+Math.round(cash).toLocaleString()+' still yours. '):'';
   showToast('That’s a win — a real one', kept+'The urge passes. What you did here is what changes the number.');
@@ -2852,7 +2852,7 @@ function _gambleWin(i, cash){
 // the real ledger, so the freedom date he just earned shows up the next time he looks.
 function _bookRedirect(i, cash, target){
   const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
   m.innerHTML='<div class="modal" style="text-align:center">'+
@@ -2896,7 +2896,7 @@ function openMomentStakes(i){
   const kind=_viceStakeKind(v);
   if(kind==='gambling'){ openGambleMoment(i); return; }
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   // Only an abstinence goal HAS a clean streak — see viceIsAbstinence. Watch mode has made no
   // promise, so there is nothing here to keep or end, and saying otherwise is the one thing that
   // mode exists to prevent.
@@ -2957,7 +2957,7 @@ function _momentWin(i){
     _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   // The win isn't a toast you scroll past — it's a door OUT. You turned away; now go live.
   theRelease({did:'The wave passed — and you didn’t. Not falling was the whole thing; the feeling goes, this is what stays.'});
@@ -3055,7 +3055,7 @@ function _riskGreetSteady(i){
     window.__momentOpenedAt=Date.now(); _recordFightMoment(v.n, true);
     v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString(); saveV();
   }
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   showToast('Good', 'Standing steady through your hard hour is its own kind of strong. I’ll be here.');
 }
@@ -3121,7 +3121,7 @@ function saveViceCost(i){
   }
   vices[i].owed = (owed>0) ? owed : 0;
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   const saved = viceMoneySaved(vices[i]);
   showToast('Saved', saved>0 ? (curSym()+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
@@ -3131,7 +3131,7 @@ function clearViceCost(i){
   loadV();
   delete vices[i].costAmount; delete vices[i].costPer; delete vices[i].costUses;
   saveV();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderVices();
   showToast('Removed','Cost tracking off for this one.');
 }

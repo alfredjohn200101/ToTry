@@ -91,7 +91,7 @@ function _feelThePull(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):((ls('totry_v')||[]).filter(v=>v&&v.n));
     if(!vs.length){ openCompanionForUrge(); return; }
     if(vs.length===1){ const _only=vs[0]; if(_only.kind==='letgo'){ openLettingGo(); return; } openMomentStakes(vices.indexOf(_only)); return; }
-    document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+    closeOpenSheets();
     // A sheet from the bottom, a title in the app's face, and the fights as rows. It was a centred card
     // with an italic reading-serif title, a centred italic note, and each name in a grey slab whose
     // text-align:left the flex button silently ignored. iosRow escapes the name.
@@ -180,17 +180,17 @@ function _saveIfThenFromModal(feeling){
   // saved — this store has no `flagged` field to keep it out of later reads.
   const _ifCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(raw) : null;
   if(_ifCrisis){
-    document.querySelector('.modal-bg.open')?.remove();
+    closeOpenSheets();
     if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis, null, { saved: false })) return;
   }
   saveIfThen(feeling, raw);
   if(!ok) return;                                   // nothing saved → leave the plan modal open
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   setTimeout(function(){ try{ if(typeof _feelMove==='function') _feelMove(feeling); }catch(_){} }, 180);
 }
 function _lockItIn(feeling){
   const existing=getIfThen(feeling); const preset=existing?existing.action:(_FEEL_PLAN[feeling]||''); const label=_FEEL_LABELS[feeling]||feeling;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal moment-sheet"><div class="modal-handle"></div>'+
     '<div class="eyebrow">A plan for next time</div>'+
@@ -336,7 +336,7 @@ function _startSmallestThing(){
 // neutral throughout ("them", never assumes who left whom). And every path ENDS — theRelease — because
 // the whole point of a dopamine detox is an app that hands you back to your life instead of holding you.
 function openLettingGo(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // The heartache path, rebuilt like the other feelings' sheets: a title in the app's face, the message
   // as body text, the one hard fact on a card of its own (it was an 11px tint caps label in a grey
   // panel), one move, and the other ways through as rows instead of four differently-painted slabs.
@@ -366,7 +366,7 @@ function _letGoSurf(){ openBreath('settle', {reason:'letgo', onClose:()=>setTime
 // A grief-prompted journal that beats Notes at the moment: a real prompt, saved to your journal (day +
 // mood + tagged), and it ENDS by handing you back to your life. Notes just stores; this processes.
 function _letGoJournal(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open';
   // "LET IT OUT \u00b7 NOT IN THEIR FEED" was a sentence in 11px tint capitals joined by a middot. The label
   // is two words; the rest is already what the paragraph under the title says.
@@ -393,7 +393,7 @@ function _letGoSaveJournal(){
     ls('totry_journal', entries.slice(0,1200));
     if(typeof renderJournal==='function') renderJournal();
   }catch(_){}
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(journalMeetCrisis(_lgCrisis)) return;   // saved above; met here rather than released
   if(typeof haptic==='function') haptic('success');
   theRelease({did:'You put it into words \u2014 and set it down. That\u2019s processing it, not feeding it.'});
@@ -401,7 +401,7 @@ function _letGoSaveJournal(){
 // Behavioral activation — the evidence-based antidote to rumination is ONE valued real action (not
 // avoidance, not numbing). Pick one, then the app closes and you go do it.
 function _letGoAct(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const acts=[
     ['walk','Walk \u2014 10 minutes, outside, phone in your pocket'],
     ['phone','Message ONE real person who loves you'],
@@ -425,7 +425,7 @@ function _letGoAct(){
 // For anyone carrying this longer than a moment — name it, and it becomes something the Fight helps with
 // every day: same urge support, a healing goal, grace on going back. Optional label, gender-free.
 function _letGoName(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof openFormModal==='function'){
     openFormModal('Make this something you\u2019re letting go of','You don\u2019t have to name them \u2014 a word is enough, or leave it blank. I\u2019ll keep it in your Fight with a healing goal (no shame clock), and meet you in the urge whenever it pulls.',[{id:'who',label:'',type:'text',placeholder:'e.g. my ex, someone, a name \u2014 optional'}],'Add it to my Fight',(vals)=>{ createLetGo((vals.who||'').trim()); return true; });
   } else { createLetGo(''); }
@@ -454,7 +454,7 @@ function createLetGo(who){
 // The grace-log for a named letting-go struggle: reaching back is part of the process, nothing resets.
 function _letGoWentBack(i){
   try{ if(typeof loadV==='function') loadV(); const v=vices[i]; if(v){ v.urgelog=v.urgelog||[]; v.urgelog.push(Date.now()); if(typeof saveV==='function') saveV(); } }catch(_){}
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-size:var(--t-title1);margin-bottom:8px">🕊️</div>'+
@@ -478,7 +478,7 @@ function theRelease(opts){
   opts = opts || {};
   // The Release ends the session — nothing should still be talking after it.
   try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   document.querySelectorAll('.breath-overlay').forEach(o=>o.remove());
   _logRelease(opts.did||'');
   const name = ls('totry_name') || '';
@@ -535,7 +535,7 @@ function theRelease(opts){
 // lecture: money stress already eats the mental bandwidth good decisions need.
 function _holds(){ try{ const a=ls('totry_impulse_holds'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
 function openImpulsePause(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   openFormModal('Before you buy','No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?',
     [{id:'what',label:'',type:'text',placeholder:'What is it?'},
@@ -556,7 +556,7 @@ const _IMPULSE_FEELINGS = [
   ['🤷','I want it and I don’t know why','That’s the honest answer, and it’s the most common one. Hold it a day and see if the wanting is still there.']
 ];
 function _impulseFeeling(what, amt){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const safe=_jsAttr(what);          // for the onclick attribute — see _jsAttr in 00-boot
   const shown=_escFew(what);         // for anything the person reads
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -570,7 +570,7 @@ function _impulseFeeling(what, amt){
   if(typeof haptic==='function') haptic('tap');
 }
 function _impulseHold(what, amt, fi){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const f=_IMPULSE_FEELINGS[fi]||_IMPULSE_FEELINGS[4];
   const safe=String(what).replace(/</g,'&lt;');
   const why=(ls('totry_why')||'').trim();
@@ -600,7 +600,7 @@ function _impulseSaveHold(what, amt){
   // "That's the whole move" on top of what they just said would be the app talking over them.
   const _ihC = (typeof crisisInAny==='function') ? crisisInAny([what]) : null;
   try{ const h=_holds(); h.unshift({what:_ihC?'':String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(_ihC){
     try{ if(typeof haptic==='function') haptic('warning'); }catch(_){}
     if(typeof journalMeetCrisis==='function') journalMeetCrisis(_ihC, null, { saved: false });
@@ -615,7 +615,7 @@ function dueImpulseHold(){
 }
 function _resolveHold(ts, bought){
   try{ const h=_holds(); const i=h.findIndex(function(x){ return x && x.ts===ts; }); if(i>=0){ h[i].done=true; h[i].bought=!!bought; ls('totry_impulse_holds', h); } }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(!bought){
     let saved=0; try{ saved=_holds().filter(function(x){ return x.done && !x.bought; }).reduce(function(a,x){ return a+(x.amt||0); },0); }catch(_){}
     try{ showToast('Still yours', saved>0 ? ('That’s about '+curSym()+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
@@ -773,7 +773,7 @@ function _tkSuggest(){
   return '';
 }
 function openToolkit(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const sug=_tkSuggest();
   const myLine=(_tkStore().myLine||'').trim();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -798,7 +798,7 @@ function openToolkit(){
 }
 function openLesson(id){
   const l=_tkLesson(id); if(!l) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const again=_tkSeen(id);
   const faithOn=(typeof faithLevel!=='function')||faithLevel()!=='light';
   const tr=(typeof faithTradition==='function')?faithTradition():'secular';
@@ -831,7 +831,7 @@ function openLesson(id){
 }
 function _tkPractice(id){
   const l=_tkLesson(id); if(!l) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   // Two lessons hand straight to a tool that already exists rather than describing one.
   if(l.pracFn==='_tkMyLine'){ _tkMyLine(); return; }
   if(l.pracFn==='openHALT' || l.pracFn==='_letGoAct'){ _tkMark(id); try{ window[l.pracFn](); }catch(_){} return; }
@@ -874,7 +874,7 @@ function _tkMyLine(){
 function _tkDone(id){
   const l=_tkLesson(id);
   _tkMark(id);
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof haptic==='function') haptic('success');
   try{ if(typeof logEvent==='function') logEvent('lesson_done'); }catch(_){}
   const did='You learned '+((l&&l.t)?l.t.charAt(0).toLowerCase()+l.t.slice(1):'a skill')+' while nothing was going wrong \u2014 which is the only time anybody ever really learns anything. It\u2019ll be there when you need it.';
@@ -902,7 +902,7 @@ const _HALT = [
     cta:'Wind down', act:"openBreath('sleep',{reason:'halt'})" }
 ];
 function openHALT(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
@@ -918,7 +918,7 @@ function openHALT(){
 }
 function _haltPick(k){
   const h=_HALT.find(function(x){ return x.k===k; }); if(!h) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-size:var(--t-2xl);margin-bottom:8px">'+h.icon+'</div>'+
@@ -939,7 +939,7 @@ function _haltPick(k){
 // it's too small to trigger it, then start a VISIBLE two minutes. Written for anyone having a low-
 // capacity day; it happens to name exactly how an ADHD brain gets stuck, without diagnosing anyone.
 function openCantStart(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal==='function'){
     openFormModal('What can’t you start?','Name it in a few words. Naming it is already the first inch.',
       [{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the washing, the call'}],'Make it smaller',
@@ -975,7 +975,7 @@ const _SHRINK = [
   function(t){ return 'Then just this: sit where you’d do it, for two minutes, doing nothing. Starting is allowed to be that small.'; }
 ];
 function _shrinkIt(thing, level){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   // CLAMPED, because `Math.min(undefined, 3)` is NaN and `_SHRINK[NaN]` is undefined, so the next
   // line throws "_SHRINK[lv] is not a function" — which four real users hit on 1 Oct 2026
   // (app_events jserror, 4 distinct anon_ids). A negative level does the same. Every call site in
@@ -1016,7 +1016,7 @@ function _startTwoMin(thing, round){
   //   · ONE extension only. Body doubling is a push-off, not a place to live; an infinite "keep going"
   //     loop would be the dependence CLAUDE.md forbids.
   //   · It ends in theRelease(), off the phone, like every other real exit here.
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   document.querySelectorAll('.tm-overlay').forEach(function(o){ o.remove(); });
   const r = round || 1;
   const ov=document.createElement('div');
@@ -1111,7 +1111,7 @@ const _LOOK_UP_PROMPTS = [
   'a building or hill older than everyone you know'
 ];
 function openLookUp(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const day = (typeof getDayCount==='function') ? getDayCount() : 0;
   const what = _LOOK_UP_PROMPTS[day % _LOOK_UP_PROMPTS.length];
   // A centred 28px bold title under a lone icon, a centred paragraph, and its second paragraph in the
@@ -1179,7 +1179,7 @@ function blessLastLine(){
 }
 let _blessS = null;
 function openBlessing(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const few=(typeof getYourFew==='function')?getYourFew():[];
   _blessS={ step:0, few:few, lovedIdx:(few.length?0:-1), loved:'', neutral:'', hard:'', reach:'', cands:[] };
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='bless-modal'; m.style.alignItems='center';
@@ -1327,7 +1327,7 @@ function getValues(){ try{ const o=ls('totry_values'); return (o && Array.isArra
 function topValue(){ const o=getValues(); return o?valLabel(o.v[0]):null; }
 let _vsS=null;
 function openValuesSort(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const cur=getValues();
   _vsS={ phase:1, picked: cur?cur.v.slice(0,5):[], why: cur?(cur.why||''):'' };
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='values-modal';
@@ -1362,14 +1362,14 @@ function _vsSave(){
   // early, so without this the card renders UNDERNEATH the open sheet — in the document and
   // not on the screen, which is the exact defect test/crisis.js was written for. Caught by
   // the suite's own elementFromPoint probe, not by reading the code.
-    try{ document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); }); }catch(_){ }
+    try{ closeOpenSheets(); }catch(_){ }
     setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_cc, null, { saved: false }); }catch(_){ } }, 250);
     return;
   }
   try{ ls('totry_values', { v:s.picked.slice(0,5), why:String(w?w.value:(s.why||'')).trim().slice(0,160), ts:new Date().toISOString() }); }catch(_){}
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   try{ showToast('Held','I\u2019ll hold you to your own words, not mine.'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   try{ renderValuesCard(); }catch(_){}
 }
 function _vsRender(){
@@ -1787,7 +1787,7 @@ function _walkBackAtThreshold(v){
 function openWalkBack(i){
   if(typeof loadV==='function') loadV();
   const v=vices[i]; if(!v) return;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   const _L=walkBackLinks(v);
   const _prev=_L ? ('\n\nLast time you traced it: “'+String(_L.last.chain||'').slice(0,180)+'”'+(_L.last.catch?(' — and the link you named was: '+_L.last.catch):'')) : '';
@@ -1825,7 +1825,7 @@ function openCBA(i){
   if(typeof loadV==='function') loadV();
   const v=vices[i]; if(!v) return;
   const c=v.cba||{};
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   if(typeof openFormModal!=='function') return;
   openFormModal('The honest ledger',
     'Both columns, honestly \u2014 including what it genuinely gives you. A list that pretends it does nothing for you is a list you won\u2019t believe at 11pm.',
@@ -1871,7 +1871,7 @@ const _DEADS=[
   ['repeat','Substitute','Give the need what it actually wants. Tired \u2192 rest. Lonely \u2192 a person. Bored \u2192 something real.']
 ];
 function openDEADS(){
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">Five ways through.</div>'+
@@ -1998,7 +1998,7 @@ function _planCardHTML(i){
 // worked (move, breath) went somewhere. These three now do too.
 function _pickHigh(type){
   try{ if(typeof logEvent==='function') logEvent('natural_high'); }catch(_){}
-  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  closeOpenSheets();
   if(type==='move'){ if(typeof go==='function') go('train'); }
   else if(type==='breath'){ if(typeof openBreath==='function') openBreath('energize'); }
   else if(type==='sun'){ if(typeof openLookUp==='function') openLookUp(); else if(typeof go==='function') go('home'); }

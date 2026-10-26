@@ -480,7 +480,7 @@ function saveMobilityAssessment(){
   ls('totry_mobility_profile', prof);
   if(typeof syncToCloud==='function') syncToCloud();
   _mobPick = {};
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   haptic('success'); showToast('Saved', 'Your mobility profile is set. Warm-ups will target your tight areas.');
   if(typeof renderMobilityPanel==='function') renderMobilityPanel();
 }

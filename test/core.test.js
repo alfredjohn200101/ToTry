@@ -3431,9 +3431,9 @@ H.section('the fixes I shipped today, checked against themselves')
     const feed = function(text){
       const out = { toasts: [], rows: null };
       const L = H.load(['handleCSVFile','parseCSV','_detectCSVColumns','_csvDate','_csvDayFirst',
-                        '_csvAmount','_autoCategory'], {
+                        '_csvAmount','_autoCategory','closeOpenSheets'], {
         VICE_MERCHANTS: VICE_MERCHANTS,
-        document: { querySelector: function(){ return null; } },
+        document: { querySelector: function(){ return null; }, querySelectorAll: function(){ return []; } },
         showToast: function(a, b){ out.toasts.push(String(a) + ' :: ' + String(b)); },
         _showCSVPreview: function(rows){ out.rows = rows; },
         console: { error: function(){} },
@@ -6514,7 +6514,10 @@ H.section('a barcode is remembered, and an unknown one can be taught once');
   const scf = H.code(H.extractFn('saveCustomFood'));
   H.ok(/__bcPending/.test(scf) && /barcodeRemember/.test(scf),
     'saving a custom food attaches the barcode it came in with');
-  H.ok(scf.indexOf('__bcPending') < scf.indexOf("querySelector('.modal-bg.open')"),
+  const _teardown = ['closeOpenSheets()', "querySelector('.modal-bg.open')", 'closeModal(']
+    .map(t => scf.indexOf(t)).filter(i => i >= 0);
+  H.ok(_teardown.length > 0, 'saveCustomFood tears the sheet down (by whatever name)');
+  H.ok(scf.indexOf('__bcPending') < Math.min.apply(null, _teardown),
     'and does it BEFORE the sheet is torn down, so the pending value is still readable');
 
   // 7. DRIVEN END TO END: unknown -> taught once -> known.
@@ -9251,9 +9254,11 @@ H.section('a recipe can come from a screenshot, and what comes back is still gat
   const run = (reply, crisisOn) => {
     let drafted = null, toast = null, crisis = null;
     const btn = { textContent:'Build the recipe', disabled:false };
-    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft'], {
+    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets'], {
       document: { getElementById: () => ({ click(){} }),
-                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }) },
+                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }),
+                  // closeOpenSheets (v659) iterates, so a document stub needs this too.
+                  querySelectorAll: () => [] },
       downscaleImage: async () => 'data:image/jpeg;base64,AAAA',
       sb: { functions: { invoke: async () => ({ data: { text: reply } }) } },
       detectCrisis: (t) => (crisisOn && /end it/i.test(t) ? { kind:'suicide' } : null),
@@ -9313,9 +9318,11 @@ H.section('a recipe can come from a link, and the link never names a platform');
   const run = (text, reply) => {
     let seen = null, toast = null, drafted = null;
     const ta = { value: text }, btn = { textContent:'', disabled:false };
-    const fns = H.load(['parsePastedRecipe','_recipeFromParsed','_recipeDraftGuard','_recipeDraft'], {
+    const fns = H.load(['parsePastedRecipe','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets'], {
       document: { getElementById: (id) => (id === 'paste-recipe-text' ? ta : { innerHTML:'' }),
-                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }) },
+                  querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }),
+                  // closeOpenSheets (v659) iterates, so a document stub needs this too.
+                  querySelectorAll: () => [] },
       api: async (sys, m, prompt, tok, opts) => { seen = { prompt, tok, opts }; return reply; },
       detectCrisis: () => null, showCrisisResponse: () => {}, showToast: (a) => { toast = a; },
       editRecipe: (i, r) => { drafted = r; }, haptic: () => {}, console,
@@ -13060,6 +13067,165 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   }
 }
 
+// ══ NOTHING MASS-REMOVES AN OPEN SHEET EITHER ══════════════════════════════════════════════
+// v653 fixed `closeModal` to honour data-sheet="static" and STOPPED THERE. 138 call sites across 25
+// modules never went through closeModal: they ran `document.querySelector('.modal-bg.open')
+// ?.remove()` or the forEach form directly, which is the same permanent destruction v653 repaired —
+// #payday-modal, #journal-modal and #serving-modal exist only as literal shell markup and nothing
+// recreates them.
+// AND DOCUMENT ORDER MADE IT SILENT: the three static sheets are children of `div.app` while every
+// appended sheet is `document.body.appendChild`, so the static one is always found FIRST. The
+// "close whatever is open, then open mine" one-liner therefore deleted the static sheet and left
+// the appended one on screen, so the screen looked right and the damage surfaced later as
+// "Cannot set properties of null (setting 'value')" — which five real users hit on 25 Oct 2026.
+// The existing guard (see "no code mass-removes .modal-bg") banned only the BARE selector, so the
+// `.open` form was invisible to the gate for its whole life.
+{
+  H.section('nothing mass-removes an open sheet');
+  const code = H.code(H.html);
+
+  // The REMOVAL forms must be gone. The READ/GUARD forms are deliberately kept — five sites do
+  // `if(document.querySelector('.modal-bg.open')) return;`, and turning a guard into a side effect
+  // is how a true finding plus a global edit becomes destruction.
+  const removals = [
+    /document\.querySelector\('\.modal-bg\.open'\)\?\.remove\(\)/g,
+    /document\.querySelectorAll\('\.modal-bg\.open'\)\.forEach\(\s*(?:function\s*\(\s*\w+\s*\)\s*\{\s*\w+\.remove|\(?\w+\)?\s*=>\s*\w+\.remove)/g,
+  ];
+  const left = removals.reduce((a, re) => a + (code.match(re) || []).length, 0);
+  H.ok(left === 0,
+    'no call site removes an open sheet directly (found ' + left + ') — they go through closeOpenSheets');
+  H.ok(/function closeOpenSheets\(/.test(code), 'and that sink exists');
+
+  // DRIVEN, not grepped: a static sheet must survive it and an appended one must not.
+  const made = [];
+  const mk = (id, isStatic) => ({ id, dataset: isStatic ? { sheet: 'static' } : {},
+    classList: { _c: ['modal-bg', 'open'],
+      remove(c){ this._c = this._c.filter(x => x !== c); },
+      contains(c){ return this._c.indexOf(c) >= 0; } },
+    remove(){ made.push('REMOVED:' + id); } });
+  const statics = ['payday-modal', 'journal-modal'].map(id => mk(id, true));
+  const appended = mk('some-sheet', false);
+  const S = H.load(['closeOpenSheets'], {
+    document: { querySelectorAll: () => statics.concat([appended]) },
+    closeServingModal: () => {},
+  });
+  S.closeOpenSheets();
+  H.ok(made.length === 1 && made[0] === 'REMOVED:some-sheet',
+    'it removes the appended sheet' + (made.length !== 1 ? ' → ' + JSON.stringify(made) : ''));
+  H.ok(statics.every(m => !m.classList.contains('open')),
+    'and CLOSES the two static sheets rather than destroying them');
+  H.ok(statics.every(m => made.indexOf('REMOVED:' + m.id) < 0),
+    'neither static sheet was removed from the DOM — they can never be rebuilt');
+
+  // #serving-modal has its own closer (it holds pending quantity state), so it must route there.
+  let servingClosed = false;
+  const serv = mk('serving-modal', true);
+  const S2 = H.load(['closeOpenSheets'], {
+    document: { querySelectorAll: () => [serv] },
+    closeServingModal: () => { servingClosed = true; },
+  });
+  S2.closeOpenSheets();
+  H.ok(servingClosed, '#serving-modal goes through closeServingModal, not a bare class removal');
+}
+
+// ══ EVERY HANDLER renderRecentFoods EMITS ACTUALLY COMPILES ════════════════════════════════
+// Real users hit these at `#nourish:1`: "Invalid or unexpected token" (8 occ) and "missing ) after
+// argument list". Cause: a hand-rolled escape chain at 14-nourish.js, `f.name.replace(/'/g,"\\'")
+// .replace(/</g,'&lt;').replace(/"/g,'&quot;')`, which escaped the quote, the angle bracket and the
+// double quote and NOT backslash and NOT newline. Measured over 9 real name shapes it broke 3, and
+// each maps to a reported error:
+//   "Line\nBreak Bar" a raw newline in a JS string literal -> Invalid or unexpected token
+//   "Trailing\"       a trailing backslash eats its own quote -> unterminated string
+//   "a&apos;b"        the parser DECODES the entity to ' before the JS compiles -> missing )
+// That last one is the repo's own recorded rule: an HTML escape cannot close a JS-string hole.
+// DRIVEN, not grepped: the real function renders, every on*= attribute is HTML-decoded the way the
+// parser does it, and each is handed to `new Function`. Calibrated by restoring the old chain,
+// which produces 9 of 18 non-compiling with the byte-identical production messages.
+{
+  H.section('every handler renderRecentFoods emits compiles');
+  let html = '';
+  const slot = { set innerHTML(v) { html = v; }, get innerHTML() { return html; } };
+  const names = ['Oats', "Mum's granola", 'Line\nBreak Bar', 'Trailing\\', 'a&apos;b', 'Oak 2% "Lite"'];
+  const L = H.load(['renderRecentFoods','_jsAttr','_escFew','_quickServing','nutGentle','svgIcon','currentMealSlot'], {
+    document: { getElementById: (id) => id === 'nut-recent-foods' ? slot : null },
+    ls: () => names.map((n, i) => ({ name: n, cal: 100 + i, pro: 10, count: 1, fav: i % 2 === 0 })),
+  });
+  L.renderRecentFoods();
+  H.ok(html.length > 500, 'it rendered (' + html.length + ' chars) \u2014 CALIBRATION: an empty render ' +
+    'would make every check below pass vacuously');
+
+  const decode = (x) => x.replace(/&apos;/g, "'").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+                         .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  let total = 0; const broken = [];
+  for (const m of html.matchAll(/on(?:click|change)="([^"]*)"/g)) {
+    total++;
+    try { new Function('logRecentFood', 'toggleFavFood', 'quickLogRecent', decode(m[1])); }
+    catch (e) { broken.push(decode(m[1]).slice(0, 40).replace(/\n/g, '\\n') + ' → ' + e.message.slice(0, 30)); }
+  }
+  H.ok(total >= 12, 'it emits ' + total + ' inline handlers');
+  H.ok(broken.length === 0,
+    'and every one of them COMPILES after the parser decodes it' +
+    (broken.length ? ' → ' + broken.slice(0, 3).join(' | ') : ''));
+
+  // The aria-labels are a TEXT position, so they must ROUND-TRIP to the real food name. _jsAttr
+  // would emit `Mum\'s granola` and a screen reader reads the backslash aloud. A first version of
+  // this check just looked for a backslash and flagged "Trailing\\", whose name genuinely has one.
+  const labels = [...html.matchAll(/aria-label="([^"]*)"/g)].map(m => decode(m[1]));
+  const strays = labels.filter(v => {
+    const bare = v.replace(/^(?:Add |Remove |Log )/, '').replace(/ (?:to|from) favourites$/, '');
+    return names.indexOf(bare) < 0;
+  });
+  H.ok(labels.length >= 8 && strays.length === 0,
+    labels.length + ' aria-labels all round-trip to a real food name' +
+    (strays.length ? ' → ' + strays.join(' | ') : ''));
+}
+
+// ══ A STRING ID IS QUOTED INTO ITS HANDLER ═════════════════════════════════════════════════
+// 16 real users hit "d0 is not defined @ #money:1" / "demo_f0_0 is not defined @ #nourish:1" on
+// 4 Sep 2026. Cause: a STRING primary key interpolated into an inline handler UNQUOTED, so
+// `editTransaction(' + t.id + ')` compiled to `editTransaction(d0)` — a bare identifier, in global
+// scope, naming nothing. c31c24b fixed the money and nourish sites with _jsCode(JSON.stringify(..))
+// and LEFT TWO: the workout-history sheet's "Repeat session" and "Delete this session".
+// `totry_workouts` is the one store whose ids are all strings — five producers, every one prefixed
+// ('manual_', 'health_', 'strava_', 'hevy_', 'stravahevy_') — so BOTH buttons threw ReferenceError
+// for every session a person could actually have. Measured: 5 of 6 real id shapes broken.
+//
+// AND THE SWEEP STOPS HERE ON PURPOSE. There are 27 raw `fn('+x.id+')` interpolations across 12
+// modules and only these two were defective: every other store writes `id: Date.now()`. Quoting
+// them all would have been the blanket edit this repo fails builds over — `deleteSubscription`
+// compares with STRICT `!==`, so handing it a quoted numeric id would silently stop deleting.
+// Bucket the hits before editing them.
+{
+  H.section('a string id is quoted into its handler');
+  const code = H.code(H.html);
+
+  // The two that were broken, by behaviour rather than by name.
+  H.ok(/reloadSession\('\+_jsCode\(JSON\.stringify\(s\.id\)\)\+'\)/.test(code),
+    'Repeat session passes the workout id as a string literal');
+  H.ok(/deleteWorkoutFromHistory\('\+_jsCode\(JSON\.stringify\(s\.id\)\)\+'\)/.test(code),
+    'Delete this session does too');
+  H.ok(!/reloadSession\('\+s\.id\+'\)/.test(code) && !/deleteWorkoutFromHistory\('\+s\.id\+'\)/.test(code),
+    'and neither interpolates it raw any more');
+
+  // THE PREMISE, asserted so the fix cannot quietly stop being necessary: if someone changes
+  // totry_workouts to numeric ids, this block should be revisited rather than silently redundant.
+  const STRING_ID_WRITERS = [
+    ["'health_'+wid",        '02-native.js'],
+    ["'strava_'+a.id",       '03-person.js'],
+    ["'hevy_' + w.id",       '21-content-engine.js'],
+    ["'manual_' + Date.now", '22-train-deep.js'],
+  ];
+  const missing = STRING_ID_WRITERS.filter(([lit]) => code.indexOf(lit) < 0);
+  H.ok(missing.length === 0,
+    'totry_workouts still has string ids from ' + STRING_ID_WRITERS.length + ' producers' +
+    (missing.length ? ' → GONE: ' + missing.map(m => m[0]).join(', ') + ' (revisit this block)' : ''));
+
+  // And the receivers still compare loosely, which is what makes a string literal safe for the
+  // numeric case too. If either tightens to ===, the quoting becomes load-bearing in a new way.
+  H.ok(/s\.id\s*==\s*id/.test(code), 'reloadSession still matches with == (safe for both types)');
+  H.ok(/s\.id\s*!=\s*id/.test(code), 'deleteWorkoutFromHistory still matches with != ');
+}
+
 // ══ THE RECOVERY BRIDGE'S DOORS ARE OPEN ═══════════════════════════════════════════════════
 // Curled 27 Oct 2026, every URL in `openRecoveryBridge`. TWO OF FOUR WERE DEAD, on the surface a
 // person reaches after the app has told them it is not enough:
@@ -13112,10 +13278,10 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   let stored = null;
   const run = (rec) => {
     stored = null;
-    const L = H.load(['applyRecommendedSplit','plural'], {
+    const L = H.load(['applyRecommendedSplit','plural','closeOpenSheets'], {
       window: { _recSplit: rec },
       ls: (k, v) => { if (v !== undefined) { stored = v; return v; } return null; },
-      document: { querySelector: () => null },
+      document: { querySelector: () => null, querySelectorAll: () => [] },
       renderSplitOverview() {}, showToast() {},
     });
     L.applyRecommendedSplit();
@@ -13143,9 +13309,9 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // source reads fine. Day one is the sentence this app says most, so the singular is pinned.
   const toasts = [];
   const runToast = (rec) => {
-    const L = H.load(['applyRecommendedSplit','plural'], {
+    const L = H.load(['applyRecommendedSplit','plural','closeOpenSheets'], {
       window: { _recSplit: rec }, ls: (k, v) => v !== undefined ? v : null,
-      document: { querySelector: () => null }, renderSplitOverview() {},
+      document: { querySelector: () => null, querySelectorAll: () => [] }, renderSplitOverview() {},
       showToast: (a, b) => toasts.push(b),
     });
     L.applyRecommendedSplit();
@@ -15577,6 +15743,10 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
       _fuelSafetyModal: () => {}, _fuelFinishSave: () => { advanced = true; },
       window: {}, parseFloat, parseInt, Array, String, RegExp, Object,
     };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     new Function(...k, src + '\n_fuelElicitSave();')(...v);
     return { bridged, prefsSaved, advanced };
@@ -15743,6 +15913,10 @@ H.section('a legacy disclosure in stored meal prefs never reaches a prompt');
   const { detectCrisis } = H.load(['detectCrisis']);
   const run = stored => {
     const sb = { detectCrisis, ls: () => stored, JSON, Object, Array, String };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     return new Function(...k, SRC + '\nreturn getMealPrefs();')(...v);
   };
@@ -15800,6 +15974,10 @@ H.section('the shop picker gates its two free-text fields too');
       setTimeout: fn => { try{ fn(); }catch(_){ } },
       renderFuelPlanCard: () => {}, syncShopsRow: () => {}, _fuelGenerate: () => { generated = true; },
       showToast: () => {} };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     new Function(...k, (src || SRC) + '\n_fuelShopSave(true);')(...v);
     return { saved, met, generated };
@@ -15880,6 +16058,10 @@ H.section('the shop picker gates its two free-text fields too');
       journalMeetCrisis: () => { metB = true; }, bridgeToRealHelp: () => { metB = true; },
       setTimeout: fn => { try{ fn(); }catch(_){ } },
       renderFuelPlanCard: () => {}, syncShopsRow: () => {}, _fuelGenerate: () => {}, showToast: () => {} };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     new Function(...k, blind + '\n_fuelShopSave(true);')(...v);
   }
@@ -16132,6 +16314,10 @@ H.section('the argument-shaped doors are gated, and none celebrates over a discl
     const sb = Object.assign({ crisisInAny, detectCrisis, Date, JSON, Object, Array, String,
       Math, parseInt, parseFloat, isNaN, Number, RegExp,
       setTimeout: fn => { try{ fn(); }catch(_){ } }, clearTimeout: () => {} }, extra);
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     const body = (src || names.map(H.extractFn).join('\n\n')) + '\n' + tail;
     try{ return { out: new Function(...k, body)(...v) }; }
@@ -16269,6 +16455,10 @@ H.section('three good things is gated, and the message cannot carry a disclosure
       journalMeetCrisis: () => { met = true; return true; },
       document: { getElementById: () => null, querySelector: () => null },
       Date, JSON, Object, Array, String, Math, parseInt, parseFloat, isNaN, Number, RegExp };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     try{
       const out = new Function(...k, (src || SRC) +
@@ -16410,6 +16600,10 @@ H.section('the quick log keeps the slip and drops the sentence');
       setTimeout: fn => { try{ fn(); }catch(_){ } },
       window: {}, parseInt, Date, JSON, Array, Object, String,
     };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     try{ new Function(...k, SRC + '\nsaveQuickLog();')(...v); }catch(e){ return { threw: String(e.message).slice(0,70) }; }
     return { met, saved, log, toasted, grace, vice: sb.vices[0] };
@@ -16463,6 +16657,10 @@ H.section('the quick log keeps the slip and drops the sentence');
       renderDayCounter: () => {}, renderWinsLog: () => {}, _celebrateFirstWin: () => {},
       viceCleanDays: () => 5, setTimeout: fn => { try{ fn(); }catch(_){ } },
       window: {}, parseInt, Date, JSON, Array, Object, String };
+    // closeOpenSheets is the static-aware sheet sink (v659). These sandboxes extract function
+    // SOURCE and do not go through H.load, so its prepend cannot reach them. A no-op is right
+    // here: these cases assert whether the gate BRIDGES, not how a sheet is torn down.
+    if(!('closeOpenSheets' in sb)) sb.closeOpenSheets = function(){};
     const k = Object.keys(sb), v = k.map(x => sb[x]);
     try{ new Function(...k, s + '\nsaveQuickLog();')(...v); }catch(e){ return { threw: String(e.message).slice(0,60) }; }
     return { met, log };

@@ -439,7 +439,7 @@ function showExamenStep(idx){
   const step = examenStepFor(EXAMEN_STEPS[idx]);
   if(!step){ saveExamen(); return; }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   
@@ -499,7 +499,7 @@ function saveExamen(){
   // Saved first — their words are never lost — then meet them, instead of celebrating.
   if(typeof journalMeetCrisis === 'function' && journalMeetCrisis(_exCrisis)) return;
   if(typeof updateExamenCount === 'function') updateExamenCount();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Show closing prayer
   const m = document.createElement('div');
@@ -525,7 +525,7 @@ function saveExamen(){
 // ── EXAMEN HISTORY VIEWER ──────────────────────────────────────
 function showExamenHistory(){
   const log = ls('totry_examens') || [];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -566,7 +566,7 @@ function showExamenDetail(idx){
   const log = ls('totry_examens') || [];
   const e = log[idx];
   if(!e) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const labels = {
     gratitude: 'Gratitude',
@@ -832,7 +832,7 @@ function showDayActivityDetail(dateKey){
     items.push({kind: 'Trackers', text: parts.join(' · ')});
   }
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   
@@ -988,7 +988,7 @@ function _tgtTellThem(){
   const msg = who
     ? (who+' — just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.')
     : ('Just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.');
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   // The sheet title role, left like every sheet — it was a centred 22px display headline at weight
   // 700, a fake bold, over a paragraph in the tertiary grey.
@@ -1009,7 +1009,7 @@ function _tgtCopyAndDone(){
   saveTGT({told:true});
   const who=((getTGT()||{}).person||'').trim();
   if(who && typeof logReachOut==='function'){ try{ logReachOut(who); }catch(_){} }
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  closeOpenSheets();
   try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
   try{ showToast('Copied','Now go send it. That one message is worth more than the whole list.'); }catch(_){}
   try{ renderTGT(); }catch(_){}

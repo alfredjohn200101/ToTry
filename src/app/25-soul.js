@@ -728,7 +728,7 @@ function generateShareCard(){
 
 // ── SHARE CARD CUSTOMIZER — pick exactly which fields go public ─────
 function openShareCustomizer(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Load saved preferences (default: most things on, some off for privacy)
   const prefs = ls('totry_share_prefs') || {
@@ -826,7 +826,7 @@ function createCustomShareCard(){
   ls('totry_share_prefs', prefs);
   
   // Close customizer
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   // Build the custom share card — load the app's fonts first so it matches the app's look.
   //
@@ -1126,7 +1126,7 @@ function renderCustomShareCard(prefs){
 }
 
 function createShareCard(style){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   // Theme: respect the user's last choice; default dark.
   const theme = (ls('totry_share_theme')) || 'dark';
   // Ensure the app's real fonts are loaded before drawing, so the card matches the app

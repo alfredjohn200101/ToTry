@@ -178,7 +178,7 @@ function offerHevyConnect(){
 
 
 function openLinkedAppDirect(appId){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const app = APP_REGISTRY[appId];
   if(!app) return;
   if(app.scheme) window.location.href = app.scheme;
@@ -249,7 +249,7 @@ function addLinkedApp(appId){
     used.push(appId);
     ls('totry_apps_used', used);
   }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderConnectedApps();
   // For apps that need authentication, launch their connect flow straight away
   // instead of just adding a dead row the user then has to figure out.
@@ -289,7 +289,7 @@ function manageStravaConnection(){
 function disconnectStrava(){
   localStorage.removeItem('totry_strava_token');
   if(typeof syncToCloud === 'function') syncToCloud('totry_strava_token', null);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Strava disconnected', 'Reconnect anytime from Settings.');
   if(typeof renderConnectedApps === 'function') renderConnectedApps();
 }
@@ -323,7 +323,7 @@ function manageHevyConnection(){
 }
 function changeHevyKey(){
   // Clearing the key sends them back through the connect flow (used after rotating the key)
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   offerHevyConnect();
 }
 function disconnectHevy(){
@@ -332,7 +332,7 @@ function disconnectHevy(){
   if(typeof syncToCloud === 'function'){ syncToCloud('totry_hevy_api_key', null); syncToCloud('totry_hevy_synced_once', null); }
   const used = (ls('totry_apps_used') || []).filter(a => a !== 'hevy');
   ls('totry_apps_used', used);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Hevy disconnected', 'Your imported workouts stay. Reconnect anytime.');
   if(typeof renderConnectedApps === 'function') renderConnectedApps();
 }

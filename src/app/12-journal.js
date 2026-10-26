@@ -30,7 +30,7 @@ let _qjMood = '\u{1F642}';
 function openQuickJournal(){
   try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }   // parity with the chip beside it
   _qjMood = '\u{1F642}';
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const moods = ['\u{1F60A}','\u{1F642}','\u{1F610}','\u{1F614}','\u{1F62D}','\u{1F621}','\u{1F914}','\u{1F525}'];
   
@@ -121,7 +121,7 @@ function saveQuickJournal(){
   });
   ls('totry_journal', entries.slice(0, 1200)); // was an inconsistent 90 here vs 365 elsewhere — unified to a years-long cap
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderJournal === 'function') renderJournal();
   // Saved first, above \u2014 then met. Never celebrate over a disclosure.
   // Tell them their words were cut BEFORE the bridge takes over the screen. The crisis return sits above

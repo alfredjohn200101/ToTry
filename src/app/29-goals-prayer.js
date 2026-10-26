@@ -98,7 +98,7 @@ function saveGoalEdit(level){
     return;
   }
   setGoal(level, text);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderGoals();
   showToast('Saved', 'Goal updated.');
   haptic('success');

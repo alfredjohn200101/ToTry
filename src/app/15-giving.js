@@ -150,7 +150,7 @@ function openSeasonPicker(){
   document.body.appendChild(m);
 }
 function pickSeason(id){
-  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  closeOpenSheets();
   if(id === 'auto'){ ls('totry_fast_season',{choice:'auto',shift:0}); if(typeof syncToCloud==='function') syncToCloud(); renderFastSeason(); haptic('success'); return; }
   const p = FAST_SEASONS[id]; if(!p) return;
   const d = new Date(), iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');

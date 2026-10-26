@@ -572,7 +572,7 @@ function checkYearInReviewPrompt(){
 
 function showSynthesisHistory(){
   const syntheses=ls('totry_syntheses')||[];
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m=document.createElement('div');
   m.className='modal-bg open';
   
@@ -616,7 +616,7 @@ function showSynthesisHistory(){
 }
 
 function viewSingleSynthesis(idx){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const syntheses=ls('totry_syntheses')||[];
   const s=syntheses[idx];
   if(!s)return;

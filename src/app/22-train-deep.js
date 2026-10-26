@@ -2053,7 +2053,7 @@ function openRoutineBuilder(){
 }
 
 function showRoutineBuilderModal(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const r = _builderRoutine;
   if(!r || !Array.isArray(r.exercises)){ return; }   // nothing to build — don't crash
   const m = document.createElement('div');
@@ -2202,7 +2202,7 @@ function saveBuilderRoutine(){
   else routines.unshift(routine);
   ls('totry_routines', routines.slice(0, 20));
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   _builderRoutine = null;
   if(typeof renderRoutines === 'function') renderRoutines();
   showToast('Routine saved', name + ' · ' + r.exercises.length + ' exercise' + (r.exercises.length===1?'':'s'));
@@ -2291,7 +2291,7 @@ function saveAllGoalRoutineDays(){
   ls('totry_routines',routines.slice(0,20));
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof renderRoutines==='function') renderRoutines();
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   haptic('success'); showToast('Routines saved', plan.days.length+' routines added. Find them in Saved routines.');
 }
 
@@ -2518,9 +2518,20 @@ function renderWorkoutHistory(){
         '<h3>'+_escFew(_focus)+'</h3>'+
         '<div class="tr-sheet-sub">'+_escFew(_when)+(_vol?' \u00b7 '+_vol.toLocaleString()+'kg volume'+(ls('totry_bw_volume')?' (incl. bodyweight)':''):'')+'</div>'+
         '<div class="tr-sheet-scroll">'+exList+'</div>'+
-        '<div class="tr-session-actions"><button class="btn primary" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button>'+
+        // THE ID IS A STRING AND THIS PASSED IT AS AN IDENTIFIER. `totry_workouts` ids come from
+        // five producers and every one of them is a STRING: 'manual_'+Date.now() (1622),
+        // 'health_'+wid (02-native:321), 'strava_'+a.id (03-person:536), 'hevy_'+w.id
+        // (21-content-engine:99) and 'stravahevy_'+a.id. Unquoted, `reloadSession('+s.id+')`
+        // compiles to `reloadSession(health_abc)` — a bare identifier, in global scope, naming
+        // nothing — so "Repeat session" and "Delete this session" threw ReferenceError for EVERY
+        // session except one with a bare numeric id. Measured: 5 of 6 real id shapes broken.
+        // This is the live remnant of the `d0 is not defined @ #money:1` family that 16 real users
+        // hit on 4 Sep; c31c24b fixed the money and nourish call sites with
+        // `_jsCode(JSON.stringify(...))` and left these two. Both receivers compare with `==`
+        // (2533, 2553), so a string literal is correct for a numeric id too.
+        '<div class="tr-session-actions"><button class="btn primary" onclick="reloadSession('+_jsCode(JSON.stringify(s.id))+');this.closest(\'.modal-bg\').remove()">Repeat session</button>'+
         '<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>'+
-        '<button class="btn quiet tr-delete" onclick="deleteWorkoutFromHistory('+s.id+')">Delete this session</button></div>';
+        '<button class="btn quiet tr-delete" onclick="deleteWorkoutFromHistory('+_jsCode(JSON.stringify(s.id))+')">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -2533,7 +2544,7 @@ async function deleteWorkoutFromHistory(id){
   const _kept = history.filter(s => s.id != id);
   tombstoneRemoved('totry_workouts', history, _kept);   // the OTHER workout delete — see deleteTraining
   ls('totry_workouts', _kept);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
   // AND REDRAW THE LIST THE ROW IS IN. renderUnifiedTraining() paints the analytics above, not
   // #pt-history-list, so the deleted session stayed on screen with its "Repeat session" button —
@@ -2986,7 +2997,7 @@ function openRoutineTemplates(){
 function previewTemplate(idx){
   const t = STARTER_TEMPLATES[idx];
   if(!t) return;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -3045,7 +3056,7 @@ function importTemplate(idx){
   }
   ls('totry_split', split);
   
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   showToast('Template imported', t.name + ' — your full week is set.');
   haptic('celebrate');
   

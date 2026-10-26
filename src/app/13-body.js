@@ -814,7 +814,7 @@ function saveGoalWeight(){
   // the AI prompt all came back 164.9 - while a WEIGH-IN of the same 165 in this same file round-trips
   // exactly, through the same helpers, because it stores dispToKg(v) untouched.
   ls('totry_goal_weight', kg);
-  try{ closeModal(el); }catch(_){ document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); }); }
+  try{ closeModal(el); }catch(_){ closeOpenSheets(); }
   renderBodyGoalCard();
   if(typeof haptic === 'function') haptic('success');
   if(typeof syncToCloud === 'function') try{ syncToCloud(); }catch(_){ }
@@ -822,7 +822,7 @@ function saveGoalWeight(){
 
 function clearGoalWeight(){
   ls('totry_goal_weight', null);
-  document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); });
+  closeOpenSheets();
   renderBodyGoalCard();
 }
 
@@ -1291,7 +1291,7 @@ function saveQuickWeight(){
     });
   }
   ls('totry_body', entries);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderBody();
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.weight(w); }catch(_){}
   // v568 made this modal unit-aware and counted two display strings; there were three. The person
@@ -1368,7 +1368,7 @@ function saveMeasurement(){
   const list = ls('totry_measurements') || [];
   list.unshift(entry);
   ls('totry_measurements', list.slice(0, 200));
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderMeasurements();
   showToast('Saved', 'Measurement snapshot logged.');
   haptic('success');
@@ -1560,7 +1560,7 @@ async function deleteProgressPhoto(id){
   if(!(await askConfirm('Delete this progress photo? Cannot be undone.'))) return;
   const photos = ls('totry_progress_photos') || [];
   ls('totry_progress_photos', photos.filter(p => p.id !== id));
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   renderProgressPhotos();
 }
 // Confirm the daily logs (weight + sleep). They already persist on entry; this gives a clear

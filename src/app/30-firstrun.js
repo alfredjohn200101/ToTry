@@ -161,7 +161,7 @@ function checkChangelog(){
 }
 function ackChangelog(){
   ls('totry_changelog_seen', APP_VERSION);
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
 }
 
 // One-time "what's possible" tour for brand-new users — shows the breadth of the app
@@ -265,7 +265,7 @@ function checkPostRelapse(){
 }
 
 function showAppPreview(){
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
 

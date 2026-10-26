@@ -1012,7 +1012,7 @@ function openUniversalSearch(){
   // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
   // where it costs nothing and cannot be missed.
   try{ if(typeof _syncExamenNounLabels==='function') _syncExamenNounLabels(); }catch(_){ }
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
@@ -1275,7 +1275,7 @@ function restoreFullBackup(event){
 
 function confirmRestore(){
   const data = window.__pendingRestore;
-  if(!data){ document.querySelector('.modal-bg.open')?.remove(); return; }
+  if(!data){ closeOpenSheets(); return; }
   // FILTERED, like importAllData (restoreKeys does the filtering for both). v430 closed this on export
   // and on the secondary import path, but this is the restore half of the prominent Settings pair and it
   // wrote every key in the file verbatim — including totry_auth_session. Restoring someone else's backup
@@ -1284,7 +1284,7 @@ function confirmRestore(){
   // landed in localStorage.
   const r = restoreKeys(data);
   window.__pendingRestore = null;
-  document.querySelector('.modal-bg.open')?.remove();
+  closeOpenSheets();
   const rep = restoreReport(r);
   showToast(r.failed.length ? rep.title : 'Restored ✓', rep.body);
   haptic(r.failed.length ? 'warning' : 'celebrate');
