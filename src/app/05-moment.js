@@ -976,7 +976,15 @@ const _SHRINK = [
 ];
 function _shrinkIt(thing, level){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const lv=Math.min(level, _SHRINK.length-1);
+  // CLAMPED, because `Math.min(undefined, 3)` is NaN and `_SHRINK[NaN]` is undefined, so the next
+  // line throws "_SHRINK[lv] is not a function" — which four real users hit on 1 Oct 2026
+  // (app_events jserror, 4 distinct anon_ids). A negative level does the same. Every call site in
+  // the bundle passes a level, so I could NOT identify the caller and this is not a fix for a named
+  // one: it makes the function TOTAL instead of partial, which is correct for any input a caller
+  // can supply. The attribute was ruled OUT by measurement rather than assumed — `_jsAttr` holds
+  // the level through an apostrophe, a quote, `&#39;`, `&quot;` and a newline, 2 args every time, so
+  // this is not the inline-handler SyntaxError family it sits beside in the log.
+  const lv=Math.min(Math.max(0, Math.floor(Number(level)) || 0), _SHRINK.length-1);
   const safe=_jsAttr(thing);         // for the onclick attribute
   const shown=_escFew(thing);        // for display
   // "TWO MINUTES. THAT’S THE WHOLE ASK." was a whole sentence in 11px tint capitals over a centred

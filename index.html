@@ -8747,7 +8747,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v657';
+const APP_VERSION = 'v658';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18836,11 +18836,27 @@ async function generateRecommendation(){
 function applyRecommendedSplit(){
   const rec=window._recSplit;
   if(!rec)return;
-  const split=rec.map(d=>({focus:d.focus,routine:null}));
+  // IT KEEPS THE EXERCISES IT JUST SHOWED THEM. This mapped to `{focus, routine:null}`, so the six
+  // named exercises the preview two screens earlier renders (`d.exercises.join(', ')`, line ~292)
+  // were discarded the moment the person tapped Apply — on the path whose own empty state promises
+  // "no guesswork". They then read "Build routines to attach to each day", which is the app asking
+  // for the work it had just thrown away.
+  // The shape is `importTemplate`'s, deliberately: that sibling has always persisted
+  // `{focus, detail, exercises, rest}` and is the one that works. `exercises` is what the day cards
+  // and 22-train-deep read; `detail` is what the Train card falls back to (21-content-engine:624,
+  // behind a person's own history). `routine` stays null on purpose — it holds the NAME of a
+  // separate entry in totry_routines, and these exercises live on the day, not in a named routine.
+  const split=rec.map(function(d){
+    const ex=(d&&d.exercises&&d.exercises.length)?d.exercises.slice():[];
+    return { focus:d.focus, routine:null, exercises:ex, detail:ex.length?ex.join(', '):'' };
+  });
   ls('totry_split',split);
   document.querySelector('.modal-bg.open')?.remove();
   renderSplitOverview();
-  showToast('Split saved','Your weekly split is live. Build routines to attach to each day.');
+  const _n=split.reduce(function(a,d){ return a+((d.exercises||[]).length?1:0); },0);
+  showToast('Split saved', _n
+    ? 'Your weekly split is live, with the exercises on '+(typeof plural==='function'?plural(_n,'day'):_n+' day'+(_n===1?'':'s'))+'.'
+    : 'Your weekly split is live. Build routines to attach to each day.');
 }
 
 // ═══════════════════════════════════════════════════
@@ -20217,12 +20233,33 @@ function openRecoveryBridge(){
   const faithOn = (typeof faithLevel!=='function') || faithLevel()!=='light';
   const tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const opts = [
-    ['compass','SMART Recovery','Free meetings, online and in person. Science-based, secular, no higher power required — you are the agent of your own change.','https://smartrecovery.org/meetings/'],
+    // A DEAD LINK ON THE RECOVERY BRIDGE. `https://smartrecovery.org/meetings/` returns 404
+    // (curled 27 Oct 2026), so the FIRST row of the hand-off a person reaches when the app has
+    // told them it is not enough rendered "find one →" and went nowhere. This is the external-API
+    // rot this repo already records — "curl every host, check the SHAPE of a 200" — and it is
+    // worse than the empty URLs beside it, because an empty URL honestly renders no link at all.
+    // Verified by shape, not just status: <title>SMART Recovery USA - Meetings.
+    // NOTE FOR THE OWNER, left as a decision rather than taken silently: this card's helplines are
+    // Australia-first (Lifeline, Beyond Blue, 13YARN), and SMART Recovery Australia's own finder is
+    // live at https://www.smartrecoveryaustralia.com.au/smart-recovery-meetings (200, verified).
+    // Swapping the domain is a regional change, not a 404 fix, so it is not made here.
+    ['compass','SMART Recovery','Free meetings, online and in person. Science-based, secular, no higher power required — you are the agent of your own change.','https://meetings.smartrecovery.org/'],
     ['users','AA / NA','The widest availability of anything on this list — a meeting most places, most nights. The higher power is yours to define.','https://www.aa.org/find-aa'],
-    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.',''],
+    // THE ROW THE APP ITSELF CALLS "the most underrated door" HAD NO DOOR. healthdirect's own
+    // service finder, verified by shape: <title>Find a health service | healthdirect, with a
+    // "Find a GP" control on the page. The other two linkless rows STAY linkless on purpose —
+    // there is no URL for "a sibling, a mate, a mentor" and none for "your imam", and inventing
+    // one would be the app naming a person it cannot know.
+    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.','https://www.healthdirect.gov.au/australian-health-services'],
     ['message','Someone who already knows','A sibling, a mate, a mentor. Saying it out loud to one person breaks most of its power — that is not a cliche, it is the mechanism.','']
   ];
-  if(faithOn && tr==='christianity') opts.splice(2,0,['\u271D','Celebrate Recovery','Christ-centred twelve steps, in a church, with people who will not flinch. Free.','https://locator.crgroups.info/']);
+  // AND THE CHRISTIAN OPTION'S FINDER WAS DEAD TOO. `locator.crgroups.info` does not resolve
+  // at all (curl 000, 27 Oct 2026) — not a 404, no connection — and `crgroups.info` is dead
+  // with it, while Celebrate Recovery's own live homepage still links both. So the ONE row a
+  // Christian sees here, on the surface shown after the app has said it is not enough, went
+  // nowhere. Celebrate Recovery's own Find Help page, verified by shape:
+  // <title>Find Help - Celebrate Recovery.
+  if(faithOn && tr==='christianity') opts.splice(2,0,['\u271D','Celebrate Recovery','Christ-centred twelve steps, in a church, with people who will not flinch. Free.','https://celebraterecovery.com/find-help-2/']);
   if(faithOn && tr!=='christianity' && tr!=='secular') opts.splice(2,0,['\u{1F54C}','Your community','An imam, a priest, a monk, an elder — someone in your own tradition who has walked beside people through this.','']);
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
@@ -22241,7 +22278,15 @@ const _SHRINK = [
 ];
 function _shrinkIt(thing, level){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const lv=Math.min(level, _SHRINK.length-1);
+  // CLAMPED, because `Math.min(undefined, 3)` is NaN and `_SHRINK[NaN]` is undefined, so the next
+  // line throws "_SHRINK[lv] is not a function" — which four real users hit on 1 Oct 2026
+  // (app_events jserror, 4 distinct anon_ids). A negative level does the same. Every call site in
+  // the bundle passes a level, so I could NOT identify the caller and this is not a fix for a named
+  // one: it makes the function TOTAL instead of partial, which is correct for any input a caller
+  // can supply. The attribute was ruled OUT by measurement rather than assumed — `_jsAttr` holds
+  // the level through an apostrophe, a quote, `&#39;`, `&quot;` and a newline, 2 args every time, so
+  // this is not the inline-handler SyntaxError family it sits beside in the log.
+  const lv=Math.min(Math.max(0, Math.floor(Number(level)) || 0), _SHRINK.length-1);
   const safe=_jsAttr(thing);         // for the onclick attribute
   const shown=_escFew(thing);        // for display
   // "TWO MINUTES. THAT’S THE WHOLE ASK." was a whole sentence in 11px tint capitals over a centred

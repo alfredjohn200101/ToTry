@@ -613,7 +613,10 @@ H.section('dead element references — must not grow');
   // Ratcheted 42 -> 40 in v413 by pruning a dead cluster: openPrayerModal + showModalPrayer and
   // openMealPlan + generateMealPlan, both superseded (by the Prayer tab and openFuelPlan) and both
   // unreferenced. Tighten this number whenever it drops — a ratchet that only ever holds is a ceiling.
-  const BASELINE = 40;
+  // RATCHETED 40 -> 12 on 27 Oct 2026. Measured: the bundle carries 12. Its own comment above
+  // says "Tighten this number whenever it drops — a ratchet that only ever holds is a
+  // ceiling", and it had drifted 28 slots, which is 28 dead ids nobody would notice.
+  const BASELINE = 12;
   H.ok(dead.size <= BASELINE,
     'no NEW dead getElementById targets (baseline ' + BASELINE + ', found ' + dead.size + ')' +
     (dead.size > BASELINE ? ' → ' + [...dead].join(', ') : ''));
@@ -13055,6 +13058,139 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     H.ok(/counsel?lor|doctor|crisis line/i.test(bare), 'while still naming a human to go to');
     H.ok(/findahelpline\.com/.test(bare), 'and a real route with no digits to get wrong');
   }
+}
+
+// ══ THE RECOVERY BRIDGE'S DOORS ARE OPEN ═══════════════════════════════════════════════════
+// Curled 27 Oct 2026, every URL in `openRecoveryBridge`. TWO OF FOUR WERE DEAD, on the surface a
+// person reaches after the app has told them it is not enough:
+//   smartrecovery.org/meetings/  -> 404  (the FIRST row, rendering "find one ->" into nothing)
+//   locator.crgroups.info/       -> 000, does not resolve at all (the ONE row a Christian sees)
+// This is the external-API rot this repo records — "curl every host, check the SHAPE of a 200" —
+// and the competitive sweep that prompted this work MISSED both, while flagging the two EMPTY urls
+// which are correct by design: there is no link for "a sibling, a mate, a mentor" and none for
+// "your imam", and inventing one would be the app naming a person it cannot know.
+// A test cannot curl in an offline gate, so this is a RATCHET against the specific dead hosts plus
+// a shape check. Re-curl before changing any of them.
+{
+  H.section('the recovery bridge dials nothing known-dead');
+  const i = H.html.indexOf('function openRecoveryBridge');
+  const j = H.html.indexOf('opts.map', i);
+  H.ok(i > 0 && j > i, 'openRecoveryBridge located');
+  // Comments stripped: the explanation above names the dead hosts, and an unstripped scan reports
+  // them as live dialled links. My own URL census did exactly that an hour ago.
+  const body = H.html.slice(i, j).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const urls = [...new Set(body.match(/https:\/\/[^'"]+/g) || [])];
+  H.ok(urls.length >= 4, 'it offers ' + urls.length + ' external doors');
+
+  const DEAD = [
+    ['smartrecovery.org/meetings', '404 since at least 27 Oct 2026 — use meetings.smartrecovery.org'],
+    ['locator.crgroups.info',      'does not resolve — use celebraterecovery.com/find-help-2/'],
+    ['crgroups.info',              'does not resolve'],
+    ['iasp.info',                  'redirects to an advocacy homepage with no helpline — recorded 2026'],
+  ];
+  const revived = DEAD.filter(([host]) => urls.some(u => u.indexOf(host) >= 0));
+  H.ok(revived.length === 0,
+    'none of the known-dead hosts is back' +
+    (revived.length ? ' → ' + revived.map(d => d[0] + ' (' + d[1] + ')').join('; ') : ''));
+
+  // AND THE ROW THE APP CALLS "the most underrated door" HAS ONE. It shipped with '' for months.
+  H.ok(/A GP or counsellor[^\]]*https:\/\//.test(body.replace(/\n/g, ' ')),
+    'the GP row carries a service finder rather than an empty string');
+  // The two rows that SHOULD stay linkless, pinned so a later sweep does not "fix" them.
+  H.ok(/Someone who already knows[^\]]*,''\]/.test(body.replace(/\n/g, ' ')),
+    'and "Someone who already knows" stays linkless — there is no URL for your brother');
+}
+
+// ══ APPLY KEEPS THE EXERCISES IT SHOWED THEM ═══════════════════════════════════════════════
+// `applyRecommendedSplit` mapped the recommendation to `{focus, routine:null}`, so the named
+// exercises the preview renders two screens earlier (`d.exercises.join(', ')`) were discarded the
+// moment the person tapped Apply \u2014 on the path whose empty state promises "no guesswork" \u2014 and
+// they were then toasted "Build routines to attach to each day", the app asking for the work it had
+// just thrown away. The shape is `importTemplate`'s, which has always persisted it correctly.
+{
+  H.section('applying a recommended split keeps its exercises');
+  let stored = null;
+  const run = (rec) => {
+    stored = null;
+    const L = H.load(['applyRecommendedSplit','plural'], {
+      window: { _recSplit: rec },
+      ls: (k, v) => { if (v !== undefined) { stored = v; return v; } return null; },
+      document: { querySelector: () => null },
+      renderSplitOverview() {}, showToast() {},
+    });
+    L.applyRecommendedSplit();
+    return stored;
+  };
+  const out = run([
+    { day:'Mon', focus:'Push', exercises:['Bench Press','Overhead Press','Dips'] },
+    { day:'Tue', focus:'Pull', exercises:['Deadlift','Barbell Row'] },
+    { day:'Wed', focus:'Rest day', exercises:[] },
+  ]);
+  H.ok(Array.isArray(out) && out.length === 3, 'the split persists all three days');
+  H.ok(!!(out && out[0] && (out[0].exercises || []).length === 3),
+    'and the first day keeps its three exercises');
+  H.ok(!!(out && out[0] && /Bench Press/.test(out[0].detail || '')),
+    'and `detail` carries them too \u2014 the field the Train card falls back to');
+  H.ok(!!(out && out[2] && (out[2].exercises || []).length === 0),
+    'while a rest day keeps none');
+  // `routine` stays null ON PURPOSE: it holds the NAME of a separate entry in totry_routines, and
+  // these exercises live on the day. Asserted so a later "fix" does not put a name there.
+  H.ok(!!(out && out.every(d => d.routine === null)),
+    'and routine stays null \u2014 it names a totry_routines entry, which this does not create');
+
+  // THE COPY, driven at each count. `plural(n, singular)` RETURNS THE NUMBER WITH THE WORD, so the
+  // first version of this toast read "the exercises on 2 2 days". Only driving it found that; the
+  // source reads fine. Day one is the sentence this app says most, so the singular is pinned.
+  const toasts = [];
+  const runToast = (rec) => {
+    const L = H.load(['applyRecommendedSplit','plural'], {
+      window: { _recSplit: rec }, ls: (k, v) => v !== undefined ? v : null,
+      document: { querySelector: () => null }, renderSplitOverview() {},
+      showToast: (a, b) => toasts.push(b),
+    });
+    L.applyRecommendedSplit();
+  };
+  runToast([{ focus:'Push', exercises:['Bench'] }]);
+  runToast([{ focus:'Push', exercises:['Bench'] }, { focus:'Pull', exercises:['Row'] }]);
+  H.ok(/\b1 day\b/.test(toasts[0] || '') && !/1 days/.test(toasts[0] || ''),
+    'one day reads "1 day", not "1 days" (' + JSON.stringify(toasts[0] || '') + ')');
+  H.ok(/\b2 days\b/.test(toasts[1] || '') && !/2 2/.test(toasts[1] || ''),
+    'two days reads "2 days", with the count not doubled');
+}
+
+// ══ _shrinkIt IS TOTAL ═════════════════════════════════════════════════════════════════════
+// FOUR REAL USERS hit "Uncaught TypeError: _SHRINK[lv] is not a function" on 1 Oct 2026 — four
+// distinct anon_ids in app_events.jserror. `Math.min(undefined, 3)` is NaN and `_SHRINK[NaN]` is
+// undefined, so the next line calls undefined. A negative level does the same.
+// Every call site in the bundle passes a level, so the caller was NOT identified — this holds the
+// function TOTAL rather than fixing a named caller. The inline-handler hypothesis was REFUTED by
+// measurement: _jsAttr carries the level intact through an apostrophe, a quote, &#39;, &quot; and a
+// newline, two arguments every time, so this is not the SyntaxError family beside it in the log.
+{
+  H.section('_shrinkIt survives any level a caller can supply');
+  // _SHRINK is a const, so H.load cannot extract it — count its entries from the bundle by bracket
+  // match, never a fixed slice.
+  const i = H.html.indexOf('const _SHRINK = ['), o = H.html.indexOf('[', i);
+  let d = 0, e = o;
+  for (; e < H.html.length; e++) { const c = H.html[e]; if (c === '[') d++; else if (c === ']') { d--; if (!d) { e++; break; } } }
+  const len = (H.html.slice(o, e).match(/function\(t\)/g) || []).length;
+  H.ok(len >= 2, '_SHRINK has ' + len + ' levels');
+
+  // The clamp as the source computes it, executed over every shape a caller can produce.
+  const body = H.code(H.html);
+  const m = body.match(/const lv=Math\.min\([^;]+\);/);
+  H.ok(!!m, 'the level is clamped where it is read');
+  const clamp = new Function('level', '_SHRINK', 'return ' + m[0].replace(/^const lv=/, '').replace(/;$/, '') + ';');
+  const fake = new Array(len).fill(0);
+  let bad = [];
+  [0, 1, len - 1, 99, -1, undefined, null, NaN, '1', '', 'abc', 1.7, -99, Infinity, -Infinity].forEach(v => {
+    let r;
+    try { r = clamp(v, fake); } catch (_) { bad.push(String(v) + ' threw'); return; }
+    // H.ok with a strict check, not H.eq — JSON.stringify flattens NaN/Infinity/undefined to "null".
+    if (!(Number.isInteger(r) && r >= 0 && r < len)) bad.push(JSON.stringify(v) + '→' + String(r));
+  });
+  H.ok(bad.length === 0,
+    'every level shape lands on a real index' + (bad.length ? ' → ' + bad.join(', ') : ' (15 shapes)'));
 }
 
 // ══ NOBODY IS OFFERED ANOTHER TRADITION'S HUMAN ════════════════════════════════════════════
