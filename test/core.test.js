@@ -3402,12 +3402,101 @@ H.section('the fixes I shipped today, checked against themselves')
       'the positional no-header guess is gone');
     H.ok(/will not guess which column/.test(h),
       'and an unreadable file is REFUSED with a reason rather than guessed at');
-    // A TRANSFER IS A TRANSFER IN BOTH DIRECTIONS. The test used to sit inside the `amt >= 0`
-    // branch, so "FROM SAVINGS" was neutral and "TRANSFER TO SAVINGS" became the biggest expense
-    // the person had. It must be decided before the sign is consulted.
-    H.ok(/const _isTransfer =/.test(h), 'the transfer test is computed once');
-    H.ok(/type: _isTransfer \? 'transfer'/.test(h) && /category: _isTransfer \? 'Transfer'/.test(h),
-      'and decides type AND category for a debit as well as a credit');
+  }
+
+  // ── AND THE HEADERLESS FILE IS DRIVEN, NOT GREPPED ────────────────────────────────
+  // The four assertions above read the SOURCE, and a source read cannot tell a fix from an
+  // overshoot. My first cut refused every headerless file, which is wrong: a bare three-column
+  // export is date, description, amount and there is nothing to guess -- `npm run panels` caught it
+  // on a fixture this suite did not have. So the columns are DETECTED (the date column parses as a
+  // date, the amount column parses as a number) and only a genuine ambiguity -- two number columns,
+  // an amount and a running balance -- is refused. Driven on the real function, with the HEADERED
+  // file as the calibration: if the control stops importing, the instrument is broken and not the
+  // app, which is exactly how the first run of this probe failed (an unstubbed VICE_MERCHANTS threw
+  // into handleCSVFile's own catch and every shape reported "refused").
+  {
+    // VICE_MERCHANTS is a const, so H.load cannot extract it -- read it out of the module rather
+    // than retyping it, or the fixture drifts from the app without anything going red.
+    const _vmSrc = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'src', 'app', '18-money-deep.js'), 'utf8');
+    const _vmOpen = _vmSrc.indexOf('{', _vmSrc.indexOf('const VICE_MERCHANTS ='));
+    let _d = 0, _e = _vmOpen;
+    for(; _e < _vmSrc.length; _e++){ const c = _vmSrc[_e];
+      if(c === '{') _d++; else if(c === '}'){ _d--; if(!_d){ _e++; break; } } }
+    const VICE_MERCHANTS = eval('(' + _vmSrc.slice(_vmOpen, _e) + ')');
+
+    const feed = function(text){
+      const out = { toasts: [], rows: null };
+      const L = H.load(['handleCSVFile','parseCSV','_detectCSVColumns','_csvDate','_csvDayFirst',
+                        '_csvAmount','_autoCategory'], {
+        VICE_MERCHANTS: VICE_MERCHANTS,
+        document: { querySelector: function(){ return null; } },
+        showToast: function(a, b){ out.toasts.push(String(a) + ' :: ' + String(b)); },
+        _showCSVPreview: function(rows){ out.rows = rows; },
+        console: { error: function(){} },
+        FileReader: function(){ const self = this;
+          this.readAsText = function(){ self.result = text; self.onload(); }; },
+      });
+      L.handleCSVFile({ target: { files: [{ name: 'x.csv' }] } });
+      return out;
+    };
+
+    // The calibration FIRST. A headered file is the ordinary path and nothing here touches it, so
+    // if this one does not import there is no point reading any of the results below.
+    const ctl = feed(['Date,Description,Amount',
+                      '28/08/2026,WOOLWORTHS 1234,-84.20',
+                      '26/08/2026,SALARY - ACME,3200.00'].join('\n'));
+    H.ok(ctl.rows && ctl.rows.length === 2,
+      'CALIBRATION: a headered export still reaches the review sheet (if this fails, the ' +
+      'MEASUREMENT is wrong, not the app -- handleCSVFile swallows a missing global into its catch)');
+
+    // 1. Three columns, no header: the one headerless shape that is unambiguous.
+    const three = feed(['28/08/2026,WOOLWORTHS 1234,-84.20',
+                        '26/08/2026,SALARY - ACME,3200.00'].join('\n'));
+    H.ok(three.rows && three.rows.length === 2,
+      'a bare three-column headerless export is read rather than refused');
+    H.ok(!!(three.rows && three.rows[0] && /WOOLWORTHS/.test(three.rows[0].desc)),
+      'and the description is the merchant, not the amount string');
+    H.ok(!!(three.rows && three.rows[0] && three.rows[0].type === 'expense' &&
+            Math.abs(three.rows[0].amount - 84.20) < 0.005),
+      'and -84.20 books as an $84.20 expense');
+
+    // 2. The other three-column order. The old positional guess got this wrong too, so the
+    //    detection fixes a shape NEITHER previous version handled.
+    const swap = feed(['28/08/2026,-84.20,WOOLWORTHS 1234',
+                       '26/08/2026,3200.00,SALARY - ACME'].join('\n'));
+    H.ok(!!(swap.rows && swap.rows[0] && /WOOLWORTHS/.test(swap.rows[0].desc) &&
+            swap.rows[0].type === 'expense'),
+      'and a headerless file with the amount SECOND is detected by shape, not assumed');
+
+    // 3. A running balance: two number columns, and position cannot tell them apart. Refused.
+    //    Injected (restore the unconditional {date:0,desc:1,amount:2}) this imports
+    //    "0 expenses, 2 income (+$1241.00)" -- 1234 harvested out of "WOOLWORTHS 1234 RICHMOND"
+    //    and 7 out of "COLES EXPRESS 7 SMITH ST", which is the figure the tithe screen takes a
+    //    percentage OF.
+    const bal = feed(['01/03/2026,4120.00,SALARY ACME PTY LTD,4120.00',
+                      '02/03/2026,-84.20,WOOLWORTHS 1234 RICHMOND,4035.80',
+                      '03/03/2026,-12.50,COLES EXPRESS 7 SMITH ST,4023.30'].join('\n'));
+    H.ok(!bal.rows, 'a headerless export carrying a running balance is refused, not guessed at');
+    H.ok(bal.toasts.some(function(t){ return /running balance/.test(t); }),
+      'and the refusal says WHICH ambiguity it cannot resolve');
+    // 4. A TRANSFER IS A TRANSFER IN BOTH DIRECTIONS, and this is now DRIVEN rather than grepped.
+    //    The test used to sit inside the `amt >= 0` branch, so "FROM SAVINGS" was neutral and
+    //    "TRANSFER TO SAVINGS" -- the identical description, leaving -- became type:'expense'
+    //    category:'Other', so moving $500 into savings was reported as the biggest thing the
+    //    person spends money on. Both signs, one file, so the pair cannot be half-fixed again.
+    const tr = feed(['Date,Description,Amount',
+                     '01/03/2026,TRANSFER TO SAVINGS,-500.00',
+                     '02/03/2026,FROM SAVINGS,500.00',
+                     '03/03/2026,WOOLWORTHS,-84.20'].join('\n'));
+    const _byDesc = function(re){ return (tr.rows || []).find(function(r){ return re.test(r.desc); }); };
+    H.ok(!!(_byDesc(/TO SAVINGS/) && _byDesc(/TO SAVINGS/).type === 'transfer' &&
+            _byDesc(/TO SAVINGS/).category === 'Transfer'),
+      'a transfer LEAVING books as a transfer, not as the biggest expense of the month');
+    H.ok(!!(_byDesc(/^FROM SAVINGS/) && _byDesc(/^FROM SAVINGS/).type === 'transfer'),
+      'and a transfer ARRIVING is not counted as income the tithe takes a tenth of');
+    H.ok(!!(_byDesc(/WOOLWORTHS/) && _byDesc(/WOOLWORTHS/).type === 'expense'),
+      'while an ordinary debit in the same file is still an expense');
   }
 
   // ── A CATEGORY KEYWORD IS A WORD, NOT A SUBSTRING ──────────────────────────────
