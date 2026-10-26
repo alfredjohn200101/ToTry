@@ -6166,6 +6166,23 @@ function renderGrowHandoffs(){
       trackLine = 'Nothing weighed yet \u2014 this is where the work shows up';
     }
     set('hand-track', trackLine);
+
+    // AND THE SAME SENTENCES, INSIDE THE FRONTS THEY DESCRIBE. One computation, several mount
+    // points -- the shape renderLifeWoven(boxId) already uses -- so the hub's thread and the
+    // front's thread cannot drift apart. Each front points at the NEXT one in the chain
+    // SOUL-ARCHITECTURE names (Train -> fuel it -> Nourish -> see what it did -> Track), carries
+    // that front's own measured line as its subtitle, and renders nothing at all when the line is
+    // empty, because a thread with no evidence behind it is just another button.
+    const thread = function(hostId, toTab, title, line, icon){
+      const host = document.getElementById(hostId);
+      if(!host) return;
+      if(!line){ host.innerHTML = ''; return; }
+      host.innerHTML = (typeof iosList === 'function' && typeof iosRow === 'function')
+        ? iosList([ iosRow({ title: title, sub: line, icon: icon, tone: 'blue', onclick: "go('" + toTab + "')" }) ])
+        : '';
+    };
+    thread('thread-train', 'nourish', 'Fuel what you earned', nourishLine, 'flame');
+    thread('thread-nourish', 'track', 'See what it did', trackLine, 'scale');
   }catch(_){ }
 }
 

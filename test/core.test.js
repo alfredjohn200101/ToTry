@@ -3339,6 +3339,52 @@ H.section('the fixes I shipped today, checked against themselves')
   H.ok(/b\.weight != null/.test(pf), 'the TDEE weight prefill reads the field that exists');
   H.ok(!/b\.w != null/.test(pf), 'not the one I invented');
 
+  // ── THE CROSS-FRONT THREAD REACHES INSIDE THE FRONTS ───────────────────────────
+  // "Integration IS the product" is the stated thesis, and measured on the rendered page the threads
+  // ran one way only: the Grow hub carried them as row SUBTITLES and the fronts they opened carried
+  // none -- Nourish, Fight, Track and Money rendered zero cross-front navigation. A person read the
+  // thread on the hub, tapped it, and arrived somewhere that had forgotten. SOUL-ARCHITECTURE names
+  // the chain (Train -> fuel it -> Nourish -> see what it did -> Track), so this is that thread put
+  // where the person is. ONE computation, several mount points, so hub and front cannot drift.
+  {
+    const gh = H.code(fnBody('renderGrowHandoffs') || '');
+    H.ok(/set\('hand-train'/.test(gh) && /set\('hand-nourish'/.test(gh) && /set\('hand-track'/.test(gh),
+      'the hub rows are still written by the same function');
+    H.ok(/thread\('thread-train', 'nourish'/.test(gh),
+      'and Train carries the thread on to Nourish');
+    H.ok(/thread\('thread-nourish', 'track'/.test(gh),
+      'and Nourish on to Track');
+    H.ok(/if\(!line\)\{ host\.innerHTML = ''; return; \}/.test(gh),
+      'with nothing rendered when there is no measured line behind it — a thread with no evidence is just a button');
+    H.ok(/iosRow\(/.test(gh),
+      'built from the app\u2019s own row component rather than painted inline');
+    ['thread-train','thread-nourish'].forEach(id => {
+      H.ok(new RegExp('id="' + id + '"').test(H.html), id + ' has a mount point in the shell');
+    });
+  }
+
+  // ── TRAIN MIRRORS THE PERSON, NOT JUST THE MENU ─────────────────────────────────
+  // Nourish is the front this app holds the others to, and it leads with the day and the number
+  // before the log bar. Train led with "Start a session" and three how-to rows, because
+  // loadTodaySplitCard hid its ONLY card whenever no routine was assigned to today -- so somebody
+  // with three logged sessions saw none of their own training, while 3 strength / 174 min /
+  // 3,493kg sat one segment away under History. The route IN is the Grow row whose own subtitle is
+  // that week line, so they read it, tapped, and arrived somewhere that had forgotten.
+  // The original reason for hiding is KEPT -- a "build a routine" card would be the third copy of
+  // that offer in one screenful -- so the branch shows the WEEK instead, and still shows nothing to
+  // somebody who has no history, because a person with nothing is owed no numbers.
+  {
+    const ld = H.code(fnBody('loadTodaySplitCard') || '');
+    H.ok(/getUnifiedWeekStats/.test(ld),
+      'the no-routine branch reads the real week stats rather than inventing a figure');
+    H.ok(/if\(_bits\.length\)/.test(ld),
+      'and only speaks when there is something to say');
+    H.ok(/ptShow\(true\)/.test(ld) && /ptShow\(false\)/.test(ld),
+      'so it shows the card with history and still hides it without — both branches live');
+    H.ok(!/Build a routine/i.test(ld),
+      'and it never becomes a third "build a routine" offer');
+  }
+
   // ── ONE CSV PARSER, AND A FILE WE CANNOT READ IS REFUSED ──────────────────────────
   // handleCSVFile had its own splitter: /\r?\n/ plus _parseCSVLine, comma-only and no BOM strip,
   // while parseCSV (39-import-export.js) sniffs the delimiter, handles ';' and tabs and strips the

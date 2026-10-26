@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v653-the-sheet-that-deleted-itself'
+const CACHE = 'totry-v654-a-front-that-remembers'
 
 const CORE = [
   './',

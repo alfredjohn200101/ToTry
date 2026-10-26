@@ -564,12 +564,39 @@ function loadTodaySplitCard(){
   }
 
   if(!today || !today.focus){
-    // NO ROUTINE ASSIGNED: say nothing. The ROUTINES list two components above already carries
-    // "Build a routine", and the segmented control above that carries "Routines" — a card whose whole
-    // content is "go and do the thing those two already offer" is the same decision a third time.
-    if(nameEl)nameEl.textContent='No routine set for today';
-    if(detailEl)detailEl.innerHTML='';
-    ptShow(false);
+    // NO ROUTINE ASSIGNED: say nothing ABOUT THE ROUTINE. The ROUTINES list two components above
+    // already carries "Build a routine", and the segmented control above that carries "Routines" —
+    // a card whose whole content is "go and do the thing those two already offer" is the same
+    // decision a third time. That reasoning is kept exactly.
+    //
+    // BUT THIS WAS THE ONLY CARD IN THE LOG PANEL, so hiding it left Train with no MIRROR at all:
+    // the arrival screen was "Start a session" and three how-to rows, while the person's own
+    // 3 strength / 174 min / 3,493kg lifted sat one segment away under History. Nourish — the front
+    // this app holds the others to — leads with the day and the number and only then the log bar;
+    // Train led with the menu. Worse, the route IN is the Grow hub row whose own subtitle IS that
+    // week line, so a person read "3 sessions this week — about 1,044 cal earned", tapped it, and
+    // arrived somewhere that had forgotten.
+    // So: no routine and no history is still silence (a brand-new person is owed no numbers), and no
+    // routine WITH history shows the week instead of the offer. Same card, the honest half of it.
+    const _w = (typeof getUnifiedWeekStats==='function') ? getUnifiedWeekStats() : null;
+    const _bits = [];
+    if(_w){
+      if(_w.strengthCount) _bits.push(_w.strengthCount + ' strength');
+      if(_w.cardioCount) _bits.push(_w.cardioCount + ' cardio');
+      if(_w.totalMinutes) _bits.push(_w.totalMinutes + ' min');
+      if(_w.totalVolumeKg) _bits.push(_w.totalVolumeKg.toLocaleString() + 'kg lifted');
+    }
+    if(_bits.length){
+      if(nameEl) nameEl.textContent = 'This week';
+      if(detailEl) detailEl.innerHTML =
+        '<div style="font-size:var(--t-base);color:var(--tx2);line-height:1.5">' + _escFew(_bits.join(' \u00b7 ')) + '</div>' +
+        '<div style="margin-top:6px;font-size:var(--t-cap);color:var(--tx3)">No routine set for today — log a session and it lands here.</div>';
+      ptShow(true);
+    } else {
+      if(nameEl)nameEl.textContent='No routine set for today';
+      if(detailEl)detailEl.innerHTML='';
+      ptShow(false);
+    }
     if(wrap) wrap.style.display='none';
     return;
   }

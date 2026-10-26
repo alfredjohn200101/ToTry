@@ -5744,7 +5744,19 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
        It is a footnote about where the numbers come from, so it is the footnote role: 13px, the
        secondary grey, left-aligned in the list gutter, and a sentence rather than a dot-strip. -->
   <div class="ios-footnote" style="margin-top:10px">Food data from USDA, FatSecret and Open Food Facts, with AI estimates for anything they don’t have.</div>
-</div>
+
+    <!-- THE CROSS-FRONT THREAD, INSIDE THE FRONT. "Integration IS the product" is this app's
+         stated thesis, and measured on the rendered page the threads ran one way only: the Grow
+         hub's rows carry them as SUBTITLES ("Train - 3 sessions this week, about 1,044 cal
+         earned") and the fronts they open carry none, so Nourish, Fight, Track and Money
+         rendered zero cross-front navigation and Train rendered one settings-style row. A
+         person read the thread on the hub, tapped it, and arrived somewhere that had forgotten.
+         SOUL-ARCHITECTURE already names the chain -- Train -> "fuel it" -> Nourish -> "see what
+         it did" -> Track -- so this is that thread put where the person is, not a new one.
+         Filled by renderGrowHandoffs(), the SAME function and the same computation the hub uses,
+         so the two can never disagree; empty and silent when there is nothing true to say. -->
+    <div id="thread-nourish" class="ios-section"></div>
+  </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <!-- TAB 5: TRAIN -->
@@ -6067,7 +6079,19 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <button class="sbtn" onclick="sendPT()"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>
   </div>
-</div>
+
+    <!-- THE CROSS-FRONT THREAD, INSIDE THE FRONT. "Integration IS the product" is this app's
+         stated thesis, and measured on the rendered page the threads ran one way only: the Grow
+         hub's rows carry them as SUBTITLES ("Train - 3 sessions this week, about 1,044 cal
+         earned") and the fronts they open carry none, so Nourish, Fight, Track and Money
+         rendered zero cross-front navigation and Train rendered one settings-style row. A
+         person read the thread on the hub, tapped it, and arrived somewhere that had forgotten.
+         SOUL-ARCHITECTURE already names the chain -- Train -> "fuel it" -> Nourish -> "see what
+         it did" -> Track -- so this is that thread put where the person is, not a new one.
+         Filled by renderGrowHandoffs(), the SAME function and the same computation the hub uses,
+         so the two can never disagree; empty and silent when there is nothing true to say. -->
+    <div id="thread-train" class="ios-section"></div>
+  </div>
 
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -8711,7 +8735,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v653';
+const APP_VERSION = 'v654';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -38291,6 +38315,23 @@ function renderGrowHandoffs(){
       trackLine = 'Nothing weighed yet \u2014 this is where the work shows up';
     }
     set('hand-track', trackLine);
+
+    // AND THE SAME SENTENCES, INSIDE THE FRONTS THEY DESCRIBE. One computation, several mount
+    // points -- the shape renderLifeWoven(boxId) already uses -- so the hub's thread and the
+    // front's thread cannot drift apart. Each front points at the NEXT one in the chain
+    // SOUL-ARCHITECTURE names (Train -> fuel it -> Nourish -> see what it did -> Track), carries
+    // that front's own measured line as its subtitle, and renders nothing at all when the line is
+    // empty, because a thread with no evidence behind it is just another button.
+    const thread = function(hostId, toTab, title, line, icon){
+      const host = document.getElementById(hostId);
+      if(!host) return;
+      if(!line){ host.innerHTML = ''; return; }
+      host.innerHTML = (typeof iosList === 'function' && typeof iosRow === 'function')
+        ? iosList([ iosRow({ title: title, sub: line, icon: icon, tone: 'blue', onclick: "go('" + toTab + "')" }) ])
+        : '';
+    };
+    thread('thread-train', 'nourish', 'Fuel what you earned', nourishLine, 'flame');
+    thread('thread-nourish', 'track', 'See what it did', trackLine, 'scale');
   }catch(_){ }
 }
 
@@ -45803,12 +45844,39 @@ function loadTodaySplitCard(){
   }
 
   if(!today || !today.focus){
-    // NO ROUTINE ASSIGNED: say nothing. The ROUTINES list two components above already carries
-    // "Build a routine", and the segmented control above that carries "Routines" — a card whose whole
-    // content is "go and do the thing those two already offer" is the same decision a third time.
-    if(nameEl)nameEl.textContent='No routine set for today';
-    if(detailEl)detailEl.innerHTML='';
-    ptShow(false);
+    // NO ROUTINE ASSIGNED: say nothing ABOUT THE ROUTINE. The ROUTINES list two components above
+    // already carries "Build a routine", and the segmented control above that carries "Routines" —
+    // a card whose whole content is "go and do the thing those two already offer" is the same
+    // decision a third time. That reasoning is kept exactly.
+    //
+    // BUT THIS WAS THE ONLY CARD IN THE LOG PANEL, so hiding it left Train with no MIRROR at all:
+    // the arrival screen was "Start a session" and three how-to rows, while the person's own
+    // 3 strength / 174 min / 3,493kg lifted sat one segment away under History. Nourish — the front
+    // this app holds the others to — leads with the day and the number and only then the log bar;
+    // Train led with the menu. Worse, the route IN is the Grow hub row whose own subtitle IS that
+    // week line, so a person read "3 sessions this week — about 1,044 cal earned", tapped it, and
+    // arrived somewhere that had forgotten.
+    // So: no routine and no history is still silence (a brand-new person is owed no numbers), and no
+    // routine WITH history shows the week instead of the offer. Same card, the honest half of it.
+    const _w = (typeof getUnifiedWeekStats==='function') ? getUnifiedWeekStats() : null;
+    const _bits = [];
+    if(_w){
+      if(_w.strengthCount) _bits.push(_w.strengthCount + ' strength');
+      if(_w.cardioCount) _bits.push(_w.cardioCount + ' cardio');
+      if(_w.totalMinutes) _bits.push(_w.totalMinutes + ' min');
+      if(_w.totalVolumeKg) _bits.push(_w.totalVolumeKg.toLocaleString() + 'kg lifted');
+    }
+    if(_bits.length){
+      if(nameEl) nameEl.textContent = 'This week';
+      if(detailEl) detailEl.innerHTML =
+        '<div style="font-size:var(--t-base);color:var(--tx2);line-height:1.5">' + _escFew(_bits.join(' \u00b7 ')) + '</div>' +
+        '<div style="margin-top:6px;font-size:var(--t-cap);color:var(--tx3)">No routine set for today — log a session and it lands here.</div>';
+      ptShow(true);
+    } else {
+      if(nameEl)nameEl.textContent='No routine set for today';
+      if(detailEl)detailEl.innerHTML='';
+      ptShow(false);
+    }
     if(wrap) wrap.style.display='none';
     return;
   }
