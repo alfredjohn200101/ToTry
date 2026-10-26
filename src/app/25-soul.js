@@ -1377,9 +1377,14 @@ async function shareCardNative(url){
   try{
     const blob=await(await fetch(url)).blob();
     const file=new File([blob],'totry-day-'+getDayCount()+'.png',{type:'image/png'});
+    // AND IT CARRIES A WAY BACK. This passed title/text/files and NO `url`, so somebody who shared
+    // their card gave the person receiving it a picture and no route to the app — and both share
+    // canvases end on a byline rather than a link, so the image carries none either. The live URL
+    // appeared exactly ONCE in all of src/ before this: the Strava OAuth redirect.
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
       text:'Still trying. ToTry.',
+      url:'https://alfredjohn200101.github.io/ToTry/',
       files:[file]
     });
   }catch(e){

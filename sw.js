@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v659-the-sink-was-fixed-and-138-call-sites-were-not'
+const CACHE = 'totry-v660-a-link-that-previews-and-an-event-that-says-which-build'
 
 const CORE = [
   './',

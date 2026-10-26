@@ -1413,7 +1413,18 @@ async function api(sys, hist, msg, tok, opts){
     system: sys,
     messages: [...(hist || []), {role:'user', content: msg}]
   };
-  if(opts.prefer) body.prefer = opts.prefer; // e.g. 'anthropic' for crisis SOS
+  // `prefer` only REORDERS the free-first chain; an unset key or a 429 still serves the next link.
+  // The comment here used to read "e.g. 'anthropic' for crisis SOS" and NO SURFACE HAS EVER PASSED
+  // IT — a dead gate whose comment named the most sensitive path in the app. The option is kept
+  // because `scripts/voice-probe.mjs chain` is what measures each provider against the real prompt,
+  // and the edge function honours `body.prefer` (ai-proxy:580); the probe builds its own body, so
+  // this line is the app-side door and nothing walks through it.
+  // IT IS DELIBERATELY NOT WIRED TO THE CRISIS PATH. The measured problem is real — gemini hands
+  // over 9 of 9 and cloudflare 8 of 9, and which one answers is decided by whose key is live that
+  // minute — but `_needsHumanNet` was built for exactly that variance and is deterministic and
+  // provider-independent. Routing would be a second, unmeasurable answer to a solved problem, and
+  // re-measuring costs the owner's own API quota. If it is ever wired, run the probe first.
+  if(opts.prefer) body.prefer = opts.prefer;
   if(opts.web_search) body.web_search = true; // route to search-capable provider (food lookup)
   // No user id in the body. The proxy takes identity from the signed token and nothing else — it used
   // to prefer this field, which meant the public anon key was enough to spend someone else's quota.

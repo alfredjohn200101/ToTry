@@ -20,6 +20,29 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>ToTry</title>
+  <!-- A LINK TO THIS APP PREVIEWED AS A BARE URL. 7 meta tags shipped and NONE of them was a
+       description, an og: or a twitter: tag, so every share — a text to a friend, a post, the
+       Instagram bio link the crash log shows real people arriving from — rendered as naked text
+       with no title, no sentence and no image. The app was un-shareable at the HTML level while
+       paid traffic was being sent to it.
+       The description leads with the ARRIVAL rather than a feature list, because that is the
+       product's own claim and the guest button already carries the sentence a stranger recognises:
+       "Something's pulling at me right now". manifest.json's six-noun list was the old copy.
+       og:image is the 512 app icon — square, so it previews as a tile rather than a wide card.
+       Honest and present beats a 1200x630 that does not exist. -->
+  <meta name="description" content="Something pulling at you right now? Start there. Training, food, money, the fight and faith in one place — so it counsels you, instead of just counting.">
+  <link rel="canonical" href="https://alfredjohn200101.github.io/ToTry/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ToTry">
+  <meta property="og:title" content="ToTry — the whole of you, in one place">
+  <meta property="og:description" content="Something pulling at you right now? Start there. Training, food, money, the fight and faith in one place — so it counsels you, instead of just counting.">
+  <meta property="og:url" content="https://alfredjohn200101.github.io/ToTry/">
+  <meta property="og:image" content="https://alfredjohn200101.github.io/ToTry/icon-512.png">
+  <meta property="og:image:alt" content="The ToTry app icon">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ToTry — the whole of you, in one place">
+  <meta name="twitter:description" content="Something pulling at you right now? Start there. Training, food, money, the fight and faith in one place — so it counsels you, instead of just counting.">
+  <meta name="twitter:image" content="https://alfredjohn200101.github.io/ToTry/icon-512.png">
 <style>
 /* THE BRAND FONTS ARE BUNDLED, NOT FETCHED. All three came from fonts.googleapis.com until 12 Sep
    2026, and nothing was cached locally — so with no network document.fonts held ZERO faces and the
@@ -8747,7 +8770,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v659';
+const APP_VERSION = 'v660';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13280,7 +13303,18 @@ async function api(sys, hist, msg, tok, opts){
     system: sys,
     messages: [...(hist || []), {role:'user', content: msg}]
   };
-  if(opts.prefer) body.prefer = opts.prefer; // e.g. 'anthropic' for crisis SOS
+  // `prefer` only REORDERS the free-first chain; an unset key or a 429 still serves the next link.
+  // The comment here used to read "e.g. 'anthropic' for crisis SOS" and NO SURFACE HAS EVER PASSED
+  // IT — a dead gate whose comment named the most sensitive path in the app. The option is kept
+  // because `scripts/voice-probe.mjs chain` is what measures each provider against the real prompt,
+  // and the edge function honours `body.prefer` (ai-proxy:580); the probe builds its own body, so
+  // this line is the app-side door and nothing walks through it.
+  // IT IS DELIBERATELY NOT WIRED TO THE CRISIS PATH. The measured problem is real — gemini hands
+  // over 9 of 9 and cloudflare 8 of 9, and which one answers is decided by whose key is live that
+  // minute — but `_needsHumanNet` was built for exactly that variance and is deterministic and
+  // provider-independent. Routing would be a second, unmeasurable answer to a solved problem, and
+  // re-measuring costs the owner's own API quota. If it is ever wired, run the probe first.
+  if(opts.prefer) body.prefer = opts.prefer;
   if(opts.web_search) body.web_search = true; // route to search-capable provider (food lookup)
   // No user id in the body. The proxy takes identity from the signed token and nothing else — it used
   // to prefer this field, which meant the public anon key was enough to spend someone else's quota.
@@ -53468,9 +53502,14 @@ async function shareCardNative(url){
   try{
     const blob=await(await fetch(url)).blob();
     const file=new File([blob],'totry-day-'+getDayCount()+'.png',{type:'image/png'});
+    // AND IT CARRIES A WAY BACK. This passed title/text/files and NO `url`, so somebody who shared
+    // their card gave the person receiving it a picture and no route to the app — and both share
+    // canvases end on a byline rather than a link, so the image carries none either. The live URL
+    // appeared exactly ONCE in all of src/ before this: the Strava OAuth redirect.
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
       text:'Still trying. ToTry.',
+      url:'https://alfredjohn200101.github.io/ToTry/',
       files:[file]
     });
   }catch(e){
@@ -56157,7 +56196,22 @@ function toggleMetrics(){
 function logEvent(name, detail){
   try{
     if(metricsOff()) return;
-    if(sb){ sb.from('app_events').insert({ anon_id:_anonId(), event:name, detail:detail||null, standalone:(typeof _isStandalone==='function'&&_isStandalone()) }).then(()=>{},()=>{}); }
+    // EVERY EVENT CARRIES THE VERSION IT CAME FROM. It did not, and that is why pinning three real
+    // crash families to a bundle took line-number archaeology across every revision of the
+    // generated index.html: `jserror` reported "index.html:30139" and nothing said which build's
+    // line 30139 that was. One field would have made it a five-minute answer.
+    // ATTACHED, NOT RESHAPED. `detail` is jsonb and callers pass three different shapes — an
+    // object (the check-in sends {improvements, note, raffle, email, day}), `{}`, or nothing. An
+    // extra key cannot break the queries in ANALYTICS-QUERIES.md, because every one of them reads
+    // a NAMED key (detail->>'note', detail->'improvements', detail->>'email').
+    // A STRING detail is left a string: `jserror` passes one, and wrapping it would change the
+    // shape of the single event type most likely to be read with detail::text. That path carries
+    // the version in the string instead.
+    const _v = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : null;
+    let _d = detail;
+    if(_d === undefined || _d === null) _d = { v:_v };
+    else if(typeof _d === 'object' && !Array.isArray(_d)) { try{ _d = Object.assign({}, _d, { v:_v }); }catch(_){ } }
+    if(sb){ sb.from('app_events').insert({ anon_id:_anonId(), event:name, detail:_d, standalone:(typeof _isStandalone==='function'&&_isStandalone()) }).then(()=>{},()=>{}); }
     if(window.goatcounter && window.goatcounter.count){ window.goatcounter.count({ path:'/e/'+name, event:true }); }
   }catch(_){ }
 }
@@ -56191,7 +56245,11 @@ const CURRENT_SCHEMA = 2;
       if(_errCount >= 5) return; _errCount++;
       const msg = (e && e.message ? String(e.message) : 'unknown').slice(0,200);
       const where = (e && e.filename ? String(e.filename).split('/').pop() : '') + ':' + (e && e.lineno ? e.lineno : '');
-      if(typeof logEvent === 'function') logEvent('jserror', (msg + ' @ ' + where).slice(0,300));
+      // THE VERSION GOES IN THE STRING HERE. jserror's detail is a string by design (it is read
+      // with detail::text), so logEvent cannot attach a key to it — and this is the one event where
+      // not knowing the build cost real hours. Prefixed, so it survives the 300-char slice.
+      const _vv = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '?';
+      if(typeof logEvent === 'function') logEvent('jserror', (_vv + ' | ' + msg + ' @ ' + where).slice(0,300));
     }catch(_){ }
   });
 })();

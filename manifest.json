@@ -1,7 +1,7 @@
 {
   "name": "ToTry — by Alfred John",
   "short_name": "ToTry",
-  "description": "A free self-improvement app for anyone trying to be better. Vice tracking, faith, habits, finance, fitness, nutrition and more. By Alfred John.",
+  "description": "Something pulling at you right now? Start there. Training, food, money, the fight and faith in one place — so it counsels you, instead of just counting.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

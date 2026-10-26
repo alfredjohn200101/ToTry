@@ -431,7 +431,22 @@ function toggleMetrics(){
 function logEvent(name, detail){
   try{
     if(metricsOff()) return;
-    if(sb){ sb.from('app_events').insert({ anon_id:_anonId(), event:name, detail:detail||null, standalone:(typeof _isStandalone==='function'&&_isStandalone()) }).then(()=>{},()=>{}); }
+    // EVERY EVENT CARRIES THE VERSION IT CAME FROM. It did not, and that is why pinning three real
+    // crash families to a bundle took line-number archaeology across every revision of the
+    // generated index.html: `jserror` reported "index.html:30139" and nothing said which build's
+    // line 30139 that was. One field would have made it a five-minute answer.
+    // ATTACHED, NOT RESHAPED. `detail` is jsonb and callers pass three different shapes — an
+    // object (the check-in sends {improvements, note, raffle, email, day}), `{}`, or nothing. An
+    // extra key cannot break the queries in ANALYTICS-QUERIES.md, because every one of them reads
+    // a NAMED key (detail->>'note', detail->'improvements', detail->>'email').
+    // A STRING detail is left a string: `jserror` passes one, and wrapping it would change the
+    // shape of the single event type most likely to be read with detail::text. That path carries
+    // the version in the string instead.
+    const _v = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : null;
+    let _d = detail;
+    if(_d === undefined || _d === null) _d = { v:_v };
+    else if(typeof _d === 'object' && !Array.isArray(_d)) { try{ _d = Object.assign({}, _d, { v:_v }); }catch(_){ } }
+    if(sb){ sb.from('app_events').insert({ anon_id:_anonId(), event:name, detail:_d, standalone:(typeof _isStandalone==='function'&&_isStandalone()) }).then(()=>{},()=>{}); }
     if(window.goatcounter && window.goatcounter.count){ window.goatcounter.count({ path:'/e/'+name, event:true }); }
   }catch(_){ }
 }
@@ -465,7 +480,11 @@ const CURRENT_SCHEMA = 2;
       if(_errCount >= 5) return; _errCount++;
       const msg = (e && e.message ? String(e.message) : 'unknown').slice(0,200);
       const where = (e && e.filename ? String(e.filename).split('/').pop() : '') + ':' + (e && e.lineno ? e.lineno : '');
-      if(typeof logEvent === 'function') logEvent('jserror', (msg + ' @ ' + where).slice(0,300));
+      // THE VERSION GOES IN THE STRING HERE. jserror's detail is a string by design (it is read
+      // with detail::text), so logEvent cannot attach a key to it — and this is the one event where
+      // not knowing the build cost real hours. Prefixed, so it survives the 300-char slice.
+      const _vv = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '?';
+      if(typeof logEvent === 'function') logEvent('jserror', (_vv + ' | ' + msg + ' @ ' + where).slice(0,300));
     }catch(_){ }
   });
 })();

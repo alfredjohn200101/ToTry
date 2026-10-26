@@ -616,6 +616,16 @@ H.section('dead element references — must not grow');
   // RATCHETED 40 -> 12 on 27 Oct 2026. Measured: the bundle carries 12. Its own comment above
   // says "Tighten this number whenever it drops — a ratchet that only ever holds is a
   // ceiling", and it had drifted 28 slots, which is 28 dead ids nobody would notice.
+  //
+  // AND IT MUST NOT GO TO 0. All 12 remaining names are `cardio-*` / `edit-cardio-*`, and they are
+  // NOT dead code — they are LIVE ids this scan structurally cannot see. 22-train-deep.js:1327
+  // holds them in a `labels` table and emits them as `'<input type="text" id="'+id+'"`, so the id
+  // reaches the DOM from a VARIABLE and no literal `id="edit-cardio-time"` exists to find. The
+  // logging form has the same twin set (:1509).
+  // Checked before writing this, because "12 dead ids in one coherent cluster" reads exactly like a
+  // removed feature waiting to be deleted — and deleting them would break the cardio editor and
+  // the cardio logging form, silently, on a path no assertion covers. The number is a floor, not a
+  // target.
   const BASELINE = 12;
   H.ok(dead.size <= BASELINE,
     'no NEW dead getElementById targets (baseline ' + BASELINE + ', found ' + dead.size + ')' +
@@ -13065,6 +13075,52 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     H.ok(/counsel?lor|doctor|crisis line/i.test(bare), 'while still naming a human to go to');
     H.ok(/findahelpline\.com/.test(bare), 'and a real route with no digits to get wrong');
   }
+}
+
+// ══ EVERY EVENT CARRIES THE BUILD IT CAME FROM ═════════════════════════════════════════════
+// `logEvent` wrote {anon_id, event, detail, standalone} and NO version, which is why pinning three
+// real crash families to a bundle took line-number archaeology across every revision of a GENERATED
+// index.html: the log said "index.html:30139" and nothing said whose line 30139 that was.
+// ATTACHED, NOT RESHAPED, and that distinction is the whole test. `detail` is jsonb and callers
+// pass three shapes: an object (the check-in sends {improvements, note, raffle, email, day}), `{}`,
+// or nothing. An extra key cannot break ANALYTICS-QUERIES.md, because every query there reads a
+// NAMED key. A STRING detail stays a string — `jserror` passes one and is read with detail::text,
+// so wrapping it would change the shape of the one event type most likely to be read that way;
+// that path carries the version inside the string instead.
+{
+  H.section('every event carries the build it came from');
+  const sent = [];
+  const L = H.load(['logEvent','metricsOff'], {
+    APP_VERSION: 'vTEST',
+    sb: { from: () => ({ insert: (r) => { sent.push(r); return { then: () => {} }; } }) },
+    localStorage: { getItem: () => null }, window: {},
+    _anonId: () => 'anon', _isStandalone: () => false,
+  });
+  L.logEvent('open');
+  L.logEvent('guest_enter', {});
+  L.logEvent('feedback', { note: 'hi', improvements: ['a'], email: 'x@y.z' });
+  L.logEvent('jserror', 'vTEST | boom @ index.html:1');
+  H.ok(sent.length === 4, 'four events reached the insert (' + sent.length + ')');
+
+  const by = (e) => (sent.find(r => r.event === e) || {}).detail;
+  H.ok(by('open') && by('open').v === 'vTEST', 'an event with NO detail still carries the version');
+  H.ok(by('guest_enter') && by('guest_enter').v === 'vTEST', 'and one passing {} does too');
+
+  const fb = by('feedback') || {};
+  H.ok(fb.v === 'vTEST', 'an object detail gains the version');
+  H.ok(fb.note === 'hi' && Array.isArray(fb.improvements) && fb.email === 'x@y.z',
+    'and keeps every key ANALYTICS-QUERIES.md reads by name \u2014 note, improvements, email');
+
+  H.ok(typeof by('jserror') === 'string',
+    'a STRING detail stays a string, so detail::text still reads jserror rows');
+  H.ok(/^vTEST \| /.test(by('jserror')),
+    'and carries the build as a prefix, so it survives the 300-char slice');
+
+  // The error handler is the one that needed this, so assert IT builds the string rather than
+  // trusting logEvent to have done it for a shape it deliberately leaves alone.
+  const code = H.code(H.html);
+  H.ok(/logEvent\('jserror', \(_vv \+ ' \| ' \+ msg/.test(code),
+    'the window error handler prefixes the version itself');
 }
 
 // ══ NOTHING MASS-REMOVES AN OPEN SHEET EITHER ══════════════════════════════════════════════
