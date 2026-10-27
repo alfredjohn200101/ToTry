@@ -4553,7 +4553,12 @@ function fnBodyOf(code, name){
     const anchor = H.extractFn('viceStreakAnchor');
     const cds = H.extractFn('_calDaysSince');
     const f = new Function('viceMode', 'viceIsAbstinence', anchor + cds + vcd + 'return viceCleanDays;')(vm, abst);
-    const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+    // CALENDAR DAYS, NOT 24h MULTIPLES. `_calDaysSince` counts CALENDAR days, so an anchor built as
+  // `Date.now() - n*864e5` drifts by one across a DST boundary — Australia moved its clocks on
+  // 4 Oct 2026, and this suite went red at midnight on 28 Oct on code nobody had touched, with every
+  // failure an off-by-one day. `setDate` moves calendar days and is DST-safe, which is what the
+  // assertions are actually about. This repo already records one date bomb; this is the second.
+    const ago = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString(); };
     H.eq(f({ n: 'X', mode: 'quit', startDate: ago(40) }), 40, 'quitting keeps its 40 days');
     H.eq(f({ n: 'X', startDate: ago(40) }), 40, 'and so does a vice from before modes existed');
     H.eq(f({ n: 'X', mode: 'watch', startDate: ago(40) }), 0, 'watch mode has no streak');
@@ -4770,7 +4775,12 @@ function fnBodyOf(code, name){
   const getDayCount = eval('(' + src.replace(/^function\s+\w+/, 'function') + ')');
   const store = {};
   global.ls = (k, v) => { if (v === undefined) return store[k]; store[k] = v; };
-  const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+  // CALENDAR DAYS, NOT 24h MULTIPLES. `_calDaysSince` counts CALENDAR days, so an anchor built as
+  // `Date.now() - n*864e5` drifts by one across a DST boundary — Australia moved its clocks on
+  // 4 Oct 2026, and this suite went red at midnight on 28 Oct on code nobody had touched, with every
+  // failure an off-by-one day. `setDate` moves calendar days and is DST-safe, which is what the
+  // assertions are actually about. This repo already records one date bomb; this is the second.
+  const ago = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString(); };
 
   store.totry_start = 12345; store.totry_journey_start = null;
   H.eq(getDayCount(), 1, 'a bare number anchors nothing — it used to give 20685');
@@ -7027,7 +7037,12 @@ H.section('third-party product text is escaped');
 // handler over the REAL loadV migration and asserts what the person actually reads on the card.
 H.section('the fight is not erased by a slip — at every door, not just the two that were patched');
 {
-  const ago = n => new Date(Date.now() - n*864e5).toISOString();
+  // CALENDAR DAYS, NOT 24h MULTIPLES. `_calDaysSince` counts CALENDAR days, so an anchor built as
+  // `Date.now() - n*864e5` drifts by one across a DST boundary — Australia moved its clocks on
+  // 4 Oct 2026, and this suite went red at midnight on 28 Oct on code nobody had touched, with every
+  // failure an off-by-one day. `setDate` moves calendar days and is DST-safe, which is what the
+  // assertions are actually about. This repo already records one date bomb; this is the second.
+  const ago = n => { const x = new Date(); x.setDate(x.getDate() - n); return x.toISOString(); };
   const store = {};
   const _ls = (k, v) => { if(v === undefined) return store[k]; store[k] = JSON.parse(JSON.stringify(v)); return v; };
   const F = H.load(
@@ -11624,8 +11639,14 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     });
     const now = new Date();
     // A weigh-in an hour ago, and one from a fortnight ago, each carrying only a ts.
-    syncWeightTodayRow([{ weight: 82.4, ts: new Date(now.getTime() - 3600e3).toISOString() }]);
-    H.eq(els['bod-current-summary'].textContent, 'Logged today', 'a weigh-in an hour ago reads as logged today');
+    // AN HOUR AGO IS YESTERDAY AT 00:27. The invariant is "a row carrying only a ts, from TODAY,
+    // reads as logged today" — "an hour ago" was shorthand for that, and it stopped being true when
+    // the suite ran in the first hour of a day. Clamp the anchor into today so the assertion tests
+    // what it is for at every hour. This repo's own rule: assert the invariant, not the rendering.
+    const _startOfToday = new Date(); _startOfToday.setHours(0, 0, 0, 0);
+    const _todayTs = new Date(Math.max(now.getTime() - 3600e3, _startOfToday.getTime() + 60e3)).toISOString();
+    syncWeightTodayRow([{ weight: 82.4, ts: _todayTs }]);
+    H.eq(els['bod-current-summary'].textContent, 'Logged today', 'a weigh-in earlier TODAY reads as logged today');
     H.eq(els['bod-current-value'].textContent, '82.4kg', 'and the row shows it');
     syncWeightTodayRow([{ weight: 82.4, ts: new Date(now.getTime() - 14 * 86400e3).toISOString() }]);
     H.eq(els['bod-current-summary'].textContent, 'No log today', 'a fortnight-old one does not');
@@ -17478,14 +17499,25 @@ H.section('two screens, one number — and the support page is reachable');
   // not), one a minute earlier (they agree). Both hold at every hour.
   const laterInDay   = (d) => new Date(Date.now() - d*86400000 + 60000).toISOString();
   const earlierInDay = (d) => new Date(Date.now() - d*86400000 - 60000).toISOString();
+  // ACROSS A DST TRANSITION THE TWO CANNOT AGREE, AND THAT IS NOT THE BUG UNDER TEST. Calendar days
+  // and 24h-rolled arithmetic differ by exactly the offset change, so the "they agree" calibration is
+  // only meaningful for a span with no transition in it. Australia moved its clocks on 4 Oct 2026 and
+  // this assertion went red at midnight on 28 Oct at d=41 — expected 41, got 42 — on correct code.
+  // Detect the crossing and say so rather than asserting something that is false by construction; the
+  // fault-injection half below still holds either way, and it is the half that catches the real bug.
+  const _crossesDst = (iso) => new Date(iso).getTimezoneOffset() !== new Date().getTimezoneOffset();
+  let _skippedDst = 0;
   [1,3,10,41].forEach((d) => {
-    H.eq(L._calDaysSince(earlierInDay(d)), rolled(earlierInDay(d)),
+    if (_crossesDst(earlierInDay(d))) { _skippedDst++; }
+    else H.eq(L._calDaysSince(earlierInDay(d)), rolled(earlierInDay(d)),
       'calibration at ' + d + ' days: with the anchor earlier in the day the two agree \u2014 which is why ' +
       'this survived, and why the case below is the test');
     H.ok(rolled(laterInDay(d)) !== L._calDaysSince(laterInDay(d)),
       'fault-injected at ' + d + ' days: the OLD elapsed-24h arithmetic is a day short for a fight ' +
       'named later in the day than it is now \u2014 that is the bug Home printed');
   });
+  // Never silent. A skipped calibration that prints nothing is a calibration nobody knows is gone.
+  H.ok(_skippedDst < 4, 'at least one span was free of a DST transition (' + _skippedDst + ' of 4 skipped)');
 
   const qw = H.code(H.extractFn('renderHomeQuickWins'));
   H.ok(/viceCleanDays\(v\)/.test(qw),

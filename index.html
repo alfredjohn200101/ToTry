@@ -8788,7 +8788,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v662';
+const APP_VERSION = 'v663';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9842,11 +9842,52 @@ async function syncNow(){
 
 // Override localStorage.setItem to trigger sync
 let _originalSetItem = null;
+// ON WEBKIT, ASSIGNING TO `localStorage.setItem` IS A SILENT NO-OP — so this whole function did
+// NOTHING on the engine the shipped iOS app and the Safari PWA both use. Measured in both engines:
+// after `localStorage.setItem = fn`, Chromium reports hasOwnProperty('setItem') === true and the
+// override runs; WebKit reports FALSE and it runs ZERO times. The value still stores, so nothing
+// looks wrong.
+//
+// TWO CONSEQUENCES, and the second is the one that loses data.
+//  1. No local write was ever queued to the outbox, so an iPhone never uploaded. ~168 of 178
+//     SYNC_KEYS are affected; only the handful with an explicit syncToCloud() call ever reached the
+//     cloud at all.
+//  2. `_recordKeyTs` is called ONLY from here, and pullFromCloud compares `lts = tsMap[k] || 0`
+//     against the cloud row's updated_at. With the stamp never written, every local key reports
+//     **0**, so ANY cloud row beats it and a fresh local edit is replaced by a stale cloud copy on
+//     the next open. Driven on the real app: a journal write left 0 entries in totry_key_ts on
+//     WebKit and 1 on Chromium, with `_recordKeyTs` called directly stamping in both — so the
+//     stamping mechanism was always fine and only the TRIGGER was missing.
+//
+// The fix is the PROTOTYPE, which is writable in both engines (measured). Two things it must keep:
+//  - `_originalSetItem` stays BOUND to localStorage, because six other sites across 00-boot.js and
+//    this file call it as `_originalSetItem(k, v)` as the deliberate "write past the monitor"
+//    escape hatch. Making it the unbound prototype method would call them with no receiver.
+//  - `this !== localStorage` returns early: Storage.prototype is shared with sessionStorage, and
+//    without the guard a sessionStorage write would queue itself to somebody's cloud row.
 function enableSyncMonitoring(){
   if(_originalSetItem) return; // Already enabled
-  _originalSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, value){
-    _originalSetItem(key, value);
+  const _proto = Storage.prototype.setItem;
+  _originalSetItem = _proto.bind(localStorage);
+  // THE UPGRADE LAUNCH IS THE DANGEROUS ONE. Until now no iOS write was ever stamped, so on the
+  // first open after this fix every existing local key still reports lts=0 and the very launch that
+  // repairs sync would hand the person's phone history to whatever stale row the cloud holds. Stamp
+  // what is already on the device ONCE, before any pull can run. This is the repo's own day-key
+  // rule — "keep the copy the person is looking at" — applied to the one device whose copy has
+  // never been backed up. Only keys that exist locally and are not already stamped are touched, so
+  // a device that was already syncing correctly (Chromium) is unaffected.
+  try{
+    const _m = _getKeyTsMap(); let _n = 0;
+    SYNC_KEYS.forEach(function(k){
+      if(_m[k]) return;
+      if(localStorage.getItem(k) === null) return;
+      _m[k] = Date.now(); _n++;
+    });
+    if(_n) _proto.call(localStorage, 'totry_key_ts', JSON.stringify(_m));
+  }catch(_){ }
+  Storage.prototype.setItem = function(key, value){
+    _proto.call(this, key, value);
+    if(this !== localStorage) return;   // sessionStorage shares this prototype; it must not sync
     // Record WHEN each key changed locally (durable per-key ts), so pull-on-open can compare
     // deterministically against the cloud row's updated_at instead of clobbering either side.
     if(SYNC_KEYS.includes(key)){
