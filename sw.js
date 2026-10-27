@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v663-an-iphone-never-backed-anything-up'
+const CACHE = 'totry-v664-window-open-returns-null-it-does-not-throw'
 
 const CORE = [
   './',

@@ -54,7 +54,7 @@ export function seedSource() {
     // npm test did NOT catch it: core.test.js reads this file as TEXT for regex assertions and never
     // imports it, so a syntax error here passes the gate. Parse-check by importing it.
     // (I then wrote the warning itself with backticks in it and broke the file a SECOND time.)
-    S('totry_v', [{ n: 'The old habit', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [_urge(5), _urge(2)], t: 'late nights alone', lastConfirm: new Date().toISOString() },
+    S('totry_v', [{ n: 'The pull', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [_urge(5), _urge(2)], t: 'late nights alone', lastConfirm: new Date().toISOString() },
                   { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [_urge(3)], lastConfirm: new Date().toISOString() },
                   // THE MONEY HERO READ "$0 / Set weekly vice spend below" IN THE STORE SCREENSHOT,
                   // on the one card the listing copy sells as "every dollar reclaimed from a habit

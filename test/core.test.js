@@ -18509,4 +18509,39 @@ H.section('reduced motion calms the app without deleting guided breathing');
     'and "Skip — just breathe" carries a 44px minimum, not the 19px it rendered at');
 }
 
+// ── window.open RETURNS NULL WHEN REFUSED; IT DOES NOT THROW ─────────────────────────────────────
+// Settings -> Help & FAQ called `try{ window.open('support.html','_blank','noopener') }catch(_){
+// location.href = ... }`. A refused open returns null, so the catch never fired and the fallback was
+// UNREACHABLE — and a relative _blank target under capacitor:// is exactly the case that gets
+// refused, which made the row do nothing at all in the App Store build. 35-strava.js already had
+// the correct shape; this was the one site that did not.
+H.section('a window.open fallback is reached by checking the return, not by catching');
+{
+  let f = '';
+  try { f = H.code(H.extractFn('openSupportPage')); } catch (e) { f = ''; }
+  H.ok(f.length > 60, 'openSupportPage was found by name (' + f.length + ' chars)');
+  if (f) {
+    H.ok(/=\s*window\.open\(/.test(f), 'it captures what window.open returned');
+    H.ok(/if\s*\(\s*!\s*\w+\s*\)/.test(f), 'and branches on that being falsy, which is how a refusal presents');
+    // The old shape: a bare window.open inside a try whose catch holds the fallback. Asserted as the
+    // ABSENCE of an un-captured call, so reverting to it is a named failure.
+    H.ok(!/try\s*\{\s*window\.open\('support\.html'/.test(f),
+      'and the fallback is not hidden behind a catch that a null return can never reach');
+  }
+  // THE FALLBACK NAVIGATES THE WHOLE WEBVIEW, so the page it lands on must offer a way back. In the
+  // App Store build there is no browser chrome and no tab to close, and support.html's only other
+  // outbound link is the public PWA, which is not "back".
+  // STRIP THE HTML COMMENTS FIRST. The comment that explains this fix names `history.back()`, so an
+  // unstripped grep passes on deleted code — which it did: the fault injection removed the real call
+  // and the assertion stayed green off the comment alone. This repo's most-repeated test defect,
+  // arriving inside the test written to close the gap.
+  const supRaw = require('fs').readFileSync(require('path').join(__dirname, '..', 'support.html'), 'utf8');
+  const sup = supRaw.replace(/<!--[\s\S]*?-->/g, '');
+  H.ok(sup.length > 1000, 'support.html was read and comment-stripped (' + sup.length + ' chars)');
+  H.ok(/history\.back\(\)/.test(sup), 'support.html offers a way back into the app');
+  H.ok(/history\.length\s*>\s*1/.test(sup),
+    'and hides that link when there is no history to return to, rather than leaving it dead');
+  H.ok(/tel:131114/.test(sup), 'and it still carries Lifeline — this page is reachable from Settings at any hour');
+}
+
 H.report();

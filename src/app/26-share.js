@@ -614,8 +614,13 @@ function tellUser(title, body, opts){
 // defect class no check here can see. `_blank` + noopener hands off to the system browser in the
 // native shell rather than replacing the app's own webview, which has no way back.
 function openSupportPage(){
-  try{ window.open('support.html', '_blank', 'noopener'); }
-  catch(_){ try{ location.href = 'support.html'; }catch(__){ } }
+  // `window.open` RETURNS NULL when it is refused; it does not throw. So the catch below never fired
+  // and the fallback was unreachable — and under capacitor:// a relative _blank target is exactly the
+  // case that gets refused, which made Settings -> Help & FAQ do nothing at all in the App Store
+  // build. 35-strava.js:135 already had the correct shape; this was the one site that did not.
+  let w = null;
+  try{ w = window.open('support.html', '_blank', 'noopener'); }catch(_){ }
+  if(!w){ try{ location.href = 'support.html'; }catch(__){ } }
 }
 function openFeedback(){
   closeOpenSheets();

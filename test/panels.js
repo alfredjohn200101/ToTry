@@ -690,7 +690,15 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+// ── CALENDAR DAYS, NOT 24h MULTIPLES ────────────────────────────────────────────────────────────
+// Every day-offset seed marked below means "i CALENDAR days ago", because that is what
+// viceCleanDays -> _calDaysSince counts. Built as `Date.now() - i*864e5` they drift by one across a
+// DST boundary — Australia moved its clocks on 4 Oct 2026 and this suite went red at midnight on
+// 28 Oct on code nobody had touched, every failure an off-by-one day ("Porn: 41 days" where 40 was
+// expected). `setDate` moves calendar days and is DST-safe. The 24h form is deliberately LEFT ALONE
+// everywhere it only orders rows or spaces them out: there it is not a day COUNT, and changing all
+// 67 of them would be the blanket sweep this repo fails builds over.
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam');
       s('totry_v',[{ n:"Mum's wine", mode:'quit', startDate:d(40) },
                    { n:'Weed', mode:'moderate', startDate:d(2), costAmount:200, costPer:'purchase', lastsDays:30, lastPurchase:d(90) }]);
@@ -728,7 +736,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam');
-      s('totry_start', new Date(Date.now()-40*864e5).toISOString());
+      s('totry_start', (function(){const x=new Date();x.setDate(x.getDate()-40);return x.toISOString();})());
       s('totry_examens',[{ ts:new Date().toISOString() }]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2700);
@@ -880,7 +888,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         const hAgo=h=>new Date(Date.now()-h*3600e3).toISOString();
         s('totry_onboarded',true); s('totry_name','Sam');
         if(c.v) s('totry_v', c.v.map(x=>({ n:x.n, mode:x.mode, startDate:d(x.days) })));
@@ -946,7 +954,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam');
-      s('totry_start', new Date(Date.now()-40*864e5).toISOString());
+      s('totry_start', (function(){const x=new Date();x.setDate(x.getDate()-40);return x.toISOString();})());
       // today's morning ALREADY done — the path that needs no completion in this session
       s('totry_mornings',[{ ts:new Date().toISOString(), day:41, gratitude:'my sister called', intention:'be present' }]);
     });
@@ -1432,7 +1440,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         s('totry_onboarded',true); s('totry_name','Sam'); s('totry_currency','GBP');
         if(c.clean){ const v={ n:'Porn', mode:'quit', startDate:d(c.clean), total:6 };
           if(c.cost){ v.costAmount=25; v.costPeriod='week'; }
@@ -2263,7 +2271,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam');
       s('totry_v',[{ n:'Vape', mode:'quit', startDate:d(100), costAmount:30, costPer:'week', owed:0 },
                    { n:'Weed', mode:'moderate', limit:2, startDate:d(100), type:'weed',
@@ -2346,7 +2354,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam');
       const hist=[]; for(let i=50;i>=0;i--) hist.push({ date:d(i), streakLength:0 });
       // a quit fight at zero AND a moderate fight tracked far longer — the mixed-mode case
@@ -2421,7 +2429,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(s0 => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         const pad=n=>String(n).padStart(2,'0'), t=new Date();
         s('totry_onboarded',true); s('totry_name','Sam');
         const v={ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(9), lastConfirm:new Date().toISOString() };
@@ -2465,7 +2473,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString(), au=i=>new Date(Date.now()-i*864e5).toLocaleDateString('en-AU');
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();}, au=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toLocaleDateString('en-AU');};
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start',d(60));
       s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(9) }]);
       s('totry_workouts',[{ id:1, ts:d(0), date:d(0).slice(0,10), title:'Push', volume:8000, sets:16, calories:400 }]);
@@ -2529,7 +2537,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(due => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         s('totry_onboarded',true); s('totry_name','Sam');
         s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(20),
                        lastConfirm: due ? d(20) : new Date().toISOString() }]);
@@ -2581,7 +2589,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         s('totry_onboarded',true); s('totry_name','Sam');
         if(c.none){ s('totry_v',[]); return; }
         const uses=[];
@@ -2615,7 +2623,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam');
       s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(104), startDate:d(26),
                      relapseHistory:[{ date:d(60), streakLength:20 },{ date:d(26), streakLength:34 }],
@@ -2672,7 +2680,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
       const page = await ctx.newPage();
       await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
         s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start',d(90));
         const uses=[], hist=[];
         if(c.days){ for(let i=c.days;i>=0;i--){ uses.push({v:'Lust',ts:d(i)}); hist.push({date:d(i),streakLength:0}); } }
@@ -2711,7 +2719,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam');
       s('totry_v',[{ n:'Lust', mode:'quit', startDate:d(26), total:3, relapseCount:2, cleanDaysTotal:40,
                      relapseHistory:[{date:d(60),streakLength:14},{date:d(26),streakLength:26}] },
@@ -4433,7 +4441,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const dayErrs = [];
     page.on('pageerror', e => dayErrs.push(String(e.message).slice(0,110)));
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      /* calendar days, not 24h multiples — see the DST note above */ const d=i=>{const x=new Date();x.setDate(x.getDate()-i);return x.toISOString();};
       s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start', d(40));
       s('totry_v',[{ n:"Mum's wine", mode:'quit', startDate:d(21) }]);
       s('totry_vice_uses',[{ v:"Mum's wine", ts:d(60) },{ v:"Mum's wine", ts:d(38) },{ v:"Mum's wine", ts:d(21) }]);

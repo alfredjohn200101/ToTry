@@ -29,6 +29,15 @@
 </head>
 <body>
 <div class="wrap">
+  <!-- A WAY BACK. Settings -> Help & FAQ can reach this page by NAVIGATING the webview (the
+       window.open fallback), and in the App Store build that replaces the whole app: there is no
+       browser chrome and no tab to close. The only other outbound link on this page is the public
+       PWA, which is not "back". history.back() works in both the native shell and a browser tab;
+       when there is no history to return to (opened directly) it is hidden rather than left dead. -->
+  <a href="#" id="back-link" onclick="history.back();return false;"
+     style="display:none;font:400 15px/1.4 Outfit,system-ui,sans-serif;color:#8C6BB6;text-decoration:none;
+            min-height:44px;align-items:center;margin-bottom:8px">&#8592; Back to ToTry</a>
+  <script>try{ if(history.length>1){ var _b=document.getElementById('back-link'); if(_b) _b.style.display='flex'; } }catch(e){}</script>
   <div class="brand">To <em>Try</em></div>
   <h1>Support</h1>
   <p class="lede">To Try is built and run by one person. When you reach out, you reach me — Alfred — not a support desk.</p>
