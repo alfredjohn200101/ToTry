@@ -40,7 +40,21 @@ export function seedSource() {
     S('totry_onboarded', true); S('totry_name', 'Alfred'); S('totry_sex', 'male'); S('totry_faith_tradition', 'christianity');
     S('totry_identity', 'A man who is present, steady, and keeps his word.'); S('totry_why', 'So my kids get the version of me that shows up.');
     S('totry_journey_start', a[1]);
-    S('totry_v', [{ n: 'Porn', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [_urge(5), _urge(2)], t: 'late nights alone', lastConfirm: new Date().toISOString() },
+    // THE DEMO SEED'S LEAD VICE IS THE ONE THAT RENDERS LARGE IN THE STORE SCREENSHOT.
+    // 03-fight.png showed PORN as the lead card's eyebrow label. App Store Review guideline 2.3.8
+    // requires screenshots to meet a 4+ rating even when the app is rated higher, because
+    // screenshots are browsable by anyone. This is DEMO DATA, not product copy: the app still ships
+    // the porn vice type, the description still speaks honestly, and nothing about what the app is
+    // for has changed. Nothing in the gate reads this name -- panels, personas and core.test.js each
+    // define their own inline fixtures, and core.test.js's only assertion about this file is about
+    // the totry_trackers day key.
+    // AND NO BACKTICKS IN HERE. THIS WHOLE BODY IS A TEMPLATE LITERAL returned by seedSource(), so a
+    // backtick in a comment TERMINATES it and the rest of the file parses as code. The first version
+    // of this comment quoted the filename in backticks and broke the seed with "Unexpected number".
+    // npm test did NOT catch it: core.test.js reads this file as TEXT for regex assertions and never
+    // imports it, so a syntax error here passes the gate. Parse-check by importing it.
+    // (I then wrote the warning itself with backticks in it and broke the file a SECOND time.)
+    S('totry_v', [{ n: 'The old habit', type: 'general', mode: 'quit', startDate: a[0], fightingSince: a[1], cleanDaysTotal: 47, relapseCount: 6, w: 9, total: 12, urgelog: [_urge(5), _urge(2)], t: 'late nights alone', lastConfirm: new Date().toISOString() },
                   { n: 'Doomscroll', type: 'general', mode: 'quit', startDate: a[2], fightingSince: a[1], cleanDaysTotal: 22, relapseCount: 3, w: 5, total: 7, urgelog: [_urge(3)], lastConfirm: new Date().toISOString() },
                   // THE MONEY HERO READ "$0 / Set weekly vice spend below" IN THE STORE SCREENSHOT,
                   // on the one card the listing copy sells as "every dollar reclaimed from a habit
