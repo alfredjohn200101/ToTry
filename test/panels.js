@@ -337,7 +337,17 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         document.getElementById('companion-backdrop')?.classList.remove('open');
         document.getElementById('feel-backdrop')?.classList.remove('open');
       };
+      // NAVIGATIONS ARE NOT MODAL OPENERS, and calling one here destroys the execution context.
+      // `openSupportPage` matches the name pattern but opens a PAGE: window.open first, and since
+      // v664 a reachable `location.href` fallback for when that is refused (which is the whole fix —
+      // window.open RETURNS NULL rather than throwing, so the old catch could never run). A
+      // page.evaluate call is not user-initiated, so window.open IS refused here, the fallback fires,
+      // and the walk dies with "Execution context was destroyed". Excluded by name rather than by
+      // guessing at a pattern, so the next navigation-shaped opener has to be considered rather than
+      // silently swallowed.
+      const NOT_MODAL_OPENERS = ['openSupportPage'];
       const names = Object.keys(window).filter(k => /^(open|show)[A-Z]/.test(k)
+        && NOT_MODAL_OPENERS.indexOf(k) < 0
         && typeof window[k] === 'function' && window[k].length === 0).sort();
       for (const nm of names) {
         closeAll();
@@ -4716,6 +4726,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const r=await page.evaluate(async()=>{
       const wait=ms=>new Promise(r=>setTimeout(r,ms));
       const openers=Object.keys(window).filter(k=>/^(open|show)[A-Z]/.test(k)
+        && ['openSupportPage'].indexOf(k) < 0   /* navigates; see NOT_MODAL_OPENERS above */
         && typeof window[k]==='function' && window[k].length===0);
       let named=0; const unnamed=[];
       for(const fn of openers){
@@ -4892,6 +4903,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       document.querySelectorAll('details').forEach(d=>{ d.open=true; });   // settings hides most rows in <details>
       await wait(400); sweep(document);
       const openers=Object.keys(window).filter(k=>/^(open|show)[A-Z]/.test(k)
+        && ['openSupportPage'].indexOf(k) < 0   /* navigates; see NOT_MODAL_OPENERS above */
         && typeof window[k]==='function' && window[k].length===0);
       for(const fn of openers){
         try{ window[fn](); }catch(e){ continue; }
