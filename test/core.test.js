@@ -18423,4 +18423,58 @@ H.section('no inline handler uses a bare identifier that document also owns');
     'the six ordinary-scope revoke calls are deliberately left bare — only an inline handler needs the prefix');
 }
 
+// ── THE BREATH IS THE INSTRUCTION, SO REDUCED MOTION MAY NOT DELETE IT ───────────────────────────
+// Reported by the owner: "I tried using the breather thing, no orb type thing came up for assisted
+// breathing." Reproduced in WebKit on the shipped bundle with prefers-reduced-motion: reduce —
+// computed transition-duration 0.00005s against an inline 6s, and TWO distinct rendered orb widths
+// instead of thirty. The orb snapped between endpoints with nothing in between to follow.
+//
+// Cause: a global `*{transition-duration:.05ms !important}` in the reduced-motion block. An author
+// !important beats an INLINE style, and the entire guidance mechanism is `_breathScale()` setting
+// `el.style.transitionDuration` inline. So reduced motion did not calm the breathing; it removed it.
+// Three surfaces, and the second is the one that matters most: every breathing protocol, THE SOS
+// CRISIS PATH, and the Feeling Door's "the pull".
+H.section('reduced motion calms the app without deleting guided breathing');
+{
+  // BRACKET-MATCH, never a fixed window. The first cut of this used a 1400-char slice and failed on
+  // correct code the moment the block grew a comment explaining itself — the exact trap this repo
+  // records, inside the test written to close the gap.
+  const css = H.html;
+  const at = css.indexOf('@media (prefers-reduced-motion:reduce){');
+  H.ok(at > 0, 'the global reduced-motion block was found');
+  if (at > 0) {
+    let d = 0, j = css.indexOf('{', at);
+    for (; j < css.length; j++) { const c = css[j]; if (c === '{') d++; else if (c === '}') { d--; if (!d) { j++; break; } } }
+    const blk = css.slice(at, j);
+    H.ok(blk.length > 200 && blk.length < 4000, 'and bracket-matched (' + blk.length + ' chars)');
+    // The three functional visuals must be EXCLUDED from the clamp. Asserted per selector, because a
+    // whole-block grep passes with one of the three dropped — and the one most likely to be dropped
+    // is the SOS circle, which no screenshot and no ordinary walk ever reaches.
+    ['\\.b-orb', '#sos-breathe-circle', '#feelingnow-breath'].forEach(sel => {
+      H.ok(new RegExp(':not\\(' + sel + '\\)').test(blk),
+        sel.replace('\\', '') + ' is exempt from the reduced-motion clamp — its animation IS the instruction');
+    });
+    // And the clamp must still EXIST, or this is not an exemption, it is ignoring the preference.
+    H.ok(/transition-duration:\s*\.?0*5?ms\s*!important/.test(blk) || /transition-duration:[^;]*!important/.test(blk),
+      'and everything else is still clamped — reduced motion is honoured, not ignored');
+    H.ok(/^\s*\*:not\(/m.test(blk) || /\*:not\(/.test(blk),
+      'the clamp is still universal apart from the named exemptions');
+  }
+  // The mechanism it protects: the one function that sets the duration inline.
+  let bs = '';
+  try { bs = H.code(H.extractFn('_breathScale')); } catch (e) { bs = ''; }
+  H.ok(/style\.transitionDuration\s*=/.test(bs),
+    '_breathScale still sets transitionDuration INLINE, which is what the exemption exists to let win');
+
+  // The escape on the distress screen is a 44px target. It rendered 19px tall, on the screen a person
+  // reaches mid-urge, and it is the way out of a question they may not want to answer.
+  let ob = '';
+  try { ob = H.code(H.extractFn('openBreath')); } catch (e) { ob = ''; }
+  H.ok(ob.length > 2000, 'openBreath was found by name (' + ob.length + ' chars)');
+  const skip = ob.match(/class="b-skip"[^>]*style="([^"]*)"/);
+  H.ok(!!skip, 'the skip button was located');
+  if (skip) H.ok(/min-height:\s*44px/.test(skip[1]),
+    'and "Skip — just breathe" carries a 44px minimum, not the 19px it rendered at');
+}
+
 H.report();

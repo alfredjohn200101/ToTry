@@ -1736,7 +1736,25 @@ input:focus,textarea:focus,select:focus{
 }
 /* Respect users who prefer less motion. */
 @media (prefers-reduced-motion:reduce){
-  *,.modal-bg.open,.modal-bg.open > .modal{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
+  /* THE BREATH IS THE INSTRUCTION, NOT DECORATION — so the three breathing visuals are EXEMPT.
+     This rule was `*{transition-duration:.05ms !important}`, and an author !important beats an
+     INLINE style. The whole guidance mechanism of guided breathing is `_breathScale()` setting
+     `el.style.transitionDuration` inline, so reduced motion did not calm the orb: it deleted it.
+     Reported by the owner as "no orb type thing came up for assisted breathing", and measured in
+     WebKit on the shipped bundle: normal = computed 6s and 30 distinct rendered widths sweeping
+     121px->186px; reduce = computed 0.00005s and TWO widths. It snapped between endpoints with
+     nothing in between to follow, through every one of the nine protocols.
+     It reached three surfaces, and the second is the one that matters most:
+       .b-orb              every breathing protocol (inline transition)
+       #sos-breathe-circle THE SOS CRISIS PATH (inline transition)
+       #feelingnow-breath  the Feeling Door's "the pull" (CSS animation fnBreathe)
+     Exempting rather than re-asserting a duration, because the duration is per-phase and set by JS:
+     excluded from the selector, the inline style simply wins again. Everything else in the app stays
+     suppressed. These three are slow, gentle, non-vestibular scales — Apple's own Breathe animates
+     under Reduce Motion — and a person who still cannot take the motion is not stranded: `.b-phase`
+     carries aria-live="assertive" and says "Breathe in" / "Breathe out" in words, with a count. */
+  *:not(.b-orb):not(#sos-breathe-circle):not(#feelingnow-breath),
+  .modal-bg.open,.modal-bg.open > .modal{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
 }
 </style>
 <!-- SUPABASE SDK — VENDORED, NOT FETCHED.

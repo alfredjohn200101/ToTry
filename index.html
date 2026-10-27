@@ -1736,7 +1736,25 @@ input:focus,textarea:focus,select:focus{
 }
 /* Respect users who prefer less motion. */
 @media (prefers-reduced-motion:reduce){
-  *,.modal-bg.open,.modal-bg.open > .modal{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
+  /* THE BREATH IS THE INSTRUCTION, NOT DECORATION — so the three breathing visuals are EXEMPT.
+     This rule was `*{transition-duration:.05ms !important}`, and an author !important beats an
+     INLINE style. The whole guidance mechanism of guided breathing is `_breathScale()` setting
+     `el.style.transitionDuration` inline, so reduced motion did not calm the orb: it deleted it.
+     Reported by the owner as "no orb type thing came up for assisted breathing", and measured in
+     WebKit on the shipped bundle: normal = computed 6s and 30 distinct rendered widths sweeping
+     121px->186px; reduce = computed 0.00005s and TWO widths. It snapped between endpoints with
+     nothing in between to follow, through every one of the nine protocols.
+     It reached three surfaces, and the second is the one that matters most:
+       .b-orb              every breathing protocol (inline transition)
+       #sos-breathe-circle THE SOS CRISIS PATH (inline transition)
+       #feelingnow-breath  the Feeling Door's "the pull" (CSS animation fnBreathe)
+     Exempting rather than re-asserting a duration, because the duration is per-phase and set by JS:
+     excluded from the selector, the inline style simply wins again. Everything else in the app stays
+     suppressed. These three are slow, gentle, non-vestibular scales — Apple's own Breathe animates
+     under Reduce Motion — and a person who still cannot take the motion is not stranded: `.b-phase`
+     carries aria-live="assertive" and says "Breathe in" / "Breathe out" in words, with a count. */
+  *:not(.b-orb):not(#sos-breathe-circle):not(#feelingnow-breath),
+  .modal-bg.open,.modal-bg.open > .modal{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
 }
 </style>
 <!-- SUPABASE SDK — VENDORED, NOT FETCHED.
@@ -8770,7 +8788,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v661';
+const APP_VERSION = 'v662';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -22977,7 +22995,9 @@ function openBreath(id, opts){
       '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);margin-bottom:6px">Before we begin</div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
       '<div class="b-scale" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
-      '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">Skip — just breathe</button>'+
+      // 44px, not 19. Measured on the shipped bundle: this button rendered 19px tall on the screen a
+      // person reaches MID-URGE, and it is the escape from a question they may not want to answer.
+      '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;min-height:44px;padding:0 16px">Skip — just breathe</button>'+
     '</div>'+
     '<div class="b-run" style="display:none;flex-direction:column;align-items:center">'+
       '<div class="b-name" style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:26px"></div>'+

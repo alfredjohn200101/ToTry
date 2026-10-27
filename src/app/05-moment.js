@@ -1609,7 +1609,9 @@ function openBreath(id, opts){
       '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);margin-bottom:6px">Before we begin</div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
       '<div class="b-scale" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
-      '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer">Skip — just breathe</button>'+
+      // 44px, not 19. Measured on the shipped bundle: this button rendered 19px tall on the screen a
+      // person reaches MID-URGE, and it is the escape from a question they may not want to answer.
+      '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;min-height:44px;padding:0 16px">Skip — just breathe</button>'+
     '</div>'+
     '<div class="b-run" style="display:none;flex-direction:column;align-items:center">'+
       '<div class="b-name" style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:26px"></div>'+
