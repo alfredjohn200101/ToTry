@@ -2335,7 +2335,22 @@ function goSosP2(){
     try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }
     _sosBreathTimer=setTimeout(step, ph.s*1000);
   };
-  step();
+  // A TRANSITION CANNOT START ON AN ELEMENT THAT HAD NO RENDERED STATE LAST FRAME. showSosPhase(2)
+  // takes #sos-p2 from display:none to displayed and step() ran in the SAME tick, so the browser took
+  // scale(1.5) as the STARTING value and had nothing to interpolate: the circle sat at its largest,
+  // completely still, through the whole 4s "Breathe in…" and the 4s hold. The first movement a person
+  // ever saw was it SHRINKING, at "Breathe out slowly…" — and _sosBreathStop() resets the transform,
+  // so it replayed on EVERY entry, not just the first of a session. The comment above sets the
+  // standard this failed: being told to exhale while the visual says inhale breaks the one thing they
+  // came here able to follow.
+  // Driven: first entry 1 distinct width (96px, the scale(1.5) END state, present at t=9ms); calling
+  // goSosP2 again when #sos-p2 is already displayed gives a smooth 64->78px inhale over 24+ widths.
+  // Same function, same settings — the only difference is the display change. It reproduces in
+  // Chromium too. `.b-orb` escapes it because its overlay is shown before startBreathing() runs.
+  // The computed transition-duration reads a correct 4s throughout, so a style-reading check passes
+  // on the broken code: test DISTINCT RENDERED WIDTHS, not the duration.
+  if(circle){ circle.style.transition='none'; circle.style.transform='scale(1)'; void circle.offsetWidth; circle.style.transition=''; }
+  requestAnimationFrame(step);   // unguarded, as every other rAF call site in this bundle is
 }
 // Held at module level so leaving the phase can stop it. The old version had no handle on its own
 // circle at all: the CSS animation was `infinite` and nothing ever turned it off.
@@ -2372,10 +2387,23 @@ function goSosP3(){
   const bar=document.getElementById('sos-q-bar');
   const lbl=document.getElementById('sos-q-lbl');
   const btns=document.getElementById('sos-p3-btns');
-  if(bar){setTimeout(()=>{bar.style.width='0%';},100);}
+  // THE BAR IS DRIVEN BY THE SAME CLOCK AS THE LABEL NOW, not by a 30-second CSS transition.
+  // `.sos-q-bar{transition:width 30s linear}` plus a single `width='0%'` meant the transition WAS the
+  // countdown — so the reduced-motion clamp (an author !important beats an inline style) emptied it
+  // from the first frame. Measured on SOS step 3 of 3, mid-urge: 5 seconds in the bar read 0 of 353px
+  // while the label directly beneath it said "Sit with this... 25s" — a bar saying finished, beside
+  // text saying 25 seconds remain, directly above "I beat it" / "I gave in". The one visual telling
+  // them the wave is passing, gone at the moment they decide whether they held.
+  // v662 exempted three siblings from that rule; this was the fourth and the only one left (a
+  // detector over every element whose normal transition is >=1.5s finds no others).
+  // Ticking it from the interval is better than another exemption: bar and label are on ONE clock by
+  // construction, it is correct under both motion settings, and it stays correct if the screen is
+  // backgrounded mid-urge instead of finishing a transition that kept running.
   let secs=30;
+  if(bar){ bar.style.transition='none'; bar.style.width='100%'; }
   const qi=setInterval(()=>{
     secs--;if(lbl)lbl.textContent='Sit with this... '+secs+'s';
+    if(bar) bar.style.width=Math.max(0, secs/30*100)+'%';
     if(secs<=0){clearInterval(qi);if(lbl)lbl.textContent='Take your time.';}
   },1000);
   // Swap the outcome buttons to match the vice's goal: moderation isn't win/lose, it's

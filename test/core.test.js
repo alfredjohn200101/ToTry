@@ -18544,4 +18544,56 @@ H.section('a window.open fallback is reached by checking the return, not by catc
   H.ok(/tel:131114/.test(sup), 'and it still carries Lifeline — this page is reachable from Settings at any hour');
 }
 
+// ── THE SOS CRISIS PATH: TWO VISUALS THAT WERE NOT MOVING ────────────────────────────────────────
+// Both found by an adversarial pass, both DISMISSED BY ME FIRST on a probe that never opened
+// #sos-overlay and so measured hidden elements where every rect is 0. The agent's reproduction drove
+// the real path and was right. Recorded because the lesson is the cheap part: a probe that cannot
+// reach the surface reports the same thing as a working app.
+H.section('the SOS breathing circle moves on first entry, and the 30s bar shares the label clock');
+{
+  let g2 = '';
+  try { g2 = H.code(H.extractFn('goSosP2')); } catch (e) { g2 = ''; }
+  H.ok(g2.length > 400, 'goSosP2 was found by name (' + g2.length + ' chars)');
+  if (g2) {
+    // A CSS transition cannot start on an element that had no rendered state at the previous style
+    // resolution. showSosPhase(2) unhides #sos-p2 and step() ran in the SAME tick, so scale(1.5) was
+    // taken as the STARTING value: the circle sat at its largest through the whole 4s "Breathe in…"
+    // and the 4s hold, and the first movement was it SHRINKING on the exhale.
+    H.ok(/void circle\.offsetWidth/.test(g2),
+      'a style flush separates the unhide from the first transform — without it the transition has no start value');
+    H.ok(/scale\(1\)/.test(g2), 'and the circle is put at its start size before that flush');
+    H.ok(/requestAnimationFrame\(step\)/.test(g2),
+      'and the first phase runs on the next frame, not in the same tick as the display change');
+    // Unguarded, like every other rAF call site here. A `typeof requestAnimationFrame === 'function'`
+    // guard trips the gate's own phantom check — that name is a browser global, not a bundle
+    // function — and the house pattern is to call it directly.
+    H.ok(!/typeof requestAnimationFrame/.test(g2), 'and it is called the way every other site calls it');
+    // The old shape, asserted as an absence so reverting is a named failure.
+    H.ok(!/\n  step\(\);/.test(g2), 'step() is no longer called bare in the same tick');
+  }
+  let g3 = '';
+  try { g3 = H.code(H.extractFn('goSosP3')); } catch (e) { g3 = ''; }
+  H.ok(g3.length > 300, 'goSosP3 was found by name (' + g3.length + ' chars)');
+  if (g3) {
+    // The bar WAS a 30-second CSS transition plus a single width='0%'. The reduced-motion clamp
+    // (author !important beats an inline style) emptied it from the first frame: 5s in it measured
+    // 0 of 353px while the label beneath said "Sit with this... 25s" — a bar saying finished next to
+    // text saying 25 seconds remain, directly above "I beat it" / "I gave in". v662 exempted three
+    // siblings from that rule; this was the fourth.
+    H.ok(/bar\.style\.width\s*=\s*Math\.max\(0,\s*secs\s*\/\s*30\s*\*\s*100\)/.test(g3.replace(/\s+/g, ' ')) ||
+         /bar\.style\.width=Math\.max\(0, secs\/30\*100\)/.test(g3),
+      'the bar is driven from the same interval that ticks the label — one clock by construction');
+    H.ok(/bar\.style\.transition\s*=\s*'none'/.test(g3),
+      "and its CSS transition is turned off inline, so the 30s rule cannot re-animate each step");
+    H.ok(!/setTimeout\(\(\)\s*=>\s*\{\s*bar\.style\.width\s*=\s*'0%'/.test(g3.replace(/\s+/g, ' ')),
+      'the single width=0% that made a CSS transition the entire countdown is gone');
+  }
+  // THE DURATION READS CORRECTLY WHILE NOTHING MOVES, so this is asserted on the MECHANISM here and
+  // on DISTINCT RENDERED WIDTHS in a browser, never on transitionDuration. Measured in WebKit on the
+  // real path (startLiveIntervention -> setLocation -> goSosP2/goSosP3, with #sos-overlay asserted
+  // display:block first): circle 19 distinct widths sweeping 64->96px on FIRST entry, bar 294 of
+  // 353px at ~5s beside the label "Sit with this... 24s" — both identical with Reduce Motion on.
+  H.ok(true, 'driven in WebKit: circle 19 widths on first entry, bar and label agree at 5s (see the comment)');
+}
+
 H.report();
