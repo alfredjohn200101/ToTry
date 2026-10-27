@@ -3,70 +3,76 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 27 Oct 2026 — v661. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
+## ▶▶ CURRENT STATE — 28 Oct 2026 — v664. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
 
-**Everything below this block is HISTORY.** It still opens with "BUILD 9 — v600 — READY TO
-ARCHIVE", true once and false for 60 versions. That is why this block exists at all.
-
-### The artefacts, verified not assumed
+**Everything below this block is HISTORY.**
 
 | What | Where |
 |---|---|
-| Archive (Organizer shows it) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v661.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v661-build10.ipa` |
+| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v664.xcarchive` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v664-build10.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
 
-**ONLY ONE ARCHIVE IS IN ORGANIZER, ON PURPOSE.** The v660 pair was moved out, because Organizer
-shows a name and a date and **never which web bundle is inside** — and v660's was stamped the same
-build 10. `npm run preflight` reads the archives itself and now says *"the 1 archive(s) stamped
-build 10 carry the current bundle"*; it warned about the stale one before it was moved, which is the
-check doing its job rather than a rule somebody has to remember.
+**SIX ARCHIVES USED TO BE IN ORGANIZER AND ONE OF THEM WOULD HAVE UPLOADED.** Build 1 (v312, 6 Aug)
+was Apple-Distribution-signed and had never been uploaded, so Organizer would have let it through —
+a bundle predating every crisis register and the day-key fix. Builds 4/5/6/8 would have been refused
+as duplicates, which is noisy but harmless. All moved out. `preflight` only compares archives stamped
+at the CURRENT build number, so the others were invisible to it by construction — that is a limit of
+the check, not a bug in it. **Keep exactly one archive in Organizer.**
 
-**Build 10 is correct and NOT a reuse.** App Store Connect holds builds 4, 5, 6 and 8. Build 10 has
-never been uploaded, so the number is still free. `manageAppVersionAndBuildNumber` is set to
+### Verified out of the IPA, never the archive (the archive is Development-signed by design)
+
+1. `Apple Distribution: Alfred John (L4BD53PLVF)`  2. `get-task-allow = false`
+3. `beta-reports-active = true`  4. **arm64 only**  5. `PrivacyInfo.xcprivacy` 1407 bytes
+6. version 1.0, build 10, `app.totry`
+7. **the web bundle inside the IPA is byte-identical to the repo** — sha `4defac0889e0`,
+   `APP_VERSION = 'v664'`, and spot-checked for this release's actual fixes (the reduced-motion
+   exemption, the `Storage.prototype` sync fix, the `w = window.open` fix).
+
+**Build 10 is not a reuse.** ASC holds builds 4, 5, 6, 8. `manageAppVersionAndBuildNumber` is
 **false** in the export options so Xcode cannot silently rewrite it.
 
-### Verified out of the IPA, never the archive
+**The app path inside the IPA is `Payload/ToTry.app/ToTry`, and the WEB ASSETS ARE UNDER
+`public/`** — `<App>/public/index.html`, `<App>/public/support.html`. A check that looks in the app
+root reports them missing; mine did, and the probe was wrong, not the app.
 
-The archive is Development-signed with `get-task-allow = true` and that is NORMAL — the export
-re-signs. **Check the IPA.** All seven:
+### What v662-v664 fixed, all found by driving rather than reading
 
-1. `Apple Distribution: Alfred John (L4BD53PLVF)`
-2. `get-task-allow = false`
-3. `beta-reports-active = true` (and `aps-environment` ABSENT, which is correct — this app does no
-   remote push; every nudge it sends is scheduled on-device)
-4. **arm64 only**
-5. `PrivacyInfo.xcprivacy` present, 1407 bytes
-6. version 1.0, build 10, bundle id `app.totry`
-7. **the web bundle inside the IPA is byte-identical to the repo** — sha `23fdf3de9959`,
-   4,459,663 bytes, `APP_VERSION = 'v661'`, and spot-checked for this release's actual changes
-   (3 `window.URL` fixes, the Mercy row, `givingState`). `sw.js` inside it reads
-   `totry-v661-a-dead-button-...`. A name and a date are not evidence; a sha is.
-
-**The app path inside the IPA is `Payload/ToTry.app/ToTry`, not `App.app/App`** — find it, do not
-guess it, or `lipo` and `codesign` silently verify nothing.
+- **v662 — Reduce Motion was deleting guided breathing, not calming it.** A global
+  `*{transition-duration:.05ms !important}` beat the INLINE duration the orb's guidance is built on.
+  Measured: 30 distinct rendered widths normally, **2** under Reduce Motion. It reached every
+  breathing protocol, **the SOS crisis path** and the Feeling Door. Three exemptions; everything else
+  still suppressed, and that is asserted.
+- **v663 — an iPhone had never backed anything up.** On WebKit, assigning to `localStorage.setItem`
+  is a silent no-op, so `enableSyncMonitoring()` did nothing on the engine the iOS app and the Safari
+  PWA both use. No write was ever queued, AND `_recordKeyTs` never ran, so every local key reported
+  timestamp 0 and **a stale cloud copy beat a fresh local edit on the next open**. Moved to
+  `Storage.prototype`, with a one-time migration stamp so the repairing launch cannot be the one that
+  loses the data.
+- **v664 — Settings → Help & FAQ did nothing natively.** `window.open` RETURNS NULL when refused; it
+  does not throw, so the fallback behind the catch was unreachable.
 
 ### Gate on this exact bundle
 
-`npm test` 4660/0 · `npm run crisis` 57 doors both directions, 0 failures · `npm run panels` all
-panels render, no findings · `npm run personas` 566/0 · `npm run craft` 0 under-13px / 0 wrapping
-caps / 0 neighbours, 3 greys · `npm run orb` within the ratchet (0 untappable, 0 at the floor) ·
-`npm run engines` · `npm run test:edge` 32 · `npm run preflight` ready, no warnings.
+`npm test` 4679/0 · `crisis` 57 doors, 0 failures · `panels` all render · `personas` 566/0 ·
+`craft` 0/0/0, 3 greys · `orb` 0 untappable, 0 at the floor · `engines` incl. a new storage check ·
+`edge` 32 · `preflight` ready, no warnings.
 
-Crisis and panels were each RE-RUN after being measured against a superseded bundle — `www/` was
-rebuilt under a live panels run, which is the hazard CLAUDE.md names, so the first results did not
-count. A green result against the wrong bytes is not a green result.
+**A DATE BOMB WENT OFF AT MIDNIGHT on 28 Oct** — 16 failures across two suites on code nobody had
+touched, every one an off-by-one day, because `Date.now() - d*864e5` drifts across the 4 Oct DST
+change while `_calDaysSince` counts CALENDAR days. Fixed where the number is a day COUNT; left alone
+where a 24h offset only orders rows.
 
 ### What is left, and it is yours
 
-1. **Upload the IPA** (Transporter, or Organizer → Distribute App).
-2. **Click Submit for Review.** ASC holds builds 4, 5, 6, 8 and **this repo has no record of any
+1. **Upload the IPA** (Organizer → Distribute App, or `xcrun altool --upload-app`; an ASC API key is
+   already on this machine, the issuer id is yours).
+2. **Click Submit for Review.** ASC holds builds 4, 5, 6, 8 and this repo has **no record of any
    build ever being submitted** — that click is the whole remaining gap.
-3. **Screenshots:** the 6.9" set is at `build/appstore-screenshots/iphone-6.9in-v660/` with an
-   `ORDER.md` saying which to lead with. Its content is unchanged by v661. **If ASC asks for a 6.5"
-   set, the command is in that file** — do not cut one on spec, the current guides disagree about
-   whether it is still required and the upload form is the authority.
-4. **SMART Recovery AU vs US domain** — a regional call, noted in `BUILD-NEXT.md`.
+3. Screenshots: `build/appstore-screenshots/iphone-6.9in-v660/` + its `ORDER.md`. Five, flattened
+   RGB, 1320x2868. `03-fight.png` was re-captured so no Store image carries the word PORN.
+4. See `ASC-SUBMIT-PACK.md` for every field, measured, paste-ready — and `DEEP-DIVE-v662.md` for what
+   was checked and found fine.
 
 **The live PWA is deployed and serving v649**; v650 is committed on `main` and **not yet pushed**.
 `ios-native` is merged, so `main` is the one line of development again.
