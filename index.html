@@ -8770,7 +8770,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v660';
+const APP_VERSION = 'v661';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12668,6 +12668,12 @@ function getLifeState(){
     // Their OWN top values, in their own order — so counsel argues from their standard, not ours.
     values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:o.why||'' }:null; }catch(_){ return null; } })(),
     sex: (typeof userSex==='function') ? userSex() : null,
+    // GIVING WAS MISSING FROM THE BRAIN. Every surface reads this object and none of them could tell
+    // whether this person gives at all — in an app whose soul statement is "Integration IS the
+    // product". givingState() lives in 15-giving.js, which is concatenated AFTER this module; a
+    // `function` hoists across the one shared top-level scope and this is only ever called at
+    // runtime, so that is safe — but the typeof guard is this codebase's own pattern and is kept.
+    giving: (typeof givingState==='function') ? givingState() : null,
     activity: { daysQuiet, everActive: (evenings.length + workouts.length) >= 5 }
   };
   // Pre-formatted text block for AI context — the whole person in a compact, honest brief.
@@ -12826,6 +12832,32 @@ function lifeStateBrief(s){
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
   if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+Math.round(s.money.totalDebt).toLocaleString()+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+Math.round(s.money.reclaimed).toLocaleString()+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  // GIVING, AND THE ONE THING THE MODEL MUST NOT DO WITH IT. The screens hide amounts when the person
+  // has turned quiet on, and each tradition's own reason is in the GIVING registry — Qur'an 2:271 for
+  // islam, "do not let your left hand know what your right hand is doing" for christianity. So under
+  // quiet the model is told it DOES NOT HAVE the figures and must not ask for or guess them: an app
+  // that announces what somebody chose to conceal has taken the practice off them. And giving is
+  // devotional practice, which this gate's own refusal forbids grading — so the instruction is
+  // explicit rather than left to the model's judgement.
+  if(s.giving && s.giving.gives){
+    const _g = s.giving;
+    let gl = 'Giving: they give' + (_g.count ? (' \u2014 '+_g.count+' logged') : '') +
+             ', and they call it '+_g.word+' \u2014 use their word, not a generic one.';
+    if(_g.quiet){
+      gl += ' They have AMOUNTS HIDDEN, which their own tradition commends. You do not have the sums'
+          + ' and must not ask for them or guess at one. Acknowledge the practice, never a figure.';
+    } else {
+      if(_g.month) gl += ' '+curSym()+Math.round(_g.month).toLocaleString()+' this month';
+      if(_g.year && _g.year !== _g.month) gl += ', '+curSym()+Math.round(_g.year).toLocaleString()+' this year';
+      if(_g.percent) gl += '. Pledged '+_g.percent+'% of income';
+      else if(_g.amount) gl += '. Pledged '+curSym()+Math.round(_g.amount).toLocaleString()+' a month';
+      gl += '.';
+    }
+    if(_g.zakat) gl += ' Their zakat year (hawl) completes in about '+_g.zakat.daysLeft+' days.';
+    gl += ' (Generosity belongs to the money front, not beside it. NEVER score, grade or set a quota'
+        + ' for it, and never imply they give too little \u2014 it is devotional practice, not a metric.)';
+    lines.push(gl);
+  }
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
   if(s.activity.daysQuiet != null && s.activity.daysQuiet >= 2) lines.push('Note: nothing logged in '+s.activity.daysQuiet+' days.');
   try{
@@ -39615,6 +39647,25 @@ function renderFastSeason(){
     row('dumbbell','Train', trainText)+
     row(s.icon==='·'?'✦':s.icon,'Why', s.why)+
     row('shield','The fight', s.fight)+
+    // MERCY WAS WRITTEN PER TRADITION AND REACHABLE ONLY THROUGH A WORRY CARD. `mercy` and `ask` are
+    // hand-authored for all six seasons and were consumed at exactly one site — `_renderNourishCare`,
+    // which renders only when `_nourishConcern()` has flagged 3+ days under 1200/1500 kcal as a
+    // possible eating-disorder signal. So the line naming who a tradition has NEVER bound — the ill
+    // and the traveller, the pregnant, the nursing, those menstruating, the elderly, and Lent's
+    // eighteen-to-fifty-nine — only ever reached somebody the app had already decided to worry about.
+    // The person who most needs to read it is one DECIDING whether to fast. Same shape as v656: the
+    // line built for them was on no screen they could reach.
+    //
+    // All six seasons have `mercy`, so the row is unconditional. Only four name a human: `ask` is ''
+    // for the two a person sets themselves, because there is nobody — and their mercy lines say so
+    // in their own words ("no authority behind it but yours"). The hand-off is therefore conditional
+    // on `ask` rather than on the tradition, so a season added later inherits the rule.
+    //
+    // The sentence is NOT the concern card's. That one opens "If it is taking more out of you than it
+    // is giving", which is written for somebody already flagged and presumes difficulty. Here nobody
+    // is flagged, so it answers the question the mercy line actually raises — does it bind ME — and
+    // the answer is a person, never this app.
+    row('heart','Mercy', s.mercy + (s.ask ? (' If you are unsure whether it binds you, '+s.ask+' is who to ask \u2014 that is what they are for.') : ''))+
     '<div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:10px">'+
       '<button class="btn subtle" onclick="openSolidarity()" style="padding:10px">'+svgIcon("utensils")+' Give what a meal costs</button>'+
       '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:8px">'+_escFew(s.how)+
@@ -39670,6 +39721,61 @@ function givingTotals(){
   const sum = f => list.filter(f).reduce((a,x)=>a+(x.amount||0), 0);
   return { month: sum(x=>new Date(x.ts).getTime()>=mStart), year: sum(x=>new Date(x.ts).getTime()>=yStart), all: sum(()=>true), count: list.length };
 }
+// ── WHAT THE WHOLE PERSON KNOWS ABOUT THEIR GIVING ───────────────────────────────────────────────
+// `getLifeState()` is the brain every surface reads and it knew NOTHING about giving — no `giving`,
+// no `zakat`, no `tithe`, nothing, in either the state object or `lifeStateBrief()`. So the coach,
+// the companion and the brother could speak about debt, training, sleep and the fight and had no idea
+// whether this person gives at all, in an app whose own soul statement is "Integration IS the
+// product". Every figure below already existed here; nothing read it.
+//
+// THE QUIET FLAG IS THE WHOLE DESIGN. `p.quiet` hides AMOUNTS from the person on their own screen
+// ("N kept quietly. Amounts hidden."), and the GIVING registry's `quiet` field is each tradition's
+// own reason for it — islam's is Qur'an 2:271, "If you conceal it and give it to the poor, that is
+// better for you." Handing those figures to a model would be the half-applied defect this repo keeps
+// paying for, pointing the other way: the screens conceal and the voice announces. So this reports
+// exactly what the screen reports — the COUNT stays (the app shows it under quiet), the SUMS go.
+// `due` is a giving amount and goes with them; the hawl DATES stay, because the timing is the useful
+// counsel and is not what concealment is about.
+function givingState(){
+  try{
+    const cg = (typeof curGiving === 'function') ? curGiving() : null;
+    const p  = givingPledge() || {};
+    const t  = givingTotals() || {};
+    if(!cg) return null;
+    const quiet = !!p.quiet;
+    const out = {
+      // The person's OWN vocabulary, so the voice says sadaqah to a Muslim and alms to a Christian
+      // rather than one neutral word for five traditions.
+      word: cg.kind || 'gift',
+      mode: cg.mode || 'pledge',
+      quiet: quiet,
+      pledged: p.mode === 'percent' || p.mode === 'amount',
+      count: t.count || 0
+    };
+    out.gives = out.count > 0 || out.pledged;
+    if(!quiet){
+      out.month = t.month || 0;
+      out.year  = t.year || 0;
+      if(p.mode === 'percent') out.percent = p.percent || 0;
+      if(p.mode === 'amount')  out.amount  = p.amount || 0;
+    }
+    if(cg.mode === 'zakat'){
+      const z = (typeof zakatState === 'function') ? zakatState() : null;
+      if(z && z.hawlStart){
+        // 354 days is the lunar year the obligation runs on, which is what openZakat computes from.
+        const st = new Date(z.hawlStart).getTime();
+        if(!isNaN(st)){
+          const done = st + 354 * 86400000;
+          out.zakat = { hawlStart: z.hawlStart, completesTs: done,
+                        daysLeft: Math.max(0, Math.round((done - Date.now()) / 86400000)) };
+          if(!quiet && z.last && z.last.due != null) out.zakat.due = z.last.due;
+        }
+      }
+    }
+    return out;
+  }catch(_){ return null; }
+}
+
 function openGivingLog(kind, subtitle, viaRelease){
   const cg = curGiving();
   openFormModal('Log what you gave', subtitle || cg.sub,
@@ -53240,10 +53346,22 @@ function renderCustomShareCard(prefs){
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:90vw;padding:16px"><div class="modal-handle"></div>' +
       '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:60vh;border-radius:var(--rs);box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
+      // `window.URL`, NOT `URL` — AN INLINE HANDLER'S SCOPE CHAIN RUNS THROUGH `document`.
+      // The HTML spec compiles an event handler content attribute with a scope of element -> form
+      // owner -> document -> window, and `document.URL` is a STRING. So inside an onclick the bare
+      // identifier `URL` resolves to that string and `.revokeObjectURL` is undefined. Driven in both
+      // engines: at global scope `typeof URL` is 'function' with revoke present; inside an inline
+      // handler it is 'string' with NO revoke, and WebKit's message is byte-identical to the one six
+      // real users reported — "TypeError: URL.revokeObjectURL is not a function. (In
+      // 'URL.revokeObjectURL('blob:capacitor://localhost/...')'". Every reported occurrence is at
+      // `:1`, which is an inline attribute, and no `const URL` has ever existed in src or in
+      // index.html's history — so the source shadow this was assumed to be was never the cause.
+      // IT IS NOT JUST A LEAKED BLOB. The throw kills the rest of the handler, so the theme switch
+      // below (`...;setShareTheme(...);createShareCard(...)`) closed the sheet and then did NOTHING.
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
-        '<button class="btn" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
+        '<button class="btn" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
       '</div></div>';
     document.body.appendChild(m);
     haptic('celebrate');
@@ -53478,8 +53596,8 @@ function _renderShareCanvas(style, theme){
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
-        '<button class="btn subtle" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
-        '<button class="btn quiet" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
+        '<button class="btn subtle" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
+        '<button class="btn quiet" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
       '</div></div>';
     document.body.appendChild(m);
     haptic('celebrate');

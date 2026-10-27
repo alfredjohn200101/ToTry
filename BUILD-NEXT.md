@@ -53,12 +53,49 @@ the feedback is ours, and the retention curve is drowned. **This is the top item
 ## 3 · POST-SUBMIT — build while review runs
 
 1. **Refusal assertions in `core.test.js`**: no `totry_score`; release count stays gated at ≥3; `metricsOff()` gates all three analytics sites; `wovenWeek` stays per-day; `companionThreshold` keeps refusing readiness. **Every soul mechanic in this codebase is held by a comment, not an assertion — the least defended code in the repo, exactly where pace pressure is highest. That is how the score panel happened.**
-2. Move the fast-season card to Soul and render `mercy` and `ask` (the two fields no competitor has, currently never rendered).
-3. Giving into `getLifeState()` — the coach does not currently know whether this person gives or owes zakat.
+2. ~~Move the fast-season card to Soul and render `mercy` and `ask` (currently never rendered)~~ —
+   **DONE v661, and the claim was WRONG.** They were already rendered: one consumer,
+   `_renderNourishCare`, which only appears when `_nourishConcern()` has flagged 3+ low days. So the
+   line naming who a tradition has never bound reached only somebody the app had already decided to
+   worry about, never the person deciding whether to fast. Now a `row()` on the season card itself,
+   after The fight. All six seasons carry `mercy`; only four carry an `ask`, and the hand-off is gated
+   on `s.ask` rather than a tradition list. Driven over all six; six fault injections.
+3. ~~Giving into `getLifeState()`~~ — **DONE v661.** Measured: 0 of 7 giving words in either
+   `getLifeState()` or `lifeStateBrief()`. Now one `givingState()` on both. The quiet flag is the
+   whole design — `p.quiet` hides amounts on the person's own screen and each tradition's reason is
+   in the registry (Qur'an 2:271 for islam), so the brief carries the COUNT, never a sum, and tells
+   the model it does not have the figures and must not ask. Zakat hawl dates stay, `due` goes. Their
+   own word per tradition (sadaqah/alms/dāna/gift); zakat only for islam. Eight fault injections.
 4. A fourth `brotherSpeaks` kind for a crossed budget line (threshold already computed, currently answered with a CSS class).
 5. The impulse-hold pot onto the balance sheet.
-6. `toLocaleString` on null — 10 real occurrences, Sep.
-7. Verify `URL.revokeObjectURL is not a function` is actually fixed — 5 occurrences Sep incl. **`capacitor://localhost`, the native build**; 9 unguarded call sites remain; no `URL` shadow in current source, so it looks resolved. Confirm, do not assume.
+6. ~~`toLocaleString` on null — 10 real occurrences, Sep~~ — **TRIAGED AND DELIBERATELY NOT SWEPT
+   (27 Oct).** Measured against the live table: 2 distinct people, both on 7 Sep, at two adjacent
+   lines, 5 times in 2 seconds (a repeated render) — and **not once in the 7 weeks since**, across
+   ~90 version bumps. v586–v596 landed on 7–8 Sep. The bundle has **121** `toLocaleString` sites and
+   almost all are already behind a truthiness check (`if(s.steps)`, `saved>0`, `if(t.tonnage7)`),
+   which is what catches null; no specific unguarded site reproduces. Guarding all 121 is the blanket
+   sweep this repo fails builds over. Re-open it if it recurs — every event now carries its build
+   (v660), so the next occurrence will say which bundle it came from, which is what made the previous
+   three families cost line-number archaeology.
+
+   **Crash-family status, all dated against the live `app_events` table (27 Oct):**
+   `Notification` (~148 distinct people, the largest by far) last seen **17 Aug**;
+   `reading 'field'` (7 people) **19 Aug only**, and `examenStepFor`'s falsy pass-through —
+   `if(!step) return step` — landed **20 Aug in v521**, which is why it is one day wide;
+   `undefined is not iterable` (3 people) **30 Aug only**, v567–v571 landed 30–31 Aug;
+   `toLocaleString` (2 people) **7 Sep only**; `d0`/`d2`/`demo_f0_0` **4 Sep only**;
+   `_SHRINK[lv]` (4 people) **1 Oct only**, fixed v660; the inline-handler SyntaxError family
+   Aug–Sep, fixed v659; `setting 'value'` (5 people) **25 Oct**, fixed v659 — shipped 27 Oct, so not
+   yet confirmable by elapsed time. **No family has recurred after its fix.**
+7. ~~Verify `URL.revokeObjectURL is not a function`~~ — **CONFIRMED NOT FIXED, AND FIXED v661.** The
+   assumed cause was wrong: `git log -S"const URL"` shows no source shadow has ever existed. The real
+   cause is that an inline handler is compiled with a scope chain of element → form → **document** →
+   window, and `document.URL` is a STRING — every reported occurrence is at `:1`, an inline attribute.
+   Driven in both engines; WebKit's message is byte-identical to production. **And it was a DEAD
+   FEATURE, not a leak**: the throw killed the rest of `closeModal(this);URL.revoke…;setShareTheme(…);
+   createShareCard(…)`, so the share card's "Switch to light background" closed the sheet and did
+   nothing. 3 inline sites prefixed with `window.`; the other 6 are ordinary scope and stay bare.
+   Whole class censused (22 document-owned names over every `on*=` attribute) and asserted at 0.
 8. Qibla (~3–4h; both hard inputs already ship — `geoCoarse()` ±0.01°, plist string present).
 9. GLP-1 / pregnancy / breastfeeding as a third branch on the existing sex fork, reaching **both** `_nourishConcern` and `_gentleCounsel`. Reframe, never silence.
 10. Print stylesheet over the last 12 weekly syntheses.

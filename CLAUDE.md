@@ -2044,6 +2044,107 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `.ios-switch "Someone you love"` that keeps its own centre, so it uses `losesItsCentre` for
      controls and painted-over for text, the same criterion as the rest of the file — and it NAMES
      what it found, because a floor failure printed as a bare count is a number acted on blind.
+   - **AND AN INLINE HANDLER'S SCOPE CHAIN RUNS THROUGH `document`, SO A BUTTON WAS DEAD (v661,
+     27 Oct 2026).** Six real users, Jun-Sep: *"TypeError: URL.revokeObjectURL is not a function. (In
+     'URL.revokeObjectURL('blob:capacitor://localhost/...')'"*. `BUILD-NEXT` assumed a source shadow
+     and said *"no `URL` shadow in current source, so it looks resolved. Confirm, do not assume."*
+     **Confirmed, and it was NOT resolved** — `git log -S"const URL"` returns nothing for `src/` or
+     `index.html`, so that was never the cause.
+     The cause is the HTML spec: an event handler content attribute is compiled with a scope chain of
+     **element → form owner → document → window**, and **`document.URL` is a STRING**. Driven in both
+     engines: at global scope `typeof URL` is `'function'` with `revokeObjectURL` present; inside an
+     inline handler it is `'string'` with none, and **WebKit's thrown message is byte-identical to the
+     production one**. `window.URL` works in both. Every reported occurrence is at **`:1`**, which is
+     an inline attribute — the tell that was in the data the whole time.
+     **AND IT WAS NOT A LEAKED BLOB, IT WAS A DEAD FEATURE.** One of the three sites is
+     `closeModal(this);URL.revokeObjectURL(…);setShareTheme(…);createShareCard(…)` — the throw kills
+     the rest of the handler. Driven on the real button in WebKit, both directions: fixed, a tap runs
+     `setShareTheme:light → createShareCard:streak`, the theme flips and the card re-renders; with the
+     bare form restored, **NOTHING RAN**, the theme stayed dark, the card did not re-render, and the
+     page error is the production string verbatim. So the share card's *"Switch to light background"*
+     closed the sheet and did nothing, for months. **Invisible to every id, handler-compile and
+     tap-target check in this gate, because the attribute is perfectly well-formed.**
+     The whole CLASS is now censused and asserted — 22 names `document` owns (`URL`, `location`,
+     `title`, `all`, `images`, `scripts`, `cookie`, `styleSheets`…), scanned over every `on*=`
+     attribute in the bundle, **0 remaining**. The scan is calibrated on a planted bare `URL` AND a
+     planted bare `location` (so it is not hardcoded to one name) and must NOT flag the
+     `window.`-prefixed form, or the fix would read as the defect. Two fault injections, both caught.
+     **And the first version of the check was over-broad and failed on correct code**: it asserted no
+     bare `URL.revokeObjectURL` anywhere and found 6 — those six are in ORDINARY JS scope, where `URL`
+     genuinely is the constructor and a prefix would be noise asserted as a rule. Same shape as the
+     over-broad speech-recognition refusal the same day: an over-broad check fails on correct code and
+     teaches you where the real boundary is.
+   - **AND THE BRAIN KNEW NOTHING ABOUT GIVING (v661, 27 Oct 2026).** `getLifeState()` is the object
+     every surface reads and it carried no `giving`, no `zakat`, no `tithe` — nor did
+     `lifeStateBrief()`. Measured: 0 of 7 such words in either. So the coach, the companion and the
+     brother could speak about debt, sleep, training and the fight with no idea whether this person
+     gives at all, in an app whose own soul statement is *"Integration IS the product"*. Every figure
+     already existed in `15-giving.js` — `curGiving`, `givingPledge`, `givingTotals`, `zakatState` —
+     and nothing read it. One `givingState()`, on the state object AND in the brief.
+     **THE QUIET FLAG IS THE WHOLE DESIGN, and getting it wrong would have been the half-applied
+     defect pointing the other way.** `p.quiet` hides AMOUNTS on the person's own screen (*"N kept
+     quietly. Amounts hidden."*) and each tradition's reason is in the GIVING registry — islam's is
+     **Qur'an 2:271**, *"If you conceal it and give it to the poor, that is better for you."* Handing
+     those sums to a model would make the app the thing that announces what somebody chose to conceal.
+     So the brief reports **exactly what the screen reports**: the COUNT stays (the app shows it under
+     quiet), every sum goes, and the model is told it **does not have** the figures and must not ask
+     for or guess one — silence alone invites it to ask. The zakat **hawl dates stay** and the `due`
+     figure goes: the timing is the counsel, the sum is what concealment is about.
+     Two more things it gets right because the registry already did. **The person's own word** —
+     sadaqah / alms / dāna / gift, driven per tradition, because one neutral noun for five traditions
+     is what the multi-faith turnaround exists to refuse. And **zakat is only given to the tradition
+     it belongs to**, which is the `bridgeToRealHelp` priest defect in another costume. Giving is also
+     devotional practice, so the brief explicitly forbids scoring or setting a quota for it — the
+     refusal this gate now holds as an assertion rather than a comment.
+     Eight fault injections, seven caught, and **the eighth is the lesson**: my invariant asked
+     whether each sum token appears AFTER the else, which a SECOND OCCURRENCE satisfies — `_g.month`
+     is written twice, once as the month print and once inside `_g.year !== _g.month` — so deleting
+     the print left the comparison behind and the injection passed on the defect. **The invariant is
+     the inverse**: ask whether the QUIET side mentions a sum at all. That cannot be satisfied from
+     elsewhere, and a figure added on the wrong side fails immediately. The window is bracket-matched
+     now too, after a fixed 2200-char slice — the never-slice trap, on the one check whose whole
+     subject is a leak.
+     **AND THREE OF MY OWN TEST DEFECTS, ALL RECORDED SHAPES.** `givingTotals()` calls `givingLog()`,
+     which I did not NAME in `H.load`, so it was undefined, the ReferenceError landed in
+     `givingState`'s own catch, the function returned null and read exactly like code that does not
+     work. The test then **CRASHED instead of failing** by dereferencing that null — no summary, every
+     other section's result lost. And the obvious fix, `if (!open) return;`, is WORSE: the section is a
+     bare block at MODULE level, so that return is legal and silently **ends the run at exit 0** —
+     defect (n) above, which would never have fired on green code, which is how it would have shipped.
+     **And my probe seeded the wrong key**: `totry_faith` instead of the app's own
+     `totry_faith_tradition`, so all five traditions came back as the seed's christianity and the probe
+     reported the tradition vocabulary broken when it was correct. A seed matching your own reader
+     rather than the app's writer reports the feature broken.
+   - **AND THE MERCY WAS REACHABLE ONLY THROUGH A WORRY CARD (v661, 27 Oct 2026).** BUILD-NEXT said
+     `mercy` and `ask` were *"currently never rendered"*. **That was wrong, and checking is what found
+     the real defect** — they had exactly ONE consumer, `_renderNourishCare`, which renders only when
+     `_nourishConcern()` has flagged 3+ days under 1200/1500 kcal as a possible eating-disorder signal.
+     So the hand-authored line naming who a tradition has **never bound** — the ill and the traveller,
+     the pregnant, the nursing, those menstruating, the elderly, and Lent's eighteen-to-fifty-nine —
+     only ever reached somebody the app had already decided to worry about. **The person who most needs
+     it is one DECIDING whether to fast.** Same shape as v656: the line built for them was on no screen
+     they could reach. One `row()` through the existing component, after The fight, so the card asks
+     something of you and then says who it never asked.
+     All six seasons carry `mercy`, so the row is unconditional; only four carry an `ask`, because the
+     two a person sets themselves name nobody and say so in their own words (*"no authority behind it
+     but yours"*). **The hand-off is gated on `s.ask`, never on a list of tradition ids**, so a season
+     added later inherits the rule instead of silently losing its human — fault-injected by hardcoding
+     that list. And the sentence is deliberately NOT the worry card's: that one opens *"If it is taking
+     more out of you than it is giving"*, written for somebody already flagged, and presumes a
+     difficulty nobody on this card has reported.
+     DRIVEN over all six seasons in a browser, seeded through the app's own `totry_fast_season` writer
+     key: four name "your imam" / "a priest" / "a monastic, or whoever teaches at your temple" /
+     "someone at your temple", two name nobody, none renders `undefined`. Six fault injections, each
+     caught.
+     **TWO OF MY OWN CHECKS FAILED ON CORRECT CODE FIRST, both shapes this file already records.**
+     A hand-rolled bracket matcher over the registry returned '' for all six entries because the
+     inserted regex read `:\{`, which requires a LITERAL BACKSLASH and can never match — so the
+     registry is **EXECUTED** now (`new Function('return ' + …)` over the brace-matched literal),
+     which removes the whole class: no window to slice, no escaping to get wrong, and the values
+     asserted are the ones the card renders. And `H.extractFn('renderSeasonCard')` found nothing
+     because the function is `renderFastSeason` — the second guessed function name in one day, after
+     `nextStepCard`. The found-by-name assertion is what turns a guess into one red line instead of a
+     block that silently asserts nothing.
    - **THE REFUSALS ARE ASSERTIONS NOW, NOT COMMENTS (27 Oct 2026).** BUILD-NEXT's own words:
      *"Every soul mechanic in this codebase is held by a comment, not an assertion — the least
      defended code in the repo, exactly where pace pressure is highest. That is how the score panel

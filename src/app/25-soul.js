@@ -1115,10 +1115,22 @@ function renderCustomShareCard(prefs){
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:90vw;padding:16px"><div class="modal-handle"></div>' +
       '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:60vh;border-radius:var(--rs);box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
+      // `window.URL`, NOT `URL` — AN INLINE HANDLER'S SCOPE CHAIN RUNS THROUGH `document`.
+      // The HTML spec compiles an event handler content attribute with a scope of element -> form
+      // owner -> document -> window, and `document.URL` is a STRING. So inside an onclick the bare
+      // identifier `URL` resolves to that string and `.revokeObjectURL` is undefined. Driven in both
+      // engines: at global scope `typeof URL` is 'function' with revoke present; inside an inline
+      // handler it is 'string' with NO revoke, and WebKit's message is byte-identical to the one six
+      // real users reported — "TypeError: URL.revokeObjectURL is not a function. (In
+      // 'URL.revokeObjectURL('blob:capacitor://localhost/...')'". Every reported occurrence is at
+      // `:1`, which is an inline attribute, and no `const URL` has ever existed in src or in
+      // index.html's history — so the source shadow this was assumed to be was never the cause.
+      // IT IS NOT JUST A LEAKED BLOB. The throw kills the rest of the handler, so the theme switch
+      // below (`...;setShareTheme(...);createShareCard(...)`) closed the sheet and then did NOTHING.
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
-        '<button class="btn" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
+        '<button class="btn" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
       '</div></div>';
     document.body.appendChild(m);
     haptic('celebrate');
@@ -1353,8 +1365,8 @@ function _renderShareCanvas(style, theme){
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
-        '<button class="btn subtle" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
-        '<button class="btn quiet" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
+        '<button class="btn subtle" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
+        '<button class="btn quiet" onclick="closeModal(this);window.URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
       '</div></div>';
     document.body.appendChild(m);
     haptic('celebrate');

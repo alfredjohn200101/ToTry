@@ -778,6 +778,12 @@ function getLifeState(){
     // Their OWN top values, in their own order — so counsel argues from their standard, not ours.
     values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:o.why||'' }:null; }catch(_){ return null; } })(),
     sex: (typeof userSex==='function') ? userSex() : null,
+    // GIVING WAS MISSING FROM THE BRAIN. Every surface reads this object and none of them could tell
+    // whether this person gives at all — in an app whose soul statement is "Integration IS the
+    // product". givingState() lives in 15-giving.js, which is concatenated AFTER this module; a
+    // `function` hoists across the one shared top-level scope and this is only ever called at
+    // runtime, so that is safe — but the typeof guard is this codebase's own pattern and is kept.
+    giving: (typeof givingState==='function') ? givingState() : null,
     activity: { daysQuiet, everActive: (evenings.length + workouts.length) >= 5 }
   };
   // Pre-formatted text block for AI context — the whole person in a compact, honest brief.
@@ -936,6 +942,32 @@ function lifeStateBrief(s){
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
   if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+Math.round(s.money.totalDebt).toLocaleString()+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+Math.round(s.money.reclaimed).toLocaleString()+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  // GIVING, AND THE ONE THING THE MODEL MUST NOT DO WITH IT. The screens hide amounts when the person
+  // has turned quiet on, and each tradition's own reason is in the GIVING registry — Qur'an 2:271 for
+  // islam, "do not let your left hand know what your right hand is doing" for christianity. So under
+  // quiet the model is told it DOES NOT HAVE the figures and must not ask for or guess them: an app
+  // that announces what somebody chose to conceal has taken the practice off them. And giving is
+  // devotional practice, which this gate's own refusal forbids grading — so the instruction is
+  // explicit rather than left to the model's judgement.
+  if(s.giving && s.giving.gives){
+    const _g = s.giving;
+    let gl = 'Giving: they give' + (_g.count ? (' \u2014 '+_g.count+' logged') : '') +
+             ', and they call it '+_g.word+' \u2014 use their word, not a generic one.';
+    if(_g.quiet){
+      gl += ' They have AMOUNTS HIDDEN, which their own tradition commends. You do not have the sums'
+          + ' and must not ask for them or guess at one. Acknowledge the practice, never a figure.';
+    } else {
+      if(_g.month) gl += ' '+curSym()+Math.round(_g.month).toLocaleString()+' this month';
+      if(_g.year && _g.year !== _g.month) gl += ', '+curSym()+Math.round(_g.year).toLocaleString()+' this year';
+      if(_g.percent) gl += '. Pledged '+_g.percent+'% of income';
+      else if(_g.amount) gl += '. Pledged '+curSym()+Math.round(_g.amount).toLocaleString()+' a month';
+      gl += '.';
+    }
+    if(_g.zakat) gl += ' Their zakat year (hawl) completes in about '+_g.zakat.daysLeft+' days.';
+    gl += ' (Generosity belongs to the money front, not beside it. NEVER score, grade or set a quota'
+        + ' for it, and never imply they give too little \u2014 it is devotional practice, not a metric.)';
+    lines.push(gl);
+  }
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
   if(s.activity.daysQuiet != null && s.activity.daysQuiet >= 2) lines.push('Note: nothing logged in '+s.activity.daysQuiet+' days.');
   try{

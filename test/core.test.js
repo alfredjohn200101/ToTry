@@ -18125,4 +18125,302 @@ H.section('the refusals are assertions now, not comments');
   });
 }
 
+// ── THE MERCY IS ON THE SEASON CARD NOW, NOT ONLY ON THE WORRY CARD ──────────────────────────────
+// `mercy` and `ask` are hand-authored per tradition and had exactly ONE consumer:
+// `_renderNourishCare`, which renders only when `_nourishConcern()` has flagged 3+ days under
+// 1200/1500 kcal. So the line naming who a tradition has never bound reached only somebody the app
+// had already decided to worry about, and never the person deciding whether to fast at all.
+// DRIVEN over all six seasons rather than grepped, because the thing that matters is which of them
+// reaches a human and which correctly reaches nobody.
+H.section('every fast season says who it never bound, and only four of them name a person');
+{
+  // NAME THE FUNCTION. `renderSeasonCard` does not exist — it is `renderFastSeason`, and the first
+  // cut guessed. Same shape as the `nextStepCard` guess earlier in this file: a name that sounds right
+  // is not a name that is right, and the found-by-name assertion is what turns that into one red line
+  // instead of a block that silently asserts nothing.
+  let gv = '';
+  try { gv = H.extractFn('renderFastSeason'); } catch (e) { gv = ''; }
+  H.ok(gv.length > 400, 'renderFastSeason was found by name (' + gv.length + ' chars) — a rename must update this check, not silently drop it');
+
+  // THE REGISTRY IS THE SUBJECT, AND IT IS EXECUTED RATHER THAN PARSED. The first cut hand-rolled a
+  // bracket matcher over the source and every entry came back empty — the inserted regex read
+  // `:\\{`, which requires a LITERAL BACKSLASH and can therefore never match, so `entryOf` returned
+  // '' six times out of six and the mercy assertions failed on correct code. Evaluating the
+  // declaration removes that whole class: no window to slice, no braces to count, no escaping to get
+  // wrong, and the values asserted are the ones the card will actually render.
+  const gsrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'app', '15-giving.js'), 'utf8');
+  const decl = 'const FAST_SEASONS = {';
+  H.eq(gsrc.split(decl).length - 1, 1, 'FAST_SEASONS is declared exactly once, so the anchor is unambiguous');
+  let SEASONS = null;
+  try {
+    const from = gsrc.indexOf(decl) + decl.length - 1;
+    // Walk to the matching brace of the OBJECT LITERAL itself. None of the season strings contains a
+    // brace, so depth counting is safe here — and if that ever stops being true this throws rather
+    // than silently handing back a truncated object.
+    let d = 0, j = from;
+    for (; j < gsrc.length; j++) { const c = gsrc[j]; if (c === '{') d++; else if (c === '}') { d--; if (!d) { j++; break; } } }
+    SEASONS = new Function('return ' + gsrc.slice(from, j))();
+  } catch (e) { SEASONS = null; }
+  H.ok(!!SEASONS, 'FAST_SEASONS evaluated' + (SEASONS ? '' : ' — it did NOT, so nothing below is evidence'));
+  if (SEASONS) {
+    const ids = Object.keys(SEASONS).sort();
+    H.eq(ids.join(','), 'lent,navratri,own,ramadan,uposatha,window',
+      'the six seasons are the ones this check was written against — a new one must be judged, not inherited silently');
+    ids.forEach(id => {
+      const m = SEASONS[id].mercy;
+      H.ok(typeof m === 'string' && m.length > 80,
+        id + ' carries a mercy line of its own — the row is unconditional, so a missing one renders undefined');
+    });
+
+    // AND ONLY FOUR NAME A HUMAN. The two a person sets themselves name nobody, because there is
+    // nobody — and their mercy lines say so in their own words ("no authority behind it but yours").
+    // This is the half that would rot first: somebody filling in a blank field would invent an
+    // authority for a fast nobody set but the person themselves.
+    const named = ids.filter(id => SEASONS[id].ask && String(SEASONS[id].ask).length > 2);
+    H.eq(named.join(','), 'lent,navratri,ramadan,uposatha',
+      'exactly the four traditions name a real person to ask');
+    ['window', 'own'].forEach(id => {
+      H.eq(SEASONS[id].ask, '',
+        id + ' names nobody, because a fast a person set themselves has no authority behind it but theirs');
+      H.ok(/you|your/i.test(SEASONS[id].mercy),
+        'and ' + id + " says so in its own words rather than leaving the person without an answer");
+    });
+  }
+
+  // THE CARD. Asserted as the FACT — that the row goes through the shared component and that the
+  // hand-off is conditional on `ask` rather than on a hardcoded list of traditions, so a season added
+  // later inherits the rule instead of silently losing it.
+  if (gv) {
+    const g = H.code(gv);
+    H.ok(/row\('heart','Mercy',\s*s\.mercy/.test(g),
+      'the season card renders mercy through the same row() component as Nourish, Train and The fight');
+    H.ok(/s\.ask\s*\?/.test(g),
+      'and the hand-off is gated on s.ask, not on a list of tradition ids — a new season inherits the rule');
+    // It must NOT reuse the concern card's sentence: that one opens "If it is taking more out of you
+    // than it is giving", written for somebody already flagged, and presumes difficulty on a card
+    // where nobody is flagged.
+    H.ok(!/taking more out of you/.test(g),
+      'it does not reuse the worry card\'s sentence, which presumes a difficulty nobody here has reported');
+    H.ok(/is who to ask/.test(g), 'it answers the question the mercy line raises — does it bind me — with a person');
+    // The row order: mercy comes after the fight, so the card asks something of you and then tells
+    // you who it never asked. Grace after the ask, which is this app's whole posture.
+    H.ok(g.indexOf("'The fight'") < g.indexOf("'Mercy'"),
+      'and it comes after The fight — the card asks something of you, then says who it never asked');
+  }
+}
+
+// ── GIVING IS IN THE BRAIN NOW, AND QUIET MEANS QUIET TO THE MODEL TOO ───────────────────────────
+// `getLifeState()` is the object every surface reads and it knew NOTHING about giving — no `giving`,
+// no `zakat`, no `tithe`, in either the state or `lifeStateBrief()`. So the coach could speak about
+// debt, sleep, training and the fight with no idea whether this person gives at all, in an app whose
+// own soul statement is "Integration IS the product". Every figure already existed in 15-giving.js;
+// nothing read it.
+//
+// THE QUIET FLAG IS THE WHOLE RISK. `p.quiet` hides AMOUNTS on the person's own screen ("N kept
+// quietly. Amounts hidden.") and each tradition's reason is in the registry — Qur'an 2:271 for islam.
+// Handing those sums to a model is the half-applied defect this repo keeps paying for, inverted: the
+// screens conceal and the voice announces. Asserted by EXECUTING givingState() and checking the
+// returned object for sum-shaped keys, because that is the only thing that can actually leak.
+H.section('the coach knows they give, in their own word — and under quiet it never learns the sums');
+{
+  const DAY = 86400000;
+  const mk = (tradition, quiet) => {
+    const now = Date.now();
+    const store = {
+      totry_giving: [{ ts: new Date(now - 2 * DAY).toISOString(), amount: 240 },
+                     { ts: new Date(now - 200 * DAY).toISOString(), amount: 1610 }],
+      totry_giving_pledge: { mode: 'amount', percent: 10, amount: 125, quiet: quiet },
+      totry_zakat: { basis: 'silver', pricePerGram: 1.2,
+                     hawlStart: new Date(now - 100 * DAY).toISOString().slice(0, 10),
+                     last: { net: 50000, nisab: 735, due: 1250 } },
+    };
+    const GIV = {
+      christianity: { mode: 'tithe', kind: 'alms' }, islam: { mode: 'zakat', kind: 'sadaqah' },
+      hinduism: { mode: 'intent', kind: 'dana' }, buddhism: { mode: 'intent', kind: 'dana' },
+      secular: { mode: 'pledge', kind: 'gift' },
+    };
+    // givingTotals() calls givingLog(), so it has to be NAMED — unnamed it is simply undefined, the
+    // ReferenceError lands in givingState's own catch and the whole thing returns null, which reads
+    // exactly like a function that does not work.
+    return H.load(['givingState', 'givingPledge', 'givingTotals', 'givingLog'], {
+      ls: k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      curGiving: () => GIV[tradition],
+      zakatState: () => store.totry_zakat,
+    }).givingState();
+  };
+
+  // CALIBRATION FIRST: the non-quiet case must actually CARRY sums, or "no sums under quiet" is
+  // satisfied by a function that never returns any and the check proves nothing.
+  const open = mk('islam', false);
+  H.ok(!!open, 'givingState() returned a state for a person who gives');
+  // GUARD, do not dereference — AND DO NOT `return`. The first version read open.month straight after
+  // this and CRASHED the whole suite when givingState returned null: no summary, every other section's
+  // result lost, reading like a syntax error rather than a failure. The obvious fix is `if (!open)
+  // return;` and that is WORSE: this section is a bare block at MODULE level, Node wraps a module in
+  // a function, so that return is legal and simply ENDS THE RUN at exit 0 with no summary at all —
+  // the defect this file records as (n). It would never have fired today, which is how it would ship.
+  if (open) {
+  H.eq(open.month, 240, 'with amounts shown, this month is the sum of this month’s gifts');
+  H.eq(open.year, 1850, 'and the year is the sum of the year’s');
+  H.eq(open.amount, 125, 'and the pledge amount is carried');
+  H.ok(!!open.zakat && open.zakat.daysLeft > 200 && open.zakat.daysLeft < 260,
+    'and a zakat hawl 100 days old has ~254 of its 354 days left (got ' + (open.zakat && open.zakat.daysLeft) + ')');
+  H.eq(open.zakat.due, 1250, 'including the computed due, which is an amount');
+
+  // THE INVARIANT. Not "the brief does not say 240" — any key holding a sum is a leak, because every
+  // one of them is interpolated into the brief by name.
+  const SUMKEYS = ['month', 'year', 'amount', 'percent'];
+  const shut = mk('islam', true);
+  H.ok(shut.quiet === true, 'the quiet flag is carried through');
+  SUMKEYS.forEach(k => {
+    H.ok(shut[k] === undefined, 'with amounts hidden, givingState carries no ' + k + ' — the model cannot say what the screen will not');
+  });
+  H.ok(shut.zakat && shut.zakat.due === undefined,
+    'and no zakat due figure either, while the hawl TIMING survives — the date is the counsel, the sum is what concealment is about');
+  H.ok(shut.zakat && shut.zakat.daysLeft > 0, 'so the lunar year is still something the coach can mention');
+  H.eq(shut.count, 2, 'the COUNT survives, because the app’s own screen shows it under quiet ("N kept quietly")');
+  H.ok(shut.gives === true, 'and the model still knows they give at all — that is the integration');
+
+  }
+
+  // THEIR OWN WORD, PER TRADITION. One neutral noun for five traditions is the thing the multi-faith
+  // turnaround exists to refuse.
+  [['islam', 'sadaqah'], ['christianity', 'alms'], ['hinduism', 'dana'], ['buddhism', 'dana'], ['secular', 'gift']]
+    .forEach(([t, w]) => { H.eq(mk(t, false).word, w, t + ' gives in its own word: ' + w); });
+
+  // ZAKAT IS NOT UNIVERSAL. A hawl on a Buddhist's state would be the app handing one tradition's
+  // obligation to another, which is the `bridgeToRealHelp` priest defect in a different costume.
+  ['christianity', 'hinduism', 'buddhism', 'secular'].forEach(t => {
+    H.ok(mk(t, false).zakat === undefined, t + ' is given no zakat hawl — it is not their obligation');
+  });
+
+  // SOMEBODY WHO HAS NEVER GIVEN PRODUCES NO LINE. A zero is an accusation without history — this
+  // repo's own "day one is not a zero".
+  const none = H.load(['givingState', 'givingPledge', 'givingTotals', 'givingLog'], {
+    ls: () => null, curGiving: () => ({ mode: 'pledge', kind: 'gift' }), zakatState: () => null,
+  }).givingState();
+  H.ok(none && none.gives === false, 'somebody who has never given is not reported as giving');
+
+  // AND THE BRIEF. The state is where a leak would come from, but the instructions are prose, so they
+  // are asserted on the rendered text of lifeStateBrief rather than on its source — a comment two
+  // lines above names every one of these words.
+  let lsb = '';
+  try { lsb = H.code(H.extractFn('lifeStateBrief')); } catch (e) { lsb = ''; }
+  H.ok(lsb.length > 2000, 'lifeStateBrief was found by name (' + lsb.length + ' chars)');
+  const gi = lsb.indexOf('s.giving && s.giving.gives');
+  H.ok(gi > 0, 'the brief has a giving branch');
+  if (gi > 0) {
+    // BRACKET-MATCH, never slice a fixed window. A 2200-char slice was the first cut and it is the
+    // trap this repo records on the one check whose whole subject is a leak.
+    let d = 0, j = lsb.indexOf('{', gi);
+    for (; j < lsb.length; j++) { const c = lsb[j]; if (c === '{') d++; else if (c === '}') { d--; if (!d) { j++; break; } } }
+    const blk = lsb.slice(gi, j);
+    H.ok(blk.length > 600 && blk.length < 4000, 'the giving branch was bracket-matched (' + blk.length + ' chars)');
+    H.ok(/must not ask for them or guess/.test(blk),
+      'under quiet the model is told it does NOT have the sums and must not ask or guess — silence alone invites it to ask');
+    H.ok(/NEVER score, grade or set a quota/.test(blk),
+      'and it is forbidden to grade giving, which is devotional practice and a refusal this gate already holds');
+    H.ok(/use their word/.test(blk), 'and told to use the person’s own word for it');
+    // Every sum interpolation must sit AFTER the quiet branch opens its else — structural, so a new
+    // figure added later cannot land on the wrong side of it.
+    // THE INVARIANT IS THE INVERSE, and the first version got it backwards. It asked whether each sum
+    // token appears AFTER the else — which a second occurrence satisfies: `_g.month` is written twice,
+    // once as the month print and once in `_g.year !== _g.month`, so DELETING the print left the
+    // comparison behind, indexOf still landed after the else, and the fault injection passed on the
+    // defect. Ask instead whether the QUIET side mentions a sum at all. That cannot be satisfied by an
+    // occurrence somewhere else, and a new figure added on the wrong side fails immediately.
+    const elseAt = blk.indexOf('} else {');
+    H.ok(elseAt > 0, 'the quiet branch has an else');
+    const quietSide = blk.slice(0, elseAt > 0 ? elseAt : blk.length);
+    ['_g.month', '_g.year', '_g.percent', '_g.amount', 'toLocaleString'].forEach(k => {
+      H.ok(quietSide.indexOf(k) < 0,
+        'the amounts-hidden side of the branch never mentions ' + k + ' — a sum on that side is the leak');
+    });
+    // CALIBRATION, and it is deliberately the weaker claim. "No sums under quiet" would be satisfied
+    // by a brief that never reports giving figures at all, so the shown side must genuinely FORMAT
+    // some. It counts `toLocaleString`, which appears only where a sum is rendered — a token-presence
+    // check cannot tell a print from a comparison (`_g.month` legitimately appears again inside
+    // `_g.year !== _g.month`), so this does NOT claim that each individual figure is printed, and
+    // deleting one of the three prints is not caught here. That is a copy decision, not a leak; the
+    // leak direction is the invariant above and it is fault-injected.
+    const shownSide = elseAt > 0 ? blk.slice(elseAt) : '';
+    H.ok((shownSide.match(/toLocaleString/g) || []).length >= 2,
+      'and the amounts-shown side genuinely formats figures, so the quiet invariant is not vacuous');
+    ['_g.month', '_g.year'].forEach(k => {
+      H.ok(shownSide.indexOf(k) >= 0, 'the amounts-shown side is where ' + k + ' is reached at all');
+    });
+  }
+
+  // AND IT IS ON THE BRAIN, not only in the brief — getLifeState is what every other surface reads.
+  let gls = '';
+  try { gls = H.code(H.extractFn('getLifeState')); } catch (e) { gls = ''; }
+  H.ok(/giving:\s*\(typeof givingState==='function'\)/.test(gls),
+    'getLifeState carries giving, so a surface that is not the AI can read it too');
+}
+
+// ── AN INLINE HANDLER'S SCOPE CHAIN RUNS THROUGH `document` ──────────────────────────────────────
+// Six real users, Jun–Sep 2026: "TypeError: URL.revokeObjectURL is not a function. (In
+// 'URL.revokeObjectURL('blob:capacitor://localhost/...')'" — every one at `:1`, which is an inline
+// attribute. BUILD-NEXT assumed a source shadow and recorded "no `URL` shadow in current source, so
+// it looks resolved. Confirm, do not assume." Confirmed, and it was NOT resolved: `git log -S` shows
+// no `const URL` has ever existed in src/ or index.html, so that was never the cause.
+//
+// The real cause is the spec. An event handler content attribute is compiled with a scope chain of
+// element -> form owner -> document -> window, and `document.URL` is a STRING. Driven in both
+// engines: at global scope `typeof URL` is 'function' with revokeObjectURL present; inside an inline
+// handler it is 'string' with no revokeObjectURL, and WebKit's thrown message is byte-identical to
+// the production one. `window.URL` works in both.
+//
+// AND IT WAS NOT JUST A LEAKED BLOB URL. One of the three sites is
+// `closeModal(this);URL.revokeObjectURL(...);setShareTheme(...);createShareCard(...)` — the throw
+// kills the rest of the handler, so the share card's "Switch to light/dark" button closed the sheet
+// and then did nothing at all. A dead feature button, invisible to every id, handler-compile and
+// tap-target check in this gate, because the attribute is perfectly well-formed.
+H.section('no inline handler uses a bare identifier that document also owns');
+{
+  // `document` owns all of these as properties, so a bare use inside an on*= attribute resolves to
+  // the document's value rather than the global of the same name.
+  const OWNED = ['URL', 'location', 'title', 'forms', 'images', 'links', 'scripts', 'all', 'domain',
+                 'cookie', 'embeds', 'plugins', 'anchors', 'referrer', 'doctype', 'activeElement',
+                 'styleSheets', 'fonts', 'defaultView', 'characterSet', 'readyState', 'currentScript'];
+  const ATTR = /on(?:click|change|input|blur|focus|submit|keyup|keydown|mousedown|touchstart)=\\?["']([^"']{0,500})/g;
+  const scan = (text) => {
+    const out = [];
+    for (const m of text.matchAll(ATTR)) {
+      for (const n of OWNED) {
+        if (new RegExp('(^|[^\\w.$\'"])' + n + '\\s*[.\\[(]').test(m[1])) out.push(n + '  ' + m[1].slice(0, 70));
+      }
+    }
+    return out;
+  };
+
+  // CALIBRATION. A scan that returns zero against broken code is blind, not clean — and this one
+  // must also NOT flag the window-prefixed form, or the fix would read as the defect.
+  const cal = scan(
+    'x.innerHTML=\'<button onclick="URL.revokeObjectURL(\\\'b\\\')">bad</button>\'+' +
+    '\'<button onclick="window.URL.revokeObjectURL(\\\'b\\\')">good</button>\'+' +
+    '\'<button onclick="location.reload()">bad2</button>\';');
+  H.eq(cal.filter(c => c.indexOf('URL ') === 0).length, 1, 'calibration: a planted bare URL in an inline handler is found');
+  H.eq(cal.filter(c => c.indexOf('location ') === 0).length, 1, 'calibration: a planted bare location is found too');
+  H.ok(!cal.some(c => c.indexOf('window.URL') >= 0), 'calibration: the window-prefixed form is NOT flagged — the fix must not read as the defect');
+
+  const found = scan(H.html);
+  H.eq(found.length, 0, 'no inline handler reaches a bare document-owned name' + (found.length ? ' → ' + found.slice(0, 4).join(' | ') : ''));
+
+  // And the three real sites are window-prefixed, asserted positively so deleting the prefix is a
+  // named failure rather than only a count moving.
+  let sc = '';
+  try { sc = H.code(H.extractFn('createShareCard')); } catch (e) { sc = '' }
+  H.ok(/window\.URL\.revokeObjectURL/.test(H.code(H.html)), 'the share-card blob is revoked through window.URL');
+  H.eq((H.code(H.html).match(/window\.URL\.revokeObjectURL/g) || []).length, 3,
+    'at all three inline sites — the other six revoke calls are in ordinary JS scope and need no prefix');
+  // AND THE OTHER SIX STAY BARE ON PURPOSE. The first version of this asserted that no bare
+  // `URL.revokeObjectURL` exists anywhere and failed on correct code with 6 — those six are in
+  // ORDINARY JS scope (07-platform.js and 14-nourish.js), where `URL` genuinely is the constructor
+  // and a window. prefix would be noise asserted as a rule. The defect is specific to the inline
+  // scope chain, so the check is too; the scan above is what covers the real class.
+  H.eq((H.code(H.html).match(/[^.\w]URL\.revokeObjectURL/g) || []).length, 6,
+    'the six ordinary-scope revoke calls are deliberately left bare — only an inline handler needs the prefix');
+}
+
 H.report();

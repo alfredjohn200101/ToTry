@@ -202,6 +202,25 @@ function renderFastSeason(){
     row('dumbbell','Train', trainText)+
     row(s.icon==='·'?'✦':s.icon,'Why', s.why)+
     row('shield','The fight', s.fight)+
+    // MERCY WAS WRITTEN PER TRADITION AND REACHABLE ONLY THROUGH A WORRY CARD. `mercy` and `ask` are
+    // hand-authored for all six seasons and were consumed at exactly one site — `_renderNourishCare`,
+    // which renders only when `_nourishConcern()` has flagged 3+ days under 1200/1500 kcal as a
+    // possible eating-disorder signal. So the line naming who a tradition has NEVER bound — the ill
+    // and the traveller, the pregnant, the nursing, those menstruating, the elderly, and Lent's
+    // eighteen-to-fifty-nine — only ever reached somebody the app had already decided to worry about.
+    // The person who most needs to read it is one DECIDING whether to fast. Same shape as v656: the
+    // line built for them was on no screen they could reach.
+    //
+    // All six seasons have `mercy`, so the row is unconditional. Only four name a human: `ask` is ''
+    // for the two a person sets themselves, because there is nobody — and their mercy lines say so
+    // in their own words ("no authority behind it but yours"). The hand-off is therefore conditional
+    // on `ask` rather than on the tradition, so a season added later inherits the rule.
+    //
+    // The sentence is NOT the concern card's. That one opens "If it is taking more out of you than it
+    // is giving", which is written for somebody already flagged and presumes difficulty. Here nobody
+    // is flagged, so it answers the question the mercy line actually raises — does it bind ME — and
+    // the answer is a person, never this app.
+    row('heart','Mercy', s.mercy + (s.ask ? (' If you are unsure whether it binds you, '+s.ask+' is who to ask \u2014 that is what they are for.') : ''))+
     '<div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:10px">'+
       '<button class="btn subtle" onclick="openSolidarity()" style="padding:10px">'+svgIcon("utensils")+' Give what a meal costs</button>'+
       '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:8px">'+_escFew(s.how)+
@@ -257,6 +276,61 @@ function givingTotals(){
   const sum = f => list.filter(f).reduce((a,x)=>a+(x.amount||0), 0);
   return { month: sum(x=>new Date(x.ts).getTime()>=mStart), year: sum(x=>new Date(x.ts).getTime()>=yStart), all: sum(()=>true), count: list.length };
 }
+// ── WHAT THE WHOLE PERSON KNOWS ABOUT THEIR GIVING ───────────────────────────────────────────────
+// `getLifeState()` is the brain every surface reads and it knew NOTHING about giving — no `giving`,
+// no `zakat`, no `tithe`, nothing, in either the state object or `lifeStateBrief()`. So the coach,
+// the companion and the brother could speak about debt, training, sleep and the fight and had no idea
+// whether this person gives at all, in an app whose own soul statement is "Integration IS the
+// product". Every figure below already existed here; nothing read it.
+//
+// THE QUIET FLAG IS THE WHOLE DESIGN. `p.quiet` hides AMOUNTS from the person on their own screen
+// ("N kept quietly. Amounts hidden."), and the GIVING registry's `quiet` field is each tradition's
+// own reason for it — islam's is Qur'an 2:271, "If you conceal it and give it to the poor, that is
+// better for you." Handing those figures to a model would be the half-applied defect this repo keeps
+// paying for, pointing the other way: the screens conceal and the voice announces. So this reports
+// exactly what the screen reports — the COUNT stays (the app shows it under quiet), the SUMS go.
+// `due` is a giving amount and goes with them; the hawl DATES stay, because the timing is the useful
+// counsel and is not what concealment is about.
+function givingState(){
+  try{
+    const cg = (typeof curGiving === 'function') ? curGiving() : null;
+    const p  = givingPledge() || {};
+    const t  = givingTotals() || {};
+    if(!cg) return null;
+    const quiet = !!p.quiet;
+    const out = {
+      // The person's OWN vocabulary, so the voice says sadaqah to a Muslim and alms to a Christian
+      // rather than one neutral word for five traditions.
+      word: cg.kind || 'gift',
+      mode: cg.mode || 'pledge',
+      quiet: quiet,
+      pledged: p.mode === 'percent' || p.mode === 'amount',
+      count: t.count || 0
+    };
+    out.gives = out.count > 0 || out.pledged;
+    if(!quiet){
+      out.month = t.month || 0;
+      out.year  = t.year || 0;
+      if(p.mode === 'percent') out.percent = p.percent || 0;
+      if(p.mode === 'amount')  out.amount  = p.amount || 0;
+    }
+    if(cg.mode === 'zakat'){
+      const z = (typeof zakatState === 'function') ? zakatState() : null;
+      if(z && z.hawlStart){
+        // 354 days is the lunar year the obligation runs on, which is what openZakat computes from.
+        const st = new Date(z.hawlStart).getTime();
+        if(!isNaN(st)){
+          const done = st + 354 * 86400000;
+          out.zakat = { hawlStart: z.hawlStart, completesTs: done,
+                        daysLeft: Math.max(0, Math.round((done - Date.now()) / 86400000)) };
+          if(!quiet && z.last && z.last.due != null) out.zakat.due = z.last.due;
+        }
+      }
+    }
+    return out;
+  }catch(_){ return null; }
+}
+
 function openGivingLog(kind, subtitle, viaRelease){
   const cg = curGiving();
   openFormModal('Log what you gave', subtitle || cg.sub,
