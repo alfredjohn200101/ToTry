@@ -2007,6 +2007,43 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      named were like that. It reports what actually breaks a control (losing its OWN centre, the
      criterion `npm run panels` fails the build on) FIRST now, and the column overlap second. A
      sub-measurement given a headline's name is a number that gets acted on.
+     **AND IT HAD TWO STRUCTURAL BLIND SPOTS, BOTH FOUND BY READING IT RATHER THAN BY A FINDING
+     (27 Oct 2026). It is `npm run orb` now, and so is `npm run craft` — neither was an npm script,
+     which is how a check nobody can name goes stale.**
+     **(a) IT ASKED ONLY ABOUT CONTROLS.** The selector was `button,a,input,…`, so the orb sitting on
+     top of BODY TEXT was invisible by construction. An orb over a button is a tap problem and this
+     suite already measured it; an orb over a NUMBER is a reading problem and nothing in the gate
+     could see it. Measured: **10 text runs clipped at rest, 3 of them numbers** — `"86.6kg"` loses
+     22% off its RIGHT edge, so a body weight renders as `86.6` with a gold circle where its unit
+     was, in an app whose own record says a hardcoded kg is how a lb user reads someone else's body.
+     Diagnosed rather than guessed: the two Grow numbers are `text-align:center` cells in the third
+     column of a 3-across stat grid whose glyphs end at x=334 against an orb starting at x=323, and
+     `.ios-row-value` is right-aligned by the component — so every fix is either scroll-dependent or
+     a decision about whether the orb may occupy the content's right gutter at all. **Ratcheted at
+     the measured number as a NAMED COST, not fixed blind**, and the ratchet is set to the measured
+     truth rather than a round number: this repo's own dead-id ratchet sat at 40 against an actual
+     12, which is 28 free slots.
+     **(b) IT RAN AT EXACTLY ONE VIEWPORT (393x852), and the App Store device is 440x956 — which is
+     this file's own argument against one screenshot, applied to itself.** The two sizes DISAGREE and
+     neither could have found the other's: at 393 the orb clips Grow's weight stats and Money's
+     payoff sentence; at 440 it clips neither, and clips Home's clean-day value instead.
+     **AND THE FLOOR IS NOW ASSERTED, WHICH WAS THE WHOLE MITIGATION AND WAS ONLY ASSUMED.** `.tab`
+     carries `padding-bottom: calc(var(--sb) + 156px)` = 190px against an orb whose top edge is 182px
+     up, so content can always be scrolled fully clear of a floating button. Measured 0 on every
+     screen at both sizes; `ORB_FAULT=floor npm run orb` removes that padding and takes it **0 → 18**,
+     so the limit is a test rather than a line nobody has seen fail. `ORB_FAULT=behind` puts the orb
+     under the content and the CALIBRATION refuses — the right failure, because it proves the probe
+     reads what the browser PAINTS rather than a rectangle intersection.
+     **THE TEXT PROBE LIED FIRST, in the usual direction.** It scrolled
+     `document.querySelector('.scroller')`, which does not exist — the scroller is `.tab`, one per
+     pane — so the floor was never measured and came back byte-identical to rest on all nine screens,
+     which reads as "the text is permanently covered" when nothing had been scrolled at all. The
+     identical numbers were the tell. It refuses to report a floor now unless `scrollTop` actually
+     moved over a non-zero range. **And my own floor check then over-reported exactly the way this
+     entry's paragraph above says not to**: it counted ANY overlap and named a 4px graze on
+     `.ios-switch "Someone you love"` that keeps its own centre, so it uses `losesItsCentre` for
+     controls and painted-over for text, the same criterion as the rest of the file — and it NAMES
+     what it found, because a floor failure printed as a bare count is a number acted on blind.
    - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
      claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
      only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in

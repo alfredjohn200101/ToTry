@@ -2,7 +2,7 @@
   "name": "totry",
   "version": "1.0.0",
   "private": true,
-  "description": "To Try — faith-rooted whole-life companion. PWA + Capacitor native shell.",
+  "description": "To Try \u2014 faith-rooted whole-life companion. PWA + Capacitor native shell.",
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "sync": "npm run build:index && npm run build:www && npx cap sync",
@@ -16,7 +16,9 @@
     "build:index": "node scripts/build-index.js",
     "verify:index": "node scripts/build-index.js --verify",
     "test:edge": "node --experimental-strip-types test/keyproxy.test.mjs && node --experimental-strip-types test/aiproxy.test.mjs && node --experimental-strip-types test/sendpush.test.mjs",
-    "crisis": "node test/crisis.js"
+    "crisis": "node test/crisis.js",
+    "craft": "node scripts/craft-audit.mjs",
+    "orb": "node scripts/orb-audit.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
