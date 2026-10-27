@@ -3,14 +3,14 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 28 Oct 2026 — v664. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
+## ▶▶ CURRENT STATE — 28 Oct 2026 — v665. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
 
 **Everything below this block is HISTORY.**
 
 | What | Where |
 |---|---|
-| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v664.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v664-build10.ipa` |
+| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v665.xcarchive` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v665-build10.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
 
 **SIX ARCHIVES USED TO BE IN ORGANIZER AND ONE OF THEM WOULD HAVE UPLOADED.** Build 1 (v312, 6 Aug)
@@ -25,8 +25,8 @@ the check, not a bug in it. **Keep exactly one archive in Organizer.**
 1. `Apple Distribution: Alfred John (L4BD53PLVF)`  2. `get-task-allow = false`
 3. `beta-reports-active = true`  4. **arm64 only**  5. `PrivacyInfo.xcprivacy` 1407 bytes
 6. version 1.0, build 10, `app.totry`
-7. **the web bundle inside the IPA is byte-identical to the repo** — sha `4defac0889e0`,
-   `APP_VERSION = 'v664'`, and spot-checked for this release's actual fixes (the reduced-motion
+7. **the web bundle inside the IPA is byte-identical to the repo** — sha `e1e013f66ef2`,
+   `APP_VERSION = 'v665'`, and spot-checked for this release's actual fixes (the reduced-motion
    exemption, the `Storage.prototype` sync fix, the `w = window.open` fix).
 
 **Build 10 is not a reuse.** ASC holds builds 4, 5, 6, 8. `manageAppVersionAndBuildNumber` is
@@ -51,6 +51,14 @@ root reports them missing; mine did, and the probe was wrong, not the app.
   loses the data.
 - **v664 — Settings → Help & FAQ did nothing natively.** `window.open` RETURNS NULL when refused; it
   does not throw, so the fallback behind the catch was unreachable.
+- **v665 — two SOS crisis-path visuals were not moving.** The breathing circle sat at its LARGEST,
+  completely still, through the whole 4s "Breathe in…" and the 4s hold, with the first movement a
+  person ever saw being it SHRINKING on the exhale — because a CSS transition cannot start on an
+  element that had no rendered state last frame, and `step()` ran in the same tick as the unhide.
+  No setting needed, every entry, and it reproduced in Chromium too. And the 30-second "sit with
+  this" bar was a CSS transition, so Reduce Motion emptied it: 5s in it read 0 of 353px while the
+  label beneath said "25s", directly above "I beat it" / "I gave in". Driven: circle 1 → 19 distinct
+  widths on first entry; bar 294 of 353px at 5s beside "24s".
 
 ### Gate on this exact bundle
 
