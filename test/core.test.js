@@ -17987,4 +17987,142 @@ H.section('a reminder time means the same wall clock after the clocks change');
   }
 }
 
+// ── THE REFUSALS, HELD BY ASSERTIONS INSTEAD OF BY COMMENTS ──────────────────────────────────────
+// BUILD-NEXT's own words: "Every soul mechanic in this codebase is held by a comment, not an
+// assertion — the least defended code in the repo, exactly where pace pressure is highest. That is
+// how the score panel happened." A refusal that lives in a comment is a refusal the next commit
+// under deadline does not see.
+//
+// WHAT IS DELIBERATELY NOT HERE. `wovenWeek` being per-day is already defended by seven executed
+// assertions above, and `companionThreshold` already refuses a flat readiness score. Re-asserting
+// them would be noise. The streak, the flame, the score panel and the trophies are KEPT — the
+// owner's call on 26 Oct 2026 — so nothing below forbids them; what is forbidden is a persisted
+// RATING, which is a different thing from a count of days.
+H.section('the refusals are assertions now, not comments');
+{
+  const fnOf = (name) => { try { return H.code(H.extractFn(name)); } catch (e) { return ''; } };
+
+  // (1) NO PERSISTED WHOLE-PERSON RATING. Four such designs were killed on measurement. The score
+  //     PANEL survived that review and stays, and the distinction is the whole point: `sc-total`
+  //     renders a COUNT OF DAYS a person has been in the fight, which is their own history, not a
+  //     number the app has graded them with. A stored rating is the thing refused, so the check asks
+  //     both halves — no rating key anywhere, and the element that looks most like a score is fed
+  //     from a day count.
+  ['totry_score', 'totry_rating', 'totry_index', 'totry_grade', 'totry_rank', 'totry_overall'].forEach(k => {
+    H.ok(H.html.indexOf(k) < 0, 'no persisted whole-person rating: ' + k + ' appears nowhere in the bundle');
+  });
+  const sfh = fnOf('renderScore') || fnOf('updateScore') || '';
+  H.ok(/sc-total'\)\)\s*e\('sc-total'\)\.textContent\s*=\s*_fightDay/.test(H.code(H.html).replace(/\s+/g, ' ').replace(/ /g, '')) ||
+       /sc-total[\s\S]{0,80}_fightDay/.test(H.code(H.html)),
+    'and the big number on the score panel is a count of days in the fight, never a graded score');
+
+  // (2) ANONYMOUS COUNTING IS REFUSABLE AT EVERY SITE THAT COUNTS. Asserted PER SITE as explicit
+  //     pairs: a whole-bundle grep for `metricsOff` passes with one site's guard deleted outright,
+  //     which is this repo's recorded "a whole-bundle union passes with one renderer's await
+  //     deleted" shape. `logEvent` is the one that matters most — it is the Supabase path, and the
+  //     GoatCounter site was the only one anything had ever asserted.
+  const le = fnOf('logEvent');
+  H.ok(le.length > 100, 'logEvent was found by name (' + le.length + ' chars)');
+  H.ok(/if\s*\(\s*metricsOff\(\)\s*\)\s*return/.test(le),
+    'logEvent refuses to count a person who turned counting off');
+  // AND IT REFUSES FIRST. A guard below the insert is not a guard, and nothing had ever asked about
+  // the ORDER — only that the symbol was present somewhere in the body.
+  H.ok(le.indexOf('metricsOff') >= 0 && le.indexOf('app_events') > le.indexOf('metricsOff'),
+    'and it refuses BEFORE it reaches app_events, not after');
+  const tm = fnOf('toggleMetrics');
+  H.ok(/totry_no_metrics'\s*,\s*off\s*\?\s*'1'\s*:\s*'0'/.test(tm.replace(/\s+/g, ' ')),
+    'the switch writes the flag metricsOff() reads — the two must agree on the key AND the value');
+  H.ok(/GOATCOUNTER_CODE && !metricsOff\(\)/.test(H.code(H.html)),
+    'and the third-party counter is behind the same switch');
+
+  // (3) GENTLE MODE DOES NOT GET A STREAK. Added v660 and held by NOTHING until now, which is the
+  //     reason this section exists. It must be read from COMMENT-STRIPPED source: the comment above
+  //     the gate names `nutGentle()` twice, so an unstripped grep passes on deleted code — exactly
+  //     the trap this repo records, arriving inside the test written to close the gap.
+  const rnl = fnOf('renderNutritionLog');
+  H.ok(rnl.length > 400, 'renderNutritionLog was found by name (' + rnl.length + ' chars)');
+  const streakAt = rnl.indexOf('-day streak');
+  H.ok(streakAt > 0, 'the nutrition streak chip is still rendered (the mechanic is KEPT, not removed)');
+  if (streakAt > 0) {
+    // STRUCTURAL, NOT A CHARACTER DISTANCE. The first cut of this used a 260-char window and failed
+    // on correct code: comment-stripping leaves the newlines behind, so the real gap is ~280. A magic
+    // number would have to be re-tuned by whoever next edits the markup. Ask the question that
+    // actually matters instead — the gate opens, and nothing CLOSES between it and the streak, so the
+    // streak cannot be rendered outside it.
+    const gateRe = /if\(st\.n >= 2 && !\(typeof nutGentle === 'function' && nutGentle\(\)\)\)\{/;
+    const gm = rnl.match(gateRe);
+    H.ok(!!gm, 'the gentle-mode gate is present in comment-stripped source (the comment beside it names nutGentle() twice, so an unstripped grep passes on deleted code)');
+    H.ok(!!gm && gm.index < streakAt && rnl.slice(gm.index + gm[0].length, streakAt).indexOf('}') < 0,
+      'but the flame and the streak are behind nutGentle() — numbers off means the streak is off too');
+    // THE HAPTIC IS THE OTHER HALF. The comment beside the gate says celebrateNutMilestone "fires a
+    // haptic on top of it", so a gate that covered only the markup would leave a buzz and a
+    // milestone toast for the person who asked to be free of the count. Measured: both are inside.
+    // STRUCTURAL FOR THE SAME REASON. A 400-char window around the streak text was the first cut and
+    // it FAILED ITS OWN FAULT INJECTION: moving celebrateNutMilestone outside the closing brace
+    // leaves it well inside 400 characters, so the assertion passed on the defect it exists for. It
+    // only looked caught because the bundle-parity check fired on the same run — a fault injection
+    // whose catch comes from a different assertion is a clean pass wearing a red tick.
+    const mAt = rnl.indexOf('celebrateNutMilestone');
+    H.ok(mAt > streakAt, 'the milestone haptic is reached after the streak chip is drawn');
+    H.ok(mAt > streakAt && rnl.slice(streakAt, mAt).indexOf('}') < 0,
+      'and it sits INSIDE that same gate rather than beside it — gentle mode gets no buzz and no milestone toast');
+  }
+
+  // (4) THE ONE NUMBER THE APP IS PROUD OF IS EARNED. Times a person left the app better, shown at
+  //     three or more and never at zero — the anti-engagement metric, which would be worth nothing
+  //     as a counter that congratulated somebody on their first visit.
+  // NAME THE FUNCTION; DO NOT GUESS AT IT WITH `||`. The first cut wrote
+  // `fnOf('nextStepCard') || fnOf('renderNextStep') || H.code(H.html)` and failed on correct code:
+  // `nextStepCard` does not exist, `renderNextStep` DOES and is truthy at 1279 chars, so the chain
+  // stopped on a function that has never held this gate. The gate lives in `renderLifeWoven` — the
+  // woven card's footer. A fallback chain settles on the first truthy thing, which is not the same as
+  // the right thing, and a `||` over three guesses hides which one answered.
+  const rlw = fnOf('renderLifeWoven');
+  H.ok(rlw.length > 400, 'renderLifeWoven was found by name (' + rlw.length + ' chars) — a rename must update this check, not silently drop it');
+  H.ok(/rc\s*>=\s*3/.test(rlw),
+    'the release count is shown at three or more, so it is earned rather than assumed');
+  H.ok(!/rc\s*>=\s*[012]\b|rc\s*>\s*0\b/.test(rlw),
+    'and never at zero, one or two, which would make it a visit counter');
+
+  // (5) NO VOICE INPUT UNTIL THE DETECTOR IS MEASURED AGAINST SPEECH. Independently reproduced:
+  //     46 of 434 real disclosures (10.6%) return null as speech-to-text delivers them, because
+  //     every clause-bounded pattern in detectCrisis needs a `.!?`, a comma, a newline or `$`, and
+  //     the losses are the highest-acuity rows. The native build cannot even ask for a microphone,
+  //     and that is the refusal rather than an oversight — so the plist is the artefact to check.
+  const plist = require('fs').readFileSync(require('path').join(__dirname, '..', 'ios', 'App', 'App', 'Info.plist'), 'utf8');
+  H.ok(plist.indexOf('UsageDescription') > 0, 'Info.plist was read and carries usage descriptions at all');
+  H.ok(plist.indexOf('NSMicrophoneUsageDescription') < 0,
+    'the app cannot ask for a microphone — voice input stays refused until detectCrisis is measured against punctuation-free transcripts');
+  // AND THE WEB HALF IS NARROWER THAN "NO VOICE ANYWHERE", which is what this check first asserted —
+  // it failed, correctly, because `startVoiceLog` DOES use webkitSpeechRecognition. That is not the
+  // refused thing: it writes into `#nut-search-in` and calls searchFood(), its own prompt is "Say
+  // what you ate — e.g. two eggs and a banana", and by this repo's own census criterion a field that
+  // names a thing to LOOK UP is not a door, while a field that names a FEELING is. So the assertion
+  // is the one that would actually catch the refused change: speech recognition has exactly ONE call
+  // site, and it is the food lookup. Wire a mic into the Feeling Door, the Companion or the journal
+  // and this count moves.
+  const srSites = (H.code(H.html).match(/webkitSpeechRecognition/g) || []).length;
+  H.eq(srSites, 1, 'speech recognition is reached from exactly one place in the bundle');
+  const svl = fnOf('startVoiceLog');
+  H.ok(svl.length > 200 && /webkitSpeechRecognition/.test(svl),
+    'and that one place is startVoiceLog — the food lookup, which is not a crisis door');
+  H.ok(/searchFood\(/.test(svl) && !/detectCrisis|openFeelingDoor|_companionSay|saveJournal/.test(svl),
+    'it hands the transcript to the food search and reaches no disclosure surface');
+
+  // (6) THE ONE SHARED SURFACE SHARES A THING, NEVER A PERSON. Refused on SAFETY, not effort:
+  //     totry_v, totry_journal and totry_prayers sit in the same SYNC_KEYS set as the budget, so any
+  //     account-shaped share exposes the Fight tab alongside the finances. Measured on the write
+  //     itself rather than on the absence of a feature — the upsert payload carries no identity.
+  const csl = fnOf('contributeToSharedLibrary');
+  H.ok(csl.length > 200, 'contributeToSharedLibrary was found by name (' + csl.length + ' chars)');
+  const upsert = csl.slice(csl.indexOf("shared_library'").valueOf());
+  H.ok(upsert.indexOf('upsert') > 0, 'the shared-library insert was located inside it');
+  ['user_id', 'author', 'display_name', 'avatar', 'profile', 'username'].forEach(f => {
+    H.ok(upsert.indexOf(f) < 0, 'the shared row carries no ' + f + ' — a shared exercise name is not a social graph');
+  });
+  ['leaderboard', 'follower', 'friend_request', 'partner_report'].forEach(w => {
+    H.ok(H.code(H.html).toLowerCase().indexOf(w) < 0, 'and nothing in the bundle builds a ' + w);
+  });
+}
+
 H.report();

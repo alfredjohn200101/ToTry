@@ -2044,6 +2044,36 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `.ios-switch "Someone you love"` that keeps its own centre, so it uses `losesItsCentre` for
      controls and painted-over for text, the same criterion as the rest of the file — and it NAMES
      what it found, because a floor failure printed as a bare count is a number acted on blind.
+   - **THE REFUSALS ARE ASSERTIONS NOW, NOT COMMENTS (27 Oct 2026).** BUILD-NEXT's own words:
+     *"Every soul mechanic in this codebase is held by a comment, not an assertion — the least
+     defended code in the repo, exactly where pace pressure is highest. That is how the score panel
+     happened."* Nine now hold, each fault-injected: no persisted whole-person RATING (distinct from
+     the score panel, which the owner KEPT and which renders a count of days in the fight, not a
+     grade); `metricsOff()` asserted PER SITE rather than as a bundle grep, including the ORDER — a
+     guard below the insert is not a guard, and nothing had ever asked; the switch writing the value
+     `metricsOff()` reads; **gentle mode getting no streak, which v660 shipped and NOTHING held**;
+     the release count earned at ≥3; no microphone usage description; and the one shared surface
+     carrying no identity in its upsert — refused on SAFETY, since `totry_v` and `totry_journal` sit
+     in the same SYNC_KEYS set as the budget.
+     **AND A FAULT INJECTION WHOSE CATCH COMES FROM A DIFFERENT ASSERTION IS A CLEAN PASS WEARING A
+     RED TICK.** Every `index.html` injection also trips the bundle-parity check, so a harness that
+     counts "did anything fail" reported **9 of 9 caught when the real number was 8** — the haptic
+     assertion used a 400-character window around the streak text, and moving
+     `celebrateNutMilestone` outside the closing brace leaves it well inside 400 characters, so it
+     passed on the exact defect it exists for. Exclude the checks that fire on ANY edit, and require
+     the injection to be caught by the assertion under test BY NAME.
+     Three more of my own, all of the shapes this file already records: **a `||` fallback chain
+     settles on the first TRUTHY thing, not the right one** — `fnOf('nextStepCard') ||
+     fnOf('renderNextStep')` stopped on a real 1279-char function that has never held the gate
+     (which lives in `renderLifeWoven`), and failed on correct code; **a character-distance window
+     is a magic number somebody must re-tune** — 260 chars failed on correct code because
+     comment-stripping leaves the newlines behind, so both flame checks ask the structural question
+     instead (the gate opens and nothing CLOSES before the thing it guards); and **an over-broad
+     refusal fails on correct code and teaches you the real one** — "no speech recognition anywhere"
+     was wrong, because `startVoiceLog` writes into `#nut-search-in`, calls `searchFood()` and
+     prompts *"Say what you ate"*. By this repo's own census criterion a field that names a thing to
+     LOOK UP is not a door. So the assertion is the one that would catch the refused change: speech
+     recognition has exactly ONE call site and it is the food lookup.
    - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
      claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
      only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in
