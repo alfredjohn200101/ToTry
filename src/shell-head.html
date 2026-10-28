@@ -1535,11 +1535,21 @@ body{position:fixed;inset:0;width:100%}
 /* Empty state styles */
 .empty-state{text-align:center;padding:32px 20px;color:var(--tx3)}
 .empty-note{font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px 12px;font-style:italic;line-height:1.6}
-#rosary-overlay,.breath-overlay{
+/* FOUR overlays paint their own near-black radial gradient in an inline style, so they must carry
+   their own ink: var(--tx) is #000 in both light blocks, and in the LIGHT appearance every word on
+   them was black on #09090c. Measured 28 Oct 2026 on the real functions: theRelease's headline
+   1.17:1 and the two-minute clock 1.17:1, against 17.99:1 for that headline in dark. Default
+   appearance is System, so that was everyone on a light-mode phone, and theRelease is the terminal
+   frame of every Feeling Door path, the SOS, all eight toolkit lessons, the timer and the spend
+   hold. This rule existed for the first two and the two added later were never put in the selector,
+   with the test beside it matching the LITERAL selector so nothing could go red. 5.23:1 and 6.35:1
+   after. --go was `var(--go)`, a self-reference: invalid at computed-value time, so it fell back to
+   the INHERITED light value rather than pinning anything. */
+#rosary-overlay,.breath-overlay,.totry-release-ov,.tm-overlay{
   --tx:#F0EDE6;--tx2:#C9C4BA;--tx3:#8E8A82;
   --bd:rgba(255,255,255,0.14);--bd2:rgba(255,255,255,0.22);
   --bg2:#15151b;--bg3:#1d1d24;
-  --go:var(--go);--go-bg:var(--go-bg);--go-bd:var(--go-bd);
+  --go:#409CFF;--go-bg:rgba(64,156,255,0.16);--go-bd:rgba(64,156,255,0.42);
   --gr:#5BB97D;--re:#D25F52;
   color:var(--tx);
 }

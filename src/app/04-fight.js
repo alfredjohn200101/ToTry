@@ -1926,7 +1926,7 @@ function playTheTape(){
     // shame lever this app exists to break \u2014 and the evidence is that it makes the next slip MORE
     // likely, not less. So: name what's actually true about each path, and let them choose freely.
     '<b style="color:var(--re)">If you give in:</b> the relief is real, and it\u2019s short \u2014 minutes. Then the wanting comes back a little louder than before, because that\u2019s how it grows. Nothing is destroyed and nothing resets; you just haven\u2019t moved.<br><br>'+
-    '<b style="color:var(--gr)">If you hold on:</b> the urge peaks and passes \u2014 it always does, usually within 20 minutes. And riding it out is the rep: each one you sit through makes the next one quieter. That\u2019s not willpower, it\u2019s practice \u2014 and it counts whether or not anyone sees it.'+
+    '<b style="color:var(--gr)">If you hold on:</b> the urge peaks and passes \u2014 it always does. Often within twenty minutes or so, sometimes longer — and longer is still a wave, not you failing it. And riding it out is the rep: each one you sit through makes the next one quieter. That\u2019s not willpower, it\u2019s practice \u2014 and it counts whether or not anyone sees it.'+
     (why ? '<br><br><span style="color:var(--go)">Remember why you started:</span><br>\u201c'+why.replace(/</g,'&lt;').slice(0,220)+'\u201d' : '')+
     // Their OWN ledger, in their OWN words — the whole reason it was worth writing down. A reason
     // written while clear beats anything the app could say while they are not. playTheTape() has no
@@ -2523,7 +2523,7 @@ const COMPANION_INSTANT_OPEN = {
 const COMPANION_LOCAL_STEPS = {
   wave: [
     "Where do you feel it in your body right now — chest, hands, stomach? Just find it and watch it like weather. Naming it (‘I'm noticing an urge’) already loosens it.",
-    "Keep breathing — in 4, out 6. Urges crest in 15–30 minutes and ALWAYS pass. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
+    "Keep breathing — in 4, out 6. Urges crest and pass — often inside 15–30 minutes, sometimes longer. Yours taking longer does not mean it will not. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
     "What is this urge trying to manage tonight — stress, loneliness, boredom, being tired? Name the real need underneath. That need is legitimate; the urge is just a bad answer to it.",
     "You've outlasted this before — that's how you got here. Every wave you ride makes the next one smaller. Stay with me a few more minutes; the crest is closer than it feels.",
     "However tonight goes, you reached for help instead of hiding — that's who you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, someone you trust, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."

@@ -2175,6 +2175,51 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      prompts *"Say what you ate"*. By this repo's own census criterion a field that names a thing to
      LOOK UP is not a door. So the assertion is the one that would catch the refused change: speech
      recognition has exactly ONE call site and it is the food lookup.
+   - **AND A SURFACE THAT PAINTS ITS OWN GROUND TOOK ITS INK FROM THE THEME (28 Oct 2026). 1.17:1.**
+     Found while re-verifying the reels scripts, which is the argument for looking at a REGION rather
+     than a list. Three overlays set a literal near-black radial gradient in an inline style and then
+     used `var(--tx)`; `--tx` is `#000000` in both light blocks, so in the LIGHT appearance every word
+     on them was black on `#09090c`. Driven on the real functions: `theRelease`'s own headline
+     **1.17:1** and `_startTwoMin`'s 2:00 clock **1.17:1**, against **17.99:1** for that same headline
+     in dark. The default appearance is **System**, so this was every person whose phone is in light
+     mode. `theRelease` is the terminal frame of every Feeling Door path, the SOS, all eight toolkit
+     lessons, the letting-go flow, the two-minute timer and the spend hold — the sentence that went
+     invisible is **"You came here instead."**, and then **"Go well."**
+     **THE RESCUE ALREADY EXISTED AND THE TEST PINNED THE HALF.** `shell-head.html` re-declares the
+     dark tokens for exactly this reason, and an assertion written with it matched the literal
+     selector `#rosary-overlay,\.breath-overlay\{` — so the two overlays added later were left out and
+     nothing could go red. The check matches the rule by its own `--tx:#F0EDE6` declaration now, names
+     all four classes, and carries a ratchet on the count of literal dark radial-gradient overlays so
+     a fifth is a decision rather than a silent inheritance of black ink.
+     **AND `--go:var(--go)` PINS NOTHING** — a custom property that references itself is invalid at
+     computed-value time and falls back to the INHERITED value, i.e. the light theme's `#0062CC`. The
+     old assertion read it as "it pins --go so var() resolves against the ground behind it", which is
+     the opposite of what the spec does. It went unnoticed for seven versions because nothing in
+     `.breath-overlay` paints text with `--go`; `.tm-overlay`'s "Starting together" eyebrow does.
+     Measured after: 5.23:1 and 6.35:1, with `.breath-overlay` unchanged at 5.05:1 — **that one is the
+     control**, because it is the thing that proves the probe reads the cascade and not the inline
+     style. **Neither `craft-audit` nor the contrast matrix could ever have seen this:** both pair ink
+     against a BACKGROUND TOKEN, and these overlays have no background token at all. That is the third
+     kind of contrast blind spot in this file, after ink on an ACCENT.
+   - **AND "HIDE NUMBERS" LEAKED AT TWO OF ITS FOUR SINKS (28 Oct 2026). 2 of 2 rows → 0.**
+     The switch reads *"Turn the numbers off — log food without seeing calories"* and exists for the
+     person who cannot see a calorie figure without losing the day to it. Measured on the local
+     typeahead with no network: with gentle mode ON, "chicken" rendered
+     `281 cal · P: 52.7g · C: 0g · F: 6.1g`, **byte-identical to gentle OFF**. `_makeFoodResultRow`
+     (`14-nourish.js:763`) is the shared sink for every search hit and held zero references to
+     `nutGentle`; `_barcodeResultCard` leaked the same way. `applyNutGentle()` hides a fixed list of
+     static element ids and `#nut-search-results` is not one of them.
+     **Half-applied, and the app already said so in its own words.** `_renderPhotoMeal`, which renders
+     into the SAME container, DOES gate, under a comment reading *"a numbers off promise that leaks a
+     red over-budget figure two cards down is worse than no promise at all."* The camera path was
+     fixed; the search path — what anybody logging food reaches first — was not.
+     **MY OWN FIX WAS HALF-APPLIED TOO, AND THE TEST I WROTE FOR IT CAUGHT THAT IN ONE RUN**: two more
+     printing sinks exist in other modules. **And the first version of that test failed on CORRECT
+     code** — it looked at `lines[i-1]` only, and both of those are the false branch of a
+     `(( typeof nutGentle==='function' && nutGentle() ) ? … : …)` ternary whose condition sits two or
+     three lines up. A line window is a magic number somebody has to re-tune; it walks back to a
+     statement boundary now and REFUSES rather than reports if that walk runs away. The v660 gentle
+     assertions held the refusals (no streak) and had never asked whether the numbers stay hidden.
    - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
      claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
      only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in

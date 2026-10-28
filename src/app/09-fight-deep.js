@@ -2907,7 +2907,7 @@ function openMomentStakes(i){
     const pic=viceSpendPicture(v);
     const saved=pic?Math.max(0,pic.net):0;
     const nextBuy=pic&&pic.nextBuyInDays!=null?pic.nextBuyInDays:null;
-    body='This craving is a wave — it peaks and falls whether or not you feed it, usually inside 20 minutes. You don’t have to win forever right now. Just outlast this one.';
+    body='This craving is a wave — it peaks and falls whether or not you feed it — often inside twenty minutes or so, sometimes longer. You don’t have to win forever right now. Just outlast this one.';
     const bits=[];
     if(clean>0) bits.push({icon:'leaf', text:clean+' day'+(clean===1?'':'s')+' clean. This is the moment that keeps it, or ends it — nothing else does.'});
     if(saved>0) bits.push({icon:'wallet', text:curSym()+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
@@ -2916,7 +2916,7 @@ function openMomentStakes(i){
     extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
   } else {
     // Behaviour: never money. Time, clarity, self-respect, and what the urge is managing.
-    body='This is a wave, not a command. It rises and it passes — 15, 20 minutes — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
+    body='This is a wave, not a command. It rises and it passes — often fifteen or twenty minutes, sometimes longer — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
     const bits=[
       {icon:'leaf', text:(clean>0?clean+' day'+(clean===1?'':'s')+' clean — this exact moment is the whole streak. ':'')+'Ten minutes from now this feeling is smaller. You just have to still be standing then.'},
       {icon:'shield', text:'What you’re protecting here doesn’t show up on any balance sheet — the clear head tomorrow, the self-respect, being able to look people in the eye. That’s the real reward, and it’s only earned in moments exactly like this one.'},

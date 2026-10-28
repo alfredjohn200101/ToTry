@@ -767,9 +767,9 @@ function _makeFoodResultRow(food){
   tap.style.cssText='flex:1;cursor:pointer;min-width:0';
   // Show the SAME serving the (+) logs and name it. The row used to print the bare per-100g figure
   // with no unit, so a 25g bar read "535 cal" and the person had no way to know what that number was of.
-  const _rs = _quickServing(food);
+  const _rs = _quickServing(food); const _frG = (typeof nutGentle==='function') && nutGentle();
   tap.innerHTML='<div class="fr-name">'+_escFew(food.name)+'</div>'+(food.brand?'<div class="fr-brand">'+_escFew(food.brand)+'</div>':'')+
-    '<div class="fr-macros"><span class="fr-cal">'+_rs.cal+' cal</span><span>P: '+_rs.pro+'g</span><span>C: '+_rs.carb+'g</span><span>F: '+_rs.fat+'g</span>'+
+    '<div class="fr-macros">'+(_frG?'':'<span class="fr-cal">'+_rs.cal+' cal</span><span>P: '+_rs.pro+'g</span><span>C: '+_rs.carb+'g</span><span>F: '+_rs.fat+'g</span>')+
     '<span style="color:var(--tx3)">'+_escFew(String(_rs.label))+'</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
@@ -2864,7 +2864,7 @@ function _barcodeResultCard(food, res, barcode, fromMemory){
       '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
         '<div class="fr-name">' + _escFew(food.name) + '</div>' +
         (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
-        '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
+        '<div class="fr-macros">' + ((typeof nutGentle==='function' && nutGentle()) ? '' : '<span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span>') + '<span style="color:var(--go)">Barcode</span></div>' +
         '<div style="font-size:var(--t-cap);color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
       '</div>' +
       '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +

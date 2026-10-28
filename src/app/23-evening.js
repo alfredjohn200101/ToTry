@@ -1320,6 +1320,20 @@ function reachOutSuggestion(){
   const reframe = stale ? 'You’ll probably feel it’s awkward, or that they don’t need to hear from you. They will — far more than you expect, and more <em>because</em> it’s been a while. Reaching out is almost never regretted.' : '';
   return { person:p, days:d, prompt:prompt, reframe:reframe };
 }
+// {name} IS A TOKEN AND EVERY CONSUMER MUST FILL IT. renderReachOutCard did; _reachOneNow did not —
+// it wrote _escFew(s.prompt) straight into the markup, and _escFew escapes only &<>"' so the braces
+// survived. So the sheet somebody reaches from the LONELY path mid-urge printed a literal
+// "send {name} something that made you think of them" — on HALF of all days for a male user
+// (leansActivity = day%2===0) and a third of days for everyone else. The one surface whose whole job
+// is to hand somebody the sentence to send a real person was showing them the template instead.
+//
+// DECLARED AT TOP LEVEL ON PURPOSE. The first version of this fix sat inside renderReachOutCard's
+// body — a src/app module may begin mid-function, so an insert is nested unless its brace depth is
+// checked — which made it function-scoped, and _reachOneNow then threw ReferenceError instead of
+// leaking: worse than the defect. Only driving it found that.
+function reachFillName(prompt, nameHtml){
+  return _escFew(String(prompt == null ? '' : prompt)).replace(/\{name\}/g, nameHtml);
+}
 function renderReachOutCard(){
   const cp=document.getElementById('call-prompt'); if(!cp) return;
   const few=getYourFew();
@@ -1334,8 +1348,8 @@ function renderReachOutCard(){
   const s=reachOutSuggestion(); if(!s){ cp.textContent=''; return; }
   const nm=_escFew(s.person.name);
   let line;
-  if(s.prompt.indexOf('{name}')>=0){ line=_escFew(s.prompt).replace(/\{name\}/g,'<b>'+nm+'</b>'); }
-  else { line='<b>'+nm+'</b> — '+_escFew(s.prompt); }
+  if(s.prompt.indexOf('{name}')>=0){ line=reachFillName(s.prompt,'<b>'+nm+'</b>'); }
+  else { line='<b>'+nm+'</b> — '+reachFillName(s.prompt, nm); }
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
   // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
   const noteLine = (s.person.note && s.person.note.trim())

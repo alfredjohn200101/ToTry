@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v667-the-row-said-saved-while-41-changes-waited'
+const CACHE = 'totry-v668-the-release-screen-was-invisible-in-light'
 
 const CORE = [
   './',

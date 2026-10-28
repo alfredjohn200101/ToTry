@@ -2069,7 +2069,7 @@ function _reachOneNow(){
       '<div style="font-size:var(--t-2xl);margin-bottom:8px">'+svgIcon("users",28)+'</div>'+
       '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">Message '+nm+'.</div>'+
       '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px">'+since+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(s.prompt||'Say one true thing. It does not have to be deep.')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+reachFillName(s.prompt||'Say one true thing. It does not have to be deep.', nm)+'</div>'+
       (s.reframe?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">'+s.reframe+'</div>':'')+
       '<button class="btn primary" id="reach-one-did" style="margin-bottom:8px">I reached out</button>'+
       '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+

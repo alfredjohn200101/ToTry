@@ -1535,11 +1535,21 @@ body{position:fixed;inset:0;width:100%}
 /* Empty state styles */
 .empty-state{text-align:center;padding:32px 20px;color:var(--tx3)}
 .empty-note{font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px 12px;font-style:italic;line-height:1.6}
-#rosary-overlay,.breath-overlay{
+/* FOUR overlays paint their own near-black radial gradient in an inline style, so they must carry
+   their own ink: var(--tx) is #000 in both light blocks, and in the LIGHT appearance every word on
+   them was black on #09090c. Measured 28 Oct 2026 on the real functions: theRelease's headline
+   1.17:1 and the two-minute clock 1.17:1, against 17.99:1 for that headline in dark. Default
+   appearance is System, so that was everyone on a light-mode phone, and theRelease is the terminal
+   frame of every Feeling Door path, the SOS, all eight toolkit lessons, the timer and the spend
+   hold. This rule existed for the first two and the two added later were never put in the selector,
+   with the test beside it matching the LITERAL selector so nothing could go red. 5.23:1 and 6.35:1
+   after. --go was `var(--go)`, a self-reference: invalid at computed-value time, so it fell back to
+   the INHERITED light value rather than pinning anything. */
+#rosary-overlay,.breath-overlay,.totry-release-ov,.tm-overlay{
   --tx:#F0EDE6;--tx2:#C9C4BA;--tx3:#8E8A82;
   --bd:rgba(255,255,255,0.14);--bd2:rgba(255,255,255,0.22);
   --bg2:#15151b;--bg3:#1d1d24;
-  --go:var(--go);--go-bg:var(--go-bg);--go-bd:var(--go-bd);
+  --go:#409CFF;--go-bg:rgba(64,156,255,0.16);--go-bd:rgba(64,156,255,0.42);
   --gr:#5BB97D;--re:#D25F52;
   color:var(--tx);
 }
@@ -8798,7 +8808,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v667';
+const APP_VERSION = 'v668';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20601,7 +20611,7 @@ function playTheTape(){
     // shame lever this app exists to break \u2014 and the evidence is that it makes the next slip MORE
     // likely, not less. So: name what's actually true about each path, and let them choose freely.
     '<b style="color:var(--re)">If you give in:</b> the relief is real, and it\u2019s short \u2014 minutes. Then the wanting comes back a little louder than before, because that\u2019s how it grows. Nothing is destroyed and nothing resets; you just haven\u2019t moved.<br><br>'+
-    '<b style="color:var(--gr)">If you hold on:</b> the urge peaks and passes \u2014 it always does, usually within 20 minutes. And riding it out is the rep: each one you sit through makes the next one quieter. That\u2019s not willpower, it\u2019s practice \u2014 and it counts whether or not anyone sees it.'+
+    '<b style="color:var(--gr)">If you hold on:</b> the urge peaks and passes \u2014 it always does. Often within twenty minutes or so, sometimes longer — and longer is still a wave, not you failing it. And riding it out is the rep: each one you sit through makes the next one quieter. That\u2019s not willpower, it\u2019s practice \u2014 and it counts whether or not anyone sees it.'+
     (why ? '<br><br><span style="color:var(--go)">Remember why you started:</span><br>\u201c'+why.replace(/</g,'&lt;').slice(0,220)+'\u201d' : '')+
     // Their OWN ledger, in their OWN words — the whole reason it was worth writing down. A reason
     // written while clear beats anything the app could say while they are not. playTheTape() has no
@@ -21198,7 +21208,7 @@ const COMPANION_INSTANT_OPEN = {
 const COMPANION_LOCAL_STEPS = {
   wave: [
     "Where do you feel it in your body right now — chest, hands, stomach? Just find it and watch it like weather. Naming it (‘I'm noticing an urge’) already loosens it.",
-    "Keep breathing — in 4, out 6. Urges crest in 15–30 minutes and ALWAYS pass. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
+    "Keep breathing — in 4, out 6. Urges crest and pass — often inside 15–30 minutes, sometimes longer. Yours taking longer does not mean it will not. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
     "What is this urge trying to manage tonight — stress, loneliness, boredom, being tired? Name the real need underneath. That need is legitimate; the urge is just a bad answer to it.",
     "You've outlasted this before — that's how you got here. Every wave you ride makes the next one smaller. Stay with me a few more minutes; the crest is closer than it feels.",
     "However tonight goes, you reached for help instead of hiding — that's who you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, someone you trust, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
@@ -23563,7 +23573,7 @@ function _reachOneNow(){
       '<div style="font-size:var(--t-2xl);margin-bottom:8px">'+svgIcon("users",28)+'</div>'+
       '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">Message '+nm+'.</div>'+
       '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px">'+since+'</div>'+
-      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(s.prompt||'Say one true thing. It does not have to be deep.')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+reachFillName(s.prompt||'Say one true thing. It does not have to be deep.', nm)+'</div>'+
       (s.reframe?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">'+s.reframe+'</div>':'')+
       '<button class="btn primary" id="reach-one-did" style="margin-bottom:8px">I reached out</button>'+
       '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
@@ -27972,7 +27982,7 @@ function openMomentStakes(i){
     const pic=viceSpendPicture(v);
     const saved=pic?Math.max(0,pic.net):0;
     const nextBuy=pic&&pic.nextBuyInDays!=null?pic.nextBuyInDays:null;
-    body='This craving is a wave — it peaks and falls whether or not you feed it, usually inside 20 minutes. You don’t have to win forever right now. Just outlast this one.';
+    body='This craving is a wave — it peaks and falls whether or not you feed it — often inside twenty minutes or so, sometimes longer. You don’t have to win forever right now. Just outlast this one.';
     const bits=[];
     if(clean>0) bits.push({icon:'leaf', text:clean+' day'+(clean===1?'':'s')+' clean. This is the moment that keeps it, or ends it — nothing else does.'});
     if(saved>0) bits.push({icon:'wallet', text:curSym()+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
@@ -27981,7 +27991,7 @@ function openMomentStakes(i){
     extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
   } else {
     // Behaviour: never money. Time, clarity, self-respect, and what the urge is managing.
-    body='This is a wave, not a command. It rises and it passes — 15, 20 minutes — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
+    body='This is a wave, not a command. It rises and it passes — often fifteen or twenty minutes, sometimes longer — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
     const bits=[
       {icon:'leaf', text:(clean>0?clean+' day'+(clean===1?'':'s')+' clean — this exact moment is the whole streak. ':'')+'Ten minutes from now this feeling is smaller. You just have to still be standing then.'},
       {icon:'shield', text:'What you’re protecting here doesn’t show up on any balance sheet — the clear head tomorrow, the self-respect, being able to look people in the eye. That’s the real reward, and it’s only earned in moments exactly like this one.'},
@@ -33214,9 +33224,9 @@ function _makeFoodResultRow(food){
   tap.style.cssText='flex:1;cursor:pointer;min-width:0';
   // Show the SAME serving the (+) logs and name it. The row used to print the bare per-100g figure
   // with no unit, so a 25g bar read "535 cal" and the person had no way to know what that number was of.
-  const _rs = _quickServing(food);
+  const _rs = _quickServing(food); const _frG = (typeof nutGentle==='function') && nutGentle();
   tap.innerHTML='<div class="fr-name">'+_escFew(food.name)+'</div>'+(food.brand?'<div class="fr-brand">'+_escFew(food.brand)+'</div>':'')+
-    '<div class="fr-macros"><span class="fr-cal">'+_rs.cal+' cal</span><span>P: '+_rs.pro+'g</span><span>C: '+_rs.carb+'g</span><span>F: '+_rs.fat+'g</span>'+
+    '<div class="fr-macros">'+(_frG?'':'<span class="fr-cal">'+_rs.cal+' cal</span><span>P: '+_rs.pro+'g</span><span>C: '+_rs.carb+'g</span><span>F: '+_rs.fat+'g</span>')+
     '<span style="color:var(--tx3)">'+_escFew(String(_rs.label))+'</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
@@ -35311,7 +35321,7 @@ function _barcodeResultCard(food, res, barcode, fromMemory){
       '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
         '<div class="fr-name">' + _escFew(food.name) + '</div>' +
         (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
-        '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
+        '<div class="fr-macros">' + ((typeof nutGentle==='function' && nutGentle()) ? '' : '<span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span>') + '<span style="color:var(--go)">Barcode</span></div>' +
         '<div style="font-size:var(--t-cap);color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
       '</div>' +
       '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
@@ -51374,6 +51384,20 @@ function reachOutSuggestion(){
   const reframe = stale ? 'You’ll probably feel it’s awkward, or that they don’t need to hear from you. They will — far more than you expect, and more <em>because</em> it’s been a while. Reaching out is almost never regretted.' : '';
   return { person:p, days:d, prompt:prompt, reframe:reframe };
 }
+// {name} IS A TOKEN AND EVERY CONSUMER MUST FILL IT. renderReachOutCard did; _reachOneNow did not —
+// it wrote _escFew(s.prompt) straight into the markup, and _escFew escapes only &<>"' so the braces
+// survived. So the sheet somebody reaches from the LONELY path mid-urge printed a literal
+// "send {name} something that made you think of them" — on HALF of all days for a male user
+// (leansActivity = day%2===0) and a third of days for everyone else. The one surface whose whole job
+// is to hand somebody the sentence to send a real person was showing them the template instead.
+//
+// DECLARED AT TOP LEVEL ON PURPOSE. The first version of this fix sat inside renderReachOutCard's
+// body — a src/app module may begin mid-function, so an insert is nested unless its brace depth is
+// checked — which made it function-scoped, and _reachOneNow then threw ReferenceError instead of
+// leaking: worse than the defect. Only driving it found that.
+function reachFillName(prompt, nameHtml){
+  return _escFew(String(prompt == null ? '' : prompt)).replace(/\{name\}/g, nameHtml);
+}
 function renderReachOutCard(){
   const cp=document.getElementById('call-prompt'); if(!cp) return;
   const few=getYourFew();
@@ -51388,8 +51412,8 @@ function renderReachOutCard(){
   const s=reachOutSuggestion(); if(!s){ cp.textContent=''; return; }
   const nm=_escFew(s.person.name);
   let line;
-  if(s.prompt.indexOf('{name}')>=0){ line=_escFew(s.prompt).replace(/\{name\}/g,'<b>'+nm+'</b>'); }
-  else { line='<b>'+nm+'</b> — '+_escFew(s.prompt); }
+  if(s.prompt.indexOf('{name}')>=0){ line=reachFillName(s.prompt,'<b>'+nm+'</b>'); }
+  else { line='<b>'+nm+'</b> — '+reachFillName(s.prompt, nm); }
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
   // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
   const noteLine = (s.person.note && s.person.note.trim())

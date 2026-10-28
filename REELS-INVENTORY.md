@@ -3,14 +3,20 @@
 > What to film, in what order, and why each one earns a viewer's attention.
 > Scripts for the top items are in `REELS-SCRIPTS.md`.
 
-<!-- Generated from a research pass over index.html and verified against the live app at v369.
-     Spot-checked: the ten Feeling Door chips, 'Lock in my plan', 'The plan you set for this',
-     'Restless energy', 'Go outside and look up', and the dynamic '🔒 Make my plan for next time'
-     label all exist in the code exactly as written here. If you change a label, fix it here too. -->
+<!-- Generated from a research pass over index.html, originally verified at v369.
+     RE-VERIFIED 28 Oct 2026 against v668, label by label, by twelve agents with an adversarial
+     refuter each. The ten Feeling Door chips, 'Lock in my plan', 'The plan you set for this',
+     'Restless energy' and 'Go outside and look up' are all still byte-exact. What moved is the
+     PICTURE, not the words: the emoji that led rows and chips are now stroke icons throughout, so
+     the '🔒 Make my plan for next time' label below renders with an indigo padlock TILE and no
+     emoji, and several beats that called for a scroll or a pan now fit on one screen.
+     The corrections live in REELS-SCRIPTS.md, each with its own BEFORE THE TAKE block.
+     If you change a label, fix it here too — and note that this file goes stale silently: it sat
+     at v367 for three hundred versions. -->
 
-## TUTORIAL REEL INVENTORY — To Try v367
+## TUTORIAL REEL INVENTORY — To Try (written at v367, labels re-verified at v668)
 
-**Source of truth:** `/Users/alfredjohn/Desktop/ToTry/index.html` (38,985 lines, v367), `/Users/alfredjohn/Desktop/ToTry/SOUL-ARCHITECTURE.md`, `/Users/alfredjohn/Desktop/ToTry/NEXT.md`. Every path below was read in the code, not guessed.
+**Source of truth:** `/Users/alfredjohn/Desktop/ToTry/index.html` (now ~44k lines; this inventory was written against v367 and its LABELS were re-checked at v668), `/Users/alfredjohn/Desktop/ToTry/SOUL-ARCHITECTURE.md`, `/Users/alfredjohn/Desktop/ToTry/NEXT.md`. Every path below was read in the code, not guessed.
 
 **How this sits inside CREATOR-PLAYBOOK.md (it does not replace it):** the playbook says the app is 1 of 5 pillars and that you *report reps, not resolutions*. A tutorial is the purest possible form of a rep — it is past tense by construction ("here's the thing I built and how I use it"), it can't hand you a false finish, and it teaches rather than announces. Every reel below is shootable in one take on a phone, and the ones ranked highest end by pointing *away* from the screen, which is the one thing no other app's tutorial can do.
 

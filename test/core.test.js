@@ -5336,13 +5336,45 @@ function fnBodyOf(code, name){
   // The Rosary and the guided breath both hardcode a near-black radial gradient, then used
   // var(--tx)/--tx2/--tx3 inside — which in the LIGHT theme is near-black. Near-black prayers on a
   // near-black ground: unreadable, not merely low contrast.
+  //
+  // AND THIS FIX WAS HALF-APPLIED FOR SEVEN VERSIONS, with this very test pinning the half. Two
+  // more overlays paint their own dark ground — theRelease (.totry-release-ov) and the two-minute
+  // body-doubling timer (.tm-overlay) — and neither was in the selector. Measured on the real
+  // functions in the light appearance, 28 Oct 2026: theRelease's own headline 1.17:1 and the 2:00
+  // clock 1.17:1, against 17.99:1 for that headline in dark. theRelease is the terminal frame of
+  // every Feeling Door path, the SOS, all eight toolkit lessons, the letting-go flow, the timer and
+  // the spend hold; the sentence that went invisible is "You came here instead." After: 5.23:1 and
+  // 6.35:1, with .breath-overlay unchanged at 5.05:1 — that one is the control, because it proves
+  // the measurement reads the cascade rather than the inline style.
+  //
+  // Neither craft-audit nor the contrast matrix could ever have seen it: both pair ink against a
+  // BACKGROUND TOKEN, and these overlays have no background token — they have a literal gradient.
   const head = require('fs').readFileSync(require('path').join(__dirname, '..', 'src/shell-head.html'), 'utf8');
-  const blk = (head.match(/#rosary-overlay,\.breath-overlay\{([^}]*)\}/) || [])[1] || '';
-  H.ok(blk, 'both overlays share one scoped ink block');
+  // Match the rule by its own first declaration, NOT by a hardcoded selector — pinning the selector
+  // is what let two overlays be left out of it without anything going red.
+  const _rm = head.match(/([^\n{]*\.breath-overlay[^\n{]*)\{([^}]*--tx:#F0EDE6[^}]*)\}/);
+  H.ok(!!_rm, 'the scoped ink block was found by its own --tx:#F0EDE6 declaration');
+  const sel = _rm ? _rm[1] : '';
+  const blk = _rm ? _rm[2] : '';
+  // EVERY overlay that supplies its own dark ground must be in it.
+  for (const cls of ['#rosary-overlay', '.breath-overlay', '.totry-release-ov', '.tm-overlay']) {
+    H.ok(sel.indexOf(cls) >= 0, `the scoped ink block covers ${cls}`);
+  }
   for (const t of ['--tx:', '--tx2:', '--tx3:', '--go:']) {
     H.ok(blk.includes(t), `it pins ${t.replace(':', '')} so var() resolves against the ground behind it`);
   }
   H.ok(/--tx:#F0EDE6/.test(blk), 'and the pinned ink is LIGHT, matching the dark gradient they paint');
+  // `--go:var(--go)` does NOT pin anything: a custom property that references itself is invalid at
+  // computed-value time, so it falls back to the INHERITED value — the light theme's #0062CC. It
+  // went unnoticed because nothing in .breath-overlay paints text with --go; .tm-overlay's
+  // "Starting together" eyebrow does, and measured 2.4:1 until it was given a real value.
+  H.ok(!/--go:\s*var\(--go\)/.test(blk),
+    '--go is a real dark value, not a self-reference that silently resolves to the light theme');
+  H.ok(/--go:\s*#409CFF/.test(blk), 'and that value is the app’s own dark --go');
+  // A NEW self-dark overlay must be a decision rather than silently inheriting black ink.
+  const _lits = (H.code(H.html).match(/background:radial-gradient\(circle[^)]*#[0-9a-fA-F]{6}/g) || []).length;
+  H.eq(_lits, 3, 'the bundle has exactly 3 literal dark radial-gradient overlays (' + _lits +
+    ') — a new one must be added to the scoped ink block above');
 }
 
 // ── the last four highs ──────────────────────────────────────────────────────────────────────
@@ -18837,6 +18869,166 @@ H.section('the cloud row never says saved while changes are waiting');
     'an error still outranks the pending line');
   // And an in-flight sync is still its own state.
   H.ok(/Syncing/.test(run({ status: 'syncing', pending: 2 })), 'a sync in flight still says so');
+}
+
+// ── "HIDE NUMBERS" IS A PROMISE, AND IT LEAKED AT TWO OF ITS THREE SINKS ────────────────────────
+// gentle mode's own switch reads "Turn the numbers off — log food without seeing calories", and it
+// exists for the person who cannot see a calorie figure without losing the day to it. Measured on
+// the local typeahead with no network, 28 Oct 2026: with gentle ON, a search for "chicken" rendered
+// "281 cal · P: 52.7g · C: 0g · F: 6.1g" — byte-identical to gentle OFF, 2 of 2 rows. The barcode
+// result card leaked the same way. Half-applied: of the three places that print a .fr-macros line,
+// exactly one asked nutGentle(), and _renderPhotoMeal (same container) carries a comment saying why
+// it matters — "a numbers off promise that leaks a red over-budget figure two cards down is worse
+// than no promise at all." The camera path was fixed; the search path, which is what anybody logging
+// food uses first, was not. After: 0 of 2 rows, with the food name, serving and badge intact.
+H.section('gentle mode hides the macros at EVERY sink that prints them, not just one');
+{
+  const code = H.code(H.html);
+  const lines = code.split('\n');
+  // Walk BACK to the enclosing statement boundary rather than guessing a window. The first version
+  // of this check looked at `lines[i-1]` only and reported two CORRECTLY gated sinks as open — both
+  // are the false branch of a `(( typeof nutGentle==='function' && nutGentle() ) ? … : …)` ternary
+  // whose condition sits two or three lines up. A line window is a magic number somebody has to
+  // re-tune; a boundary is a fact about the code.
+  const spanBack = (i) => {
+    let j = i, steps = 0;
+    while (j > 0) {
+      const prev = lines[j - 1].trim();
+      // a statement boundary: nothing to continue from
+      if (prev === '' || prev.endsWith(';') || prev.endsWith('{') || prev.endsWith('}')) break;
+      j--; steps++;
+      if (steps > 40) return null;          // refuse rather than report on a runaway walk
+    }
+    return lines.slice(j, i + 1).join('\n');
+  };
+  const sinks = [];
+  lines.forEach((ln, i) => {
+    if (!/class="fr-macros"/.test(ln)) return;
+    if (!/ cal(\/100g)?<\/span>/.test(ln)) return;      // only the ones that print a figure
+    const span = spanBack(i);
+    sinks.push({ i: i + 1, walked: span !== null, gated: span !== null && /nutGentle\(\)|_frG|_pmG/.test(span) });
+  });
+  H.ok(sinks.length >= 4, 'found the .fr-macros sinks that print a figure (' + sinks.length + ')');
+  H.eq(sinks.filter(s => !s.walked).length, 0, 'every sink’s enclosing statement was bounded, so none was judged on a runaway walk');
+  const open = sinks.filter(s => s.walked && !s.gated);
+  H.eq(open.length, 0,
+    'every sink that prints a calorie figure asks gentle mode first' +
+    (open.length ? ' — ungated at bundle line(s) ' + open.map(s => s.i).join(', ') : ''));
+  // And the guard must gate the FIGURE, not the whole row: a search result still has to name the
+  // food and its serving, or "log food without seeing calories" becomes "cannot log food".
+  const frr = H.extractFn('_makeFoodResultRow');
+  H.ok(/_frG/.test(frr), '_makeFoodResultRow consults the flag');
+  H.ok(/fr-name/.test(frr) && /_rs\.label/.test(frr),
+    'and it still prints the food name and the serving it logs');
+  H.ok(/_frG\s*\?\s*''/.test(frr),
+    'the guard suppresses the macro span only — the empty branch is the GENTLE one, not the other way round');
+}
+
+// ── THE NUMBER IS A RULE OF THUMB, AND THE APP STATED IT AS A LAW IN FOUR PLACES ────────────────
+// "Riding the wave", the app's own toolkit lesson, has always carried the honest version: the
+// "urges pass in 15–30 minutes" line is "a clinical rule of thumb, not a measured law — yours may
+// be shorter or longer." Four OTHER surfaces stated it as fact, and all four are shown to somebody
+// mid-urge: playTheTape's hold-on card ("it always does, usually within 20 minutes"), the companion’s OFFLINE step list — what somebody
+// mid-urge gets with no network, and so with no model to soften it — ("Urges crest in 15–30 minutes and ALWAYS pass"), and both branches of
+// openMomentStakes, the urge door ("usually inside 20 minutes" for a substance vice, "15, 20
+// minutes" for a behaviour one).
+//
+// This is a grace-over-shame defect, not a pedantry one. A person still holding on at minute forty
+// has been told by the app that it always ends by thirty — so the app has handed them a yardstick
+// to fail against at the worst possible moment. The SHAPE is real and stays (urge surfing works
+// precisely because the wave falls if you do not feed it); the CERTAINTY about the number goes.
+//
+// Six other "20 minutes" hits in src are NOT this defect and must not be swept: a code comment
+// about the dopamine cycle, two reflective questions ("In 20 minutes, what will you wish you had
+// done?"), a morning-routine line, a model prompt, and 04-fight.js's `spine:` field, which is
+// already hedged ("MOST urges crest and fade within 15-30 minutes IF NOT ACTED ON") and cites
+// Marlatt. A blanket find-replace here is the vandalism this repo fails builds over.
+H.section('no surface states the urge window as a certainty');
+{
+  const code = H.code(H.html);
+  // An absolute claim about duration: "always" within N minutes, in either order.
+  const ABS = [
+    /always does,\s*usually within \d+ minutes/i,
+    /crest in \d+[–-]\d+ minutes and ALWAYS pass/i,
+    /whether or not you feed it,\s*usually inside \d+ minutes/i,
+    /rises and it passes — \d+, \d+ minutes/i,
+  ];
+  ABS.forEach((re, i) => {
+    H.ok(!re.test(code), 'the absolute duration claim #' + (i + 1) + ' is gone (' + re.source.slice(0, 44) + ')');
+  });
+  // And each of the four surfaces still says the wave PASSES — the reassurance is the therapeutic
+  // content and removing it would be a worse defect than the one being fixed.
+  const pt = H.extractFn('playTheTape');
+  H.ok(/peaks and passes/.test(pt), 'playTheTape still says the urge peaks and passes');
+  H.ok(/sometimes longer/.test(pt), 'and now allows that it can take longer');
+  // COMPANION_LOCAL_STEPS is a module-level const, not a function, so it is asserted on the bundle
+  // directly. It is the companion's OFFLINE step list — what somebody mid-urge gets with no network
+  // and therefore with no model to soften it, which is why this was the worst of the four.
+  H.ok(/Urges crest and pass \u2014 often inside 15\u201330 minutes, sometimes longer/.test(H.html) ||
+       /Urges crest and pass — often inside 15–30 minutes, sometimes longer/.test(code),
+    'the companion\u2019s offline step still says urges crest and pass');
+  H.ok(/Yours taking longer does not mean it will not/.test(code),
+    'and it answers the person still holding on past the window, rather than leaving them to conclude they are the exception');
+  H.ok(/COMPANION_LOCAL_STEPS/.test(code), 'and that step list is still the offline one, found by name');
+  const oms = H.extractFn('openMomentStakes');
+  H.eq((oms.match(/sometimes longer/g) || []).length, 2,
+    'both urge-door branches — substance and behaviour — carry the hedge, not just one');
+  // The lesson that was right all along is untouched, and it is the wording the four now match.
+  H.ok(/clinical rule of thumb, not a measured law/.test(code),
+    'the toolkit lesson still carries the honest version this fix was measured against');
+}
+
+// ── {name} IS A TOKEN, AND ONE OF ITS TWO CONSUMERS NEVER FILLED IT ─────────────────────────────
+// All three _REACH_ACTIVITY prompts carry a literal `{name}`. renderReachOutCard substituted it;
+// _reachOneNow wrote `_escFew(s.prompt)` straight into the markup, and _escFew escapes only &<>"'
+// so the braces survived. Driven on the real renderer: the sheet read "send {name} something that
+// made you think of them — a clip, a track, a memory."
+//
+// Which prompt you get is decided by the day: leansActivity is `day%2===0` for a male user and
+// `day%3===0` for everyone else — so HALF of all days, for half the population. And the surface is
+// the one reached from the LONELY branch of the HALT check mid-urge, whose entire job is to hand
+// somebody the sentence to send a real person. It showed them the template instead.
+//
+// THE FIRST FIX WAS WORSE THAN THE DEFECT AND ONLY DRIVING IT FOUND THAT. The helper was inserted
+// above the card's own use of it — which is INSIDE renderReachOutCard's body, because a src/app
+// module may begin mid-function and an insert is nested unless its brace depth is checked. That
+// made it function-scoped, so _reachOneNow threw ReferenceError and the sheet did not render at
+// all. Hence the depth assertion below: it is the trap, not a style rule.
+H.section('every consumer of a reach prompt fills {name}');
+{
+  const code = H.code(H.html);
+  // 1. EXECUTE the filler rather than grep it.
+  const F = H.load(['reachFillName', '_escFew']);
+  H.eq(F.reachFillName('send {name} a track', 'Dan'), 'send Dan a track',
+    'reachFillName substitutes the token');
+  H.eq(F.reachFillName('ask {name} and {name} again', 'Dan'), 'ask Dan and Dan again',
+    'and it is global, not first-occurrence-only');
+  H.eq(F.reachFillName(null, 'Dan'), '', 'a null prompt is empty, not the string "null"');
+  H.ok(F.reachFillName('<b>{name}</b>', 'Dan').indexOf('&lt;b&gt;') === 0,
+    'and it still escapes the prompt — the filler replaced an escape, it must not drop it');
+  // 2. NO consumer may render a prompt without it. This is the bypass that shipped.
+  H.eq((code.match(/_escFew\(s\.prompt/g) || []).length, 0,
+    'no surface renders s.prompt through a bare escape (that is the bypass that printed {name})');
+  // 3. Both known consumers go through the one filler.
+  const one = H.extractFn('_reachOneNow');
+  H.ok(/reachFillName\(s\.prompt/.test(one), '_reachOneNow fills the token');
+  const card = H.extractFn('renderReachOutCard');
+  H.ok(/reachFillName\(s\.prompt/.test(card), 'and so does renderReachOutCard');
+  // 4. THE NESTING TRAP. The filler is called from a DIFFERENT module, so it only resolves if it is
+  // declared at top level. A nested declaration is function-scoped and the caller throws.
+  const mod = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src/app/23-evening.js'), 'utf8').split('\n');
+  let depth = 0, declDepth = null;
+  for (const ln of mod) {
+    if (declDepth === null && ln.startsWith('function reachFillName(')) { declDepth = depth; break; }
+    depth += (ln.match(/\{/g) || []).length - (ln.match(/\}/g) || []).length;
+  }
+  H.ok(declDepth !== null, 'reachFillName was found in its own module by name');
+  H.eq(declDepth, 0,
+    'and it is declared at TOP LEVEL — nested, it is function-scoped and its cross-module caller throws ReferenceError');
+  // 5. The prompts it exists for still carry the token, or the filler is guarding nothing.
+  H.ok(/see if \{name\} is free this week/.test(code),
+    'the _REACH_ACTIVITY prompts still carry {name}, so the filler has something to fill');
 }
 
 H.report();

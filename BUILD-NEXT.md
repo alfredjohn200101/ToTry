@@ -128,3 +128,121 @@ the feedback is ours, and the retention curve is drowned. **This is the top item
 **Day 4** — one full gate run (`build:index && build:www && sync` FIRST — three of five suites read `../www`), archive, verify the IPA, upload, **submit for review**.
 
 Then section 3 while review runs.
+
+---
+
+## SUBMISSION BLOCKER, found 28 Oct 2026 at v667 — THE RELEASE SCREEN IS UNREADABLE IN LIGHT MODE
+
+**MEASURED, calibrated, on the real functions in a real browser.** Three overlays paint their own
+hardcoded dark gradient and then take their ink from the theme. The default appearance is **System**,
+so every person whose phone is in Light mode has been getting near-blank screens:
+
+| overlay | `--tx` resolves to | worst visible text | |
+|---|---|---|---|
+| `theRelease` (`05-moment.js:490`, `.totry-release-ov`) | `#000000` | **1.17:1** | **FAIL** |
+| `_startTwoMin` (`05-moment.js:1024`, `.tm-overlay`) | `#000000` | **1.17:1** (the 2:00 clock) | **FAIL** |
+| `openBreath` (`05-moment.js:1602`, `.breath-overlay`) | `#F0EDE6` | 5.05:1 | PASS |
+
+In dark the same Release headline measures **17.99:1**. The breath overlay passing is the
+CALIBRATION — it proves the probe reads the cascade rather than the inline styles, so the two
+failures are real.
+
+**Reach.** `theRelease` is the terminal frame of every Feeling Door path, the SOS, every one of the
+eight toolkit lessons, the letting-go flow, the two-minute timer and the spend hold. The sentence
+that goes invisible is *"You came here instead."* — and then *"Go well."* `_startTwoMin` is the
+body-doubling timer, where the thing that disappears is the countdown it exists to show.
+
+**THE FIX ALREADY EXISTS AND WAS HALF-APPLIED.** `src/shell-head.html:1538` re-declares the dark
+tokens for exactly this reason — `#rosary-overlay,.breath-overlay{--tx:#F0EDE6;--tx2:#C9C4BA;…}` —
+and the two overlays added later were never added to the selector. One line:
+
+```css
+#rosary-overlay,.breath-overlay,.totry-release-ov,.tm-overlay{ … }
+```
+
+**And that existing rule carries a latent bug of its own:** `--go:var(--go)` is a self-reference, so
+per spec it is invalid at computed-value time and the property falls back to the INHERITED value —
+the light-theme `#0062CC`. Same for `--go-bg` and `--go-bd`. Nothing in the breath overlay paints
+text with `--go`, which is why it has never shown; `.tm-overlay`'s eyebrow ("Starting together")
+does, so it must be given the real dark values (`#409CFF`, `rgba(64,156,255,0.16)`,
+`rgba(64,156,255,0.42)`) in the same change.
+
+**Needs:** the selector fix, the `--go` self-reference fix, a test that measures ink-on-a-self-dark-
+overlay in the LIGHT appearance (the contrast matrix has never asked this — its recorded blind spot
+is ink on an ACCENT, and this is the third kind: ink on a surface that supplies its own ground),
+fault-injected by removing a class from the selector. Then bump, build, sync, full gate.
+
+**Why no check caught it:** `craft-audit` and the contrast matrix both read tokens against
+BACKGROUND tokens. These overlays have no background token — they have a literal gradient in an
+inline style, so there was nothing for either instrument to pair the ink with.
+
+---
+
+## SECOND BLOCKER, found 28 Oct 2026 at v667 — "HIDE NUMBERS" LEAKS CALORIES IN FOOD SEARCH
+
+**MEASURED on the local typeahead, no network, calibrated.** With gentle mode ON
+(`nutGentle() === true`, `applyNutGentle()` called), searching "chicken" renders:
+
+```
+281 cal · P: 52.7g · C: 0g · F: 6.1g     1 breast (170g)
+188 cal · P: 23.4g · C: 0g · F: 9.8g     1 thigh (90g)
+```
+
+Byte-identical to the rows with gentle mode OFF. 2 of 2 rows print calories in both states. The
+gentle-OFF pass is the calibration: rows do render, so the probe is sound.
+
+**Cause:** `_makeFoodResultRow(food)` (`src/app/14-nourish.js:763`) is the SHARED SINK for every
+search hit and contains **zero** references to `nutGentle`. `applyNutGentle()` hides a fixed list of
+static element ids and `#nut-search-results` is not one of them.
+
+**It is the half-applied shape, and the app already says so in its own words.** `_renderPhotoMeal`
+(`14-nourish.js:1438`), two functions away, renders into the SAME container, DOES gate on
+`const _pmG = nutGentle()`, and carries a comment explaining exactly this: *"a numbers off promise
+that leaks a red over-budget figure two cards down is worse than no promise at all."* The camera
+path was fixed; the search path — the one anybody logging food uses first — was not.
+
+**Why it matters more than it looks.** The switch's own copy is *"Turn the numbers off — log food
+without seeing calories"*, and the reason it exists is the person who cannot see a calorie figure
+without losing the day to it. Searching for a food is the first thing they do.
+
+**Fix:** gate the macro line in `_makeFoodResultRow` the way `_renderPhotoMeal` gates its own, keep
+the food name, the serving and the "✓ Common" badge (the row must still do its job). Then sweep the
+other renderers into `#nut-search-results` rather than fixing this one — `nutSearchTypeahead`,
+`searchFood`'s own result path, Recent foods and My meals all need asking, because a sink fixed in
+one place is how this defect was created.
+
+**Needs a test that asserts the ABSENCE of a digit-plus-cal pattern in the rendered rows with gentle
+on**, fault-injected by removing the guard. The existing v660 gentle-mode assertions hold the
+refusals (no streak) and never asked whether the numbers actually stay hidden.
+
+---
+
+## FOURTH DEFECT, found 28 Oct 2026 at v667 — THE LONELY PATH SHOWED A TEMPLATE PLACEHOLDER
+
+**FIXED.** All three `_REACH_ACTIVITY` prompts carry a literal `{name}`. `renderReachOutCard`
+substituted it; **`_reachOneNow` did not** — it wrote `_escFew(s.prompt)` straight into the markup,
+and `_escFew` escapes only `&<>"'`, so the braces survived. Driven on the real renderer, the sheet
+read:
+
+> send **{name}** something that made you think of them — a clip, a track, a memory.
+
+**Reach.** `leansActivity` is `day % 2 === 0` for a male user and `day % 3 === 0` for everyone else,
+so this was **half of all days for half the population**. And the surface is the one reached from the
+LONELY branch of the HALT check *mid-urge* — the single screen whose whole job is handing somebody
+the sentence to send a real person. It showed them the template instead.
+
+**MY FIRST FIX WAS WORSE THAN THE DEFECT, AND ONLY DRIVING IT FOUND THAT.** I put the helper
+immediately above the card's own use of it — which is **inside** `renderReachOutCard`'s body, because
+a `src/app` module may begin mid-function and an insert is nested unless its brace depth is checked.
+That made it function-scoped, so the cross-module caller threw `ReferenceError` and the sheet did not
+render **at all**. The probe said `ReferenceError: reachFillName is not defined`; a source read would
+have said the fix was in. It is declared at verified brace depth 0 now, and a test asserts that
+depth, because it is the trap rather than a style preference.
+
+**And `www/` was stale for the first probe run** — `build:index` without `build:www`, the documented
+trap. The tell was the calibration and the shipped run returning *identical* output.
+
+One `reachFillName()` serves all three render paths now (both card branches and the sheet), the test
+forbids any bare `_escFew(s.prompt)` outright rather than listing exceptions, and five fault
+injections each reproduce a real failure: the bare-escape bypass, the nesting, a dropped `/g`, a
+neutered substitution, and the token being removed from the prompts so the filler guards nothing.
