@@ -8798,7 +8798,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v666';
+const APP_VERSION = 'v667';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9703,6 +9703,19 @@ function renderSyncStatus(){
   if(typeof currentUser==='undefined' || !currentUser){ el.textContent = 'Sign in to sync'; return; }
   if(s.status==='syncing'){ el.innerHTML = '<span class="sync-busy">Syncing\u2026</span>'; return; }
   if(s.status==='error'){ el.innerHTML = '<span class="sync-bad">Not fully synced</span> \u00b7 '+(s.pending||0)+' change'+((s.pending===1)?'':'s')+' waiting, will retry'; return; }
+  // PENDING IS PENDING, WHATEVER THE STATUS SAYS. This row only ever admitted to unsynced work when
+  // `status === 'error'`, and queueing a write does not set that status — so measured at 41 queued
+  // changes the row still read "Saved to cloud · just now". That is a false reassurance about data
+  // safety, which is the same class as the bug that made the outbox never fill on WebKit at all:
+  // _setOutbox's own comment two functions down records the identical lesson ("the UI still reported
+  // the write as on its way to the cloud, so an edit was lost with a success message over it").
+  // `_setSyncState` already computes `pending` from the outbox on every patch, so the number is
+  // there; nothing was reading it outside the error branch. Deliberately calm rather than alarming —
+  // queued is normal, and it resolves on the next flush.
+  if((s.pending||0) > 0){
+    el.innerHTML = '<span class="sync-ok">Saving\u2026</span> \u00b7 '+s.pending+' change'+((s.pending===1)?'':'s')+' waiting';
+    return;
+  }
   if(s.status==='synced' || s.lastSyncAt){ el.innerHTML = '<span class="sync-ok">Saved to cloud</span>'+(s.lastSyncAt?(' \u00b7 '+ago(s.lastSyncAt)):''); return; }
   el.textContent = 'Up to date';
 }

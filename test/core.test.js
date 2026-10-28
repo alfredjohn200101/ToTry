@@ -18803,4 +18803,40 @@ H.section('the money threshold speaks, and stays quiet for everyone it should');
     'and after the write itself');
 }
 
+// ── THE SYNC ROW ADMITS TO QUEUED WORK, WHATEVER THE STATUS SAYS ────────────────────────────────
+// It only ever said "Not fully synced" when `status === 'error'`, and queueing a write does not set
+// that status — so measured at 41 queued changes the row still read "Saved to cloud · just now".
+// A false reassurance about data safety, which is the same class as the bug that stopped the outbox
+// filling at all on WebKit. `_setOutbox`'s own comment records the identical lesson: "the UI still
+// reported the write as on its way to the cloud, so an edit was lost with a success message over it".
+H.section('the cloud row never says saved while changes are waiting');
+{
+  const run = (st) => {
+    const out = { innerHTML: '', textContent: '' };
+    const L = H.load(['renderSyncStatus'], {
+      document: { getElementById: () => out }, window: { __syncState: st },
+      currentUser: { id: 'u1' }, Date,
+    });
+    L.renderSyncStatus();
+    return (out.innerHTML || out.textContent).replace(/<[^>]*>/g, '');
+  };
+  // CALIBRATION: the happy path must still say saved, or "never says saved" is satisfied by a row
+  // that never says anything.
+  H.ok(/Saved to cloud/.test(run({ status: 'synced', pending: 0, lastSyncAt: Date.now() })),
+    'calibration: nothing queued and synced still reads "Saved to cloud"');
+
+  const queued = run({ status: 'synced', pending: 41, lastSyncAt: Date.now() });
+  H.ok(!/Saved to cloud/.test(queued),
+    'with 41 changes queued it does NOT claim saved — got: ' + queued);
+  H.ok(/41 changes waiting/.test(queued), 'and it names how many are waiting — got: ' + queued);
+  H.ok(/1 change waiting/.test(run({ status: 'synced', pending: 1, lastSyncAt: Date.now() })),
+    'and it says "change" not "changes" for one — the sentence this app says most');
+
+  // The error branch must still win: "will retry" carries more than "Saving…".
+  H.ok(/Not fully synced/.test(run({ status: 'error', pending: 3 })),
+    'an error still outranks the pending line');
+  // And an in-flight sync is still its own state.
+  H.ok(/Syncing/.test(run({ status: 'syncing', pending: 2 })), 'a sync in flight still says so');
+}
+
 H.report();
