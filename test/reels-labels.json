@@ -1,0 +1,1200 @@
+{
+ "generated_against": "index.html",
+ "note": "every needle below was PROVEN present when written; see scripts/reels-labels.mjs",
+ "rows": [
+  {
+   "script": 1,
+   "label": "A PLAN FOR NEXT TIME",
+   "needle": "a plan for next time",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Go outside and look up",
+   "needle": "go outside and look up",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Just talk",
+   "needle": "just talk",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Lock in my plan",
+   "needle": "lock in my plan",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Log a quick workout",
+   "needle": "log a quick workout",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Make my plan for next time",
+   "needle": "my plan for next time",
+   "kind": "fragment"
+  },
+  {
+   "script": 1,
+   "label": "Next time this hits, I’ll hand you back your own words",
+   "needle": "next time this hits, i'll hand you back your own words",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "No pan needed either — the whole card fits",
+   "needle": "the whole card",
+   "kind": "fragment"
+  },
+  {
+   "script": 1,
+   "label": "Plan locked in",
+   "needle": "plan locked in",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Rehearse on a different feeling",
+   "needle": "on a different",
+   "kind": "fragment"
+  },
+  {
+   "script": 1,
+   "label": "Restless energy",
+   "needle": "restless energy",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Restless — can’t settle, antsy",
+   "needle": "can't settle, antsy",
+   "kind": "fragment"
+  },
+  {
+   "script": 1,
+   "label": "THE PLAN YOU SET FOR THIS",
+   "needle": "the plan you set for this",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Take a breath first",
+   "needle": "take a breath first",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "That buzz wants OUT, not in. Don’t scroll it away — that just traps it",
+   "needle": "that buzz wants out, not in. don't scroll it away - that just traps it",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "What are you feeling, Alfy?",
+   "needle": "what are you feeling,",
+   "kind": "fragment"
+  },
+  {
+   "script": 1,
+   "label": "Write it down",
+   "needle": "write it down",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "Your life, woven",
+   "needle": "your life, woven",
+   "kind": "whole"
+  },
+  {
+   "script": 1,
+   "label": "burn it off — 20 push-ups or a fast walk, not the scroll",
+   "needle": "burn it off - 20 push-ups or a fast walk, not the scroll",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "Go well",
+   "needle": "go well",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "I'm putting it down",
+   "needle": "i'm putting it down",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "I’m feeling it — come here first",
+   "needle": "i'm feeling it - come here first",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "Large title",
+   "needle": "large title",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "N times now, you’ve come here and walked back into your life instead of down the glass",
+   "needle": "times now, you've come here and walked back into your life",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "N times, you came here and walked back into your life",
+   "needle": "times, you came here and walked back into your life",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "Now put me down, Alfy. Go live the next hour — the real one, off the glass. I’m right here if the wave comes back. But you don’t need me right now",
+   "needle": "go live the next hour - the real one, off the glass. i'm right here if the wave comes back. but you don't need me right now",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "ONE SMALL REAL THING",
+   "needle": "one small real thing",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "Screen:",
+   "needle": "screen:",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "Sign in",
+   "needle": "sign in",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "The Fight tab’s lede has three forms and one of them is silence",
+   "needle": "the fight tab's",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "The wave passed — and you didn’t. Not falling was the whole thing; the feeling goes, this is what stays",
+   "needle": "the wave passed - and you didn't. not falling was the whole thing; the feeling goes, this is what stays",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "The wave’s passing — I’m good",
+   "needle": "the wave's passing - i'm good",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "This morning you said who you’d be today: ‘…’. This is the exact moment that meant",
+   "needle": "this morning you said who you'd be today:",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "When I put this down, I’ll [go for a walk]",
+   "needle": "when i put this down, i'll",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "YOUR PLAN — IN YOUR WORDS",
+   "needle": "your plan - in your words",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "You came here first",
+   "needle": "you came here first",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "You came here instead",
+   "needle": "you came here instead",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "You stayed in it N of the last 14 days",
+   "needle": "of the last 14 days",
+   "kind": "fragment"
+  },
+  {
+   "script": 2,
+   "label": "Your life, woven",
+   "needle": "your life, woven",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "the gold",
+   "needle": "the gold",
+   "kind": "whole"
+  },
+  {
+   "script": 2,
+   "label": "…or go message <name>",
+   "needle": "...or go message",
+   "kind": "fragment"
+  },
+  {
+   "script": 3,
+   "label": "Action comes first",
+   "needle": "action comes first",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "Behavioural activation is the strongest-evidenced thing on this list… it performs about as well as full cognitive behavioural therapy for depression",
+   "needle": "it performs about as well as full cognitive behavioural therapy for depression",
+   "kind": "fragment"
+  },
+  {
+   "script": 3,
+   "label": "Learn the tools — 2 min each",
+   "needle": "learn the tools",
+   "kind": "fragment"
+  },
+  {
+   "script": 3,
+   "label": "THE SENTENCE YOU TOLD ME ABOUT",
+   "needle": "the sentence you told me about",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "THE TOOLKIT",
+   "needle": "the toolkit",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "The need under the urge",
+   "needle": "the need under the urge",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "The toolkit",
+   "needle": "the toolkit",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "The tools I use with you",
+   "needle": "the tools i use with you",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "These are skills, not treatment… If what you’re facing is bigger than an hour, that deserves a real person, not a better exercise",
+   "needle": "if what you're facing is bigger than an hour, that deserves a real person, not a better exercise",
+   "kind": "fragment"
+  },
+  {
+   "script": 3,
+   "label": "This is bigger than a skill — point me to real help",
+   "needle": "this is bigger than a skill - point me to real help",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "Where it comes from:",
+   "needle": "where it comes from:",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "You’ve picked this one up before",
+   "needle": "you've picked this one up before",
+   "kind": "whole"
+  },
+  {
+   "script": 3,
+   "label": "no delete control",
+   "needle": "delete control",
+   "kind": "fragment"
+  },
+  {
+   "script": 3,
+   "label": "row 1, Riding the wave",
+   "needle": "riding the wave",
+   "kind": "fragment"
+  },
+  {
+   "script": 4,
+   "label": "An urge is not a straight line that climbs until you give in. It rises, it peaks, and it comes down — whether or not you feed it",
+   "needle": "an urge is not a straight line that climbs until you give in. it rises, it peaks, and it comes down - whether or not you feed it",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Breathe in",
+   "needle": "breathe in",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Breathe one through now",
+   "needle": "breathe one through now",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "I’m ready",
+   "needle": "i'm ready",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Learn the tools — 2 min each",
+   "needle": "learn the tools",
+   "kind": "fragment"
+  },
+  {
+   "script": 4,
+   "label": "MAYBE START HERE",
+   "needle": "maybe start here",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Rest here a moment. That was a work — small, real, yours",
+   "needle": "rest here a moment. that was a work - small, real, yours",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Riding the wave",
+   "needle": "riding the wave",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Slow out",
+   "needle": "slow out",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "The 'urges pass in 15–30 minutes' line you hear everywhere is a clinical rule of thumb, not a measured law — yours may be shorter or longer",
+   "needle": "line you hear everywhere is a clinical rule of thumb, not a measured law - yours may be shorter or longer",
+   "kind": "fragment"
+  },
+  {
+   "script": 4,
+   "label": "The toolkit",
+   "needle": "the toolkit",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "Try the practice — one minute",
+   "needle": "try the practice - one minute",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "a clinical rule of thumb, not a measured law — yours may be shorter or longer",
+   "needle": "a clinical rule of thumb, not a measured law - yours may be shorter or longer",
+   "kind": "whole"
+  },
+  {
+   "script": 4,
+   "label": "counting",
+   "needle": "counting",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "A minute of guided breathing — just you and the breath, no belief required",
+   "needle": "a minute of guided breathing - just you and the breath, no belief required",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Dhikr on the breath — Carry the remembrance of Allah on your breath",
+   "needle": "carry the remembrance of allah on your breath",
+   "kind": "fragment"
+  },
+  {
+   "script": 5,
+   "label": "How much surfaces",
+   "needle": "how much surfaces",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Reading plans",
+   "needle": "reading plans",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Secular / None",
+   "needle": "secular / none",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Short plans",
+   "needle": "short plans",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Starting again",
+   "needle": "starting again",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Take a breath",
+   "needle": "take a breath",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "The one work you can always do. Pick what fits right now",
+   "needle": "the one work you can always do. pick what fits right now",
+   "kind": "whole"
+  },
+  {
+   "script": 5,
+   "label": "Written for your path — Secular / None — not translated from someone else’s",
+   "needle": "- not translated from someone else's",
+   "kind": "fragment"
+  },
+  {
+   "script": 5,
+   "label": "the top of the Soul tab is the best shot in this script",
+   "needle": "the top of the",
+   "kind": "fragment"
+  },
+  {
+   "script": 6,
+   "label": "Also here",
+   "needle": "also here",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Debts, bills, subscriptions, budgets and giving",
+   "needle": "debts, bills, subscriptions, budgets and giving",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "FOUND IN YOUR STATEMENTS",
+   "needle": "found in your statements",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Import a bank statement",
+   "needle": "import a bank statement",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Import transactions",
+   "needle": "import transactions",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "N charges that repeat like subscriptions — about **$X/year** between them. Not an accusation, just the ones you may have stopped noticing",
+   "needle": "between them. not an accusation, just the ones you may have stopped noticing",
+   "kind": "fragment"
+  },
+  {
+   "script": 6,
+   "label": "Not one",
+   "needle": "not one",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Review import",
+   "needle": "review import",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "SUBSCRIPTIONS",
+   "needle": "subscriptions",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Stewardship",
+   "needle": "stewardship",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Subscriptions",
+   "needle": "subscriptions",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "THIS MONTH",
+   "needle": "this month",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "This month",
+   "needle": "this month",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Track recurring expenses. Cancel what doesn’t serve you",
+   "needle": "track recurring expenses. cancel what doesn't serve you",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "Tracked",
+   "needle": "tracked",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "merchant> — about $X a year. Now it is a decision again",
+   "needle": "a year. now it is a decision again",
+   "kind": "fragment"
+  },
+  {
+   "script": 6,
+   "label": "monthly",
+   "needle": "monthly",
+   "kind": "whole"
+  },
+  {
+   "script": 6,
+   "label": "tap the",
+   "needle": "tap the",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "About to buy something?",
+   "needle": "about to buy something?",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Before you buy",
+   "needle": "before you buy",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Boredom is the cheapest trigger there is, and the most expensive to obey. This is the one most worth sleeping on",
+   "needle": "boredom is the cheapest trigger there is, and the most expensive to obey. this is the one most worth sleeping on",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Hold it for a day",
+   "needle": "hold it for a day",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "I'm buying it anyway — that's allowed",
+   "needle": "i'm buying it anyway - that's allowed",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "I’m buying it anyway — that’s allowed",
+   "needle": "i'm buying it anyway - that's allowed",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Let’s look at it together first — no lecture",
+   "needle": "let's look at it together first - no lecture",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "N times now, you’ve come here and walked back into your life instead of down the glass",
+   "needle": "times now, you've come here and walked back into your life",
+   "kind": "fragment"
+  },
+  {
+   "script": 7,
+   "label": "Nah, it passed",
+   "needle": "nah, it passed",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?",
+   "needle": "no judgement - most of this is just a feeling looking for an exit. what is it, and what's it cost?",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "ONE SMALL REAL THING",
+   "needle": "one small real thing",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Stewardship",
+   "needle": "stewardship",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Still yours — that’s about $X held onto by just waiting a day",
+   "needle": "held onto by just waiting a day",
+   "kind": "fragment"
+  },
+  {
+   "script": 7,
+   "label": "The 24-hour hold",
+   "needle": "the 24-hour hold",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "What's underneath it?",
+   "needle": "what's underneath it?",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Why you started",
+   "needle": "why you started",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "Why you started: …",
+   "needle": "why you started:",
+   "kind": "fragment"
+  },
+  {
+   "script": 7,
+   "label": "You came here instead",
+   "needle": "you came here instead",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "You slept on it",
+   "needle": "you slept on it",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "You stopped before you spent, and named what was actually going on. That’s the whole move",
+   "needle": "you stopped before you spent, and named what was actually going on. that's the whole move",
+   "kind": "whole"
+  },
+  {
+   "script": 7,
+   "label": "no full stop). Straight into the 🕊️ Release screen:",
+   "needle": "straight into the",
+   "kind": "fragment"
+  },
+  {
+   "script": 7,
+   "label": "yesterday you held off on [item] (about $180). Still want it? Either answer is fine — the point was deciding it awake instead of in the moment",
+   "needle": "still want it? either answer is fine - the point was deciding it awake instead of in the moment",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "Can't start — frozen, staring at it",
+   "needle": "frozen, staring at it",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "Do the smallest visible piece of 'the assignment' — just enough that it's started",
+   "needle": "do the smallest visible piece of",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "If even that’s too much today, that’s information about your capacity, not your character. Rest counts",
+   "needle": "if even that's too much today, that's information about your capacity, not your character. rest counts",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "I’m going / done",
+   "needle": "i'm going / done",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "I’m here. You don’t have to do it well — just do it while I’m sitting with you",
+   "needle": "i'm here. you don't have to do it well - just do it while i'm sitting with you",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Make it smaller",
+   "needle": "make it smaller",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Name it in a few words. Naming it is already the first inch",
+   "needle": "name it in a few words. naming it is already the first inch",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Nearly. Do not tidy it, do not restart it — just keep your hands on it",
+   "needle": "nearly. do not tidy it, do not restart it - just keep your hands on it",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "STARTING TOGETHER",
+   "needle": "starting together",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Smaller still: stand up and put one object where it needs to be. **That’s it.**",
+   "needle": "smaller still: stand up and put one object where it needs to be.",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "Smaller: open it. Put the file, the page or the app on your screen and nothing else",
+   "needle": "smaller: open it. put the file, the page or the app on your screen and nothing else",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Start two minutes",
+   "needle": "start two minutes",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Starting is allowed to be that small",
+   "needle": "starting is allowed to be that small",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Still here. Whatever you have done so far is more than the version of tonight where you did not start",
+   "needle": "still here. whatever you have done so far is more than the version of tonight where you did not start",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Still too big — make it smaller",
+   "needle": "still too big - make it smaller",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "That’s four. Whatever happens now, you started — go on without me",
+   "needle": "that's four. whatever happens now, you started - go on without me",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "That’s it",
+   "needle": "that's it",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "That’s two minutes. Still going, or is that enough for tonight?",
+   "needle": "that's two minutes. still going, or is that enough for tonight?",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Then just this: sit where you’d do it, for two minutes, doing nothing. **Starting is allowed to be that small.**",
+   "needle": "then just this: sit where you'd do it, for two minutes, doing nothing.",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "This is the body-doubling script and you are not using the best of it",
+   "needle": "and you are not",
+   "kind": "fragment"
+  },
+  {
+   "script": 8,
+   "label": "Two minutes. That's the whole ask",
+   "needle": "two minutes. that's the whole ask",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "Two more, with me",
+   "needle": "two more, with me",
+   "kind": "whole"
+  },
+  {
+   "script": 8,
+   "label": "What can't you start?",
+   "needle": "what can't you start?",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "An urge is often a different need wearing a disguise. Pick whichever is truest right now. More than one can be",
+   "needle": "an urge is often a different need wearing a disguise. pick whichever is truest right now. more than one can be",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "Before anything else — what's actually going on?",
+   "needle": "before anything else - what's actually going on?",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "Do something for someone else instead",
+   "needle": "do something for someone else instead",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "Go log something to eat",
+   "needle": "go log something to eat",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "I reached out",
+   "needle": "i reached out",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "It does NOT leave the Fight tab",
+   "needle": "does not leave",
+   "kind": "fragment"
+  },
+  {
+   "script": 9,
+   "label": "I’m feeling it — come here first",
+   "needle": "i'm feeling it - come here first",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "None of these — just stay with me",
+   "needle": "none of these - just stay with me",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "Search or describe a meal",
+   "needle": "search or describe a meal",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "This one matters most",
+   "needle": "this one matters most",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "Wait — am I hungry, angry, lonely or tired?",
+   "needle": "wait - am i hungry, angry, lonely or tired?",
+   "kind": "whole"
+  },
+  {
+   "script": 9,
+   "label": "You came here first",
+   "needle": "you came here first",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Am I actually hungry?",
+   "needle": "am i actually hungry?",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Boredom, not hunger",
+   "needle": "boredom, not hunger",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Eat anyway — no shame",
+   "needle": "eat anyway - no shame",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Hide numbers",
+   "needle": "hide numbers",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "More ways to log",
+   "needle": "more ways to log",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "More ways to log → Say it",
+   "needle": "more ways to log",
+   "kind": "fragment"
+  },
+  {
+   "script": 10,
+   "label": "No wrong answer, no judgement. One honest second before you eat — the thing a calorie count can never tell you",
+   "needle": "no wrong answer, no judgement. one honest second before you eat - the thing a calorie count can never tell you",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Six seconds, before you eat",
+   "needle": "six seconds, before you eat",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "That's 4 times this week you've eaten for this, not hunger. Worth knowing — gently",
+   "needle": "times this week you've eaten for this, not hunger. worth knowing - gently",
+   "kind": "fragment"
+  },
+  {
+   "script": 10,
+   "label": "That’s 4 times this week you’ve eaten for this, not hunger. Worth knowing — gently",
+   "needle": "times this week you've eaten for this, not hunger. worth knowing - gently",
+   "kind": "fragment"
+  },
+  {
+   "script": 10,
+   "label": "The mouth just wants something to do. Water or a 2-minute move often scratches the same itch — no shame if you eat anyway",
+   "needle": "the mouth just wants something to do. water or a 2-minute move often scratches the same itch - no shame if you eat anyway",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "Use your keyboard’s mic",
+   "needle": "use your keyboard's mic",
+   "kind": "whole"
+  },
+  {
+   "script": 10,
+   "label": "the equation",
+   "needle": "the equation",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "How did I get there?",
+   "needle": "how did i get there?",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "How did you get there?",
+   "needle": "how did you get there?",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "In bed / late night",
+   "needle": "in bed / late night",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "I’m feeling it — come here first",
+   "needle": "i'm feeling it - come here first",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "Play the tape forward ▶",
+   "needle": "play the tape forward",
+   "kind": "fragment"
+  },
+  {
+   "script": 11,
+   "label": "Save this",
+   "needle": "save this",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "Stay with me — full SOS",
+   "needle": "stay with me - full sos",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "THE LINK YOU SAID YOU’D BREAK",
+   "needle": "the link you said you'd break",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "That chain is the thing to interrupt — miles earlier than the moment itself",
+   "needle": "that chain is the thing to interrupt - miles earlier than the moment itself",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "Which link could you realistically break next time?",
+   "needle": "which link could you realistically break next time?",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "You came here first",
+   "needle": "you came here first",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "You worked that out when you were clear-headed. It is still true now",
+   "needle": "you worked that out when you were clear-headed. it is still true now",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "Your other fights",
+   "needle": "your other fights",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "Your plan — how you want to handle this",
+   "needle": "your plan - how you want to handle this",
+   "kind": "whole"
+  },
+  {
+   "script": 11,
+   "label": "three lines inside the box and does not overflow",
+   "needle": "inside the box",
+   "kind": "fragment"
+  },
+  {
+   "script": 11,
+   "label": "when you’re ready, not before",
+   "needle": "when you're ready,",
+   "kind": "fragment"
+  },
+  {
+   "script": 12,
+   "label": "Before the world starts pulling, choose who you’ll be in it. Take it at your own pace — there’s no wrong way",
+   "needle": "before the world starts pulling, choose who you'll be in it. take it at your own pace - there's no wrong way",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Begin with a breath",
+   "needle": "begin with a breath",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Did you live it? No score — just honesty. Carry what’s true into tomorrow",
+   "needle": "did you live it? no score - just honesty. carry what's true into tomorrow",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Drawn from what you logged today",
+   "needle": "drawn from what you logged today",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "How did you sleep?",
+   "needle": "how did you sleep?",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Morning",
+   "needle": "morning",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "My intention for today",
+   "needle": "my intention for today",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "ONE TAKE",
+   "needle": "one take",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "One thing to release",
+   "needle": "one thing to release",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "One win from today",
+   "needle": "one win from today",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Reflect on today →",
+   "needle": "reflect on today →",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "Set your intention",
+   "needle": "set your intention",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "THE DAY YOU ACTUALLY LIVED",
+   "needle": "the day you actually",
+   "kind": "fragment"
+  },
+  {
+   "script": 12,
+   "label": "Your day",
+   "needle": "your day",
+   "kind": "whole"
+  },
+  {
+   "script": 12,
+   "label": "button already sitting on Today). It lands with the",
+   "needle": "already sitting",
+   "kind": "fragment"
+  }
+ ]
+}

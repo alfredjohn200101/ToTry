@@ -195,4 +195,45 @@ function voiceFingerprint(htmlArg){
            ambiguous };
 }
 
-module.exports = { voiceFingerprint, extractFn, load, eq, approx, ok, section, report, html, code, defer };
+// ── THE REELS LABEL HAYSTACK ────────────────────────────────────────────────────────────────────
+// REELS-SCRIPTS.md tells the owner to point a camera at named buttons and read quoted copy aloud.
+// It was written at v367 and nothing checked it until v668 — three hundred versions, by which time
+// a whole beat ("You started", the 48px DAYS CLEAN hero) no longer existed and he would have found
+// out with the camera running. These two helpers let scripts/reels-labels.mjs MEASURE a needle once
+// and core.test.js re-check it every run, and they live HERE for the same reason voiceFingerprint
+// does: a fold computed two ways is a fold that silently stops matching.
+//
+// THREE THINGS THE HAYSTACK HAS TO DO, each learned from a false result:
+//   · strip `//` comments — this repo's comments QUOTE the copy they removed, so "No subscriptions
+//     tracked yet." greps as present in a bundle that has not rendered it since v6xx. The guard is
+//     `(?<!:)` so `https://` survives, which `code()` above does not do.
+//   · decode \uXXXX — curly apostrophes and em-dashes are stored escaped in the modules, so
+//     "Can't start" is absent and `Can’t start` is there. A grep for the former reports a
+//     missing chip that is on screen.
+//   · fold the punctuation — the scripts are written with real curly quotes and the source is not
+//     consistent about it, so both sides are flattened to ASCII before comparing.
+// What it deliberately does NOT do is join concatenations: `'What are you feeling, '+name+'?'` is
+// genuinely two fragments, and the generator's answer to that is to needle the longest provable
+// fragment rather than to pretend the whole sentence is one literal.
+function reelsFold(s){
+  return String(s == null ? '' : s)
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, '-').replace(/…/g, '...')
+    .replace(/\s+/g, ' ').toLowerCase();
+}
+function reelsHaystack(htmlArg){
+  const raw = String(htmlArg == null ? html : htmlArg);
+  // HTML COMMENTS FIRST, AND THEY ARE NOT OPTIONAL. Found by fault-injecting this very check:
+  // shell-head.html explains removed copy inside <!-- --> blocks, so "THE DAY YOU ACTUALLY LIVED"
+  // and "However it felt, this is real. You showed up." — both deliberately deleted from the
+  // evening cards, and both correctly called DEAD when the reels scripts were re-verified — read
+  // as PRESENT. A needle generated for either would have certified a beat that cannot be filmed,
+  // which is the exact failure this mechanism exists to prevent. Measured safe: 423 occurrences of
+  // `<!--` in the bundle and ZERO in any src/app module, so none of them is inside JavaScript.
+  const noHtml = raw.replace(/<!--[\s\S]*?-->/g, ' ');
+  const noComments = noHtml.replace(/(?<!:)\/\/[^\n]*/g, '');
+  const decoded = noComments.replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
+  return reelsFold(decoded);
+}
+
+module.exports = { voiceFingerprint, extractFn, load, eq, approx, ok, section, report, html, code, defer, reelsFold, reelsHaystack };

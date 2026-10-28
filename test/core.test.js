@@ -19031,4 +19031,79 @@ H.section('every consumer of a reach prompt fills {name}');
     'the _REACH_ACTIVITY prompts still carry {name}, so the filler has something to fill');
 }
 
+// ── THE REELS SCRIPTS NAME REAL BUTTONS, AND NOTHING CHECKED THEM FOR 300 VERSIONS ──────────────
+// REELS-SCRIPTS.md tells the owner to point a camera at named controls and read quoted copy out
+// loud. It was written at v367 and first re-verified at v668. By then a whole beat no longer
+// existed — "You started" is not on the two-minute screen, and the 48px "DAYS CLEAN" hero with
+// ticking seconds had been deliberately deleted — so he would have found out with the camera
+// running, on a video whose whole premise is that nothing on screen is invented.
+//
+// WHY THIS CANNOT CRY WOLF, which is the only reason it is allowed to exist: every needle in
+// test/reels-labels.json was PROVEN present in the shipped bundle by scripts/reels-labels.mjs at
+// the moment it was written. The generator refuses to write anything it cannot find, and it is
+// deliberately NOT wired into the gate — a check that regenerates its own expectations cannot
+// fail. When a label changes, this goes red, and a human decides whether the script or the label
+// is the thing that should move.
+//
+// The haystack lives in test/harness.js next to voiceFingerprint, for the same reason: computed
+// two ways it would silently stop matching. It strips `//` comments (this repo's comments QUOTE
+// the copy they removed, so "No subscriptions tracked yet." greps as present in a bundle that has
+// not rendered it in sixty versions) and decodes \uXXXX (so "Can't start" is findable at all).
+H.section('every UI string the reels scripts name is still in the app');
+{
+  const data = require('./reels-labels.json');
+  const rows = (data && data.rows) || [];
+  const hay = H.reelsHaystack();
+  const md = H.reelsFold(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'REELS-SCRIPTS.md'), 'utf8'));
+
+  // RATCHET. Without it the file could be emptied and this section would pass over nothing — the
+  // shape this repo already records for a check that was satisfied by an admin-only queue.
+  H.ok(rows.length >= 195,
+    'the measured label set is intact (' + rows.length + ' needles; regenerate with ' +
+    'node scripts/reels-labels.mjs --write if you deliberately changed a label AND its script)');
+  const scriptsCovered = new Set(rows.map(r => r.script));
+  H.eq(scriptsCovered.size, 12, 'all twelve scripts have at least one checked UI string');
+
+  // THE NEEDLE MUST COME FROM THE LABEL. Otherwise a red run can be "fixed" by pasting in a
+  // generic string that matches anything, which is the same move as widening a crisis bound to
+  // make a panel go green.
+  const forged = rows.filter(r => H.reelsFold(r.label).indexOf(r.needle) < 0);
+  H.eq(forged.length, 0, 'every needle is a substring of the label it claims to prove' +
+    (forged.length ? ' — forged: ' + JSON.stringify(forged[0]) : ''));
+
+  // AND THE LABEL MUST STILL BE IN THE SCRIPT. If a beat is rewritten away, the needle guarding it
+  // is checking something nobody will ever film — stale in the other direction.
+  const orphaned = rows.filter(r => md.indexOf(H.reelsFold(r.label)) < 0);
+  H.eq(orphaned.length, 0, 'every checked label is still named in REELS-SCRIPTS.md' +
+    (orphaned.length ? ' — orphaned: ' + JSON.stringify(orphaned.slice(0, 3).map(o => o.label)) : ''));
+
+  // THE CHECK ITSELF.
+  const gone = rows.filter(r => hay.indexOf(r.needle) < 0);
+  H.eq(gone.length, 0,
+    'every UI string the scripts name is still in the bundle' +
+    (gone.length ? ' — ' + gone.length + ' MISSING, first: script ' + gone[0].script + ' ' +
+      JSON.stringify(gone[0].label) + ' (needle ' + JSON.stringify(gone[0].needle) + ')' : ''));
+
+  // CALIBRATION: the haystack must NOT find copy this repo deliberately removed and then quoted in
+  // a comment explaining the removal. If these pass, the comment strip is broken and every result
+  // above is worthless.
+  //
+  // BOTH needles are chosen by MEASUREMENT. The first draft used "No subscriptions tracked yet"
+  // and the fault injection MISSED: that quote is split across two `//` lines, so the interposed
+  // `//` keeps it unmatchable whether the strip runs or not — a calibration that cannot
+  // distinguish is not a calibration. These two sit inside single <!-- --> blocks in
+  // shell-head.html, and before the HTML strip existed BOTH read as present — one of them was
+  // live in reels-labels.json, proving a script 12 beat the app had DELETED. That is the exact
+  // false pass this section exists to prevent, found by injecting a fault into the section itself.
+  H.ok(hay.indexOf(H.reelsFold('However it felt, this is real')) < 0,
+    'the haystack strips HTML comments — deleted copy quoted in one does NOT read as present');
+  H.ok(hay.indexOf(H.reelsFold('THE DAY YOU ACTUALLY LIVED')) < 0,
+    'and the same for the eyebrow it replaced');
+  H.ok(hay.indexOf('https://') >= 0,
+    'and the comment strip spares URLs (the recorded `(?<!:)//` trap)');
+  H.ok(hay.indexOf(H.reelsFold("Can't start")) >= 0,
+    'and it decodes \\uXXXX, or every curly-apostrophe label reads as missing');
+}
+
 H.report();

@@ -2220,6 +2220,52 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      three lines up. A line window is a magic number somebody has to re-tune; it walks back to a
      statement boundary now and REFUSES rather than reports if that walk runs away. The v660 gentle
      assertions held the refusals (no streak) and had never asked whether the numbers stay hidden.
+   - **AND THE REELS SCRIPTS WENT STALE FOR 300 VERSIONS BECAUSE NOTHING GATED PROSE (28 Oct 2026).**
+     `REELS-SCRIPTS.md` tells the owner to point a camera at named buttons and read quoted copy out
+     loud, and it was written at **v367**. Twelve agents plus twelve adversarial refuters re-verified
+     it at v668: all twelve scripts were still shootable, but a whole beat was DEAD ("You started" is
+     not on the two-minute screen; the 48px "DAYS CLEAN" hero with ticking seconds was deliberately
+     deleted), every emoji that led a row had become a stroke icon, and several beats called for a
+     scroll or a pan on sheets that no longer scroll. **He would have found out with the camera
+     running**, on videos whose whole premise is that nothing on screen is invented.
+     **The gate holds it now, and the design rule is MEASURE ONCE, RE-CHECK FOREVER.**
+     `scripts/reels-labels.mjs` extracts every UI string from the SCREEN ACTIONS and BEFORE THE TAKE
+     blocks, PROVES each one present in the shipped bundle, and writes `test/reels-labels.json`
+     (199 needles, all twelve scripts). `npm test` re-checks every needle. It cannot cry wolf,
+     because nothing it cannot prove is ever written down; and it is deliberately **NOT** wired into
+     the gate, because a check that regenerates its own expectations cannot fail. Four more
+     assertions keep the artefact honest: a ratchet at 195, every script covered, every needle a
+     substring of the label it claims to prove (or a red run could be "fixed" by pasting in a
+     generic string — the same move as widening a crisis bound to green a panel), and every label
+     still named in the script (stale in the other direction is a needle guarding a beat nobody
+     films). Five fault injections, each caught by name.
+     **THE HAYSTACK IS THE WHOLE PROBLEM, AND THE FAULT INJECTION FOUND THE HOLE.** It lives in
+     `test/harness.js` beside `voiceFingerprint` for the same reason — computed two ways it would
+     silently stop matching — and it has to do three things, each learned from a false result:
+     decode `\uXXXX` (a chip is stored `Can’t start`, so a grep for the rendered form reports a
+     missing control that is on screen), strip `//` comments with the recorded `(?<!:)` guard
+     (**this repo's comments QUOTE the copy they removed**), and strip `<!-- -->` **as well**. That
+     last one was missing, and the injection is what exposed it: `shell-head.html` explains its
+     deletions inside HTML comments, so *"However it felt, this is real. You showed up."* and
+     *"THE DAY YOU ACTUALLY LIVED"* — both correctly called DEAD by the re-verification — read as
+     PRESENT, and one of them was **live in the measured set, certifying a script 12 beat the app
+     had deleted**. Exactly the false pass the mechanism exists to prevent. Measured safe before
+     applying: 423 `<!--` in the bundle, **0 in any `src/app` module**, so none is inside JavaScript.
+     **And the first calibration could not distinguish.** It asserted that "No subscriptions tracked
+     yet" is absent — true either way, because that quote is split across two `//` lines and the
+     interposed `//` keeps it unmatchable whether the strip runs or not. The injection reported
+     MISSED, which is the only reason the HTML hole was found at all. **A calibration that passes
+     for a reason unrelated to the thing under test is not a calibration.**
+     Two shapes of my own recurred and are worth the line: the caps filter I wrote to drop my own
+     shouted headers **threw away four real labels** — `THE PLAN YOU SET FOR THIS`, `STARTING
+     TOGETHER`, `ONE SMALL REAL THING`, `FOUND IN YOUR STATEMENTS` are `.eyebrow` elements uppercased
+     by CSS, so the scripts write them in caps BECAUSE that is what the camera sees; provability is
+     the only filter worth having. And punctuation-splitting could not prove
+     `"Make my plan for next time"` at all, because the source builds it as
+     `(_saved?'Update':'Make')+' my plan for next time'` and there is no punctuation to split on —
+     word windows find the longest run that IS one literal, which is the honest answer for a
+     concatenation. 158 proven → 190 → 204 → 199 after the HTML strip removed the five that were
+     only ever proven by a comment.
    - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
      claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
      only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in

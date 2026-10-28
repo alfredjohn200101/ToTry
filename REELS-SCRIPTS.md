@@ -10,6 +10,17 @@
      'Restless energy', 'Go outside and look up', and the dynamic '🔒 Make my plan for next time'
      label all exist in the code exactly as written here. If you change a label, fix it here too. -->
 
+<!-- AND IT CANNOT GO STALE SILENTLY AGAIN. `test/reels-labels.json` holds 199 UI strings from the
+     SCREEN ACTIONS and BEFORE THE TAKE blocks below, each one PROVEN present in the shipped bundle
+     at the moment it was written, and `npm test` re-checks every one of them. Rename a button in
+     the app and the gate goes red naming the script that still says the old words.
+     If you deliberately change a label AND the script that names it, regenerate:
+         node scripts/reels-labels.mjs            # report only
+         node scripts/reels-labels.mjs --write    # rewrite the measured set
+     It is deliberately NOT part of the gate: a check that regenerates its own expectations cannot
+     fail. Voiceover, on-screen text, captions and CTAs are never checked — those are your words
+     about the app, not claims about what is on screen. -->
+
 ## TO TRY — 12 SHOOTABLE SCRIPTS
 
 Companion to `CREATOR-PLAYBOOK.md`. That file governs *why* and *when* you publish; this one is the *what to point the camera at*. Same rules apply here: past tense, reps not resolutions, scars not wounds, and every video useful even to someone who never installs anything.
