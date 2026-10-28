@@ -1511,8 +1511,17 @@ const _PULL_PRACTICE = {
     why:  "The double inhale with a long exhale drops your heart rate faster than deep breathing does. Tracking an urge instead of fighting it is urge surfing \u2014 it peaks and falls, usually within minutes."
   }
 };
+// THE FEELING DOOR'S PRACTICE ASKED THE TRADITION AND NOT THE DIAL. Somebody who chose "Lighter —
+// mostly the systems" opened the app's own front door for an urge and was handed "The Jesus
+// Prayer", the words to say, and an instruction to put a hand on their heart. _breathFaithOn() is
+// the predicate that already answers this question for the breath prayer, so it answers it here
+// rather than a second one drifting away from it. Light reads as SECULAR, which is a real practice
+// (urge surfing, a double inhale and a long exhale) and not an empty card — the same call as the
+// SOS anchor's, for the same reason.
 function _fnPractice(){
-  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  const t = (typeof _breathFaithOn === 'function' && !_breathFaithOn())
+    ? 'secular'
+    : ((typeof faithTradition === 'function') ? faithTradition() : 'secular');
   return _PULL_PRACTICE[t] || _PULL_PRACTICE.secular;
 }
 const _BREATH_PRAYERS = {

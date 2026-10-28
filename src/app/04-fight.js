@@ -2265,14 +2265,30 @@ const _SOS_P2_LBL = {
   buddhism:     'Receive the teaching',
   secular:      'Steady your mind'
 };
+// AND THE LEVEL DIAL WAS NEVER ASKED. The work above made step 2 of 3 serve all five paths by
+// TRADITION, and it still handed somebody who went into Settings and chose "Lighter — mostly the
+// systems" a verse from their own tradition, under "Receive the word", with Listen and
+// Make-a-card attached, mid-urge. _breathFaithOn() has gated the breath prayer on exactly this
+// dial since it was written; this surface and the Feeling Door's practice never asked.
+// LIGHT READS AS SECULAR HERE RATHER THAN AS NOTHING, which matters: the secular path is already
+// a steadying line (Meditations, not scripture) under "Steady your mind", so step 2 stays whole
+// and nobody loses an anchor for turning the religion down.
+function _sosFaithKey(){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return 'secular';
+    return (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  }catch(_){ return 'secular'; }
+}
 function _sosAnchor(pb){
   try{
-    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    const t = _sosFaithKey();
     if(t === 'christianity'){
       return { text: (sosVerseData && sosVerseData.verse) || pb.verse,
                ref:  (sosVerseData && sosVerseData.reference) || (pb.verseRef + ' (ESV)') };
     }
-    const set = (typeof activeVerses === 'function') ? activeVerses() : null;
+    const set = (t === 'secular')
+      ? ((typeof VS_SECULAR !== 'undefined') ? VS_SECULAR : null)
+      : ((typeof activeVerses === 'function') ? activeVerses() : null);
     if(set && set.length){
       // Deterministic, so it does not reshuffle under someone mid-urge on a re-render, but still
       // varies day to day rather than being the same line forever.
@@ -2298,7 +2314,7 @@ function goSosP2(){
   if(vr)vr.textContent='\u2014 '+_anchor.ref;
   try{
     const _lbl=document.getElementById('sos-p2-lbl');
-    const _t=(typeof faithTradition==='function')?faithTradition():'secular';
+    const _t=_sosFaithKey();   // the same dial as the anchor, or the label and the line disagree
     if(_lbl) _lbl.textContent='Step 2 of 3 \u2014 '+(_SOS_P2_LBL[_t] || _SOS_P2_LBL.secular);
   }catch(_){}
   // Listen / Make a card, now that there is a verse to listen to.

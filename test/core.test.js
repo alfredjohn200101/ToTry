@@ -1763,7 +1763,19 @@ H.section('the crisis surface must speak the person\'s own tradition');
   H.ok(/function _sosAnchor\(/.test(code), 'the SOS anchor goes through a tradition-aware resolver');
   const fn = code.slice(code.indexOf('function _sosAnchor('));
   const body = fn.slice(0, fn.indexOf('\nfunction '));
-  H.ok(/faithTradition\(\)/.test(body), 'it asks which tradition the person is');
+  // ASSERT THE FACT, NOT THE HELPER. This read `faithTradition()` out of _sosAnchor's own body and
+  // broke when the call moved one function along into _sosFaithKey() — the resolver that now also
+  // asks the LEVEL dial. The fact is that the anchor resolves through a key which consults both.
+  const keyFn = code.slice(code.indexOf('function _sosFaithKey('));
+  const keyBody = keyFn.slice(0, keyFn.indexOf('\nfunction '));
+  H.ok(/_sosFaithKey\(\)/.test(body), 'it resolves the person through one faith key');
+  H.ok(/faithTradition\(\)/.test(keyBody), 'and that key asks which tradition the person is');
+  // AND THE LEVEL. Somebody who chose "Lighter — mostly the systems" was still handed a verse from
+  // their own tradition under "Receive the word", mid-urge, with Listen and Make-a-card attached.
+  H.ok(/faithLevel\(\)\s*===\s*'light'/.test(keyBody),
+    "and the level dial too — 'light' means mostly the systems, at the worst moment too");
+  H.ok(/return 'secular'/.test(keyBody),
+    'light reads as SECULAR, not as nothing — step 2 of 3 keeps a steadying line');
   H.ok(/activeVerses\(\)/.test(body), 'and draws from their own verse set, not a new hardcoded list');
   H.ok(/=== 'christianity'/.test(body), 'the Bible sources are reserved for someone who is Christian');
   H.ok(/ESV/.test(body.split("=== 'christianity'")[1].slice(0, 400)),
@@ -19299,6 +19311,63 @@ H.section('the crisis hand-off names the person whose tradition it is');
       H.ok(((REG.buddhism || {}).guide || '').indexOf('imam') < 0, 'Buddhism is not handed an imam');
     }
   }
+}
+
+// ── "LIGHTER — MOSTLY THE SYSTEMS" WAS IGNORED AT THE WORST MOMENT THE APP HAS ──────────────────
+// Settings → Faith has TWO dials: the tradition, and how much of it surfaces. _breathFaithOn() has
+// honoured the second one for the breath prayer since it was written. Two surfaces never asked:
+// the live SOS's step 2 of 3, and the Feeling Door's in-the-moment practice — the app's own front
+// door for an urge. So a person who deliberately chose "Lighter" was handed, mid-urge, a verse from
+// their tradition under "Receive the word" with Listen and Make-a-card attached, and then "The
+// Jesus Prayer", the words to say, and an instruction to put a hand on their heart.
+//
+// LIGHT READS AS SECULAR, NOT AS NOTHING, on both. The secular path is already a real, non-religious
+// practice — a steadying line from Meditations, and urge surfing with a double inhale — so nobody
+// loses their anchor for turning the religion down. Taking the card away would be its own defect.
+H.section("faith level 'light' is honoured where it matters most");
+{
+  const src = H.code(H.html);
+  const exec = (name) => {
+    const start = src.indexOf(name);
+    const b = src.indexOf('{', start);
+    let d = 0, end = -1;
+    for (let k = b; k < src.length; k++) {
+      if (src[k] === '{') d++;
+      else if (src[k] === '}') { d--; if (d === 0) { end = k + 1; break; } }
+    }
+    try { return new Function('return ' + src.slice(b, end))(); } catch (e) { return null; }
+  };
+  const PRACTICE = exec('_PULL_PRACTICE');
+  H.ok(!!PRACTICE && !!PRACTICE.secular, 'the practice registry executes (not a stub — the real one)');
+
+  const TRADS = ['christianity', 'islam', 'hinduism', 'buddhism', 'secular'];
+  if (PRACTICE) {
+    const nameFor = (tr, lvl) => (H.load(['_fnPractice', '_breathFaithOn'],
+      { faithTradition: () => tr, faithLevel: () => lvl, _PULL_PRACTICE: PRACTICE })._fnPractice() || {}).name;
+    TRADS.forEach(function(tr){
+      H.eq(nameFor(tr, 'light'), PRACTICE.secular.name,
+        tr + " at 'light' gets the secular practice, not their tradition's");
+      if (tr !== 'secular') {
+        H.eq(nameFor(tr, 'full'), PRACTICE[tr].name,
+          tr + " at 'full' still gets its own — the dial turns it down, it does not delete it");
+      }
+    });
+    // And the thing that would make this cosmetic: light must not simply be empty.
+    H.ok(!!PRACTICE.secular.name && !!PRACTICE.secular.how,
+      'the secular practice is a real one, so turning the religion down is not an empty card');
+  }
+
+  // THE SOS SIDE. _sosFaithKey is the one resolver, so the verse and its LABEL cannot disagree —
+  // the label said "Receive the word" over a Meditations line before they shared a key.
+  const key = H.load(['_sosFaithKey'], { faithTradition: () => 'christianity', faithLevel: () => 'light' });
+  H.eq(key._sosFaithKey(), 'secular', "a Christian on 'light' resolves to the secular anchor");
+  const key2 = H.load(['_sosFaithKey'], { faithTradition: () => 'islam', faithLevel: () => 'full' });
+  H.eq(key2._sosFaithKey(), 'islam', 'and at full faith they are themselves');
+  const anchorBody = H.code(H.extractFn('_sosAnchor'));
+  H.ok(/_sosFaithKey\(\)/.test(anchorBody), 'the anchor resolves through that key');
+  const p2 = H.code(H.html);
+  H.ok(p2.indexOf("_SOS_P2_LBL[_sosFaithKey()]") >= 0 || /_t=_sosFaithKey\(\)/.test(p2),
+    'and so does the step-2 label, or the line and its heading disagree');
 }
 
 H.report();
