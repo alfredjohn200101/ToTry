@@ -1,7 +1,7 @@
 {
   "note": "Written by scripts/voice-probe.mjs on a clean full run. npm test fails if the voice sources change without re-running it — the probe needs the network, the gate does not.",
-  "sha": "bd52be2b0a5e0c15",
-  "bytes": 13001,
+  "sha": "59d5bfa13323f710",
+  "bytes": 13004,
   "measured": {
     "notes_in_prompt": true,
     "bandA_ordinary_flinched": "0 of 7",

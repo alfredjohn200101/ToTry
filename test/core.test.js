@@ -13030,7 +13030,7 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   const ci0 = H.html.indexOf('const CRISIS_LINES = ['), cj0 = H.html.indexOf('];', ci0);
   const CRISIS_LINES = new Function(H.html.slice(ci0, cj0 + 2) + '\nreturn CRISIS_LINES;')();
   let note = '';
-  try { note = H.load(['safetyNote', '_crisisLinesForPrompt'], { CRISIS_LINES }).safetyNote(); }
+  try { note = H.load(['safetyNote', '_guideForPrompt', '_crisisLinesForPrompt'], { CRISIS_LINES }).safetyNote(); }
   catch (e) { H.ok(false, 'safetyNote() must EXECUTE — threw: ' + String(e.message).slice(0, 90)); }
   H.ok(note.length > 600, 'calibration: the note is actually built and returned, not empty');
   // ── it names the register the keyword floor deliberately refuses ──
@@ -13068,7 +13068,16 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // ── and when it IS real, it hands over, which is the soul document's own promise ──
   H.ok(/helpline/i.test(note) && /counsellor/i.test(note) && /doctor/i.test(note),
     'it names real humans to hand to');
-  H.ok(/priest|imam/i.test(note), 'including the ones a person of faith would want');
+  // THE CLERGY IS NO LONGER UNCONDITIONAL, AND THAT IS THE FIX. This asserted /priest|imam/ on a
+  // note built with no faith stub, which is how "their priest or imam" reached a Hindu, a Buddhist
+  // and a secular person for as long as it did. The guide is per tradition now, so the honest
+  // assertion is that a person of faith gets THEIRS — see the dedicated section below for all five.
+  {
+    const _withFaith = H.load(['safetyNote','_guideForPrompt','_crisisLinesForPrompt'],
+      { CRISIS_LINES, curFaith: () => ({ guide: 'their imam' }), faithLevel: () => 'full' }).safetyNote();
+    H.ok(/their imam/.test(_withFaith), 'including the one a person of faith would want — their own');
+    H.ok(!/priest/.test(_withFaith), 'and not another tradition’s');
+  }
   H.ok(/not letting\s+them carry it alone|Stay with them/i.test(note),
     'and stays with them while they do it');
   H.ok(/never diagnose/i.test(note) && /never assess risk/i.test(note),
@@ -13120,7 +13129,7 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // and the guard is load-bearing HERE, measured rather than asserted: with no CRISIS_LINES passed
   // in, the note still names a human and does not throw.
   {
-    const bare = H.load(['safetyNote','_crisisLinesForPrompt']).safetyNote();
+    const bare = H.load(['safetyNote','_guideForPrompt','_crisisLinesForPrompt']).safetyNote();
     H.ok(bare.length > 100, 'with CRISIS_LINES absent the note still assembles (' + bare.length + ' chars)');
     H.ok(!/\d{3,}/.test(bare),
       'and carries NO number at all — with nothing verified to read, none is the safe answer, ' +
@@ -14799,7 +14808,7 @@ H.section('the safety note has a ceiling, and now something holds it');
     return new Function('return ' + src.slice(j, k + 1))();
   };
   const CRISIS_LINES = grab('CRISIS_LINES');
-  const { safetyNote } = H.load(['safetyNote','_crisisLinesForPrompt'], { CRISIS_LINES: CRISIS_LINES });
+  const { safetyNote } = H.load(['safetyNote','_guideForPrompt','_crisisLinesForPrompt'], { CRISIS_LINES: CRISIS_LINES });
   const note = safetyNote();
   // EXECUTE IT, DO NOT READ IT. The note is a dozen concatenated string literals, so no regex over
   // the source can measure what the model actually receives — a lesson this file already carries.
@@ -19183,6 +19192,113 @@ H.section('no on* attribute hand-escapes typed text past _jsAttr');
   H.ok(hand <= 15,
     'hand-rolled quote escapes stay at the audited set (' + hand + ' of 15) — a new one needs a ' +
     'reason here, or _jsAttr');
+}
+
+// ── THE HAND-OFF NAMED SOMEBODY ELSE'S CLERGY TO THREE TRADITIONS OUT OF FIVE ───────────────────
+// safetyNote() is the crisis clause in EVERY AI prompt — the one the register work repeatedly says
+// the refused register belongs on, reached through brotherSys by all seven voice surfaces. Its
+// hand-off sentence read "a helpline, their doctor, a counsellor, someone they love, their priest
+// or imam" to ALL FIVE traditions. So a Hindu, a Buddhist and a secular person, at the single
+// moment the model stops coaching and hands them to a human, were offered someone else's clergy —
+// and the secular person a category they had asked not to be addressed in, in the same prompt that
+// forbids religious language for them. The same defect as the hardcoded priest in bridgeToRealHelp,
+// on the surface with the highest acuity in the app.
+//
+// FAITHS had no clergy field at all, which is why it was hardcoded. It has `guide` now, beside the
+// fast seasons' own `ask` and using their vocabulary. EMPTY MEANS NAME NOBODY, and that is right
+// twice: for secular there is nobody to name, and at faith level 'light' the person asked for
+// "mostly the systems" — _faithLine already returns '' for both, so this mirrors a decision the app
+// had made and never applied here.
+H.section('the crisis hand-off names the person whose tradition it is');
+{
+  const GUIDES = { christianity:'their priest', islam:'their imam',
+                   hinduism:'whoever teaches at their temple',
+                   buddhism:'a monastic, or whoever teaches at their sangha', secular:'' };
+  const LINES = [{ region:'Australia', name:'Lifeline', contact:'13 11 14', detail:'24/7' }];
+  const note = (tr, lvl) => H.load(
+    ['safetyNote', '_guideForPrompt', '_crisisLinesForPrompt'],
+    { curFaith: () => ({ guide: GUIDES[tr] }), faithLevel: () => lvl, CRISIS_LINES: LINES }
+  ).safetyNote();
+
+  Object.keys(GUIDES).forEach(function(tr){
+    const full = note(tr, 'full'), light = note(tr, 'light');
+    // THE HUMAN HALF REACHES EVERYONE — it is not anybody's tradition, and removing it would be a
+    // worse defect than the one being fixed.
+    [full, light].forEach(function(s){
+      ['a helpline', 'their doctor', 'a counsellor', 'someone they love'].forEach(function(h){
+        H.ok(s.indexOf(h) >= 0, tr + ': the hand-off still names ' + h);
+      });
+    });
+    if (GUIDES[tr]) {
+      H.ok(full.indexOf(GUIDES[tr]) >= 0, tr + ' is offered its OWN guide at full faith');
+      // and nobody else's
+      Object.keys(GUIDES).forEach(function(other){
+        if (other === tr || !GUIDES[other]) return;
+        H.ok(full.indexOf(GUIDES[other]) < 0, tr + ' is NOT offered ' + other + "'s");
+      });
+    } else {
+      H.ok(!/priest|imam|monastic|sangha|temple/.test(full),
+        'a secular person is offered no clergy at all');
+    }
+    H.ok(!/priest|imam|monastic|sangha|temple/.test(light),
+      tr + " at faith level 'light' is offered no clergy — they asked for mostly the systems");
+  });
+  // The old hardcoded clause must be gone outright, or a later edit restores it beside the new one.
+  H.ok(H.code(H.html).indexOf('their priest or imam') < 0,
+    'the hardcoded "their priest or imam" is gone from the prompt');
+  // AND THE SAME DEFECT ON THE RECOVERY BRIDGE. openRecoveryBridge adds a "Your community" row for
+  // every non-Christian, non-secular tradition, and it carried a MOSQUE mark plus a list opening
+  // with an imam — to Hindus and Buddhists as well. It reads the tradition's own icon and guide now.
+  {
+    // COMMENT-STRIPPED: the fix's own comment names the mosque escape it removed, which is
+    // this repo's recorded trap of a check matching its own explanation.
+    const rb = H.code(H.extractFn('openRecoveryBridge'));
+    H.ok(rb.indexOf('\\u{1F54C}') < 0 && rb.indexOf('\u{1F54C}') < 0,
+      'the recovery bridge no longer shows a mosque to every non-Christian tradition');
+    H.ok(/curFaith\(\)/.test(rb) && /guide/.test(rb),
+      'it takes the mark and the person from the registry instead');
+  }
+
+  // EXECUTE THE REAL REGISTRY. Everything above stubs curFaith, so it proves the WIRING and says
+  // nothing about the CONTENT — fault-injected, giving Hinduism a priest and Secular a priest both
+  // passed, because no stub reads FAITHS. This is the recorded trap of a fixture with nothing for
+  // the rule to exclude. Brace-match the literal and run it, the way the fast-season card's test
+  // does, so the values asserted are the ones the prompt will actually carry.
+  {
+    const src = H.code(H.html);
+    const start = src.indexOf('const FAITHS = {');
+    H.ok(start > 0, 'the FAITHS registry was found by name');
+    let d = 0, end = -1;
+    for (let k = src.indexOf('{', start); k < src.length; k++) {
+      if (src[k] === '{') d++;
+      else if (src[k] === '}') { d--; if (d === 0) { end = k + 1; break; } }
+    }
+    H.ok(end > start, 'and brace-matched rather than sliced to a fixed window');
+    let REG = null;
+      // Bank names found by ASKING the literal, not guessed: VS_HINDU and VS_BUDDHIST, not the
+      // -ISM forms a reader would assume. They are passed empty because the registry only needs
+      // them to BE something; nothing asserted below reads a verse.
+    try { REG = new Function('VS_CHRISTIANITY','VS_ISLAM','VS_HINDU','VS_BUDDHIST','VS_SECULAR',
+      'return ' + src.slice(src.indexOf('{', start), end))([], [], [], [], []); } catch (e) { REG = null; }
+    H.ok(!!REG, 'and it executes' + (REG ? '' : ' — it did not, so nothing below was checked'));
+    if (REG) {
+      const seen = {};
+      ['christianity','islam','hinduism','buddhism','secular'].forEach(function(tr){
+        H.ok(typeof (REG[tr] || {}).guide === 'string',
+          tr + ' declares a guide (empty is a valid answer; missing is not)');
+        const g = (REG[tr] || {}).guide;
+        if (tr === 'secular') {
+          H.eq(g, '', 'secular names NOBODY — there is nobody to name');
+        } else {
+          H.ok(g && g.length > 3, tr + ' names a real person (' + JSON.stringify(g) + ')');
+          H.ok(!seen[g], tr + ' does not reuse another tradition’s guide');
+          seen[g] = tr;
+        }
+      });
+      H.ok(((REG.hinduism || {}).guide || '').indexOf('priest') < 0, 'Hinduism is not handed a priest');
+      H.ok(((REG.buddhism || {}).guide || '').indexOf('imam') < 0, 'Buddhism is not handed an imam');
+    }
+  }
 }
 
 H.report();

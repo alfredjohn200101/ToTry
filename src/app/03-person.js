@@ -3777,7 +3777,12 @@ const VS_SECULAR=[
 // faithTradition() = which path; faithLevel() (elsewhere) = how much surfaces.
 const FAITHS = {
   christianity: {
-    id:'christianity', label:'Christianity', icon:'✝', divine:'God',
+    id:'christianity',
+    // THE HAND-OFF NAMES A PERSON, AND WHOSE PERSON IT IS MATTERS. safetyNote() — the crisis
+    // clause in EVERY AI prompt — said "their priest or imam" to all five traditions, so a Hindu,
+    // a Buddhist and a secular person were handed someone else's clergy at the one moment the
+    // model stops coaching. Empty means NAME NOBODY, which is the honest answer for secular.
+    guide:'their priest', label:'Christianity', icon:'✝', divine:'God',
     bookName:'the Bible', bookShort:'Bible',
     todayTitle:'Today in the Church', todayDesc:'The Mass readings for today and the saint the Church remembers.',
     practiceTitle:'The Rosary', practiceDesc:'Pray it guided, bead by bead — today’s mysteries chosen for you.',
@@ -3786,7 +3791,8 @@ const FAITHS = {
     verses: VS_CHRISTIANITY,
   },
   islam: {
-    id:'islam', label:'Islam', icon:'☪', divine:'Allah',
+    id:'islam',
+    guide:'their imam', label:'Islam', icon:'☪', divine:'Allah',
     bookName:'the Qur’an', bookShort:'Qur’an',
     todayTitle:'Prayer times', todayDesc:'Today’s five prayers, the Hijri date, and an ayah.',
     practiceTitle:'Dhikr', practiceDesc:'Remembrance of Allah — guided, with the beautiful names.',
@@ -3795,7 +3801,8 @@ const FAITHS = {
     verses: VS_ISLAM,
   },
   hinduism: {
-    id:'hinduism', label:'Hinduism', icon:'🕉', divine:'the Divine',
+    id:'hinduism',
+    guide:'whoever teaches at their temple', label:'Hinduism', icon:'🕉', divine:'the Divine',
     bookName:'the Bhagavad Gita', bookShort:'Gita',
     todayTitle:'Today’s verse', todayDesc:'A verse from the Gita to carry through the day.',
     practiceTitle:'Japa', practiceDesc:'Mantra repetition — steady the mind, bead by bead.',
@@ -3804,7 +3811,8 @@ const FAITHS = {
     verses: VS_HINDU,
   },
   buddhism: {
-    id:'buddhism', label:'Buddhism', icon:'☸', divine:null,
+    id:'buddhism',
+    guide:'a monastic, or whoever teaches at their sangha', label:'Buddhism', icon:'☸', divine:null,
     bookName:'the Dhammapada', bookShort:'Dhammapada',
     todayTitle:'Today’s teaching', todayDesc:'A teaching from the Dhammapada for today.',
     practiceTitle:'Meditation', practiceDesc:'Sit with the breath — guided, at your own pace.',
@@ -3813,7 +3821,8 @@ const FAITHS = {
     verses: VS_BUDDHIST,
   },
   secular: {
-    id:'secular', label:'Secular / None', icon:'○', divine:null,
+    id:'secular',
+    guide:'', label:'Secular / None', icon:'○', divine:null,
     bookName:'the Stoics', bookShort:'Reflections',
     todayTitle:'Today’s reflection', todayDesc:'A grounded reflection to steady the day.',
     practiceTitle:'Stillness', practiceDesc:'A few quiet minutes with the breath — no belief required.',

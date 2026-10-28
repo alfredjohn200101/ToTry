@@ -331,6 +331,22 @@ function _crisisLinesForPrompt(){
       + '. Lead with the one for where they are; this app is Australian, so Lifeline 13 11 14 is the default. ';
   }catch(_){ return 'their local crisis line, their doctor, or findahelpline.com. '; }
 }
+// WHOSE PERSON THE HAND-OFF NAMES. This clause said "their priest or imam" to ALL FIVE traditions,
+// so a Hindu, a Buddhist and a secular person reaching an AI surface at the one moment the model
+// stops coaching were handed someone else's clergy — and the secular person a category they have
+// asked not to be addressed in, in the same prompt that forbids religious language for them.
+// Empty means NAME NOBODY, and that is the right answer twice over: for secular, because there is
+// nobody to name, and at faith level 'light', because that dial means "mostly the systems" and
+// _faithLine already returns '' for both — this mirrors a decision the app had already made.
+// The human half of the hand-off is untouched: a helpline, their doctor, a counsellor and someone
+// they love are named to everyone, because those are not anybody's tradition.
+function _guideForPrompt(){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return '';
+    const g = (typeof curFaith === 'function') ? ((curFaith() || {}).guide || '') : '';
+    return g ? (', ' + g) : '';
+  }catch(_){ return ''; }
+}
 function safetyNote(){
   // KEPT SHORT ON PURPOSE. The first draft was 404 tokens — 44% of BROTHER_VOICE — and the cost is
   // not only the bill: a long clinical block crowds out the voice instructions and pushes the model
@@ -368,7 +384,7 @@ function safetyNote(){
     + _crisisLinesForPrompt()
     + 'If it is the serious one: stop coaching, say plainly this is bigger than you and you are not '
     + 'letting them carry it alone, and get a real human in — a helpline, their doctor, a counsellor, '
-    + 'someone they love, their priest or imam. Stay with them while they do. Never diagnose, never '
+    + 'someone they love' + _guideForPrompt() + '. Stay with them while they do. Never diagnose, never '
     + 'assess risk, never give a method, never make them prove how bad it is. ';
 }
 function brotherSys(extra){

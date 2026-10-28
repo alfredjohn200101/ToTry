@@ -37,7 +37,7 @@ const FAITHS = new Function('VS_CHRISTIANITY','VS_ISLAM','VS_HINDU','VS_BUDDHIST
 // H.load REFUSES a stub it would shadow, so faithVoiceNote MOVES into the load list rather than
 // being duplicated as a stub.
 const { brotherSys, faithVoiceNote, sexNote } =
-  H.load(['brotherSys','safetyNote','sexNote','_crisisLinesForPrompt','faithVoiceNote','curFaith'], {
+  H.load(['brotherSys','safetyNote','_guideForPrompt','sexNote','_crisisLinesForPrompt','faithVoiceNote','curFaith'], {
     BROTHER_VOICE, CRISIS_LINES, FAITHS,
     userSex: () => 'male',           // only 1 of sexNote's 3 branches is measured; the other two are
                                      // fingerprinted but never driven, which the stamp comment says.

@@ -1733,7 +1733,19 @@ function openRecoveryBridge(){
   // nowhere. Celebrate Recovery's own Find Help page, verified by shape:
   // <title>Find Help - Celebrate Recovery.
   if(faithOn && tr==='christianity') opts.splice(2,0,['\u271D','Celebrate Recovery','Christ-centred twelve steps, in a church, with people who will not flinch. Free.','https://celebraterecovery.com/find-help-2/']);
-  if(faithOn && tr!=='christianity' && tr!=='secular') opts.splice(2,0,['\u{1F54C}','Your community','An imam, a priest, a monk, an elder — someone in your own tradition who has walked beside people through this.','']);
+  // A MOSQUE MARK FOR A HINDU AND A BUDDHIST. This row is added for every non-Christian,
+  // non-secular tradition and it carried \u{1F54C} — the mosque — plus a list that opened with an
+  // imam. Same defect as safetyNote()'s "their priest or imam": one tradition's furniture handed
+  // to three. It takes the tradition's OWN mark and its OWN guide now, from the registry.
+  // `their` → `your` because FAITHS states the guide in the third person for the AI prompt, and all
+  // four read correctly second-person: your priest / your imam / whoever teaches at your temple /
+  // a monastic, or whoever teaches at your sangha.
+  if(faithOn && tr!=='christianity' && tr!=='secular'){
+    const _cf = (typeof curFaith==='function') ? (curFaith()||{}) : {};
+    const _who = String(_cf.guide||'').replace(/\btheir\b/g,'your') || 'someone in your own tradition';
+    opts.splice(2,0,[_cf.icon||'\u{1F64F}','Your community', _who.charAt(0).toUpperCase()+_who.slice(1)+
+      ' — someone in your own tradition who has walked beside people through this.','']);
+  }
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+

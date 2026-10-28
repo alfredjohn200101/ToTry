@@ -15759,7 +15759,12 @@ const VS_SECULAR=[
 // faithTradition() = which path; faithLevel() (elsewhere) = how much surfaces.
 const FAITHS = {
   christianity: {
-    id:'christianity', label:'Christianity', icon:'✝', divine:'God',
+    id:'christianity',
+    // THE HAND-OFF NAMES A PERSON, AND WHOSE PERSON IT IS MATTERS. safetyNote() — the crisis
+    // clause in EVERY AI prompt — said "their priest or imam" to all five traditions, so a Hindu,
+    // a Buddhist and a secular person were handed someone else's clergy at the one moment the
+    // model stops coaching. Empty means NAME NOBODY, which is the honest answer for secular.
+    guide:'their priest', label:'Christianity', icon:'✝', divine:'God',
     bookName:'the Bible', bookShort:'Bible',
     todayTitle:'Today in the Church', todayDesc:'The Mass readings for today and the saint the Church remembers.',
     practiceTitle:'The Rosary', practiceDesc:'Pray it guided, bead by bead — today’s mysteries chosen for you.',
@@ -15768,7 +15773,8 @@ const FAITHS = {
     verses: VS_CHRISTIANITY,
   },
   islam: {
-    id:'islam', label:'Islam', icon:'☪', divine:'Allah',
+    id:'islam',
+    guide:'their imam', label:'Islam', icon:'☪', divine:'Allah',
     bookName:'the Qur’an', bookShort:'Qur’an',
     todayTitle:'Prayer times', todayDesc:'Today’s five prayers, the Hijri date, and an ayah.',
     practiceTitle:'Dhikr', practiceDesc:'Remembrance of Allah — guided, with the beautiful names.',
@@ -15777,7 +15783,8 @@ const FAITHS = {
     verses: VS_ISLAM,
   },
   hinduism: {
-    id:'hinduism', label:'Hinduism', icon:'🕉', divine:'the Divine',
+    id:'hinduism',
+    guide:'whoever teaches at their temple', label:'Hinduism', icon:'🕉', divine:'the Divine',
     bookName:'the Bhagavad Gita', bookShort:'Gita',
     todayTitle:'Today’s verse', todayDesc:'A verse from the Gita to carry through the day.',
     practiceTitle:'Japa', practiceDesc:'Mantra repetition — steady the mind, bead by bead.',
@@ -15786,7 +15793,8 @@ const FAITHS = {
     verses: VS_HINDU,
   },
   buddhism: {
-    id:'buddhism', label:'Buddhism', icon:'☸', divine:null,
+    id:'buddhism',
+    guide:'a monastic, or whoever teaches at their sangha', label:'Buddhism', icon:'☸', divine:null,
     bookName:'the Dhammapada', bookShort:'Dhammapada',
     todayTitle:'Today’s teaching', todayDesc:'A teaching from the Dhammapada for today.',
     practiceTitle:'Meditation', practiceDesc:'Sit with the breath — guided, at your own pace.',
@@ -15795,7 +15803,8 @@ const FAITHS = {
     verses: VS_BUDDHIST,
   },
   secular: {
-    id:'secular', label:'Secular / None', icon:'○', divine:null,
+    id:'secular',
+    guide:'', label:'Secular / None', icon:'○', divine:null,
     bookName:'the Stoics', bookShort:'Reflections',
     todayTitle:'Today’s reflection', todayDesc:'A grounded reflection to steady the day.',
     practiceTitle:'Stillness', practiceDesc:'A few quiet minutes with the breath — no belief required.',
@@ -20418,7 +20427,19 @@ function openRecoveryBridge(){
   // nowhere. Celebrate Recovery's own Find Help page, verified by shape:
   // <title>Find Help - Celebrate Recovery.
   if(faithOn && tr==='christianity') opts.splice(2,0,['\u271D','Celebrate Recovery','Christ-centred twelve steps, in a church, with people who will not flinch. Free.','https://celebraterecovery.com/find-help-2/']);
-  if(faithOn && tr!=='christianity' && tr!=='secular') opts.splice(2,0,['\u{1F54C}','Your community','An imam, a priest, a monk, an elder — someone in your own tradition who has walked beside people through this.','']);
+  // A MOSQUE MARK FOR A HINDU AND A BUDDHIST. This row is added for every non-Christian,
+  // non-secular tradition and it carried \u{1F54C} — the mosque — plus a list that opened with an
+  // imam. Same defect as safetyNote()'s "their priest or imam": one tradition's furniture handed
+  // to three. It takes the tradition's OWN mark and its OWN guide now, from the registry.
+  // `their` → `your` because FAITHS states the guide in the third person for the AI prompt, and all
+  // four read correctly second-person: your priest / your imam / whoever teaches at your temple /
+  // a monastic, or whoever teaches at your sangha.
+  if(faithOn && tr!=='christianity' && tr!=='secular'){
+    const _cf = (typeof curFaith==='function') ? (curFaith()||{}) : {};
+    const _who = String(_cf.guide||'').replace(/\btheir\b/g,'your') || 'someone in your own tradition';
+    opts.splice(2,0,[_cf.icon||'\u{1F64F}','Your community', _who.charAt(0).toUpperCase()+_who.slice(1)+
+      ' — someone in your own tradition who has walked beside people through this.','']);
+  }
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
@@ -24823,6 +24844,22 @@ function _crisisLinesForPrompt(){
       + '. Lead with the one for where they are; this app is Australian, so Lifeline 13 11 14 is the default. ';
   }catch(_){ return 'their local crisis line, their doctor, or findahelpline.com. '; }
 }
+// WHOSE PERSON THE HAND-OFF NAMES. This clause said "their priest or imam" to ALL FIVE traditions,
+// so a Hindu, a Buddhist and a secular person reaching an AI surface at the one moment the model
+// stops coaching were handed someone else's clergy — and the secular person a category they have
+// asked not to be addressed in, in the same prompt that forbids religious language for them.
+// Empty means NAME NOBODY, and that is the right answer twice over: for secular, because there is
+// nobody to name, and at faith level 'light', because that dial means "mostly the systems" and
+// _faithLine already returns '' for both — this mirrors a decision the app had already made.
+// The human half of the hand-off is untouched: a helpline, their doctor, a counsellor and someone
+// they love are named to everyone, because those are not anybody's tradition.
+function _guideForPrompt(){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return '';
+    const g = (typeof curFaith === 'function') ? ((curFaith() || {}).guide || '') : '';
+    return g ? (', ' + g) : '';
+  }catch(_){ return ''; }
+}
 function safetyNote(){
   // KEPT SHORT ON PURPOSE. The first draft was 404 tokens — 44% of BROTHER_VOICE — and the cost is
   // not only the bill: a long clinical block crowds out the voice instructions and pushes the model
@@ -24860,7 +24897,7 @@ function safetyNote(){
     + _crisisLinesForPrompt()
     + 'If it is the serious one: stop coaching, say plainly this is bigger than you and you are not '
     + 'letting them carry it alone, and get a real human in — a helpline, their doctor, a counsellor, '
-    + 'someone they love, their priest or imam. Stay with them while they do. Never diagnose, never '
+    + 'someone they love' + _guideForPrompt() + '. Stay with them while they do. Never diagnose, never '
     + 'assess risk, never give a method, never make them prove how bad it is. ';
 }
 function brotherSys(extra){
