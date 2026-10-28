@@ -7567,8 +7567,20 @@ H.section('a label says what its number is');
       'and the hero renders that ordinal, not _fightMax');
     H.ok(/_fightDay === 1 \? 'Day in the fight'/.test(hab),
       'the hero says "Day in the fight" on day one');
-    H.ok(/\(str === _fightMax\)/.test(hab),
+    H.ok(/str === _fightMax/.test(hab),
       'the clean-streak tile still hides on elapsed — that test asks whether they ever slipped');
+    // AND IT HIDES ENTIRELY WHEN NOTHING THERE IS AN ABSTINENCE FIGHT. A person who chose "Just
+    // watching" was told "No goal, no streak, no line. Nothing to keep or break" and then shown a
+    // tile labelled Streak reading 0 from day two — the day-one hide was the str === _fightMax
+    // coincidence, never a guard.
+    H.ok(/!_streakVices\.length/.test(hab),
+      'and hides outright when no vice is an abstinence fight');
+    // ANCHOR ON THE FILTER, NOT THE SYMBOL. A bare /viceIsAbstinence/ passes while the filter goes
+    // back to `kind !== 'letgo'`, because the name still appears in the by-vice skip below it and
+    // in the comment above it — a second occurrence satisfying the invariant, which this repo has
+    // paid for before.
+    H.ok(/_streakVices\s*=\s*vices\.filter\([^;]*viceIsAbstinence/.test(hab),
+      'the streak SET is chosen by MODE, not by kind !== letgo, which kept watch-only vices in');
   }
 
   // A WAITING STATE MAY NOT CLAIM THE THING IT IS WAITING FOR — and may not repeat the heading above

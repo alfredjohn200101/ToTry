@@ -44,7 +44,14 @@ function renderScoreboard(){
   const tw=vices.reduce((a,v)=>a+(v.w||0),0),tf=vices.reduce((a,v)=>a+(v.total||0),0);
   // STREAK on the Fight tab = longest CURRENT clean streak across all vices (days clean),
   // not the habit-completion streak. This is what users expect to see here.
-  const _streakVices = vices.filter(v => v.kind !== 'letgo'); // letting-go isn't a clean-day streak
+  // A STREAK TILE FOR SOMEBODY PROMISED NO STREAK. The filter asked `kind !== 'letgo'`, which keeps
+  // WATCH-ONLY and MODERATE vices in — and the person who chose "Just watching" was told, in the
+  // app's own words, "No goal, no streak, no line. Nothing to keep or break", with the card
+  // repeating it ("I am just holding the mirror"). One tap right, on the same tab, they were shown
+  // a tile labelled Streak reading 0 from day two onward. The day-one hide was a coincidence
+  // (str === _fightMax), never a guard. A clean-day streak only means something for a vice whose
+  // goal IS abstinence, which is exactly what viceIsAbstinence() answers.
+  const _streakVices = vices.filter(v => (typeof viceIsAbstinence === 'function') ? viceIsAbstinence(v) : v.kind !== 'letgo');
   const cleanStreak = _streakVices.length ? Math.max(0, ..._streakVices.map(v => viceCleanDays(v))) : 0;
   const rate=tf>0?Math.round((tw/tf)*100):0,day=getDayCount(),str=cleanStreak;
   const e=id=>document.getElementById(id);
@@ -83,14 +90,18 @@ function renderScoreboard(){
   // panel is worth reading closely. When it has nothing of its own to add, it says so instead.
   const _streakTile = e('sc-streak') ? e('sc-streak').closest('.ios-stat') : null;
   if(e('sc-streak')) e('sc-streak').textContent = str;
-  if(_streakTile) _streakTile.style.display = (str === _fightMax) ? 'none' : '';
+  // NO ABSTINENCE VICE AT ALL MEANS NO TILE. Without this the tile just reads 0 forever, which is
+  // the zero-under-a-label this file argues against a few lines down.
+  if(_streakTile) _streakTile.style.display = (!_streakVices.length || str === _fightMax) ? 'none' : '';
   // A typographic apostrophe, like the rest of the app's prose. It was the straight one, set in
   // italics and centred under the hero; the italics are gone too.
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\u2019re becoming over who you used to be.';
   const bv=e('score-by-vice');
   const _bvRows = [];
   if(bv){bv.innerHTML='';vices.forEach(v=>{
-    if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
+    // Same dial as the tile above: a watch-only or moderate vice has no clean-day streak to read,
+    // and its row said "0d clean" until it had uses logged.
+    if((typeof viceIsAbstinence === 'function') ? !viceIsAbstinence(v) : v.kind==='letgo') return;
     // THE SAME SHAME, ONE TAP AWAY. v546 took "WIN RATE 0% · 0/15" off the vice card and left the
     // Score panel entirely built on it — so a man 105 days into the fight, who had logged 51 slips
     // honestly, read "0 TOTAL URGES DEFEATED · WIN RATE 0% · 0/51 won · No wins yet" underneath a
