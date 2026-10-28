@@ -436,9 +436,16 @@ function pickContextualVerse(context){
 function showVerseToast(context, customTitle){
   // "LIGHTER — SURFACES LESS" HAS TO MEAN THIS ONE TOO. The dial already hides the hero verse, and the
   // companion and breath surfaces both check it (_breathFaithOn, faithOn) — but this, the app's main
-  // UNPROMPTED scripture moment, contained no faithLevel reference at all. It fires on a win, a slip, a
-  // PR, a fasting milestone and an answered prayer, so a person who had explicitly asked for less still
-  // got a full-screen verse at every one of those. Verified: at level 'light' the hero verse was
+  // UNPROMPTED scripture moment, contained no faithLevel reference at all. It fires on a win, a PR, a
+  // fasting milestone and an answered prayer, so a person who had explicitly asked for less still
+  // got a full-screen verse at every one of those.
+  // IT DOES NOT FIRE ON A SLIP, and this comment said it did. `loss` is a real pool — twelve
+  // grace-first verses — with NO call site: logLoss renders the streak toast and nothing else. So
+  // the app speaks scripture at a win, a PR, a fast and an answered prayer, and says nothing at the
+  // one moment grace is the entire point. That asymmetry is a DECISION for the owner, not a bug to
+  // quietly close: a verse arriving unbidden on the worst tap of somebody's week could as easily be
+  // an interruption as a presence. Recorded here so the next reader sees the choice rather than a
+  // sentence claiming it already works. Verified: at level 'light' the hero verse was
   // display:none while showVerseToast rendered the identical modal it renders at 'full'.
   // Asking for less and being given the same thing is worse than never offering the dial.
   if(typeof faithLevel === 'function' && faithLevel() === 'light') return;
@@ -453,6 +460,11 @@ function showVerseToast(context, customTitle){
     if(_t === 'christianity'){
       v = pickContextualVerse(context);
     } else if(typeof activeVerses === 'function'){
+      // THE CONTEXT IS ACCEPTED AND THROWN AWAY HERE, and that is the honest state rather than an
+      // oversight: VS_ISLAM, VS_HINDU, VS_BUDDHIST and VS_SECULAR are flat {t, r} banks with no
+      // context tags, so there is nothing to target by. Only Christianity has CONTEXTUAL_VERSES.
+      // Giving the other four real per-moment pools is content work across four scriptures and
+      // belongs to somebody who can judge the lines, not to a sweep that invents them.
       const set = activeVerses();
       if(set && set.length){
         const pick = set[Math.floor(Math.random() * set.length)];

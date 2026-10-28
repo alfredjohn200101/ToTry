@@ -19449,4 +19449,69 @@ H.section('the share image carries the URL, not just the share sheet');
   H.eq(man.description, metaDesc, 'and manifest.json says exactly the same thing');
 }
 
+// ── A SPLIT SAVE THAT DID NOT REPAINT THE CARD ABOVE IT ────────────────────────────────────────
+// renderSplitOverview() repaints the day LIST; the today card 200px above it is written by
+// loadTodaySplitCard(). saveSplitDay learned that at some point, under a comment explaining that
+// without it "the card still read 'No routine set for today' ... telling the person to do the thing
+// they had just done". applyRecommendedSplit, seventy lines below in the same file, never did — so
+// applying a whole week's split left the card contradicting it. The persist half of that function
+// was fixed at v658 and the repaint half was the twin nobody looked for.
+H.section('every split save repaints the card above the list');
+{
+  ['saveSplitDay', 'applyRecommendedSplit'].forEach(function(fn){
+    let b = '';
+    try { b = H.code(H.extractFn(fn)); } catch (e) { b = ''; }
+    H.ok(b.length > 120, fn + ' was found by name');
+    H.ok(/ls\('totry_split'/.test(b), fn + ' writes the split');
+    H.ok(/renderSplitOverview\(\)/.test(b), 'and repaints the day list');
+    H.ok(/loadTodaySplitCard\(\)/.test(b),
+      'AND the today card above it, or the card contradicts what they just did');
+  });
+  // The exercises must survive the save too — the original finding, fixed at v658.
+  const ars = H.code(H.extractFn('applyRecommendedSplit'));
+  H.ok(/exercises\s*:\s*ex\b/.test(ars),
+    'and the generated exercises are persisted, not dropped for a bare label');
+}
+
+// ── A COMMENT THAT CLAIMED A CALL SITE THAT DOES NOT EXIST ─────────────────────────────────────
+// showVerseToast's own comment said it fires "on a win, a slip, a PR, a fasting milestone and an
+// answered prayer". There is no slip: `loss` is a declared pool of twelve grace-first verses with
+// NO caller — logLoss renders the streak toast and nothing else. So the app speaks scripture at a
+// win, a PR, a fast and an answered prayer, and says nothing at the one moment grace is the whole
+// point. That is a decision for the owner; the defect was the sentence claiming it was already
+// made. This asserts every context the comment names is really wired, so the next such claim fails.
+H.section('the verse toast fires where its own comment says it does');
+{
+  const all = H.code(H.html);
+  const called = new Set((all.match(/showVerseToast\(\s*'([a-z_]+)'/g) || [])
+    .map(m => m.replace(/.*'([a-z_]+)'.*/, '$1')));
+  H.ok(called.size >= 4, 'the toast has real call sites (' + [...called].sort().join(', ') + ')');
+  // The comment is part of the record, so read it UNSTRIPPED and hold it to the call sites.
+  const src = H.html;
+  const i = src.indexOf('function showVerseToast(');
+  const head = src.slice(i, i + 1400);
+  // NORMALISE FIRST. The comment wraps, so every continuation line carries a literal "// " that
+  // ends up inside a phrase ("a\n  // fasting milestone"), and [^.]+ runs straight past the list
+  // into the rest of the sentence. Strip the prefixes, collapse the whitespace, then cut the list
+  // at ", so" — both of those were real failures of this check on correct code.
+  const flat = head.replace(/\n\s*\/\/ ?/g, ' ').replace(/\s+/g, ' ');
+  const claim = (flat.match(/It fires on (.+?)(?:, so |\.)/) || [])[1] || '';
+  H.ok(claim.length > 10, 'the comment still states where it fires');
+  // EVERY PHRASE THE COMMENT LISTS MUST MAP TO A REAL CALL SITE. The first version of this check
+  // only validated the four phrases it already knew, so a comment claiming "a nap" sailed past it —
+  // it could catch a claim being restored but not a new one being invented. Split the list and
+  // require each phrase to resolve; an unrecognised phrase is itself the failure.
+  const PHRASE = { 'a win': 'win', 'a PR': 'pr', 'a fasting milestone': 'fasting_milestone',
+                   'an answered prayer': 'prayer_answered', 'a slip': 'loss' };
+  const phrases = claim.split(/,| and /).map(x => x.trim()).filter(Boolean);
+  H.ok(phrases.length >= 3, 'the claim lists several moments (' + phrases.length + ')');
+  phrases.forEach(function(ph){
+    const ctx = PHRASE[ph];
+    H.ok(!!ctx, 'the comment phrase ' + JSON.stringify(ph) + ' is one this check knows \u2014 ' +
+      'an unrecognised one is either a new context to wire up or a claim nobody can verify');
+    if (ctx) H.ok(called.has(ctx),
+      'and ' + JSON.stringify(ph) + ' really is wired (showVerseToast(\'' + ctx + '\'))');
+  });
+}
+
 H.report();

@@ -326,6 +326,12 @@ function applyRecommendedSplit(){
   ls('totry_split',split);
   closeOpenSheets();
   renderSplitOverview();
+  // THE SAME REPAINT ITS SIBLING ALREADY DOES, seventy lines up, under a comment explaining exactly
+  // why: renderSplitOverview() repaints the day LIST, and the today card 200px above it is written
+  // by loadTodaySplitCard(). Without this, somebody applies a whole week's split and the card still
+  // reads "No routine set for today" — telling them to do the thing they have just done. The
+  // persist half of this function was fixed at v658 and the repaint half was left behind.
+  if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
   const _n=split.reduce(function(a,d){ return a+((d.exercises||[]).length?1:0); },0);
   showToast('Split saved', _n
     ? 'Your weekly split is live, with the exercises on '+(typeof plural==='function'?plural(_n,'day'):_n+' day'+(_n===1?'':'s'))+'.'
