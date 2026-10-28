@@ -1110,7 +1110,7 @@ function runUniversalSearch(query){
         date: e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''),
         body: e.text,
         mood: e.mood,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'journal\'),100)'
+        onclick: 'closeOpenSheets();go(\'reflect\');setTimeout(()=>setReflectTab(\'journal\'),100)'
       });
     }
   });
@@ -1123,7 +1123,7 @@ function runUniversalSearch(query){
         sourceColor: 'var(--gr)',
         date: w.date + (w.day ? ' · Day ' + w.day : ''),
         body: w.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'wins\'),100)'
+        onclick: 'closeOpenSheets();go(\'reflect\');setTimeout(()=>setReflectTab(\'wins\'),100)'
       });
     }
   });
@@ -1143,7 +1143,7 @@ function runUniversalSearch(query){
         // it and tapped the result landed on somebody else's screen — their passage displayed
         // correctly, which is what made it read as working. openMyBook() already branches, so this
         // closes the route with no new gating logic.
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenSaved()'
+        onclick: 'closeOpenSheets();_searchOpenSaved()'
       });
     }
   });
@@ -1158,7 +1158,7 @@ function runUniversalSearch(query){
         sourceColor: 'var(--pu)',
         date: e.date + (e.day ? ' · Day ' + e.day : ''),
         body: preview,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();showExamenDetail(' + i + ')'
+        onclick: 'closeOpenSheets();showExamenDetail(' + i + ')'
       });
     }
   });
@@ -1173,7 +1173,7 @@ function runUniversalSearch(query){
         sourceColor: p.status === 'answered' ? 'var(--gr)' : 'var(--tx2)',
         date: days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago',
         body: p.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenPrayer()'
+        onclick: 'closeOpenSheets();_searchOpenPrayer()'
       });
     }
   });

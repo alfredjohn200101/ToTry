@@ -540,7 +540,7 @@ function postUrgeReflection(viceName){
     '<input type="text" id="pur-trigger" placeholder="stress, boredom, a person, late night..." style="margin-bottom:12px">'+
     '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">What got you through?</div>'+
     '<input type="text" id="pur-helped" placeholder="prayer, walked away, called someone, breathed..." style="margin-bottom:14px">'+
-    '<button class="btn primary" onclick="savePostUrge(\''+viceName.replace(/'/g,"\\'")+'\')" style="margin-bottom:8px">Save what happened</button>'+
+    '<button class="btn primary" onclick="savePostUrge(\''+_jsAttr(viceName)+'\')" style="margin-bottom:8px">Save what happened</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Skip</button>'+
     '</div>';
   document.body.appendChild(m);

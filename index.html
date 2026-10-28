@@ -22087,7 +22087,7 @@ function _impulseHold(what, amt, fi){
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Don’t decide now — decide tomorrow. About seven in ten urges to buy are gone within a day, and the ones that aren’t are usually the ones worth having. I’ll ask you about <b style="color:var(--tx)">'+safe+'</b> then.</div>'+
     '</div>'+
     (why?'<div style="font-size:var(--t-sm);color:var(--go);line-height:1.6;margin-bottom:14px;font-style:italic">Why you started: “'+why.replace(/</g,'&lt;').slice(0,150)+'”</div>':'')+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+String(what).replace(/'/g,"").replace(/"/g,'')+'\','+amt+')">Hold it for a day</button>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+_jsAttr(what)+'\','+amt+')">Hold it for a day</button>'+
     '<button class="btn subtle" onclick="closeModal(this)" style="margin-bottom:8px">I’m buying it anyway — that’s allowed</button>'+
     '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">Either way there’s no telling-off here. Buying something isn’t a moral failure; doing it without noticing is just how money leaks.</div>'+
   '</div>';
@@ -25615,7 +25615,7 @@ function postUrgeReflection(viceName){
     '<input type="text" id="pur-trigger" placeholder="stress, boredom, a person, late night..." style="margin-bottom:12px">'+
     '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">What got you through?</div>'+
     '<input type="text" id="pur-helped" placeholder="prayer, walked away, called someone, breathed..." style="margin-bottom:14px">'+
-    '<button class="btn primary" onclick="savePostUrge(\''+viceName.replace(/'/g,"\\'")+'\')" style="margin-bottom:8px">Save what happened</button>'+
+    '<button class="btn primary" onclick="savePostUrge(\''+_jsAttr(viceName)+'\')" style="margin-bottom:8px">Save what happened</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Skip</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -46877,7 +46877,7 @@ async function searchExercises(query, opts){
   if(_superseded()) return;
   if(!exercises.length){
     if(_typeahead){ res.className='tr-results'; res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
-    const safeQ = query.replace(/'/g,"\\'").replace(/</g,'&lt;');
+    const safeQ = _jsAttr(query);   // a JS string inside an attribute: & first, then \ ' " and newline
     res.className='tr-results';
     res.innerHTML='<div class="ios-empty">'+svgIcon('search',44)+'<div class="ios-empty-title">Nothing found</div>'+
       '<div class="ios-empty-body">No exercises found for \u201c'+_escFew(query)+'\u201d.</div>'+
@@ -51032,7 +51032,7 @@ function renderTGT(){
     (few.length
       ? '<div class="tgt-people">'+
           few.slice(0,5).map(function(p){ const on=(person===p.name);
-            return '<button class="qb'+(on?' on':'')+'" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')">'+_escFew(p.name)+'</button>'; }).join('')+
+            return '<button class="qb'+(on?' on':'')+'" onclick="_tgtPickPerson(\''+_jsAttr(p.name)+'\')">'+_escFew(p.name)+'</button>'; }).join('')+
         '</div>'
       : '')+
     ((t.c && t.c.trim())
@@ -55848,7 +55848,7 @@ function runUniversalSearch(query){
         date: e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''),
         body: e.text,
         mood: e.mood,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'journal\'),100)'
+        onclick: 'closeOpenSheets();go(\'reflect\');setTimeout(()=>setReflectTab(\'journal\'),100)'
       });
     }
   });
@@ -55861,7 +55861,7 @@ function runUniversalSearch(query){
         sourceColor: 'var(--gr)',
         date: w.date + (w.day ? ' · Day ' + w.day : ''),
         body: w.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'reflect\');setTimeout(()=>setReflectTab(\'wins\'),100)'
+        onclick: 'closeOpenSheets();go(\'reflect\');setTimeout(()=>setReflectTab(\'wins\'),100)'
       });
     }
   });
@@ -55881,7 +55881,7 @@ function runUniversalSearch(query){
         // it and tapped the result landed on somebody else's screen — their passage displayed
         // correctly, which is what made it read as working. openMyBook() already branches, so this
         // closes the route with no new gating logic.
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenSaved()'
+        onclick: 'closeOpenSheets();_searchOpenSaved()'
       });
     }
   });
@@ -55896,7 +55896,7 @@ function runUniversalSearch(query){
         sourceColor: 'var(--pu)',
         date: e.date + (e.day ? ' · Day ' + e.day : ''),
         body: preview,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();showExamenDetail(' + i + ')'
+        onclick: 'closeOpenSheets();showExamenDetail(' + i + ')'
       });
     }
   });
@@ -55911,7 +55911,7 @@ function runUniversalSearch(query){
         sourceColor: p.status === 'answered' ? 'var(--gr)' : 'var(--tx2)',
         date: days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago',
         body: p.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenPrayer()'
+        onclick: 'closeOpenSheets();_searchOpenPrayer()'
       });
     }
   });
@@ -60617,7 +60617,7 @@ function manageStravaConnection(){
       '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F6B4}</div>' +
       '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Strava connected</div><div style="font-size:var(--t-cap);color:var(--gr)">✓ syncing your activities</div></div>' +
     '</div>' +
-    '<button class="btn primary" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();if(typeof syncStravaActivities===&apos;function&apos;){showToast(&apos;Syncing&apos;,&apos;Pulling recent activities...&apos;);syncStravaActivities();}" style="margin-bottom:8px">↻ Sync now</button>' +
+    '<button class="btn primary" onclick="closeOpenSheets();if(typeof syncStravaActivities===&apos;function&apos;){showToast(&apos;Syncing&apos;,&apos;Pulling recent activities...&apos;);syncStravaActivities();}" style="margin-bottom:8px">↻ Sync now</button>' +
     '<button class="btn" onclick="window.open(&apos;https://www.strava.com&apos;,&apos;_blank&apos;)" style="margin-bottom:8px;background:var(--bg3)">Open Strava app</button>' +
     '<button class="btn" onclick="disconnectStrava()" style="margin-bottom:8px;background:var(--re-bg);color:var(--re)">Disconnect Strava</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
@@ -60646,9 +60646,9 @@ function manageHevyConnection(){
       '<div style="width:40px;height:40px;border-radius:var(--rs);background:#1C1C3A;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F4AA}</div>' +
       '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Hevy connected</div><div style="font-size:var(--t-cap);color:var(--gr)">✓ ' + workouts.length + ' workout' + (workouts.length===1?'':'s') + ' imported</div></div>' +
     '</div>' +
-    '<button class="btn primary" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();showToast(&apos;Syncing&apos;,&apos;Pulling your latest Hevy workouts...&apos;);setTimeout(()=>syncHevyWorkouts(),300)" style="margin-bottom:8px">↻ Sync workouts now</button>' +
+    '<button class="btn primary" onclick="closeOpenSheets();showToast(&apos;Syncing&apos;,&apos;Pulling your latest Hevy workouts...&apos;);setTimeout(()=>syncHevyWorkouts(),300)" style="margin-bottom:8px">↻ Sync workouts now</button>' +
     '<button class="btn" onclick="importHevyRoutines()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("save")+' Import my Hevy routines</button>' +
-    '<button class="btn" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();showToast(&apos;Loading&apos;,&apos;Pulling your Hevy routines...&apos;);setTimeout(()=>fetchHevyRoutines(),300)" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("save")+' Load my Hevy routines</button>' +
+    '<button class="btn" onclick="closeOpenSheets();showToast(&apos;Loading&apos;,&apos;Pulling your Hevy routines...&apos;);setTimeout(()=>fetchHevyRoutines(),300)" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("save")+' Load my Hevy routines</button>' +
     '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg3);border-radius:var(--r);cursor:pointer"><input type="checkbox" id="hevy-bw-toggle" ' + (ls('totry_bw_volume')?'checked':'') + ' onchange="ls(&apos;totry_bw_volume&apos;,this.checked); showToast(&apos;Saved&apos;, this.checked?&apos;Bodyweight now counts in volume (matches Hevy).&apos;:&apos;Volume counts external load only.&apos;); if(typeof renderUnifiedTraining===&apos;function&apos;)renderUnifiedTraining();" style="width:18px;height:18px;flex-shrink:0"><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4">Count bodyweight in volume for pull-ups, dips, etc. <span style="color:var(--tx3)">(matches how Hevy totals volume)</span></span></label>' +
     '<button class="btn" onclick="openPushRoutineToHevy()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("upload")+' Push a routine to Hevy</button>' +
     '<button class="btn" onclick="pushLastWorkoutToHevy()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("upload")+' Log my last ToTry workout to Hevy</button>' +

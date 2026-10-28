@@ -968,7 +968,7 @@ function renderTGT(){
     (few.length
       ? '<div class="tgt-people">'+
           few.slice(0,5).map(function(p){ const on=(person===p.name);
-            return '<button class="qb'+(on?' on':'')+'" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')">'+_escFew(p.name)+'</button>'; }).join('')+
+            return '<button class="qb'+(on?' on':'')+'" onclick="_tgtPickPerson(\''+_jsAttr(p.name)+'\')">'+_escFew(p.name)+'</button>'; }).join('')+
         '</div>'
       : '')+
     ((t.c && t.c.trim())

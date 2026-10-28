@@ -13196,10 +13196,27 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // The REMOVAL forms must be gone. The READ/GUARD forms are deliberately kept — five sites do
   // `if(document.querySelector('.modal-bg.open')) return;`, and turning a guard into a side effect
   // is how a true finding plus a global edit becomes destruction.
+  // THE QUOTE IS NOT ALWAYS A QUOTE. Measured 29 Oct 2026: this check asserted `left === 0` and
+  // measured 0 against a bundle holding EIGHT live removal sites — five written `\\'` (a JS string
+  // literal inside a module) and three written `&apos;` (an HTML entity inside an onclick
+  // attribute). The old regexes demanded a BARE `'`, so both escapings walked straight past them.
+  // A check that cannot fail is how this family returns after being closed, which is exactly what
+  // happened here: the sink was built, the call sites were swept once, and the sweep's own guard
+  // could not see the two spellings anybody would actually write next.
+  const Q = "(?:'|\\\\'|&apos;|&#39;|&#x27;)";
   const removals = [
-    /document\.querySelector\('\.modal-bg\.open'\)\?\.remove\(\)/g,
-    /document\.querySelectorAll\('\.modal-bg\.open'\)\.forEach\(\s*(?:function\s*\(\s*\w+\s*\)\s*\{\s*\w+\.remove|\(?\w+\)?\s*=>\s*\w+\.remove)/g,
+    new RegExp('document\\.querySelector\\(' + Q + '\\.modal-bg\\.open' + Q + '\\)\\?\\.remove\\(\\)', 'g'),
+    new RegExp('document\\.querySelectorAll\\(' + Q + '\\.modal-bg\\.open' + Q + '\\)\\.forEach\\(\\s*' +
+      '(?:function\\s*\\(\\s*\\w+\\s*\\)\\s*\\{\\s*\\w+\\.remove|\\(?\\w+\\)?\\s*=>\\s*\\w+\\.remove)', 'g'),
   ];
+  // CALIBRATION: the class must actually match all three spellings, or the widening is cosmetic.
+  ["document.querySelector('.modal-bg.open')?.remove()",
+   "document.querySelector(\\'.modal-bg.open\\')?.remove()",
+   'document.querySelector(&apos;.modal-bg.open&apos;)?.remove()'
+  ].forEach(function(sample, k){
+    H.ok(removals[0].test(sample), 'the removal pattern sees spelling ' + (k + 1) + ' of 3');
+    removals[0].lastIndex = 0;
+  });
   const left = removals.reduce((a, re) => a + (code.match(re) || []).length, 0);
   H.ok(left === 0,
     'no call site removes an open sheet directly (found ' + left + ') — they go through closeOpenSheets');
@@ -19104,6 +19121,68 @@ H.section('every UI string the reels scripts name is still in the app');
     'and the comment strip spares URLs (the recorded `(?<!:)//` trap)');
   H.ok(hay.indexOf(H.reelsFold("Can't start")) >= 0,
     'and it decodes \\uXXXX, or every curly-apostrophe label reads as missing');
+}
+
+// ── FOUR on* ATTRIBUTES HAND-ESCAPED USER-TYPED TEXT, IN THE SAME BUNDLE AS _jsAttr ─────────────
+// The crash log carries ~10 real "Failed to read the 'onclick' property … missing ) after argument
+// list" / "Invalid or unexpected token" errors at #nourish, #money, #today and #home. The three
+// CAUSES previously pinned were genuinely fixed by v659 — and the FAMILY was not. Four sites were
+// still building a JS string inside an on* attribute with a hand-rolled quote replace, on text a
+// person types:
+//   09-fight-deep.js  savePostUrge(viceName)        — a vice name
+//   05-moment.js      _impulseSaveHold(what)        — what was going on when they nearly spent
+//   23-evening.js     _tgtPickPerson(p.name)        — a person they named
+//   22-train-deep.js  openCreateExercise(query)     — a typed exercise search
+// Driven at v668 before the fix: a vice named `porn "just once"` broke the tag open, the app's own
+// source landed as a stray attribute whose NAME was `once"')"`, btn.onclick was null, and the
+// button reading "Save what happened" was DEAD. `a&apos;b` and a trailing backslash each produced a
+// non-compiling attribute too, because the HTML parser decodes an entity BEFORE the JS is compiled
+// and none of the four stripped every character that matters — savePostUrge did not strip `"` at all.
+//
+// AND savePostUrge IS A CRISIS DOOR. It gates #pur-trigger and #pur-helped, which a person fills in
+// right after a slip — "one of the two moments they are most likely to say the true thing". With the
+// button dead the gate never ran.
+//
+// 05-moment.js:586 is the textbook twin: 28 lines above it, _impulseFeeling already does
+// `const safe=_jsAttr(what);  // for the onclick attribute — see _jsAttr in 00-boot`, the value
+// comes back as an ARGUMENT, and the sibling re-emitted it with its own replace.
+H.section('no on* attribute hand-escapes typed text past _jsAttr');
+{
+  const code = H.code(H.html);
+  // The four sites, by the FUNCTION each one calls — asserting the call, not a line number.
+  // ANCHOR ON THE CALL SITE, NOT THE ARGUMENT. The first version asserted `_jsAttr(what)` is
+  // present, and the fault injection caught that by the RATCHET rather than by name: `_jsAttr(what)`
+  // occurs TWICE in 05-moment.js — once at :560 in the very twin this fix was modelled on — so
+  // reverting :586 left the needle intact. A duplicate anchor does not fail, it relocates.
+  [['savePostUrge', "savePostUrge(\\''+_jsAttr(viceName)"],
+   ['_impulseSaveHold', "_impulseSaveHold(\\''+_jsAttr(what)"],
+   ['_tgtPickPerson', "_tgtPickPerson(\\''+_jsAttr(p.name)"],
+   ['openCreateExercise', '_jsAttr(query)']].forEach(function(pair){
+    const n = code.split(pair[1]).length - 1;
+    H.ok(n >= 1,
+      pair[0] + ' takes its argument through _jsAttr at its own call site, not a hand-rolled replace');
+  });
+  // EXECUTE the helper rather than trust its name: it must survive every payload that broke a site.
+  const J = H.load(['_jsAttr']);
+  ['porn "just once"', 'a&apos;b', 'Trailing\\', "Dan's shop"].forEach(function(pl){
+    const out = J._jsAttr(pl);
+    H.ok(out.indexOf('&quot;') >= 0 || pl.indexOf('"') < 0,
+      'a double quote is neutralised for ' + JSON.stringify(pl));
+    H.ok(!/(^|[^\\])'/.test(out), 'and no bare apostrophe survives in ' + JSON.stringify(pl));
+  });
+  H.ok(J._jsAttr('&').indexOf('&amp;') === 0,
+    '& is escaped FIRST, or an entity decodes back into a quote before the JS compiles');
+
+  // RATCHET, with the survivors named. Each remaining hand-rolled replace is legitimate and the
+  // reason is on the record: _jsAttr's own body; detectCrisis's apostrophe-STRIPPED pass (_hit and
+  // _hitRe test four forms and the stripped one is required); a guarded _jsAttr fallback; and
+  // interpolations of app-authored registry values (CONTEXTUAL_VERSES, the eight hardcoded saint
+  // buttons, EXERCISE_DB, a subscription key) which no person can type into. A NEW one must be a
+  // decision rather than a silent fifth crash site.
+  const hand = (code.match(/\.replace\(\/'\/g/g) || []).length;
+  H.ok(hand <= 15,
+    'hand-rolled quote escapes stay at the audited set (' + hand + ' of 15) — a new one needs a ' +
+    'reason here, or _jsAttr');
 }
 
 H.report();

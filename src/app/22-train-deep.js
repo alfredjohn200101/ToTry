@@ -151,7 +151,7 @@ async function searchExercises(query, opts){
   if(_superseded()) return;
   if(!exercises.length){
     if(_typeahead){ res.className='tr-results'; res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
-    const safeQ = query.replace(/'/g,"\\'").replace(/</g,'&lt;');
+    const safeQ = _jsAttr(query);   // a JS string inside an attribute: & first, then \ ' " and newline
     res.className='tr-results';
     res.innerHTML='<div class="ios-empty">'+svgIcon('search',44)+'<div class="ios-empty-title">Nothing found</div>'+
       '<div class="ios-empty-body">No exercises found for \u201c'+_escFew(query)+'\u201d.</div>'+

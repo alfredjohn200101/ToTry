@@ -583,7 +583,7 @@ function _impulseHold(what, amt, fi){
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Don’t decide now — decide tomorrow. About seven in ten urges to buy are gone within a day, and the ones that aren’t are usually the ones worth having. I’ll ask you about <b style="color:var(--tx)">'+safe+'</b> then.</div>'+
     '</div>'+
     (why?'<div style="font-size:var(--t-sm);color:var(--go);line-height:1.6;margin-bottom:14px;font-style:italic">Why you started: “'+why.replace(/</g,'&lt;').slice(0,150)+'”</div>':'')+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+String(what).replace(/'/g,"").replace(/"/g,'')+'\','+amt+')">Hold it for a day</button>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+_jsAttr(what)+'\','+amt+')">Hold it for a day</button>'+
     '<button class="btn subtle" onclick="closeModal(this)" style="margin-bottom:8px">I’m buying it anyway — that’s allowed</button>'+
     '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">Either way there’s no telling-off here. Buying something isn’t a moral failure; doing it without noticing is just how money leaks.</div>'+
   '</div>';
