@@ -169,6 +169,34 @@ function selectTransCategory(c){
   window.__transCategory = c;
   renderTransCategories();
 }
+// THE MONEY THRESHOLD. Deliberately conservative, because this is an UNPROMPTED voice and the app's
+// own soul statement is "quiet by default, there and ever-present, never overbearing".
+//   - expenses only; income is not a threshold
+//   - SILENT FOR A BRAND NEW PERSON. A zero is information with history and an accusation without
+//     it, so a thin ledger says nothing at all.
+//   - the debt has to actually be on their shoulders, because the line says it is
+//   - and the trigger is RELATIVE TO THEIR OWN monthlyPaymentRate(), never a hardcoded figure:
+//     $1,800 is a rounding error to one person and a month of freedom to another.
+// brotherSpeaks already throttles itself per kind (3h), so there is no second throttle here.
+function _maybeSpendThreshold(amount){
+  try{
+    if(typeof brotherSpeaks !== 'function') return;
+    if(window.__transType !== 'expense') return;
+    const amt = parseFloat(amount) || 0;
+    if(!(amt > 0)) return;
+    const list = ls('totry_transactions') || [];
+    if(list.length < 10) return;                       // not enough history to read anything from
+    const rate = (typeof monthlyPaymentRate === 'function') ? (parseFloat(monthlyPaymentRate()) || 0) : 0;
+    if(!(rate > 0)) return;                            // no payment history: nothing to be relative to
+    if(amt < rate) return;                             // the line is a month of their own progress
+    let debt = 0;
+    try{ const m = (typeof getLifeState === 'function') ? (getLifeState().money || {}) : {};
+         debt = parseFloat(m.totalDebt) || 0; }catch(_){ }
+    if(!(debt > 0)) return;
+    brotherSpeaks({ kind:'spendHeavy', detail:{ amount: amt, rate: rate, debt: debt } });
+  }catch(_){ }
+}
+
 function saveTransaction(){
   const amount = parseFloat(document.getElementById('trans-amount')?.value || 0);
   if(amount <= 0){ showToast('Invalid amount', 'Enter a positive amount.'); return; }
@@ -191,6 +219,15 @@ function saveTransaction(){
   // this door read "−$12" there and "−$12.00" here, so the app looked like it had recorded two
   // different things.
   showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + _moneyG(amount) + ' · ' + window.__transCategory);
+  // MONEY WAS THE ONLY PILLAR WITH NO THRESHOLD VOICE. The soul document says this app "speaks at
+  // thresholds (about to cross a line)", and brotherSpeaks declares four kinds — viceOver,
+  // trainTired, calorieOver and spendHeavy — but only three were ever called. The spendHeavy branch
+  // at 03-person.js:435 is complete and renders correctly when invoked by hand; nothing called it.
+  // So a person with debt on screen logged a large expense and got a grey "Logged" toast.
+  //
+  // AFTER the row is persisted and after the toast, never before: a threshold must never be able to
+  // cost somebody their entry. That is the same ordering rule the crisis gates follow.
+  try{ _maybeSpendThreshold(amount); }catch(_){ }
   haptic('success');
 }
 // Every other record here can be corrected — debts, bills, assets, subscriptions. A transaction

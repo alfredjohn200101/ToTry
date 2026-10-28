@@ -3244,7 +3244,28 @@ function tryApp(e,sc,st){
   setTimeout(()=>{ try{document.body.removeChild(f);}catch(_){}; document.removeEventListener('visibilitychange',onHide); if(!opened && !document.hidden){ window.open(st,'_blank'); } },1200);
 }
 function toggleCalPicker(){const p=document.getElementById('cal-picker');if(p)p.style.display=p.style.display==='none'?'block':'none';}
+// DEAD STORE IDS, VERIFIED AGAINST APPLE'S LOOKUP API rather than against a curl status code — both
+// a live and a dead apps.apple.com URL stop at a 301 to itms-apps://, so the status cannot tell them
+// apart. `itunes.apple.com/lookup?id=…&country=au` returns resultCount 0 for a dead id, and
+// MyFitnessPal's id is the control that proves the method.
+//   6447167650 -> 0 (the id this picker shipped)   6480417616 -> "Cal AI - Calorie Tracker"
+// The picker's row hardcoded its own copy of the id, which is why the registry's own "Removed: … Cal
+// AI …" note at 34-settings-apps.js:21 never reached it — a half-applied removal.
+const _DEAD_STORE_IDS = { '6447167650': '6480417616', '1388737828': '1458862350' };
+function _repairStoreUrl(u){
+  try{
+    let out = String(u || '');
+    Object.keys(_DEAD_STORE_IDS).forEach(function(bad){
+      if(out.indexOf('id' + bad) >= 0) out = out.replace('id' + bad, 'id' + _DEAD_STORE_IDS[bad]);
+    });
+    return out;
+  }catch(_){ return u; }
+}
 function setCalApp(n,ic,sc,st){
+  // A wrong link here becomes a PERMANENT one: totry_ca is persisted and openLinkedCalApp() reuses
+  // it every time, with no way to correct it short of picking a different app. So it is repaired on
+  // the way in as well as in the markup.
+  st = _repairStoreUrl(st);
   ls('totry_ca',{name:n,icon:ic,scheme:sc,store:st});
   const cn=document.getElementById('cal-name');
   const ci=document.getElementById('cal-icon');
@@ -3273,7 +3294,17 @@ function useToTryTracker(){
   if(typeof go==='function') go('nourish');
 }
 
+// AND REPAIR WHAT IS ALREADY STORED. Somebody who picked CalAI before this fix has the dead URL in
+// totry_ca; without this they would keep opening an "app unavailable" page forever.
+function _repairStoredCalApp(){
+  try{
+    const c = ls('totry_ca');
+    if(c && c.store){ const fixed = _repairStoreUrl(c.store);
+      if(fixed !== c.store){ c.store = fixed; ls('totry_ca', c); } }
+  }catch(_){ }
+}
 function openLinkedCalApp(){
+  _repairStoredCalApp();
   const ca=ls('totry_ca');
   if(!ca){toggleCalPicker();return;}
   // ToTry's own tracker → just go to Nourish in-app (no external app to launch).

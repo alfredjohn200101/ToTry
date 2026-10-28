@@ -23,7 +23,7 @@ function updatePartnerBtn(){
 const APP_REGISTRY = {
   // — Training with real OAuth / API —
   strava: {name:'Strava', icon:'&#x1F6B4;', color:'#FC4C02', category:'Training', scheme:'strava://', store:'https://apps.apple.com/app/strava-run-ride-hike/id426826309', web:'https://strava.com', oauth:true, sync:true},
-  hevy: {name:'Hevy', icon:'&#x1F4AA;', color:'#1C1C3A', category:'Training', scheme:'hevy://', store:'https://apps.apple.com/app/hevy-workout-tracker/id1388737828', web:'https://hevy.com', apikey:true},
+  hevy: {name:'Hevy', icon:'&#x1F4AA;', color:'#1C1C3A', category:'Training', scheme:'hevy://', store:'https://apps.apple.com/app/hevy-workout-tracker/id1458862350', web:'https://hevy.com', apikey:true},
   // — Working URL schemes (one-tap open the iOS app) —
   strong: {name:'Strong', icon:'&#x1F3CB;', color:'#1A2A1A', category:'Training', scheme:'strong://', store:'https://apps.apple.com/app/strong-workout-tracker-gym-log/id464254577'},
   applefit: {name:'Apple Fitness', icon:'&#x1F34E;', color:'#000', category:'Training', scheme:'x-apple-fitness://'},

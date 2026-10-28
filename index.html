@@ -1587,6 +1587,16 @@ input:focus, textarea:focus, select:focus{outline:none;border-color:var(--go);bo
 @media(max-height:480px) and (orientation:landscape){
   .hdr{padding-top:calc(var(--st) + 6px);padding-bottom:8px}
   .tab{padding-bottom:calc(var(--sb) + 90px)}
+  /* FULL-HEIGHT CENTRED OVERLAYS CANNOT BE REACHED WHEN THEY OVERFLOW. They are
+     `justify-content:center` with no overflow rule, so a 414px panel in a 393px viewport splits the
+     overflow evenly top and bottom and NEITHER half can be scrolled to — measured on the guided
+     breathing screen at 852x393 (11px cut off each end, the protocol name reduced to ~5px of a 15px
+     line) and at 667x375, where "Change breath" has its centre at y=376 in a 375px viewport and is
+     genuinely untappable. The orb, the phase words, the count and the close button stayed usable
+     throughout, so this costs the heading and one control, never the exercise itself.
+     The native app is portrait-only as of v666, but a PWA in Safari can still be rotated, so the
+     overlays are made survivable rather than relying on the plist alone. */
+  .breath-overlay,.sos-overlay{justify-content:flex-start !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
 }
 
 /* Skeleton list */
@@ -5965,7 +5975,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
         <div class="ios-header">Choose your calorie app</div>
         <div class="ios-list">
           <button type="button" class="ios-row tint" onclick="setCalApp('MyFitnessPal','&#x1F957;','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">MyFitnessPal</span></span></button>
-          <button type="button" class="ios-row tint" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">CalAI</span></span></button>
+          <button type="button" class="ios-row tint" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/cal-ai-calorie-tracker/id6480417616')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">CalAI</span></span></button>
           <button type="button" class="ios-row tint" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cronometer</span></span></button>
           <button type="button" class="ios-row tint" onclick="useToTryTracker()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Use ToTry’s built-in tracker</span></span></button>
         </div>
@@ -8788,7 +8798,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v665';
+const APP_VERSION = 'v666';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -21217,7 +21227,23 @@ function _compNextLocalStep(){
 }
 
 // Map a vice type (from classifyVice) to the best mechanism spine.
-function _mechanismForType(type){
+// CBT COGNITIVE RESTRUCTURING WAS UNREACHABLE. Over every string classifyVice can return plus
+// general/overthinking/anxiety/''/null/undefined, this chain's image was exactly
+// ["interrupt","wave","ground","defuse"] — `reframe` was not in it, and `_compManualMechanism` is only
+// ever RESET to null, so there was no second route either. Someone naming the thought that makes it
+// feel okay — "just once won't matter" — got 5-4-3-2-1 grounding, and the AI was briefed on the wrong
+// technique for the rest of the conversation. CLAUDE.md lists it as one of the companion's four
+// clinical mechanisms and its own spine calls it "the most evidence-backed technique".
+//
+// NOT fixed by driving selection from the registry's `forTypes`, even though that is the field with
+// zero readers. reframe's forTypes is porn/nicotine/alcohol/gambling/food/scrolling/general — it
+// OVERLAPS three other mechanisms, so any first-match rule either never reaches it or silently
+// changes which mechanism a person mid-urge receives. The real signal is the one the mechanism was
+// written for and which its own spine enumerates: a PERMISSION-GIVING DISTORTION, named in their own
+// words. Everything else below is untouched, so no existing answer moves.
+function _mechanismForType(type, text){
+  const _t = String(text || '').toLowerCase();
+  if(_t && /just once|just this once|only once|i deserve|i've earned|ive earned|already ruined|already blown|already stuffed|start fresh tomorrow|start again tomorrow|start tomorrow|what'?s the point|one more won'?t|won'?t matter|wont matter|can'?t cope without|cant cope without|need it to relax|earned it today/.test(_t)) return 'reframe';
   if(type === 'overthinking' || type === 'anxiety') return 'defuse';
   if(type === 'porn') return 'interrupt';
   if(type === 'scrolling') return 'interrupt';
@@ -23895,7 +23921,8 @@ async function _beginCompanion(name, type, userMessage){
     if(/overthink|rumina|spiral|can't stop think|cant stop think|in my head|racing thought|worry|worrying/.test(lc)) type = 'overthinking';
     else if(/anxi|panic|overwhelm|can't breathe|cant breathe|heart racing/.test(lc)) type = 'anxiety';
   }
-  const mechKey = _mechanismForType(type);
+  // Pass the person's own words: CBT restructuring is chosen by the THOUGHT they named, not the type.
+  const mechKey = _mechanismForType(type, lc);
   let mech = COMPANION_MECHANISMS[mechKey];
   let spine = mech ? mech.spine : COMPANION_MECHANISMS.ground.spine;
   let mechLabel = mech ? mech.label : 'Here with you';
@@ -28834,6 +28861,19 @@ function openManageHabits(){
 let curVerse={verse:'',reference:''};
 async function findVerse(feeling){
   if(!feeling||!feeling.trim())return;
+  // BIBLE_SYS is "You are a Bible scholar and pastoral counsellor". Driven OFFLINE so no model was
+  // involved, all four traditions got the identical 8 ESV verses, and the shared topic chips offered
+  // a Buddhist "Fear of judgement". fetchSosVerse() does the right thing 60 lines away with a bare
+  // `if(faithTradition() !== 'christianity') return;` — but THAT is a background fetch and this is a
+  // button a person taps. A bare return here makes a dead button, which is the class this repo has
+  // fixed twice this week. So it ROUTES to their own book instead of doing nothing.
+  try{
+    if((typeof faithTradition==='function' ? faithTradition() : 'secular') !== 'christianity'){
+      if(typeof openMyBook==='function') openMyBook();
+      else if(typeof go==='function') go('soul');
+      return;
+    }
+  }catch(_){ }
   const input=document.getElementById('bible-in');
   if(input)input.value=feeling;
   // SAFETY GATE — people type how they actually feel into "find me a verse". If that's a disclosure,
@@ -42738,6 +42778,34 @@ function selectTransCategory(c){
   window.__transCategory = c;
   renderTransCategories();
 }
+// THE MONEY THRESHOLD. Deliberately conservative, because this is an UNPROMPTED voice and the app's
+// own soul statement is "quiet by default, there and ever-present, never overbearing".
+//   - expenses only; income is not a threshold
+//   - SILENT FOR A BRAND NEW PERSON. A zero is information with history and an accusation without
+//     it, so a thin ledger says nothing at all.
+//   - the debt has to actually be on their shoulders, because the line says it is
+//   - and the trigger is RELATIVE TO THEIR OWN monthlyPaymentRate(), never a hardcoded figure:
+//     $1,800 is a rounding error to one person and a month of freedom to another.
+// brotherSpeaks already throttles itself per kind (3h), so there is no second throttle here.
+function _maybeSpendThreshold(amount){
+  try{
+    if(typeof brotherSpeaks !== 'function') return;
+    if(window.__transType !== 'expense') return;
+    const amt = parseFloat(amount) || 0;
+    if(!(amt > 0)) return;
+    const list = ls('totry_transactions') || [];
+    if(list.length < 10) return;                       // not enough history to read anything from
+    const rate = (typeof monthlyPaymentRate === 'function') ? (parseFloat(monthlyPaymentRate()) || 0) : 0;
+    if(!(rate > 0)) return;                            // no payment history: nothing to be relative to
+    if(amt < rate) return;                             // the line is a month of their own progress
+    let debt = 0;
+    try{ const m = (typeof getLifeState === 'function') ? (getLifeState().money || {}) : {};
+         debt = parseFloat(m.totalDebt) || 0; }catch(_){ }
+    if(!(debt > 0)) return;
+    brotherSpeaks({ kind:'spendHeavy', detail:{ amount: amt, rate: rate, debt: debt } });
+  }catch(_){ }
+}
+
 function saveTransaction(){
   const amount = parseFloat(document.getElementById('trans-amount')?.value || 0);
   if(amount <= 0){ showToast('Invalid amount', 'Enter a positive amount.'); return; }
@@ -42760,6 +42828,15 @@ function saveTransaction(){
   // this door read "−$12" there and "−$12.00" here, so the app looked like it had recorded two
   // different things.
   showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + _moneyG(amount) + ' · ' + window.__transCategory);
+  // MONEY WAS THE ONLY PILLAR WITH NO THRESHOLD VOICE. The soul document says this app "speaks at
+  // thresholds (about to cross a line)", and brotherSpeaks declares four kinds — viceOver,
+  // trainTired, calorieOver and spendHeavy — but only three were ever called. The spendHeavy branch
+  // at 03-person.js:435 is complete and renders correctly when invoked by hand; nothing called it.
+  // So a person with debt on screen logged a large expense and got a grey "Logged" toast.
+  //
+  // AFTER the row is persisted and after the toast, never before: a threshold must never be able to
+  // cost somebody their entry. That is the same ordering rule the crisis gates follow.
+  try{ _maybeSpendThreshold(amount); }catch(_){ }
   haptic('success');
 }
 // Every other record here can be corrected — debts, bills, assets, subscriptions. A transaction
@@ -49870,7 +49947,28 @@ function tryApp(e,sc,st){
   setTimeout(()=>{ try{document.body.removeChild(f);}catch(_){}; document.removeEventListener('visibilitychange',onHide); if(!opened && !document.hidden){ window.open(st,'_blank'); } },1200);
 }
 function toggleCalPicker(){const p=document.getElementById('cal-picker');if(p)p.style.display=p.style.display==='none'?'block':'none';}
+// DEAD STORE IDS, VERIFIED AGAINST APPLE'S LOOKUP API rather than against a curl status code — both
+// a live and a dead apps.apple.com URL stop at a 301 to itms-apps://, so the status cannot tell them
+// apart. `itunes.apple.com/lookup?id=…&country=au` returns resultCount 0 for a dead id, and
+// MyFitnessPal's id is the control that proves the method.
+//   6447167650 -> 0 (the id this picker shipped)   6480417616 -> "Cal AI - Calorie Tracker"
+// The picker's row hardcoded its own copy of the id, which is why the registry's own "Removed: … Cal
+// AI …" note at 34-settings-apps.js:21 never reached it — a half-applied removal.
+const _DEAD_STORE_IDS = { '6447167650': '6480417616', '1388737828': '1458862350' };
+function _repairStoreUrl(u){
+  try{
+    let out = String(u || '');
+    Object.keys(_DEAD_STORE_IDS).forEach(function(bad){
+      if(out.indexOf('id' + bad) >= 0) out = out.replace('id' + bad, 'id' + _DEAD_STORE_IDS[bad]);
+    });
+    return out;
+  }catch(_){ return u; }
+}
 function setCalApp(n,ic,sc,st){
+  // A wrong link here becomes a PERMANENT one: totry_ca is persisted and openLinkedCalApp() reuses
+  // it every time, with no way to correct it short of picking a different app. So it is repaired on
+  // the way in as well as in the markup.
+  st = _repairStoreUrl(st);
   ls('totry_ca',{name:n,icon:ic,scheme:sc,store:st});
   const cn=document.getElementById('cal-name');
   const ci=document.getElementById('cal-icon');
@@ -49899,7 +49997,17 @@ function useToTryTracker(){
   if(typeof go==='function') go('nourish');
 }
 
+// AND REPAIR WHAT IS ALREADY STORED. Somebody who picked CalAI before this fix has the dead URL in
+// totry_ca; without this they would keep opening an "app unavailable" page forever.
+function _repairStoredCalApp(){
+  try{
+    const c = ls('totry_ca');
+    if(c && c.store){ const fixed = _repairStoreUrl(c.store);
+      if(fixed !== c.store){ c.store = fixed; ls('totry_ca', c); } }
+  }catch(_){ }
+}
 function openLinkedCalApp(){
+  _repairStoredCalApp();
   const ca=ls('totry_ca');
   if(!ca){toggleCalPicker();return;}
   // ToTry's own tracker → just go to Nourish in-app (no external app to launch).
@@ -55622,6 +55730,25 @@ function openUniversalSearch(){
   }, 100);
 }
 
+// A SEARCH RESULT MUST LAND ON THE PERSON'S OWN SHELF. Both of these used to be
+// `go('bible');setBibleTab(...)` inline, which is the Christian tab. openMyBook() and
+// openPrayerSection() both already branch on faithTradition() — openPrayerSection's own comment
+// records this exact violation being fixed for its other callers — so these just defer to them.
+function _searchOpenSaved(){
+  try{
+    if((typeof faithTradition==='function' ? faithTradition() : 'secular') === 'christianity'){
+      if(typeof go==='function') go('bible');
+      setTimeout(function(){ if(typeof setBibleTab==='function') setBibleTab('saved'); }, 100);
+      return;
+    }
+  }catch(_){ }
+  if(typeof openMyBook==='function') openMyBook();
+  else if(typeof go==='function') go('soul');
+}
+function _searchOpenPrayer(){
+  if(typeof openPrayerSection==='function'){ openPrayerSection(); return; }
+  if(typeof go==='function') go('soul');
+}
 function runUniversalSearch(query){
   const box = document.getElementById('search-results');
   if(!box) return;
@@ -55711,7 +55838,13 @@ function runUniversalSearch(query){
         date: v.reference || '',
         body: v.verse,
         verse: true,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'bible\');setTimeout(()=>setBibleTab(\'saved\'),100)'
+        // ROUTE THROUGH THE TRADITION-AWARE OPENER. `go('bible')` is the Christian "Scripture / The
+        // Word" tab. totry_sv is SHARED and _planCarry writes it for every tradition, so a Muslim,
+        // Hindu, Buddhist or secular person who saved a passage from their own reader, searched for
+        // it and tapped the result landed on somebody else's screen — their passage displayed
+        // correctly, which is what made it read as working. openMyBook() already branches, so this
+        // closes the route with no new gating logic.
+        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenSaved()'
       });
     }
   });
@@ -55741,7 +55874,7 @@ function runUniversalSearch(query){
         sourceColor: p.status === 'answered' ? 'var(--gr)' : 'var(--tx2)',
         date: days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago',
         body: p.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'bible\');setTimeout(()=>setBibleTab(\'prayer\'),100)'
+        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenPrayer()'
       });
     }
   });
@@ -59569,7 +59702,7 @@ function updatePartnerBtn(){
 const APP_REGISTRY = {
   // — Training with real OAuth / API —
   strava: {name:'Strava', icon:'&#x1F6B4;', color:'#FC4C02', category:'Training', scheme:'strava://', store:'https://apps.apple.com/app/strava-run-ride-hike/id426826309', web:'https://strava.com', oauth:true, sync:true},
-  hevy: {name:'Hevy', icon:'&#x1F4AA;', color:'#1C1C3A', category:'Training', scheme:'hevy://', store:'https://apps.apple.com/app/hevy-workout-tracker/id1388737828', web:'https://hevy.com', apikey:true},
+  hevy: {name:'Hevy', icon:'&#x1F4AA;', color:'#1C1C3A', category:'Training', scheme:'hevy://', store:'https://apps.apple.com/app/hevy-workout-tracker/id1458862350', web:'https://hevy.com', apikey:true},
   // — Working URL schemes (one-tap open the iOS app) —
   strong: {name:'Strong', icon:'&#x1F3CB;', color:'#1A2A1A', category:'Training', scheme:'strong://', store:'https://apps.apple.com/app/strong-workout-tracker-gym-log/id464254577'},
   applefit: {name:'Apple Fitness', icon:'&#x1F34E;', color:'#000', category:'Training', scheme:'x-apple-fitness://'},

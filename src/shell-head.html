@@ -1587,6 +1587,16 @@ input:focus, textarea:focus, select:focus{outline:none;border-color:var(--go);bo
 @media(max-height:480px) and (orientation:landscape){
   .hdr{padding-top:calc(var(--st) + 6px);padding-bottom:8px}
   .tab{padding-bottom:calc(var(--sb) + 90px)}
+  /* FULL-HEIGHT CENTRED OVERLAYS CANNOT BE REACHED WHEN THEY OVERFLOW. They are
+     `justify-content:center` with no overflow rule, so a 414px panel in a 393px viewport splits the
+     overflow evenly top and bottom and NEITHER half can be scrolled to — measured on the guided
+     breathing screen at 852x393 (11px cut off each end, the protocol name reduced to ~5px of a 15px
+     line) and at 667x375, where "Change breath" has its centre at y=376 in a 375px viewport and is
+     genuinely untappable. The orb, the phase words, the count and the close button stayed usable
+     throughout, so this costs the heading and one control, never the exercise itself.
+     The native app is portrait-only as of v666, but a PWA in Safari can still be rotated, so the
+     overlays are made survivable rather than relying on the plist alone. */
+  .breath-overlay,.sos-overlay{justify-content:flex-start !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
 }
 
 /* Skeleton list */
@@ -5965,7 +5975,7 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
         <div class="ios-header">Choose your calorie app</div>
         <div class="ios-list">
           <button type="button" class="ios-row tint" onclick="setCalApp('MyFitnessPal','&#x1F957;','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">MyFitnessPal</span></span></button>
-          <button type="button" class="ios-row tint" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">CalAI</span></span></button>
+          <button type="button" class="ios-row tint" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/cal-ai-calorie-tracker/id6480417616')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">CalAI</span></span></button>
           <button type="button" class="ios-row tint" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Cronometer</span></span></button>
           <button type="button" class="ios-row tint" onclick="useToTryTracker()"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Use ToTry’s built-in tracker</span></span></button>
         </div>

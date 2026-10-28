@@ -193,7 +193,8 @@ async function _beginCompanion(name, type, userMessage){
     if(/overthink|rumina|spiral|can't stop think|cant stop think|in my head|racing thought|worry|worrying/.test(lc)) type = 'overthinking';
     else if(/anxi|panic|overwhelm|can't breathe|cant breathe|heart racing/.test(lc)) type = 'anxiety';
   }
-  const mechKey = _mechanismForType(type);
+  // Pass the person's own words: CBT restructuring is chosen by the THOUGHT they named, not the type.
+  const mechKey = _mechanismForType(type, lc);
   let mech = COMPANION_MECHANISMS[mechKey];
   let spine = mech ? mech.spine : COMPANION_MECHANISMS.ground.spine;
   let mechLabel = mech ? mech.label : 'Here with you';

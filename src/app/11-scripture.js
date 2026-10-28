@@ -2,6 +2,19 @@
 let curVerse={verse:'',reference:''};
 async function findVerse(feeling){
   if(!feeling||!feeling.trim())return;
+  // BIBLE_SYS is "You are a Bible scholar and pastoral counsellor". Driven OFFLINE so no model was
+  // involved, all four traditions got the identical 8 ESV verses, and the shared topic chips offered
+  // a Buddhist "Fear of judgement". fetchSosVerse() does the right thing 60 lines away with a bare
+  // `if(faithTradition() !== 'christianity') return;` — but THAT is a background fetch and this is a
+  // button a person taps. A bare return here makes a dead button, which is the class this repo has
+  // fixed twice this week. So it ROUTES to their own book instead of doing nothing.
+  try{
+    if((typeof faithTradition==='function' ? faithTradition() : 'secular') !== 'christianity'){
+      if(typeof openMyBook==='function') openMyBook();
+      else if(typeof go==='function') go('soul');
+      return;
+    }
+  }catch(_){ }
   const input=document.getElementById('bible-in');
   if(input)input.value=feeling;
   // SAFETY GATE — people type how they actually feel into "find me a verse". If that's a disclosure,

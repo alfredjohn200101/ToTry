@@ -13910,7 +13910,14 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     // this very function (search-result onclick strings that navigate then scroll), so it would have
     // reported a debounce with the gate's timer deleted — and its mirror image made the fault
     // injection below fail on correct code.
-    H.ok((us.match(/setTimeout\(/g) || []).length >= 5,
+    // WAS >= 5, NOW >= 3. Two of the five were inline onclick strings that did
+    // `go('bible');setTimeout(()=>setBibleTab('saved'),100)` — the Christian tab, handed to every
+    // tradition. v666 routed them through `_searchOpenSaved()`/`_searchOpenPrayer()`, which defer to
+    // the openers that already branch on faithTradition(), so those two setTimeouts moved out of this
+    // function. The calibration's POINT is unchanged and still holds: there is more than one
+    // setTimeout here, so a bare /setTimeout\(/ would be ambiguous and the gate's own timer must be
+    // anchored exactly — which the next assertion does.
+    H.ok((us.match(/setTimeout\(/g) || []).length >= 3,
       'calibration: this function contains other setTimeouts, which is why the anchor must be exact');
     H.ok(/clearTimeout\(runUniversalSearch\._t\)/.test(us) && /runUniversalSearch\._t = setTimeout\(/.test(us),
       'the gate waits for the typing to STOP rather than judging each keystroke');
@@ -18594,6 +18601,206 @@ H.section('the SOS breathing circle moves on first entry, and the 30s bar shares
   // display:block first): circle 19 distinct widths sweeping 64->96px on FIRST entry, bar 294 of
   // 353px at ~5s beside the label "Sit with this... 24s" — both identical with Reduce Motion on.
   H.ok(true, 'driven in WebKit: circle 19 widths on first entry, bar and label agree at 5s (see the comment)');
+}
+
+// ── A SEARCH RESULT LANDS ON THE PERSON'S OWN SHELF ──────────────────────────────────────────────
+// `totry_sv` is SHARED and `_planCarry` writes it for every tradition, so a Muslim, Hindu, Buddhist
+// or secular person who saved a passage from their own reader, searched for it and tapped the result
+// landed on `tab-bible` — "Scripture / The Word", with "Find a Verse · Read · Saved · Prayer". Their
+// passage displayed correctly, which is exactly what made it read as working: it was somebody else's
+// screen rather than an empty one. And if they then tapped "Find a Verse", `findVerse()` was
+// tradition-blind — driven OFFLINE so no model was involved, all four traditions returned the
+// identical 8 ESV verses, and the shared topic chips offered a Buddhist "Fear of judgement".
+H.section('every route into the Christian scripture tab branches on the tradition first');
+{
+  const code = H.code(H.html);
+  // THE RULE, as a grep a test can hold: `go('bible')` may only appear inside something that has
+  // already asked faithTradition(). Checked per enclosing function rather than over the whole bundle,
+  // because a bundle-wide grep is satisfied by any one branch somewhere else.
+  const names = ['_searchOpenSaved', '_searchOpenPrayer', 'openMyBook', 'openPrayerSection', 'findVerse'];
+  names.forEach(n => {
+    let f = '';
+    try { f = H.code(H.extractFn(n)); } catch (e) { f = ''; }
+    H.ok(f.length > 40, n + ' was found by name (' + f.length + ' chars)');
+    if (f && /go\('bible'\)/.test(f)) {
+      H.ok(/faithTradition\(\)/.test(f),
+        n + " reaches go('bible') only after asking faithTradition()");
+    }
+  });
+  // The two search onclicks must no longer build the destination inline.
+  let us = '';
+  try { us = H.code(H.extractFn('runUniversalSearch')); } catch (e) { us = ''; }
+  H.ok(!/go\(\\?'bible\\?'\);setTimeout/.test(us.replace(/\s+/g, '')),
+    'neither search result hardcodes the Christian tab in its onclick any more');
+  H.ok(/_searchOpenSaved\(\)/.test(us) && /_searchOpenPrayer\(\)/.test(us),
+    'both route through the tradition-aware helpers');
+
+  // AND findVerse ROUTES RATHER THAN RETURNING. fetchSosVerse() does the right thing with a bare
+  // early return, but that is a BACKGROUND fetch; this is a button a person taps, and a bare return
+  // would make it dead — the class this repo has fixed twice this week.
+  let fv = '';
+  try { fv = H.code(H.extractFn('findVerse')); } catch (e) { fv = ''; }
+  H.ok(/faithTradition\(\)[^\n]*!==\s*'christianity'/.test(fv),
+    'findVerse asks the tradition before reaching BIBLE_SYS');
+  H.ok(/openMyBook\(\)/.test(fv),
+    'and sends a non-Christian to their OWN book rather than doing nothing — a bare return here is a dead button');
+}
+
+// ── EVERY CLINICAL MECHANISM THE COMPANION SHIPS MUST BE REACHABLE ──────────────────────────────
+// `_mechanismForType` is a hardcoded if-chain that duplicates the mapping `COMPANION_MECHANISMS[*]
+// .forTypes` already declares, and the two had diverged: over every string classifyVice can return,
+// plus general/overthinking/anxiety/''/null/undefined, its image was exactly
+// ["interrupt","wave","ground","defuse"] — `reframe`, CBT cognitive restructuring, was not in it.
+// Someone naming the thought that makes it feel okay ("just once won't matter") got 5-4-3-2-1
+// grounding, and the AI was briefed on the wrong technique for the rest of the conversation.
+// A key-level grep clears this FALSELY, because 'reframe' also appears as an unrelated toolkit id.
+H.section('every companion mechanism is reachable, and the selector still answers as it did');
+{
+  const L = H.load(['_mechanismForType']);
+  const TYPES = ['porn','nicotine','alcohol','gambling','food','scrolling',
+                 'overthinking','anxiety','rumination','general','', null, undefined];
+  // Read the registry's own keys rather than a hand-written list, so a mechanism added later is
+  // covered the day it is written.
+  const code = H.code(H.html);
+  const at = code.indexOf('const COMPANION_MECHANISMS');
+  H.ok(at > 0, 'COMPANION_MECHANISMS was located');
+  let keys = [];
+  if (at > 0) {
+    let d = 0, j = code.indexOf('{', at);
+    for (; j < code.length; j++) { const c = code[j]; if (c === '{') d++; else if (c === '}') { d--; if (!d) { j++; break; } } }
+    const blk = code.slice(code.indexOf('{', at), j);
+    keys = [...blk.matchAll(/\n  ([a-z][a-zA-Z0-9_]*)\s*:\s*\{/g)].map(m => m[1]);
+  }
+  H.ok(keys.length >= 5, 'the registry declares ' + keys.length + ' mechanisms');
+
+  // The image WITHOUT text must be exactly what it was — this is the regression guard, because the
+  // obvious fix (driving selection from forTypes, whose lists OVERLAP three other mechanisms) would
+  // silently change which mechanism a person mid-urge receives.
+  const imageNoText = [...new Set(TYPES.map(t => L._mechanismForType(t)))].sort();
+  H.eq(imageNoText.join(','), 'defuse,ground,interrupt,wave',
+    'the type-only mapping is unchanged — no existing answer moved');
+
+  // And the permission-giving distortions the reframe spine itself enumerates must reach it.
+  ['just once wont matter', 'i deserve this', 'ive already ruined today',
+   'ill start fresh tomorrow', 'i cant cope without it'].forEach(t => {
+    H.eq(L._mechanismForType('porn', t), 'reframe',
+      '"' + t + '" reaches CBT cognitive restructuring');
+  });
+  // Ordinary words must NOT, or the detector has eaten the other four mechanisms.
+  H.eq(L._mechanismForType('porn', 'i feel rough tonight'), 'interrupt',
+    'and ordinary words still reach the mechanism they always did');
+
+  // THE RULE: every declared mechanism is in the selector's image, counting both routes.
+  const full = new Set(TYPES.map(t => L._mechanismForType(t)));
+  full.add(L._mechanismForType('porn', 'just once wont matter'));
+  const unreachable = keys.filter(k => !full.has(k));
+  H.eq(unreachable.join(','), '',
+    'every mechanism the registry declares can actually be selected' +
+    (unreachable.length ? ' — unreachable: ' + unreachable.join(', ') : ''));
+}
+
+// ── NO LIVE LINK CARRIES A DEAD APP STORE ID ────────────────────────────────────────────────────
+// Train -> "Choose your calorie app" -> Cal AI opened an Apple page saying the app is unavailable,
+// and the dead address was SAVED as their chosen calorie app, so the row did the same thing every
+// time afterwards with no way to correct it short of picking a different app.
+// Verified against Apple's lookup API, not curl status codes — both a live and a dead
+// apps.apple.com URL stop at a 301 to itms-apps://, so the status cannot tell them apart:
+//   id=6447167650 -> resultCount 0        id=6480417616 -> "Cal AI - Calorie Tracker"
+//   id=341232718  -> "MyFitnessPal"       (the control that proves the method)
+//   id=1388737828 -> resultCount 0        id=1458862350 -> "Hevy - Workout Tracker Gym Log"
+// A half-applied removal: APP_REGISTRY's own comment says Cal AI was removed, but the static picker
+// row kept its own hardcoded copy of the id.
+H.section('no live App Store link carries an id Apple does not resolve');
+{
+  // EXTRACT THE URLS, do not grep the stripped source. `H.code()` removes `//` comments and a URL
+  // contains `//`, so the first version of this check silently lost the very string it was looking
+  // for — the trap this repo already records — and its fault injection reported a clean pass while
+  // the assertion was not running at all. Asking the apps.apple.com links themselves is also the
+  // honest subject: "no live LINK carries a dead id", which a comment mentioning the id cannot fake.
+  const DEAD = ['6447167650', '1388737828'];
+  const links = [...H.html.matchAll(/https:\/\/apps\.apple\.com\/[^"'\s)]+/g)].map(m => m[0]);
+  H.ok(links.length >= 2, 'the bundle carries App Store links to check (' + links.length + ')');
+  DEAD.forEach(id => {
+    const bad = links.filter(u => u.indexOf('id' + id) >= 0);
+    H.eq(bad.length, 0,
+      'no live App Store link points at the dead id ' + id + (bad.length ? ' -> ' + bad[0] : ''));
+  });
+  // And the repair map still knows them, so somebody who ALREADY picked the dead one is fixed on use
+  // rather than left opening an "app unavailable" page forever.
+  let m = '';
+  try { m = H.code(H.extractFn('_repairStoreUrl')); } catch (e) { m = ''; }
+  H.ok(m.length > 40, '_repairStoreUrl was found by name (' + m.length + ' chars)');
+  DEAD.forEach(id => {
+    H.ok(m.indexOf(id) > 0 || H.html.indexOf("'" + id + "': '") > 0,
+      'the repair map still knows ' + id + ' so a stored copy of it is corrected');
+  });
+  let sc = '';
+  try { sc = H.code(H.extractFn('setCalApp')); } catch (e) { sc = ''; }
+  H.ok(/_repairStoreUrl\(st\)/.test(sc),
+    'setCalApp repairs the URL before persisting it — a wrong link here becomes a permanent one');
+  let ol = '';
+  try { ol = H.code(H.extractFn('openLinkedCalApp')); } catch (e) { ol = ''; }
+  H.ok(/_repairStoredCalApp\(\)/.test(ol),
+    'and what is already stored is repaired on use');
+}
+
+// ── MONEY WAS THE ONLY PILLAR WITH NO THRESHOLD VOICE ───────────────────────────────────────────
+// The soul document says this app "speaks at thresholds (about to cross a line)", and brotherSpeaks
+// declares four kinds — viceOver, trainTired, calorieOver, spendHeavy. Only three were ever called:
+// a grep for `brotherSpeaks({ kind:'…'` returns exactly three sites and there is no dynamic kind.
+// The spendHeavy branch at 03-person.js is complete and renders when invoked by hand, so a person
+// with debt on screen logged a large expense and got a grey "Logged" toast. Not a defect — an
+// unbuilt feature, and the honest answer to "is everything we planned present" was: this was not.
+H.section('the money threshold speaks, and stays quiet for everyone it should');
+{
+  const mk = (over) => {
+    let spoke = null;
+    const o = Object.assign({
+      transType: 'expense', rows: 20, rate: 400, debt: 6350,
+    }, over || {});
+    const L = H.load(['_maybeSpendThreshold'], {
+      window: { __transType: o.transType },
+      ls: k => (k === 'totry_transactions' ? new Array(o.rows).fill({}) : null),
+      monthlyPaymentRate: () => o.rate,
+      getLifeState: () => ({ money: { totalDebt: o.debt } }),
+      brotherSpeaks: m => { spoke = m; },
+      document: {},
+    });
+    L._maybeSpendThreshold(o.amount);
+    return spoke;
+  };
+  // CALIBRATION FIRST: it must actually fire, or every "stays quiet" case below is satisfied by a
+  // function that never speaks at all.
+  const fired = mk({ amount: 500 });
+  H.ok(!!fired && fired.kind === 'spendHeavy',
+    'calibration: an expense above their own monthly payment rate, with debt, speaks');
+  H.ok(!!fired && fired.detail && fired.detail.amount === 500,
+    'and it carries the amount it fired on');
+
+  // RELATIVE TO THEIR OWN RATE, never a hardcoded figure — $1,800 is a rounding error to one person
+  // and a month of freedom to another.
+  H.eq(mk({ amount: 399 }), null, 'an expense below their own monthly rate says nothing');
+  H.ok(!!mk({ amount: 9000, rate: 8000 }), 'and the line moves with the rate, not with a fixed number');
+
+  // SILENT FOR A BRAND NEW PERSON. A zero is information with history and an accusation without it.
+  H.eq(mk({ amount: 500, rows: 3 }), null, 'a thin ledger says nothing at all');
+  H.eq(mk({ amount: 500, rate: 0 }), null, 'and no payment history means nothing to be relative to');
+
+  // The line says the debt is on their shoulders, so it has to be.
+  H.eq(mk({ amount: 500, debt: 0 }), null, 'somebody with no debt is not told about their debt');
+
+  // Income is not a threshold.
+  H.eq(mk({ amount: 5000, transType: 'income' }), null, 'money arriving is not a threshold');
+
+  // AND IT FIRES AFTER THE ROW IS PERSISTED. A threshold must never be able to cost somebody their
+  // entry — the same ordering rule every crisis gate in this app follows.
+  let st = '';
+  try { st = H.code(H.extractFn('saveTransaction')); } catch (e) { st = ''; }
+  H.ok(st.length > 200, 'saveTransaction was found by name (' + st.length + ' chars)');
+  H.ok(st.indexOf('_maybeSpendThreshold') > st.indexOf('showToast('),
+    'the threshold is asked AFTER the row is saved and the toast shown, never before');
+  H.ok(st.indexOf('_maybeSpendThreshold') > st.indexOf("ls('totry_transactions'"),
+    'and after the write itself');
 }
 
 H.report();

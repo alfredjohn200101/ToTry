@@ -2565,7 +2565,23 @@ function _compNextLocalStep(){
 }
 
 // Map a vice type (from classifyVice) to the best mechanism spine.
-function _mechanismForType(type){
+// CBT COGNITIVE RESTRUCTURING WAS UNREACHABLE. Over every string classifyVice can return plus
+// general/overthinking/anxiety/''/null/undefined, this chain's image was exactly
+// ["interrupt","wave","ground","defuse"] — `reframe` was not in it, and `_compManualMechanism` is only
+// ever RESET to null, so there was no second route either. Someone naming the thought that makes it
+// feel okay — "just once won't matter" — got 5-4-3-2-1 grounding, and the AI was briefed on the wrong
+// technique for the rest of the conversation. CLAUDE.md lists it as one of the companion's four
+// clinical mechanisms and its own spine calls it "the most evidence-backed technique".
+//
+// NOT fixed by driving selection from the registry's `forTypes`, even though that is the field with
+// zero readers. reframe's forTypes is porn/nicotine/alcohol/gambling/food/scrolling/general — it
+// OVERLAPS three other mechanisms, so any first-match rule either never reaches it or silently
+// changes which mechanism a person mid-urge receives. The real signal is the one the mechanism was
+// written for and which its own spine enumerates: a PERMISSION-GIVING DISTORTION, named in their own
+// words. Everything else below is untouched, so no existing answer moves.
+function _mechanismForType(type, text){
+  const _t = String(text || '').toLowerCase();
+  if(_t && /just once|just this once|only once|i deserve|i've earned|ive earned|already ruined|already blown|already stuffed|start fresh tomorrow|start again tomorrow|start tomorrow|what'?s the point|one more won'?t|won'?t matter|wont matter|can'?t cope without|cant cope without|need it to relax|earned it today/.test(_t)) return 'reframe';
   if(type === 'overthinking' || type === 'anxiety') return 'defuse';
   if(type === 'porn') return 'interrupt';
   if(type === 'scrolling') return 'interrupt';

@@ -1029,6 +1029,25 @@ function openUniversalSearch(){
   }, 100);
 }
 
+// A SEARCH RESULT MUST LAND ON THE PERSON'S OWN SHELF. Both of these used to be
+// `go('bible');setBibleTab(...)` inline, which is the Christian tab. openMyBook() and
+// openPrayerSection() both already branch on faithTradition() — openPrayerSection's own comment
+// records this exact violation being fixed for its other callers — so these just defer to them.
+function _searchOpenSaved(){
+  try{
+    if((typeof faithTradition==='function' ? faithTradition() : 'secular') === 'christianity'){
+      if(typeof go==='function') go('bible');
+      setTimeout(function(){ if(typeof setBibleTab==='function') setBibleTab('saved'); }, 100);
+      return;
+    }
+  }catch(_){ }
+  if(typeof openMyBook==='function') openMyBook();
+  else if(typeof go==='function') go('soul');
+}
+function _searchOpenPrayer(){
+  if(typeof openPrayerSection==='function'){ openPrayerSection(); return; }
+  if(typeof go==='function') go('soul');
+}
 function runUniversalSearch(query){
   const box = document.getElementById('search-results');
   if(!box) return;
@@ -1118,7 +1137,13 @@ function runUniversalSearch(query){
         date: v.reference || '',
         body: v.verse,
         verse: true,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'bible\');setTimeout(()=>setBibleTab(\'saved\'),100)'
+        // ROUTE THROUGH THE TRADITION-AWARE OPENER. `go('bible')` is the Christian "Scripture / The
+        // Word" tab. totry_sv is SHARED and _planCarry writes it for every tradition, so a Muslim,
+        // Hindu, Buddhist or secular person who saved a passage from their own reader, searched for
+        // it and tapped the result landed on somebody else's screen — their passage displayed
+        // correctly, which is what made it read as working. openMyBook() already branches, so this
+        // closes the route with no new gating logic.
+        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenSaved()'
       });
     }
   });
@@ -1148,7 +1173,7 @@ function runUniversalSearch(query){
         sourceColor: p.status === 'answered' ? 'var(--gr)' : 'var(--tx2)',
         date: days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago',
         body: p.text,
-        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();go(\'bible\');setTimeout(()=>setBibleTab(\'prayer\'),100)'
+        onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();_searchOpenPrayer()'
       });
     }
   });
