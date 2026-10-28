@@ -3,14 +3,14 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 28 Oct 2026 — v665. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
+## ▶▶ CURRENT STATE — 28 Oct 2026 — v666. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
 
 **Everything below this block is HISTORY.**
 
 | What | Where |
 |---|---|
-| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v665.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v665-build10.ipa` |
+| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-27/ToTry-v666.xcarchive` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v666-build10.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
 
 **SIX ARCHIVES USED TO BE IN ORGANIZER AND ONE OF THEM WOULD HAVE UPLOADED.** Build 1 (v312, 6 Aug)
@@ -25,8 +25,8 @@ the check, not a bug in it. **Keep exactly one archive in Organizer.**
 1. `Apple Distribution: Alfred John (L4BD53PLVF)`  2. `get-task-allow = false`
 3. `beta-reports-active = true`  4. **arm64 only**  5. `PrivacyInfo.xcprivacy` 1407 bytes
 6. version 1.0, build 10, `app.totry`
-7. **the web bundle inside the IPA is byte-identical to the repo** — sha `e1e013f66ef2`,
-   `APP_VERSION = 'v665'`, and spot-checked for this release's actual fixes (the reduced-motion
+7. **the web bundle inside the IPA is byte-identical to the repo** — sha `71cbffc9cb08`,
+   `APP_VERSION = 'v666'`, and spot-checked for this release's actual fixes (the reduced-motion
    exemption, the `Storage.prototype` sync fix, the `w = window.open` fix).
 
 **Build 10 is not a reuse.** ASC holds builds 4, 5, 6, 8. `manageAppVersionAndBuildNumber` is
@@ -59,6 +59,14 @@ root reports them missing; mine did, and the probe was wrong, not the app.
   this" bar was a CSS transition, so Reduce Motion emptied it: 5s in it read 0 of 353px while the
   label beneath said "25s", directly above "I beat it" / "I gave in". Driven: circle 1 → 19 distinct
   widths on first entry; bar 294 of 353px at 5s beside "24s".
+- **v666 — five more off the deep dive.** The app is **portrait-only** (verified in the shipped
+  binary: `UIInterfaceOrientationPortrait` alone), and the breath/SOS overlays scroll in landscape
+  anyway, because a PWA in Safari can still be rotated — at 667x375 "Change breath" had its centre at
+  y=376 in a 375px viewport, genuinely untappable. A search result now lands on the person's OWN
+  shelf instead of the Christian scripture tab, and `findVerse` routes rather than dead-ending. CBT
+  cognitive restructuring could never be selected at all. The Cal AI picker pointed at a dead App
+  Store id and PERSISTED it (verified against Apple's lookup API, not curl status codes). And money
+  finally has the threshold voice the other three pillars have.
 
 ### Gate on this exact bundle
 
