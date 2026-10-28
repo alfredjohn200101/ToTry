@@ -112,7 +112,12 @@ function report(){
 // Source with // comments stripped. Four absence assertions in one session matched the COMMENT
 // explaining why a thing had been removed, and so failed on correct code — twice I nearly
 // diagnosed a regression that did not exist. Any !/.../.test() over source goes through this.
-function code(t){ return String(t == null ? html : t).replace(/\/\/[^\n]*/g, ''); }
+// STRIPPING `//` EATS URLs, and this repo has the scar: it made a privacy guard unable to fail
+// and returned zero from a host census. The guard is `(?<!:)` so `https://` survives, which is
+// the form reelsHaystack already uses — computing the same rule two ways is how they drift.
+// Found again 29 Oct 2026: a new `const HEALTH_FINDER = 'https://…'` read as ABSENT from the
+// stripped bundle, because everything from the `//` in the URL onwards had been deleted.
+function code(t){ return String(t == null ? html : t).replace(/(?<!:)\/\/[^\n]*/g, ''); }
 
 // ── THE VOICE FINGERPRINT ───────────────────────────────────────────────────────────────────────
 // scripts/voice-probe.mjs needs the network, so it cannot live in the gate. It stamps this hash on

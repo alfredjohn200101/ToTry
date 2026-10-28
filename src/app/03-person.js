@@ -2678,6 +2678,12 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
 // The verified lines, in one place, read by the card AND by safetyNote() so the model never has to
 // remember a number. 03-person.js loads before 08-voice.js and safetyNote() runs at call time, so
 // the const is visible there — but never read this at LOAD time from a later module.
+// ONE FINDER, NAMED ONCE. Three surfaces tell somebody a GP is the door — openRecoveryBridge,
+// bridgeToRealHelp and the eating-disorder sheet — and only the first carried a way to find one,
+// while the rows either side of it were tappable. A second literal here is exactly the drift this
+// repo already paid for with the helpline numbers, which is why those became one list.
+const HEALTH_FINDER = 'https://www.healthdirect.gov.au/australian-health-services';
+
 const CRISIS_LINES = [
   {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
   {region: 'Australia', name: 'Beyond Blue', contact: '1300 22 4636', detail: '24/7 phone'},

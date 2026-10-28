@@ -13404,8 +13404,12 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
   // Comments stripped: the explanation above names the dead hosts, and an unstripped scan reports
   // them as live dialled links. My own URL census did exactly that an hour ago.
   const body = H.html.slice(i, j).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  // HEALTH_FINDER counts as a door. The GP row's literal URL moved into one named constant beside
+  // CRISIS_LINES so that three surfaces could share it instead of growing a third hardcoded copy —
+  // the drift this repo already paid for with the helpline numbers.
   const urls = [...new Set(body.match(/https:\/\/[^'"]+/g) || [])];
-  H.ok(urls.length >= 4, 'it offers ' + urls.length + ' external doors');
+  const doors = urls.length + (/HEALTH_FINDER/.test(body) ? 1 : 0);
+  H.ok(doors >= 4, 'it offers ' + doors + ' external doors');
 
   const DEAD = [
     ['smartrecovery.org/meetings', '404 since at least 27 Oct 2026 — use meetings.smartrecovery.org'],
@@ -13419,8 +13423,29 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
     (revived.length ? ' → ' + revived.map(d => d[0] + ' (' + d[1] + ')').join('; ') : ''));
 
   // AND THE ROW THE APP CALLS "the most underrated door" HAS ONE. It shipped with '' for months.
-  H.ok(/A GP or counsellor[^\]]*https:\/\//.test(body.replace(/\n/g, ' ')),
+  H.ok(/A GP or counsellor[^\]]*(?:https:\/\/|HEALTH_FINDER)/.test(body.replace(/\n/g, ' ')),
     'the GP row carries a service finder rather than an empty string');
+
+  // EVERY GP ROW, NOT JUST THIS ONE. Three surfaces tell somebody a GP is the door —
+  // openRecoveryBridge, bridgeToRealHelp and the eating-disorder sheet — and only this one carried
+  // a way to find one, while the rows either side of it were dialable. That is the assertion that
+  // would have caught the twins, and the reason the URL is a shared constant now.
+  {
+    const all = H.code(H.html);
+    H.eq((all.match(/const HEALTH_FINDER\s*=/g) || []).length, 1,
+      'the service finder is declared exactly once');
+    H.ok(/healthdirect\.gov\.au/.test(all), 'and it is a real finder');
+    ['bridgeToRealHelp', 'showEDSupport'].forEach(function(fn){
+      let b = '';
+      try { b = H.code(H.extractFn(fn)); } catch (e) { b = ''; }
+      H.ok(b.length > 80, fn + ' was found by name');
+      H.ok(/GP/.test(b), fn + ' names a GP as a door');
+      H.ok(/HEALTH_FINDER/.test(b), 'and gives a way to find one');
+    });
+    // The literal must not come back anywhere else, or it is three copies again.
+    H.eq((all.match(/healthdirect\.gov\.au\/australian-health-services/g) || []).length, 1,
+      'and the finder URL itself appears exactly once in the bundle');
+  }
   // The two rows that SHOULD stay linkless, pinned so a later sweep does not "fix" them.
   H.ok(/Someone who already knows[^\]]*,''\]/.test(body.replace(/\n/g, ' ')),
     'and "Someone who already knows" stays linkless — there is no URL for your brother');
@@ -19380,6 +19405,48 @@ H.section("faith level 'light' is honoured where it matters most");
   const p2 = H.code(H.html);
   H.ok(p2.indexOf("_SOS_P2_LBL[_sosFaithKey()]") >= 0 || /_t=_sosFaithKey\(\)/.test(p2),
     'and so does the step-2 label, or the line and its heading disagree');
+}
+
+// ── THE LINK HALF SHIPPED AND THE IMAGE HALF DID NOT ───────────────────────────────────────────
+// v660 made the app shareable at the HTML level — description, canonical, the og and twitter tags,
+// and the share sheet's own `url:`. It left both 1080x1080 share canvases stopping at the byline.
+// The IMAGE is the artefact that actually gets posted, screenshotted, saved and sent on, and once
+// it is separated from the share sheet there is no route back to the app at all. Driven: both
+// renderers now draw the URL (y=1058 of 1080 on the custom card, whose byline moved up from 1055
+// to make the room; y=1026 on the other, which had 80px spare).
+//
+// CANVAS TEXT IS PIXELS, so no static check can see what a canvas says — this asserts the SOURCE
+// draws it, and the drive that proves it reaches the bitmap lives in .tmp-review/sharecanvas.mjs.
+H.section('the share image carries the URL, not just the share sheet');
+{
+  const code = H.code(H.html);
+  // ONE pair of constants: two footers saying the same thing in two places is how they drift.
+  H.eq((code.match(/const SHARE_URL_SHOWN\s*=/g) || []).length, 1,
+    'the displayed URL is declared exactly once');
+  H.eq((code.match(/const SHARE_URL\s*=/g) || []).length, 1,
+    'and the link URL exactly once');
+  // BOTH canvases, by name, because fixing one and not its twin is this repo's commonest shape.
+  ['renderCustomShareCard', '_renderShareCanvas'].forEach(function(fn){
+    const body = H.code(H.extractFn(fn));
+    H.ok(/fillText\(\s*SHARE_URL_SHOWN/.test(body), fn + ' draws the URL onto the image');
+    H.ok(/ALFRED/.test(body), 'and still draws the byline (or the footer moved somewhere unexpected)');
+  });
+  // The share sheet reads the same constant rather than its own literal.
+  H.ok(/url:\s*SHARE_URL\b/.test(code), 'the share sheet uses the same constant as the image');
+  // AND THE HTML HALF STAYS. It is cheap to lose a meta tag in a shell edit and nothing would say so.
+  const head = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src/shell-head.html'), 'utf8');
+  ['name="description"', 'rel="canonical"', 'property="og:title"', 'property="og:description"',
+   'property="og:url"', 'property="og:image"', 'name="twitter:card"'].forEach(function(tag){
+    H.ok(head.indexOf(tag) >= 0, 'the shell still carries ' + tag);
+  });
+  // and the manifest says the same thing as the page, or a share preview and an install prompt
+  // describe two different apps.
+  const man = JSON.parse(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'manifest.json'), 'utf8'));
+  const metaDesc = (head.match(/<meta name="description" content="([^"]+)"/) || [])[1] || '';
+  H.ok(metaDesc.length > 40, 'the meta description is real (' + metaDesc.length + ' chars)');
+  H.eq(man.description, metaDesc, 'and manifest.json says exactly the same thing');
 }
 
 H.report();

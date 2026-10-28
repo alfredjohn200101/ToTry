@@ -858,6 +858,16 @@ function createCustomShareCard(){
   } else { draw(); }
 }
 
+// THE LINK HALF WAS DONE AND THE IMAGE HALF WAS NOT. v660 put the live URL on every HTML surface
+// and on the share sheet's own `url:` — and left both 1080x1080 canvases stopping at the byline.
+// The image is the artefact that actually gets posted, screenshotted, saved and sent on, and once
+// it is separated from the share sheet there is no route back to the app. ONE pair of constants,
+// because two footers that say the same thing in two places is how they drift.
+// A canvas cannot read a design token (ctx.fillStyle='var(--go)' is silently ignored), so the
+// colours below stay literal and match each canvas's own byline.
+const SHARE_URL      = 'https://alfredjohn200101.github.io/ToTry/';
+const SHARE_URL_SHOWN = 'alfredjohn200101.github.io/ToTry';
+
 function renderCustomShareCard(prefs){
   // THIS FUNCTION DREW NOTHING AT ALL UNTIL 19 Oct 2026, AND NOTHING SAID SO.
   // It painted with CSS custom properties — ctx.fillStyle = 'var(--go)' and friends, 15 sites. A
@@ -1105,7 +1115,8 @@ function renderCustomShareCard(prefs){
   // Signature
   ctx.fillStyle = 'rgba(217,193,140,0.5)';
   ctx.font = '500 10px "Outfit", sans-serif';
-  ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1055);
+  ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1035);
+  ctx.fillText(SHARE_URL_SHOWN, 540, 1058);
   
   // Output
   canvas.toBlob(blob => {
@@ -1353,6 +1364,7 @@ function _renderShareCanvas(style, theme){
   ctx.fillStyle = C.ink3;
   ctx.font = '500 11px "Outfit", sans-serif';
   ctx.fillText('TO \u00b7 TRY \u00b7 BY \u00b7 ALFRED \u00b7 JOHN', 540, 1000);
+  ctx.fillText(SHARE_URL_SHOWN, 540, 1026);
 
   // Deliver — preview with theme toggle + download/share.
   canvas.toBlob(blob => {
@@ -1396,7 +1408,7 @@ async function shareCardNative(url){
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
       text:'Still trying. ToTry.',
-      url:'https://alfredjohn200101.github.io/ToTry/',
+      url:SHARE_URL,
       files:[file]
     });
   }catch(e){

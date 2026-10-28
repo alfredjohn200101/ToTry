@@ -6762,6 +6762,8 @@ function showEDSupport(){
     '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
       '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Your GP / doctor</div>' +
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">A trusted first step — they can refer you to the right care privately.</div>' +
+      // The rows either side of this one are dialable; this one named the door and gave no way to it.
+      '<div style="font-size:var(--t-sm);margin-top:4px"><a href="'+HEALTH_FINDER+'" target="_blank" rel="noopener" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">Find a GP near you</a></div>' +
     '</div>' +
     '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
       '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +

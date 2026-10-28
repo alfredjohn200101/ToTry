@@ -14660,6 +14660,12 @@ const MEDICAL_PHRASES = MEDICAL_ACUTE.concat(MEDICAL_AMBIGUOUS);
 // The verified lines, in one place, read by the card AND by safetyNote() so the model never has to
 // remember a number. 03-person.js loads before 08-voice.js and safetyNote() runs at call time, so
 // the const is visible there — but never read this at LOAD time from a later module.
+// ONE FINDER, NAMED ONCE. Three surfaces tell somebody a GP is the door — openRecoveryBridge,
+// bridgeToRealHelp and the eating-disorder sheet — and only the first carried a way to find one,
+// while the rows either side of it were tappable. A second literal here is exactly the drift this
+// repo already paid for with the helpline numbers, which is why those became one list.
+const HEALTH_FINDER = 'https://www.healthdirect.gov.au/australian-health-services';
+
 const CRISIS_LINES = [
   {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
   {region: 'Australia', name: 'Beyond Blue', contact: '1300 22 4636', detail: '24/7 phone'},
@@ -20417,7 +20423,7 @@ function openRecoveryBridge(){
     // "Find a GP" control on the page. The other two linkless rows STAY linkless on purpose —
     // there is no URL for "a sibling, a mate, a mentor" and none for "your imam", and inventing
     // one would be the app naming a person it cannot know.
-    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.','https://www.healthdirect.gov.au/australian-health-services'],
+    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.',HEALTH_FINDER],
     ['message','Someone who already knows','A sibling, a mate, a mentor. Saying it out loud to one person breaks most of its power — that is not a cliche, it is the mechanism.','']
   ];
   // AND THE CHRISTIAN OPTION'S FINDER WAS DEAD TOO. `locator.crgroups.info` does not resolve
@@ -20544,7 +20550,7 @@ function bridgeToRealHelp(reason){
           // either side already name a friend and a counsellor, so there is nothing missing.
           ((function(){ const g = (typeof faithGuide==='function') ? faithGuide() : null;
             return g ? '\u2022 <b style="color:var(--tx)">' + _esc(g.label) + '</b> \u2014 ' + g.note + '<br>' : ''; })())+
-          '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
+          '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it. <a href="'+HEALTH_FINDER+'" target="_blank" rel="noopener" style="color:var(--go)">Find one</a><br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
           // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`
           // asserts a helpline is visible AND TAPPABLE by selecting
@@ -39292,6 +39298,8 @@ function showEDSupport(){
     '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
       '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Your GP / doctor</div>' +
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">A trusted first step — they can refer you to the right care privately.</div>' +
+      // The rows either side of this one are dialable; this one named the door and gave no way to it.
+      '<div style="font-size:var(--t-sm);margin-top:4px"><a href="'+HEALTH_FINDER+'" target="_blank" rel="noopener" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">Find a GP near you</a></div>' +
     '</div>' +
     '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
       '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +
@@ -53396,6 +53404,16 @@ function createCustomShareCard(){
   } else { draw(); }
 }
 
+// THE LINK HALF WAS DONE AND THE IMAGE HALF WAS NOT. v660 put the live URL on every HTML surface
+// and on the share sheet's own `url:` — and left both 1080x1080 canvases stopping at the byline.
+// The image is the artefact that actually gets posted, screenshotted, saved and sent on, and once
+// it is separated from the share sheet there is no route back to the app. ONE pair of constants,
+// because two footers that say the same thing in two places is how they drift.
+// A canvas cannot read a design token (ctx.fillStyle='var(--go)' is silently ignored), so the
+// colours below stay literal and match each canvas's own byline.
+const SHARE_URL      = 'https://alfredjohn200101.github.io/ToTry/';
+const SHARE_URL_SHOWN = 'alfredjohn200101.github.io/ToTry';
+
 function renderCustomShareCard(prefs){
   // THIS FUNCTION DREW NOTHING AT ALL UNTIL 19 Oct 2026, AND NOTHING SAID SO.
   // It painted with CSS custom properties — ctx.fillStyle = 'var(--go)' and friends, 15 sites. A
@@ -53643,7 +53661,8 @@ function renderCustomShareCard(prefs){
   // Signature
   ctx.fillStyle = 'rgba(217,193,140,0.5)';
   ctx.font = '500 10px "Outfit", sans-serif';
-  ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1055);
+  ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1035);
+  ctx.fillText(SHARE_URL_SHOWN, 540, 1058);
   
   // Output
   canvas.toBlob(blob => {
@@ -53891,6 +53910,7 @@ function _renderShareCanvas(style, theme){
   ctx.fillStyle = C.ink3;
   ctx.font = '500 11px "Outfit", sans-serif';
   ctx.fillText('TO \u00b7 TRY \u00b7 BY \u00b7 ALFRED \u00b7 JOHN', 540, 1000);
+  ctx.fillText(SHARE_URL_SHOWN, 540, 1026);
 
   // Deliver — preview with theme toggle + download/share.
   canvas.toBlob(blob => {
@@ -53934,7 +53954,7 @@ async function shareCardNative(url){
     await navigator.share({
       title:'Day '+getDayCount()+' on ToTry',
       text:'Still trying. ToTry.',
-      url:'https://alfredjohn200101.github.io/ToTry/',
+      url:SHARE_URL,
       files:[file]
     });
   }catch(e){

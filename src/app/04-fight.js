@@ -1723,7 +1723,7 @@ function openRecoveryBridge(){
     // "Find a GP" control on the page. The other two linkless rows STAY linkless on purpose —
     // there is no URL for "a sibling, a mate, a mentor" and none for "your imam", and inventing
     // one would be the app naming a person it cannot know.
-    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.','https://www.healthdirect.gov.au/australian-health-services'],
+    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.',HEALTH_FINDER],
     ['message','Someone who already knows','A sibling, a mate, a mentor. Saying it out loud to one person breaks most of its power — that is not a cliche, it is the mechanism.','']
   ];
   // AND THE CHRISTIAN OPTION'S FINDER WAS DEAD TOO. `locator.crgroups.info` does not resolve
@@ -1850,7 +1850,7 @@ function bridgeToRealHelp(reason){
           // either side already name a friend and a counsellor, so there is nothing missing.
           ((function(){ const g = (typeof faithGuide==='function') ? faithGuide() : null;
             return g ? '\u2022 <b style="color:var(--tx)">' + _esc(g.label) + '</b> \u2014 ' + g.note + '<br>' : ''; })())+
-          '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
+          '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it. <a href="'+HEALTH_FINDER+'" target="_blank" rel="noopener" style="color:var(--go)">Find one</a><br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
           // ANNOUNCED LIKE THE CARD IS, so the geometry guarantee reaches it. `npm run crisis`
           // asserts a helpline is visible AND TAPPABLE by selecting
