@@ -844,6 +844,58 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
+// ── DYNAMIC TYPE, THE ONE BRIDGE THE SCALE NEVER HAD ───────────────────────────────────────────
+// Every --t-* token was an absolute px, so raising iOS Text Size (or the Accessibility Larger Text
+// slider) changed nothing in this app, on any screen. The app's own floor is an 11px caption and a
+// 13px footnote, which makes the affected population exactly the people who turn that setting on
+// and never turn it off.
+//
+// THE MEASUREMENT IS THE ONLY HONEST BRIDGE. There is no CSS media query for Dynamic Type; the one
+// thing a web view can read is the `-apple-system-body` font shorthand, which WebKit resolves to
+// the user's own preferred body size. 17px is the default, so the ratio against 17 is the scale.
+//
+// IT MUST BE ABLE TO DECLINE, and that is most of this function. In Chromium the shorthand does not
+// resolve at all and the probe keeps the inherited size — which would compute a ratio of 16/17 and
+// SHRINK every token, silently, including in every suite this repo runs. So the probe is only
+// believed when the shorthand demonstrably took effect: the computed family must have changed away
+// from the one it inherited. Otherwise --ts stays 1 and nothing moves.
+//
+// AND IT IS CLAMPED. An unbounded multiplier on a 34px large title is a layout nobody has measured;
+// 0.9–1.4 is the range the orb and craft audits were re-run against.
+// The DECISION is a pure function so it can be asserted without a device: the DOM half below only
+// gathers two facts (did the shorthand apply, and what size did it produce).
+function _textScaleFor(px, shorthandApplied){
+  if(!shorthandApplied) return 1;
+  const n = Number(px);
+  if(!isFinite(n) || n <= 0) return 1;
+  // AND THE FAMILY CHANGING IS NOT ENOUGH. Measured in Playwright's headless WebKit: the shorthand
+  // DOES resolve there (the family moves) and computes to 13px, which is not a Dynamic Type size at
+  // all — it is a headless default. Believing it would have shrunk every token by 10% on an engine
+  // with no user preference to honour, which is the shrinking-direction lie this guard refuses.
+  // iOS's own body sizes are 14/15/16/17/19/21/23 and then the accessibility sizes up to 53, so
+  // anything under 14 or over 60 is not a preference, it is noise.
+  if(n < 14 || n > 60) return 1;
+  // CLAMPED: an unbounded multiplier on a 34px large title is a layout nobody has measured.
+  return Math.min(1.4, Math.max(0.9, n / 17));
+}
+function applyTextScale(){
+  try{
+    const probe = document.createElement('span');
+    probe.setAttribute('aria-hidden','true');
+    probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden';
+    probe.textContent = 'A';
+    document.body.appendChild(probe);
+    const before = getComputedStyle(probe).fontFamily;
+    probe.style.font = '-apple-system-body';
+    const after = getComputedStyle(probe).fontFamily;
+    const px = parseFloat(getComputedStyle(probe).fontSize);
+    probe.remove();
+    const ts = _textScaleFor(px, after !== before);
+    document.documentElement.style.setProperty('--ts', String(ts));
+    return ts;
+  }catch(_){ return 1; }
+}
+
 const APP_VERSION = 'v668';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):

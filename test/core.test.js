@@ -19514,4 +19514,66 @@ H.section('the verse toast fires where its own comment says it does');
   });
 }
 
+// ── THE TYPE SCALE NEVER SCALED ────────────────────────────────────────────────────────────────
+// The tokens' own comment has always called them "the iOS Dynamic Type default scale", and every
+// value was an absolute px — so somebody who raised iOS Text Size, or the Accessibility Larger Text
+// slider, got literally no change anywhere in this app. The app's floor is an 11px caption and a
+// 13px footnote, which makes the affected population exactly the people who turn that setting on
+// and never turn it off. Their only recourse was pinch-zoom.
+//
+// MEASURED, and the first number is the point: with the eleven tokens converted and nothing else,
+// only **3 of 317** visible text runs moved — 0.9%. The tokens barely reach the rendered page,
+// because the design-system pass added px literals (several `!important`) that override them. Six
+// EXACT-VALUE conversions, chosen by measured reach rather than by a sweep, took it to **164 of 317
+// (51.7%)**: .btn's !important override, .ios-row-title, .ios-row-sub (x2), .ios-row-value and
+// .ios-header. Exact-value means the default rendering does not move, which craft-audit confirms
+// (0 runs under 13px, 0 wrapping caps, 0 neighbours).
+//
+// AND THE LAYOUT WAS RE-MEASURED AT THE CLAMP, which is the part most likely to surface new work:
+// at --ts 1.4 over five tabs, text clipped by its own box 0 -> 0, controls under 44px 2 -> 2
+// (pre-existing), tabs gaining horizontal scroll 0 -> 0.
+//
+// STILL OPEN AND NAMED: the other ~48% is raw px literals, most of them inline styles inside
+// src/app/*.js. That is a bucket-at-a-time job with a reach measurement per bucket, not a sweep —
+// this repo fails builds over blanket find-replace.
+H.section('the type scale can actually scale');
+{
+  const code = H.code(H.html);
+  // THE DECISION IS A PURE FUNCTION so it is assertable without a device.
+  const S = H.load(['_textScaleFor']);
+  H.eq(S._textScaleFor(17, true), 1, 'the iOS default body size is 1.0');
+  H.approx(S._textScaleFor(23, true), 23 / 17, 0.001, 'a larger preference scales proportionally');
+  H.eq(S._textScaleFor(53, true), 1.4, 'and an accessibility size is CLAMPED, not honoured raw');
+  H.eq(S._textScaleFor(14, true), 0.9, 'the small end is clamped too');
+  // THE GUARD THAT MATTERS MOST: it must refuse a number that is not a real preference. Measured in
+  // Playwright's headless WebKit, `-apple-system-body` DOES resolve (the family moves) and computes
+  // to 13px — so believing it would have shrunk every token by 10% on an engine with no user
+  // preference at all, silently, including in every suite here.
+  H.eq(S._textScaleFor(13, true), 1, '13px is below iOS’s smallest body size, so it is refused');
+  H.eq(S._textScaleFor(200, true), 1, 'and an absurd size is refused rather than clamped');
+  H.eq(S._textScaleFor(19, false), 1, 'and if the shorthand never applied, nothing moves at all');
+  H.eq(S._textScaleFor(NaN, true), 1, 'NaN is refused');
+
+  // THE TOKENS READ IT. All eleven, or the dial reaches only some of the scale.
+  ['--t-micro','--t-mini','--t-cap','--t-sm','--t-base','--t-md','--t-lg','--t-hd','--t-xl',
+   '--t-title1','--t-2xl'].forEach(function(t){
+    H.ok(new RegExp(t.replace(/-/g,'\\-') + ':calc\\([0-9.]+px \\* var\\(--ts\\)\\)').test(code),
+      t + ' scales with --ts');
+  });
+  H.ok(/--ts:1;/.test(code), 'and --ts defaults to 1, so an unmeasurable device renders as before');
+
+  // AND IT IS WIRED AT BOOT, or the whole thing is a token nobody sets.
+  const init = H.code(H.extractFn('initApp'));
+  H.ok(/applyTextScale\(\)/.test(init), 'applyTextScale runs at boot');
+
+  // THE SIX HIGH-REACH RULES. Named individually, because converting one and not its twin is how
+  // 0.9% happened in the first place.
+  H.ok(/\.btn\{[^}]*font-size:var\(--t-base\) !important/.test(code),
+    "the .btn !important override reads the token (it was pinning 17px over the token below it)");
+  ['ios-row-title', 'ios-row-sub', 'ios-row-value', 'ios-header'].forEach(function(cls){
+    H.ok(new RegExp('\\.' + cls + '\\{[^}]*font-size:var\\(--t-').test(code),
+      '.' + cls + ' reads a scaling token');
+  });
+}
+
 H.report();

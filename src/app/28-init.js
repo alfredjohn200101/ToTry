@@ -538,6 +538,9 @@ async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
   try{ if(typeof _watchA11y==='function') _watchA11y(); }catch(_){ }
+  // EARLY, because every --t-* token reads it and a late set repaints the whole app one frame in.
+  // It declines to a no-op wherever the -apple-system-body shorthand does not resolve.
+  try{ if(typeof applyTextScale==='function') applyTextScale(); }catch(_){ }
   try{ if(typeof _initHealthAutoSync==='function') _initHealthAutoSync(); }catch(_){ }
   // Demo mode has to survive a reload, or the first restart silently turns syncing back on and starts
   // pushing a persona named Alex into a real account. Re-assert both facts, and show the banner.

@@ -146,7 +146,16 @@
        micro 11 (caption 2) · mini 12 (caption 1) · cap 13 (footnote) · sm 15 (subheadline)
        md 16 (callout) · base/lg 17 (body/headline) · hd 20 (title 3) · xl 22 (title 2)
        title1 28 · 2xl 34 (large title) */
-  --t-micro:11px;--t-mini:12px;--t-cap:13px;--t-sm:15px;--t-base:17px;--t-md:16px;--t-lg:17px;--t-hd:20px;--t-xl:22px;--t-title1:28px;--t-2xl:34px;
+  /* AND IT NEVER ACTUALLY SCALED. The comment above has always called this "the iOS Dynamic Type
+     default scale", and every value was an absolute px — so somebody who raised Settings -> Display
+     & Brightness -> Text Size, or the Accessibility Larger Text slider, got literally no change
+     anywhere in the app. The floor here is an 11px caption and a 13px footnote, so the people
+     affected are exactly the ones who turn that setting on and never turn it off.
+     --ts is the bridge: 1 by default, and set at boot from the device's own preferred body size
+     (see applyTextScale in 00-boot.js). It is CLAMPED, because an unbounded multiplier on a 34px
+     large title is a layout this repo has not measured. */
+  --ts:1;
+  --t-micro:calc(11px * var(--ts));--t-mini:calc(12px * var(--ts));--t-cap:calc(13px * var(--ts));--t-sm:calc(15px * var(--ts));--t-base:calc(17px * var(--ts));--t-md:calc(16px * var(--ts));--t-lg:calc(17px * var(--ts));--t-hd:calc(20px * var(--ts));--t-xl:calc(22px * var(--ts));--t-title1:calc(28px * var(--ts));--t-2xl:calc(34px * var(--ts));
   /* Outfit first — the app's own text face — with the system stack behind it, so a device that cannot
      load the file still gets a native-feeling face rather than Times. */
   --font-text:'Outfit',-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
@@ -1889,7 +1898,7 @@ hr,.divider{border:0 !important;height:.5px !important;background:var(--bd) !imp
 .card-hd{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em !important;color:var(--tx) !important}
 
 /* ── Buttons ────────────────────────────────────────────────────────────────────────────────────── */
-.btn{font-family:var(--font-text) !important;font-size:17px !important;font-weight:600 !important;letter-spacing:-0.006em !important;
+.btn{font-family:var(--font-text) !important;font-size:var(--t-base) !important;font-weight:600 !important;letter-spacing:-0.006em !important;
   min-height:50px;border-radius:12px !important;border:0 !important;box-shadow:none !important;
   background:var(--fill) !important;color:var(--go) !important;transition:opacity .15s,transform .1s}
 .btn:active{opacity:.6;transform:none !important}
@@ -1984,7 +1993,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--go)}
    .ios-list is an inset grouped section; .ios-row is one 44pt+ row inside it. Separators are drawn
    INSET from the leading edge (and inset further when the row has an icon tile), never full width. */
 .ios-section{margin:0 0 28px}
-.ios-header{font-family:var(--font-text);font-size:13px;font-weight:400;text-transform:uppercase;letter-spacing:0;color:var(--tx2);padding:0 16px 7px}
+.ios-header{font-family:var(--font-text);font-size:var(--t-cap);font-weight:400;text-transform:uppercase;letter-spacing:0;color:var(--tx2);padding:0 16px 7px}
 .ios-footnote{font-family:var(--font-text);font-size:13px;line-height:1.38;letter-spacing:-.006em;color:var(--tx2);padding:7px 16px 0}
 .ios-list{background:var(--bg2);border-radius:var(--r);overflow:hidden}
 .ios-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:11px 16px;background:transparent;border:0;margin:0;
@@ -1996,12 +2005,12 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .ios-row-icon{flex:none;width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--go-fill)}
 .ios-row-icon .ic{width:18px;height:18px;stroke-width:2.1}
 .ios-row-body{flex:1;min-width:0}
-.ios-row-title{font-size:17px;line-height:1.29;color:var(--tx);overflow:hidden;text-overflow:ellipsis}
+.ios-row-title{font-size:var(--t-base);line-height:1.29;color:var(--tx);overflow:hidden;text-overflow:ellipsis}
 /* text-wrap:pretty — a row subtitle is one or two lines and must not end on a single word. Money's
    first row read "Let's look at it together first — no" / "lecture.", three lines tall to carry one
    orphan, at the top of the screen. */
-.ios-row-sub{font-size:15px;line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px;text-wrap:pretty}
-.ios-row-value{flex:none;font-size:17px;color:var(--tx2);font-variant-numeric:tabular-nums;max-width:45%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ios-row-sub{font-size:var(--t-sm);line-height:1.33;letter-spacing:-0.004em;color:var(--tx2);margin-top:1px;text-wrap:pretty}
+.ios-row-value{flex:none;font-size:var(--t-base);color:var(--tx2);font-variant-numeric:tabular-nums;max-width:45%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ios-row-chevron{flex:none;color:var(--tx3);margin-right:-4px}
 .ios-row-chevron .ic{width:14px;height:14px;stroke-width:2.6}
 .ios-row.destructive .ios-row-title{color:var(--re)}
@@ -2147,7 +2156,7 @@ button.ios-row:active,a.ios-row:active,.ios-row[onclick]:active{background:var(-
 .ios-list.hub .ios-row-icon{width:38px;height:38px;border-radius:9px}
 .ios-list.hub .ios-row-icon .ic{width:23px;height:23px}
 .ios-list.hub .ios-row-title{font-size:20px;font-weight:600;letter-spacing:-.006em}
-.ios-list.hub .ios-row-sub{font-size:15px;line-height:1.33;margin-top:2px}
+.ios-list.hub .ios-row-sub{font-size:var(--t-sm);line-height:1.33;margin-top:2px}
 .ios-list.hub .ios-row+.ios-row::before{left:68px}
 
 /* ── THE NUMBER THAT IS EARNED ────────────────────────────────────────────────────────────────────
