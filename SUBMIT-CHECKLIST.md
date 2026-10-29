@@ -101,19 +101,26 @@ where a 24h offset only orders rows.
    already on this machine, the issuer id is yours).
 2. **Click Submit for Review.** ASC holds builds 4, 5, 6, 8 and this repo has **no record of any
    build ever being submitted** — that click is the whole remaining gap.
-3. Screenshots: `build/appstore-screenshots/iphone-6.9in-v660/` + its `ORDER.md`. Five, flattened
-   RGB, 1320x2868. `03-fight.png` was re-captured so no Store image carries the word PORN.
+3. Screenshots: **`build/appstore-screenshots/iphone-6.9in-v669/`** + its `ORDER.md`. Five,
+   flattened RGB, 1320x2868, cut 29 Oct from the v669 build. Lead with `02-feeling-door.png`.
+   **Do not upload from the v660 folder beside it** — its `01-home.png` has the floating orb sitting
+   on the Money row, so the first image of the listing reads `$6,350 deb`. The v669 Home frame is
+   composed so the orb sits in the woven card's bottom padding and every row is complete. The set is
+   flattened by `node scripts/png-flatten.mjs`, which refuses a genuinely translucent PNG and
+   re-decodes what it wrote; `--selftest` proves both halves and needs no simulator.
 4. See `ASC-SUBMIT-PACK.md` for every field, measured, paste-ready — and `DEEP-DIVE-v662.md` for what
    was checked and found fine.
 
-**The live PWA is deployed and serving v649**; v650 is committed on `main` and **not yet pushed**.
-`ios-native` is merged, so `main` is the one line of development again.
+**The live PWA is deployed and serving v669**, measured 29 Oct: the served `index.html` hashes to
+`6ad14c2d3161`, byte-identical to the repo and to the bundle inside the IPA. `ios-native` is merged,
+so `main` is the one line of development again.
 
 **⚠ THE SERVER IS AHEAD OF THE CLIENT, DELIBERATELY, AND ONE THING IS WAITING ON A PUSH.**
 `send-push` **v23** is live and the `last_seen` / `last_away_sent` columns are applied — both had to
 go first, because the away nudge exists for people who are not opening the app and there is nowhere
-else for it to run. But `last_seen` is written by the CLIENT, so until v650 is pushed no PWA row
-advances it and no away nudge can fire. Nothing is broken by the gap; it is just inert.
+else for it to run. The client half shipped with v650 and is live, so `last_seen` now advances on
+every launch. (The original note here said the gap was inert until v650 was pushed; it was, and then
+it was pushed.)
 And measured against the live table, **both subscribers still hold `tz_offset_minutes: -600` with
 `tz` NULL, so their reminders are still an hour late** — v649's DST fix is correct and cannot reach
 them until the app is opened once on each device with a client that writes `tz`. An offset cannot be
@@ -672,22 +679,31 @@ Privacy Policy URL: `https://alfredjohn200101.github.io/ToTry/privacy.html`
 
 ## 3 · Age rating
 
-Answer the questionnaire honestly. Every line below was **re-verified against the v610 bundle on
-10 Oct 2026**; the previous version of this list was written around v424, and one answer had gone
-stale in a way that matters (see User-Generated Content). Where a number appears, it is measured.
+Answer the questionnaire honestly. Every count below was **re-measured against the v669 bundle on
+29 Oct 2026** (previously v610 on 10 Oct; before that v424, when one answer had gone stale in a way
+that matters — see User-Generated Content). Where a number appears, it is measured, over the bundle
+with `//` comments stripped (`H.code()`), and the regex is named so you can reproduce it.
+
+**No ANSWER changed between v610 and v669. Four counts did**, and the direction is worth seeing:
+HealthKit touch points **21 → 35** (v633 added the mindful-session write and a per-type
+authorisation status), helplines **54 → 56**, and the navigation surface **9 → 10** `window.open`
+with **6 → 7** `location.href =` (v664's Help & FAQ fix, which opens the app's own bundled
+`support.html`). The clinical-mechanism count went **23 → 19** — that one may be my regex rather
+than the app, since `\bACT\b` is easy to write two ways; it does not move the answer either way.
 
 - **Medical/Treatment Information → declare it, and consider the HIGHER band.** Measured on the
   shipped bundle with comments stripped (`H.code()`), each count naming the exact tokens so you can
   reproduce it rather than trust it — an earlier draft of this bullet gave four numbers whose labels
   did not match what had been counted, which is the failure this whole section exists to avoid:
   `calorieTarget|proteinTarget|tdee|bmr` **162**; `bmi` **23**; `menstrual|luteal|follicular|ovulat`
-  **34**; `HealthWrite|HKQuantity|healthkit` **21** (these are HealthKit *touch points*, not reads —
+  **34**; `HealthWrite|HKQuantity|healthkit` **35** (these are HealthKit *touch points*, not reads —
   `HealthWrite` is a write, and the bare word "HealthKit" occurs once);
-  `CBT|ACT|urge-surf|cognitive restructur|defusion` **23** (the first four alone give 18 — the fifth
-  term is doing real work); `helpline|Lifeline|Samaritans|988` **54**; and
+  `CBT|ACT|urge-surf|cognitive restructur|defusion` **19** (the first four alone give 14 — the fifth
+  term is doing real work); `helpline|Lifeline|Samaritans|988` **56**; and
   `emergency services|get to a hospital|Ambulance` **7**, of which at least one is `_HUMAN_KIND`,
-  the net's own detector regex rather than a place the app says it. It does not diagnose or prescribe and it carries 4 explicit "not medical
-  advice" disclaimers — but health and mental-health guidance is on essentially every screen, so the
+  the net's own detector regex rather than a place the app says it. It does not diagnose or prescribe and it carries **5 user-facing**
+  "not a substitute / not medical advice" disclaimers (plus 3 more written into the model's own
+  prompts, which nobody reads) — but health and mental-health guidance is on essentially every screen, so the
   "Infrequent/Mild" this doc claimed from v424 is hard to defend. Answer what the app does and take
   the band that follows.
 - **Alcohol, Tobacco, or Drug Use or References → Infrequent/Mild.** Confirmed. Vices can be named
@@ -714,9 +730,12 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   embedded browser (`Browser.open` / `InAppBrowser`: **0**), `capacitor.config.json` declares **no
   `allowNavigation`**, and no Swift file overrides `WKUIDelegate` or `decidePolicyFor`. So only the
   app's own origin loads in the webview and external links hand off to Safari.
-  The whole navigation surface, not just one third of it: **9** `window.open` (all `_blank`), **9**
-  `<a target="_blank">`, and **6** `location.href =` — the last going to `app.scheme` / `ca.scheme`,
-  i.e. deep links OUT to other apps, which is not in-app browsing. An earlier draft cited only the
+  The whole navigation surface, not just one third of it, re-enumerated at v669: **10**
+  `window.open` (**all 10** `_blank`), **10** `<a target="_blank">`, and **7** `location.href =`.
+  Of those seven, four go to `app.scheme` / `ca.scheme` — deep links OUT to other apps, which is not
+  in-app browsing — two are OAuth redirects (Strava, Google Health), and the seventh is
+  `'support.html'`, **a file inside the app's own bundle** (v664's Help & FAQ fix, and the fallback
+  for when `window.open` returns null). Same origin, so it is not web access either. An earlier draft cited only the
   nine `window.open` calls and concluded from them; the conclusion survives the other fifteen, but
   the evidence had to.
   **And it said "none of the 9 targets is built from a typed value", which is false.**
@@ -729,10 +748,10 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   This doc used to say *"Nothing a user writes is visible to any other user."* As written, that is no
   longer true. `shared_library` is a crowd-sourced exercise/food table: `contributeToSharedLibrary()`
   is called from `22-train-deep.js:58` with a **user-typed exercise name** and from
-  `14-nourish.js:3524` with a food name, and `pullSharedLibrary()` reads other people's rows into
-  every user's app.
+  `14-nourish.js:4109` with a food name — still exactly two live call sites, re-counted at v669 —
+  and `pullSharedLibrary()` reads other people's rows into every user's app.
   **Both of them can be the person's own typing, not one.** The food name is `wf.name`, which is
-  built as `p.name || query` (`14-nourish.js:1976`) — so when the web lookup returns no name, what
+  built as `p.name || query` — so when the web lookup returns no name, what
   gets published is **the search text the person typed**. An earlier draft of this section called it
   "a web-looked-up food name", which is true only when the lookup succeeds. The food one does at
   least require an explicit tap on a "Share" button; the exercise one does not.
@@ -749,8 +768,15 @@ stale in a way that matters (see User-Generated Content). Where a number appears
   profiles, no author attribution, no messages, no comments, no user-cast votes, and nothing else a
   person writes — journals, letters, why, identity, vice names, prayers, check-ins — ever leaves
   their own row. Answer the question with that shape in front of you rather than a bare yes or no,
-  and note there is **no user-facing "report content" control** (the `flagged` column is admin-only),
-  which is defensible precisely because nothing is visible until a human has already reviewed it.
+  **AND THERE IS A USER-FACING REPORT CONTROL NOW — this line used to say there was not.** Settings
+  → **Report shared content** (`openReportContent` / `submitContentReport`, `src/app/26-share.js`)
+  writes into the existing `feedback` queue tagged `type: 'content_report'`. That is 1.2's other
+  limb: pre-moderation filters objectionable material, and this is how the person who SEES something
+  wrong says so, because a pre-approval queue is only as good as the day it was reviewed. It is also
+  **crisis door 57** — "What's wrong with it?" invites a sentence — so it is gated per field, above
+  the validation, and it says *"Not sent"* when offline rather than claiming a filing. Re-derived
+  from the source on 29 Oct; the old sentence had gone stale, which is the same failure this section
+  already records for the UGC answer itself.
 
   One leak of exactly this kind has already happened and been fixed: `_companionSay()` used to
   publish the person's own words for what they were fighting into `shared_library`, filed as an

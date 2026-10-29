@@ -48,6 +48,11 @@ if (cmd === 'install') {
   if (!fs.existsSync(app)) { console.error('built, but no ToTry.app at ' + app); process.exit(1); }
   sh('simctl', 'install', 'booted', app);
   console.log('installed ' + app);
+  // EXIT EXPLICITLY. `install` used to fall through to the launch/capture chain below, which is a
+  // SEPARATE statement rather than a continuation of this one — so a successful install printed the
+  // usage block and exited 1. `app-shot.mjs install && app-shot.mjs seed` therefore never seeded,
+  // and an exit code that says failure after doing the work is the shape this repo keeps paying for.
+  process.exit(0);
 }
 else // ── seed ─────────────────────────────────────────────────────────────────────────────────────────
 // THE STORE SCREENSHOTS CAME FROM A STATE NOBODY COULD RECREATE. This script builds, installs and

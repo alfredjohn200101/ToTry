@@ -24,11 +24,14 @@ the upper third", and not the most legible word (that is `161`). The risk is sti
 2.3.8 requires screenshots to meet a 4+ rating regardless of the app's own rating, and a plain
 English word for pornography in a browsable Store image is a known metadata-rejection trigger.
 
-Fixed at the source: the demo seed's lead vice is now `The old habit`
-(`scripts/seed-person.mjs`). It is DEMO DATA, not product copy — the app still ships the porn vice
+Fixed at the source: the demo seed's lead vice is no longer the porn vice
+(`scripts/seed-person.mjs`). **It reads `The pull` as of v664** — this file said `The old habit` for
+five versions after it had been renamed, which is harmless here (both are 4+ safe) and is exactly the
+shape that is not harmless elsewhere: a doc restating a mutable fact. Checked in the file on 29 Oct,
+not recalled. It is DEMO DATA, not product copy — the app still ships the porn vice
 type, the description still speaks honestly, and nothing about what the app is for changed.
 Re-captured from the real Capacitor build on a booted iPhone 17 Pro Max and viewed: the card now
-reads `THE OLD HABIT`, with Day 161, "9 days clean · came back 6 times" and the red urge button
+reads `THE PULL`, with Day 161, "9 days clean · came back 6 times" and the red urge button
 unchanged.
 
 **The original fix advice was checked before it was followed, and that mattered twice.** First I
@@ -55,7 +58,8 @@ Builds 4/5/6/8 would have been refused as duplicates, which is noisy but harmles
 live hazard.
 
 All five older archives moved to `~/Library/Developer/Xcode/ToTry-superseded/` (moved, never
-deleted). Organizer now shows **exactly one** `app.totry` archive: `ToTry-v661.xcarchive`, build 10.
+deleted). Organizer shows **exactly one** `app.totry` archive. As of 29 Oct that is
+`ToTry-v669.xcarchive`, **build 12** — v661/build 10 was never uploaded and has been superseded.
 
 `preflight` could not have caught this and is not at fault: it only compares archives stamped at the
 *current* build number, so builds 1/4/5/6/8 are invisible to it by construction. I had previously
@@ -85,10 +89,11 @@ Xcode → Window → Organizer → Archives → select  ToTry  2026-10-27  →  
 ```
 
 **After B2, the 2026-10-27 row is the only one there.** Source of truth for the build number is
-`npm run preflight` ("iOS version 1.0 (build 10)"), not this file.
+`npm run preflight`, which on 29 Oct prints "iOS version 1.0 (build 12)" — not this file.
 
 - You will **not** be asked about export compliance — `ITSAppUsesNonExemptEncryption = false` is in
-  the shipped `Info.plist` (read from `ToTry-v661.xcarchive/Products/Applications/ToTry.app/Info.plist`).
+  the shipped `Info.plist` (re-read 29 Oct from inside the signed IPA, `ToTry-v669-build12.ipa`,
+  which is the artefact that uploads — the archive is Development-signed by design).
 - You will **not** be asked for an ATT declaration — no `NSUserTrackingUsageDescription`.
 - Upload-validation risks checked and clear: app icon is 1024×1024 RGB with **no alpha**
   (`colourType=2`); the built plist carries `arm64` (not the Capacitor-default `armv7`);
@@ -306,17 +311,18 @@ Against: `runUniversalSearch` is entirely local and the on-device Bible history 
 ```
 
 > Source of truth: `npm run preflight` / `project.pbxproj` `MARKETING_VERSION`. The attached build
-> will read **1.0 (10)** — `APP-REVIEW-NOTES.md:60` says build 9 and is one build stale.
+> will read **1.0 (12)**, verified inside the signed IPA on 29 Oct. `APP-REVIEW-NOTES.md` was
+> re-derived the same day and now agrees.
 
 ### Screenshots — iPhone 6.9" Display
 
-Upload the five PNGs from `build/appstore-screenshots/iphone-6.9in-v660/` **in this order** (do not
-let the filename sort put `01-home` first):
+Upload the five PNGs from **`build/appstore-screenshots/iphone-6.9in-v669/`** **in this order** (do
+not let the filename sort put `01-home` first):
 
 ```
 1.  02-feeling-door.png
 2.  01-home.png
-3.  03-fight.png          ← re-captured 27 Oct, now reads THE OLD HABIT
+3.  03-fight.png          ← lead vice reads THE PULL, not the porn vice
 4.  05-soul.png
 5.  04-money.png
 ```
@@ -332,11 +338,16 @@ recorded for the `6.9-v643` set (01-home was actually Settings mid-scroll) does 
   `SIM_DEVICE='iPhone 11 Pro Max' node scripts/app-shot.mjs install`.
 - **Ignore `APP-STORE-SUBMISSION.md:29`**, which names 1290×2796 and 1242×2688 — you have no asset
   at either size, so following it reads as "you have no usable screenshots".
-- **Do not use `build/appstore-screenshots/iphone-6.9in/`** (no `-v660`). It sorts first, has six
+- **Do not use `build/appstore-screenshots/iphone-6.9in-v660/`** either. It is the 27 Oct set and its
+  `01-home.png` has the floating orb sitting on the Money row, so the first image of the listing reads
+  `$6,350 deb`. Kept for the record, not for upload.
+- **Do not use `build/appstore-screenshots/iphone-6.9in/`** (no suffix). It sorts first, has six
   images and is alpha-clean, so every surface signal points at it — and it is 19 August: gold
   accent, emoji row icons, no Liquid Glass capsule, a different demo person. It is a different app.
-- Known and deliberate: the orb clips the Money value in `01-home` and the tab capsule overlaps
-  "Doomscroll" in `03-fight`. Measured and accepted inside the app — `npm run orb` reports **0
+- **The `01-home` orb clip is FIXED in the v669 set** — the frame is composed so the orb sits in the
+  woven card's bottom padding and all four rows are complete with their chevrons. Verified by cropping
+  the SAVED file, not the preview. Still deliberate: the tab capsule overlaps "Doomscroll" in
+  `03-fight`. Measured and accepted inside the app — `npm run orb` reports **0
   controls losing their own centre** at both 393x852 and 440x956, which is the tappability criterion,
   and 0 still under the orb when fully scrolled. The at-rest text clips are a floating button's
   inherent cost and are ratcheted at the measured number.
@@ -514,7 +525,8 @@ Two details that matter in that text:
 
 Order matters — Connect greys out Submit until all of these are green:
 
-1. Build attached and finished processing (1.0 (10))
+1. Build attached and finished processing — **1.0 (12)** as of 29 Oct; confirm against
+   `npm run preflight`, never against this line
 2. All five screenshots uploaded to the 6.9" slot
 3. App Privacy complete and **published** (it has its own Publish button)
 4. Age Rating questionnaire saved
