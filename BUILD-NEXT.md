@@ -246,3 +246,73 @@ One `reachFillName()` serves all three render paths now (both card branches and 
 forbids any bare `_escFew(s.prompt)` outright rather than listing exceptions, and five fault
 injections each reproduce a real failure: the bare-escape bypass, the nesting, a dropped `/g`, a
 neutered substitution, and the token being removed from the prompts so the filler guards nothing.
+
+
+---
+
+# ▶▶ STATUS AFTER THE 29 Oct 2026 AUDIT — v669
+
+**Everything in sections 1 and 2 above was re-verified against v668 by fifteen agents, each with an
+adversarial refuter on any DONE verdict.** The headline is the one this repo keeps re-learning:
+**most of the list was already built.** Seven items came back DONE; two of those were then REFUTED
+by their own refuter, which is exactly why they ran.
+
+## Closed — verified, not assumed
+
+| # | Was | Verified |
+|---|---|---|
+| 1.1 | gate writes to production | **DONE** — 373 writes intercepted in today's run; 0 new `feedback` rows since 26 Oct |
+| 1.2 | 13YARN missing from static crisis surfaces | **DONE at v656** — all four surfaces dial AND name it, driven on both engines at three phone sizes, held by a test fault-injected six ways |
+| 1.5 | `_SHRINK[lv] is not a function` | **DONE at v658** — 22 of 22 adversarial levels render, 0 crash |
+| 1.8 | `d0` / `demo_f0_0` | **DONE at v576 + v659** |
+| 1.9 | archive, verify, upload | **DONE except the two clicks**, which are the owner's |
+| 2.4 | `prefer` has no call sites | **DONE at v660** — the comment WAS the defect; deleted and replaced with a measured refusal |
+| 2.6 | `wovenDays()` never said out loud | **STALE CLAIM** — it has rendered as 52px real text since v646, *ten versions before this list was written* |
+
+## Fixed in this pass (v669)
+
+| # | What | Measured |
+|---|---|---|
+| 1.6 | the gate check **could not fail** — `left === 0` against a bundle holding 8 sites, both `\'` and `&apos;` defeating its regex | 8 sites routed through `closeOpenSheets()`; the check builds its quote class from all five escapings and calibrates on three spellings |
+| 1.7 | the inline-handler family was **not closed** — 4 sites hand-escaping typed text into `on*` attributes | a vice named `porn "just once"` broke the tag open and killed the button; `savePostUrge` is a crisis door, so its gate never ran |
+| 1.3 | `safetyNote()` named "their priest or imam" to **all five traditions** | FAITHS gained `guide`; re-measured live — band A 0 of 7 flinches, band C 3 of 3 with verified numbers |
+| 1.4 | a **Streak tile reading 0** to everyone promised "no streak, no line" | routed through `viceIsAbstinence()`; driven across all three modes |
+| 2.1 | the split save never repainted the card above it | its sibling already did, under a comment saying why |
+| 2.2 | the share **image** carried no URL | both 1080x1080 canvases now draw it, from one shared constant; meta tags + manifest now gated |
+| 2.3 | two of three GP rows led nowhere | one `HEALTH_FINDER` serves all three; the test asks about EVERY GP row |
+| X.1 | faith level **"light" ignored by the live SOS** and the Feeling Door practice | light reads as secular, not as nothing; driven 5 traditions x 2 levels |
+| X.3 | a comment claiming a call site that does not exist | corrected; the comment is now an artefact the gate compares |
+| X.2 | the type scale **never scaled** | 0.9% -> **51.7%** of rendered text; layout re-measured at the 1.4 clamp |
+
+## Still open, named rather than swept
+
+- **~48% of rendered text is still raw px literals**, mostly inline styles in `src/app/*.js`. Bucket
+  at a time, with a reach measurement per bucket. Not a sweep.
+- **Per-tradition context pools for the verse toast.** The four non-Christian banks are flat
+  `{t, r}` with no context tags, so the `context` argument is accepted and discarded. Giving them
+  real per-moment pools is content work across four scriptures — it belongs to somebody who can
+  judge the lines.
+- **The slip verse.** `loss` is a declared pool of twelve grace-first verses with no caller. The app
+  speaks scripture at a win, a PR, a fast and an answered prayer and says nothing at the one moment
+  grace is the whole point. That asymmetry is a DECISION, and a verse arriving unbidden on the worst
+  tap of somebody's week could as easily be an interruption as a presence.
+- **The purge.** 169 junk `feedback` rows and 49,097 `boot_offline` rows still sit on the live
+  project. All 169 are verified gate strings — nine distinct, zero with a real `user_id` — so **no
+  real person's disclosure is sitting unanswered**. Destructive, production, and the owner's call.
+- **The orb's breathing halo**, hidden globally by the 16 Sep flat pass. The flat FILL is correct
+  and load-bearing (a gradient to `--pu` would fail AA on the glyph); the halo is a brand decision.
+
+## And the crash log says something the old list did not
+
+Measured against `app_events`, not recalled. **`Can't find variable: Notification` hit 163 devices**
+— the top variant arriving at `?utm_source=ig&utm_medium=social`, i.e. Instagram traffic — and was
+**fixed on 18-19 Aug**, which is the date of the last such error. Two more large ones
+(`reading 'field'`, 10 devices; `toLocaleString`, 3) are likewise long gone. Of the four crash
+"blockers" on the list, only **1.6's `setting 'value'`** was still occurring at all (5 devices in 45
+days), and its live cause was already fixed at v659.
+
+**There ARE real people using this app.** 32 devices with 5+ events across 3+ kinds, 26 of them on
+two or more separate days, across 43 event kinds including `morning_done`, `evening_done`,
+`fight_won`, `two_min_done`, `release` and `letgo_named`, most recently 27 Oct. Section 0's "there
+is no user feedback" is true of the `feedback` TABLE and false of `app_events`. Some of those
+devices are certainly the owner's own; the behaviour is real either way.

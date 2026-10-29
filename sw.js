@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v668-the-release-screen-was-invisible-in-light'
+const CACHE = 'totry-v669-the-handoff-names-your-own-tradition'
 
 const CORE = [
   './',
