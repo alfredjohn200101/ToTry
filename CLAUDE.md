@@ -2266,6 +2266,87 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      word windows find the longest run that IS one literal, which is the honest answer for a
      concatenation. 158 proven → 190 → 204 → 199 after the HTML strip removed the five that were
      only ever proven by a comment.
+   - **AND A GUARD COULD NOT SEE THE ESCAPED FORM OF WHAT IT BANNED (29 Oct 2026).** The check on
+     `.modal-bg.open` removals asserted `left === 0` and MEASURED 0 against a bundle holding
+     **eight live sites** — five written `\'` (a JS string literal inside a module) and three
+     written `&apos;` (an HTML entity inside an onclick attribute). Its regexes demanded a bare
+     quote, so both spellings walked straight past. The sink was built, the call sites were swept
+     once, and the sweep's own guard could not see the two spellings anybody would write next: that
+     is how a closed family returns. The quote class is built from all five escapings now, it
+     CALIBRATES on all three spellings before reporting, and there is **one fault injection per
+     escaping** — without that the widened regex is the old unfailable check with more characters.
+   - **AND THE INLINE-HANDLER FAMILY WAS "FIXED" THREE TIMES AND STILL LIVE.** The three CAUSES in
+     the crash log were genuinely closed by v659; the FAMILY was not. Four more sites were still
+     hand-escaping USER-TYPED text into an `on*` attribute, in the same bundle as `_jsAttr`:
+     `savePostUrge(viceName)`, `_impulseSaveHold(what)`, `_tgtPickPerson(p.name)` and
+     `openCreateExercise(query)`. Driven before the fix: a vice named `porn "just once"` **broke the
+     tag open**, the app's own source landed as a stray attribute whose NAME was `once"')"`,
+     `btn.onclick` was null, and the button reading "Save what happened" was DEAD — `savePostUrge`
+     did not strip `"` at all. **And it is a crisis door**: it gates `#pur-trigger` and
+     `#pur-helped`, filled in right after a slip, so for those people the gate never ran.
+     `05-moment.js:586` is the textbook twin — twenty-eight lines above it `_impulseFeeling`
+     already does `const safe=_jsAttr(what); // for the onclick attribute`. The fourth site was
+     missed by a census of eighty interpolations and found by READING the list it produced.
+   - **AND A DUPLICATE ANCHOR RELOCATES RATHER THAN FAILS, INSIDE MY OWN TEST.** The by-name check
+     for those four sites asserted `_jsAttr(what)` is present — and `_jsAttr(what)` occurs TWICE in
+     `05-moment.js`, once at :560 in the very twin the fix was modelled on, so reverting :586 left
+     the needle intact and the injection was caught by the RATCHET instead of by name. Anchor on
+     the CALL SITE (`_impulseSaveHold(\''+_jsAttr(what)`), not the argument.
+   - **AND A TEST THAT STUBS THE REGISTRY PROVES THE WIRING AND NOTHING ELSE (29 Oct 2026).**
+     `safetyNote()` — the crisis clause in EVERY AI prompt — said *"a helpline, their doctor, a
+     counsellor, someone they love, their priest or imam"* to **all five traditions**, so a Hindu, a
+     Buddhist and a secular person at the one moment the model stops coaching were handed someone
+     else's clergy, the secular person a category they had asked not to be addressed in, in the same
+     prompt that forbids religious language for them. FAITHS had no clergy field at all, which is why
+     it was hardcoded; it has `guide` now, and **empty means NAME NOBODY** — right for secular
+     because there is nobody, and at faith level `light` because `_faithLine` already returns `''`
+     for both. The human half reaches everyone, because none of those is anybody's tradition.
+     **Two of six injections MISSED**: giving Hinduism a priest and Secular a priest both PASSED,
+     because every assertion stubbed `curFaith`. A stub is a fixture with nothing for the rule to
+     exclude. The section EXECUTES the real FAITHS literal now — brace-matched, with the verse banks
+     passed in by their real names `VS_HINDU`/`VS_BUDDHIST`, not the `-ISM` forms a reader assumes.
+   - **AND `H.code()` ATE URLs — THIS FILE'S OWN RECORDED TRAP, LIVING IN THE HARNESS.** It stripped
+     `//` with no `(?<!:)` guard, so a new `const HEALTH_FINDER = 'https://…'` read as **ABSENT**
+     from the stripped bundle and an assertion about it could not pass on correct code.
+     `reelsHaystack` had the guard already: the same rule computed two ways, which is the shape this
+     file fails builds over. Fixed; 4927 assertions, nothing else moved.
+   - **AND THE TYPE SCALE NEVER SCALED, AND CONVERTING THE TOKENS REACHED 0.9% (29 Oct 2026).**
+     The tokens' own comment has always called them *"the iOS Dynamic Type default scale"* and every
+     value was an absolute px, so raising iOS Text Size changed nothing anywhere — for a population
+     that is precisely the people who turn that setting on and never turn it off, against a floor of
+     an 11px caption and a 13px footnote. **Measured after converting all eleven tokens: 3 of 317
+     visible text runs moved.** The tokens barely reach the rendered page, because the design-system
+     pass added px literals — several `!important` — that override them; `.btn{font-size:17px
+     !important}` was pinning 17px over the token in the rule above it. Six EXACT-VALUE conversions
+     chosen **by measured reach** took it to 164 of 317 (51.7%), and exact-value means the default
+     rendering does not move, which `craft-audit` confirms. **Measure REACH, never intent** — and
+     the remaining ~48% is named as a cost rather than swept, because a blanket find-replace here is
+     the vandalism this file already records.
+   - **AND A DEVICE-DEPENDENT DECISION BELONGS IN A PURE FUNCTION.** There is no CSS media query for
+     Dynamic Type; the only readable signal is the `-apple-system-body` shorthand. Splitting the
+     DECISION out as `_textScaleFor(px, applied)` made it assertable without a device — nine cases,
+     six injections — while the DOM half only gathers two facts. **And the guard that matters most
+     came from a measurement: Playwright's headless WebKit DOES resolve that shorthand (the family
+     moves) and computes to 13px**, which is not a Dynamic Type size but a headless default, so
+     believing it would have shrunk every token by 10% on an engine with no user preference —
+     silently, in every suite here. iOS ships 14/15/16/17/19/21/23 and the accessibility sizes to 53,
+     so under 14 or over 60 is refused. Both engines correctly decline.
+   - **AND `npm run panels` CAUGHT MY OWN REGRESSION IN THE SAME SESSION.** The *"Find a GP near
+     you"* link added to the eating-disorder sheet measured **123x20** against the suite's 24pt tap
+     floor: **an anchor is only as tall as its line box**, and the rows either side of it are 20px
+     dialable numbers that clear it by accident of their font size. `display:inline-block` plus
+     `padding:6px 0` → 123x32. A hand-off surface is the worst place to ship a control a thumb
+     misses, and no source read would have found it.
+   - **AND THE CRASH LOG RANKED THE WORK BETTER THAN THE LIST DID.** Measured against `app_events`
+     rather than recalled: **`Can't find variable: Notification` hit 163 devices**, the top variant
+     arriving at `?utm_source=ig&utm_medium=social` — Instagram traffic — and it is **not on any
+     checklist**, because it was fixed on 18-19 Aug, which is the date of the last such error. I had
+     hypothesised the opposite ("the crash stopped because the posting stopped") and the guards plus
+     the dates refuted it. Of the four crash items the list called blockers, only one was still
+     occurring at all. **And there are real people in that table**: 32 devices with 5+ events across
+     3+ kinds, 26 on two or more days, through `morning_done`, `evening_done`, `fight_won`,
+     `two_min_done`, `release` and `letgo_named`. "There is no user feedback" was true of the
+     `feedback` TABLE and false of `app_events`.
    - `npm run engines` — **the one check the rest of the gate structurally cannot make.** v607's whole
      claim is that one day is one key on BOTH engines, and every other suite here runs in Chromium
      only, so none of them can see a divergence. This evals the shipped `dayKeyOf`/`dayKeyNorm` in
