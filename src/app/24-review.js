@@ -158,6 +158,11 @@ async function generateWeeklySynthesis(){
     return;
   }
   
+  // The other unprompted POST. Silent for the same reason, and placed BELOW the show-an-existing-one
+  // branch above on purpose: a synthesis generated while the coach was on is the person's own stored
+  // data, and hiding it would be taking something away rather than declining to send.
+  if(typeof aiOff==='function' && aiOff()) return;
+
   // Don't retry the AI on every tab switch if it failed — once per session only.
   if(window.__synthesisAttempted) return;
   window.__synthesisAttempted = true;

@@ -1153,6 +1153,9 @@ function downscaleImage(file, maxDim, quality){
 // ── AI MEAL PHOTO (beats Cal AI — our Coach IS Claude) ──
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
+  // Refused BEFORE the file is read, so nothing is downscaled, no spinner starts and the person is
+  // not told "the connection dropped it" about a switch they themselves turned off.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   const file = event.target.files?.[0];
   // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
   // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
@@ -1185,7 +1188,7 @@ async function handleMealPhoto(event){
         // Measured today: the text version of that shape needs 4000 against the live chain, because
         // Gemini 2.5 Flash spends the budget thinking before it writes. At 500 it cannot get past the
         // first item. This is the call he pointed at the gyros.
-        sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:4000 } }),
+        aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:4000 }),
         // Measured against the live chain: a 4000-token generation of this shape takes 9.3-11.5s
         // before any upload. 18s left almost no headroom on a slow connection, and 15s on the text
         // path was under the median. A longer ceiling is only cruel when the wait is a blank pulse —
@@ -1253,6 +1256,7 @@ let _pmPendingDescribe = '';
 // of the plate knows. This is the cheapest accuracy in the whole feature: their words are treated as
 // authoritative and the photo is demoted to judging quantity.
 async function _pmDescribe(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Re-reading the photo with your words')) return;
   const el = document.getElementById('pm-describe');
   const words = ((el && el.value) || '').trim();
   if(!words){ if(typeof showToast==='function') showToast('Tell me what it is', 'e.g. "open plate gyros, large, mixed meat".'); return; }
@@ -1271,8 +1275,8 @@ async function _pmDescribe(){
     // own: on a stalled connection it never settles, so the catch never runs and the waiting state
     // spins for good. Re-asking with words is the same size of job as the first look, so the same 25s.
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{
-        action:'vision', prompt:_mealPrompt(words), image_base64:img.b64, image_mime:img.mime, max_tokens:4000 } }),
+      aiInvoke({
+        action:'vision', prompt:_mealPrompt(words), image_base64:img.b64, image_mime:img.mime, max_tokens:4000 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 25000)),
     ]).catch(e => ({ error:e }));
     if(error || !data?.text) throw new Error('no answer');
@@ -1322,6 +1326,7 @@ function _pmWebPrompt(words, items){
 // photo does. This uses the free web-grounded text path that already exists in ai-proxy (Gemini
 // grounding, OpenRouter :online), so it costs nothing and needs no new provider.
 async function _pmWebLookup(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Looking the dish up')) return;
   const words = ((_photoMeal && _photoMeal.describe) || (document.getElementById('pm-describe')||{}).value || '').trim();
   if(!words){ if(typeof showToast==='function') showToast('Name the dish first', 'Tell me what you ordered and I will look it up.'); return; }
   const res = document.getElementById('nut-search-results');
@@ -1333,8 +1338,8 @@ async function _pmWebLookup(){
     // than reading a photo, and cutting it off at 25 would fail the case it exists for. Bounded all the
     // same, because unbounded is how a spinner becomes permanent.
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{
-        messages:[{ role:'user', content:prompt }], max_tokens:4000, web_search:true } }),
+      aiInvoke({
+        messages:[{ role:'user', content:prompt }], max_tokens:4000, web_search:true }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000)),
     ]).catch(e => ({ error:e }));
     if(error || !data?.text) throw new Error('no answer');
@@ -2810,12 +2815,16 @@ async function readBarcodePhoto(event){
 }
 // AI vision barcode read, split out so the photo handler stays clean.
 async function _barcodeVisionLookup(base64, mime, statusEl){
+    // Its own guard rather than one in the caller: the barcode photo path reaches this directly, and
+    // the status line two lines down would otherwise blame the image for a choice the person made.
+    if(typeof aiOffNotice==='function' && aiOffNotice('Reading a barcode from a photo')){
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--tx3)">The coach is off \u2014 type the number below instead.</span>';
+      return;
+    }
     try{
       const prompt = 'This image contains a product barcode (EAN-13, EAN-8, UPC-A, or UPC-E). Read the digits printed beneath or beside the barcode lines. Return ONLY valid JSON, no markdown: {"barcode":"the digits as a string, no spaces","confidence":"high|medium|low"}. If you cannot read any barcode digits, return {"error":"no barcode"}.';
       const {data, error} = await Promise.race([
-        sb.functions.invoke('ai-proxy', {
-          body: { action:'vision', prompt, image_base64: base64, image_mime: mime, max_tokens: 200 }
-        }),
+        aiInvoke({ action:'vision', prompt, image_base64: base64, image_mime: mime, max_tokens: 200 }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 30000))
       ]).catch(e => ({ error: e }));
       
@@ -3163,6 +3172,7 @@ function _recipeDraft(recipe){
 // Built on the vision call that already reads a workout summary and a plate of food, and it lands in
 // the SAME editable draft as the other two doors.
 async function handleRecipeScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   const file = event && event.target && event.target.files && event.target.files[0];
   if(event && event.target) event.target.value = '';
   if(!file) return;
@@ -3188,8 +3198,8 @@ async function handleRecipeScreenshot(event){
       + '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'
       + 'servings = how many meals the whole recipe makes (estimate from the amounts if not stated; default 1). Numbers only.';
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt,
-        image_base64: dataUrl.split(',')[1], image_mime:'image/jpeg', max_tokens:4000 } }),
+      aiInvoke({ action:'vision', prompt,
+        image_base64: dataUrl.split(',')[1], image_mime:'image/jpeg', max_tokens:4000 }),
       new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('Timed out')); }, 30000); })
     ]).catch(function(e){ return { error:e }; });
     if(error || !data || !data.text) throw new Error('no answer');

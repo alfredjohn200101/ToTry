@@ -302,34 +302,26 @@ by their own refuter, which is exactly why they ran.
   patching it blind: the guard would have to be a question, and where that question is asked is a
   product decision.
 
-- **THERE IS NO AI OFF-SWITCH, AND THE APP SENDS WITHOUT BEING ASKED. This is the one real product
-  decision the 30 Oct audit surfaced, and it is the owner's.** Measured by driving the shipping
-  bundle in chromium AND webkit with every outbound request captured and fulfilled locally, 20s idle,
-  zero interaction, three calibrations passing: **two unprompted `ai-proxy` POSTs fire on launch**
-  (`showAIMorningSentence` at `25-soul.js:621` and `generateWeeklySynthesis` at `24-review.js:140`,
-  both reached unconditionally from `go('home')`). Between them, with no tap, they send `totry_why`
-  verbatim, the identity sentence, every vice name with its clean-day count, body weight, calories
-  and protein, debt remaining, money in and out, average day rating, sleep (HealthKit-sourced
-  included) and **up to four journal entries word for word**. The `messages` array of each holds one
-  app-authored entry — there is no message from the person at all.
-  v670 made the POLICY true about this, in all three copies plus the Info.plist string. What it did
-  not do is give anybody a way to decline: greps for `totry_ai_off`, `aiDisabled`, `totry_no_ai` and
-  `disableAI` all return zero, so the only way out is not opening the app.
-  Three options, in the order I would take them:
-  1. **An off-switch**, modelled on `metricsOff()` — one key, one Settings row, asked at every
-     `api()` call site. Additive, removes nothing from anyone who wants it, and it is the answer
-     most consistent with "grace over shame, presence over measurement".
-  2. **Move both calls behind a tap.** `showAIMorningSentence` already has a deliberate control
-     (`refreshAIMorning`, `25-soul.js:703`), so the card could offer "write today's sentence"
-     instead of firing on render; `generateWeeklySynthesis` already gates its MODAL on Sunday and
-     could gate its GENERATION the same way. This is the strictest reading of the soul document's
-     "quiet by default... never overbearing" and it costs the thing the owner likes most about the
-     Today card.
-  3. **Leave it, now that the copy is honest.** Defensible — it is disclosed, and it is what makes
-     the morning sentence possible at all — but it means a person who reads the policy and objects
-     has no lever.
-  Not taken unilaterally: 1 and 2 both change the product, and this close to a submission that is
-  the owner's call, not mine.
+- ~~**THERE IS NO AI OFF-SWITCH, AND THE APP SENDS WITHOUT BEING ASKED.**~~ — **BUILT v671, option 1,
+  and the option I said I would take.** Additive: the default is ON, so it takes nothing from anybody
+  who wants the coach. `aiOff()` + one Settings row ("What the coach can read" → *Let the coach read
+  my data*), modelled on `metricsOff()` so the pair reads the same.
+  **The census is the finding.** `api()` was ONE OF THIRTEEN doors — 9 direct
+  `sb.functions.invoke('ai-proxy', …)` sites bypass it entirely and **every vision path is among
+  them**, so a switch wired only into `api()` would have been half-applied on every path that sends a
+  PHOTO. One `aiInvoke()` sink; the raw-invoke count is pinned at 2 in the whole bundle.
+  **`hevyFetch` is deliberately NOT gated and that refusal is a test** — it routes a Hevy REST
+  request through the same function with `action:'hevy'` for CORS, no model and no personal text, so
+  a sweep of the function NAME would have broken the Hevy sync while looking thorough.
+  **Measured, real browser, zero interaction:** one unprompted POST of 6,642 chars carrying the
+  identity sentence, the why, a journal entry verbatim, the vice name and the clean-day count →
+  **0 with the switch off**, and the morning card hides itself rather than showing an empty promise.
+  The meal photo: 2 POSTs on → 0 off. Both unprompted sends refuse ABOVE their own once-per-day
+  latch, so turning the coach back on works the same day. Ten fault injections, each caught by name.
+  **Option 2 (move both behind a tap) was NOT taken** and the reason stands: it costs the thing the
+  owner likes most about the Today card, and with a lever present the send is now a choice rather
+  than a condition of using the app. If the morning sentence should become a tap, that is still a
+  product decision and it is still the owner's.
 
 - **~48% of rendered text is still raw px literals**, mostly inline styles in `src/app/*.js`. Bucket
   at a time, with a reach measurement per bucket. Not a sweep.

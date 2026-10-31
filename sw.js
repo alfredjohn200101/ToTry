@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v670-a-model-was-inventing-withdrawal-physiology'
+const CACHE = 'totry-v671-the-policy-disclosed-a-send-nobody-could-decline'
 
 const CORE = [
   './',

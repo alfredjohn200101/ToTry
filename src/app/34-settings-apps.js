@@ -11,6 +11,9 @@ function updatePartnerBtn(){
   if(btn)btn.checked=!!ls('totry_partner');
   // Reflect the saved usage-counting choice too, so the switch never lies about its own state.
   try{ const mb=document.getElementById('metrics-toggle-btn'); if(mb) mb.checked = !((typeof metricsOff==='function') && metricsOff()); }catch(_){}
+  // Same for the coach switch, and for the same reason. A row that renders ON over a stored OFF is
+  // how somebody concludes the switch does nothing and stops trusting any of them.
+  try{ const ab=document.getElementById('ai-toggle-btn'); if(ab) ab.checked = !((typeof aiOff==='function') && aiOff()); }catch(_){}
 }
 
 

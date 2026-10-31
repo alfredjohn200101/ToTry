@@ -611,6 +611,7 @@ function generateMobilityRoutine(minutes){
 // WS-I: form-check from a single photo via AI vision. Heavily caveated — "things to look at",
 // never medical/coaching certainty, and honest that one still can't capture a full movement.
 async function runFormCheck(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('A form check')) return;
   const file = event.target.files && event.target.files[0];
   if(!file) return;
   if(!file.type || !file.type.startsWith('image/')){ showToast('Wrong file','Please choose an image.'); return; }
@@ -635,7 +636,7 @@ async function runFormCheck(event){
     if(!sb){ if(out) out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Form check needs you to be signed in.</div>'; return; }
     const prompt='This is a photo of someone performing a strength exercise (or holding a position). As a knowledgeable strength coach, give GENERAL, encouraging observations about what you can see of their body position — "things to look at" only. Identify the exercise if you can. Mention up to 3 things that look okay and up to 3 things worth checking (e.g. back angle, knee tracking, bar path, depth). Be clear these are observations from a single still, not a diagnosis. NEVER give medical advice. Plain text, short. End with one line reminding them a single photo can\u2019t capture the full movement and a coach is best for real assessment. If this is not a person exercising, say so briefly.';
     const {data,error}=await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:600 } }),
+      aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:600 }),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out')),35000))
     ]).catch(e=>({error:e}));
     if(error || !(data && data.text)){

@@ -7516,6 +7516,18 @@ Amen.</div></div>
         <div class="ios-footnote" id="lock-sub">Your journal, your fight and your money, behind Face ID. Off by default.</div>
       </div>
 
+      <!-- THE AI OFF-SWITCH. The privacy policy says two things leave for a model on every open
+           without being asked; this is the lever that makes that a choice rather than a notice. On by
+           default — it takes nothing from anybody who wants the coach. The footnote names what keeps
+           working, because an off-switch a person is afraid to touch is not a choice either. -->
+      <div class="ios-section">
+        <div class="ios-header">What the coach can read</div>
+        <div class="ios-list">
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Let the coach read my data</span><span class="ios-row-sub" style="display:block">Needed for the coach, the companion and the food camera</span></span><input type="checkbox" class="ios-switch" id="ai-toggle-btn" aria-label="Let the coach read my data" onclick="toggleAICoach()"></label>
+        </div>
+        <div class="ios-footnote">On, it sends what it needs to answer you — including twice on each first open of the day, to write your morning sentence and your weekly read, without asking. Off, nothing goes to a model at all. Everything else still works: your logs, reminders, backups, scripture, the fight, food search and barcodes.</div>
+      </div>
+
       <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
            policy names it plainly — a promise you can check is worth more than a promise that sounds good. -->
       <div class="ios-section">
@@ -8869,7 +8881,7 @@ function applyTextScale(){
   }catch(_){ return 1; }
 }
 
-const APP_VERSION = 'v670';
+const APP_VERSION = 'v671';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13458,6 +13470,65 @@ window.addEventListener('online', ()=>{ isOnline=true; });
 window.addEventListener('offline', ()=>{ isOnline=false; });
 
 
+// ─── THE AI OFF-SWITCH ────────────────────────────────────────
+// v670 made the privacy policy TRUE about something it had been silent on: two ai-proxy POSTs fire
+// on launch with no tap at all — the morning sentence (25-soul.js) and the weekly synthesis
+// (24-review.js) — and between them they send totry_why verbatim, the identity sentence, every vice
+// with its clean-day count, body weight, calories and protein, debt remaining, average day rating,
+// sleep (HealthKit-sourced included) and up to four journal entries word for word. The copy became
+// honest and there was still no lever: greps for totry_ai_off, aiDisabled, totry_no_ai and disableAI
+// all returned zero, so the only way out was not opening the app. A disclosure a person cannot act
+// on is a notice, not a choice.
+//
+// Modelled on metricsOff() deliberately — one key, one Settings row, read through a PREDICATE so a
+// surface written next month inherits the refusal instead of having to remember it. The default is
+// ON: this takes nothing from anybody who wants the coach.
+//
+// WHAT IT DELIBERATELY DOES NOT GATE, and the criterion is the whole point: hevyFetch()
+// (37-hevy.js:334) routes a Hevy REST request through the same edge function with action:'hevy',
+// because the browser cannot call Hevy directly for CORS. No model sees it and there is no personal
+// text in it. "Every ai-proxy call site" is NOT the same set as "every model call", and a sweep of
+// the function NAME would have silently broken the Hevy sync — the blanket-sweep shape this repo
+// fails builds over. Food lookups (key-proxy, USDA, Open Food Facts, the barcode database) are
+// untouched for the same reason: no model, no journal, no body data.
+function aiOff(){ try{ return localStorage.getItem('totry_ai_off')==='1'; }catch(_){ return false; } }
+
+function toggleAICoach(){
+  const off = !aiOff();
+  try{ localStorage.setItem('totry_ai_off', off?'1':'0'); }catch(_){}
+  try{ showToast(off?'The coach is off':'The coach is back',
+    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. What you log stays on this phone and in your own backup.'
+       :'Thank you — it can read your data again to answer you.'); }catch(_){}
+  try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+}
+
+// WHAT A PERSON SEES WHEN THEY TAP AN AI FEATURE THEY THEMSELVES SWITCHED OFF. The nine direct model
+// calls each hand-write their own failure copy — handleMealPhoto says "The photo did not get through.
+// The connection dropped it." — and every one of those sentences is a lie about a choice the person
+// made, the same wrong as a "Saved · I read what you wrote" toast on a surface that stores nothing.
+// So each entry point refuses BEFORE it does any work, and the true thing is said once, in one place.
+// Returns true when it refused, so a call site reads `if(aiOffNotice('…')) return;`.
+function aiOffNotice(what){
+  if(!aiOff()) return false;
+  try{ showToast('The coach is off', (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.'); }catch(_){}
+  return true;
+}
+
+// THE ONE DOOR EVERY MODEL CALL GOES THROUGH. Eleven sites invoked ai-proxy directly before this
+// existed and nine of them bypassed api() altogether — every vision path among them, which is to
+// say every path that sends a PHOTO. A switch wired only into api() would have been half-applied in
+// the most sensitive direction there is. Returns the Supabase-shaped {data, error} either way, so no
+// call site has to know this exists.
+async function aiInvoke(body){
+  if(aiOff()){
+    window.__lastAIError = { error:'ai_off' };
+    return { data:null, error:{ message:'The coach is switched off in Settings → Your data.' } };
+  }
+  if(!(sb && sb.functions)) return { data:null, error:{ message:'Not connected yet.' } };
+  return sb.functions.invoke('ai-proxy', { body });
+}
+
+
 // Multi-provider AI client. The Edge Function picks Gemini → Groq → OpenRouter → Anthropic.
 // Returns {text, provider, error} so callers can show real failures instead of pretending.
 // Hard timeout on every path so the UI never hangs on "Testing..." / "Thinking...".
@@ -13475,6 +13546,12 @@ async function api(sys, hist, msg, tok, opts){
   // Seven JSON-parsing callers sat under that. max_tokens is a CEILING, not a target — raising it
   // costs nothing on a short answer and is the difference between an answer and nothing on a long
   // one. A truncated reply is worth exactly zero to the person waiting for it.
+  // REFUSED HERE AS THE BACKSTOP. Every entry point a person taps refuses earlier and says something
+  // truer (aiOffNotice), but a surface added later inherits this one by construction rather than by
+  // somebody remembering. It sits ABOVE trackAPIUsage on purpose — a call that never happens must
+  // not be counted as one — and it returns '' rather than throwing, because that is what api()
+  // already returns when every provider fails, so no caller needs a new shape.
+  if(aiOff()){ window.__lastAIError = { error:'ai_off' }; return ''; }
   tok = Math.max(tok || 1200, 2000);
   opts = opts || {};
   const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
@@ -13520,7 +13597,7 @@ async function api(sys, hist, msg, tok, opts){
   if(sb && sb.functions){
     try{
       const {data, error} = await withTimeout(
-        sb.functions.invoke('ai-proxy', {body}),
+        aiInvoke(body),
         _left(),
         'supabase-invoke'
       );
@@ -13532,12 +13609,12 @@ async function api(sys, hist, msg, tok, opts){
             if(!body.__retriedTruncated){
               try{
                 const _r = await withTimeout(
-                  sb.functions.invoke('ai-proxy', { body: Object.assign({}, body, {
+                  aiInvoke(Object.assign({}, body, {
                     // 2048 was below what a thinking model needs to finish a real answer, so the
                     // one honest retry truncated too and the person got nothing twice.
                     max_tokens: Math.min(6000, Math.round((body.max_tokens || 600) * 2)),
                     __retriedTruncated: true
-                  })}),
+                  })),
                   _left(),
                   'supabase-invoke-retry'
                 );
@@ -13647,6 +13724,13 @@ function aiUnavailableHtml(local){
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
+  // THE PERSON SWITCHED IT OFF, AND THIS BRANCH HAS TO COME FIRST. Every other branch below
+  // describes something that went WRONG — "Your phone is not online right now", "My end is down for
+  // a moment" — and telling somebody their connection failed when what actually happened is a
+  // choice they made is the same defect as a "Saved" toast on a surface that stores nothing. Five
+  // surfaces render this sentence (the coach, the companion, the body screen, the fuel plan and the
+  // two morning cards), so this one branch is the whole honesty half for all of them.
+  if(err.error === 'ai_off') return 'The coach is switched off — Settings → Your data turns it back on. Nothing else in the app has changed.';
   // The server's daily-limit notice is the most useful message we have — it names the reset and says
   // the rest of the app keeps working. api() stopped returning it as CONTENT (it was being rendered
   // as a person's prayer), so it surfaces here instead.
@@ -13692,6 +13776,16 @@ function getAIErrorMessage(){
 // Dev-only — surfaces real reason for AI failure. Probes the edge function directly
 // so it can distinguish "edge function unreachable" from "all providers failing".
 async function runAIDiagnostic(){
+  // Two direct fetch(API) calls live below, so this is a door of its own \u2014 and a person who has
+  // switched the coach off and taps "Test AI connection" should be told the switch is the answer
+  // rather than watch a model call go out. The payload is a 1x1 PNG and carries nothing personal;
+  // this guard is about the promise, not the payload.
+  if(aiOff()){
+    const _o = document.getElementById('ai-diag-out');
+    if(_o) _o.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">The coach is switched off, so nothing was sent. Settings \u2192 Your data turns it back on and this will test it.</div>';
+    else if(typeof showToast==='function') showToast('The coach is off', 'Nothing was sent. Settings \u2192 Your data turns it back on.');
+    return;
+  }
   const out = document.getElementById('ai-diag-out');
   if(out) out.innerHTML = '<span style="color:var(--tx3)">Testing… (max 30s)</span>';
   
@@ -33848,6 +33942,9 @@ function downscaleImage(file, maxDim, quality){
 // ── AI MEAL PHOTO (beats Cal AI — our Coach IS Claude) ──
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
+  // Refused BEFORE the file is read, so nothing is downscaled, no spinner starts and the person is
+  // not told "the connection dropped it" about a switch they themselves turned off.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   const file = event.target.files?.[0];
   // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
   // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
@@ -33880,7 +33977,7 @@ async function handleMealPhoto(event){
         // Measured today: the text version of that shape needs 4000 against the live chain, because
         // Gemini 2.5 Flash spends the budget thinking before it writes. At 500 it cannot get past the
         // first item. This is the call he pointed at the gyros.
-        sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:4000 } }),
+        aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:4000 }),
         // Measured against the live chain: a 4000-token generation of this shape takes 9.3-11.5s
         // before any upload. 18s left almost no headroom on a slow connection, and 15s on the text
         // path was under the median. A longer ceiling is only cruel when the wait is a blank pulse —
@@ -33948,6 +34045,7 @@ let _pmPendingDescribe = '';
 // of the plate knows. This is the cheapest accuracy in the whole feature: their words are treated as
 // authoritative and the photo is demoted to judging quantity.
 async function _pmDescribe(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Re-reading the photo with your words')) return;
   const el = document.getElementById('pm-describe');
   const words = ((el && el.value) || '').trim();
   if(!words){ if(typeof showToast==='function') showToast('Tell me what it is', 'e.g. "open plate gyros, large, mixed meat".'); return; }
@@ -33966,8 +34064,8 @@ async function _pmDescribe(){
     // own: on a stalled connection it never settles, so the catch never runs and the waiting state
     // spins for good. Re-asking with words is the same size of job as the first look, so the same 25s.
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{
-        action:'vision', prompt:_mealPrompt(words), image_base64:img.b64, image_mime:img.mime, max_tokens:4000 } }),
+      aiInvoke({
+        action:'vision', prompt:_mealPrompt(words), image_base64:img.b64, image_mime:img.mime, max_tokens:4000 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 25000)),
     ]).catch(e => ({ error:e }));
     if(error || !data?.text) throw new Error('no answer');
@@ -34017,6 +34115,7 @@ function _pmWebPrompt(words, items){
 // photo does. This uses the free web-grounded text path that already exists in ai-proxy (Gemini
 // grounding, OpenRouter :online), so it costs nothing and needs no new provider.
 async function _pmWebLookup(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Looking the dish up')) return;
   const words = ((_photoMeal && _photoMeal.describe) || (document.getElementById('pm-describe')||{}).value || '').trim();
   if(!words){ if(typeof showToast==='function') showToast('Name the dish first', 'Tell me what you ordered and I will look it up.'); return; }
   const res = document.getElementById('nut-search-results');
@@ -34028,8 +34127,8 @@ async function _pmWebLookup(){
     // than reading a photo, and cutting it off at 25 would fail the case it exists for. Bounded all the
     // same, because unbounded is how a spinner becomes permanent.
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{
-        messages:[{ role:'user', content:prompt }], max_tokens:4000, web_search:true } }),
+      aiInvoke({
+        messages:[{ role:'user', content:prompt }], max_tokens:4000, web_search:true }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000)),
     ]).catch(e => ({ error:e }));
     if(error || !data?.text) throw new Error('no answer');
@@ -35505,12 +35604,16 @@ async function readBarcodePhoto(event){
 }
 // AI vision barcode read, split out so the photo handler stays clean.
 async function _barcodeVisionLookup(base64, mime, statusEl){
+    // Its own guard rather than one in the caller: the barcode photo path reaches this directly, and
+    // the status line two lines down would otherwise blame the image for a choice the person made.
+    if(typeof aiOffNotice==='function' && aiOffNotice('Reading a barcode from a photo')){
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--tx3)">The coach is off \u2014 type the number below instead.</span>';
+      return;
+    }
     try{
       const prompt = 'This image contains a product barcode (EAN-13, EAN-8, UPC-A, or UPC-E). Read the digits printed beneath or beside the barcode lines. Return ONLY valid JSON, no markdown: {"barcode":"the digits as a string, no spaces","confidence":"high|medium|low"}. If you cannot read any barcode digits, return {"error":"no barcode"}.';
       const {data, error} = await Promise.race([
-        sb.functions.invoke('ai-proxy', {
-          body: { action:'vision', prompt, image_base64: base64, image_mime: mime, max_tokens: 200 }
-        }),
+        aiInvoke({ action:'vision', prompt, image_base64: base64, image_mime: mime, max_tokens: 200 }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 30000))
       ]).catch(e => ({ error: e }));
       
@@ -35858,6 +35961,7 @@ function _recipeDraft(recipe){
 // Built on the vision call that already reads a workout summary and a plate of food, and it lands in
 // the SAME editable draft as the other two doors.
 async function handleRecipeScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   const file = event && event.target && event.target.files && event.target.files[0];
   if(event && event.target) event.target.value = '';
   if(!file) return;
@@ -35883,8 +35987,8 @@ async function handleRecipeScreenshot(event){
       + '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'
       + 'servings = how many meals the whole recipe makes (estimate from the amounts if not stated; default 1). Numbers only.';
     const { data, error } = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt,
-        image_base64: dataUrl.split(',')[1], image_mime:'image/jpeg', max_tokens:4000 } }),
+      aiInvoke({ action:'vision', prompt,
+        image_base64: dataUrl.split(',')[1], image_mime:'image/jpeg', max_tokens:4000 }),
       new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('Timed out')); }, 30000); })
     ]).catch(function(e){ return { error:e }; });
     if(error || !data || !data.text) throw new Error('no answer');
@@ -45115,6 +45219,7 @@ function generateMobilityRoutine(minutes){
 // WS-I: form-check from a single photo via AI vision. Heavily caveated — "things to look at",
 // never medical/coaching certainty, and honest that one still can't capture a full movement.
 async function runFormCheck(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('A form check')) return;
   const file = event.target.files && event.target.files[0];
   if(!file) return;
   if(!file.type || !file.type.startsWith('image/')){ showToast('Wrong file','Please choose an image.'); return; }
@@ -45139,7 +45244,7 @@ async function runFormCheck(event){
     if(!sb){ if(out) out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Form check needs you to be signed in.</div>'; return; }
     const prompt='This is a photo of someone performing a strength exercise (or holding a position). As a knowledgeable strength coach, give GENERAL, encouraging observations about what you can see of their body position — "things to look at" only. Identify the exercise if you can. Mention up to 3 things that look okay and up to 3 things worth checking (e.g. back angle, knee tracking, bar path, depth). Be clear these are observations from a single still, not a diagnosis. NEVER give medical advice. Plain text, short. End with one line reminding them a single photo can\u2019t capture the full movement and a coach is best for real assessment. If this is not a person exercising, say so briefly.';
     const {data,error}=await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:600 } }),
+      aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:600 }),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out')),35000))
     ]).catch(e=>({error:e}));
     if(error || !(data && data.text)){
@@ -48624,6 +48729,7 @@ function saveCardioManually(){
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
   if(!file) return;
@@ -48648,14 +48754,12 @@ async function handleWorkoutScreenshot(event){
       
       // 30s timeout so a stalled vision call can't leave the UI stuck on "Reading..."
       const {data, error} = await Promise.race([
-        sb.functions.invoke('ai-proxy', {
-          body: {
-            action: 'vision',
-            prompt: prompt,
-            image_base64: base64,
-            image_mime: mime,
-            max_tokens: 600
-          }
+        aiInvoke({
+          action: 'vision',
+          prompt: prompt,
+          image_base64: base64,
+          image_mime: mime,
+          max_tokens: 600
         }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out after 30s')), 30000))
       ]).catch(e => ({ error: e }));
@@ -51982,6 +52086,11 @@ async function generateWeeklySynthesis(){
     return;
   }
   
+  // The other unprompted POST. Silent for the same reason, and placed BELOW the show-an-existing-one
+  // branch above on purpose: a synthesis generated while the coach was on is the person's own stored
+  // data, and hiding it would be taking something away rather than declining to send.
+  if(typeof aiOff==='function' && aiOff()) return;
+
   // Don't retry the AI on every tab switch if it failed — once per session only.
   if(window.__synthesisAttempted) return;
   window.__synthesisAttempted = true;
@@ -53338,6 +53447,12 @@ async function showAIMorningSentence(){
     return;
   }
   
+  // REFUSED HERE AND NOT ONLY INSIDE api(). The marker written four lines below is a once-per-DAY
+  // latch: a refusal that happened after it would keep this card hidden for the rest of the day even
+  // if the switch were turned back on ten seconds later. This is one of the two POSTs that fire with
+  // no tap at all, so it says nothing — nobody asked, so nobody is told.
+  if(typeof aiOff==='function' && aiOff()){ card.style.display='none'; return; }
+
   // Don't retry on every tab switch — only attempt ONCE per day even on failure.
   // A failed attempt today sets a marker so navigation doesn't spam the AI.
   if(window.__aiMorningAttempted || ls('totry_ai_morning_tried_'+today)){
@@ -55863,7 +55978,7 @@ function showPrivacyPolicy(){
       // body weight, calories and protein, debt remaining, money in/out, average day rating, sleep
       // (HealthKit-sourced included) and up to FOUR journal entries word for word.
       // The old sentence was the basis on which somebody would judge the risk, and it was false.
-      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider.</li>' +
+      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider. <strong>You can stop all of it.</strong> Settings → Your data → “Let the coach read my data”. Switched off, nothing goes to a model at all — including the two sends above that you are not asked about — and everything else keeps working: your logs, reminders, backups, scripture, the fight, food search and barcodes.</li>' +
         '<li><strong>Photos you send to the coach</strong> \u2014 six things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter, Mistral, Cloudflare or NVIDIA as fallbacks): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, a <strong>smart-scale screenshot</strong> (your weight and body composition are in it), and a <strong>recipe screenshot</strong> (a photo of a recipe card or page, or a screenshot of one \u2014 whatever is in that picture goes with it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
         '<li><strong>Food search</strong> — when you type a food name, that text goes to <strong>four</strong> nutrition databases at once, and the first useful answers are merged: USDA (api.nal.usda.gov), FatSecret, Open Food Facts (au.openfoodfacts.org) and Nutritionix. FatSecret and Nutritionix are reached through my own server, which holds the keys, so they see the words you typed and not you. This used to be described as "the barcode is sent to OpenFoodFacts", which was true of scanning and understated searching — corrected 30 Oct 2026.</li><li><strong>Barcode scanning</strong> — the barcode number is sent to Open Food Facts. If the camera cannot read the code, the photo path above applies instead.</li>' +
         
@@ -60050,6 +60165,9 @@ function updatePartnerBtn(){
   if(btn)btn.checked=!!ls('totry_partner');
   // Reflect the saved usage-counting choice too, so the switch never lies about its own state.
   try{ const mb=document.getElementById('metrics-toggle-btn'); if(mb) mb.checked = !((typeof metricsOff==='function') && metricsOff()); }catch(_){}
+  // Same for the coach switch, and for the same reason. A row that renders ON over a stored OFF is
+  // how somebody concludes the switch does nothing and stops trusting any of them.
+  try{ const ab=document.getElementById('ai-toggle-btn'); if(ab) ab.checked = !((typeof aiOff==='function') && aiOff()); }catch(_){}
 }
 
 
@@ -61795,6 +61913,7 @@ function importEufyCSV(event){
 // entry. A confirmation step lets the man correct any misread digit before saving —
 // honest data matters more than speed.
 async function importScaleScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
   if(!file) return;
@@ -61807,7 +61926,7 @@ async function importScaleScreenshot(event){
   try{
     const prompt = 'This is a screenshot from a smart-scale app (e.g. EufyLife) showing body-composition cards. Read every value you can see. Return ONLY this JSON, no markdown, numbers only (no units), use null for anything not shown: {"weight":number,"unit":"kg or lb","bf":number,"musclePct":number,"muscleKg":number,"fatMassKg":number,"bmi":number,"water":number,"bonePct":number,"boneKg":number,"bmr":number,"visceral":number,"leanKg":number,"heartRate":number,"protein":number,"bodyAge":number}. If this is not a scale/body-composition screenshot, return {"error":"not a scale"}.';
     const {data, error} = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:400 } }),
+      aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:400 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000))
     ]).catch(e => ({ error:e }));
     if(error || !data?.text){ showToast('Couldn\'t read it', 'Try a clearer screenshot, or use + Log to enter manually.'); return; }

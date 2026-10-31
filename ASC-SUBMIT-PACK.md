@@ -1,6 +1,6 @@
 # App Store Connect — submission pack
 
-**Derived from the code and the shipped binary. Re-measured 31 Oct 2026 at v670 / build 13, not
+**Derived from the code and the shipped binary. Re-measured 31 Oct 2026 at v671 / build 14, not
 from the other submission docs.**
 Where this file disagrees with `APP-STORE-LISTING.md`, `APP-REVIEW-NOTES.md`, `APP-STORE-SUBMISSION.md`
 or `SUBMIT-CHECKLIST.md`, this file is the one that was re-measured — but every mutable fact below

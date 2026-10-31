@@ -136,6 +136,7 @@ function importEufyCSV(event){
 // entry. A confirmation step lets the man correct any misread digit before saving —
 // honest data matters more than speed.
 async function importScaleScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
   if(!file) return;
@@ -148,7 +149,7 @@ async function importScaleScreenshot(event){
   try{
     const prompt = 'This is a screenshot from a smart-scale app (e.g. EufyLife) showing body-composition cards. Read every value you can see. Return ONLY this JSON, no markdown, numbers only (no units), use null for anything not shown: {"weight":number,"unit":"kg or lb","bf":number,"musclePct":number,"muscleKg":number,"fatMassKg":number,"bmi":number,"water":number,"bonePct":number,"boneKg":number,"bmr":number,"visceral":number,"leanKg":number,"heartRate":number,"protein":number,"bodyAge":number}. If this is not a scale/body-composition screenshot, return {"error":"not a scale"}.';
     const {data, error} = await Promise.race([
-      sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:400 } }),
+      aiInvoke({ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:400 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000))
     ]).catch(e => ({ error:e }));
     if(error || !data?.text){ showToast('Couldn\'t read it', 'Try a clearer screenshot, or use + Log to enter manually.'); return; }

@@ -633,6 +633,12 @@ async function showAIMorningSentence(){
     return;
   }
   
+  // REFUSED HERE AND NOT ONLY INSIDE api(). The marker written four lines below is a once-per-DAY
+  // latch: a refusal that happened after it would keep this card hidden for the rest of the day even
+  // if the switch were turned back on ten seconds later. This is one of the two POSTs that fire with
+  // no tap at all, so it says nothing — nobody asked, so nobody is told.
+  if(typeof aiOff==='function' && aiOff()){ card.style.display='none'; return; }
+
   // Don't retry on every tab switch — only attempt ONCE per day even on failure.
   // A failed attempt today sets a marker so navigation doesn't spam the AI.
   if(window.__aiMorningAttempted || ls('totry_ai_morning_tried_'+today)){

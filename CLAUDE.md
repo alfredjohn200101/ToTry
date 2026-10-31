@@ -62,7 +62,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v670**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v671**. Bump it AND `CACHE` in sw.js together, always.
   (This line restates a mutable fact, which this file records as its own failure mode — `grep APP_VERSION
   src/app/00-boot.js` is the source of truth if it has drifted again.)
 
@@ -1576,6 +1576,56 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      pulling at me right now →"*, which a reviewer facing an email-code wall will not read as
      "skip sign-in". That is a 2.1 rejection waiting to happen, so `APP-REVIEW-NOTES.md` carries the
      paste-ready note naming the button.
+   - **AND THE POLICY DISCLOSED A SEND NOBODY COULD DECLINE (v671, 31 Oct 2026).** v670 made the
+     privacy copy true about two `ai-proxy` POSTs that fire on launch with **no tap at all**, and
+     left the person no lever: greps for `totry_ai_off`, `aiDisabled`, `totry_no_ai` and `disableAI`
+     all returned zero, so the only way out was not opening the app. **A disclosure a person cannot
+     act on is a notice, not a choice.** Measured on the real bundle with every outbound request
+     captured, zero interaction: one unprompted POST of **6,642 characters** carrying the identity
+     sentence, the why, a journal entry verbatim, the vice name and the clean-day count. 0 after.
+     **`api()` WAS NOT THE DOOR — IT WAS ONE OF THIRTEEN.** A census found 9 direct
+     `sb.functions.invoke('ai-proxy', …)` sites bypassing `api()` altogether, **every vision path
+     among them**, which is to say every path that sends a PHOTO; plus `api()`'s own two invokes, its
+     direct-`fetch(API)` fallback, and two more fetches in the dev diagnostic. A switch wired only
+     into `api()` would have been half-applied in the most sensitive direction there is. One
+     `aiInvoke()` sink now, and a test pins the raw-invoke count at **2** in the whole bundle.
+     **THE CRITERION IS "EVERY MODEL CALL", NOT "EVERY ai-proxy CALL SITE", AND THE DIFFERENCE IS A
+     FEATURE.** `hevyFetch` routes a Hevy REST request through the same edge function with
+     `action:'hevy'` because the browser cannot reach Hevy for CORS — no model, no personal text. A
+     sweep of the function NAME would have silently broken the Hevy sync while looking like
+     thoroughness, so the refusal is **asserted**: gating it turns the suite red.
+     **THE ORDER IS THE DEFECT, TWICE OVER.** Both unprompted sends write a once-per-day or
+     once-per-session latch BEFORE they call, so a refusal that happened only inside `api()` would
+     have kept the morning card hidden **for the rest of the day** after the switch was turned back
+     on. And `api()`'s gate sits above `trackAPIUsage` — a call that never happens must not be
+     counted as one, which is the `metricsOff` lesson this file already records, now asserted.
+     **THE HONESTY HALF WAS NEARLY FREE, AND NOT TAKING IT WOULD HAVE BEEN THE SAME DEFECT AS
+     "Saved · I read what you wrote".** Nine doors hand-write their own failure copy —
+     `handleMealPhoto` says *"The photo did not get through. The connection dropped it."* — and every
+     one of those is a lie about a choice the person made. `getAIErrorMessage()` is the single place
+     an error becomes a sentence and **five surfaces render it**, so one branch carries all of them;
+     the nine entry points refuse BEFORE any work through one `aiOffNotice()`. Driven: the meal photo
+     sends nothing and says *"Reading a meal photo needs the coach, and you switched it off."*
+     Ten fault injections, each caught by the assertion under test BY NAME. **And one of them proved
+     my own check was weaker than its message:** anchoring "refuses before any work" on the SINK is
+     satisfied by a guard inserted one line above the sink, after the photo has been read and
+     downscaled — it is anchored on the first `await` now, and injection 4b fails only that
+     assertion, which is how I know the old form would have passed on the defect.
+     **FIVE OF MY SIX PROBE FAILURES WERE THE PROBE, ALL SAYING THE APP WAS BROKEN.** `ls()` is
+     `setItem(k, JSON.stringify(v))`, so a raw-string seed throws in `JSON.parse` and the value
+     **never exists for any reader** — which is how the first run reported the person's own `why`
+     missing from the prompt. Then the opposite: `aiOff()` reads localStorage **raw** (because
+     `metricsOff()`/`totry_no_metrics` does, and the pair is meant to look identical), so
+     JSON-stringifying that one key stored `"1"` and every assertion failed at once. **Two storage
+     conventions live in this app and a seed has to match the one its OWN reader uses.** Then my own
+     `.slice(0, 4000)` on the captured body reported "NONE of the markers present" in a 6,642-character
+     prompt — **a probe that cuts its own evidence reports an absence it created.** Then a hit test
+     at `rect.top 1358` in an 896px viewport, where `elementFromPoint` answers `nothing`, which reads
+     exactly like a covered control; the rect was **byte-identical before and after the scroll**,
+     which is the recorded tell. Geometry has an owner, so it is deferred to `npm run panels` BY NAME
+     rather than measured badly here. And a Python edit aborted on its last anchor because the file
+     holds a real em-dash where I typed `—` — **anchor on ASCII you copied out of the file, or on
+     a line number**, which this file already says and which still cost two runs.
    - `npm run crisis` — **57 doors as of 14 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and

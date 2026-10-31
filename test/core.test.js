@@ -9362,7 +9362,11 @@ H.section('a recipe can come from a screenshot, and what comes back is still gat
   const run = (reply, crisisOn) => {
     let drafted = null, toast = null, crisis = null;
     const btn = { textContent:'Build the recipe', disabled:false };
-    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets'], {
+    // aiInvoke/aiOff are loaded because every model call routes through the sink now (v671). The
+    // `sb` stub below is still what answers — the sink passes straight through when the coach is on
+    // — but a test that stubs the RAW invoke while the code calls the sink gets an undefined global,
+    // a ReferenceError into the catch, and a null draft that reads exactly like a broken feature.
+    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets','aiInvoke','aiOff'], {
       document: { getElementById: () => ({ click(){} }),
                   querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }),
                   // closeOpenSheets (v659) iterates, so a document stub needs this too.
@@ -19875,6 +19879,189 @@ H.section('the type scale can actually scale');
   // CALIBRATION: the pattern must be able to fire, or "0 hits" means nothing.
   H.eq(('one tap opens a calm, proven in-the-moment guide'.match(CLAIMS) || []).length, 1,
     'calibration — the pattern catches the word that was actually there');
+}
+
+// ═══ THE AI OFF-SWITCH (v671) ════════════════════════════════════════════
+// v670 made the privacy policy true about two ai-proxy POSTs that fire on launch with no tap. This
+// is the lever that makes that disclosure a choice. Every assertion below was fault-injected.
+{
+  H.section('the coach can be switched off, and the switch reaches every door');
+
+  const mkLS = function(init){
+    const m = Object.assign({}, init || {});
+    return { getItem: function(k){ return (k in m) ? m[k] : null; },
+             setItem: function(k,v){ m[k] = String(v); },
+             removeItem: function(k){ delete m[k]; }, _m: m };
+  };
+  const mkEnv = function(ls){
+    const toasts = [], row = { checked: true }, W = {};
+    let invoked = 0;
+    const fns = H.load(['aiOff','toggleAICoach','aiOffNotice','aiInvoke'], {
+      localStorage: ls,
+      showToast: function(a,b){ toasts.push(a + ' · ' + b); },
+      document: { getElementById: function(id){ return id === 'ai-toggle-btn' ? row : null; } },
+      window: W,
+      sb: { functions: { invoke: function(){ invoked++; return Promise.resolve({ data:{ text:'hi' }, error:null }); } } },
+    });
+    return { fns: fns, toasts: toasts, row: row, W: W, hits: function(){ return invoked; } };
+  };
+
+  // 1. THE PREDICATE, EXECUTED. Default ON matters as much as the off state: a switch that defaults
+  //    to off would take the coach away from everybody on the next release without being asked.
+  H.eq(mkEnv(mkLS({})).fns.aiOff(), false, 'with nothing stored the coach is ON — the switch takes nothing away by existing');
+  H.eq(mkEnv(mkLS({ totry_ai_off:'1' })).fns.aiOff(), true, 'stored “1” switches it off');
+  H.eq(mkEnv(mkLS({ totry_ai_off:'0' })).fns.aiOff(), false, 'and “0” is on, not a truthy string');
+
+  // 2. THE TOGGLE WRITES WHAT THE PREDICATE READS. The pair is asserted together because this repo
+  //    has shipped a switch whose stored type the reader destroyed (parseInt over a day string).
+  {
+    const e = mkEnv(mkLS({}));
+    e.fns.toggleAICoach();
+    H.eq(e.fns.aiOff(), true, 'one tap switches it off, read back through the predicate itself');
+    H.eq(e.row.checked, false, 'and the row stops showing ON over a stored OFF');
+    e.fns.toggleAICoach();
+    H.eq(e.fns.aiOff(), false, 'a second tap switches it back on');
+    H.ok(e.toasts.length === 2 && /morning/i.test(e.toasts[0]),
+      'the off toast names the thing that stops rather than saying only “off”');
+  }
+
+  // 3. THE SINK REFUSES WITHOUT TOUCHING THE NETWORK. Asserted on the SPY COUNT, not on the return
+  //    value: a refusal that still invoked and then discarded the answer would have sent the data.
+  H.defer((function(){
+    const on = mkEnv(mkLS({})), off = mkEnv(mkLS({ totry_ai_off:'1' }));
+    return Promise.all([ on.fns.aiInvoke({ action:'vision' }), off.fns.aiInvoke({ action:'vision' }) ])
+      .then(function(r){
+        H.eq(on.hits(), 1, 'coach on: the sink passes straight through to the edge function');
+        H.ok(r[0].data && r[0].data.text === 'hi', 'and hands back the Supabase-shaped answer unchanged');
+        H.eq(off.hits(), 0, 'coach off: NOTHING is invoked — the measurement is the spy count, not the reply');
+        H.ok(r[1].error && !r[1].data, 'and the caller gets the Supabase-shaped error it already handles');
+        H.eq(off.W.__lastAIError && off.W.__lastAIError.error, 'ai_off',
+          'stamped ai_off so getAIErrorMessage can tell the truth about why');
+      });
+  })());
+
+  // 4. EVERY MODEL CALL GOES THROUGH THE SINK. Structural, because this is the invariant that makes
+  //    the switch inherit-by-construction instead of inherit-by-remembering. Nine sites invoked
+  //    ai-proxy directly before v671 and every vision path was among them — a switch wired only into
+  //    api() would have been half-applied in the one direction that sends a PHOTO.
+  const BUNDLE = H.code(H.html);
+  const raw = BUNDLE.match(/sb\.functions\.invoke\(\s*'ai-proxy'/g) || [];
+  H.eq(raw.length, 2, 'exactly two raw ai-proxy invokes survive in the whole bundle (the sink, and Hevy) — found ' + raw.length);
+  let sink = '';
+  try { sink = H.code(H.extractFn('aiInvoke')); } catch (e) { sink = ''; }
+  H.ok(sink.length > 100, 'aiInvoke was found by name — a rename must update this check, not silently drop it');
+  H.ok(/sb\.functions\.invoke\(\s*'ai-proxy'/.test(sink), 'one of the two is the sink itself');
+  H.ok(/aiOff\(\)/.test(sink), 'and the sink asks the predicate');
+
+  // 5. THE REFUSAL, HELD AS A TEST. hevyFetch routes a Hevy REST request through the same edge
+  //    function with action:'hevy' because the browser cannot call Hevy directly for CORS. No model
+  //    sees it and there is no personal text in it, so gating it would silently break the Hevy sync
+  //    while looking like thoroughness. "Every ai-proxy call site" is NOT "every model call".
+  let hevy = '';
+  try { hevy = H.code(H.extractFn('hevyFetch')); } catch (e) { hevy = ''; }
+  H.ok(hevy.length > 100, 'hevyFetch was found by name');
+  H.ok(/action\s*:\s*'hevy'/.test(hevy), 'the second raw invoke is the Hevy CORS proxy, identified by its own action');
+  H.ok(!/aiOff\(\)/.test(hevy), 'and it is deliberately NOT gated — gating it would break the Hevy sync for no privacy gain');
+
+  // 6. THE GUARD IN api() SITS ABOVE trackAPIUsage. A guard below the thing it guards is not a
+  //    guard, and nothing had ever asked that of metricsOff either — same shape, now asserted.
+  let apiSrc = '';
+  try { apiSrc = H.code(H.extractFn('api')); } catch (e) { apiSrc = ''; }
+  H.ok(apiSrc.length > 500, 'api() was found by name');
+  const gAt = apiSrc.indexOf('aiOff()'), tAt = apiSrc.indexOf('trackAPIUsage');
+  H.ok(gAt > -1 && tAt > -1 && gAt < tAt,
+    'api() refuses BEFORE it counts the call — a call that never happens must not be counted as one');
+
+  // 7. THE TWO UNPROMPTED SENDS REFUSE ABOVE THEIR OWN LATCH. This is the half only reading the call
+  //    sites reveals: both write a once-per-day / once-per-session marker, so a refusal that happened
+  //    only inside api() would keep the morning card hidden for the REST OF THE DAY after the switch
+  //    was turned back on. The order is the test.
+  [['showAIMorningSentence', "totry_ai_morning_tried_"],
+   ['generateWeeklySynthesis', "__synthesisAttempted = true"]].forEach(function(p){
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 300, p[0] + ' was found by name');
+    const g = src.indexOf('aiOff()'), latch = src.indexOf(p[1]);
+    H.ok(g > -1, p[0] + ': the unprompted send asks the switch at all');
+    H.ok(latch > -1, p[0] + ': its latch (' + p[1] + ') is still there to be ordered against');
+    H.ok(g > -1 && latch > -1 && g < latch,
+      p[0] + ': refuses ABOVE its own latch, so turning the coach back on works the same day');
+  });
+
+  // 8. EVERY ENTRY POINT REFUSES BEFORE IT REACHES THE SINK — asserted PER SURFACE BY NAME, never as
+  //    a count, because a count cannot say which one went missing. Each of these hand-writes its own
+  //    failure copy ("The photo did not get through. The connection dropped it."), which would be a
+  //    lie about a choice the person made, so the refusal has to come first and say something true.
+  [['handleMealPhoto', 14], ['_pmDescribe', 14], ['_pmWebLookup', 14],
+   ['_barcodeVisionLookup', 14], ['handleRecipeScreenshot', 14],
+   ['runFormCheck', 19], ['handleWorkoutScreenshot', 22], ['importScaleScreenshot', 39]].forEach(function(p){
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 200, p[0] + ' was found by name');
+    if (!src) return;
+    const g = src.search(/aiOffNotice\(/), call = src.indexOf('aiInvoke(');
+    // ORDERED AGAINST THE FIRST `await`, NOT against the sink. Anchoring on the sink made this
+    // assertion weaker than its own message: a guard inserted on the line ABOVE aiInvoke satisfies
+    // `g < call` while the photo has already been read, downscaled and put on screen. The first
+    // await is where the work starts, so that is what "before any work" has to mean.
+    const work = src.indexOf('await ');
+    H.ok(g > -1, p[0] + ': the entry point says the true thing when the coach is off');
+    H.ok(call > -1, p[0] + ': it still reaches the sink, so this is the right function');
+    H.ok(work > -1, p[0] + ': it does async work to be ordered against');
+    H.ok(g > -1 && call > -1 && g < call, p[0] + ': refuses before it reaches the sink');
+    H.ok(g > -1 && work > -1 && g < work, p[0] + ': refuses BEFORE any work, not after the photo is read');
+  });
+
+  // 9. THE HONESTY BRANCH, EXECUTED, AND FIRST. Five surfaces render getAIErrorMessage(), so one
+  //    branch carries all of them — and it must not fall through to "Your phone is not online right
+  //    now", which is the "Saved · I read what you wrote" defect in another costume.
+  {
+    const W = {};
+    const g = H.load(['getAIErrorMessage'], { window: W });
+    W.__lastAIError = { error:'ai_off' };
+    const msg = g.getAIErrorMessage() || '';
+    H.ok(/Settings/.test(msg) && /switched off/i.test(msg),
+      'the coach-off message names the switch rather than describing a failure');
+    H.ok(!/offline|not online|connection|try again/i.test(msg),
+      'and never blames the network for a choice the person made');
+    W.__lastAIError = { error: 'Failed to fetch' };
+    H.ok(/not online/i.test(g.getAIErrorMessage() || ''),
+      'CALIBRATION — a real network failure still gets the network sentence, so the branch is not swallowing everything');
+    H.eq(g.getAIErrorMessage.call(null) !== null, true, 'and it still answers for the ordinary case');
+  }
+
+  // 10. THE ROW EXISTS, IS WIRED, AND SAYS WHAT KEEPS WORKING. An off-switch a person is afraid to
+  //     touch is not a choice either, so the footnote naming the untouched features is load-bearing.
+  {
+    const shell = H.html;
+    H.ok(/id="ai-toggle-btn"/.test(shell), 'the Settings row ships');
+    H.ok(/id="ai-toggle-btn"[^>]*aria-label=/.test(shell) || /aria-label="Let the coach read my data"/.test(shell),
+      'and carries an accessible name');
+    H.ok(/onclick="toggleAICoach\(\)"/.test(shell), 'and is wired to the toggle, not to a function that does not exist');
+    const foot = (shell.match(/Off, nothing goes to a model at all\.[^<]*/) || [''])[0];
+    H.ok(/food search/i.test(foot) && /backups?/i.test(foot) && /reminders/i.test(foot),
+      'the footnote names what still works — ' + (foot ? 'found' : 'NOT FOUND'));
+  }
+
+  // 11. BOTH POLICY COPIES CARRY THE LEVER. v670's lesson: an enumeration in user-facing copy is an
+  //     artefact the gate can compare, not prose to be trusted — and the copy a live PWA user reads
+  //     is the hardcoded duplicate in showPrivacyPolicy(), not privacy.html.
+  {
+    const fs = require('fs'), path = require('path');
+    const pub = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
+    [['privacy.html', pub], ['the in-app policy', H.html]].forEach(function(p){
+      H.ok(/Let the coach read my data/.test(p[1]),
+        p[0] + ': names the switch by the exact words on the row a person has to find');
+      H.ok(/nothing goes to a model at all/.test(p[1]),
+        p[0] + ': and says what switching it off actually does');
+    });
+  }
+
+  // 12. THE SWITCH NEVER LIES ABOUT ITS OWN STATE on a fresh open.
+  let upb = '';
+  try { upb = H.code(H.extractFn('updatePartnerBtn')); } catch (e) { upb = ''; }
+  H.ok(/ai-toggle-btn/.test(upb) && /aiOff/.test(upb),
+    'the row is reflected from storage at boot, so it cannot render ON over a stored OFF');
 }
 
 H.report();

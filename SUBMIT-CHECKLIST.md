@@ -3,7 +3,11 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 31 Oct 2026 — v670, build 13. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
+## ▶▶ CURRENT STATE — 31 Oct 2026 — v671, build 14. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
+> **Build 14 SUPERSEDES build 13.** Same five screenshots, same answers, same privacy declarations
+> — v671 only adds the AI off-switch, which removes a send and adds no data type. Build 13's
+> archive has been moved to `~/Library/Developer/Xcode/ToTry-superseded-archives/`, so Organizer
+> shows exactly one. If you already uploaded 13, upload 14 as well and submit 14.
 
 **Everything below this block is HISTORY.** Fill every App Store Connect field from
 `ASC-SUBMIT-PACK.md` — **not from §2 or §4 of this file**, both of which are struck below because
@@ -12,7 +16,7 @@ they would have produced a false privacy label and handed App Review an admin ac
 | What | Where |
 |---|---|
 | Archive (keep exactly ONE in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-31/ToTry-v670.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v670-build13.ipa` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v671-build14.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
 | Screenshots, in upload order | `build/appstore-screenshots/iphone-6.9in-v669/` + its `ORDER.md` |
 

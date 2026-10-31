@@ -1658,6 +1658,7 @@ function saveCardioManually(){
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
   if(!file) return;
@@ -1682,14 +1683,12 @@ async function handleWorkoutScreenshot(event){
       
       // 30s timeout so a stalled vision call can't leave the UI stuck on "Reading..."
       const {data, error} = await Promise.race([
-        sb.functions.invoke('ai-proxy', {
-          body: {
-            action: 'vision',
-            prompt: prompt,
-            image_base64: base64,
-            image_mime: mime,
-            max_tokens: 600
-          }
+        aiInvoke({
+          action: 'vision',
+          prompt: prompt,
+          image_base64: base64,
+          image_mime: mime,
+          max_tokens: 600
         }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out after 30s')), 30000))
       ]).catch(e => ({ error: e }));

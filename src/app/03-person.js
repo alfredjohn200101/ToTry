@@ -1415,6 +1415,65 @@ window.addEventListener('online', ()=>{ isOnline=true; });
 window.addEventListener('offline', ()=>{ isOnline=false; });
 
 
+// ─── THE AI OFF-SWITCH ────────────────────────────────────────
+// v670 made the privacy policy TRUE about something it had been silent on: two ai-proxy POSTs fire
+// on launch with no tap at all — the morning sentence (25-soul.js) and the weekly synthesis
+// (24-review.js) — and between them they send totry_why verbatim, the identity sentence, every vice
+// with its clean-day count, body weight, calories and protein, debt remaining, average day rating,
+// sleep (HealthKit-sourced included) and up to four journal entries word for word. The copy became
+// honest and there was still no lever: greps for totry_ai_off, aiDisabled, totry_no_ai and disableAI
+// all returned zero, so the only way out was not opening the app. A disclosure a person cannot act
+// on is a notice, not a choice.
+//
+// Modelled on metricsOff() deliberately — one key, one Settings row, read through a PREDICATE so a
+// surface written next month inherits the refusal instead of having to remember it. The default is
+// ON: this takes nothing from anybody who wants the coach.
+//
+// WHAT IT DELIBERATELY DOES NOT GATE, and the criterion is the whole point: hevyFetch()
+// (37-hevy.js:334) routes a Hevy REST request through the same edge function with action:'hevy',
+// because the browser cannot call Hevy directly for CORS. No model sees it and there is no personal
+// text in it. "Every ai-proxy call site" is NOT the same set as "every model call", and a sweep of
+// the function NAME would have silently broken the Hevy sync — the blanket-sweep shape this repo
+// fails builds over. Food lookups (key-proxy, USDA, Open Food Facts, the barcode database) are
+// untouched for the same reason: no model, no journal, no body data.
+function aiOff(){ try{ return localStorage.getItem('totry_ai_off')==='1'; }catch(_){ return false; } }
+
+function toggleAICoach(){
+  const off = !aiOff();
+  try{ localStorage.setItem('totry_ai_off', off?'1':'0'); }catch(_){}
+  try{ showToast(off?'The coach is off':'The coach is back',
+    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. What you log stays on this phone and in your own backup.'
+       :'Thank you — it can read your data again to answer you.'); }catch(_){}
+  try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+}
+
+// WHAT A PERSON SEES WHEN THEY TAP AN AI FEATURE THEY THEMSELVES SWITCHED OFF. The nine direct model
+// calls each hand-write their own failure copy — handleMealPhoto says "The photo did not get through.
+// The connection dropped it." — and every one of those sentences is a lie about a choice the person
+// made, the same wrong as a "Saved · I read what you wrote" toast on a surface that stores nothing.
+// So each entry point refuses BEFORE it does any work, and the true thing is said once, in one place.
+// Returns true when it refused, so a call site reads `if(aiOffNotice('…')) return;`.
+function aiOffNotice(what){
+  if(!aiOff()) return false;
+  try{ showToast('The coach is off', (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.'); }catch(_){}
+  return true;
+}
+
+// THE ONE DOOR EVERY MODEL CALL GOES THROUGH. Eleven sites invoked ai-proxy directly before this
+// existed and nine of them bypassed api() altogether — every vision path among them, which is to
+// say every path that sends a PHOTO. A switch wired only into api() would have been half-applied in
+// the most sensitive direction there is. Returns the Supabase-shaped {data, error} either way, so no
+// call site has to know this exists.
+async function aiInvoke(body){
+  if(aiOff()){
+    window.__lastAIError = { error:'ai_off' };
+    return { data:null, error:{ message:'The coach is switched off in Settings → Your data.' } };
+  }
+  if(!(sb && sb.functions)) return { data:null, error:{ message:'Not connected yet.' } };
+  return sb.functions.invoke('ai-proxy', { body });
+}
+
+
 // Multi-provider AI client. The Edge Function picks Gemini → Groq → OpenRouter → Anthropic.
 // Returns {text, provider, error} so callers can show real failures instead of pretending.
 // Hard timeout on every path so the UI never hangs on "Testing..." / "Thinking...".
@@ -1432,6 +1491,12 @@ async function api(sys, hist, msg, tok, opts){
   // Seven JSON-parsing callers sat under that. max_tokens is a CEILING, not a target — raising it
   // costs nothing on a short answer and is the difference between an answer and nothing on a long
   // one. A truncated reply is worth exactly zero to the person waiting for it.
+  // REFUSED HERE AS THE BACKSTOP. Every entry point a person taps refuses earlier and says something
+  // truer (aiOffNotice), but a surface added later inherits this one by construction rather than by
+  // somebody remembering. It sits ABOVE trackAPIUsage on purpose — a call that never happens must
+  // not be counted as one — and it returns '' rather than throwing, because that is what api()
+  // already returns when every provider fails, so no caller needs a new shape.
+  if(aiOff()){ window.__lastAIError = { error:'ai_off' }; return ''; }
   tok = Math.max(tok || 1200, 2000);
   opts = opts || {};
   const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
@@ -1477,7 +1542,7 @@ async function api(sys, hist, msg, tok, opts){
   if(sb && sb.functions){
     try{
       const {data, error} = await withTimeout(
-        sb.functions.invoke('ai-proxy', {body}),
+        aiInvoke(body),
         _left(),
         'supabase-invoke'
       );
@@ -1489,12 +1554,12 @@ async function api(sys, hist, msg, tok, opts){
             if(!body.__retriedTruncated){
               try{
                 const _r = await withTimeout(
-                  sb.functions.invoke('ai-proxy', { body: Object.assign({}, body, {
+                  aiInvoke(Object.assign({}, body, {
                     // 2048 was below what a thinking model needs to finish a real answer, so the
                     // one honest retry truncated too and the person got nothing twice.
                     max_tokens: Math.min(6000, Math.round((body.max_tokens || 600) * 2)),
                     __retriedTruncated: true
-                  })}),
+                  })),
                   _left(),
                   'supabase-invoke-retry'
                 );
@@ -1604,6 +1669,13 @@ function aiUnavailableHtml(local){
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
+  // THE PERSON SWITCHED IT OFF, AND THIS BRANCH HAS TO COME FIRST. Every other branch below
+  // describes something that went WRONG — "Your phone is not online right now", "My end is down for
+  // a moment" — and telling somebody their connection failed when what actually happened is a
+  // choice they made is the same defect as a "Saved" toast on a surface that stores nothing. Five
+  // surfaces render this sentence (the coach, the companion, the body screen, the fuel plan and the
+  // two morning cards), so this one branch is the whole honesty half for all of them.
+  if(err.error === 'ai_off') return 'The coach is switched off — Settings → Your data turns it back on. Nothing else in the app has changed.';
   // The server's daily-limit notice is the most useful message we have — it names the reset and says
   // the rest of the app keeps working. api() stopped returning it as CONTENT (it was being rendered
   // as a person's prayer), so it surfaces here instead.
@@ -1649,6 +1721,16 @@ function getAIErrorMessage(){
 // Dev-only — surfaces real reason for AI failure. Probes the edge function directly
 // so it can distinguish "edge function unreachable" from "all providers failing".
 async function runAIDiagnostic(){
+  // Two direct fetch(API) calls live below, so this is a door of its own \u2014 and a person who has
+  // switched the coach off and taps "Test AI connection" should be told the switch is the answer
+  // rather than watch a model call go out. The payload is a 1x1 PNG and carries nothing personal;
+  // this guard is about the promise, not the payload.
+  if(aiOff()){
+    const _o = document.getElementById('ai-diag-out');
+    if(_o) _o.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">The coach is switched off, so nothing was sent. Settings \u2192 Your data turns it back on and this will test it.</div>';
+    else if(typeof showToast==='function') showToast('The coach is off', 'Nothing was sent. Settings \u2192 Your data turns it back on.');
+    return;
+  }
   const out = document.getElementById('ai-diag-out');
   if(out) out.innerHTML = '<span style="color:var(--tx3)">Testing… (max 30s)</span>';
   

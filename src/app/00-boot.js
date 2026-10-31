@@ -896,7 +896,7 @@ function applyTextScale(){
   }catch(_){ return 1; }
 }
 
-const APP_VERSION = 'v670';
+const APP_VERSION = 'v671';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
