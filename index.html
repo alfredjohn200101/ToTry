@@ -13592,7 +13592,11 @@ async function api(sys, hist, msg, tok, opts){
     // without anybody remembering. opts.quiet is for the paths that run with no tap behind them (the
     // SOS verse, the launch push refresh, the companion opening itself at a threshold): a toast
     // nobody asked for is the overbearing thing this app refuses to be.
-    if(!opts.quiet && typeof aiOffNotice==='function'){ try{ aiOffNotice(opts.what); }catch(_){ } }
+    // No argument: aiOffLine falls to "That needs the coach, and you switched it off", which is true
+    // at every one of the ~25 sites that reach this floor. An `opts.what` was written here first and
+    // had ZERO suppliers across all 38 api() callers -- a parameter that cannot fire is worse than
+    // none, and the 13 surfaces where a specific sentence earns its keep carry their own guard.
+    if(!opts.quiet && typeof aiOffNotice==='function'){ try{ aiOffNotice(); }catch(_){ } }
     return '';
   }
   tok = Math.max(tok || 1200, 2000);

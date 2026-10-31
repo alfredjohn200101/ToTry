@@ -20351,6 +20351,32 @@ H.section('the type scale can actually scale');
       'the companion is silent only when it opened ITSELF, not when somebody typed into it');
   }
 
+  // 17b. THE FLOOR'S OWN SENTENCE, WITH NO ARGUMENT, EXECUTED. An `opts.what` was written into the
+  //      backstop first and had ZERO suppliers across all 38 api() callers — a parameter that cannot
+  //      fire, under a comment describing a behaviour it never had, which is the dead-guard shape
+  //      this project fails builds over. It was removed rather than given invented suppliers, so the
+  //      bare line has to stand on its own at the ~25 sites that reach the floor.
+  {
+    let line = '', loadErr = '';
+    try {
+      line = H.load(['aiOffLine'], {}).aiOffLine();
+    } catch (e) { loadErr = String(e && e.message || e); }
+    H.ok(!!line, 'aiOffLine loads by name' + (loadErr ? ' — ' + loadErr : ''));
+    if (line) {
+      H.ok(/needs the coach/.test(line) && /switched it off/.test(line),
+        'with no argument it still names the switch and the choice: ' + JSON.stringify(line.slice(0, 60)));
+      H.ok(/Settings/.test(line), 'and says where to turn it back on');
+      H.ok(!/undefined|null/.test(line),
+        'and never renders a missing argument — the whole reason the parameter went');
+      H.ok(/^That /.test(line), 'the no-argument form reads as a sentence, not as a gap');
+    }
+    let a = '';
+    try { a = H.code(H.extractFn('api')); } catch (e) { a = ''; }
+    H.ok(a.length > 400, 'api() was found by name');
+    H.ok(!/aiOffNotice\(opts\.what\)/.test(a),
+      'the floor passes no argument, so there is no parameter here that nothing supplies');
+  }
+
   // 18. THE TWELVE SURFACES THAT USED TO ASSERT A CAUSE, ASSERTED PER SURFACE BY NAME. Section 16 is
   //     the floor that catches a new one; this is the record of which ones were wrong, so a revert
   //     shows up as a named failure rather than as a count moving by one. Three of these blamed the
