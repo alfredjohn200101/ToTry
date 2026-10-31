@@ -316,6 +316,9 @@ by their own refuter, which is exactly why they ran.
   **Measured, real browser, zero interaction:** one unprompted POST of 6,642 chars carrying the
   identity sentence, the why, a journal entry verbatim, the vice name and the clean-day count →
   **0 with the switch off**, and the morning card hides itself rather than showing an empty promise.
+  (One, not two: `generateWeeklySynthesis` returns at `_synthDayCount < 7 || _synthActivity < 3`, so
+  a NEW person's launch sends once and an established person's sends twice. Its gate is verified by
+  ORDER, above its own latch, rather than by observation — the seed does not qualify to reach it.)
   The meal photo: 2 POSTs on → 0 off. Both unprompted sends refuse ABOVE their own once-per-day
   latch, so turning the coach back on works the same day. Ten fault injections, each caught by name.
   **Option 2 (move both behind a tap) was NOT taken** and the reason stands: it costs the thing the

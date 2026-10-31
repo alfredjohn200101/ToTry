@@ -1583,6 +1583,12 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      act on is a notice, not a choice.** Measured on the real bundle with every outbound request
      captured, zero interaction: one unprompted POST of **6,642 characters** carrying the identity
      sentence, the why, a journal entry verbatim, the vice name and the clean-day count. 0 after.
+     **MEASURED AS ONE, NOT TWO, AND THE DIFFERENCE IS THE PERSON.** v670 measured two; this seed
+     produced one, because `generateWeeklySynthesis` returns at `_synthDayCount < 7 || _synthActivity
+     < 3` — so a NEW person's launch sends once and an established person's sends twice. Its gate was
+     verified by order (above its own `__synthesisAttempted` latch) and not by observation, because
+     the seed does not qualify to reach it. Saying "two" of a six-day seed would have been quoting a
+     measurement instead of making one.
      **`api()` WAS NOT THE DOOR — IT WAS ONE OF THIRTEEN.** A census found 9 direct
      `sb.functions.invoke('ai-proxy', …)` sites bypassing `api()` altogether, **every vision path
      among them**, which is to say every path that sends a PHOTO; plus `api()`'s own two invokes, its
