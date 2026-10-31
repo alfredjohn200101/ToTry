@@ -1,13 +1,22 @@
 # App Store Connect — submission pack
 
-**Derived from the code and the shipped binary on 27 Oct 2026, not from the other submission docs.**
+**Derived from the code and the shipped binary. Re-measured 31 Oct 2026 at v670 / build 13, not
+from the other submission docs.**
 Where this file disagrees with `APP-STORE-LISTING.md`, `APP-REVIEW-NOTES.md`, `APP-STORE-SUBMISSION.md`
 or `SUBMIT-CHECKLIST.md`, this file is the one that was re-measured — but every mutable fact below
 names its source of truth so you can re-check it rather than trust it.
 
-**Do not open `APP-STORE-SUBMISSION.md` or `NEXT.md` while filling the form.** Both are stale
-(`NEXT.md` §0 still says build 4 / v512; `APP-STORE-SUBMISSION.md` predicts age tiers that Apple
-deleted). The App Review note exists in three disagreeing copies and the build number in three — one
+**Do not open `APP-STORE-SUBMISSION.md`, `NEXT.md` or `SUBMIT-CHECKLIST.md` §§2 and 4 while filling
+the form — all three carried instructions that would have failed the submission, struck 31 Oct:**
+`APP-STORE-SUBMISSION.md:30` is an imperative to declare Health data as **not collected**, which
+contradicts the bundled manifest; `SUBMIT-CHECKLIST.md` §4 was a paste-ready App Review note
+asserting Health data is *"never uploaded or sent to any third party"* (false against the binary's
+own usage string, `SYNC_KEYS` and `lifeStateBrief()`) and told you to hand App Review an address
+already in `DEV_EMAILS`, which unlocks the **shared-library moderation queue**; and §2's
+privacy-label table is missing **Photos or Videos**, so filling App Privacy from it under-declares.
+All four survived because `npm run preflight` gates `APP-PRIVACY.md` and `APP-STORE-LISTING.md`
+against the manifest and never opens those two files. (`NEXT.md` §0 also still says build 4 / v512;
+`APP-STORE-SUBMISSION.md` predicts age tiers Apple deleted.) The App Review note exists in three disagreeing copies and the build number in three — one
 source per field is the whole point of this pack.
 
 ---
@@ -84,12 +93,16 @@ anyway, so all five were flattened in the same pass.
 ## 1 · Upload the build — your click
 
 ```
-Xcode → Window → Organizer → Archives → select  ToTry  2026-10-27  →  Distribute App
+Xcode → Window → Organizer → Archives → select the ONLY ToTry row →  Distribute App
    → App Store Connect → Upload → Automatically manage signing → Upload
 ```
 
-**After B2, the 2026-10-27 row is the only one there.** Source of truth for the build number is
-`npm run preflight`, which on 29 Oct prints "iOS version 1.0 (build 12)" — not this file.
+**There is exactly one ToTry row in Organizer, by design** — superseded pairs are moved to
+`~/Library/Developer/Xcode/ToTry-superseded/`, never deleted, because Organizer shows a name and a
+date and never which bundle is inside. ~~the 2026-10-27 row~~ — that date was already wrong when it
+was written and is struck rather than corrected, because **this file must not name the date at all**:
+`npm run preflight` reads the archives itself and says whether the one stamped at the current build
+carries the current bundle. Take the build number and the date from preflight, never from here.
 
 - You will **not** be asked about export compliance — `ITSAppUsesNonExemptEncryption = false` is in
   the shipped `Info.plist` (re-read 29 Oct from inside the signed IPA, `ToTry-v669-build12.ipa`,
@@ -575,11 +588,9 @@ launch**, one carrying `Sleep: 3.3h last night…` and three journal entries ver
 field the prompt prints; **I did not independently re-run the launch probe**. If it holds, this is a
 false statement in the artifact Apple reads under 5.1.2. **Fixing it is a one-line copy change to
 `privacy.html` and `showPrivacyPolicy()` — no new build needed for the hosted page**, and the notes
-in §6 already describe the behaviour correctly. Two smaller errors in the same file, unverified: the
-AI-provider list is short two providers and omits NVIDIA from the vision chain, and Resend (which
-receives feedback text **and** the sender's email) is not named in the third-party list.
+in §6 already describe the behaviour correctly. Two smaller errors in the same file, unverified: ~~the AI-provider list is short two providers and omits NVIDIA from the vision chain~~ — **struck 30 Oct: both are already correct in the live file, and editing it on this instruction would have damaged a correct page.** `APP-PRIVACY.md` was the file that was short three, and it is fixed. The other half was TRUE and is now done: Resend (which receives feedback text **and** the sender's email address) was named in neither privacy document and is now a bullet in both.
 
-**U3 — Settings → Help & FAQ is a silent no-op in the App Store build.** Unverified by me.
+**U3 — ~~Settings → Help & FAQ is a silent no-op in the App Store build.~~ CLOSED in v664** — `26-share.js:623` carries `if(!w){ location.href='support.html' }`, the null fallback for exactly the `window.open`-returns-null case described below, and `support.html` ships inside the bundle with its own `history.back()` route out. Verified present in all three bundles. v670 also precaches it, so it works offline instead of falling back to reloading the whole app. Original note:
 `26-share.js:617` is `window.open('support.html', '_blank', 'noopener')`; Capacitor 8 hands every
 `_blank` to the system, the app declares no `CFBundleURLTypes` (✅ I confirmed
 `Print: Entry, ":CFBundleURLTypes", Does Not Exist`), so the open fails — and the `catch` fallback is
@@ -587,8 +598,7 @@ structurally unreachable because `window.open` with `noopener` returns null rath
 **Not a submission blocker** (the Support *URL* is fine and works in a browser), but do not tell a
 reviewer that row works.
 
-**U4 — cloud sync may upload almost nothing on WebKit.** Unverified, and the most serious item here
-if true. A lens drove both engines and reported that assigning to `localStorage.setItem` does not
+**U4 — ~~cloud sync may upload almost nothing on WebKit.~~ CLOSED in v663** — the lens was right, and `01-sync.js:284-302` now hooks `Storage.prototype.setItem` (writable in both engines) instead of assigning to `localStorage.setItem`, with a one-time stamp of every existing local key so the repairing launch cannot hand the phone's history to a stale cloud row. Verified present in all three bundles. Original note: A lens drove both engines and reported that assigning to `localStorage.setItem` does not
 install a hook in WebKit (the named-property setter captures the assignment and stores it as an
 item), so `enableSyncMonitoring()` at `01-sync.js:249` never fires — leaving **174 of 184 SYNC_KEYS**
 with no push path, and a pull that can then overwrite the device. **I did not re-run this.** It does

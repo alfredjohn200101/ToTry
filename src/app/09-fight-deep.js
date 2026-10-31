@@ -1458,6 +1458,28 @@ const RECOVERY_TIMELINES = {
     { d:30, body:'Many report better sleep, deeper focus and less comparison-driven low mood.', soul:'A month of living your own life instead of watching others\u2019.' },
     { d:90, body:'Sustained attention and real-world engagement noticeably strengthen.', soul:'Ninety days. Your time is yours again.' }
   ],
+  // SEDATIVES — the one class besides alcohol where stopping suddenly can kill. The day-1 entry
+  // leads with the warning rather than a gain, because for this class day 1 is the dangerous day
+  // and a milestone card is the wrong shape for it. Modelled on alcohol's day-1 copy, which has
+  // carried the same warning for 200 versions.
+  sedative: [
+    { d:1, body:'Before anything else: if you have been taking these every day, do NOT stop suddenly. Benzodiazepines and sleeping tablets are, with alcohol, the classes where abrupt withdrawal can cause a seizure. A doctor or a withdrawal service can taper you down safely — that is the difference between hard and dangerous.', soul:'Getting help to do this safely is not a smaller kind of courage. It is the whole of it.' },
+    { d:7, body:'On a supervised reduction, the first week is usually the sharpest for sleep and anxiety — rebound symptoms are the body relearning, not proof you need the dose back.', soul:'A week. You are doing the hardest kind of patient thing.' },
+    { d:30, body:'Sleep architecture and daytime anxiety typically begin to settle as the reduction continues. Memory and concentration often start to sharpen.', soul:'A month. The mind clearing is your own mind coming back.' },
+    { d:90, body:'Many people describe emotions returning at full volume around this point — uncomfortable, and a sign the nervous system is no longer being damped.', soul:'Ninety days of feeling things again. That takes more nerve than numbing did.' },
+    { d:365, body:'A year on, sleep, memory and anxiety regulation continue to improve for most people.', soul:'A year. You are living without the thing you were told you could not live without.' }
+  ],
+  // OPIOIDS — withdrawal itself is rarely fatal; the danger is on the other side of abstinence.
+  // Tolerance falls within days, so a return to the old dose is the leading cause of opioid death.
+  // An abstinence-milestone card is precisely the surface that would never say so, which is why it
+  // is said at day 1 and said again at 30.
+  opioid: [
+    { d:1, body:'Withdrawal from opioids is brutal but, on its own, rarely dangerous — a doctor can make it far less so, and medication-assisted treatment is treatment, not failure. The dangerous part comes later: your tolerance drops within days, so a dose that was ordinary last week can stop your breathing. Keep naloxone where someone can reach it, and never use alone.', soul:'Day one. Asking for medical help with this is wisdom, not weakness.' },
+    { d:7, body:'The worst of the physical withdrawal usually passes within a week; sleep and appetite begin to return, often unevenly.', soul:'A week through the worst of it. That was endurance, not luck.' },
+    { d:30, body:'Energy, appetite and sleep keep steadying. Your tolerance is now far below what it was — if you ever do go back, start nowhere near your old dose, and not on your own.', soul:'A month. You have given your body a month it has not had in a long time.' },
+    { d:90, body:'Mood and motivation often lift noticeably around now as the reward system rebalances; pain sensitivity usually normalises.', soul:'Ninety days. The flatness lifting is not luck — it is what you built.' },
+    { d:365, body:'A year on, sleep, mood, hormones and immune function continue recovering.', soul:'A year. You are someone who did the hardest version of this.' }
+  ],
   food: [
     { d:1, body:'One day of steady choices begins stabilising blood sugar and energy.', soul:'You fed the body, not the feeling. That\u2019s a real win.' },
     { d:7, body:'Cravings often ease as blood sugar steadies; energy becomes more even.', soul:'A week of eating with intention. Notice the steadiness.' },
@@ -1555,7 +1577,12 @@ async function _researchRecoveryTimeline(name, type){
     const cacheKey = 'rt_'+(type||'')+'_'+_who+'_'+(name||'').toLowerCase().slice(0,30);
     const store = (()=>{ try{ return JSON.parse(localStorage.getItem('totry_recovery_timelines')||'{}'); }catch(_){ return {}; } })();
     if(store[cacheKey]) return store[cacheKey];
-    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
+    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. SAFETY, and it overrides the rest: never give dosing, tapering or withdrawal instructions, and never state a quantity of anything. If stopping this particular thing suddenly can carry real physical risk, or if a relapse after a break is more dangerous than the use was, say that plainly in the day-1 body and name a doctor or a withdrawal service instead of a milestone. Do not invent a physiological claim you are not confident of — a vaguer true sentence is better than a precise invented one. Return ONLY the JSON array, no markdown.';
+    // THE PROMPT CARRIES THE SAFETY CLAUSE BECAUSE safetyNote() STRUCTURALLY CANNOT REACH IT. This
+    // call does not route through brotherSys(), so the note every other AI surface inherits is not
+    // here — the same blind spot this repo recorded for BIBLE_SYS. The two classes where a specific
+    // omission is fatal are CHECKED copy in RECOVERY_TIMELINES above and never reach this path; this
+    // clause is for everything else a person might name.
     const txt = await api(sys, [], 'The struggle: "'+name+'". Give the recovery timeline.', 700, { web_search:true, timeout:40000 });
     let arr = null;
     try{ arr = JSON.parse((txt||'').replace(/```json|```/g,'').trim()); }catch(_){ arr = null; }

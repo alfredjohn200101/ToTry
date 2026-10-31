@@ -8869,7 +8869,7 @@ function applyTextScale(){
   }catch(_){ return 1; }
 }
 
-const APP_VERSION = 'v669';
+const APP_VERSION = 'v670';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19798,6 +19798,29 @@ function classifyVice(name){
   // tested, and the person lost the nicotine timeline. A guard against a weak signal must never be able
   // to veto an explicit one.
   const map = [
+    // ── THE TWO CLASSES WHERE THE OMISSION KILLS ────────────────────────────────────────────────
+    // Measured 30 Oct 2026: every drug name a person can type returned 'general', which has no entry
+    // in RECOVERY_TIMELINES, so it fell through to _researchRecoveryTimeline() — a model asked, with
+    // web search, for "4-6 recovery milestones a person gains by abstaining", under a prompt with no
+    // safety clause and no route to safetyNote(). Driven over 19 names: Xanax, Valium, diazepam,
+    // oxycodone, heroin, fentanyl, methadone, kratom, codeine, tramadol — 19 of 19 invented. The app
+    // warned correctly for alcohol and handed the other lethal class to an LLM.
+    // These two are checked copy because each has ONE fact whose absence is fatal, and neither is a
+    // fact a milestone card would naturally reach for:
+    //   sedatives — abrupt unsupervised cessation can cause a seizure. Benzodiazepines and alcohol
+    //     are the two classes where stopping suddenly can kill, and alcohol already says so.
+    //   opioids — withdrawal itself rarely kills; the danger is AFTER. Tolerance falls within days,
+    //     so returning to the old dose is the leading cause of opioid death, and an
+    //     abstinence-milestone card is exactly the surface that would never mention it.
+    // Strong-only, no weak keywords: every stem here is unambiguous. 'meth' and 'oxy' are
+    // deliberately ABSENT — `startsWord` is a word-START match, so they would claim "method" and
+    // "oxygen"; the full names are used instead.
+    ['opioid',    ['opioid','opiate','heroin','oxycodone','oxycontin','fentanyl','methadone',
+                   'buprenorphine','suboxone','subutex','codeine','tramadol','morphine',
+                   'hydrocodone','percocet','dilaudid','kratom'], [], []],
+    ['sedative',  ['benzo','xanax','alprazolam','valium','diazepam','klonopin','clonazepam',
+                   'ativan','lorazepam','temazepam','zopiclone','barbiturate','phenobarbital',
+                   'ghb'], [], []],
     ['porn',      ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], [], []],
     // The named books are strong: they carry no other meaning, and under the old classifier they were
     // only reached by the substring 'bet' inside "Sportsbet".
@@ -19818,6 +19841,12 @@ function classifyVice(name){
     ['food',      ['binge','overeat'], ['eat','food','sugar','junk','snack','sweets'], []]
   ];
   const startsWord = k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
+  // WHOLE-WORD SLANG, which a word-START match structurally cannot carry. `\boxy` claims "oxygen"
+  // and `\bmeth` claims "method", so the full chemical names are in the list above and the street
+  // names are tested here as COMPLETE words instead. "Oxy" is the commonest way anybody names this
+  // and it is exactly the person the tolerance warning is written for; measured, it returned
+  // 'general' without this line. Deliberately tight: 'bars' and 'tabs' are protein and browser.
+  if(/\b(oxy|oxys|percs?|roxies|roxys)\b/.test(n)) return 'opioid';
   // Two passes, so an explicit word anywhere in the name beats every weak match and every guard.
   for(const [type, strong] of map){ if(strong.some(startsWord)) return type; }
   for(const [type, , weak, nots] of map){
@@ -21380,7 +21409,11 @@ function _mechanismForType(type, text){
   if(type === 'overthinking' || type === 'anxiety') return 'defuse';
   if(type === 'porn') return 'interrupt';
   if(type === 'scrolling') return 'interrupt';
-  if(type === 'nicotine' || type === 'alcohol' || type === 'gambling' || type === 'food') return 'wave';
+  // A substance craving is the shape urge-surfing was written for, so the two new classes join
+  // nicotine and alcohol here rather than falling through to grounding. Measured: without this
+  // line `_mechanismForType('opioid')` returned 'ground', i.e. 5-4-3-2-1 for a withdrawal craving.
+  if(type === 'nicotine' || type === 'alcohol' || type === 'gambling' || type === 'food'
+     || type === 'opioid' || type === 'sedative') return 'wave';
   return 'ground';
 }
 
@@ -24317,9 +24350,29 @@ const HealthWrite = {
     try{
       const mins = parseFloat(sess.durationMin || sess.durationMinutes || 0) || 0;
       if(mins <= 0) return;                      // nothing honest to write
+      // 5.1.3's ONE EXPLICIT MUST-NOT IS "APPS MUST NOT WRITE FALSE OR INACCURATE DATA INTO HEALTHKIT",
+      // and this wrote every single mirrored workout a full duration LATE. `sess.ts` is the moment Save
+      // was tapped, not the moment the session began, while `durationMin` is wall-clock from
+      // `__sessionStart` — so the plugin, which treats startMs as the START, placed the sample at
+      // [save, save+duration]. Measured by driving the real bridge with a stubbed plugin capturing the
+      // payload: a session that genuinely ran 18:00-19:00 with Save at 19:00 was written to Apple
+      // Health as 19:00-20:00, +60 min drift, on EVERY mirrored workout. It can land on top of the
+      // person's own recorded sleep and sits an hour from the Watch's record of the same session.
+      // `startedAt` is now persisted at save time; the subtraction is the fallback for the sessions
+      // already in history and for anything arriving from an import, and it is exactly equivalent.
+      const _startMs = sess.startedAt ? Date.parse(sess.startedAt)
+                     : (sess.ts ? Date.parse(sess.ts) - mins * 60000 : Date.now() - mins * 60000);
+      if(!isFinite(_startMs)) return;
+      // AND A RESTORED DRAFT COULD CLAIM FIFTEEN HOURS. `22-train-deep.js` restores `__sessionStart`
+      // from a saved draft, so a session begun yesterday and saved this morning produced a 900-minute
+      // workout ENDING IN THE FUTURE. Refusing is the right answer rather than clamping: a mirror that
+      // is absent is honest, and a 15-hour strength session written into somebody's health record is
+      // not. `saveMindful` in the plugin already guards its own end time; `saveWorkout` did not.
+      if(mins > 480) return;
+      if(_startMs + mins * 60000 > Date.now() + 60000) return;   // never write into the future
       await p.saveWorkout({
         type: String(sess.splitFocus || sess.type || 'Strength'),
-        startMs: sess.ts ? Date.parse(sess.ts) : Date.now(),
+        startMs: _startMs,
         durationMin: mins,
         calories: parseFloat(sess.calories || 0) || 0
       });
@@ -26668,6 +26721,28 @@ const RECOVERY_TIMELINES = {
     { d:30, body:'Many report better sleep, deeper focus and less comparison-driven low mood.', soul:'A month of living your own life instead of watching others\u2019.' },
     { d:90, body:'Sustained attention and real-world engagement noticeably strengthen.', soul:'Ninety days. Your time is yours again.' }
   ],
+  // SEDATIVES — the one class besides alcohol where stopping suddenly can kill. The day-1 entry
+  // leads with the warning rather than a gain, because for this class day 1 is the dangerous day
+  // and a milestone card is the wrong shape for it. Modelled on alcohol's day-1 copy, which has
+  // carried the same warning for 200 versions.
+  sedative: [
+    { d:1, body:'Before anything else: if you have been taking these every day, do NOT stop suddenly. Benzodiazepines and sleeping tablets are, with alcohol, the classes where abrupt withdrawal can cause a seizure. A doctor or a withdrawal service can taper you down safely — that is the difference between hard and dangerous.', soul:'Getting help to do this safely is not a smaller kind of courage. It is the whole of it.' },
+    { d:7, body:'On a supervised reduction, the first week is usually the sharpest for sleep and anxiety — rebound symptoms are the body relearning, not proof you need the dose back.', soul:'A week. You are doing the hardest kind of patient thing.' },
+    { d:30, body:'Sleep architecture and daytime anxiety typically begin to settle as the reduction continues. Memory and concentration often start to sharpen.', soul:'A month. The mind clearing is your own mind coming back.' },
+    { d:90, body:'Many people describe emotions returning at full volume around this point — uncomfortable, and a sign the nervous system is no longer being damped.', soul:'Ninety days of feeling things again. That takes more nerve than numbing did.' },
+    { d:365, body:'A year on, sleep, memory and anxiety regulation continue to improve for most people.', soul:'A year. You are living without the thing you were told you could not live without.' }
+  ],
+  // OPIOIDS — withdrawal itself is rarely fatal; the danger is on the other side of abstinence.
+  // Tolerance falls within days, so a return to the old dose is the leading cause of opioid death.
+  // An abstinence-milestone card is precisely the surface that would never say so, which is why it
+  // is said at day 1 and said again at 30.
+  opioid: [
+    { d:1, body:'Withdrawal from opioids is brutal but, on its own, rarely dangerous — a doctor can make it far less so, and medication-assisted treatment is treatment, not failure. The dangerous part comes later: your tolerance drops within days, so a dose that was ordinary last week can stop your breathing. Keep naloxone where someone can reach it, and never use alone.', soul:'Day one. Asking for medical help with this is wisdom, not weakness.' },
+    { d:7, body:'The worst of the physical withdrawal usually passes within a week; sleep and appetite begin to return, often unevenly.', soul:'A week through the worst of it. That was endurance, not luck.' },
+    { d:30, body:'Energy, appetite and sleep keep steadying. Your tolerance is now far below what it was — if you ever do go back, start nowhere near your old dose, and not on your own.', soul:'A month. You have given your body a month it has not had in a long time.' },
+    { d:90, body:'Mood and motivation often lift noticeably around now as the reward system rebalances; pain sensitivity usually normalises.', soul:'Ninety days. The flatness lifting is not luck — it is what you built.' },
+    { d:365, body:'A year on, sleep, mood, hormones and immune function continue recovering.', soul:'A year. You are someone who did the hardest version of this.' }
+  ],
   food: [
     { d:1, body:'One day of steady choices begins stabilising blood sugar and energy.', soul:'You fed the body, not the feeling. That\u2019s a real win.' },
     { d:7, body:'Cravings often ease as blood sugar steadies; energy becomes more even.', soul:'A week of eating with intention. Notice the steadiness.' },
@@ -26765,7 +26840,12 @@ async function _researchRecoveryTimeline(name, type){
     const cacheKey = 'rt_'+(type||'')+'_'+_who+'_'+(name||'').toLowerCase().slice(0,30);
     const store = (()=>{ try{ return JSON.parse(localStorage.getItem('totry_recovery_timelines')||'{}'); }catch(_){ return {}; } })();
     if(store[cacheKey]) return store[cacheKey];
-    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
+    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. SAFETY, and it overrides the rest: never give dosing, tapering or withdrawal instructions, and never state a quantity of anything. If stopping this particular thing suddenly can carry real physical risk, or if a relapse after a break is more dangerous than the use was, say that plainly in the day-1 body and name a doctor or a withdrawal service instead of a milestone. Do not invent a physiological claim you are not confident of — a vaguer true sentence is better than a precise invented one. Return ONLY the JSON array, no markdown.';
+    // THE PROMPT CARRIES THE SAFETY CLAUSE BECAUSE safetyNote() STRUCTURALLY CANNOT REACH IT. This
+    // call does not route through brotherSys(), so the note every other AI surface inherits is not
+    // here — the same blind spot this repo recorded for BIBLE_SYS. The two classes where a specific
+    // omission is fatal are CHECKED copy in RECOVERY_TIMELINES above and never reach this path; this
+    // clause is for everything else a person might name.
     const txt = await api(sys, [], 'The struggle: "'+name+'". Give the recovery timeline.', 700, { web_search:true, timeout:40000 });
     let arr = null;
     try{ arr = JSON.parse((txt||'').replace(/```json|```/g,'').trim()); }catch(_){ arr = null; }
@@ -47839,7 +47919,7 @@ async function saveWorkoutSession(){
   // logged HERE as coming from Hevy: the history showed a HEVY tag, the card read "From your Hevy", and
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
-  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
+  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),startedAt:(__sessionStart ? new Date(__sessionStart).toISOString() : null),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
   // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this
@@ -55760,7 +55840,7 @@ function showPrivacyPolicy(){
     '<h3>Privacy policy</h3>' +
     // Sentence case under the title. It was 11px caps in the third grey, and at phone width the one
     // line wrapped to two — the caps-that-wrap shape, on the page a reviewer reads.
-    '<p class="modal-sub">ToTry · Last updated June 2026 · Plain English</p>' +
+    '<p class="modal-sub">ToTry · Last updated October 2026 · Plain English</p>' +
     '<div class="legal">' +
     
       '<p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -55774,11 +55854,21 @@ function showPrivacyPolicy(){
       '<h4>3. What gets sent to third parties</h4>' +
       '<p>Some app features call external services to work. Each one sees something specific:</p>' +
       '<ul>' +
-        '<li><strong>Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
+        // MEASURED, NOT ASSUMED, 30 Oct 2026. This bullet said "your message + relevant context", which
+      // told a reader that an AI send always accompanies something they typed. Driven on the shipping
+      // bundle in chromium AND webkit with every outbound request captured and fulfilled locally, 20s
+      // idle, zero interaction: TWO unprompted ai-proxy POSTs fire on launch, and the `messages` array
+      // of each holds exactly one app-authored entry — no message from the person at all. Between them
+      // they carry totry_why verbatim, the identity sentence, every vice name with its clean-day count,
+      // body weight, calories and protein, debt remaining, money in/out, average day rating, sleep
+      // (HealthKit-sourced included) and up to FOUR journal entries word for word.
+      // The old sentence was the basis on which somebody would judge the risk, and it was false.
+      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider.</li>' +
         '<li><strong>Photos you send to the coach</strong> \u2014 six things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter, Mistral, Cloudflare or NVIDIA as fallbacks): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, a <strong>smart-scale screenshot</strong> (your weight and body composition are in it), and a <strong>recipe screenshot</strong> (a photo of a recipe card or page, or a screenshot of one \u2014 whatever is in that picture goes with it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
-        '<li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
-        '<li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
-        '<li><strong>Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
+        '<li><strong>Food search</strong> — when you type a food name, that text goes to <strong>four</strong> nutrition databases at once, and the first useful answers are merged: USDA (api.nal.usda.gov), FatSecret, Open Food Facts (au.openfoodfacts.org) and Nutritionix. FatSecret and Nutritionix are reached through my own server, which holds the keys, so they see the words you typed and not you. This used to be described as "the barcode is sent to OpenFoodFacts", which was true of scanning and understated searching — corrected 30 Oct 2026.</li><li><strong>Barcode scanning</strong> — the barcode number is sent to Open Food Facts. If the camera cannot read the code, the photo path above applies instead.</li>' +
+        
+        '<li><strong>Messages you send me</strong> — if you write to me through Help improve ToTry, report shared content, or answer the progress check-in, your message and the email address you give reach my inbox by email through Resend (api.resend.com). Resend sees both.</li>' +
+        '<li><strong>Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI whenever it writes coaching for you — including the day’s sentence on your first open each day, which you are not asked about. See the first item in this list. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong>Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         // Exercise GIFs were listed here and no longer happen: a census of every https:// in src/
         // finds ZERO requests to exercisedb or wger (calibrated against api.aladhan.com, which
@@ -55832,7 +55922,7 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3>Terms of use</h3>' +
-    '<p class="modal-sub">ToTry · Last updated June 2026</p>' +
+    '<p class="modal-sub">ToTry · Last updated October 2026</p>' +
     '<div class="legal">' +
     
       '<p>By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
@@ -56747,9 +56837,67 @@ function toggleMetrics(){
   try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
   try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
+// ── THE GATE WAS STILL WRITING TO PRODUCTION, THREE DAYS AFTER THE FIX FOR THAT ────────────────
+// v657 blocked Supabase at the BROWSER (test/no-production-writes.js) and wired it into the three
+// named suites. Measured against the live table on 30 Oct: **666 more `boot_offline` rows arrived
+// in the three days AFTER it landed** — 470 on 27 Oct, 195 on 28 Oct, 1 on 29 Oct, across 644
+// distinct anon_ids. The block reached panels, personas and crisis and NOT the eight other files in
+// this repo that launch a browser (craft-audit, orb-audit, density-audit, clip-audit,
+// day-key-engines, ios-shot, record-reels, make-splash), and not one of the dozens of one-off
+// probes a working session writes to /tmp — which is where most of a day's page loads come from.
+// The half-applied sweep, inside the fix written to stop the half-applied sweep.
+//
+// SO THE GUARD MOVES INTO THE APP, where no harness can forget it: a probe cannot opt out of this
+// by existing, and the next one nobody has written yet inherits it for free.
+//
+// THE DISCRIMINATOR IS THE PROTOCOL, NOT THE HOSTNAME, and getting that backwards is the
+// catastrophic version of this fix — Capacitor serves the NATIVE app from capacitor://localhost, so
+// a hostname check would silently switch analytics off for the entire App Store build. That is not
+// hypothetical: GoatCounter's count.js makes exactly that mistake, which is the reason recorded 20
+// lines below for cutting it from the native bundle. Android's androidScheme has defaulted to https
+// since Capacitor 4 (8.4.1 here), so the Android shell is https://localhost — also not http:.
+//   live PWA          https://alfredjohn200101.github.io/ToTry/   -> counted
+//   App Store build   capacitor://localhost                       -> counted
+//   Android build     https://localhost                           -> counted
+//   any local harness http://localhost:<port>, http://127.0.0.1   -> SILENT
+// isNativeApp() is asked as well, so a future Capacitor scheme change cannot make a shipped build
+// silent: native is never a probe whatever protocol it is served over.
+//
+// SCOPE, DELIBERATELY: logEvent ONLY. The other thing the gate wrote to production was the
+// `feedback` table (169 rows, every one a crisis test string), and that is NOT gated here on
+// purpose. Those four insert sites distinguish sent / refused-by-the-server / no-answer-at-all and
+// say which to the person, with an outbox that retries — the "say which actually happened" logic
+// that exists because telling somebody a report was filed when it never left the phone is the
+// defect this repo already fixed once. Making the insert silently skip would make the app say
+// "No connection" to a developer and leave entries in their outbox, i.e. it would change a
+// user-visible message to tidy up a test. The browser block in test/no-production-writes.js covers
+// those doors instead, and the feedback table has had no new gate row since it landed. logEvent is
+// fire-and-forget with no user-visible behaviour, which is exactly why it is safe to gate here and
+// they are not. If you are tempted to "finish the sweep", this is the reason not to.
+function _isLocalProbe(){
+  try{
+    if(typeof isNativeApp === 'function' && isNativeApp()) return false;
+    if(location.protocol !== 'http:' && location.protocol !== 'file:') return false;
+    const h = (location.hostname || '').toLowerCase();
+    if(h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1' || h === ''
+       || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.test')) return true;
+    // AND A PRIVATE LAN ADDRESS, because that is how this app gets tested on a real phone before
+    // there is a native build: `python3 -m http.server` on the laptop and http://192.168.1.x:8000 on
+    // the handset. Those launches are a developer checking a layout, not a population, and they are
+    // the one remaining shape a loopback check cannot see. 127.x is already covered above as a name;
+    // this is the RFC1918 set. A real person is never on one of these — they are on github.io over
+    // https, or on capacitor://localhost, both of which returned false before reaching here.
+    return /^10\.(?:\d{1,3}\.){2}\d{1,3}$/.test(h)
+        || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)
+        || /^172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h);
+  }catch(_){ return false; }   // unreadable location: count it, rather than lose a real person
+}
 function logEvent(name, detail){
   try{
     if(metricsOff()) return;
+    // ABOVE the insert and beside metricsOff(), because a guard below the thing it guards is not a
+    // guard — the one ordering rule this repo has paid for more than once.
+    if(_isLocalProbe()) return;
     // EVERY EVENT CARRIES THE VERSION IT CAME FROM. It did not, and that is why pinning three real
     // crash families to a bundle took line-number archaeology across every revision of the
     // generated index.html: `jserror` reported "index.html:30139" and nothing said which build's

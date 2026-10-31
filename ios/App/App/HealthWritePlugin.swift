@@ -84,9 +84,24 @@ public class HealthWritePlugin: CAPPlugin, CAPBridgedPlugin {
         let durationMin = call.getDouble("durationMin") ?? 0
         guard durationMin > 0 else { call.resolve(["ok": false, "reason": "no-duration"]); return }
 
-        let startMs = call.getDouble("startMs") ?? (Date().timeIntervalSince1970 * 1000)
+        // THE SAME TWO GUARDS `saveMindful` HAS HAD ALL ALONG, AND THIS DID NOT. 5.1.3's one explicit
+        // must-not is "Apps must not write false or inaccurate data into HealthKit", and `saveWorkout`
+        // checked only that the duration was positive — so a draft session restored from yesterday
+        // arrived as a 900-minute workout ENDING TOMORROW and was written. The JS side now refuses both
+        // shapes too; this is the floor, because the plugin is what actually touches the health store
+        // and a future caller does not inherit a guard that lives in one caller.
+        let durationCeilingMin = 480.0           // no honest workout is eight hours
+        guard durationMin <= durationCeilingMin else {
+            call.resolve(["ok": false, "reason": "implausible-duration"]); return
+        }
+        let nowMs = Date().timeIntervalSince1970 * 1000
+        let startMs = call.getDouble("startMs") ?? nowMs
         let start = Date(timeIntervalSince1970: startMs / 1000)
         let end = start.addingTimeInterval(durationMin * 60)
+        // A sample ending in the future is rejected by HealthKit anyway; say which thing was wrong.
+        guard end.timeIntervalSince1970 <= (nowMs / 1000) + 60 else {
+            call.resolve(["ok": false, "reason": "future-session"]); return
+        }
         let activity = Self.activityType(for: call.getString("type") ?? "")
 
         // HKWorkoutBuilder is the modern path; HKWorkout(...) is deprecated from iOS 17.

@@ -3,15 +3,41 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 29 Oct 2026 — v669, build 12. **ARCHIVE CUT AND VERIFIED. ONLY THE UPLOAD IS LEFT.**
+## ▶▶ CURRENT STATE — 31 Oct 2026 — v670, build 13. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
 
-**Everything below this block is HISTORY.**
+**Everything below this block is HISTORY.** Fill every App Store Connect field from
+`ASC-SUBMIT-PACK.md` — **not from §2 or §4 of this file**, both of which are struck below because
+they would have produced a false privacy label and handed App Review an admin account.
 
 | What | Where |
 |---|---|
-| Archive (the ONLY one in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-29/ToTry-v669.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v669-build12.ipa` |
+| Archive (keep exactly ONE in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-31/ToTry-v670.xcarchive` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v670-build13.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
+| Screenshots, in upload order | `build/appstore-screenshots/iphone-6.9in-v669/` + its `ORDER.md` |
+
+**WHY v670 EXISTS, in one line each** — every one measured, not reasoned:
+- `RECOVERY_TIMELINES` had no `general` key, so **19 of 19 drug names** fell through to a model asked
+  for "recovery milestones a person gains by abstaining" with no safety clause. Benzodiazepines — the
+  one class besides alcohol where abrupt cessation can kill — were answered by an LLM at 0 days clean,
+  and an opioid card never said tolerance is gone. Two checked classes added.
+- Every workout mirrored to Apple Health was written **a full duration late** (5.1.3's one explicit
+  must-not), and a restored draft wrote a 900-minute workout ending tomorrow.
+- The privacy policy's health sentence was **false in four places, one of them inside the binary**
+  (`NSHealthShareUsageDescription`), which is why this needed a new build rather than a hosted edit.
+- The privacy manifest declared `NSPrivacyCollectedDataTypeHealthAndFitness`, which Apple does not
+  document — so it declared **no health data** while the binary links HealthKit. Split into Health
+  and Fitness, with Apple's 35 documented values pinned as an artefact.
+- The test gate had put 169 rows into the live `feedback` table and ~49k into `app_events`; v657's fix
+  for that reached 3 of 11 browser launchers, so the decision moved into the app.
+
+**Gate at v670, every suite re-run after the last edit:** `npm test` **5105/0** · `npm run crisis`
+**57 doors dialable and 53 of 53 ordinary sentences left alone** · `npm run personas` **566/0** ·
+`npm run panels` **all panels render, 316 production writes intercepted and NOT sent** ·
+`npm run engines` **stable in both, and the WebKit setItem fix verified with its calibration** ·
+`npm run craft` **0 under 13px, 0 wrapping caps, 0 neighbours, 3 greys** · `npm run orb` **0
+untappable, 0 unclear at the floor, within ratchet** · `npm run test:edge` **88/0** ·
+`npm run preflight` **ready to archive**.
 
 **SIX ARCHIVES USED TO BE IN ORGANIZER AND ONE OF THEM WOULD HAVE UPLOADED.** Build 1 (v312, 6 Aug)
 was Apple-Distribution-signed and had never been uploaded, so Organizer would have let it through —
@@ -181,13 +207,17 @@ it was previously measured without · `npm run preflight` **ready to archive**.
 archive** — the archive is Development-signed with `get-task-allow=true` by design because the
 export re-signs. The IPA must read `Apple Distribution: Alfred John (L4BD53PLVF)`,
 `get-task-allow=false`, `beta-reports-active=true`, arm64 only, PrivacyInfo present, and a web
-bundle sha byte-identical to the repo. Keep build **10**: it has never been uploaded.
+bundle sha byte-identical to the repo. The current archive is build **13** (v670). Builds 7, 9, 10, 11 and 12 were cut and never uploaded; take the number from `npm run preflight`, never from a line in a document.
 
 **The store screenshots are reproducible** — `node scripts/app-shot.mjs seed` plants the demo person
-into WebKit's own `localstorage.sqlite3`. The four in `~/Desktop/ToTry-screenshots/6.9-v643/` predate
-v644; re-cut them from the new build before submitting.
+into WebKit's own `localstorage.sqlite3`. ~~The four in `~/Desktop/ToTry-screenshots/6.9-v643/` predate
+v644; re-cut them from the new build before submitting.~~ **Superseded: the five to upload are
+`build/appstore-screenshots/iphone-6.9in-v669/` with its `ORDER.md`**, cut 29 Oct from the real
+Capacitor build. v670 changes no pixel on any of the five screens — the diff is the analytics guard,
+the two substance timelines, the HealthKit timestamp, policy prose and a plist string — so they
+remain accurate.
 
-**Still hardware-only: barcode scanning (no camera) and haptics (no Taptic engine).**
+**Still hardware-only: the barcode OPTICS (no camera) and haptics (no Taptic engine).** The barcode LOOKUP, parse, serving maths, queue and diary row are all driven in the gate off a live Open Food Facts fixture — a barcode is a number, and only the lens needs a phone.
 
 **The upload click is the owner's.** Nothing here uploads anything, and nothing needs an issuer ID.
 
@@ -653,9 +683,21 @@ signing" on. Nothing else in the project needs touching.
 Answer **"Yes, we collect data"**, then declare these. The source of truth is
 `ios/App/App/PrivacyInfo.xcprivacy` — the label must agree with it or review flags the mismatch.
 
-*Re-checked 19 Aug 2026 against the manifest: this table had nine of the manifest's ten types.*
-***Coarse Location*** *was missing and is added below. App Store Connect also splits Health & Fitness
-into two separate rows (Health, Fitness), so you will tick **eleven** boxes for ten declared types.*
+> ⛔ **DO NOT FILL THE FORM FROM THE TABLE BELOW — STRUCK 30 Oct 2026.** It is missing
+> **Photos or Videos**, which the shipping manifest declares
+> (`NSPrivacyCollectedDataTypePhotosorVideos`), so filling App Privacy from it **under-declares
+> Photos** — which is the exact failure `APP-PRIVACY.md` records as having already happened once.
+> It also says "eleven boxes for ten declared types"; the manifest declares **eleven** types, so it
+> is twelve boxes (ASC splits Health & Fitness into two rows). It survived because preflight gates
+> `APP-PRIVACY.md` and `APP-STORE-LISTING.md` and never opens this file.
+>
+> ▶ **Fill it from `APP-STORE-LISTING.md`**, which is complete, marks all four unlinked types, and
+> is the copy preflight actually checks — or from `ASC-SUBMIT-PACK.md` §4, which adds the three
+> over-declare decisions (C1–C4). The table below is kept only as the record of what was wrong.
+
+*~~Re-checked 19 Aug 2026 against the manifest: this table had nine of the manifest's ten types.~~*
+*~~**Coarse Location** was missing and is added below. App Store Connect also splits Health & Fitness~~*
+*~~into two separate rows (Health, Fitness), so you will tick **eleven** boxes for ten declared types.~~*
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
@@ -875,11 +917,30 @@ nudge's "at most 3 a week" throttle, and anything that depends on the device bei
 > it reaches any AI service and replaced with region-appropriate helpline numbers (Lifeline, 988,
 > Samaritans, findahelpline.com). These are also on the sign-in screen, reachable without an account.
 >
-> Health data (steps, active energy, workouts, heart rate) is read only with permission, computed on
-> device, and never uploaded or sent to any third party.
+> ~~Health data (steps, active energy, workouts, heart rate) is read only with permission, computed on~~
+> ~~device, and never uploaded or sent to any third party.~~
 
-**Demo account:** if you'd rather not hand over your own, sign up `alfredjohn200101+studio@gmail.com`
-(already in `DEV_EMAILS`) and load Settings → Demo data before you record or submit screenshots.
+> ⛔ **STRUCK 30 Oct 2026 — THAT SENTENCE IS FALSE AND IT WAS ADDRESSED TO APP REVIEW.** Measured
+> against the shipped binary: `NSHealthShareUsageDescription` in the IPA's own Info.plist says the
+> data is saved to the account so it follows the person to a new phone; `totry_trackers` (sleep),
+> `totry_today_steps`, `totry_workouts` and `totry_watch_burns_byday` are all in `SYNC_KEYS`, so they
+> are upserted to Supabase; and `lifeStateBrief()` puts sleep and recent training into the prompt
+> that reaches the AI providers. All three contradict "computed on device, and never uploaded or sent
+> to any third party". The published privacy policy and the privacy manifest both say so correctly.
+> Pasting it would have been a misrepresentation to App Review, and the only reason it survived is
+> that `npm run preflight` gates `APP-PRIVACY.md` and `APP-STORE-LISTING.md` against the manifest and
+> never opens this file.
+
+> ⛔ **AND THE DEMO ACCOUNT INSTRUCTION IS STRUCK FOR A DIFFERENT REASON.** It said to sign up
+> ~~`alfredjohn200101+studio@gmail.com` (already in `DEV_EMAILS`)~~ and hand that to App Review.
+> It *is* in `DEV_EMAILS` — which unlocks the dev panel, the demo-data switches and the shared-library
+> **moderation queue**, with UPDATE/DELETE on `shared_library`. That is admin access handed to a
+> stranger. The correct answer is `ASC-SUBMIT-PACK.md` §6: **Sign-In Required = No, demo fields
+> blank**, because the guest door is already the whole app.
+
+> ▶ **THE NOTE TO PASTE IS `ASC-SUBMIT-PACK.md` §6.** It is the corrected copy and it carries the
+> server-backup and AI-context disclosure this one denied. One source per field; this §4 is
+> superseded.
 
 ---
 

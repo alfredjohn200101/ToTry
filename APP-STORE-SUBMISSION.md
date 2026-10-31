@@ -1,5 +1,9 @@
 # To Try — App Store Submission (iOS)
 
+> ⛔ **DO NOT FILL ANY APP STORE CONNECT FIELD FROM THIS FILE.** It is v312 state, hundreds of
+> versions stale, and step 8 below would have under-declared Health data on the privacy label.
+> The one current source is `ASC-SUBMIT-PACK.md`. This file is kept for the Xcode mechanics only.
+>
 > State as of v312. The native project is **verified App-Store-ready** — everything below marked ✅
 > was checked in code/config. The remaining steps need your Mac, Xcode, and Apple Developer account
 > (they can't be done from here). Android/Play is a separate pass (the `android/` project is tracked).
@@ -27,7 +31,11 @@
 5. **App Store Connect** ([appstoreconnect.apple.com](https://appstoreconnect.apple.com)) → create the app record if it doesn't exist (name "To Try", primary language, bundle id `app.totry`, SKU).
 6. Fill the listing: **subtitle**, **description**, **keywords**, **support URL**, **marketing URL** (optional), and **Privacy Policy URL** → point it at your hosted `privacy.html` (`https://alfredjohn200101.github.io/ToTry/privacy.html`).
 7. **Screenshots** (required): 6.7" iPhone (1290×2796) and 6.5" iPhone (1242×2688) — a few of Home, Fight, Nourish, Soul. (You'll generate these from the simulator or a device.)
-8. **App Privacy** (the "nutrition label" questionnaire): declare what's collected — **email** (account), and that **Health data is used but not collected/leaves the device** (per the usage strings). Be accurate.
+8. ~~**App Privacy** (the "nutrition label" questionnaire): declare what's collected — **email** (account), and that **Health data is used but not collected/leaves the device** (per the usage strings).~~
+   ⛔ **STRUCK 30 Oct 2026 — following this produces a FALSE privacy label.** The shipping
+   `PrivacyInfo.xcprivacy` declares Health & Fitness as **collected and linked**, and it is: steps,
+   sleep, workouts and watch burns are all in `SYNC_KEYS` and reach Supabase, and sleep and recent
+   training reach the AI providers. Fill App Privacy from `ASC-SUBMIT-PACK.md` §4 only.
 9. **Age rating** questionnaire — **see the judgment call below.**
 10. Attach the uploaded **build**, then **Submit for Review**.
 

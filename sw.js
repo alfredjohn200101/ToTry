@@ -1,11 +1,17 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v669-the-handoff-names-your-own-tradition'
+const CACHE = 'totry-v670-a-model-was-inventing-withdrawal-physiology'
 
 const CORE = [
   './',
   './index.html',
   './manifest.json',
+  // Help & FAQ is what somebody reaches when something is wrong, and being offline correlates with
+  // something being wrong. Uncached, the HTML branch fell back to './index.html', so tapping Help
+  // with no connection RELOADED THE WHOLE APP instead of showing help. Verified live at
+  // /ToTry/support.html (200, 4570 bytes) before adding it — a 404 in CORE makes `c.addAll` reject
+  // and the service worker never installs at all.
+  './support.html',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',

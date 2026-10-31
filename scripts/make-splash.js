@@ -40,6 +40,12 @@ const srv = http.createServer((q, r) => {
 (async () => {
   await new Promise(res => srv.listen(4610, res));
   const b = await chromium.launch();
+  // EVERY BROWSER THIS REPO OPENS GETS THE PRODUCTION-WRITE BLOCK. v657 wired it into panels,
+  // personas and crisis and stopped there; 666 more analytics rows reached the live table in the
+  // three days afterwards, from the eight OTHER files here that launch a browser. See
+  // test/no-production-writes.js, and _isLocalProbe() in src/app/28-init.js for the half a harness
+  // cannot be trusted to remember.
+  require('../test/no-production-writes.js').installNoProductionWrites(b);
   // 1366 x 1366 at deviceScaleFactor 2 == a 2732 x 2732 PNG.
   const ctx = await b.newContext({ viewport:{width:1366,height:1366}, deviceScaleFactor:2, serviceWorkers:'block' });
   const pg = await ctx.newPage();

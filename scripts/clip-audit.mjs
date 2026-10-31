@@ -15,11 +15,18 @@
 import pw from '../node_modules/playwright/index.js'; const { chromium } = pw;
 import http from 'http'; import fs from 'fs'; import path from 'path'; import url from 'url';
 import { seedSource } from './seed-person.mjs';
+import { installNoProductionWrites } from '../test/no-production-writes.js';
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 const srv = http.createServer((q,r)=>{ try{ const p=path.join(ROOT, decodeURIComponent(q.url.split('?')[0]).replace(/\/$/,'/index.html'));
   r.writeHead(200,{'content-type':p.endsWith('.js')?'text/javascript':'text/html'}); r.end(fs.readFileSync(p)); }catch(e){ r.writeHead(404); r.end('x'); } });
 await new Promise(z=>srv.listen(0,z)); const PORT=srv.address().port;
 const b = await chromium.launch();
+// EVERY BROWSER THIS REPO OPENS GETS THE PRODUCTION-WRITE BLOCK. v657 wired it into panels,
+// personas and crisis and stopped there; 666 more analytics rows reached the live table in the
+// three days afterwards, from the eight OTHER files here that launch a browser. See
+// test/no-production-writes.js, and _isLocalProbe() in src/app/28-init.js for the half a harness
+// cannot be trusted to remember.
+installNoProductionWrites(b);
 for (const W of [320, 393, 430]) {
   const ctx = await b.newContext({ viewport:{width:W,height:852}, isMobile:true, hasTouch:true, serviceWorkers:'block' });
   const pg = await ctx.newPage();

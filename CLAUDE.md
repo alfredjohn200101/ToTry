@@ -62,7 +62,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v650**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v670**. Bump it AND `CACHE` in sw.js together, always.
   (This line restates a mutable fact, which this file records as its own failure mode — `grep APP_VERSION
   src/app/00-boot.js` is the source of truth if it has drifted again.)
 
@@ -2366,6 +2366,189 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      then relies on preflight to catch.
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
    not yet a test.
+   - **AND A MODEL WAS INVENTING DAY-BY-DAY PHYSIOLOGY FOR THE TWO CLASSES THAT KILL (v670, 31 Oct
+     2026).** The worst finding of the pre-submission audit, and it is a harm finding rather than a
+     rejection one. `RECOVERY_TIMELINES` held six checked entries and **no `general` key**, so every
+     struggle that did not classify into those six fell through to `_researchRecoveryTimeline()` — a
+     model asked, *with web search*, for *"4-6 recovery milestones a person gains by abstaining"*,
+     under a prompt with no safety clause, and the answer **cached permanently**. Driven through the
+     real `classifyVice` over 19 names: **19 of 19 drug names returned 'general'** — Xanax, Valium,
+     diazepam, oxycodone, heroin, fentanyl, methadone, kratom, codeine, tramadol. Alcohol and beer
+     both returned 'alcohol' in the same run, which is what proves the function loaded.
+     So the app warned correctly for one of the two classes where abrupt unsupervised cessation can
+     kill, and handed the other to an LLM. **Reachable at day 0**: somebody who named "Xanax" today
+     and tapped *"What you're earning"* got model-authored day-1 physiology at 0 days clean, which
+     is precisely the moment benzodiazepine withdrawal is lethal.
+     **THE REVIEW FOUND SOMETHING WORSE THAN THE FINDING, TWICE.** The add-vice field's own
+     placeholder is *"Name it (e.g. weed, drinking, porn)…"* and `Weed` is one of the twelve
+     onboarding chips — so **6 of the 12 fights the app itself offers** got a model-invented
+     timeline. The app's own copy invited the exact input its registry could not serve. And the
+     highest-mortality omission was not benzodiazepines at all: **an abstinence-milestone card for
+     an opioid never said that tolerance is gone**, and post-abstinence tolerance loss is the
+     leading cause of opioid death. A milestone card is the one surface that would never reach for
+     that fact, which is why it is now CHECKED copy and not left to a prompt.
+     Two classes added, each because it has ONE fact whose absence is fatal: `sedative` (do not stop
+     suddenly, seizures, a doctor or a withdrawal service) and `opioid` (withdrawal rarely kills,
+     the danger is after — tolerance falls within days, naloxone, never use alone, and it is said
+     again at day 30 because that is when somebody feels recovered). Everything else gains a prompt
+     clause, because **`safetyNote()` structurally cannot reach this call** — it does not route
+     through `brotherSys()`, the same blind spot this file records for `BIBLE_SYS`.
+     **`meth` AND `oxy` ARE DELIBERATELY ABSENT FROM THE KEYWORD LIST.** `startsWord` is a
+     word-START match, so `\bmeth` claims "method" and `\boxy` claims "oxygen"; the full chemical
+     names carry those, and the street names are tested as COMPLETE words in a separate narrow
+     pre-test — because measured, bare "Oxy" returned 'general', and that is the commonest way
+     anybody names it and exactly the person the tolerance warning is for. `bars` and `tabs` were
+     refused on the same test: they are protein and browser.
+     **A new type value has a blast radius, and it was measured rather than assumed.**
+     `VICE_PLAYBOOK[type] || .general` and `RECOVERY_TIMELINES[type] || null` both fall back safely,
+     but `_mechanismForType` ENUMERATES types and falls through to `'ground'` — so without one added
+     line a withdrawal craving got 5-4-3-2-1 grounding instead of urge-surfing. Six injections, each
+     caught by name; the false-friend one is the calibration and it caught all five of them.
+     One honest residual, named: **"Weed" still reaches the model**, now under the safety clause.
+     Cannabis withdrawal is not dangerous, so a checked timeline there is content work rather than a
+     safety fix — but an app that OFFERS a fight as a chip and cannot serve it is the half-applied
+     shape, and it is on the list rather than silently fine.
+   - **AND EVERY WORKOUT MIRRORED TO APPLE HEALTH WAS WRITTEN A FULL DURATION LATE (v670).**
+     5.1.3's one explicit must-not is *"Apps must not write false or inaccurate data into
+     HealthKit"*, and this was wrong on **every single mirrored workout**, not an edge case.
+     `sess.ts` is the moment Save was tapped; `durationMin` is wall-clock from `__sessionStart`; and
+     the Swift plugin treats `startMs` as the START — so the sample was placed at
+     `[save, save+duration]` instead of `[start, save]`. Driven with the plugin stubbed and the real
+     `HealthWrite.workout()` body running: a session that genuinely ran 08:00–09:00 with Save at
+     09:00 was written as **09:00–10:00, +60 min**. It can land on top of the person's own recorded
+     sleep and sits an hour from the Watch's record of the same session.
+     Worse, `22-train-deep.js` restores `__sessionStart` from a saved draft, so a session begun
+     yesterday and saved this morning produced a **900-minute workout ending tomorrow** — and
+     `saveWorkout` in the plugin had neither of the two guards `saveMindful` has had all along.
+     The session now PERSISTS `startedAt`, so nothing has to be derived; the subtraction is the
+     fallback for the sessions already in history and is exactly equivalent. Both false-data shapes
+     are refused in BOTH languages — **refusing, not clamping**, because an absent mirror is honest
+     and a 15-hour strength session in somebody's health record is not. Measured after: drift 0 on
+     both paths, 0 writes for the 900-minute draft and 0 for a window ending ahead, with the
+     ordinary session and the 0-minute session as the two calibrations.
+     The guard goes in the PLUGIN as well as the caller, because a future caller does not inherit a
+     guard that lives in one caller — which is how `saveWorkout` came to be the one without it.
+   - **AND THE PRIVACY POLICY'S HEALTH SENTENCE WAS FALSE IN FOUR PLACES, ONE OF THEM INSIDE THE
+     BINARY (v670).** The policy said the person's sleep and training reach the AI *"when you ask
+     for coaching"*, and the Coach bullet above it said an AI send is *"your message plus relevant
+     context"*. Measured by serving the SHIPPING bundle in chromium AND webkit with every outbound
+     request captured and fulfilled locally, 20s idle, zero interaction, three calibrations passing:
+     **two unprompted `ai-proxy` POSTs fire on launch**, and the `messages` array of each holds
+     exactly one app-authored entry — **no message from the person at all**. Between them they carry
+     `totry_why` verbatim, the identity sentence, every vice name with its clean-day count, body
+     weight, calories and protein, debt remaining, money in and out, average day rating, sleep
+     (HealthKit-sourced included) and **up to four journal entries word for word**.
+     So the sentence a reader would judge the risk on was false, and it was false independently of
+     HealthKit — fixing only the sentence the audit named would have left a policy that is still
+     false in the file Apple reads. **The fourth copy is `NSHealthShareUsageDescription`, which
+     ships inside the binary**, so this could not be a free hosted-page edit: it cost a version
+     bump, a rebuild and a re-cut archive. And `privacy.html` is never hyperlinked from the app —
+     all five references in `src/` are comments — so the in-app duplicate is the only policy an
+     iPhone user will ever see, which is the copy it would have been easiest to skip.
+     **Resend was named in neither privacy document** and receives the feedback text AND the
+     sender's email address. It has a bullet in both now.
+     **AND THE AUDIT'S OWN INSTRUCTION ABOUT THIS FILE WAS A REGRESSION TRAP**: it said
+     `privacy.html`'s provider list was short two providers and omitted NVIDIA. Both were already
+     correct in the live file; `APP-PRIVACY.md` was the one that was short three. Acting on it would
+     have damaged a correct page. Struck, with the reason.
+     **THE OFF-SWITCH IS THE OWNER'S CALL AND IS NOT TAKEN HERE.** Greps for `totry_ai_off`,
+     `aiDisabled`, `totry_no_ai` and `disableAI` all return zero, so a person who reads the
+     corrected policy and objects has no lever but to stop opening the app. v670 makes the statement
+     true; it does not change the behaviour, because moving two launch calls behind a tap changes
+     the product and that is a decision, not a fix. Recorded with its measurement in `BUILD-NEXT.md`.
+   - **AND FOUR SHIP DOCS TOLD THE OWNER TO DO THINGS THAT WOULD HAVE FAILED THE SUBMISSION (v670).**
+     Not stale facts — INSTRUCTIONS, in files whose whole purpose is to be acted on:
+     `SUBMIT-CHECKLIST.md` §4 was a paste-ready App Review note asserting Health data is *"computed
+     on device, and never uploaded or sent to any third party"* — contradicted by the binary's own
+     usage string, by `SYNC_KEYS` membership for sleep/steps/workouts/watch-burns, and by
+     `lifeStateBrief()`. Pasting it was a misrepresentation to App Review.
+     The same §4 told the owner to hand App Review `alfredjohn200101+studio@gmail.com`, *"already in
+     `DEV_EMAILS`"* — which unlocks the dev panel, the demo-data switches and the **shared-library
+     moderation queue**, with UPDATE/DELETE on `shared_library`. Admin access, handed to a stranger.
+     §2 was the privacy-label fill table and was **missing Photos or Videos**, so filling App Privacy
+     from it under-declares Photos — the exact failure `APP-PRIVACY.md` records as having already
+     happened once. And `APP-STORE-SUBMISSION.md:30` is an imperative to declare that *"Health data
+     is used but not collected/leaves the device"*, which produces a label contradicting the bundled
+     manifest.
+     **All four survived because `npm run preflight` gates `APP-PRIVACY.md` and `APP-STORE-LISTING.md`
+     against the manifest and never opens those two files.** A third and fourth copy of an answer
+     set is not covered by a check aimed at the first two. Struck through rather than deleted, each
+     with the measurement, each pointing at the one current source.
+   - **AND THE GATE HAD BEEN WRITING TO THE LIVE PRODUCTION DATABASE (v670).** Measured against the
+     live project: `feedback` held **169 rows, ids 1–169, every one `npm run crisis`'s own corpus
+     verbatim, 0 with a `user_id`** — so the field whose copy promises *"I read every note"* had
+     never held a note from a person; it held suicide-disclosure test strings. `app_events` held
+     **49,202 `boot_offline` rows across 48,061 distinct `anon_id`s — 1.02 events each**, a fresh
+     browser context per page load, ~85% of the table. The shape of it: `user_data` is CLEAN (18 real
+     signed-in users, no test rows), because the suites never authenticate — **the only two tables
+     that accept anonymous inserts were the only two polluted.**
+     v657 found this and blocked Supabase at the browser, and **666 more rows arrived in the three
+     days after that fix landed**, because it was wired into panels, personas and crisis and this
+     repo has ELEVEN files that launch a browser — plus every one-off probe a session writes to
+     /tmp, which no repo-side wiring can reach. **And nothing in `npm test` asserted any of it**:
+     deleting the call from a suite stayed green. The half-applied sweep, inside the fix for the
+     half-applied sweep.
+     So the decision moved INTO the app: `_isLocalProbe()` in `28-init.js`, asked ABOVE the insert.
+     **THE DISCRIMINATOR IS THE PROTOCOL, NOT THE HOSTNAME, and inverting that is the catastrophic
+     version of this fix** — Capacitor serves native from `capacitor://localhost`, so a hostname
+     check silently switches analytics off for the whole App Store build. GoatCounter's `count.js`
+     makes exactly that mistake, which is the reason recorded 20 lines below it for cutting that
+     script from the native bundle. 11 host cases pinned and executed, RFC1918 included (serving over
+     LAN to a handset is how this gets tested before a native build), with **172.15 and 172.32
+     pinned as PUBLIC so an over-broad range fails**. Six injections, each caught — and one of mine
+     was INVALID first: I moved the guard to the line immediately BEFORE the insert, which is still
+     a working guard, so it correctly produced nothing. A fault injection has to reproduce the
+     defect, and "below the insert" is the defect, not "near it".
+     Scope is deliberate and written at the call site: `logEvent` only. The four `feedback` insert
+     sites distinguish sent / refused-by-the-server / no-answer-at-all and say which, with an outbox
+     that retries — making those silently skip would change a user-visible message to tidy up a
+     test. The browser block covers them, and the feedback table has had no new gate row since it
+     landed. **The census is the assertion**: anything under `test/` or `scripts/` that calls
+     `.launch(` must install the block, derived from the files themselves rather than from a named
+     list, so the next launcher fails the build the day it is written.
+   - **AND `ANALYTICS-QUERIES.md` NAMED A COLUMN THAT DOES NOT EXIST (v670).** The timestamp on
+     `app_events` is `ts`; the doc said `created_at`, so **nine of its eleven queries errored with
+     `42703`** — the only window this project has onto whether real people use the app had never
+     run, and the doc's own hedge ("adjust the column names if the schema differs") is what let it
+     survive. `feedback` *does* have `created_at`; `app_events` never did. Fixed, then **planned
+     against the live project with `EXPLAIN`**, which resolves every table and column and returns no
+     rows, so it catches exactly this class without reading anybody's data — 11 of 11, with the
+     validator calibrated first on the pre-fix query (`FAILS 42703`) and on a nonexistent table
+     (`FAILS 42P01`).
+     Its headline number was inflated by the same pollution: *"32 devices with 5+ events across 3+
+     kinds, 26 on 2+ days"* counted `boot_offline`. Excluding it: **23 devices, 14 on 2+ days, 3 on
+     5+ days, 43 event kinds, most recent 28 Oct.** There are real people; there are fewer than the
+     doc said.
+   - **AND A FOURTH ONE NEARLY DELETED A TRUE DISCLOSURE (v670).** Having added a Resend bullet to
+     both privacy copies, I checked it the way that felt obvious — `grep -rn "send-feedback-email"
+     src/app/*.js` — got **nothing**, found the only email path in the bundle is a `mailto:` link,
+     and concluded the disclosure was the inverse untruth this very policy file warns about (the
+     exercise-GIF note: *"disclosing a host the app does not contact is the same kind of untruth"*).
+     It was one step from being reverted. **The path is SERVER-SIDE**: `pg_trigger` on `public.feedback`
+     carries `trg_feedback_send_email` → `on_feedback_insert_send_email`, which calls
+     `send-feedback-email` via `pg_net.http_post` and forwards `new.message` AND `new.email`. So
+     Resend does receive both, the disclosure is right, and the client grep was simply the wrong
+     instrument for a question about where data goes. **Be as suspicious of a tool that CLEARS a
+     finding as of one that raises it** — this file has said so since the contrast-probe round, and
+     it cost a near-regression anyway. A data-flow question is answered at every hop, and a
+     Supabase-backed app has hops that are not in `src/`.
+   - **THREE OF THE SESSION'S OWN INSTRUMENTS LIED, ALL IN RECORDED SHAPES (v670).**
+     **`H.extractFn` THROWS, AND A THROW AT MODULE LEVEL KILLS THE SUITE WITH NO SUMMARY.** I wrote
+     `H.extractFn('workout')` — but `workout` is an object METHOD (`async workout(sess){`), not a
+     `function` declaration, so it threw at load and the whole run ended with a stack and no report.
+     Same family as the recorded bare `return` at module level: the section header had already
+     printed. Guessing a function name is the other half of it, for the third time in this repo.
+     **A SLICE TO AN ANCHOR THAT OCCURS EARLIER RUNS BACKWARDS AND COMES BACK EMPTY.** My
+     `startedAt` assertion sliced from the session literal to `const history=ls('totry_workouts')`,
+     which occurs **229,000 characters earlier** somewhere else — so the slice was empty and the
+     assertion failed on correct code. The needle is unique in the bundle, so it asserts the
+     UNIQUENESS and then the fact. Never slice to an anchor you have not proved comes after the
+     start, and never slice a fixed window.
+     **AND THE FIRST LIVE PROBE'S CALIBRATION FAILED, WHICH IS THE ONLY REASON ITS ZERO WAS NOT
+     BELIEVED.** Neutering `_isLocalProbe` through `addInitScript` + `setInterval` produced no insert
+     either, so "0 writes" meant nothing. The cause was the probe's timing, not the app: overriding
+     the global synchronously in the same `page.evaluate` as the `logEvent` call produced the POST
+     immediately, intercepted, with the exact payload shape that had been flooding the table.
 3. **Bump `APP_VERSION` (`src/app/00-boot.js`) and `CACHE` (sw.js) together** on every release,
    then `npm run build:index && npm run build:www && npx cap sync` — **`cap sync` with no platform, or
    android silently rots.** This line said `cap sync ios`, and on 2 Sep 2026 the Android web bundle was

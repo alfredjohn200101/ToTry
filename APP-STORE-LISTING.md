@@ -40,7 +40,7 @@ Most apps track a single slice of you — your steps, your calories, your spendi
 It's a presence, not another tracker. Quiet by default and there when you need it — meeting you at the moment you actually feel something, instead of waiting for you to open a spreadsheet.
 
 ONE LIFE, WOVEN TOGETHER
-• The Fight — face the habits you're done with. When an urge hits, one tap opens a calm, proven in-the-moment guide: urge-surfing, grounding, honest logging. Grace over shame — a slip is feedback, not failure.
+• The Fight — face the habits you're done with. When an urge hits, one tap opens a calm in-the-moment guide: urge-surfing, grounding, honest logging. Grace over shame — a slip is feedback, not failure.
 • Nourish — food logging that finally coaches. Search, snap a photo, or scan a barcode; correct anything; and get a real nudge ("48g short on protein — a shake gets you there"), not just a number.
 • Money — stewardship, not spreadsheets. A debt-payoff strategy, "I just got paid — allocate it," and every dollar reclaimed from a habit you dropped.
 • Soul — the root beneath it all. Choose your path — Christianity, Islam, Hinduism, Buddhism, or none — and it meets you there: your own sacred text, a daily verse, a prayer or meditation, and a morning-and-evening rhythm to begin and close each day.

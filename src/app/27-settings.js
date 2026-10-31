@@ -850,7 +850,7 @@ function showPrivacyPolicy(){
     '<h3>Privacy policy</h3>' +
     // Sentence case under the title. It was 11px caps in the third grey, and at phone width the one
     // line wrapped to two — the caps-that-wrap shape, on the page a reviewer reads.
-    '<p class="modal-sub">ToTry · Last updated June 2026 · Plain English</p>' +
+    '<p class="modal-sub">ToTry · Last updated October 2026 · Plain English</p>' +
     '<div class="legal">' +
     
       '<p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -864,11 +864,21 @@ function showPrivacyPolicy(){
       '<h4>3. What gets sent to third parties</h4>' +
       '<p>Some app features call external services to work. Each one sees something specific:</p>' +
       '<ul>' +
-        '<li><strong>Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
+        // MEASURED, NOT ASSUMED, 30 Oct 2026. This bullet said "your message + relevant context", which
+      // told a reader that an AI send always accompanies something they typed. Driven on the shipping
+      // bundle in chromium AND webkit with every outbound request captured and fulfilled locally, 20s
+      // idle, zero interaction: TWO unprompted ai-proxy POSTs fire on launch, and the `messages` array
+      // of each holds exactly one app-authored entry — no message from the person at all. Between them
+      // they carry totry_why verbatim, the identity sentence, every vice name with its clean-day count,
+      // body weight, calories and protein, debt remaining, money in/out, average day rating, sleep
+      // (HealthKit-sourced included) and up to FOUR journal entries word for word.
+      // The old sentence was the basis on which somebody would judge the risk, and it was false.
+      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider.</li>' +
         '<li><strong>Photos you send to the coach</strong> \u2014 six things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter, Mistral, Cloudflare or NVIDIA as fallbacks): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, a <strong>smart-scale screenshot</strong> (your weight and body composition are in it), and a <strong>recipe screenshot</strong> (a photo of a recipe card or page, or a screenshot of one \u2014 whatever is in that picture goes with it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
-        '<li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
-        '<li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
-        '<li><strong>Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
+        '<li><strong>Food search</strong> — when you type a food name, that text goes to <strong>four</strong> nutrition databases at once, and the first useful answers are merged: USDA (api.nal.usda.gov), FatSecret, Open Food Facts (au.openfoodfacts.org) and Nutritionix. FatSecret and Nutritionix are reached through my own server, which holds the keys, so they see the words you typed and not you. This used to be described as "the barcode is sent to OpenFoodFacts", which was true of scanning and understated searching — corrected 30 Oct 2026.</li><li><strong>Barcode scanning</strong> — the barcode number is sent to Open Food Facts. If the camera cannot read the code, the photo path above applies instead.</li>' +
+        
+        '<li><strong>Messages you send me</strong> — if you write to me through Help improve ToTry, report shared content, or answer the progress check-in, your message and the email address you give reach my inbox by email through Resend (api.resend.com). Resend sees both.</li>' +
+        '<li><strong>Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI whenever it writes coaching for you — including the day’s sentence on your first open each day, which you are not asked about. See the first item in this list. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong>Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         // Exercise GIFs were listed here and no longer happen: a census of every https:// in src/
         // finds ZERO requests to exercisedb or wger (calibrated against api.aladhan.com, which
@@ -922,7 +932,7 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3>Terms of use</h3>' +
-    '<p class="modal-sub">ToTry · Last updated June 2026</p>' +
+    '<p class="modal-sub">ToTry · Last updated October 2026</p>' +
     '<div class="legal">' +
     
       '<p>By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +

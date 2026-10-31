@@ -5,6 +5,7 @@
 import pw from '../node_modules/playwright/index.js'; const { chromium } = pw;
 import { seedSource } from './seed-person.mjs';
 import http from 'http'; import fs from 'fs'; import path from 'path'; import url from 'url';
+import { installNoProductionWrites } from '../test/no-production-writes.js';
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const tab = args[0] || 'home';
@@ -28,6 +29,12 @@ const srv = http.createServer((q, r) => { let p = path.join(ROOT, decodeURICompo
   catch (e) { r.writeHead(404); r.end('x'); } });
 await new Promise(z => srv.listen(0, z)); const PORT = srv.address().port;
 const b = await chromium.launch();
+// EVERY BROWSER THIS REPO OPENS GETS THE PRODUCTION-WRITE BLOCK. v657 wired it into panels,
+// personas and crisis and stopped there; 666 more analytics rows reached the live table in the
+// three days afterwards, from the eight OTHER files here that launch a browser. See
+// test/no-production-writes.js, and _isLocalProbe() in src/app/28-init.js for the half a harness
+// cannot be trusted to remember.
+installNoProductionWrites(b);
 for (const scheme of (mode === 'both' ? ['light', 'dark'] : [mode])) {
   const ctx = await b.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true, serviceWorkers: 'block', colorScheme: scheme });
   const pg = await ctx.newPage();

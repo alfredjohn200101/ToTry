@@ -447,9 +447,29 @@ const HealthWrite = {
     try{
       const mins = parseFloat(sess.durationMin || sess.durationMinutes || 0) || 0;
       if(mins <= 0) return;                      // nothing honest to write
+      // 5.1.3's ONE EXPLICIT MUST-NOT IS "APPS MUST NOT WRITE FALSE OR INACCURATE DATA INTO HEALTHKIT",
+      // and this wrote every single mirrored workout a full duration LATE. `sess.ts` is the moment Save
+      // was tapped, not the moment the session began, while `durationMin` is wall-clock from
+      // `__sessionStart` — so the plugin, which treats startMs as the START, placed the sample at
+      // [save, save+duration]. Measured by driving the real bridge with a stubbed plugin capturing the
+      // payload: a session that genuinely ran 18:00-19:00 with Save at 19:00 was written to Apple
+      // Health as 19:00-20:00, +60 min drift, on EVERY mirrored workout. It can land on top of the
+      // person's own recorded sleep and sits an hour from the Watch's record of the same session.
+      // `startedAt` is now persisted at save time; the subtraction is the fallback for the sessions
+      // already in history and for anything arriving from an import, and it is exactly equivalent.
+      const _startMs = sess.startedAt ? Date.parse(sess.startedAt)
+                     : (sess.ts ? Date.parse(sess.ts) - mins * 60000 : Date.now() - mins * 60000);
+      if(!isFinite(_startMs)) return;
+      // AND A RESTORED DRAFT COULD CLAIM FIFTEEN HOURS. `22-train-deep.js` restores `__sessionStart`
+      // from a saved draft, so a session begun yesterday and saved this morning produced a 900-minute
+      // workout ENDING IN THE FUTURE. Refusing is the right answer rather than clamping: a mirror that
+      // is absent is honest, and a 15-hour strength session written into somebody's health record is
+      // not. `saveMindful` in the plugin already guards its own end time; `saveWorkout` did not.
+      if(mins > 480) return;
+      if(_startMs + mins * 60000 > Date.now() + 60000) return;   // never write into the future
       await p.saveWorkout({
         type: String(sess.splitFocus || sess.type || 'Strength'),
-        startMs: sess.ts ? Date.parse(sess.ts) : Date.now(),
+        startMs: _startMs,
         durationMin: mins,
         calories: parseFloat(sess.calories || 0) || 0
       });

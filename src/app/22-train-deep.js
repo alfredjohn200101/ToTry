@@ -953,7 +953,7 @@ async function saveWorkoutSession(){
   // logged HERE as coming from Hevy: the history showed a HEVY tag, the card read "From your Hevy", and
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
-  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
+  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),startedAt:(__sessionStart ? new Date(__sessionStart).toISOString() : null),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
   // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this

@@ -6,6 +6,7 @@
 import http from 'http';
 import pw from '../node_modules/playwright/index.js'; const { chromium, webkit } = pw;
 import fs from 'fs'; import path from 'path'; import url from 'url';
+import { installNoProductionWrites } from '../test/no-production-writes.js';
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
@@ -89,6 +90,12 @@ const _PORT = _srv.address().port;
 const out = {}, mon = {}, sto = {};
 for(const [name, launcher] of [['chromium', chromium], ['webkit', webkit]]){
   const b = await launcher.launch();
+  // EVERY BROWSER THIS REPO OPENS GETS THE PRODUCTION-WRITE BLOCK. v657 wired it into panels,
+  // personas and crisis and stopped there; 666 more analytics rows reached the live table in the
+  // three days afterwards, from the eight OTHER files here that launch a browser. See
+  // test/no-production-writes.js, and _isLocalProbe() in src/app/28-init.js for the half a harness
+  // cannot be trusted to remember.
+  installNoProductionWrites(b);
   const pg = await (await b.newContext()).newPage();
   await pg.goto('http://localhost:' + _PORT + '/');
   out[name] = await pg.evaluate(PROBE, SRC);

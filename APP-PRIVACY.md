@@ -163,7 +163,7 @@ Declare as **Coarse Location**, purpose App Functionality, not linked.
 | Service | What reaches it |
 |---|---|
 | **Supabase** (own project) | everything in `SYNC_KEYS` — the account's whole record |
-| **AI providers** via the `ai-proxy` edge function (Gemini → Groq → OpenRouter → Anthropic) | the person's messages plus `lifeStateBrief()`, which summarises health, fitness, money and faith context |
+| **AI providers** via the `ai-proxy` edge function. Read from `supabase/functions/ai-proxy/index.ts`, not from memory — this list said "Gemini → Groq → OpenRouter → Anthropic" and was short three. TEXT (`DEFAULT_ORDER`, :43): Gemini → Groq → OpenRouter → Mistral → Cloudflare → Anthropic. VISION (:572): Gemini → OpenRouter → Mistral → Cloudflare → NVIDIA. `privacy.html` already states both correctly; this file did not, and it is the file that says to fill the policy from it | the person's messages plus `lifeStateBrief()`, which summarises health, fitness, money and faith context |
 | **GoatCounter** | page/event pings, pseudonymous |
 | **api.aladhan.com** | coarse (~1km) location, for prayer times |
 | **api.esv.org**, api.alquran.cloud, bible-api.com, vedicscriptures.github.io | scripture requests |

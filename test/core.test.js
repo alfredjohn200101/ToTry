@@ -8958,8 +8958,35 @@ H.section('the privacy manifest declares what the binary actually handles');
   const plist = fs.readFileSync(path.join(__dirname, '..', 'ios/App/App/Info.plist'), 'utf8');
 
   // CALIBRATION both ways, so a broken read cannot pass this quietly.
-  H.ok(/NSPrivacyCollectedDataTypeHealthAndFitness/.test(man), 'calibration — a type we know is declared');
-  H.ok(!/NSPrivacyCollectedDataTypeContacts/.test(man), 'calibration — one we know is not');
+  // THIS SECTION WAS CALIBRATED ON THE DEFECT. It asserted the PRESENCE of
+  // `NSPrivacyCollectedDataTypeHealthAndFitness` as "a type we know is declared" — a value Apple does
+  // not document. Apple documents 35 values and HEALTH and FITNESS are two of them, with no combined
+  // key; an unrecognised value maps to no category, so for 300+ versions the shipped manifest declared
+  // NO health data at all while the binary links HealthKit.framework and holds
+  // `com.apple.developer.healthkit`. The assertion could never fail on vocabulary, which is precisely
+  // why nobody saw it — and simply repointing it at the two new names would rebuild the same
+  // unfailable check.
+  // So the VOCABULARY is pinned as an artefact instead, measured once from Apple's own docs JSON and
+  // re-checked forever (the shape test/reels-labels.json already uses here).
+  const APPLE = require('./apple-privacy-types.json');
+  H.eq(APPLE.values.length, 35, 'the pinned Apple vocabulary is intact');
+  H.ok(APPLE.values.indexOf('NSPrivacyCollectedDataTypeHealth') > -1
+    && APPLE.values.indexOf('NSPrivacyCollectedDataTypeFitness') > -1,
+    'and Apple documents Health and Fitness separately');
+  H.ok(APPLE.values.indexOf('NSPrivacyCollectedDataTypeHealthAndFitness') < 0,
+    'and documents no combined key — which is the whole finding');
+  const declared = (man.match(/<key>NSPrivacyCollectedDataType<\/key>\s*<string>([^<]+)<\/string>/g) || [])
+    .map(function(b){ return (b.match(/<string>([^<]+)<\/string>/) || [])[1]; }).filter(Boolean);
+  H.ok(declared.length >= 12, 'the manifest declares its types (' + declared.length + ')');
+  declared.forEach(function(t){
+    H.ok(APPLE.values.indexOf(t) > -1, 'manifest type is one Apple documents: ' + t);
+  });
+  // AND THE BINARY'S CAPABILITY MUST BE DECLARED. The gap the old calibration could not see: the app
+  // links HealthKit, so Health and Fitness both have to be there.
+  H.ok(/NSHealthShareUsageDescription/.test(plist), 'the app asks for Health (calibration)');
+  H.ok(declared.indexOf('NSPrivacyCollectedDataTypeHealth') > -1, 'and the manifest declares Health');
+  H.ok(declared.indexOf('NSPrivacyCollectedDataTypeFitness') > -1, 'and declares Fitness');
+  H.ok(!/NSPrivacyCollectedDataTypeContacts/.test(man), 'calibration — one we know is not declared');
 
   // If the app asks for photos, the manifest must say so.
   const asksForPhotos = /NSPhotoLibrary/.test(plist);
@@ -13176,17 +13203,37 @@ H.section('Settings: every on/off is a switch that shows what was saved, and the
 {
   H.section('every event carries the build it came from');
   const sent = [];
-  const L = H.load(['logEvent','metricsOff'], {
-    APP_VERSION: 'vTEST',
-    sb: { from: () => ({ insert: (r) => { sent.push(r); return { then: () => {} }; } }) },
-    localStorage: { getItem: () => null }, window: {},
-    _anonId: () => 'anon', _isStandalone: () => false,
-  });
+  // `_isLocalProbe` MUST BE NAMED HERE. H.load extracts functions by name, so the predicate v670
+  // added inside logEvent arrived undefined, the ReferenceError landed in logEvent's own catch, and
+  // all seven assertions below failed on correct code — "a new predicate inside a tested function
+  // silently throws into its catch", the second time this repo has paid for that exact shape. And
+  // the `location` has to be a REAL host, or the predicate correctly returns early and the insert
+  // genuinely never happens.
+  const mkL = (href) => {
+    const u = new URL(href);
+    return H.load(['logEvent','metricsOff','_isLocalProbe'], {
+      APP_VERSION: 'vTEST',
+      sb: { from: () => ({ insert: (r) => { sent.push(r); return { then: () => {} }; } }) },
+      localStorage: { getItem: () => null }, window: {},
+      _anonId: () => 'anon', _isStandalone: () => false,
+      isNativeApp: () => false,
+      location: { protocol: u.protocol, hostname: u.hostname, href },
+    });
+  };
+  const L = mkL('https://alfredjohn200101.github.io/ToTry/');
   L.logEvent('open');
   L.logEvent('guest_enter', {});
   L.logEvent('feedback', { note: 'hi', improvements: ['a'], email: 'x@y.z' });
   L.logEvent('jserror', 'vTEST | boom @ index.html:1');
   H.ok(sent.length === 4, 'four events reached the insert (' + sent.length + ')');
+
+  // THE INVERSE, THROUGH THE REAL FUNCTION. The predicate is pinned on its own further down, but
+  // only driving logEvent proves the two are WIRED: a correct predicate the function never asks is
+  // the defect this whole section exists for.
+  const before = sent.length;
+  const Lp = mkL('http://localhost:8802/index.html');
+  Lp.logEvent('open'); Lp.logEvent('guest_enter', {}); Lp.logEvent('boot_offline');
+  H.eq(sent.length - before, 0, 'and a local harness sends NOTHING (' + (sent.length - before) + ' sent)');
 
   const by = (e) => (sent.find(r => r.event === e) || {}).detail;
   H.ok(by('open') && by('open').v === 'vTEST', 'an event with NO detail still carries the version');
@@ -19574,6 +19621,260 @@ H.section('the type scale can actually scale');
     H.ok(new RegExp('\\.' + cls + '\\{[^}]*font-size:var\\(--t-').test(code),
       '.' + cls + ' reads a scaling token');
   });
+}
+
+// ── THE GATE WAS STILL WRITING TO PRODUCTION, AND NOTHING HELD THE FIX ─────────────────────────
+// v657 found that the gate had put 169 rows into the live `feedback` table and ~48k into
+// `app_events`, and blocked Supabase at the browser in test/no-production-writes.js. It wired that
+// into panels, personas and crisis — and NOTHING IN THIS SUITE ASSERTED ANY OF IT, so deleting the
+// call from a suite was green. Measured against the live table on 30 Oct 2026: 666 more
+// `boot_offline` rows arrived in the three days AFTER the fix landed (470 / 195 / 1, across 644
+// distinct anon_ids), because the eight OTHER files in this repo that launch a browser were never
+// wired, and neither is any of the one-off probes a session writes to /tmp.
+{
+  const fs = require('fs'), path = require('path');
+  const root = path.join(__dirname, '..');
+
+  // ── HALF ONE: THE APP REFUSES TO COUNT A LOCAL HARNESS ───────────────────────────────────────
+  // EXECUTED, not grepped. A grep for `location.protocol` passes on a predicate that reads it and
+  // then returns the wrong answer, and the wrong answer here is the expensive one: a hostname check
+  // would make the ENTIRE App Store build silent, because Capacitor serves native from
+  // capacitor://localhost. Both directions are pinned, native first.
+  [
+    ['capacitor://localhost/',                    false, false, 'the App Store build still counts'],
+    ['capacitor://localhost/',                    true,  false, 'native flag set: still counts'],
+    ['https://localhost/',                        false, false, 'the Android shell still counts'],
+    ['http://localhost/',                         true,  false, 'native over http: still counts'],
+    ['https://alfredjohn200101.github.io/ToTry/',  false, false, 'the live PWA still counts'],
+    ['http://totry.example.com/',                 false, false, "a real person's own http host counts"],
+    ['http://localhost:8802/index.html',          false, true,  'a served harness is silent'],
+    ['http://127.0.0.1:8859/',                    false, true,  '127.0.0.1 is silent'],
+    ['http://[::1]:5000/',                        false, true,  '[::1] is silent'],
+    ['file:///Users/x/ToTry/index.html',          false, true,  'a file:// open is silent'],
+    ['http://app.localhost:3000/',                false, true,  'a .localhost subdomain is silent'],
+    ['http://192.168.1.14:8000/',                 false, true,  'a phone on the LAN is silent'],
+    ['http://10.0.0.7:8000/',                     false, true,  'and 10.x'],
+    ['http://172.20.3.9:8000/',                   false, true,  'and 172.16-31.x'],
+    ['http://172.15.3.9:8000/',                   false, false, 'but 172.15 is PUBLIC and still counts'],
+    ['http://172.32.3.9:8000/',                   false, false, 'and so is 172.32'],
+    ['http://110.142.3.9/',                       false, false, "and a real person's public IP"],
+  ].forEach(function(c){
+    const u = new URL(c[0]);
+    const L = H.load(['_isLocalProbe'], {
+      isNativeApp: function(){ return c[1]; },
+      location: { protocol: u.protocol, hostname: u.hostname, href: c[0] },
+    });
+    H.eq(L._isLocalProbe(), c[2], '_isLocalProbe: ' + c[3]);
+  });
+
+  // AND logEvent ASKS IT ABOVE THE INSERT. A guard below the thing it guards is not a guard, and
+  // this is asked STRUCTURALLY rather than by character distance — a window is a magic number
+  // somebody has to re-tune, and comment-stripping leaves the newlines behind.
+  const le = H.code(H.extractFn('logEvent'));
+  const gi = le.indexOf('_isLocalProbe()');
+  const ii = le.indexOf("from('app_events')");
+  H.ok(gi > -1, 'logEvent asks _isLocalProbe()');
+  H.ok(ii > -1, 'logEvent still inserts into app_events');
+  H.ok(gi > -1 && ii > -1 && gi < ii, 'and it asks BEFORE the insert, not after');
+
+  // ── HALF TWO: EVERY BROWSER THIS REPO OPENS CARRIES THE BLOCK ────────────────────────────────
+  // The census is the assertion. A named list of files is the half-applied sweep that produced this
+  // defect twice: it cannot see the script somebody adds next. So the rule is derived from the
+  // files themselves — anything under test/ or scripts/ that launches a Playwright browser must
+  // install the guard — and a new unguarded launcher fails the build on the day it is written.
+  const dirs = ['test', 'scripts'];
+  const launchers = [];
+  dirs.forEach(function(d){
+    fs.readdirSync(path.join(root, d)).forEach(function(f){
+      if(!/\.(js|mjs|cjs)$/.test(f)) return;
+      if(f === 'no-production-writes.js') return;          // the guard itself
+      const src = fs.readFileSync(path.join(root, d, f), 'utf8');
+      // Comment-stripped, because this repo's comments quote the code they describe — an unstripped
+      // read finds `.launch(` inside the explanation above a call that was removed.
+      const code = H.code(src);
+      if(/\.launch\s*\(/.test(code)) launchers.push({ rel: d + '/' + f, code: code });
+    });
+  });
+  H.ok(launchers.length >= 11, 'the launcher census found them (' + launchers.length + ' files)');
+  launchers.forEach(function(L){
+    H.ok(/installNoProductionWrites\s*\(/.test(L.code),
+      L.rel + ' installs the production-write block');
+  });
+
+  // THE BLOCK ITSELF STILL FULFILLS RATHER THAN ABORTS, and still counts what it stopped. An abort
+  // surfaces as a network error, and this app has real offline-fallback paths that would then be
+  // exercised instead of the online ones — silently changing what several checks measure. And a
+  // guard that intercepts nothing looks identical to a guard that is not installed.
+  const gsrc = H.code(fs.readFileSync(path.join(root, 'test', 'no-production-writes.js'), 'utf8'));
+  H.ok(/route\.fulfill\(/.test(gsrc) && !/route\.abort\(/.test(gsrc),
+    'the block fulfills with a 200 rather than aborting');
+  H.ok(/stats\.intercepted\+\+/.test(gsrc), 'and it counts what it intercepted');
+  H.ok(/supabase\.co/.test(gsrc), 'and it is pointed at the production host');
+}
+
+// ── A MODEL WAS INVENTING DAY-BY-DAY PHYSIOLOGY FOR THE TWO CLASSES THAT KILL ──────────────────
+// Measured 30 Oct 2026. RECOVERY_TIMELINES had six checked entries and no `general`, so every
+// struggle that did not classify into those six fell through to `_researchRecoveryTimeline()` — a
+// model asked, with web search, for "4-6 recovery milestones a person gains by abstaining", under a
+// prompt carrying no safety clause and no route to safetyNote(), cached permanently. Driven over 19
+// drug names: 19 of 19 invented. The app warned correctly for alcohol and handed the other lethal
+// class to an LLM. Reachable at day 0: somebody who named "Xanax" today and tapped "What you're
+// earning" got model-authored day-1 physiology at 0 days clean, which is the precise moment abrupt
+// benzodiazepine cessation is lethal.
+{
+  H.section('the two substance classes whose omission is fatal');
+  const L = H.load(['classifyVice','_mechanismForType']);
+
+  // CLASSIFICATION, both directions. The false friends are the calibration and they matter more
+  // than the hits: `startsWord` is a word-START match, so a bare 'meth' claims "method" and a bare
+  // 'oxy' claims "oxygen". Those stems are absent from the list on purpose and the street names are
+  // whole-word tested instead.
+  [['opioid',   ['oxycodone','OxyContin','Oxy','oxys','percs','heroin','Fentanyl','methadone',
+                 'Suboxone','codeine','tramadol','kratom','opiates','Percocet','morphine']],
+   ['sedative', ['Xanax','benzos','benzodiazepines','Valium','diazepam','Klonopin','clonazepam',
+                 'Ativan','lorazepam','temazepam','barbiturates','GHB']],
+   ['alcohol',  ['Alcohol','beer','booze']],
+   ['nicotine', ['Nicotine gum','vaping','cigarettes']],
+   ['general',  ['method acting','oxygen therapy','methodical procrastination','my methods',
+                 'Oxygen','percentage of my pay','Weed','Overspending']],
+  ].forEach(function(pair){
+    pair[1].forEach(function(n){
+      H.eq(L.classifyVice(n), pair[0], 'classifyVice(' + JSON.stringify(n) + ')');
+    });
+  });
+  // The poly-use phrasing lands on `sedative` rather than `alcohol` because the new entries sit
+  // above it in the map. ASSERTED rather than dropped: sedative's own day-1 copy names alcohol as
+  // well, so the stricter of the two warnings is the one that shows.
+  H.eq(L.classifyVice('Benzos and booze'), 'sedative',
+    'a poly-use name gets the sedative card, whose copy names alcohol too');
+
+  // A SUBSTANCE CRAVING GETS URGE-SURFING, NOT GROUNDING. Without the mechanism line both new types
+  // fell through to 'ground' — 5-4-3-2-1 for a withdrawal craving. nicotine is the control.
+  H.eq(L._mechanismForType('opioid',   ''), 'wave', 'opioid gets urge-surfing');
+  H.eq(L._mechanismForType('sedative', ''), 'wave', 'sedative gets urge-surfing');
+  H.eq(L._mechanismForType('nicotine', ''), 'wave', 'calibration — nicotine already did');
+  H.eq(L._mechanismForType('porn',     ''), 'interrupt', 'calibration — and porn still interrupts');
+
+  // THE REGISTRY IS EXECUTED, NOT GREPPED, so the facts asserted are the ones the card renders.
+  // (A window to slice is the trap this repo records; brace-match and run it.)
+  const i = H.html.indexOf('const RECOVERY_TIMELINES = {');
+  H.ok(i > -1, 'the registry is found by name');
+  let d = 0, st = H.html.indexOf('{', i), end = -1;
+  for (let k = st; k < H.html.length; k++) {
+    if (H.html[k] === '{') d++;
+    else if (H.html[k] === '}') { d--; if (!d) { end = k + 1; break; } }
+  }
+  H.ok(end > st, 'and brace-matched');
+  const R = new Function('return ' + H.html.slice(st, end))();
+  H.ok(!!R.sedative && !!R.opioid, 'both classes have a CHECKED timeline, so neither reaches the model');
+  H.ok(!!R.nicotine && !!R.alcohol, 'calibration — the original six are still there');
+
+  // THE ONE FACT PER CLASS WHOSE ABSENCE IS FATAL. Each is asserted on the rendered body text, and
+  // each is a fact a milestone card would not naturally reach for, which is why it is checked copy
+  // and not left to a prompt.
+  const sed = R.sedative[0].body.toLowerCase();
+  H.ok(/not stop suddenly/.test(sed),   'sedative day 1: do not stop suddenly');
+  H.ok(/seizure/.test(sed),             'sedative day 1: names a seizure');
+  H.ok(/doctor|withdrawal service/.test(sed), 'sedative day 1: names a human to go to');
+  const op = R.opioid[0].body.toLowerCase();
+  H.ok(/tolerance (drops|falls)/.test(op), 'opioid day 1: tolerance drops — the leading cause of opioid death');
+  H.ok(/naloxone/.test(op),                'opioid day 1: names naloxone');
+  H.ok(/never use alone/.test(op),         'opioid day 1: never use alone');
+  H.ok(/tolerance/.test(String((R.opioid.find(function(x){ return x.d === 30; }) || {}).body).toLowerCase()),
+    'and day 30 repeats it, because that is when somebody feels recovered');
+
+  // THE PROMPT CARRIES THE CLAUSE, because safetyNote() structurally cannot reach this call — it
+  // does not route through brotherSys(). Read from the STRING LITERAL only: the slice stops at the
+  // closing quote, so the comment underneath cannot satisfy it (this repo's own recorded trap).
+  const ps = H.html.indexOf('You are a recovery scientist.');
+  H.ok(ps > -1, 'the research prompt is found');
+  const lit = H.html.slice(ps, H.html.indexOf("';", ps));
+  H.ok(/never give dosing, tapering or withdrawal instructions/.test(lit),
+    'the research prompt forbids dosing and tapering guidance');
+  H.ok(/doctor or a withdrawal service/.test(lit),
+    'and tells it to name a human instead of a milestone where there is risk');
+  H.ok(!/safetyNote/.test(lit), 'calibration — and it is NOT safetyNote, which cannot reach here');
+}
+
+// ── EVERY MIRRORED WORKOUT WAS WRITTEN A FULL DURATION LATE ────────────────────────────────────
+// 5.1.3's one explicit must-not is "Apps must not write false or inaccurate data into HealthKit",
+// and this was wrong on EVERY mirrored workout, not an edge case. `sess.ts` is the moment Save was
+// tapped; `durationMin` is wall-clock from `__sessionStart`; the plugin treats startMs as the START.
+// So the sample was placed at [save, save+duration]. Driven with the plugin stubbed and the real
+// HealthWrite.workout() body running: a session that genuinely ran 08:00-09:00 with Save at 09:00
+// was written as 09:00-10:00, +60 min, and a draft restored from yesterday produced a 900-minute
+// workout ENDING TOMORROW. Measured after: drift 0 on both the new and the derived path, and both
+// false-data shapes refused.
+{
+  H.section('a mirrored workout lands where it actually happened');
+  // `workout` is an object METHOD (`async workout(sess){`), not a `function` declaration, so
+  // H.extractFn CANNOT find it — and it THROWS, which killed the whole suite at load with no
+  // summary rather than failing one assertion. Sliced by its own call site instead.
+  // Anchored on the CALL SITE rather than on a symbol, because `startMs` appears in three methods
+  // of this object and a symbol grep passes on the wrong one.
+  const w = H.code(H.html.slice(H.html.indexOf('async workout(sess){'),
+                               H.html.indexOf('async weight(kg, atMs){')));
+  H.ok(w.length > 200, 'the workout mirror is found by name');
+  H.ok(!/startMs: sess\.ts \? Date\.parse\(sess\.ts\) : Date\.now\(\)/.test(w),
+    'the old [save, save+duration] window is gone');
+  H.ok(/sess\.startedAt/.test(w), 'it prefers the persisted real start');
+  H.ok(/Date\.parse\(sess\.ts\) - mins \* 60000/.test(w),
+    'and derives it for the sessions already in history');
+  H.ok(/mins > 480/.test(w), 'a duration no workout can honestly be is refused');
+  H.ok(/> Date\.now\(\) \+ 60000/.test(w), 'and a window ending in the future is refused');
+
+  // THE SESSION ACTUALLY CARRIES IT. A correct reader of a field nothing writes is the silent
+  // no-op this repo is built around, so the writer is asserted separately from the reader.
+  // ASSERT THE UNIQUENESS, THEN THE FACT. My first version sliced from the session literal to
+  // `const history=ls('totry_workouts')` — which occurs 229,000 characters EARLIER somewhere else,
+  // so the slice ran backwards, came back empty, and the assertion failed on correct code. The
+  // repo's own recorded trap, twice over: never slice to an anchor you have not proved is after
+  // the start, and never slice a fixed window.
+  const _sa = (H.code(H.html).match(/startedAt:\(__sessionStart/g) || []).length;
+  H.eq(_sa, 1, 'startedAt is written in exactly one place');
+  H.ok(/startedAt:\(__sessionStart \? new Date\(__sessionStart\)\.toISOString\(\) : null\)/.test(H.code(H.html)),
+    'saveWorkoutSession persists startedAt from __sessionStart');
+
+  // AND THE PLUGIN HAS THE FLOOR, because a future caller does not inherit a guard that lives in
+  // one caller. `saveMindful` had both guards all along and `saveWorkout` had neither.
+  const fs = require('fs'), path = require('path');
+  const swift = fs.readFileSync(path.join(__dirname, '..', 'ios/App/App/HealthWritePlugin.swift'), 'utf8');
+  const sw = swift.slice(swift.indexOf('func saveWorkout'), swift.indexOf('func saveWeight') > -1
+    ? swift.indexOf('func saveWeight') : swift.indexOf('func saveMindful'));
+  H.ok(sw.length > 200, 'saveWorkout is found in the plugin');
+  H.ok(/implausible-duration/.test(sw), 'saveWorkout refuses an implausible duration');
+  H.ok(/future-session/.test(sw), 'and refuses a sample ending in the future');
+  const sm = swift.slice(swift.indexOf('func saveMindful'));
+  H.ok(/future-session/.test(sm), 'calibration — saveMindful still has its own guard');
+}
+
+// ── THE LISTING COPY MUST NOT OVERCLAIM, IN EITHER COPY OF IT ──────────────────────────────────
+// ASC-SUBMIT-PACK deliberately removed "proven" from the Fight bullet — "the only efficacy claim in
+// 2511 characters, under a header that says 'Nothing here overclaims — keep it that way'" — and
+// APP-STORE-LISTING.md, the file TITLED as the listing source, still carried it on 31 Oct 2026. Two
+// copies of one description is how they drift, and the one a reader would paste from was the stale
+// one. 2.3.1, and more to the point the app's own standard.
+{
+  H.section('neither copy of the listing overclaims');
+  const fs = require('fs'), path = require('path');
+  const CLAIMS = /\b(proven|clinically|scientifically|guaranteed|cures?|cured|diagnos[ei]|FDA[- ]approved)\b/gi;
+  ['APP-STORE-LISTING.md', 'ASC-SUBMIT-PACK.md'].forEach(function(f){
+    const raw = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    // Only the lines that ARE listing copy: the bullets and the lede. The surrounding prose
+    // legitimately discusses the words ("proven removed", "clinically safe minimum"), so matching the
+    // whole file would fail on correct text — the trap this repo records about grepping explanations.
+    const copy = raw.split('\n').filter(function(l){
+      const t = l.trim();
+      return (t.indexOf('• ') === 0) || /^It.s a presence, not another tracker/.test(t);
+    }).join('\n');
+    H.ok(copy.length > 200, f + ': the listing bullets are found (' + copy.length + ' chars)');
+    const hits = copy.match(CLAIMS) || [];
+    H.eq(hits.length, 0, f + ': no efficacy claim in the listing copy' +
+      (hits.length ? ' — found ' + JSON.stringify(hits) : ''));
+  });
+  // CALIBRATION: the pattern must be able to fire, or "0 hits" means nothing.
+  H.eq(('one tap opens a calm, proven in-the-moment guide'.match(CLAIMS) || []).length, 1,
+    'calibration — the pattern catches the word that was actually there');
 }
 
 H.report();

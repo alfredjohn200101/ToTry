@@ -31,7 +31,7 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>So you can lock To Try behind Face ID. This app holds your journal, your confessions and what you are fighting — if you turn the lock on, only you can open it. Your face is checked by iOS and never seen by To Try.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your sleep and imported workout summaries are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never used for advertising, never sold, never shared with anyone else.</string>
+	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your sleep and imported workout summaries are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI whenever it writes coaching for you — including the day’s sentence on your first open each day, which you are not asked about. Never used for advertising, never sold, never shared with anyone else.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>To Try can record activity you log here back to Apple Health, so your data stays in one place.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -286,6 +286,51 @@ by their own refuter, which is exactly why they ran.
 
 ## Still open, named rather than swept
 
+- **THE BMI LABEL USES ADULT BANDS AND THE APP NEVER ASKS AGE.** `13-body.js:1043` renders
+  `'BMI ' + bmi + ' · ' + (bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')`.
+  Measured: there is no `totry_age`, `totry_dob` or birth year anywhere in the bundle, so the app
+  cannot know it is talking to a fifteen-year-old — for whom those cutoffs are simply the wrong
+  instrument (children are read on percentiles) — or to somebody muscular, for whom "Obese" is
+  arithmetic rather than information. The line already refuses to guess a HEIGHT, under a comment
+  explaining that a categorical judgement computed from an invented number "is exactly the kind of
+  number a person believes". The same argument reaches age, and the fix is not obvious: a caveat in
+  the footnote, an age question in Settings → About you, or dropping the categorical word and
+  keeping the number. **Left to the owner on purpose** — how this app speaks about a person's body
+  is a soul decision, and the one surface where a well-meant label does the most harm. (1.4.1
+  adjacent; two refuters put it at medium and low, and four "not medical advice" disclaimers ship.)
+- **NOTHING ASKS ABOUT PREGNANCY BEFORE A 500-CALORIE DEFICIT.** Same family, same reason for not
+  patching it blind: the guard would have to be a question, and where that question is asked is a
+  product decision.
+
+- **THERE IS NO AI OFF-SWITCH, AND THE APP SENDS WITHOUT BEING ASKED. This is the one real product
+  decision the 30 Oct audit surfaced, and it is the owner's.** Measured by driving the shipping
+  bundle in chromium AND webkit with every outbound request captured and fulfilled locally, 20s idle,
+  zero interaction, three calibrations passing: **two unprompted `ai-proxy` POSTs fire on launch**
+  (`showAIMorningSentence` at `25-soul.js:621` and `generateWeeklySynthesis` at `24-review.js:140`,
+  both reached unconditionally from `go('home')`). Between them, with no tap, they send `totry_why`
+  verbatim, the identity sentence, every vice name with its clean-day count, body weight, calories
+  and protein, debt remaining, money in and out, average day rating, sleep (HealthKit-sourced
+  included) and **up to four journal entries word for word**. The `messages` array of each holds one
+  app-authored entry — there is no message from the person at all.
+  v670 made the POLICY true about this, in all three copies plus the Info.plist string. What it did
+  not do is give anybody a way to decline: greps for `totry_ai_off`, `aiDisabled`, `totry_no_ai` and
+  `disableAI` all return zero, so the only way out is not opening the app.
+  Three options, in the order I would take them:
+  1. **An off-switch**, modelled on `metricsOff()` — one key, one Settings row, asked at every
+     `api()` call site. Additive, removes nothing from anyone who wants it, and it is the answer
+     most consistent with "grace over shame, presence over measurement".
+  2. **Move both calls behind a tap.** `showAIMorningSentence` already has a deliberate control
+     (`refreshAIMorning`, `25-soul.js:703`), so the card could offer "write today's sentence"
+     instead of firing on render; `generateWeeklySynthesis` already gates its MODAL on Sunday and
+     could gate its GENERATION the same way. This is the strictest reading of the soul document's
+     "quiet by default... never overbearing" and it costs the thing the owner likes most about the
+     Today card.
+  3. **Leave it, now that the copy is honest.** Defensible — it is disclosed, and it is what makes
+     the morning sentence possible at all — but it means a person who reads the policy and objects
+     has no lever.
+  Not taken unilaterally: 1 and 2 both change the product, and this close to a submission that is
+  the owner's call, not mine.
+
 - **~48% of rendered text is still raw px literals**, mostly inline styles in `src/app/*.js`. Bucket
   at a time, with a reach measurement per bucket. Not a sweep.
 - **Per-tradition context pools for the verse toast.** The four non-Christian banks are flat

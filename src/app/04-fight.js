@@ -1037,6 +1037,29 @@ function classifyVice(name){
   // tested, and the person lost the nicotine timeline. A guard against a weak signal must never be able
   // to veto an explicit one.
   const map = [
+    // ── THE TWO CLASSES WHERE THE OMISSION KILLS ────────────────────────────────────────────────
+    // Measured 30 Oct 2026: every drug name a person can type returned 'general', which has no entry
+    // in RECOVERY_TIMELINES, so it fell through to _researchRecoveryTimeline() — a model asked, with
+    // web search, for "4-6 recovery milestones a person gains by abstaining", under a prompt with no
+    // safety clause and no route to safetyNote(). Driven over 19 names: Xanax, Valium, diazepam,
+    // oxycodone, heroin, fentanyl, methadone, kratom, codeine, tramadol — 19 of 19 invented. The app
+    // warned correctly for alcohol and handed the other lethal class to an LLM.
+    // These two are checked copy because each has ONE fact whose absence is fatal, and neither is a
+    // fact a milestone card would naturally reach for:
+    //   sedatives — abrupt unsupervised cessation can cause a seizure. Benzodiazepines and alcohol
+    //     are the two classes where stopping suddenly can kill, and alcohol already says so.
+    //   opioids — withdrawal itself rarely kills; the danger is AFTER. Tolerance falls within days,
+    //     so returning to the old dose is the leading cause of opioid death, and an
+    //     abstinence-milestone card is exactly the surface that would never mention it.
+    // Strong-only, no weak keywords: every stem here is unambiguous. 'meth' and 'oxy' are
+    // deliberately ABSENT — `startsWord` is a word-START match, so they would claim "method" and
+    // "oxygen"; the full names are used instead.
+    ['opioid',    ['opioid','opiate','heroin','oxycodone','oxycontin','fentanyl','methadone',
+                   'buprenorphine','suboxone','subutex','codeine','tramadol','morphine',
+                   'hydrocodone','percocet','dilaudid','kratom'], [], []],
+    ['sedative',  ['benzo','xanax','alprazolam','valium','diazepam','klonopin','clonazepam',
+                   'ativan','lorazepam','temazepam','zopiclone','barbiturate','phenobarbital',
+                   'ghb'], [], []],
     ['porn',      ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], [], []],
     // The named books are strong: they carry no other meaning, and under the old classifier they were
     // only reached by the substring 'bet' inside "Sportsbet".
@@ -1057,6 +1080,12 @@ function classifyVice(name){
     ['food',      ['binge','overeat'], ['eat','food','sugar','junk','snack','sweets'], []]
   ];
   const startsWord = k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
+  // WHOLE-WORD SLANG, which a word-START match structurally cannot carry. `\boxy` claims "oxygen"
+  // and `\bmeth` claims "method", so the full chemical names are in the list above and the street
+  // names are tested here as COMPLETE words instead. "Oxy" is the commonest way anybody names this
+  // and it is exactly the person the tolerance warning is written for; measured, it returned
+  // 'general' without this line. Deliberately tight: 'bars' and 'tabs' are protein and browser.
+  if(/\b(oxy|oxys|percs?|roxies|roxys)\b/.test(n)) return 'opioid';
   // Two passes, so an explicit word anywhere in the name beats every weak match and every guard.
   for(const [type, strong] of map){ if(strong.some(startsWord)) return type; }
   for(const [type, , weak, nots] of map){
@@ -2619,7 +2648,11 @@ function _mechanismForType(type, text){
   if(type === 'overthinking' || type === 'anxiety') return 'defuse';
   if(type === 'porn') return 'interrupt';
   if(type === 'scrolling') return 'interrupt';
-  if(type === 'nicotine' || type === 'alcohol' || type === 'gambling' || type === 'food') return 'wave';
+  // A substance craving is the shape urge-surfing was written for, so the two new classes join
+  // nicotine and alcohol here rather than falling through to grounding. Measured: without this
+  // line `_mechanismForType('opioid')` returned 'ground', i.e. 5-4-3-2-1 for a withdrawal craving.
+  if(type === 'nicotine' || type === 'alcohol' || type === 'gambling' || type === 'food'
+     || type === 'opioid' || type === 'sedative') return 'wave';
   return 'ground';
 }
 

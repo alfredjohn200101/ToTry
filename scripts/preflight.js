@@ -170,7 +170,14 @@ if (plist) {
         // the doc writes Apple's human labels; map each manifest type to the words that must appear
         const LABEL = {
           EmailAddress: 'Email Address', Name: 'Name', UserID: 'User ID',
-          CoarseLocation: 'Location', HealthAndFitness: 'Health', SensitiveInfo: 'Sensitive Info',
+          CoarseLocation: 'Location', SensitiveInfo: 'Sensitive Info',
+          // Apple documents these SEPARATELY and documents no combined key (35 values, read from
+          // its own docs JSON on 31 Oct 2026 and pinned in test/apple-privacy-types.json). The
+          // manifest declared `HealthAndFitness` for 300+ versions, which maps to no category at
+          // all — so it declared NO health data while the binary links HealthKit. `HealthAndFitness`
+          // is deliberately NOT kept here as an alias: `unlabelled` below fails on an unknown type,
+          // so dropping it is what makes a regression visible instead of silently relabelled.
+          Health: 'Health', Fitness: 'Fitness',
           PhotosorVideos: 'Photos or Videos', OtherUserContent: 'Other User Content',
           OtherFinancialInfo: 'Other Financial Info', ProductInteraction: 'Product Interaction',
           CrashData: 'Crash Data',

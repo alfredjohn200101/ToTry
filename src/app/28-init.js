@@ -428,9 +428,67 @@ function toggleMetrics(){
   try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
   try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
+// ── THE GATE WAS STILL WRITING TO PRODUCTION, THREE DAYS AFTER THE FIX FOR THAT ────────────────
+// v657 blocked Supabase at the BROWSER (test/no-production-writes.js) and wired it into the three
+// named suites. Measured against the live table on 30 Oct: **666 more `boot_offline` rows arrived
+// in the three days AFTER it landed** — 470 on 27 Oct, 195 on 28 Oct, 1 on 29 Oct, across 644
+// distinct anon_ids. The block reached panels, personas and crisis and NOT the eight other files in
+// this repo that launch a browser (craft-audit, orb-audit, density-audit, clip-audit,
+// day-key-engines, ios-shot, record-reels, make-splash), and not one of the dozens of one-off
+// probes a working session writes to /tmp — which is where most of a day's page loads come from.
+// The half-applied sweep, inside the fix written to stop the half-applied sweep.
+//
+// SO THE GUARD MOVES INTO THE APP, where no harness can forget it: a probe cannot opt out of this
+// by existing, and the next one nobody has written yet inherits it for free.
+//
+// THE DISCRIMINATOR IS THE PROTOCOL, NOT THE HOSTNAME, and getting that backwards is the
+// catastrophic version of this fix — Capacitor serves the NATIVE app from capacitor://localhost, so
+// a hostname check would silently switch analytics off for the entire App Store build. That is not
+// hypothetical: GoatCounter's count.js makes exactly that mistake, which is the reason recorded 20
+// lines below for cutting it from the native bundle. Android's androidScheme has defaulted to https
+// since Capacitor 4 (8.4.1 here), so the Android shell is https://localhost — also not http:.
+//   live PWA          https://alfredjohn200101.github.io/ToTry/   -> counted
+//   App Store build   capacitor://localhost                       -> counted
+//   Android build     https://localhost                           -> counted
+//   any local harness http://localhost:<port>, http://127.0.0.1   -> SILENT
+// isNativeApp() is asked as well, so a future Capacitor scheme change cannot make a shipped build
+// silent: native is never a probe whatever protocol it is served over.
+//
+// SCOPE, DELIBERATELY: logEvent ONLY. The other thing the gate wrote to production was the
+// `feedback` table (169 rows, every one a crisis test string), and that is NOT gated here on
+// purpose. Those four insert sites distinguish sent / refused-by-the-server / no-answer-at-all and
+// say which to the person, with an outbox that retries — the "say which actually happened" logic
+// that exists because telling somebody a report was filed when it never left the phone is the
+// defect this repo already fixed once. Making the insert silently skip would make the app say
+// "No connection" to a developer and leave entries in their outbox, i.e. it would change a
+// user-visible message to tidy up a test. The browser block in test/no-production-writes.js covers
+// those doors instead, and the feedback table has had no new gate row since it landed. logEvent is
+// fire-and-forget with no user-visible behaviour, which is exactly why it is safe to gate here and
+// they are not. If you are tempted to "finish the sweep", this is the reason not to.
+function _isLocalProbe(){
+  try{
+    if(typeof isNativeApp === 'function' && isNativeApp()) return false;
+    if(location.protocol !== 'http:' && location.protocol !== 'file:') return false;
+    const h = (location.hostname || '').toLowerCase();
+    if(h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1' || h === ''
+       || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.test')) return true;
+    // AND A PRIVATE LAN ADDRESS, because that is how this app gets tested on a real phone before
+    // there is a native build: `python3 -m http.server` on the laptop and http://192.168.1.x:8000 on
+    // the handset. Those launches are a developer checking a layout, not a population, and they are
+    // the one remaining shape a loopback check cannot see. 127.x is already covered above as a name;
+    // this is the RFC1918 set. A real person is never on one of these — they are on github.io over
+    // https, or on capacitor://localhost, both of which returned false before reaching here.
+    return /^10\.(?:\d{1,3}\.){2}\d{1,3}$/.test(h)
+        || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)
+        || /^172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h);
+  }catch(_){ return false; }   // unreadable location: count it, rather than lose a real person
+}
 function logEvent(name, detail){
   try{
     if(metricsOff()) return;
+    // ABOVE the insert and beside metricsOff(), because a guard below the thing it guards is not a
+    // guard — the one ordering rule this repo has paid for more than once.
+    if(_isLocalProbe()) return;
     // EVERY EVENT CARRIES THE VERSION IT CAME FROM. It did not, and that is why pinning three real
     // crash families to a bundle took line-number archaeology across every revision of the
     // generated index.html: `jserror` reported "index.html:30139" and nothing said which build's

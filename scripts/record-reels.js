@@ -310,6 +310,12 @@ const CLIPS = {
   fs.mkdirSync(RAW, { recursive: true });
 
   const browser = await chromium.launch({ channel: 'chrome', headless: false });
+  // EVERY BROWSER THIS REPO OPENS GETS THE PRODUCTION-WRITE BLOCK. v657 wired it into panels,
+  // personas and crisis and stopped there; 666 more analytics rows reached the live table in the
+  // three days afterwards, from the eight OTHER files here that launch a browser. See
+  // test/no-production-writes.js, and _isLocalProbe() in src/app/28-init.js for the half a harness
+  // cannot be trusted to remember.
+  require('../test/no-production-writes.js').installNoProductionWrites(browser);
   const results = [];
 
   for (const name of names) {
