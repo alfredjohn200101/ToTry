@@ -1786,6 +1786,21 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      bundles read v672, so a label comparison would have reported parity and the build would have gone
      to Apple carrying code one commit old. The lesson is already rule 3 and it still cost a run:
      a `build:index` is not the end of the chain, it is the first third of it.
+   - **AND BOTH HEADLINE FIXES WERE DRIVEN ON THE SHIPPED BYTES, WHICH IS THE ONLY EVIDENCE THAT
+     COUNTS FOR EITHER (1 Nov 2026).** `curl` proves the live PWA, the repo and the IPA all carry
+     `4be5cdd3ad5e`; it proves nothing about behaviour. Driven in a browser against `www/` (the same
+     file preflight compares), both calibrations holding: the switch's own toast now reads *"Nothing
+     goes to a model now — including the sentence that used to be written for you each morning. Your
+     logs still sync to your own account the same as before; this switch is only about what a model is
+     shown."* — **claims the logs stay on the device: false; says syncing is unchanged: true.** And the
+     scripture search, asked a stacked reason-plus-plan, renders *"Searching scripture by how you feel
+     needs the coach, and you switched it off"* instead of *"Couldn't reach scripture right now"*, with
+     **a human named in BOTH states** rather than only with the coach on. The coach-ON half produced
+     real verses, which is what makes the OFF column mean anything.
+     **The live ORIGIN could not be driven at all** — its own `page.goto` timed out at 30s, and then a
+     LOCAL one timed out at 120s, on a machine with ~14MB of free RAM. So the bytes are verified by
+     hash and the behaviour by driving the identical file; the one thing not done is driving the
+     github.io origin itself, and that is a machine limit rather than a result.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at
