@@ -1439,10 +1439,25 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 function aiOff(){ try{ return localStorage.getItem('totry_ai_off')==='1'; }catch(_){ return false; } }
 
 function toggleAICoach(){
-  const off = !aiOff();
-  try{ localStorage.setItem('totry_ai_off', off?'1':'0'); }catch(_){}
+  const want = !aiOff();
+  try{ localStorage.setItem('totry_ai_off', want?'1':'0'); }catch(_){}
+  // READ IT BACK. On a full device that write throws, the catch swallows it, and claiming the switch
+  // took effect is the one lie this whole feature exists to remove -- the person believes they
+  // declined and every send continues. Measured: stored=null, aiOff()=false, row rendering OFF.
+  const off = aiOff();
+  if(off !== want){
+    try{ showToast('I could not save that',
+      'This phone has no room left, so the switch did not change. Settings → Your data → Export, '
+      + 'or clear some space, then try again. Nothing about what the coach sends has changed yet.'); }catch(_){}
+    try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+    return;
+  }
+  // The reason is a global that only the next call overwrites, so switching back ON has to clear it
+  // or getAIErrorMessage() keeps answering "the coach is switched off" to a surface that renders
+  // before anything is asked.
+  try{ if(!off && window.__lastAIError && window.__lastAIError.error==='ai_off') window.__lastAIError = null; }catch(_){}
   try{ showToast(off?'The coach is off':'The coach is back',
-    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. What you log stays on this phone and in your own backup.'
+    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. Your logs still sync to your own account the same as before; this switch is only about what a model is shown.'
        :'Thank you — it can read your data again to answer you.'); }catch(_){}
   try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
@@ -1453,10 +1468,23 @@ function toggleAICoach(){
 // made, the same wrong as a "Saved · I read what you wrote" toast on a surface that stores nothing.
 // So each entry point refuses BEFORE it does any work, and the true thing is said once, in one place.
 // Returns true when it refused, so a call site reads `if(aiOffNotice('…')) return;`.
+// THE SENTENCE LIVES IN ONE PLACE AND IS DELIVERED THREE WAYS. A toast is right for a button that
+// owns no container; a surface with its own results box renders it THERE, because a toast over an
+// empty box is exactly the dead end this is replacing. _barcodeVisionLookup already did that by
+// hand, which is what made it worth naming.
+function aiOffLine(what){
+  return (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.';
+}
 function aiOffNotice(what){
   if(!aiOff()) return false;
-  try{ showToast('The coach is off', (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.'); }catch(_){}
+  try{ showToast('The coach is off', aiOffLine(what)); }catch(_){}
   return true;
+}
+// For a surface that writes into its own element. Returns the markup so the caller keeps control of
+// where it lands, and the caller is still responsible for the net (see searchBible).
+function aiOffHtml(what){
+  const esc = String(aiOffLine(what)).replace(/</g,'&lt;');
+  return '<div class="ios-empty"><div class="ios-empty-body">' + esc + '</div></div>';
 }
 
 // THE ONE DOOR EVERY MODEL CALL GOES THROUGH. Eleven sites invoked ai-proxy directly before this
@@ -1496,9 +1524,18 @@ async function api(sys, hist, msg, tok, opts){
   // somebody remembering. It sits ABOVE trackAPIUsage on purpose — a call that never happens must
   // not be counted as one — and it returns '' rather than throwing, because that is what api()
   // already returns when every provider fails, so no caller needs a new shape.
-  if(aiOff()){ window.__lastAIError = { error:'ai_off' }; return ''; }
-  tok = Math.max(tok || 1200, 2000);
   opts = opts || {};
+  if(aiOff()){
+    window.__lastAIError = { error:'ai_off' };
+    // SAY IT HERE, so the thirteen surfaces that hand-write "Couldn't reach the coach right now" are
+    // no longer the only thing the person reads -- and so the fourteenth, written later, is covered
+    // without anybody remembering. opts.quiet is for the paths that run with no tap behind them (the
+    // SOS verse, the launch push refresh, the companion opening itself at a threshold): a toast
+    // nobody asked for is the overbearing thing this app refuses to be.
+    if(!opts.quiet && typeof aiOffNotice==='function'){ try{ aiOffNotice(opts.what); }catch(_){ } }
+    return '';
+  }
+  tok = Math.max(tok || 1200, 2000);
   const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
   // Deadline for everything below. Two methods are tried in sequence; giving each the full ceiling
   // made the real wait double the number the caller asked for, on the surface where it matters most.
@@ -1653,7 +1690,11 @@ function aiUnavailableHtml(local){
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
   return (local ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
     '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
-      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.' : ' Nothing is lost — try again in a moment.') +
+      // "try again in a moment" is advice that cannot be followed when the cause is the switch,
+      // and getAIErrorMessage() has already said which it is. Asked rather than assumed.
+      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.'
+                        : (((typeof aiOff==='function') && aiOff()) ? ' Nothing is lost.'
+                                                                    : ' Nothing is lost — try again in a moment.')) +
     '</div>';
 }
 
@@ -1881,7 +1922,7 @@ async function maybeUpdateCoachMemory(){
     // Feed recent conversation + existing summary; ask for a tight evolving memory.
     const recent = cH.slice(-12).map(m => (m.role==='user'?'Them: ':'Coach: ') + (m.content||'').slice(0,300)).join('\n');
     const prompt = 'You keep a SHORT private memory of what this person and their coach have been working through, so the coach can be continuous across conversations. Here is the current memory and the latest conversation. Return an UPDATED memory: 3-5 short bullet-style lines (no markdown bullets, just newline-separated), capturing ongoing themes, what they\u2019re struggling with, what\u2019s helping, and any commitment they made. Keep it under 120 words. Be specific and warm, not clinical. Return ONLY the memory text.\n\nCURRENT MEMORY:\n' + (mem.summary || '(none yet)') + '\n\nLATEST CONVERSATION:\n' + recent;
-    const updated = await api('You maintain a concise, caring memory of an ongoing coaching relationship.', [], prompt, 350);
+    const updated = await api('You maintain a concise, caring memory of an ongoing coaching relationship.', [], prompt, 350, { quiet:true });
     if(updated && updated.trim()){
       mem.summary = updated.trim();
       mem.updated = today;
@@ -1982,7 +2023,10 @@ async function sendCoach(){
     maybeUpdateCoachMemory();
   } else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'The coach is unavailable for a moment.';
-    addMsg('coach-msgs', _netted(t, errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
+    // "While it's down" asserted a cause. The offer underneath is true either way: the journal
+    // is there whether the coach failed or was switched off, so it stops naming a reason and
+    // leaves errMsg above as the only thing that does.
+    addMsg('coach-msgs', _netted(t, errMsg + '\n\nYou can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
     const msgs = document.getElementById('coach-msgs');
     if(msgs){
       const btn = document.createElement('button');

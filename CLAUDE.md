@@ -62,7 +62,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v671**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v672**. Bump it AND `CACHE` in sw.js together, always.
   (This line restates a mutable fact, which this file records as its own failure mode — `grep APP_VERSION
   src/app/00-boot.js` is the source of truth if it has drifted again.)
 
@@ -1610,7 +1610,10 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `handleMealPhoto` says *"The photo did not get through. The connection dropped it."* — and every
      one of those is a lie about a choice the person made. `getAIErrorMessage()` is the single place
      an error becomes a sentence and **five surfaces render it**, so one branch carries all of them;
-     the nine entry points refuse BEFORE any work through one `aiOffNotice()`. Driven: the meal photo
+     the entry points refuse BEFORE any work through one `aiOffNotice()` — nine at v671, and the
+     count is deliberately not restated here, because v672 took it to twenty-two and a number in
+     prose is the mutable fact this file records as misleading at the worst moment. `grep -c
+     "aiOffNotice(" src/app/*.js` is the source of truth, and the gate asserts it per surface by name. Driven: the meal photo
      sends nothing and says *"Reading a meal photo needs the coach, and you switched it off."*
      Ten fault injections, each caught by the assertion under test BY NAME. **And one of them proved
      my own check was weaker than its message:** anchoring "refuses before any work" on the SINK is
@@ -1632,6 +1635,114 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      rather than measured badly here. And a Python edit aborted on its last anchor because the file
      holds a real em-dash where I typed `—` — **anchor on ASCII you copied out of the file, or on
      a line number**, which this file already says and which still cost two runs.
+   - **AND THE OFF-SWITCH ITSELF LIED, IN THE ONE SENTENCE THAT CONFIRMS IT (v672, 31 Oct 2026).**
+     Rule 4 on a commit ONE DAY OLD, and the yield did not fall off: seven lenses over v671, every
+     finding sent to two refuters told to default to refuted. **The worst was a FALSE PRIVACY
+     ASSURANCE INSIDE THE PRIVACY CONTROL.** The toast I wrote said *"What you log stays on this
+     phone and in your own backup."* `totry_journal`, `totry_v`, `totry_identity` and `totry_why`
+     are all in **SYNC_KEYS**, so for a signed-in person every journal entry is upserted to Supabase
+     exactly as before. The switch governs what a MODEL is shown and has never governed cloud sync.
+     A false sentence in the confirmation of a privacy control is the precise thing v670 and v671
+     exist to remove, and it shipped inside the fix for it.
+     **AND THE SWITCH REPORTED SUCCESS IT HAD NOT ACHIEVED.** `toggleAICoach` wrapped its
+     `setItem` in `try{}catch(_){}` and then, unconditionally, toasted "Nothing goes to a model now"
+     and set the row to render OFF. Driven with the full-device simulation `test/panels.js` already
+     uses (setItem throws for a NEW `totry_` key, which is what `totry_ai_off` is the first time
+     anybody switches the coach off): **stored=null, `aiOff()`=false, the row rendering OFF, the
+     toast claiming off** — every send continuing while the person believed they had declined. It
+     reads the write back now. **Its twin `toggleMetrics` had the identical shape** and is fixed in
+     the same change, because the pair is deliberately matched and fixing one is the half-applied
+     defect this file is mostly made of. My first probe for this FAILED HONESTLY: filling the quota
+     with 256KB blobs does not make a 1-byte write throw, which is a true result about the
+     instrument and not about the app.
+     **AND SIGNING OUT SILENTLY TURNED THE COACH BACK ON.** The refusal is deliberately NOT in
+     SYNC_KEYS (a cloud-restored truthy value can undo a local privacy choice — the recorded
+     notifications defect), so `signOut()`'s wipe of every `totry_` key was permanent, while its own
+     dialog promises *"everything synced comes back"* and enumerates what will not: photos, the
+     cycle log, pending changes — not this. It survives a sign-out and an account deletion now, and
+     deliberately NOT "Start fresh on this device", whose copy says it clears everything and asks
+     twice.
+     **THIRTEEN SURFACES ASSERTED A CAUSE THEY COULD NOT KNOW, AND I COUNTED THEM FOUR TIMES: 8, 7,
+     8, 13.** Every sweep was wrong in its own way and only disagreeing with each other exposed it.
+     (a) A 44-line window missed copy **56 lines** after its `api()` call. (b) Brace matching ended
+     `_fuelGenerate` BEFORE its own `api()` call — **the AI prompts in this bundle are full of JSON
+     braces inside string literals**, so the depth returns to zero early and a function "ends"
+     before its own body. (c) Tightening an apostrophe budget from `.{0,8}` to `.{0,3}` lost
+     `Couldn’t read that`, where the escape is **six characters** between "Couldn" and "t read"
+     — a false positive fixed at the cost of a true one. (d) Extracting quoted strings
+     **desynchronises on this bundle's mixed quotes**: an inline style's `"` inside a single-quoted
+     HTML string misaligns the scan, so `generateGoalRoutine` has TWO false branches and run 4
+     called it clean. So the gate COUNTS it now, derived from the files with line-anchored units
+     (column 0, which no string literal can fake) and the apostrophe NORMALISED rather than
+     budgeted; site 38, written next month, fails the build the day it is written.
+     **AND THE FLOOR IS IN api() ITSELF, BECAUSE A PER-SITE FIX FOR A SET NOBODY CAN COUNT IS THE
+     BLANKET SWEEP THIS FILE FAILS BUILDS OVER.** The backstop says the true thing rather than only
+     refusing, so the fourteenth surface inherits it. **The default is to SPEAK and the opt-out is
+     explicit** — an inverted default, so forgetting it gives somebody a harmless true toast instead
+     of a lie. Six paths opt out, measured per call site and not assumed: the SOS verse (fires when
+     that screen opens), the launch push refresh (`initApp`), `maybeUpdateCoachMemory` (unreachable
+     in the off state at all), `_researchProtocol` ("fire and forget" by its own comment),
+     `getProgressiveSuggestion` (a render), and **the companion only when it opens ITSELF** at a
+     threshold — a typed message is a person asking and gets the sentence.
+     **AND ONE SURFACE READ AS HONEST IN THE SWEEP BECAUSE ITS LYING BRANCH WAS THE ONE THAT DOES
+     NOT ROUTE THROUGH `getAIErrorMessage()`.** `parseCalendarAI` is crisis door 20 — the paste-a-roster
+     box — and its failure copy is a ternary: `err.message==='parse'||'empty'` gets *"Couldn't read
+     that clearly. Try the "+ Add one" button, or rephrase"*, and everything else gets the honest
+     sentence. With the coach off `api()` returns `''`, `JSON.parse` throws, `err.message` is
+     `'parse'`, and the person is told their WORDING was the problem when nothing was ever sent. The
+     sweep put the function in the HONEST column because the honest branch is also there. **A
+     function is not honest because one of its branches is** — and the comment eleven lines above
+     that toast already called it a hazard.
+     **MY OWN GUARD MADE FOUR BUTTONS DEAD ON THE RETRY IT ASKS FOR.** A file input only fires
+     `change` when its value CHANGES, which is why these doors clear it immediately; v671 refused
+     ABOVE that line, so somebody read "switched it off", went and switched it back on, picked the
+     SAME photo — and nothing happened. **The comment four lines below the guard in
+     `handleMealPhoto` already records a previous fix that "fixed the camera and broke the other
+     half" for this exact retry class.** Reading `files[0]` and clearing `value` are free, so the
+     refusal still comes before any WORK, which is what the assertion anchors on.
+     **THE CRISIS HALF IS SMALLER THAN THE REVIEW CLAIMED AND IT IS DRIVEN, NOT READ.** The coach,
+     the PT and the companion all KEEP the net with the coach off, because v670 had already put it on
+     their failure branches — measured, 3 of 3. One surface lost it and one lost it a different way:
+     the scripture search nets through `_netNoteInto` on a RENDER that no longer happens (measured:
+     names a human with the coach on, **NO human with it off**), and the **Sunday check-in**, crisis
+     door #11, nets at the top of its SUCCESS branch, so with no reply the else branch ran instead
+     and a reason plus a plan typed into "what did you struggle with" reached nobody. The three
+     UNPROMPTED netted surfaces are deliberately left and named: nobody typed anything just now, the
+     journal's own save is already a gated door, and a card that does not render cannot carry a line.
+     **THE SWITCH MAY NEVER OUTRANK A CRISIS GATE** — three of these surfaces take a typed sentence
+     and already gate on it, so a privacy guard above a crisis gate would be the dead-gate defect
+     arriving through a privacy fix. Asserted per surface, and one injection proves it.
+     **FIVE OF MY OWN NEW ASSERTIONS FAILED ON REAL DEFECTS IN THEIR FIRST RUN**, which is the best
+     thing in this entry. `opts.quiet` was read ABOVE the line that defaults `opts`, so **every
+     refusal from a caller passing no opts would have thrown**. A net assertion named a HELPER while
+     the fix used a different one — "assert the fact, not the helper", in the check written for it.
+     An ordering assertion anchored on the first `await`, and for `searchBible` that is a
+     **legitimate non-model fetch**: an exact-reference lookup goes to fetchESV and bible-api.com,
+     both of which must keep working with the coach off, so the subject is the MODEL CALL. A
+     pre-existing check was pinned to the identifier `off` rather than to the key and value its own
+     message names. And "the FIRST net comes after the guard" is the wrong fact where a function
+     correctly nets on its success path too.
+     **AND THE NEGATIVE CONTROL WAS WRONG, NOT THE INSTRUMENT.** `findVerse` is flagged by a
+     line-level scan and is clean when driven, because its thematic bank is LOCAL — so it is
+     deliberately NOT guarded (guarding it would remove a working feature) and only its last-resort
+     sentence was corrected. A control has to be something established independently.
+     **A DRY RUN CHECKS ANCHORS, NOT COVERAGE.** A pre-flight that re-ran every `edit()` against the
+     real files reported **40 of 40 resolve** while three edits were never in the file at all — a
+     string replacement meant to insert them had silently not matched. It is still worth having: it
+     caught three mixed-encoding anchors, including a line that writes the apostrophe as `’`
+     and the dash beside it as a **real em-dash**, which is the trap my own patch header warned
+     about and then fell into.
+     **AND `git checkout` IN MY OWN INJECTION HARNESS, AGAIN.** One injection ended with
+     `git checkout -- privacy.html`, which restores from HEAD and would have silently reverted the
+     uncommitted v672 copy fix in that same file. This file already records that lesson; I wrote the
+     harness minutes after reading it. Back up with `cp`, and never reach for git to undo an edit in
+     a file that also holds work you want.
+     **AND TWO SHIP DOCS WERE WRONG IN WAYS THAT WOULD HAVE COST THE OWNER.** `SUBMIT-CHECKLIST.md`'s
+     upload table named `ToTry-v670.xcarchive` — **a file that does not exist** — under a banner
+     correctly saying build 14, because v671 updated the banner and not the table. And the v671
+     paragraph in `APP-PRIVACY.md` was inserted INSIDE the third-party markdown table, so the blank
+     line above it terminated the table and **four third-party rows rendered as literal text with
+     pipes** in the document the privacy label is filled from.
    - `npm run crisis` — **57 doors as of 14 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and

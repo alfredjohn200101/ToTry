@@ -661,6 +661,18 @@ function _fuelMergeRecipeShopping(plan){
 }
 
 async function _fuelGenerate(){
+  // REFUSED BEFORE THE SPINNER. openFuelPlan() calls this directly whenever prefs already exist, so
+  // with the coach off, opening the Fuel plan screen used to show "Building your plan..." and then
+  // "Couldn't build it just now - try again in a moment." A plan they already have is their own data,
+  // so it is rendered rather than withheld; only the building is declined.
+  if(typeof aiOff==='function' && aiOff()){
+    const _have = ls('totry_meal_plan');
+    if(_have && _have.meals && _have.meals.length && typeof _fuelRenderPlan==='function'){
+      try{ _fuelRenderPlan(_have); }catch(_){ }
+    }
+    if(typeof aiOffNotice==='function') aiOffNotice('Building a meal plan');
+    return;
+  }
   const p = getMealPrefs();
   const ctx = _fuelCtx();
   let cal = ctx.cal;
@@ -853,6 +865,7 @@ function _fuelRenderPlan(plan){
 // Close the target gap in one tap — add a snack sized to the remaining calories/protein.
 async function _fuelAddSnack(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Adding a snack to your plan')) return;
   const p = getMealPrefs(); const dietStr = _fuelDietStr(p);
   const dayCal = plan.meals.reduce(function(a,m){return a+(m.cal||0);},0), dayPro = plan.meals.reduce(function(a,m){return a+(m.pro||0);},0);
   const tgt = (plan.targets&&plan.targets.cal)||0, tgtP = (plan.targets&&plan.targets.pro)||0;
@@ -895,6 +908,7 @@ function _fuelSaneMeal(meal){
 }
 async function _fuelSwapMeal(i){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Swapping a meal')) return;
   const p = getMealPrefs();
   const dietStr = _fuelDietStr(p);
   const old = plan.meals[i];
@@ -1107,6 +1121,7 @@ async function _fuelLogPlan(btn){
 // A focused web-search pass to replace estimated prices with real, cited ones (per store).
 async function _fuelLivePrices(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping.length) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Looking up live prices')) return;
   const p = getMealPrefs();
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain||'');
   if(typeof showToast==='function') showToast('Checking prices…', 'Looking up current prices at '+(shopsStr||'your shops')+'.');
@@ -1140,6 +1155,10 @@ async function parseCalendarAI(){
   // page; this door just never asked. Gated before the text leaves the device.
   const _calC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC, null, { saved: false })) return;
+  // Below the crisis gate, above the send. With the coach off this used to throw 'parse' on an empty
+  // reply and land on the ONE branch that does not route through getAIErrorMessage -- "Couldn't read
+  // that clearly ... or rephrase", which blames their wording for a switch they flipped.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a pasted roster')) return;
   if(btn){ btn.textContent = 'Reading...'; btn.disabled = true; }
   try{
     const sys = 'You extract calendar events from messy text (work rosters, class timetables, plain notes) into strict JSON. Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';

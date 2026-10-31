@@ -3,11 +3,25 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 31 Oct 2026 — v671, build 14. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
-> **Build 14 SUPERSEDES build 13.** Same five screenshots, same answers, same privacy declarations
-> — v671 only adds the AI off-switch, which removes a send and adds no data type. Build 13's
-> archive has been moved to `~/Library/Developer/Xcode/ToTry-superseded-archives/`, so Organizer
-> shows exactly one. If you already uploaded 13, upload 14 as well and submit 14.
+## ▶▶ CURRENT STATE — 31 Oct 2026 — **DO NOT UPLOAD YET.** v672 is in the repo and build 15 is NOT cut.
+> **The newest ARCHIVE on this machine is build 14 (v671), and v672 supersedes it in the repo.**
+> v672 corrects two things in v671's own off-switch, both of which ship inside the binary, so build
+> 14 should not be the build that goes up: its confirmation toast said *"What you log stays on this
+> phone and in your own backup"* while `totry_journal` is in `SYNC_KEYS`, and on a full device the
+> switch reported success it had not achieved (the write threw, the row still rendered OFF, every
+> send continued). The source, `index.html`, `www/`, `ios/` and `android/` are all at v672 and
+> `CURRENT_PROJECT_VERSION` is 15 in both configurations; `npm run preflight` reports **ready to
+> archive at build 15**.
+>
+> **NEXT STEP IS TO CUT BUILD 15**, then verify the IPA and update the two paths in the table below.
+> Nothing in this file should be acted on for an upload until that is done.
+>
+> Same five screenshots and the same App Privacy answers either way — v672 changes no data type.
+>
+> *(This block previously named `ToTry-v670.xcarchive` in the table below, a file that does not
+> exist, because v671 updated the banner and not the table. The paths are marked PENDING now rather
+> than guessed, which is the same discipline: a doc that restates a mutable fact misleads at the
+> worst moment.)*
 
 **Everything below this block is HISTORY.** Fill every App Store Connect field from
 `ASC-SUBMIT-PACK.md` — **not from §2 or §4 of this file**, both of which are struck below because
@@ -15,9 +29,9 @@ they would have produced a false privacy label and handed App Review an admin ac
 
 | What | Where |
 |---|---|
-| Archive (keep exactly ONE in Organizer) | `~/Library/Developer/Xcode/Archives/2026-10-31/ToTry-v670.xcarchive` |
-| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v671-build14.ipa` |
-| Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` |
+| Archive (keep exactly ONE in Organizer) | **PENDING — build 15 not cut.** The newest on disk is `~/Library/Developer/Xcode/Archives/2026-10-31/ToTry-v671.xcarchive` (build 14, superseded by v672 in the repo) |
+| Distribution IPA | **PENDING — build 15 not cut.** Newest on disk: `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v671-build14.ipa` |
+| Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` **and** `~/Library/Developer/Xcode/ToTry-superseded-archives/` — TWO such directories exist and this file used to name only one |
 | Screenshots, in upload order | `build/appstore-screenshots/iphone-6.9in-v669/` + its `ORDER.md` |
 
 **WHY v670 EXISTS, in one line each** — every one measured, not reasoned:

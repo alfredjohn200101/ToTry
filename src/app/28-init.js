@@ -45,7 +45,7 @@ async function refreshAIPushMessages(opts){
     const identity = ls('totry_identity') || '';
     const sys = 'You write short, warm push-notification lines for a whole-life self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend in their corner. '+((typeof faithVoiceNote==='function')?faithVoiceNote():'')+'Return ONLY JSON.';
     const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of '+((typeof faithTradition==='function'&&faithTradition()==='secular')?'self-improvement':'faith and self-improvement')+''+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
-    const raw = await api(sys, [], prompt, 700);
+    const raw = await api(sys, [], prompt, 700, { quiet:true });
     const m = raw.match(/\{[\s\S]*\}/);
     if(!m) return;
     const sets = JSON.parse(m[0]);
@@ -423,8 +423,20 @@ async function _purgeSyncedPhotos(){
 }
 function metricsOff(){ try{ return localStorage.getItem('totry_no_metrics')==='1'; }catch(_){ return false; } }
 function toggleMetrics(){
-  const off = !metricsOff();
-  try{ localStorage.setItem('totry_no_metrics', off?'1':'0'); }catch(_){}
+  // THE SAME DEFECT AS toggleAICoach, and found there: on a full device the write throws, the catch
+  // swallows it, and the toast says "You won't be counted at all" while metricsOff() still reads
+  // false. Smaller stakes than the coach switch, identical shape -- and the pair is deliberately
+  // matched, so fixing one and not the other is the half-applied shape.
+  const want = !metricsOff();
+  try{ localStorage.setItem('totry_no_metrics', want?'1':'0'); }catch(_){}
+  const off = metricsOff();
+  if(off !== want){
+    try{ showToast('I could not save that',
+      'This phone has no room left, so the switch did not change. Counting is still '
+      + (off?'off':'on') + '.'); }catch(_){}
+    try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+    return;
+  }
   try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
   try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }

@@ -7523,9 +7523,9 @@ Amen.</div></div>
       <div class="ios-section">
         <div class="ios-header">What the coach can read</div>
         <div class="ios-list">
-          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Let the coach read my data</span><span class="ios-row-sub" style="display:block">Needed for the coach, the companion and the food camera</span></span><input type="checkbox" class="ios-switch" id="ai-toggle-btn" aria-label="Let the coach read my data" onclick="toggleAICoach()"></label>
+          <label class="ios-row"><span class="ios-row-body"><span class="ios-row-title" style="display:block">Let the coach read my data</span><span class="ios-row-sub" style="display:block">Needed by everything the coach writes for you</span></span><input type="checkbox" class="ios-switch" id="ai-toggle-btn" aria-label="Let the coach read my data" onclick="toggleAICoach()"></label>
         </div>
-        <div class="ios-footnote">On, it sends what it needs to answer you — including twice on each first open of the day, to write your morning sentence and your weekly read, without asking. Off, nothing goes to a model at all. Everything else still works: your logs, reminders, backups, scripture, the fight, food search and barcodes.</div>
+        <div class="ios-footnote">On, it sends what it needs to answer you — including once on your first open of each day, to write your morning sentence, and again when it writes your weekly read. Neither asks you first. Off, nothing goes to a model at all. Everything else still works: your logs, reminders, backups, your reading plan and saved verses, the fight, food search and barcodes. What stops is anything the coach writes for you: a searched verse, a written prayer, a meal plan, a photo read.</div>
       </div>
 
       <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
@@ -8881,7 +8881,7 @@ function applyTextScale(){
   }catch(_){ return 1; }
 }
 
-const APP_VERSION = 'v671';
+const APP_VERSION = 'v672';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9247,7 +9247,12 @@ async function signOut(){
     // Clear local data so next user gets clean slate
     const keys = Object.keys(localStorage);
     keys.forEach(k => {
-      if(k.startsWith('totry_') && k !== 'totry_auth_session') {
+      // The two device privacy refusals survive. They are deliberately not synced, so a wipe here
+      // is permanent -- and the dialog above promises "everything synced comes back", which these
+      // never were. Keeping them also fails SAFE: the next person on this device inherits "do not
+      // send" and can see the row and turn it on.
+      if(k.startsWith('totry_') && k !== 'totry_auth_session'
+         && k !== 'totry_ai_off' && k !== 'totry_no_metrics') {
         localStorage.removeItem(k);
       }
     });
@@ -13494,10 +13499,25 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 function aiOff(){ try{ return localStorage.getItem('totry_ai_off')==='1'; }catch(_){ return false; } }
 
 function toggleAICoach(){
-  const off = !aiOff();
-  try{ localStorage.setItem('totry_ai_off', off?'1':'0'); }catch(_){}
+  const want = !aiOff();
+  try{ localStorage.setItem('totry_ai_off', want?'1':'0'); }catch(_){}
+  // READ IT BACK. On a full device that write throws, the catch swallows it, and claiming the switch
+  // took effect is the one lie this whole feature exists to remove -- the person believes they
+  // declined and every send continues. Measured: stored=null, aiOff()=false, row rendering OFF.
+  const off = aiOff();
+  if(off !== want){
+    try{ showToast('I could not save that',
+      'This phone has no room left, so the switch did not change. Settings → Your data → Export, '
+      + 'or clear some space, then try again. Nothing about what the coach sends has changed yet.'); }catch(_){}
+    try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+    return;
+  }
+  // The reason is a global that only the next call overwrites, so switching back ON has to clear it
+  // or getAIErrorMessage() keeps answering "the coach is switched off" to a surface that renders
+  // before anything is asked.
+  try{ if(!off && window.__lastAIError && window.__lastAIError.error==='ai_off') window.__lastAIError = null; }catch(_){}
   try{ showToast(off?'The coach is off':'The coach is back',
-    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. What you log stays on this phone and in your own backup.'
+    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. Your logs still sync to your own account the same as before; this switch is only about what a model is shown.'
        :'Thank you — it can read your data again to answer you.'); }catch(_){}
   try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
@@ -13508,10 +13528,23 @@ function toggleAICoach(){
 // made, the same wrong as a "Saved · I read what you wrote" toast on a surface that stores nothing.
 // So each entry point refuses BEFORE it does any work, and the true thing is said once, in one place.
 // Returns true when it refused, so a call site reads `if(aiOffNotice('…')) return;`.
+// THE SENTENCE LIVES IN ONE PLACE AND IS DELIVERED THREE WAYS. A toast is right for a button that
+// owns no container; a surface with its own results box renders it THERE, because a toast over an
+// empty box is exactly the dead end this is replacing. _barcodeVisionLookup already did that by
+// hand, which is what made it worth naming.
+function aiOffLine(what){
+  return (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.';
+}
 function aiOffNotice(what){
   if(!aiOff()) return false;
-  try{ showToast('The coach is off', (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.'); }catch(_){}
+  try{ showToast('The coach is off', aiOffLine(what)); }catch(_){}
   return true;
+}
+// For a surface that writes into its own element. Returns the markup so the caller keeps control of
+// where it lands, and the caller is still responsible for the net (see searchBible).
+function aiOffHtml(what){
+  const esc = String(aiOffLine(what)).replace(/</g,'&lt;');
+  return '<div class="ios-empty"><div class="ios-empty-body">' + esc + '</div></div>';
 }
 
 // THE ONE DOOR EVERY MODEL CALL GOES THROUGH. Eleven sites invoked ai-proxy directly before this
@@ -13551,9 +13584,18 @@ async function api(sys, hist, msg, tok, opts){
   // somebody remembering. It sits ABOVE trackAPIUsage on purpose — a call that never happens must
   // not be counted as one — and it returns '' rather than throwing, because that is what api()
   // already returns when every provider fails, so no caller needs a new shape.
-  if(aiOff()){ window.__lastAIError = { error:'ai_off' }; return ''; }
-  tok = Math.max(tok || 1200, 2000);
   opts = opts || {};
+  if(aiOff()){
+    window.__lastAIError = { error:'ai_off' };
+    // SAY IT HERE, so the thirteen surfaces that hand-write "Couldn't reach the coach right now" are
+    // no longer the only thing the person reads -- and so the fourteenth, written later, is covered
+    // without anybody remembering. opts.quiet is for the paths that run with no tap behind them (the
+    // SOS verse, the launch push refresh, the companion opening itself at a threshold): a toast
+    // nobody asked for is the overbearing thing this app refuses to be.
+    if(!opts.quiet && typeof aiOffNotice==='function'){ try{ aiOffNotice(opts.what); }catch(_){ } }
+    return '';
+  }
+  tok = Math.max(tok || 1200, 2000);
   const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
   // Deadline for everything below. Two methods are tried in sequence; giving each the full ceiling
   // made the real wait double the number the caller asked for, on the surface where it matters most.
@@ -13708,7 +13750,11 @@ function aiUnavailableHtml(local){
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
   return (local ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
     '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
-      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.' : ' Nothing is lost — try again in a moment.') +
+      // "try again in a moment" is advice that cannot be followed when the cause is the switch,
+      // and getAIErrorMessage() has already said which it is. Asked rather than assumed.
+      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.'
+                        : (((typeof aiOff==='function') && aiOff()) ? ' Nothing is lost.'
+                                                                    : ' Nothing is lost — try again in a moment.')) +
     '</div>';
 }
 
@@ -13936,7 +13982,7 @@ async function maybeUpdateCoachMemory(){
     // Feed recent conversation + existing summary; ask for a tight evolving memory.
     const recent = cH.slice(-12).map(m => (m.role==='user'?'Them: ':'Coach: ') + (m.content||'').slice(0,300)).join('\n');
     const prompt = 'You keep a SHORT private memory of what this person and their coach have been working through, so the coach can be continuous across conversations. Here is the current memory and the latest conversation. Return an UPDATED memory: 3-5 short bullet-style lines (no markdown bullets, just newline-separated), capturing ongoing themes, what they\u2019re struggling with, what\u2019s helping, and any commitment they made. Keep it under 120 words. Be specific and warm, not clinical. Return ONLY the memory text.\n\nCURRENT MEMORY:\n' + (mem.summary || '(none yet)') + '\n\nLATEST CONVERSATION:\n' + recent;
-    const updated = await api('You maintain a concise, caring memory of an ongoing coaching relationship.', [], prompt, 350);
+    const updated = await api('You maintain a concise, caring memory of an ongoing coaching relationship.', [], prompt, 350, { quiet:true });
     if(updated && updated.trim()){
       mem.summary = updated.trim();
       mem.updated = today;
@@ -14037,7 +14083,10 @@ async function sendCoach(){
     maybeUpdateCoachMemory();
   } else {
     const errMsg = (typeof getAIErrorMessage==='function' && getAIErrorMessage()) || 'The coach is unavailable for a moment.';
-    addMsg('coach-msgs', _netted(t, errMsg + '\n\nWhile it\u2019s down, you can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
+    // "While it's down" asserted a cause. The offer underneath is true either way: the journal
+    // is there whether the coach failed or was switched off, so it stops naming a reason and
+    // leaves errMsg above as the only thing that does.
+    addMsg('coach-msgs', _netted(t, errMsg + '\n\nYou can still get it out — tap to write it in your journal instead, and bring it to the coach later.'), 'coach');
     const msgs = document.getElementById('coach-msgs');
     if(msgs){
       const btn = document.createElement('button');
@@ -19119,6 +19168,7 @@ async function showRoutineRecommender(){
 }
 
 async function generateRecommendation(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Recommending a split')) return;
   const days=document.getElementById('rec-days')?.value;
   const goal=document.getElementById('rec-goal')?.value;
   const exp=document.getElementById('rec-exp')?.value;
@@ -20872,7 +20922,7 @@ async function fetchSosVerse(i){
   try{ if(typeof faithTradition==='function' && faithTradition() !== 'christianity') return; }catch(_){}
   try{
     const prompt='Someone is fighting an urge for "'+v.n+'" (category: '+pb.label+'). It usually hits when: '+v.t+'. Find the single most relevant ESV verse for resisting THIS specific kind of temptation right now. A strong default for this category is '+pb.verseRef+', but choose what fits best.';
-    const raw=await api(BIBLE_SYS,[],prompt,900);
+    const raw=await api(BIBLE_SYS,[],prompt,900,{ quiet:true });
     if(raw){const m=raw.match(/\{[\s\S]*?\}/);if(m){const d=JSON.parse(m[0]);if(d.verse&&d.reference&&d.verse.length>15)sosVerseData=d;}}
   }catch(e){}
 }
@@ -24243,7 +24293,7 @@ async function _researchProtocol(name, key){
     // the person's tradition (and says "no religious framing" for secular).
     const _fv = (typeof faithVoiceNote==='function') ? faithVoiceNote() : '';
     const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. " + ((typeof faithTradition==='function' && faithTradition()!=='secular') ? 'Then in one more sentence, note how their faith can anchor it. ' : '') + "Return ONLY the guidance text, no preamble.";
-    const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000 });
+    const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000, quiet:true });
     // Length is not validity. This cached ANY long string as the clinical spine for a struggle, and
     // the rate-limit notice is 140 characters — so a billing message became the permanent protocol
     // for someone's 2am, injected into every prompt after it. Only cache a real answer.
@@ -25260,7 +25310,7 @@ async function _companionSay(userText, opening){
       // malformed for Anthropic's API and confusing for the rest of the chain, at the one conversation
       // that matters most: the 2am door. sendPT already does this correctly with ptH.slice(0,-1).
       const _hist = userText ? _compHistory.slice(0, -1) : _compHistory;
-      reply = await api(sys, _hist, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000 });
+      reply = await api(sys, _hist, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000, quiet: opening === true });
     }catch(_){ reply = ''; }
   }
   if(typing) typing.style.display='none';
@@ -29285,7 +29335,12 @@ Return ONLY a raw JSON array. No markdown.
     if(card)card.style.display='block';
   } else if(card){
     card.style.display='block';
-    card.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
+    // NOT guarded on the switch, on purpose: the thematic bank above is local, so this door keeps
+    // working with the coach off. Only the sentence needed correcting -- "check your connection" is
+    // wrong when the cause is a switch the person flipped.
+    card.innerHTML=(((typeof aiOff==='function') && aiOff()) && typeof aiOffHtml==='function')
+      ? aiOffHtml('Finding verses for how you feel')
+      : '<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
   }
 }
 function saveCurrentVerse(){
@@ -30424,6 +30479,14 @@ function nextChapter(){
   else{const idx=BIBLE_BOOKS.findIndex(b=>b.id===bookSel.value);if(idx<BIBLE_BOOKS.length-1){bookSel.value=BIBLE_BOOKS[idx+1].id;onBibleBookChange(false);document.getElementById('br-chapter').value=1;loadBibleChapter();}}
 }
 async function searchBible(query){
+  // REFUSED HERE, WITH THE NET STILL RUN. Measured by driving: a stacked reason+plan typed into this
+  // box names a human with the coach on and NO human with it off, because _netNoteInto() hangs off
+  // the RENDER path below and the render is what goes away. The keyword floor deliberately REFUSES
+  // that class on the stated grounds that it belongs on the surfaces that read a whole message, so
+  // this net is the only thing behind that refusal. The crisis gate below still runs first; this
+  // guard is placed after it for exactly that reason.
+  // (The detectCrisis gate sits BELOW on purpose: a disclosure it catches must reach the card
+  //  whether the coach is on or off, so the switch must never short-circuit it.)
   // SAFETY GATE — people type how they actually feel into a scripture search. If that's a
   // disclosure, a verse is not the answer; a human is. Same reasoning as findVerse.
   try{
@@ -30490,6 +30553,18 @@ async function searchBible(query){
   }
   
   // SITUATIONAL MODE — reason purely from what the user wrote. No stored assumptions.
+  // The switch, asked AFTER the crisis gate above and BEFORE anything is sent. The results box gets
+  // the true sentence rather than "Couldn't reach scripture right now", and the net still runs on
+  // what they typed, so a stacked reason+plan is answered by a person and not by silence.
+  if(typeof aiOff==='function' && aiOff()){
+    const _r=document.getElementById('br-search-results');
+    if(_r){
+      _r.style.display='';
+      _r.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Searching scripture by how you feel'):'';
+      try{ if(typeof _netNoteInto==='function') _netNoteInto(_r, query); }catch(_){ }
+    } else if(typeof aiOffNotice==='function'){ aiOffNotice('Searching scripture by how you feel'); }
+    return;
+  }
   const histKey='totry_bible_search_history_'+query.toLowerCase().slice(0,40);
   const shown=ls(histKey)||[];
   const excludeList=shown.length>0?'\n\nThey have already been shown these — pick different ones: '+shown.join(', ')+'.':'';
@@ -30612,6 +30687,18 @@ async function generateIntentionPrayer(pfx){
       }
     }
   }catch(_){}
+  // The switch, asked after the crisis gate above and before anything is sent. "Couldn't write that
+  // just now. Try again in a moment." was a lie about a choice they made, and trying again would
+  // never have worked.
+  if(typeof aiOff==='function' && aiOff()){
+    const _o = document.getElementById(pfx + '-out');
+    if(_o){
+      _o.style.display='block';
+      _o.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Writing this for you'):'';
+      try{ if(typeof _netNoteInto==='function') _netNoteInto(_o, intention); }catch(_){ }
+    } else if(typeof aiOffNotice==='function'){ aiOffNotice('Writing this for you'); }
+    return;
+  }
   const btn = document.getElementById(pfx + '-btn'); const out = document.getElementById(pfx + '-out');
   if(btn){ btn.textContent='Writing...'; btn.disabled=true; }
   try{
@@ -30666,6 +30753,11 @@ async function showSaintPrayer(saint, title){
   const out = document.getElementById('saint-prayer-out');
   if(!out) return;
   out.style.display='block';
+  // "Couldn't reach the library right now" named a failure that had not happened.
+  if(typeof aiOff==='function' && aiOff()){
+    out.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Bringing this prayer across'):'';
+    return;
+  }
   out.innerHTML='<p class="pulsing tr-loading">Bringing '+saint+'\u2019s words...</p>';
   try{
     const sys='You provide the authentic, traditional text of well-known Catholic prayers exactly as commonly prayed. Return only the prayer text, no commentary or title.';
@@ -30683,6 +30775,7 @@ async function showSaintPrayer(saint, title){
 }
 
 async function generatePrayerFor(situation, verse){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Writing a prayer for this')) return;
   const res=document.getElementById('br-search-results');
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');
@@ -31712,11 +31805,34 @@ async function generateWeeklyCoachResponse(entry){
       // and NOTHING happened. The toast forty lines up already told them "Your coach is reading your
       // week…", so silence here reads as being ignored right after being asked to be honest.
       const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) || 'I could not reach the coach just now.';
-      showToast('Check-in saved', why + ' Your week is logged — open it again in a bit and I will read it back.');
+      // THE NET BELONGS ON THIS BRANCH TOO. The success branch above nets win+struggle+focus as one
+      // message; with the coach off there is no reply, so the net never ran and a reason plus a plan
+      // typed into "what did you struggle with" reached nobody. _netNoteInto needs an element, and
+      // this branch only has a toast, so the line goes in the toast itself.
+      let _tail = ' Your week is logged — open it again in a bit and I will read it back.';
+      if(typeof aiOff==='function' && aiOff()) _tail = ' Your week is logged.';
+      // Through _netted(), not by calling _humanNetLine() directly: the helpers are what ask
+      // _needsHumanNet, including its "the reply already names a human" half, and a pre-existing
+      // invariant holds that nothing reaches past them. The fields are the same three the success
+      // branch nets, judged as ONE message because they are typed on one screen and submitted
+      // together.
+      let _netFired = false;
+      try{
+        if(typeof _netted === 'function'){
+          const _before = _tail;
+          _tail = _netted([entry.win, entry.struggle, entry.focus].filter(Boolean).join(' '), _tail);
+          _netFired = _tail !== _before;
+        }
+      }catch(_){ }
+      // A toast is gone in five seconds (seven with a tap target), which is a weaker home for a
+      // helpline than the persistent bubble the chat surfaces give it. So when the net fires, the
+      // toast routes to bridgeToRealHelp -- numbers this project has hit-tested, behind a tap.
+      showToast('Check-in saved', why + _tail,
+        _netFired && typeof bridgeToRealHelp === 'function' ? function(){ bridgeToRealHelp('heavy'); } : undefined);
     }
   } catch(e){
     console.error('Coach response failed:', e);
-    showToast('Coach offline','Your check-in is saved. Coach response will retry later.');
+    showToast('Coach offline','Your check-in is saved.' + (((typeof aiOff==='function') && aiOff()) ? '' : ' Coach response will retry later.'));
   }
 }
 // Recent weight entries with delete — weight was previously un-removable (a "trapped entry").
@@ -33942,9 +34058,6 @@ function downscaleImage(file, maxDim, quality){
 // ── AI MEAL PHOTO (beats Cal AI — our Coach IS Claude) ──
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
-  // Refused BEFORE the file is read, so nothing is downscaled, no spinner starts and the person is
-  // not told "the connection dropped it" about a switch they themselves turned off.
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   const file = event.target.files?.[0];
   // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
   // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
@@ -33953,6 +34066,11 @@ async function handleMealPhoto(event){
   const _from = (event.target && event.target.id === 'meal-camera-input') ? 'camera' : 'library';
   try{ window.__mealPhotoFrom = _from; }catch(_){}
   event.target.value = '';
+  // Refused before anything is READ, downscaled or put on screen, and the person is not told "the
+  // connection dropped it" about a switch they themselves turned off -- but AFTER the line above,
+  // because a file input that keeps its value never fires `change` again, so refusing any earlier
+  // made re-picking the same photo do nothing once the coach was switched back on.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a photo of your meal.'); return; }
   const res = document.getElementById('nut-search-results');
@@ -35961,9 +36079,9 @@ function _recipeDraft(recipe){
 // Built on the vision call that already reads a workout summary and a plate of food, and it lands in
 // the SAME editable draft as the other two doors.
 async function handleRecipeScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   const file = event && event.target && event.target.files && event.target.files[0];
   if(event && event.target) event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   if(!file) return;
   if(!String(file.type||'').startsWith('image/')){
     if(typeof showToast==='function') showToast('Wrong file', 'Pick an image of the recipe.');
@@ -36029,6 +36147,7 @@ async function parsePastedRecipe(){
   // counts someone's clean days telling them that opening Instagram is productive meal planning.
   // So this path never names a platform and never offers to open one: it takes a link, from
   // wherever the person already had it.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Building a recipe from what you pasted')) return;
   const _url = (text.match(/https?:\/\/[^\s<>"']+/) || [])[0] || '';
   if(btn){ btn.textContent = _url ? 'Reading that page…' : 'Working out the macros…'; btn.disabled=true; }
   // web_search:true is Gemini's google_search grounding — the same capability the live-price pass and
@@ -41629,6 +41748,18 @@ function _fuelMergeRecipeShopping(plan){
 }
 
 async function _fuelGenerate(){
+  // REFUSED BEFORE THE SPINNER. openFuelPlan() calls this directly whenever prefs already exist, so
+  // with the coach off, opening the Fuel plan screen used to show "Building your plan..." and then
+  // "Couldn't build it just now - try again in a moment." A plan they already have is their own data,
+  // so it is rendered rather than withheld; only the building is declined.
+  if(typeof aiOff==='function' && aiOff()){
+    const _have = ls('totry_meal_plan');
+    if(_have && _have.meals && _have.meals.length && typeof _fuelRenderPlan==='function'){
+      try{ _fuelRenderPlan(_have); }catch(_){ }
+    }
+    if(typeof aiOffNotice==='function') aiOffNotice('Building a meal plan');
+    return;
+  }
   const p = getMealPrefs();
   const ctx = _fuelCtx();
   let cal = ctx.cal;
@@ -41821,6 +41952,7 @@ function _fuelRenderPlan(plan){
 // Close the target gap in one tap — add a snack sized to the remaining calories/protein.
 async function _fuelAddSnack(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Adding a snack to your plan')) return;
   const p = getMealPrefs(); const dietStr = _fuelDietStr(p);
   const dayCal = plan.meals.reduce(function(a,m){return a+(m.cal||0);},0), dayPro = plan.meals.reduce(function(a,m){return a+(m.pro||0);},0);
   const tgt = (plan.targets&&plan.targets.cal)||0, tgtP = (plan.targets&&plan.targets.pro)||0;
@@ -41863,6 +41995,7 @@ function _fuelSaneMeal(meal){
 }
 async function _fuelSwapMeal(i){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Swapping a meal')) return;
   const p = getMealPrefs();
   const dietStr = _fuelDietStr(p);
   const old = plan.meals[i];
@@ -42075,6 +42208,7 @@ async function _fuelLogPlan(btn){
 // A focused web-search pass to replace estimated prices with real, cited ones (per store).
 async function _fuelLivePrices(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping.length) return;
+  if(typeof aiOffNotice==='function' && aiOffNotice('Looking up live prices')) return;
   const p = getMealPrefs();
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain||'');
   if(typeof showToast==='function') showToast('Checking prices…', 'Looking up current prices at '+(shopsStr||'your shops')+'.');
@@ -42108,6 +42242,10 @@ async function parseCalendarAI(){
   // page; this door just never asked. Gated before the text leaves the device.
   const _calC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
   if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC, null, { saved: false })) return;
+  // Below the crisis gate, above the send. With the coach off this used to throw 'parse' on an empty
+  // reply and land on the ONE branch that does not route through getAIErrorMessage -- "Couldn't read
+  // that clearly ... or rephrase", which blames their wording for a switch they flipped.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a pasted roster')) return;
   if(btn){ btn.textContent = 'Reading...'; btn.disabled = true; }
   try{
     const sys = 'You extract calendar events from messy text (work rosters, class timetables, plain notes) into strict JSON. Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';
@@ -46120,6 +46258,12 @@ function _disciplineThread(){
 async function generateWeeklyContent(){
   const box = document.getElementById('weekly-content-out');
   const btn = document.getElementById('weekly-content-btn');
+  // "Couldn't reach the producer right now" named a failure that had not happened.
+  if(typeof aiOff==='function' && aiOff()){
+    if(box){ box.style.display='block'; box.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Assembling this week\u2019s content'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Assembling this week\u2019s content'); }
+    return;
+  }
   if(btn){ btn.textContent='Assembling\u2026'; btn.disabled=true; }
   try{
     const d = _disciplineThread();
@@ -46153,6 +46297,15 @@ async function generateWeeklyContent(){
 async function generateWeeklyReflection(){
   const box = document.getElementById('weekly-reflection-out');
   const btn = document.getElementById('weekly-reflection-btn');
+  // Worse than a false sentence: with the coach off, api() returns '' and the block that builds this
+  // card is skipped entirely, so "Reflect on my week" left a COMPLETELY EMPTY card on screen. Silence
+  // reads as "there is nothing to say about you", which is the thing aiUnavailableHtml() was written
+  // for two cards away.
+  if(typeof aiOff==='function' && aiOff()){
+    if(box){ box.style.display='block'; box.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Reflecting on your week'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Reflecting on your week'); }
+    return;
+  }
   if(btn){ btn.textContent='Reflecting...'; btn.disabled=true; }
   try{
     const s = _weekStats();
@@ -48729,9 +48882,9 @@ function saveCardioManually(){
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){
     showToast('Wrong file', 'Please upload an image of your workout summary.');
@@ -49296,6 +49449,9 @@ function openGoalRoutine(){
 }
 async function generateGoalRoutine(){
   const goal=(document.getElementById('goal-routine-input')||{}).value||'';
+  // The switch is asked BELOW the crisis gate (see the comment under this one) and before anything
+  // is sent, because "Couldn't draft that. Try describing your goal differently." blames their words
+  // for a choice they made.
   // GATED, 12 Oct 2026 — ABOVE the empty-field check, because a validation rule must never be able
   // to outrank a disclosure (the Sunday check-in's out-of-band weight, recorded in CLAUDE.md, and
   // rebuilt by me in saveQuickLog an hour ago). This text is sent straight to a MODEL.
@@ -49306,6 +49462,12 @@ async function generateGoalRoutine(){
   }
   if(!goal.trim()){ showToast('Tell me your goal','Describe what you\u2019re training for first.'); return; }
   const btn=document.getElementById('goal-routine-btn'); const out=document.getElementById('goal-routine-out');
+  if(typeof aiOff==='function' && aiOff()){
+    const _o=document.getElementById('goal-routine-out');
+    if(_o){ _o.style.display='block'; _o.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Drafting a routine'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Drafting a routine'); }
+    return;
+  }
   if(btn){ btn.textContent='Drafting...'; btn.disabled=true; }
   try{
     const sys='You are an expert strength coach. Design safe, effective, evidence-based routines. Respect stated limits/injuries. Return ONLY JSON.';
@@ -50295,7 +50457,7 @@ async function getProgressiveSuggestion(){
   }catch(_){ }
   const todayFocus=getUserSplit()[tIdx()]?.focus||'Workout';
   const recent=history.slice(0,3).map(s=>((s&&Array.isArray(s.exercises))?s.exercises:[]).map(ex=>(ex&&ex.name||'?')+': '+((ex&&Array.isArray(ex.sets))?ex.sets:[]).map(set=>(set&&set.weight!=null?set.weight:'?')+'kg\u00d7'+(set&&set.reps!=null?set.reps:'?')).join(', ')).join('; ')).join('\n');
-  const suggestion=await api(buildPTCtx(),[],'Based on these recent sessions:\n'+recent+'\nToday is '+todayFocus+'. Give specific progressive overload targets — what weight and reps to aim for on the main lifts, with a sentence of why for each. Be concrete with numbers; a short paragraph is fine.',500);
+  const suggestion=await api(buildPTCtx(),[],'Based on these recent sessions:\n'+recent+'\nToday is '+todayFocus+'. Give specific progressive overload targets — what weight and reps to aim for on the main lifts, with a sentence of why for each. Be concrete with numbers; a short paragraph is fine.',500,{ quiet:true });
   if(suggestion){const el=_el();if(el)el.textContent=suggestion;
     try{ ls('totry_ai_pt_sugg', { k:_k, v:suggestion }); }catch(_){ }}
 }
@@ -55927,7 +56089,11 @@ async function deleteAccount(){
   }
   
   // Wipe local
-  const keep = ['totry_theme']; // Keep theme so post-delete login isn't jarring
+  // Keep theme so post-delete login isn't jarring, and keep the two device privacy refusals for the
+  // reason in signOut(): they are about this phone, not the account being deleted, and inheriting
+  // "do not send" fails safe. "Start fresh on this device" deliberately keeps NEITHER -- its copy
+  // says it clears everything on this phone, and it asks twice.
+  const keep = ['totry_theme', 'totry_ai_off', 'totry_no_metrics'];
   Object.keys(localStorage).forEach(k => {
     if(k.startsWith('totry_') && !keep.includes(k)) localStorage.removeItem(k);
   });
@@ -55978,7 +56144,7 @@ function showPrivacyPolicy(){
       // body weight, calories and protein, debt remaining, money in/out, average day rating, sleep
       // (HealthKit-sourced included) and up to FOUR journal entries word for word.
       // The old sentence was the basis on which somebody would judge the risk, and it was false.
-      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider. <strong>You can stop all of it.</strong> Settings → Your data → “Let the coach read my data”. Switched off, nothing goes to a model at all — including the two sends above that you are not asked about — and everything else keeps working: your logs, reminders, backups, scripture, the fight, food search and barcodes.</li>' +
+      '<li><strong>Coach &amp; AI features</strong> — two kinds of send, and the second one was not disclosed until 30 Oct 2026. FIRST: when you write to the coach, your message goes with relevant context (recent state from your logs). SECOND, and you are not asked: on your first open of the day — and again when it writes the weekly reflection — the app sends that context <strong>on its own, with no message from you</strong>, to write the day’s sentence. That context is a summary of your whole day: sleep, recent training, your weight, calories and protein, your clean-day counts for each thing you are fighting, money in and out, how you have rated your days, the sentence you wrote about who you are becoming and why this matters to you, and <strong>the text of your few most recent journal entries, word for word</strong>. It goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. Many retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume both your messages <em>and that daily context</em> may be reviewed by automated systems and retained briefly by the provider. <strong>You can stop all of it.</strong> Settings → Your data → “Let the coach read my data”. Switched off, nothing goes to a model at all — including the two sends above that you are not asked about — and everything else keeps working: your logs, reminders, backups, your reading plan and saved verses, the fight, food search and barcodes. What stops is anything the coach writes for you: a searched verse, a written prayer, a meal plan, a photo read.</li>' +
         '<li><strong>Photos you send to the coach</strong> \u2014 six things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter, Mistral, Cloudflare or NVIDIA as fallbacks): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, a <strong>smart-scale screenshot</strong> (your weight and body composition are in it), and a <strong>recipe screenshot</strong> (a photo of a recipe card or page, or a screenshot of one \u2014 whatever is in that picture goes with it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
         '<li><strong>Food search</strong> — when you type a food name, that text goes to <strong>four</strong> nutrition databases at once, and the first useful answers are merged: USDA (api.nal.usda.gov), FatSecret, Open Food Facts (au.openfoodfacts.org) and Nutritionix. FatSecret and Nutritionix are reached through my own server, which holds the keys, so they see the words you typed and not you. This used to be described as "the barcode is sent to OpenFoodFacts", which was true of scanning and understated searching — corrected 30 Oct 2026.</li><li><strong>Barcode scanning</strong> — the barcode number is sent to Open Food Facts. If the camera cannot read the code, the photo path above applies instead.</li>' +
         
@@ -56569,7 +56735,7 @@ async function refreshAIPushMessages(opts){
     const identity = ls('totry_identity') || '';
     const sys = 'You write short, warm push-notification lines for a whole-life self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend in their corner. '+((typeof faithVoiceNote==='function')?faithVoiceNote():'')+'Return ONLY JSON.';
     const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of '+((typeof faithTradition==='function'&&faithTradition()==='secular')?'self-improvement':'faith and self-improvement')+''+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
-    const raw = await api(sys, [], prompt, 700);
+    const raw = await api(sys, [], prompt, 700, { quiet:true });
     const m = raw.match(/\{[\s\S]*\}/);
     if(!m) return;
     const sets = JSON.parse(m[0]);
@@ -56947,8 +57113,20 @@ async function _purgeSyncedPhotos(){
 }
 function metricsOff(){ try{ return localStorage.getItem('totry_no_metrics')==='1'; }catch(_){ return false; } }
 function toggleMetrics(){
-  const off = !metricsOff();
-  try{ localStorage.setItem('totry_no_metrics', off?'1':'0'); }catch(_){}
+  // THE SAME DEFECT AS toggleAICoach, and found there: on a full device the write throws, the catch
+  // swallows it, and the toast says "You won't be counted at all" while metricsOff() still reads
+  // false. Smaller stakes than the coach switch, identical shape -- and the pair is deliberately
+  // matched, so fixing one and not the other is the half-applied shape.
+  const want = !metricsOff();
+  try{ localStorage.setItem('totry_no_metrics', want?'1':'0'); }catch(_){}
+  const off = metricsOff();
+  if(off !== want){
+    try{ showToast('I could not save that',
+      'This phone has no room left, so the switch did not change. Counting is still '
+      + (off?'off':'on') + '.'); }catch(_){}
+    try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+    return;
+  }
   try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
   try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.checked = !off; }catch(_){}
 }
@@ -61913,9 +62091,9 @@ function importEufyCSV(event){
 // entry. A confirmation step lets the man correct any misread digit before saving —
 // honest data matters more than speed.
 async function importScaleScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a screenshot of your scale stats.'); return; }
   showToast('Reading your scale...', 'One moment while I read the numbers.');

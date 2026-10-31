@@ -578,11 +578,34 @@ async function generateWeeklyCoachResponse(entry){
       // and NOTHING happened. The toast forty lines up already told them "Your coach is reading your
       // week…", so silence here reads as being ignored right after being asked to be honest.
       const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) || 'I could not reach the coach just now.';
-      showToast('Check-in saved', why + ' Your week is logged — open it again in a bit and I will read it back.');
+      // THE NET BELONGS ON THIS BRANCH TOO. The success branch above nets win+struggle+focus as one
+      // message; with the coach off there is no reply, so the net never ran and a reason plus a plan
+      // typed into "what did you struggle with" reached nobody. _netNoteInto needs an element, and
+      // this branch only has a toast, so the line goes in the toast itself.
+      let _tail = ' Your week is logged — open it again in a bit and I will read it back.';
+      if(typeof aiOff==='function' && aiOff()) _tail = ' Your week is logged.';
+      // Through _netted(), not by calling _humanNetLine() directly: the helpers are what ask
+      // _needsHumanNet, including its "the reply already names a human" half, and a pre-existing
+      // invariant holds that nothing reaches past them. The fields are the same three the success
+      // branch nets, judged as ONE message because they are typed on one screen and submitted
+      // together.
+      let _netFired = false;
+      try{
+        if(typeof _netted === 'function'){
+          const _before = _tail;
+          _tail = _netted([entry.win, entry.struggle, entry.focus].filter(Boolean).join(' '), _tail);
+          _netFired = _tail !== _before;
+        }
+      }catch(_){ }
+      // A toast is gone in five seconds (seven with a tap target), which is a weaker home for a
+      // helpline than the persistent bubble the chat surfaces give it. So when the net fires, the
+      // toast routes to bridgeToRealHelp -- numbers this project has hit-tested, behind a tap.
+      showToast('Check-in saved', why + _tail,
+        _netFired && typeof bridgeToRealHelp === 'function' ? function(){ bridgeToRealHelp('heavy'); } : undefined);
     }
   } catch(e){
     console.error('Coach response failed:', e);
-    showToast('Coach offline','Your check-in is saved. Coach response will retry later.');
+    showToast('Coach offline','Your check-in is saved.' + (((typeof aiOff==='function') && aiOff()) ? '' : ' Coach response will retry later.'));
   }
 }
 // Recent weight entries with delete — weight was previously un-removable (a "trapped entry").

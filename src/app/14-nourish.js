@@ -1153,9 +1153,6 @@ function downscaleImage(file, maxDim, quality){
 // ── AI MEAL PHOTO (beats Cal AI — our Coach IS Claude) ──
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
-  // Refused BEFORE the file is read, so nothing is downscaled, no spinner starts and the person is
-  // not told "the connection dropped it" about a switch they themselves turned off.
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   const file = event.target.files?.[0];
   // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
   // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
@@ -1164,6 +1161,11 @@ async function handleMealPhoto(event){
   const _from = (event.target && event.target.id === 'meal-camera-input') ? 'camera' : 'library';
   try{ window.__mealPhotoFrom = _from; }catch(_){}
   event.target.value = '';
+  // Refused before anything is READ, downscaled or put on screen, and the person is not told "the
+  // connection dropped it" about a switch they themselves turned off -- but AFTER the line above,
+  // because a file input that keeps its value never fires `change` again, so refusing any earlier
+  // made re-picking the same photo do nothing once the coach was switched back on.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a meal photo')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a photo of your meal.'); return; }
   const res = document.getElementById('nut-search-results');
@@ -3172,9 +3174,9 @@ function _recipeDraft(recipe){
 // Built on the vision call that already reads a workout summary and a plate of food, and it lands in
 // the SAME editable draft as the other two doors.
 async function handleRecipeScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   const file = event && event.target && event.target.files && event.target.files[0];
   if(event && event.target) event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a recipe screenshot')) return;
   if(!file) return;
   if(!String(file.type||'').startsWith('image/')){
     if(typeof showToast==='function') showToast('Wrong file', 'Pick an image of the recipe.');
@@ -3240,6 +3242,7 @@ async function parsePastedRecipe(){
   // counts someone's clean days telling them that opening Instagram is productive meal planning.
   // So this path never names a platform and never offers to open one: it takes a link, from
   // wherever the person already had it.
+  if(typeof aiOffNotice==='function' && aiOffNotice('Building a recipe from what you pasted')) return;
   const _url = (text.match(/https?:\/\/[^\s<>"']+/) || [])[0] || '';
   if(btn){ btn.textContent = _url ? 'Reading that page…' : 'Working out the macros…'; btn.disabled=true; }
   // web_search:true is Gemini's google_search grounding — the same capability the live-price pass and

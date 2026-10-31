@@ -18227,7 +18227,10 @@ H.section('the refusals are assertions now, not comments');
   H.ok(le.indexOf('metricsOff') >= 0 && le.indexOf('app_events') > le.indexOf('metricsOff'),
     'and it refuses BEFORE it reaches app_events, not after');
   const tm = fnOf('toggleMetrics');
-  H.ok(/totry_no_metrics'\s*,\s*off\s*\?\s*'1'\s*:\s*'0'/.test(tm.replace(/\s+/g, ' ')),
+  // The identifier is deliberately not pinned: this assertion's own message says the subject is the
+  // KEY and the VALUE. Pinning `off` made it fail when the full-device fix renamed it to `want`.
+  // Section 14 drives the toggle and asserts the behaviour, which is the stronger half.
+  H.ok(/totry_no_metrics'\s*,\s*\w+\s*\?\s*'1'\s*:\s*'0'/.test(tm.replace(/\s+/g, ' ')),
     'the switch writes the flag metricsOff() reads — the two must agree on the key AND the value');
   H.ok(/GOATCOUNTER_CODE && !metricsOff\(\)/.test(H.code(H.html)),
     'and the third-party counter is behind the same switch');
@@ -19961,7 +19964,12 @@ H.section('the type scale can actually scale');
   try { hevy = H.code(H.extractFn('hevyFetch')); } catch (e) { hevy = ''; }
   H.ok(hevy.length > 100, 'hevyFetch was found by name');
   H.ok(/action\s*:\s*'hevy'/.test(hevy), 'the second raw invoke is the Hevy CORS proxy, identified by its own action');
-  H.ok(!/aiOff\(\)/.test(hevy), 'and it is deliberately NOT gated — gating it would break the Hevy sync for no privacy gain');
+  // EVERY SPELLING of the gate, not one. The refusal is the point: hevyFetch routes a Hevy REST
+  // request through the same edge function for CORS — no model, no personal text — so a sweep of
+  // the function NAME would break the Hevy sync while looking thorough. A check that refuses only
+  // `aiOff()` would pass on `aiOffNotice(...)`, `aiOffHtml(...)` or a bare `aiOff` reference.
+  H.ok(!/\baiOff\b|aiOffNotice|aiOffHtml|aiOffLine|totry_ai_off/.test(hevy),
+    'and it is deliberately NOT gated — in ANY spelling — because gating it would break the Hevy sync for no privacy gain');
 
   // 6. THE GUARD IN api() SITS ABOVE trackAPIUsage. A guard below the thing it guards is not a
   //    guard, and nothing had ever asked that of metricsOff either — same shape, now asserted.
@@ -20062,6 +20070,458 @@ H.section('the type scale can actually scale');
   try { upb = H.code(H.extractFn('updatePartnerBtn')); } catch (e) { upb = ''; }
   H.ok(/ai-toggle-btn/.test(upb) && /aiOff/.test(upb),
     'the row is reflected from storage at boot, so it cannot render ON over a stored OFF');
+}
+
+// ═══ v672 — WHAT THE ADVERSARIAL REVIEW OF v671 FOUND ════════════════════════════
+// Rule 4, on my own commit, one day old. Seven lenses, every finding sent to two refuters told to
+// default to refuted. The yield did not fall off: the worst finding was a FALSE PRIVACY ASSURANCE
+// inside the privacy control itself, and the second worst was a switch that reported success it had
+// not achieved. Each assertion below is paired with the measurement that found it.
+{
+  // 13. THE SWITCH'S OWN CONFIRMATION MUST NOT CLAIM THE DATA STAYS ON THE PHONE.
+  //     My toast said "What you log stays on this phone and in your own backup." totry_journal,
+  //     totry_v, totry_identity and totry_why are all in SYNC_KEYS, so for a signed-in person every
+  //     journal entry is upserted to Supabase exactly as before. A false privacy sentence inside a
+  //     privacy control is the one thing this feature exists to remove.
+  //     EXECUTED, not grepped: the toast text is built at runtime, so the assertion drives the
+  //     function and reads what showToast was handed.
+  {
+    const store = {};
+    const said = [];
+    const L = { getItem: k => (k in store ? store[k] : null),
+                setItem: (k, v) => { store[k] = String(v); },
+                removeItem: k => { delete store[k]; } };
+    const t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
+      localStorage: L,
+      showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
+      document: { getElementById: () => null },
+      window: {},
+    });
+    t.toggleAICoach();
+    const off = said.join(' ');
+    H.ok(/nothing goes to a model/i.test(off), 'the off toast still says what it does stop');
+    H.ok(!/stays on (this )?phone/i.test(off) && !/only on this device/i.test(off),
+      'and it does NOT claim the logs stay on the device, because totry_journal is in SYNC_KEYS');
+    H.ok(/sync/i.test(off) || /account/i.test(off),
+      'it says plainly that syncing is unchanged, so the sentence a person judges the risk on is true');
+  }
+
+  // 13b. aiOffNotice's RETURN VALUE, EXECUTED. All 22 guards read `if(aiOffNotice(...)) return;`, so
+  //      a predicate that returns falsy while the coach is off turns every one of them into a dead
+  //      gate in a single stroke — parses, suite green, does nothing. Both directions.
+  {
+    const said = [];
+    const mk = stored => H.load(['aiOffNotice', 'aiOff', 'aiOffLine'], {
+      localStorage: { getItem: k => (k === 'totry_ai_off' ? stored : null), setItem: () => {}, removeItem: () => {} },
+      showToast: (t, m) => said.push(String(t) + ' :: ' + String(m)),
+      document: { getElementById: () => null }, window: {},
+    });
+    said.length = 0;
+    const offRet = mk('1').aiOffNotice('Reading a meal photo');
+    H.eq(offRet, true, 'aiOffNotice RETURNS TRUE when the coach is off — every guard depends on it');
+    H.ok(/Reading a meal photo/.test(said.join(' ')) && /switched it off/.test(said.join(' ')),
+      'and it says which action, and that the person switched it off');
+    said.length = 0;
+    const onRet = mk(null).aiOffNotice('Reading a meal photo');
+    H.eq(onRet, false, 'CALIBRATION — and FALSE when the coach is on, or every guard would refuse always');
+    H.eq(said.length, 0, 'and says nothing at all when the coach is on');
+  }
+
+  // 14. A PRIVACY SWITCH MAY NOT REPORT SUCCESS IT DID NOT ACHIEVE.
+  //     DRIVEN with the full-device simulation test/panels.js uses (setItem throws for a NEW totry_
+  //     key, which is what totry_ai_off is the first time anybody switches the coach off): measured
+  //     stored=null, aiOff()=false, the row rendering OFF, and the toast saying "Nothing goes to a
+  //     model now". Every send continued while the person believed they had declined.
+  //     The fix is to READ IT BACK, so this executes the toggle against a storage that refuses.
+  [['toggleAICoach', 'aiOff', 'totry_ai_off', 'ai-toggle-btn'],
+   ['toggleMetrics', 'metricsOff', 'totry_no_metrics', 'metrics-toggle-btn']].forEach(function (p) {
+    const store = {};
+    const said = [];
+    const btn = { checked: false };
+    const L = { getItem: k => (k in store ? store[k] : null),
+                setItem: () => { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; },
+                removeItem: k => { delete store[k]; } };
+    let fns;
+    try {
+      fns = H.load([p[0], p[1], 'aiOffLine'], {
+        localStorage: L,
+        showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
+        document: { getElementById: id => (id === p[3] ? btn : null) },
+        window: {},
+      });
+    } catch (e) { fns = null; }
+    H.ok(!!fns, p[0] + ' was found by name — a rename must update this check, not silently drop it');
+    if (!fns) return;
+    let threw = false;
+    try { fns[p[0]](); } catch (e) { threw = true; }
+    H.eq(threw, false, p[0] + ' on a full device does not throw out of the handler');
+    H.eq(fns[p[1]](), false, p[0] + ': the write was refused, so the predicate still reads ON');
+    H.eq(btn.checked, true, p[0] + ': and the row renders the TRUTH (on), not the wish (off)');
+    H.ok(/could not save|no room/i.test(said.join(' ')),
+      p[0] + ': and it says the write failed instead of claiming the switch took effect');
+    H.ok(!/^.*Nothing goes to a model now/.test(said.join(' ')) || /could not save/i.test(said.join(' ')),
+      p[0] + ': never the success sentence on a refused write');
+  });
+
+  // 14b. AND showToast's OWN FULL-DEVICE INTERCEPTOR MUST NOT REWRITE IT. Within two seconds of a
+  //      real failed write, showToast replaces any success-sounding toast with a generic "Not saved".
+  //      The toggle's new message is specific and actionable, and it is the only thing the person has
+  //      to go on — so the two have to be checked against each other rather than assumed compatible.
+  {
+    let sh = '';
+    try { sh = H.code(H.extractFn('showToast')); } catch (e) { sh = ''; }
+    H.ok(/_alreadyHonest/.test(sh), 'showToast still carries its full-device interceptor');
+    const m = (sh.match(/const _alreadyHonest = (\/[^;]+\/i)/) || [])[1];
+    H.ok(!!m, 'and its already-honest pattern was found');
+    if (m) {
+      const re = eval(m);   // the live pattern out of the shipped source, not a copy of it
+      let tg = '';
+      try { tg = H.code(H.extractFn('toggleAICoach')); } catch (e) { tg = ''; }
+      const said = (tg.match(/'I could not save that',[\s\S]{0,400}?'\);/) || [''])[0];
+      H.ok(said.length > 40, 'the full-device message was found in toggleAICoach');
+      H.ok(re.test(said),
+        'and showToast reads it as ALREADY HONEST, so it is not replaced by the generic "Not saved"');
+      H.ok(!re.test('Held your line \u00b7 One more day you chose yourself'),
+        'CALIBRATION \u2014 a genuine success toast is NOT already-honest, so the interceptor still fires on those');
+    }
+  }
+
+  // 15. SIGNING OUT MUST NOT SILENTLY TURN THE COACH BACK ON. The refusal is deliberately not in
+  //     SYNC_KEYS (a cloud-restored truthy value could undo a local privacy choice — the recorded
+  //     notifications defect), so a wipe is permanent, and signOut()'s own dialog promises
+  //     "everything synced comes back". Asserted PER WIPE PATH by name, because there are three and
+  //     they disagree on purpose: "Start fresh on this device" keeps neither, and says so twice.
+  {
+    let so = '';
+    try { so = H.code(H.extractFn('signOut')); } catch (e) { so = ''; }
+    H.ok(so.length > 400, 'signOut was found by name');
+    H.ok(/totry_ai_off/.test(so) && /totry_no_metrics/.test(so),
+      'signing out keeps the two device privacy refusals — they are about this phone, not the account');
+    H.ok(/totry_auth_session/.test(so),
+      'CALIBRATION — the pre-existing exception is still there, so this is the right loop');
+    const su = H.code(H.html);
+    H.ok(/const keep = \[\s*'totry_theme',\s*'totry_ai_off',\s*'totry_no_metrics'\s*\]/.test(su),
+      'deleting the account keeps them too, for the same reason');
+    // And the deliberate exception, asserted so it reads as a decision rather than an omission.
+    const fresh = (su.match(/startsWith\('totry_'\)\|\|k\.startsWith\('strava_'\)[^\n]*/) || [''])[0];
+    H.ok(fresh.length > 0 && !/totry_ai_off/.test(fresh),
+      '"Start fresh on this device" deliberately keeps NEITHER — its copy says it clears everything');
+  }
+
+  // 16. EVERY api() CALL SITE EITHER TELLS THE TRUTH OR CLAIMS NO CAUSE.
+  //     THE CONSTRUCTION-LEVEL CHECK, and the reason it exists is that I counted the surfaces that
+  //     assert a cause they cannot know FOUR TIMES and got 8, 7, 8 and 13 — every sweep wrong in a
+  //     different way (a fixed window missed copy 56 lines down; brace matching ended a function
+  //     before its own api() call, because the prompts are full of JSON braces inside strings;
+  //     tightening an apostrophe budget lost a ’ escape; and extracting quoted strings
+  //     desynchronises on this bundle's mixed quotes). A per-site fix for a set nobody can count is
+  //     the blanket sweep this project fails builds over, so the gate counts it instead: site 38,
+  //     written next month, fails the build the day it is written.
+  //     Derived from the files, never a hardcoded list.
+  {
+    const fs = require('fs'), path = require('path');
+    const dir = path.join(__dirname, '..', 'src', 'app');
+    const TOP = /^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/;
+    const strip = s => s.replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    const norm = s => s.replace(/\\u2019|\\u0027|&#0?39;|&apos;|&#x27;|’|\\'/g, "'");
+    // Only phrases that ASSERT A CAUSE. "Couldn't draft that" names a failure; "Nothing logged yet"
+    // does not, and a check that fails on the second would cry wolf and be deleted.
+    const CAUSE = /couldn'?t (?:reach|write|build|read|add|swap|fetch|assemble|draft)|could not (?:reach|read|write|find)|can'?t reach|cannot reach|check your connection|connection dropped|you'?re offline|is unavailable|coach offline|unreachable|try again (?:in a moment|shortly|later)|didn'?t get through|came back unusable|will retry later/i;
+    const HONEST = /getAIErrorMessage|aiUnavailableHtml|aiOffNotice|aiOffHtml|aiOff\(\)/;
+    const QUIET = /quiet\s*:/;
+    const offenders = [], sites = [];
+    fs.readdirSync(dir).filter(f => /\.js$/.test(f)).sort().forEach(function (f) {
+      const lines = fs.readFileSync(path.join(dir, f), 'utf8').split('\n');
+      // Unit boundaries are LINE-ANCHORED at column 0. No string literal can fake that, which is
+      // what brace matching could not survive here.
+      const starts = [];
+      lines.forEach((ln, i) => { if (TOP.test(ln)) starts.push(i); });
+      starts.forEach(function (s, k) {
+        const end = (k + 1 < starts.length ? starts[k + 1] - 1 : lines.length - 1);
+        const body = lines.slice(s, end + 1).map(strip).join('\n');
+        if (!/\bawait\s+api\s*\(|[^a-zA-Z_$.]api\s*\(/.test(body)) return;
+        const name = lines[s].match(TOP)[1];
+        if (name === 'api') return;
+        sites.push(f + ':' + (s + 1) + ' ' + name);
+        if (HONEST.test(body) || QUIET.test(body)) return;
+        if (CAUSE.test(norm(body))) offenders.push(f + ':' + (s + 1) + ' ' + name + '()');
+      });
+    });
+    H.ok(sites.length >= 30,
+      'the scan found ' + sites.length + ' api() call sites — it is reading the real modules');
+    H.eq(offenders.length, 0,
+      'every api() caller either routes the reason honestly, guards on the switch, or claims no cause'
+      + (offenders.length ? ' — offenders: ' + offenders.join(', ') : ''));
+    // CALIBRATION: plant the defect and require the scan to see it. A scan that returns zero against
+    // a known-bad unit is blind, not clean.
+    {
+      const bad = ['function _probeFake(){',
+                   '  const r = await api(S,[],P,900);',
+                   '  if(!r) show("Couldn\'t reach the coach right now.");',
+                   '}'].join('\n');
+      H.ok(CAUSE.test(norm(bad)) && !HONEST.test(bad) && !QUIET.test(bad),
+        'CALIBRATION — a planted unit that asserts a cause with no guard IS caught');
+      const good = bad.replace("show(\"Couldn't reach the coach right now.\")", 'show(getAIErrorMessage())');
+      H.ok(HONEST.test(good), 'CALIBRATION — and routing it through getAIErrorMessage clears it');
+    }
+  }
+
+  // 17. THE FLOOR SPEAKS, AND THE PATHS NOBODY ASKED FOR STAY SILENT.
+  //     api()'s backstop now says the true thing itself, so the fourteenth surface inherits it. The
+  //     default is to SPEAK and the opt-out is explicit — an inverted default, so forgetting it gives
+  //     somebody a harmless true toast instead of a lie. The six quiet paths were measured per call
+  //     site, not assumed: the SOS verse fires when that screen opens, the push refresh from initApp,
+  //     the companion when it opens ITSELF at a threshold.
+  {
+    let a = '';
+    try { a = H.code(H.extractFn('api')); } catch (e) { a = '' }
+    H.ok(a.length > 400, 'api() was found by name');
+    const g = a.indexOf('aiOff()'), opt = a.indexOf('opts = opts ||');
+    // EXECUTED, not grepped. An `if(false)` around the call leaves the symbol in the source, so a
+    // text check passes on the defect — which is exactly what the fault injection for this showed.
+    {
+      const said = [];
+      const store = { totry_ai_off: '1' };
+      let drove = false, threw = '';
+      try {
+        const e = H.load(['api', 'aiOff', 'aiOffNotice', 'aiOffLine'], {
+          localStorage: { getItem: k => (k in store ? store[k] : null), setItem: () => {}, removeItem: () => {} },
+          showToast: (t, m) => said.push(String(t) + ' :: ' + String(m)),
+          window: {}, sb: null, isOnline: true,
+          document: { getElementById: () => null },
+        });
+        const r = e.api('sys', [], 'msg', 900);
+        drove = true;
+        H.eq(r && typeof r.then === 'function' ? 'promise' : r, 'promise',
+          'api() still returns a promise when it refuses');
+        // H.defer, never `return`: a bare return in a module-level block ends the whole run at
+        // exit 0 with no summary, which is defect (n) in CLAUDE.md.
+        H.defer(r.then(function (txt) {
+          H.eq(txt, '', 'and resolves to the empty string api() already returns when every provider fails');
+          H.ok(/switched it off/i.test(said.join(' ')),
+            'THE FLOOR SPEAKS: api() itself says the true thing, so the fourteenth surface inherits it');
+        }));
+      } catch (err) { threw = String(err && err.message || err); }
+      H.ok(drove, 'api() was driven in the off state' + (threw ? ' — threw: ' + threw : ''));
+    }
+    H.ok(opt > -1 && opt < g,
+      'and opts is defaulted ABOVE the backstop, or opts.quiet throws on every refusal');
+    H.ok(/!opts\.quiet/.test(a), 'the opt-out is explicit, so the default is to tell the truth');
+    [['04-fight.js', 'fetchSosVerse'], ['28-init.js', 'refreshAIPushMessages'],
+     ['03-person.js', 'maybeUpdateCoachMemory'], ['08-voice.js', '_companionSay'],
+     ['22-train-deep.js', 'getProgressiveSuggestion'], ['06-train.js', '_researchProtocol']].forEach(function (p) {
+      let s = '';
+      try { s = H.code(H.extractFn(p[1])); } catch (e) { s = ''; }
+      H.ok(s.length > 60, p[1] + ' was found by name');
+      if (!s) return;
+      H.ok(/quiet\s*:/.test(s),
+        p[1] + ' runs with no tap behind it, so it refuses SILENTLY — a toast nobody asked for is the overbearing thing this app refuses to be');
+    });
+    // _companionSay is quiet ONLY when the companion opened itself; a typed message is a person asking.
+    let cs = '';
+    try { cs = H.code(H.extractFn('_companionSay')); } catch (e) { cs = ''; }
+    H.ok(/quiet:\s*opening === true/.test(cs),
+      'the companion is silent only when it opened ITSELF, not when somebody typed into it');
+  }
+
+  // 18. THE TWELVE SURFACES THAT USED TO ASSERT A CAUSE, ASSERTED PER SURFACE BY NAME. Section 16 is
+  //     the floor that catches a new one; this is the record of which ones were wrong, so a revert
+  //     shows up as a named failure rather than as a count moving by one. Three of these blamed the
+  //     PERSON — "Try describing your goal differently" told somebody their words were the problem
+  //     when nothing had been sent.
+  [['searchBible', 11], ['generateIntentionPrayer', 11], ['showSaintPrayer', 11],
+   ['generatePrayerFor', 11], ['parsePastedRecipe', 14], ['_fuelGenerate', 17],
+   ['_fuelAddSnack', 17], ['_fuelSwapMeal', 17], ['_fuelLivePrices', 17],
+   ['generateWeeklyContent', 21], ['generateWeeklyReflection', 21],
+   ['generateGoalRoutine', 22], ['generateRecommendation', 4],
+   ['parseCalendarAI', 17]].forEach(function (p) {
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 100, p[0] + ' was found by name');
+    if (!src) return;
+    H.ok(/aiOff\(\)|aiOffNotice\(/.test(src),
+      p[0] + ': refuses on the switch instead of naming a failure that did not happen');
+    const g = src.search(/aiOff\(\)|aiOffNotice\(/);
+    // ORDERED AGAINST THE MODEL CALL, not the first `await`: searchBible awaits fetchESV and
+    // bible-api.com first for an exact-reference lookup, and neither is a model.
+    const call = src.search(/\bapi\s*\(|aiInvoke\s*\(/);
+    H.ok(call === -1 || g < call, p[0] + ': and refuses BEFORE the model call, not after it');
+  });
+
+  // 19. THE SWITCH MUST NEVER OUTRANK A CRISIS GATE. Three of those surfaces take a typed sentence
+  //     and already gate on it. A privacy guard placed above a crisis gate would be the dead-gate
+  //     defect arriving through a privacy fix — which is exactly how _fuelElicitSave's gate came to
+  //     read three element ids that do not exist.
+  [['searchBible', 'detectCrisis'], ['generateIntentionPrayer', 'detectCrisis'],
+   ['parsePastedRecipe', 'detectCrisis'], ['generateGoalRoutine', 'journalCrisisOf'],
+   ['parseCalendarAI', 'journalCrisisOf']].forEach(function (p) {
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 100, p[0] + ' was found by name');
+    if (!src) return;
+    const crisis = src.indexOf(p[1]), guard = src.search(/aiOff\(\)|aiOffNotice\(/);
+    H.ok(crisis > -1, p[0] + ': still carries its crisis gate');
+    H.ok(guard > -1, p[0] + ': and the switch guard');
+    H.ok(crisis > -1 && guard > -1 && crisis < guard,
+      p[0] + ': the crisis gate runs FIRST — a disclosure reaches a human whether the coach is on or off');
+  });
+
+  // 20. THE SAFETY NET SURVIVES THE OFF STATE WHERE SOMEBODY TYPED SOMETHING.
+  //     DRIVEN: the coach, the PT and the companion all keep the net with the switch off, because
+  //     v670 had already put it on their failure branches. Two surfaces lost it, both because
+  //     _netNoteInto hangs off a RENDER that no longer happens — the scripture search (measured:
+  //     names a human with the coach on, NO human with it off) and the prayer composer. The Sunday
+  //     check-in lost it a third way: its net sits at the top of the success branch, and with no
+  //     reply the else branch ran instead. The three UNPROMPTED netted surfaces are deliberately
+  //     left: nobody typed anything just now, the journal's own save is already a gated door, and a
+  //     card that does not render cannot carry a line.
+  [['searchBible'], ['generateIntentionPrayer'], ['generateWeeklyCoachResponse']].forEach(function (p) {
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 100, p[0] + ' was found by name');
+    if (!src) return;
+    const guard = src.search(/aiOff\(\)|aiOffNotice\(/);
+    // ANY of the three net helpers counts. Which one a surface uses is decided by what it has to
+    // append to: _netNoteInto needs an element, and the Sunday check-in's refusal path has only a
+    // toast string, so it goes through _netted.
+    const NET = /_netNoteInto\(|_netted\(|_needsHumanNet\(/;
+    H.ok(NET.test(src), p[0] + ': the net is present');
+    // AFTER the guard, not "the first one is after it". generateWeeklyCoachResponse nets on its
+    // SUCCESS path too and that occurrence comes first, exactly as it should -- the question is
+    // whether the REFUSAL path carries one as well.
+    H.ok(guard > -1 && NET.test(src.slice(guard)),
+      p[0] + ': and a reason plus a plan still names a human when the coach is off');
+    // AND IT HAS TO OUTLIVE THE SENTENCE. generateWeeklyCoachResponse's refusal path has only a
+    // toast, which showToast removes after five seconds, so the line alone is weaker there than the
+    // persistent bubble the chat surfaces give it: it routes to bridgeToRealHelp behind a tap.
+    if (p[0] === 'generateWeeklyCoachResponse')
+      H.ok(/bridgeToRealHelp/.test(src),
+        p[0] + ': the net on a TOAST routes to numbers that can be dialled, not just a line that fades');
+  });
+
+  // 21. THE RETRY THE REFUSAL ASKS FOR HAS TO WORK. A file input only fires `change` when its value
+  //     CHANGES, which is why these doors clear it immediately. v671 refused ABOVE that line, so
+  //     somebody read "switched it off", went and switched it back on, picked the SAME photo — and
+  //     nothing happened. The comment four lines below the guard in handleMealPhoto already records a
+  //     previous fix that "broke the other half" for this exact retry class.
+  [['handleMealPhoto', 14], ['handleRecipeScreenshot', 14],
+   ['handleWorkoutScreenshot', 22], ['importScaleScreenshot', 39]].forEach(function (p) {
+    let src = '';
+    try { src = H.code(H.extractFn(p[0])); } catch (e) { src = ''; }
+    H.ok(src.length > 200, p[0] + ' was found by name');
+    if (!src) return;
+    const reset = src.search(/target\.value\s*=\s*''/);
+    const guard = src.search(/aiOffNotice\(/);
+    const work = src.indexOf('await ');
+    H.ok(reset > -1, p[0] + ': still clears its file input, so the same photo can be picked again');
+    H.ok(guard > -1 && reset > -1 && reset < guard,
+      p[0] + ': the input is cleared BEFORE the refusal returns, or the retry it asks for is dead');
+    H.ok(work === -1 || guard < work,
+      p[0] + ': and the refusal is still before any WORK — reading files[0] and clearing value are free');
+  });
+
+  // 22. THE STALE REASON. window.__lastAIError holds {error:'ai_off'} until the next call overwrites
+  //     it, so a surface rendering getAIErrorMessage() after the coach is switched back ON — but
+  //     before anything is asked — told the person it was still off. Executed.
+  {
+    const store = {};
+    const W = { __lastAIError: { error: 'ai_off' } };
+    const t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
+      localStorage: { getItem: k => (k in store ? store[k] : null),
+                      setItem: (k, v) => { store[k] = String(v); },
+                      removeItem: k => { delete store[k]; } },
+      showToast: () => {},
+      document: { getElementById: () => null },
+      window: W,
+    });
+    store.totry_ai_off = '1';                 // off
+    t.toggleAICoach();                        // back on
+    H.eq(t.aiOff(), false, 'CALIBRATION — the toggle really switched it back on');
+    H.eq(W.__lastAIError, null,
+      'switching the coach back on clears the stale reason, so nothing still says it is off');
+  }
+
+  // 23. THE COPY IS CHECKED AGAINST WHAT THE CODE DOES, in both directions. The footnote said the app
+  //     sends "twice on each first open of the day" — the weekly read is gated on getWeekKey() plus
+  //     >=7 logged days and >=3 activities, so it fires once a WEEK at most, and the privacy policy
+  //     beside it already said this correctly. Both halves are asserted: if the synthesis is ever
+  //     made daily, the first half fails and whoever does it has to fix the copy.
+  {
+    let gs = '';
+    try { gs = H.code(H.extractFn('generateWeeklySynthesis')); } catch (e) { gs = ''; }
+    H.ok(/getWeekKey/.test(gs),
+      'the second unprompted send is still gated on a WEEK key — if this fails, the copy below is now wrong');
+    const foot = (H.html.match(/On, it sends what it needs to answer you[^<]*/) || [''])[0];
+    H.ok(foot.length > 60, 'the Settings footnote was found');
+    H.ok(!/twice on each first open of the day/.test(foot),
+      'and no longer calls a weekly send a daily one');
+    H.ok(/weekly/i.test(foot),
+      'it names the weekly read as weekly');
+    // (a) scripture: findVerse has a real local thematic bank and keeps working; searchBible and the
+    //     prayer composer are model calls. "scripture" as a bare word overclaimed in all three copies.
+    const fs = require('fs'), path = require('path');
+    const pub = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
+    const inapp = fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '27-settings.js'), 'utf8');
+    [['privacy.html', pub], ['the in-app policy (27-settings.js, the copy an iPhone user reads)', inapp],
+     ['the Settings footnote', H.html]].forEach(function (p) {
+      H.ok(!/backups, scripture, the fight/.test(p[1]),
+        p[0] + ': does not promise bare "scripture" keeps working — the Bible search is a model call');
+      H.ok(/reading plan and saved verses/.test(p[1]),
+        p[0] + ': names the part that genuinely does keep working');
+    });
+    // (b) The in-app policy assertion in section 11 could not fail: it tested H.html for needles that
+    //     the Settings footnote also contains, so deleting the policy sentence left it green. Read the
+    //     MODULE, not the assembled bundle.
+    H.ok(/Let the coach read my data/.test(inapp),
+      'the in-app policy names the switch — asserted against 27-settings.js, not the bundle that also holds the row');
+    H.ok(/Let the coach read my data/.test(pub), 'and so does privacy.html');
+  }
+
+  // 24. THE NINTH DOOR HAD NO ASSERTION. runAIDiagnostic fronts two direct fetch(API) POSTs, so it is
+  //     a door of its own and the only one of the nine nothing held.
+  {
+    let d = '';
+    try { d = H.code(H.extractFn('runAIDiagnostic')); } catch (e) { d = ''; }
+    H.ok(d.length > 200, 'runAIDiagnostic was found by name');
+    if (d) {
+      const g = d.indexOf('aiOff()'), f = d.indexOf('fetch(');
+      H.ok(g > -1, 'the dev diagnostic refuses on the switch');
+      H.ok(f > -1 && g < f, 'and before either of its direct fetch(API) calls, which bypass api()');
+    }
+  }
+
+  // 25. THE CENSUS WAS ONE QUOTING STYLE WIDE. The count that pins every model call to the sink
+  //     matched only 'ai-proxy' in single quotes, so the same call written with double quotes — or a
+  //     template literal — would have slipped past both the count and the kind set. Same shape as the
+  //     recorded defect where a contributor count matched only QUOTED first arguments.
+  {
+    const code = H.code(H.html);
+    const anyQuote = (code.match(/functions\.invoke\s*\(\s*['"`]ai-proxy['"`]/g) || []).length;
+    const single = (code.match(/functions\.invoke\s*\(\s*'ai-proxy'/g) || []).length;
+    H.eq(anyQuote, 2,
+      'exactly two raw ai-proxy invokes in the whole bundle, counted across ALL THREE quoting styles ('
+      + anyQuote + ' found)');
+    H.eq(single, anyQuote,
+      'and both are written the same way, so the single-quote count in section 7 is not quietly narrower than it reads');
+  }
+}
+
+// 26. THE REFUSAL MUST NOT BURN THE WINDOW IT REFUSED. "Reflect on my week" stamps
+//     totry_weekly_reflection_at AFTER the render block, inside the try — so with the coach off
+//     api() returned '', the render was skipped, the stamp still ran, and the person got an empty
+//     card AND could not try again for a week, even after switching the coach back on. Same shape
+//     as the morning sentence's once-per-day latch, which v671 already refused above.
+{
+  let wr = '';
+  try { wr = H.code(H.extractFn('generateWeeklyReflection')); } catch (e) { wr = ''; }
+  H.ok(wr.length > 200, 'generateWeeklyReflection was found by name');
+  if (wr) {
+    const g = wr.search(/aiOff\(\)/), stamp = wr.indexOf('totry_weekly_reflection_at');
+    H.ok(g > -1, 'it refuses on the switch');
+    H.ok(stamp > -1, 'and still stamps its 7-day window on a real run');
+    H.ok(g > -1 && stamp > -1 && g < stamp,
+      'the refusal comes BEFORE the stamp, so declining does not cost them the week');
+  }
 }
 
 H.report();

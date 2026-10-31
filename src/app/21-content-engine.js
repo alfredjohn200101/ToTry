@@ -28,6 +28,12 @@ function _disciplineThread(){
 async function generateWeeklyContent(){
   const box = document.getElementById('weekly-content-out');
   const btn = document.getElementById('weekly-content-btn');
+  // "Couldn't reach the producer right now" named a failure that had not happened.
+  if(typeof aiOff==='function' && aiOff()){
+    if(box){ box.style.display='block'; box.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Assembling this week\u2019s content'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Assembling this week\u2019s content'); }
+    return;
+  }
   if(btn){ btn.textContent='Assembling\u2026'; btn.disabled=true; }
   try{
     const d = _disciplineThread();
@@ -61,6 +67,15 @@ async function generateWeeklyContent(){
 async function generateWeeklyReflection(){
   const box = document.getElementById('weekly-reflection-out');
   const btn = document.getElementById('weekly-reflection-btn');
+  // Worse than a false sentence: with the coach off, api() returns '' and the block that builds this
+  // card is skipped entirely, so "Reflect on my week" left a COMPLETELY EMPTY card on screen. Silence
+  // reads as "there is nothing to say about you", which is the thing aiUnavailableHtml() was written
+  // for two cards away.
+  if(typeof aiOff==='function' && aiOff()){
+    if(box){ box.style.display='block'; box.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Reflecting on your week'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Reflecting on your week'); }
+    return;
+  }
   if(btn){ btn.textContent='Reflecting...'; btn.disabled=true; }
   try{
     const s = _weekStats();

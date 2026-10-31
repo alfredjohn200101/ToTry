@@ -896,7 +896,7 @@ function applyTextScale(){
   }catch(_){ return 1; }
 }
 
-const APP_VERSION = 'v671';
+const APP_VERSION = 'v672';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -1262,7 +1262,12 @@ async function signOut(){
     // Clear local data so next user gets clean slate
     const keys = Object.keys(localStorage);
     keys.forEach(k => {
-      if(k.startsWith('totry_') && k !== 'totry_auth_session') {
+      // The two device privacy refusals survive. They are deliberately not synced, so a wipe here
+      // is permanent -- and the dialog above promises "everything synced comes back", which these
+      // never were. Keeping them also fails SAFE: the next person on this device inherits "do not
+      // send" and can see the row and turn it on.
+      if(k.startsWith('totry_') && k !== 'totry_auth_session'
+         && k !== 'totry_ai_off' && k !== 'totry_no_metrics') {
         localStorage.removeItem(k);
       }
     });

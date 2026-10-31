@@ -502,7 +502,7 @@ async function _companionSay(userText, opening){
       // malformed for Anthropic's API and confusing for the rest of the chain, at the one conversation
       // that matters most: the 2am door. sendPT already does this correctly with ptH.slice(0,-1).
       const _hist = userText ? _compHistory.slice(0, -1) : _compHistory;
-      reply = await api(sys, _hist, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000 });
+      reply = await api(sys, _hist, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000, quiet: opening === true });
     }catch(_){ reply = ''; }
   }
   if(typing) typing.style.display='none';

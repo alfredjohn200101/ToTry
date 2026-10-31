@@ -83,7 +83,12 @@ Return ONLY a raw JSON array. No markdown.
     if(card)card.style.display='block';
   } else if(card){
     card.style.display='block';
-    card.innerHTML='<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
+    // NOT guarded on the switch, on purpose: the thematic bank above is local, so this door keeps
+    // working with the coach off. Only the sentence needed correcting -- "check your connection" is
+    // wrong when the cause is a switch the person flipped.
+    card.innerHTML=(((typeof aiOff==='function') && aiOff()) && typeof aiOffHtml==='function')
+      ? aiOffHtml('Finding verses for how you feel')
+      : '<div class="ios-empty"><div class="ios-empty-body">Could not find verses right now. Check your connection and try again.</div></div>';
   }
 }
 function saveCurrentVerse(){
@@ -1222,6 +1227,14 @@ function nextChapter(){
   else{const idx=BIBLE_BOOKS.findIndex(b=>b.id===bookSel.value);if(idx<BIBLE_BOOKS.length-1){bookSel.value=BIBLE_BOOKS[idx+1].id;onBibleBookChange(false);document.getElementById('br-chapter').value=1;loadBibleChapter();}}
 }
 async function searchBible(query){
+  // REFUSED HERE, WITH THE NET STILL RUN. Measured by driving: a stacked reason+plan typed into this
+  // box names a human with the coach on and NO human with it off, because _netNoteInto() hangs off
+  // the RENDER path below and the render is what goes away. The keyword floor deliberately REFUSES
+  // that class on the stated grounds that it belongs on the surfaces that read a whole message, so
+  // this net is the only thing behind that refusal. The crisis gate below still runs first; this
+  // guard is placed after it for exactly that reason.
+  // (The detectCrisis gate sits BELOW on purpose: a disclosure it catches must reach the card
+  //  whether the coach is on or off, so the switch must never short-circuit it.)
   // SAFETY GATE — people type how they actually feel into a scripture search. If that's a
   // disclosure, a verse is not the answer; a human is. Same reasoning as findVerse.
   try{
@@ -1288,6 +1301,18 @@ async function searchBible(query){
   }
   
   // SITUATIONAL MODE — reason purely from what the user wrote. No stored assumptions.
+  // The switch, asked AFTER the crisis gate above and BEFORE anything is sent. The results box gets
+  // the true sentence rather than "Couldn't reach scripture right now", and the net still runs on
+  // what they typed, so a stacked reason+plan is answered by a person and not by silence.
+  if(typeof aiOff==='function' && aiOff()){
+    const _r=document.getElementById('br-search-results');
+    if(_r){
+      _r.style.display='';
+      _r.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Searching scripture by how you feel'):'';
+      try{ if(typeof _netNoteInto==='function') _netNoteInto(_r, query); }catch(_){ }
+    } else if(typeof aiOffNotice==='function'){ aiOffNotice('Searching scripture by how you feel'); }
+    return;
+  }
   const histKey='totry_bible_search_history_'+query.toLowerCase().slice(0,40);
   const shown=ls(histKey)||[];
   const excludeList=shown.length>0?'\n\nThey have already been shown these — pick different ones: '+shown.join(', ')+'.':'';
@@ -1410,6 +1435,18 @@ async function generateIntentionPrayer(pfx){
       }
     }
   }catch(_){}
+  // The switch, asked after the crisis gate above and before anything is sent. "Couldn't write that
+  // just now. Try again in a moment." was a lie about a choice they made, and trying again would
+  // never have worked.
+  if(typeof aiOff==='function' && aiOff()){
+    const _o = document.getElementById(pfx + '-out');
+    if(_o){
+      _o.style.display='block';
+      _o.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Writing this for you'):'';
+      try{ if(typeof _netNoteInto==='function') _netNoteInto(_o, intention); }catch(_){ }
+    } else if(typeof aiOffNotice==='function'){ aiOffNotice('Writing this for you'); }
+    return;
+  }
   const btn = document.getElementById(pfx + '-btn'); const out = document.getElementById(pfx + '-out');
   if(btn){ btn.textContent='Writing...'; btn.disabled=true; }
   try{
@@ -1464,6 +1501,11 @@ async function showSaintPrayer(saint, title){
   const out = document.getElementById('saint-prayer-out');
   if(!out) return;
   out.style.display='block';
+  // "Couldn't reach the library right now" named a failure that had not happened.
+  if(typeof aiOff==='function' && aiOff()){
+    out.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Bringing this prayer across'):'';
+    return;
+  }
   out.innerHTML='<p class="pulsing tr-loading">Bringing '+saint+'\u2019s words...</p>';
   try{
     const sys='You provide the authentic, traditional text of well-known Catholic prayers exactly as commonly prayed. Return only the prayer text, no commentary or title.';
@@ -1481,6 +1523,7 @@ async function showSaintPrayer(saint, title){
 }
 
 async function generatePrayerFor(situation, verse){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Writing a prayer for this')) return;
   const res=document.getElementById('br-search-results');
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');

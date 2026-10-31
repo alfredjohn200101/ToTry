@@ -264,6 +264,7 @@ async function showRoutineRecommender(){
 }
 
 async function generateRecommendation(){
+  if(typeof aiOffNotice==='function' && aiOffNotice('Recommending a split')) return;
   const days=document.getElementById('rec-days')?.value;
   const goal=document.getElementById('rec-goal')?.value;
   const exp=document.getElementById('rec-exp')?.value;
@@ -2017,7 +2018,7 @@ async function fetchSosVerse(i){
   try{ if(typeof faithTradition==='function' && faithTradition() !== 'christianity') return; }catch(_){}
   try{
     const prompt='Someone is fighting an urge for "'+v.n+'" (category: '+pb.label+'). It usually hits when: '+v.t+'. Find the single most relevant ESV verse for resisting THIS specific kind of temptation right now. A strong default for this category is '+pb.verseRef+', but choose what fits best.';
-    const raw=await api(BIBLE_SYS,[],prompt,900);
+    const raw=await api(BIBLE_SYS,[],prompt,900,{ quiet:true });
     if(raw){const m=raw.match(/\{[\s\S]*?\}/);if(m){const d=JSON.parse(m[0]);if(d.verse&&d.reference&&d.verse.length>15)sosVerseData=d;}}
   }catch(e){}
 }

@@ -250,6 +250,47 @@ neutered substitution, and the token being removed from the prompts so the fille
 
 ---
 
+# ▶▶ v672 — THE OFF-SWITCH LIED IN THE ONE SENTENCE THAT CONFIRMS IT (31 Oct 2026)
+
+Rule 4 applied to v671, a commit **one day old**, before the owner uploaded it: seven lenses, every
+finding sent to two refuters told to default to refuted. Every finding below was reproduced by hand
+before anything was touched, and the yield did not fall off.
+
+## Fixed
+
+| What | Measured |
+|---|---|
+| **The switch's own toast claimed the data stays on the device** | *"What you log stays on this phone and in your own backup"* — `totry_journal`, `totry_v`, `totry_identity` and `totry_why` are all in `SYNC_KEYS`, so for a signed-in person every journal entry is upserted to Supabase exactly as before. A false privacy sentence inside a privacy control |
+| **The switch reported success it had not achieved** | DRIVEN with panels' own full-device simulation: `stored=null`, `aiOff()=false`, the row rendering OFF, the toast saying "Nothing goes to a model now". Every send continued. It reads the write back now, and its twin `toggleMetrics` is fixed in the same change |
+| **Signing out silently turned the coach back on** | Deliberately not in `SYNC_KEYS`, wiped by `signOut()`, and absent from the dialog's own list of what will not come back. Survives sign-out and account deletion now; deliberately NOT "Start fresh on this device" |
+| **13 surfaces asserted a cause they could not know** | I counted them four times and got 8, 7, 8, 13 — four sweeps, four different instrument failures. The gate counts it now, derived from the files, so site 38 fails the build the day it is written |
+| **My own guard made four buttons dead on the retry it asks for** | A file input only fires `change` when its value CHANGES; the refusal sat above the line that clears it, so re-picking the same photo after switching the coach back on did nothing |
+| **The scripture search lost the safety net** | DRIVEN both ways: a stacked reason+plan names a human with the coach on and NO human with it off, because `_netNoteInto` hangs off a render that no longer happens |
+| **The Sunday check-in lost it a third way** | Crisis door #11. Its net sits at the top of the SUCCESS branch, so with no reply the else branch ran and a reason plus a plan typed into "what did you struggle with" reached nobody |
+| **"Reflect on my week" burned its 7-day window on a refusal** | The stamp ran after a skipped render, so an empty card also cost them the week |
+| **The calendar's paste-a-roster box blamed the person's wording** | Crisis door 20. Its copy is a ternary and only the NON-`parse` branch routes through `getAIErrorMessage()`; with the coach off `api()` returns `''`, `JSON.parse` throws `'parse'`, and they were told to rephrase. The sweep called the function honest because its other branch is |
+| **`SUBMIT-CHECKLIST.md` named an archive that does not exist** | v671 updated the banner to build 14 and left `ToTry-v670.xcarchive` in the upload table |
+| **`APP-PRIVACY.md`'s v671 paragraph split a markdown table** | Four third-party rows rendered as literal text with pipes, in the document the privacy label is filled from |
+
+## Named costs, not oversights
+
+- **`findVerse` is deliberately NOT guarded.** Its thematic verse bank is local, so the door keeps
+  working with the coach off — it was the negative control in the measurement. Only its last-resort
+  sentence was corrected.
+- **Three unprompted netted surfaces lose their net** in the off state (the morning sentence, the
+  weekly synthesis, the weekly reflection) and are left that way: nobody typed anything just now,
+  the journal's own save is already a gated door, and a card that does not render cannot carry a
+  line.
+- **Food search still offers its two AI cards at full prominence** with the coach off. The floor in
+  `api()` tells the truth when one is tapped; hiding controls in the off state is a bigger product
+  change than this commit should make, and a feature that vanishes is its own confusion.
+- **`runFormCheck` and `readBarcodePhoto` never cleared their file input at all**, so re-picking the
+  same photo after a genuine failure has always done nothing. Pre-existing, and that area has a
+  recorded history of a well-meant fix breaking the camera/library routing, so it is named rather
+  than swept.
+- **Option 2 — moving the two unprompted sends behind a tap — is still not taken**, and still the
+  owner's. v672 makes the switch honest; it does not change what happens by default.
+
 # ▶▶ STATUS AFTER THE 29 Oct 2026 AUDIT — v669
 
 **Everything in sections 1 and 2 above was re-verified against v668 by fifteen agents, each with an
@@ -321,6 +362,11 @@ by their own refuter, which is exactly why they ran.
   ORDER, above its own latch, rather than by observation — the seed does not qualify to reach it.)
   The meal photo: 2 POSTs on → 0 off. Both unprompted sends refuse ABOVE their own once-per-day
   latch, so turning the coach back on works the same day. Ten fault injections, each caught by name.
+  **AND v672 CORRECTED THIS ENTRY'S OWN SUBJECT — read the v672 block above before trusting
+  anything here.** The switch confirmed itself with a sentence that was false (*"What you log stays
+  on this phone and in your own backup"*, while `totry_journal` is in `SYNC_KEYS`), reported success
+  it had not achieved on a full device, was wiped by a sign-out, and left thirteen surfaces blaming
+  the connection for a choice the person made.
   **Option 2 (move both behind a tap) was NOT taken** and the reason stands: it costs the thing the
   owner likes most about the Today card, and with a lever present the send is now a choice rather
   than a condition of using the app. If the morning sentence should become a tap, that is still a

@@ -165,6 +165,10 @@ Declare as **Coarse Location**, purpose App Functionality, not linked.
 | **Supabase** (own project) | everything in `SYNC_KEYS` — the account's whole record |
 | **AI providers** via the `ai-proxy` edge function. Read from `supabase/functions/ai-proxy/index.ts`, not from memory — this list said "Gemini → Groq → OpenRouter → Anthropic" and was short three. TEXT (`DEFAULT_ORDER`, :43): Gemini → Groq → OpenRouter → Mistral → Cloudflare → Anthropic. VISION (:572): Gemini → OpenRouter → Mistral → Cloudflare → NVIDIA. `privacy.html` already states both correctly; this file did not, and it is the file that says to fill the policy from it | the person's messages plus `lifeStateBrief()`, which summarises health, fitness, money and faith context |
 | **GoatCounter** | page/event pings, pseudonymous |
+| **api.aladhan.com** | coarse (~1km) location, for prayer times |
+| **api.esv.org**, api.alquran.cloud, bible-api.com, vedicscriptures.github.io | scripture requests |
+| **Strava**, **Hevy** | account-linked fitness sync (user-initiated) |
+| OpenFoodFacts, FatSecret, wger, ExerciseDB | food/exercise lookups |
 
 **THE AI SEND CAN BE DECLINED SINCE v671, AND THE ANSWERS DO NOT CHANGE BECAUSE OF IT.** `aiOff()`
 (Settings → Your data → *Let the coach read my data*) is ON by default and refuses at every one of
@@ -174,10 +178,8 @@ data leaves the device, and for anybody who keeps the coach it does. An opt-out 
 Yes into a No. What it changes is 5.1.1(ii)'s question about choice, which this app could not
 previously answer: the analytics row already said "the opt-out is a reachable button", and until
 v671 the AI row had no equivalent sentence.
-| **api.aladhan.com** | coarse (~1km) location, for prayer times |
-| **api.esv.org**, api.alquran.cloud, bible-api.com, vedicscriptures.github.io | scripture requests |
-| **Strava**, **Hevy** | account-linked fitness sync (user-initiated) |
-| OpenFoodFacts, FatSecret, wger, ExerciseDB | food/exercise lookups |
+
+**v672 corrected the switch itself.** Its confirmation toast said "What you log stays on this phone and in your own backup", which is FALSE for a signed-in person: `totry_journal`, `totry_v`, `totry_identity` and `totry_why` are all in `SYNC_KEYS`, so every journal entry is upserted to Supabase exactly as before. The switch governs what a MODEL is shown and has never governed cloud sync, which is the Supabase row above. On a full device the write threw, the catch swallowed it, and the row still rendered OFF while `aiOff()` read false — measured, so the toggle reads the write back now. Neither changes an answer on this page; both changed what the person was told.
 
 The full outbound host list is maintained in `sw.js` (`apiHosts`) — that array is the most reliable
 inventory of where the app talks to, and is a good thing to re-read before each submission.

@@ -1658,9 +1658,9 @@ function saveCardioManually(){
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a workout screenshot')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){
     showToast('Wrong file', 'Please upload an image of your workout summary.');
@@ -2225,6 +2225,9 @@ function openGoalRoutine(){
 }
 async function generateGoalRoutine(){
   const goal=(document.getElementById('goal-routine-input')||{}).value||'';
+  // The switch is asked BELOW the crisis gate (see the comment under this one) and before anything
+  // is sent, because "Couldn't draft that. Try describing your goal differently." blames their words
+  // for a choice they made.
   // GATED, 12 Oct 2026 — ABOVE the empty-field check, because a validation rule must never be able
   // to outrank a disclosure (the Sunday check-in's out-of-band weight, recorded in CLAUDE.md, and
   // rebuilt by me in saveQuickLog an hour ago). This text is sent straight to a MODEL.
@@ -2235,6 +2238,12 @@ async function generateGoalRoutine(){
   }
   if(!goal.trim()){ showToast('Tell me your goal','Describe what you\u2019re training for first.'); return; }
   const btn=document.getElementById('goal-routine-btn'); const out=document.getElementById('goal-routine-out');
+  if(typeof aiOff==='function' && aiOff()){
+    const _o=document.getElementById('goal-routine-out');
+    if(_o){ _o.style.display='block'; _o.innerHTML=(typeof aiOffHtml==='function')?aiOffHtml('Drafting a routine'):''; }
+    else if(typeof aiOffNotice==='function'){ aiOffNotice('Drafting a routine'); }
+    return;
+  }
   if(btn){ btn.textContent='Drafting...'; btn.disabled=true; }
   try{
     const sys='You are an expert strength coach. Design safe, effective, evidence-based routines. Respect stated limits/injuries. Return ONLY JSON.';
@@ -3224,7 +3233,7 @@ async function getProgressiveSuggestion(){
   }catch(_){ }
   const todayFocus=getUserSplit()[tIdx()]?.focus||'Workout';
   const recent=history.slice(0,3).map(s=>((s&&Array.isArray(s.exercises))?s.exercises:[]).map(ex=>(ex&&ex.name||'?')+': '+((ex&&Array.isArray(ex.sets))?ex.sets:[]).map(set=>(set&&set.weight!=null?set.weight:'?')+'kg\u00d7'+(set&&set.reps!=null?set.reps:'?')).join(', ')).join('; ')).join('\n');
-  const suggestion=await api(buildPTCtx(),[],'Based on these recent sessions:\n'+recent+'\nToday is '+todayFocus+'. Give specific progressive overload targets — what weight and reps to aim for on the main lifts, with a sentence of why for each. Be concrete with numbers; a short paragraph is fine.',500);
+  const suggestion=await api(buildPTCtx(),[],'Based on these recent sessions:\n'+recent+'\nToday is '+todayFocus+'. Give specific progressive overload targets — what weight and reps to aim for on the main lifts, with a sentence of why for each. Be concrete with numbers; a short paragraph is fine.',500,{ quiet:true });
   if(suggestion){const el=_el();if(el)el.textContent=suggestion;
     try{ ls('totry_ai_pt_sugg', { k:_k, v:suggestion }); }catch(_){ }}
 }

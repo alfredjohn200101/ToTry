@@ -136,9 +136,9 @@ function importEufyCSV(event){
 // entry. A confirmation step lets the man correct any misread digit before saving —
 // honest data matters more than speed.
 async function importScaleScreenshot(event){
-  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   const file = event.target.files?.[0];
   event.target.value = '';
+  if(typeof aiOffNotice==='function' && aiOffNotice('Reading a scale screenshot')) return;
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a screenshot of your scale stats.'); return; }
   showToast('Reading your scale...', 'One moment while I read the numbers.');
