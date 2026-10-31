@@ -225,7 +225,7 @@ it was previously measured without · `npm run preflight` **ready to archive**.
 archive** — the archive is Development-signed with `get-task-allow=true` by design because the
 export re-signs. The IPA must read `Apple Distribution: Alfred John (L4BD53PLVF)`,
 `get-task-allow=false`, `beta-reports-active=true`, arm64 only, PrivacyInfo present, and a web
-bundle sha byte-identical to the repo. The current archive is build **13** (v670). Builds 7, 9, 10, 11 and 12 were cut and never uploaded; take the number from `npm run preflight`, never from a line in a document.
+bundle sha byte-identical to the repo. **The build number is deliberately not restated here** — this sentence said 13 while the header said 14 and the table named a v670 archive that does not exist, which is three answers in one file. `npm run preflight` reads the archives itself and prints the only number that is true; nothing uploaded has ever been submitted.
 
 **The store screenshots are reproducible** — `node scripts/app-shot.mjs seed` plants the demo person
 into WebKit's own `localstorage.sqlite3`. ~~The four in `~/Desktop/ToTry-screenshots/6.9-v643/` predate

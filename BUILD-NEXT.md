@@ -288,6 +288,17 @@ before anything was touched, and the yield did not fall off.
   same photo after a genuine failure has always done nothing. Pre-existing, and that area has a
   recorded history of a well-meant fix breaking the camera/library routing, so it is named rather
   than swept.
+- **AI-WRITTEN PUSH MESSAGES ALREADY ON THE SERVER KEEP BEING DELIVERED AFTER THE SWITCH GOES OFF**,
+  and this is named rather than fixed. `ai_morning_messages` / `ai_evening_messages` are written to
+  the `push_subscriptions` row while the coach is ON, and `send-push` picks from those stored strings
+  server-side — so no NEW model call happens and the switch's promise ("nothing goes to a model") is
+  literally kept, which is the same reasoning that deliberately leaves an already-generated weekly
+  synthesis on screen. But a person who switches the coach off may reasonably expect the AI-written
+  nudges to stop arriving, and they do not. Closing it means a new column, a migration and an
+  `send-push` deploy — and this file records what happened the last time an edge-function body was
+  handed to a deploy tool at the end of a session. It is a decision with a cost on both sides, so it
+  is the owner's.
+
 - **Option 2 — moving the two unprompted sends behind a tap — is still not taken**, and still the
   owner's. v672 makes the switch honest; it does not change what happens by default.
 

@@ -1743,6 +1743,55 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      paragraph in `APP-PRIVACY.md` was inserted INSIDE the third-party markdown table, so the blank
      line above it terminated the table and **four third-party rows rendered as literal text with
      pipes** in the document the privacy label is filled from.
+   - **WHAT THE v671 REVIEW CLEARED IS WORTH AS MUCH AS WHAT IT FOUND, AND IT WAS CLEARED BY
+     MEASUREMENT (1 Nov 2026).** The census lens drove the whole claim rather than reading it: with
+     the switch on, a seeded ESTABLISHED person's launch makes **2 unprompted `ai-proxy` POSTs
+     (6,545 and 8,358 characters)**, each carrying the identity sentence, the why, journal text and
+     vice names with clean-day counts; with it off, **0** — calibrated in both directions. And the
+     same-day re-enable works: off, `#ai-morning-card` is `display:none`; `toggleAICoach()` plus
+     `showAIMorningSentence()` in the same session renders the card and makes exactly one fresh POST,
+     so the latch ordering is right.
+     Four structural blind spots were gone looking for and all four are closed. **The SERVER-SIDE
+     hop** — `pg_proc` on the live project was queried for anything doing `http_post`, and exactly
+     one function exists (`on_feedback_insert_send_email` → Resend); **nothing server-side calls
+     ai-proxy**, so no client write can trigger a model call behind the switch. **NATIVE** — the five
+     Swift plugins contain exactly ONE network call in total (a product thumbnail in
+     `BarcodeScannerPlugin.swift`), so there is no native model path. **`key-proxy`** serves only the
+     ESV, FatSecret and USDA secrets, so no provider key is obtainable client-side and no direct model
+     call is possible. And `navigator.sendBeacon`, `XMLHttpRequest` and direct provider hosts are **0,
+     0 and 0** — the only `googleapis` strings in the bundle are Fit OAuth scopes.
+     Two corrections to this file's own v671 entry came out of it, both in the generous direction:
+     **SIX surfaces carry the honest sentence, not five** (`explainPlateau` and `explainVicePatterns`
+     reach it through `aiUnavailableHtml()`, which renders `getAIErrorMessage()`), and the degradation
+     is real rather than claimed — driven, the companion falls back to its local clinical step,
+     `findVerse` falls back to the local concordance with **8 real verses**, and the barcode path runs
+     the native `BarcodeDetector` first and refuses only the AI fallback.
+     **AND 33 OF THE 67 AGENTS DIED ON A SESSION LIMIT, WHICH IS THE QUORUM LESSON ARRIVING AGAIN.**
+     The pipeline counts a finding as surviving when fewer than two refuters kill it, so every finding
+     whose refuters never ran is reported as having survived two of them: **12 survived with a real
+     quorum, 17 were UNREFUTED with none, 1 refuted.** Unrefuted is not confirmed. Every one of the 37
+     was therefore reproduced by hand before anything was touched, and one of them (*"four found-by-name
+     assertions are unreachable"*) was **refuted on inspection** — all five `extractFn` calls in that
+     block are already wrapped. It did point at a real neighbour, though: my own new `H.load` calls
+     were unguarded, and `H.load` THROWS on a missing name, which at module level ends the run with no
+     summary. A rename should cost one red line, not the whole report.
+   - **AND A DATE BOMB WENT OFF AT MIDNIGHT, ON CODE NOBODY HAD TOUCHED (1 Nov 2026).** The giving
+     section seeded two gifts RELATIVELY — `now - 2 DAY` and `now - 200 DAY` — and asserted the
+     month total as a hardcoded 240 and the year as 1850. Relative is not the same as calendar-safe:
+     `now - 2 DAY` lands in the PREVIOUS MONTH on the 1st and 2nd, which is what turned the suite red
+     the moment the date rolled over, and `now - 200 DAY` lands in the PREVIOUS YEAR from 1 January
+     to about 19 July. **Measured over every day of 2027: the old seed is red on 210 of 365 days**,
+     and it had never been noticed because the suite had only ever run in the back half of a year.
+     The month and year boundaries are the whole subject of the function under test, so the gifts are
+     anchored to the CALENDAR now (midday on the 1st of this month, midday on 1 January of this year)
+     and the expected sums are DERIVED from the same clock the code reads rather than written down.
+     **One consequence had to be faced rather than papered over: in JANUARY "this month" and "this
+     year" are the same window, so a fixed pair of numbers there is not merely fragile, it is
+     unsatisfiable** — which is the real reason the expectation is computed. The seed carries its own
+     calibration (each gift really is in the window it is asserted about), and 0 of 365 days are red.
+     Same family as the `dayKeyOf` stub that went red overnight, and the inverse of the TZ tautology:
+     **a test must not derive its expectation from a clock that moves under it, and "it passes today"
+     is exactly the evidence the broken form already had.**
    - `npm run crisis` — **57 doors as of 14 Oct 2026, and it now also asserts WHICH CARD.** The three
      added on 9 Oct each hid from a different census, and the first of them is the sharpest:
      **the GATED function opens the ungated door itself.** `addVice()` checks its own two fields and

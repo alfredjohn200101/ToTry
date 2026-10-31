@@ -18424,11 +18424,20 @@ H.section('every fast season says who it never bound, and only four of them name
 H.section('the coach knows they give, in their own word — and under quiet it never learns the sums');
 {
   const DAY = 86400000;
+  // Anchored to the calendar, not to a sliding window. GIFT_M is midday on the 1st of the current
+  // month, so it is always in this month and this year; GIFT_Y is midday on 1 January of the current
+  // year, so it is always in this year and is in this month ONLY during January.
+  const _n = new Date();
+  const GIFT_M = new Date(_n.getFullYear(), _n.getMonth(), 1, 12, 0, 0);
+  const GIFT_Y = new Date(_n.getFullYear(), 0, 1, 12, 0, 0);
+  const IS_JAN = _n.getMonth() === 0;
+  const EXP_MONTH = IS_JAN ? 240 + 1610 : 240;   // in January the two windows are the same window
+  const EXP_YEAR = 240 + 1610;
   const mk = (tradition, quiet) => {
     const now = Date.now();
     const store = {
-      totry_giving: [{ ts: new Date(now - 2 * DAY).toISOString(), amount: 240 },
-                     { ts: new Date(now - 200 * DAY).toISOString(), amount: 1610 }],
+      totry_giving: [{ ts: GIFT_M.toISOString(), amount: 240 },
+                     { ts: GIFT_Y.toISOString(), amount: 1610 }],
       totry_giving_pledge: { mode: 'amount', percent: 10, amount: 125, quiet: quiet },
       totry_zakat: { basis: 'silver', pricePerGram: 1.2,
                      hawlStart: new Date(now - 100 * DAY).toISOString().slice(0, 10),
@@ -18460,8 +18469,14 @@ H.section('the coach knows they give, in their own word — and under quiet it n
   // a function, so that return is legal and simply ENDS THE RUN at exit 0 with no summary at all —
   // the defect this file records as (n). It would never have fired today, which is how it would ship.
   if (open) {
-  H.eq(open.month, 240, 'with amounts shown, this month is the sum of this month’s gifts');
-  H.eq(open.year, 1850, 'and the year is the sum of the year’s');
+  // CALIBRATION FOR THE SEED ITSELF: the two gifts must land in the windows this asserts about, or
+  // the numbers below prove nothing. Checked against the same clock the function reads.
+  H.ok(GIFT_M.getMonth() === _n.getMonth() && GIFT_M.getFullYear() === _n.getFullYear(),
+    'the month gift really is in this month');
+  H.ok(GIFT_Y.getFullYear() === _n.getFullYear(), 'and the year gift really is in this year');
+  H.eq(open.month, EXP_MONTH, 'with amounts shown, this month is the sum of this month’s gifts'
+    + (IS_JAN ? ' (January: both, because the two windows are the same window)' : ''));
+  H.eq(open.year, EXP_YEAR, 'and the year is the sum of the year’s');
   H.eq(open.amount, 125, 'and the pledge amount is carried');
   H.ok(!!open.zakat && open.zakat.daysLeft > 200 && open.zakat.daysLeft < 260,
     'and a zakat hawl 100 days old has ~254 of its 354 days left (got ' + (open.zakat && open.zakat.daysLeft) + ')');
@@ -20035,7 +20050,13 @@ H.section('the type scale can actually scale');
     W.__lastAIError = { error: 'Failed to fetch' };
     H.ok(/not online/i.test(g.getAIErrorMessage() || ''),
       'CALIBRATION — a real network failure still gets the network sentence, so the branch is not swallowing everything');
-    H.eq(g.getAIErrorMessage.call(null) !== null, true, 'and it still answers for the ordinary case');
+    // AND THE BRANCH NOBODY HAD TESTED. The previous line already proves a non-null answer for a
+    // real failure, so re-asserting non-null here could not fail independently of it. The untested
+    // case is NO error at all: it has to return null, or a surface renders a failure that never
+    // happened — which is this whole feature's defect pointing the other way.
+    W.__lastAIError = null;
+    H.eq(g.getAIErrorMessage(), null,
+      'with no error recorded it returns null, so nothing prints a failure that did not happen');
   }
 
   // 10. THE ROW EXISTS, IS WIRED, AND SAYS WHAT KEEPS WORKING. An off-switch a person is afraid to
@@ -20091,13 +20112,19 @@ H.section('the type scale can actually scale');
     const L = { getItem: k => (k in store ? store[k] : null),
                 setItem: (k, v) => { store[k] = String(v); },
                 removeItem: k => { delete store[k]; } };
-    const t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
-      localStorage: L,
-      showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
-      document: { getElementById: () => null },
-      window: {},
-    });
-    t.toggleAICoach();
+    // GUARDED. H.load throws on a missing name, and a throw at module level ends the whole run with
+    // no summary — defect (n) in CLAUDE.md. A rename should cost one named failure, not the report.
+    let t = null, loadErr = '';
+    try {
+      t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
+        localStorage: L,
+        showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
+        document: { getElementById: () => null },
+        window: {},
+      });
+    } catch (e) { loadErr = String(e && e.message || e); }
+    H.ok(!!t, 'toggleAICoach/aiOff/aiOffLine all load by name' + (loadErr ? ' — ' + loadErr : ''));
+    if (t) t.toggleAICoach();
     const off = said.join(' ');
     H.ok(/nothing goes to a model/i.test(off), 'the off toast still says what it does stop');
     H.ok(!/stays on (this )?phone/i.test(off) && !/only on this device/i.test(off),
