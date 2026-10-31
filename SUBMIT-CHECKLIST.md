@@ -3,20 +3,16 @@
 
 ---
 
-## ▶▶ CURRENT STATE — 31 Oct 2026 — **DO NOT UPLOAD YET.** v672 is in the repo and build 15 is NOT cut.
-> **The newest ARCHIVE on this machine is build 14 (v671), and v672 supersedes it in the repo.**
-> v672 corrects two things in v671's own off-switch, both of which ship inside the binary, so build
-> 14 should not be the build that goes up: its confirmation toast said *"What you log stays on this
-> phone and in your own backup"* while `totry_journal` is in `SYNC_KEYS`, and on a full device the
-> switch reported success it had not achieved (the write threw, the row still rendered OFF, every
-> send continued). The source, `index.html`, `www/`, `ios/` and `android/` are all at v672 and
-> `CURRENT_PROJECT_VERSION` is 15 in both configurations; `npm run preflight` reports **ready to
-> archive at build 15**.
+## ▶▶ CURRENT STATE — 1 Nov 2026 — v672, build 15. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
+> **Build 15 SUPERSEDES 14 AND 13**, and neither of those should go up. v672 corrects two things in
+> v671's own off-switch, both of which ship inside the binary: its confirmation toast said *"What you
+> log stays on this phone and in your own backup"* while `totry_journal` is in `SYNC_KEYS`, and on a
+> full device the switch reported success it had not achieved (the write threw, the row still rendered
+> OFF, every send continued). Every superseded archive has been moved out of Organizer, so it shows
+> exactly one.
 >
-> **NEXT STEP IS TO CUT BUILD 15**, then verify the IPA and update the two paths in the table below.
-> Nothing in this file should be acted on for an upload until that is done.
->
-> Same five screenshots and the same App Privacy answers either way — v672 changes no data type.
+> Same five screenshots and the same App Privacy answers as 13 and 14 — v672 changes no data type and
+> removes nothing from the listing.
 >
 > *(This block previously named `ToTry-v670.xcarchive` in the table below, a file that does not
 > exist, because v671 updated the banner and not the table. The paths are marked PENDING now rather
@@ -29,8 +25,8 @@ they would have produced a false privacy label and handed App Review an admin ac
 
 | What | Where |
 |---|---|
-| Archive (keep exactly ONE in Organizer) | **PENDING — build 15 not cut.** The newest on disk is `~/Library/Developer/Xcode/Archives/2026-10-31/ToTry-v671.xcarchive` (build 14, superseded by v672 in the repo) |
-| Distribution IPA | **PENDING — build 15 not cut.** Newest on disk: `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v671-build14.ipa` |
+| Archive (keep exactly ONE in Organizer) | `~/Library/Developer/Xcode/Archives/2026-11-01/ToTry-v672.xcarchive` |
+| Distribution IPA | `~/Library/Developer/Xcode/ToTry-current-build/ToTry-v672-build15.ipa` |
 | Superseded, kept not deleted | `~/Library/Developer/Xcode/ToTry-superseded/` **and** `~/Library/Developer/Xcode/ToTry-superseded-archives/` — TWO such directories exist and this file used to name only one |
 | Screenshots, in upload order | `build/appstore-screenshots/iphone-6.9in-v669/` + its `ORDER.md` |
 

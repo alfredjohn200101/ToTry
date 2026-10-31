@@ -1775,6 +1775,32 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      block are already wrapped. It did point at a real neighbour, though: my own new `H.load` calls
      were unguarded, and `H.load` THROWS on a missing name, which at module level ends the run with no
      summary. A rename should cost one red line, not the whole report.
+   - **AND preflight STOPPED AN ARCHIVE OF THE WRONG BUNDLE, SIXTY SECONDS AFTER I STARTED IT
+     (1 Nov 2026).** Removing the dead `opts.what` parameter meant a `build:index`, and I went
+     straight to cutting the archive without `build:www` and `npm run sync` — so `www/`, `ios/` and
+     `android/` were all still at the previous sha. The archive was already running. `npm run
+     preflight` named all three in one line each (*"same version, different bytes — an edit after the
+     last build"* and *"AN ARCHIVE RIGHT NOW WOULD SHIP v672"*), the run was killed, the sync done
+     and the archive re-cut on the right bytes. **This is the check this file describes as hashing the
+     FILE rather than comparing the version LABEL, catching its own author**: every one of those three
+     bundles read v672, so a label comparison would have reported parity and the build would have gone
+     to Apple carrying code one commit old. The lesson is already rule 3 and it still cost a run:
+     a `build:index` is not the end of the chain, it is the first third of it.
+   - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
+     Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
+     `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at
+     ~3,700 (about 15MB) and swap at 5.3GB of 6.1GB.** The failure point MOVING between runs is what
+     identifies it as starvation rather than a defect in a check. Diagnosed through the recorded
+     ladder and every rung mattered: 0 orphaned `[m]s-playwright` processes and no stale port after
+     both runs (so not the orphan hazard), `ROOT` is `../www` which was never rebuilt mid-run (so not
+     the rebuild hazard), and `ps` ELAPSED showed a 1h46m-old `node test/panels.js` that was in fact
+     the live one — **etime lied exactly as this file says it does**, and sampling the output's line
+     count twice is what settled it. `xcrun simctl shutdown all` and quitting Simulator.app freed
+     almost nothing, because the consumers were this session and the owner's own Chrome, which is not
+     mine to close. **The timeout was NOT raised to make it pass**: 16 checks ran green in the second
+     attempt and 30 in the first, including the 24pt tap-target floor, the sheet-a11y floor, both
+     injection drives and the typed-text sweep across 12 stores — and the right sentence is "16 of
+     about 40 and then the machine gave out", not "the gate is green".
    - **AND A DATE BOMB WENT OFF AT MIDNIGHT, ON CODE NOBODY HAD TOUCHED (1 Nov 2026).** The giving
      section seeded two gifts RELATIVELY — `now - 2 DAY` and `now - 200 DAY` — and asserted the
      month total as a hardcoded 240 and the year as 1850. Relative is not the same as calendar-safe:
