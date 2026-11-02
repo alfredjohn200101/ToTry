@@ -572,7 +572,17 @@ Order matters — Connect greys out Submit until all of these are green:
 These were surfaced by this audit's lenses but **no independent refuter reached a verdict on them**.
 I re-measured the ones marked ✅ myself; the rest are flagged as unverified.
 
-**U1 — the privacy manifest declares an invalid key.** ✅ *Re-measured by me:* the shipping
+**U1 — ~~the privacy manifest declares an invalid key.~~ CLOSED in v670, verified out of build 15.**
+`PrivacyInfo.xcprivacy` inside `ToTry-v672-build15.ipa` declares **12** collected types with
+`…TypeHealth` and `…TypeFitness` as separate entries and **0** occurrences of the combined key —
+read out of the IPA, not the repo, because the IPA is what uploads. The two checks that laundered
+it were fixed with it: `preflight.js` is no longer a hardcoded label map, and the assertion that
+*pinned* the bad key as its calibration now pins Apple's 35 documented values instead, so it is
+the vocabulary that is asserted rather than one spelling. **There is no ITMS-91056 to wait for.**
+
+<details><summary>The original entry, kept because it names the two checks that hid it</summary>
+
+*Re-measured by me:* the shipping
 `PrivacyInfo.xcprivacy` carries `NSPrivacyCollectedDataTypeHealthAndFitness`. Apple documents two
 keys for that category — `…TypeHealth` and `…TypeFitness` — and no combined one. The other ten keys
 are spelled exactly right, Apple's own irregular `PhotosorVideos` included. Two checks launder it:
@@ -582,7 +592,21 @@ this.** `plutil -lint` passes (it validates syntax, not the enum). **If the uplo
 ITMS-91056 email naming the privacy manifest, that is your signal to fix it and re-archive** — and
 that pass should fix C1–C3 at the same time.
 
-**U2 — one sentence in the published privacy policy is false, and it is the file Apple reads.** ✅
+</details>
+
+**U2 — ~~one sentence in the published privacy policy is false, and it is the file Apple reads.~~
+CLOSED in v670, and it cost a build rather than a copy edit.** The sentence was false in **four**
+places, not one, and the fourth was `NSHealthShareUsageDescription` — which ships **inside the
+binary**, so the "no new build needed for the hosted page" below was wrong: it took a version
+bump, a rebuild and a re-cut archive. Verified out of build 15: the corrected usage string is
+present and the stale wording has **0** occurrences. The two smaller errors in the same file were
+measured too — `privacy.html`'s provider list was already correct and `APP-PRIVACY.md` was the
+one short three, so acting on the original note would have damaged a correct page. And v671/v672
+went further than the sentence: the sends it describes can now be **declined** (§ 8).
+
+<details><summary>The original entry, kept because its measurement is what forced the build</summary>
+
+✅
 *Partly re-measured by me:* `privacy.html:48` says sleep and training reach the AI "**when you ask
 for coaching**", and `privacy.html:56` sets the house standard "sent when you choose that action,
 **never in the background**". A lens drove the app and measured **2 unprompted `ai-proxy` calls on
@@ -592,6 +616,8 @@ field the prompt prints; **I did not independently re-run the launch probe**. If
 false statement in the artifact Apple reads under 5.1.2. **Fixing it is a one-line copy change to
 `privacy.html` and `showPrivacyPolicy()` — no new build needed for the hosted page**, and the notes
 in §6 already describe the behaviour correctly. Two smaller errors in the same file, unverified: ~~the AI-provider list is short two providers and omits NVIDIA from the vision chain~~ — **struck 30 Oct: both are already correct in the live file, and editing it on this instruction would have damaged a correct page.** `APP-PRIVACY.md` was the file that was short three, and it is fixed. The other half was TRUE and is now done: Resend (which receives feedback text **and** the sender's email address) was named in neither privacy document and is now a bullet in both.
+
+</details>
 
 **U3 — ~~Settings → Help & FAQ is a silent no-op in the App Store build.~~ CLOSED in v664** — `26-share.js:623` carries `if(!w){ location.href='support.html' }`, the null fallback for exactly the `window.open`-returns-null case described below, and `support.html` ships inside the bundle with its own `history.back()` route out. Verified present in all three bundles. v670 also precaches it, so it works offline instead of falling back to reloading the whole app. Original note:
 `26-share.js:617` is `window.open('support.html', '_blank', 'noopener')`; Capacitor 8 hands every
