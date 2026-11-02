@@ -1936,6 +1936,25 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      is what proves the derivation is live rather than hardcoded — and removing `naloxone` from the
      pack while the app still renders it fails TWICE, once per drug class. The counts are
      bracket-matched per value, because a milestone's own prose contains brackets.
+   - **AND THE FILE THAT BECAME THE SINGLE AUTHORITY WAS THE ONE NOT GATED (2 Nov 2026).**
+     `preflight` cross-checks the shipped manifest against `APP-PRIVACY.md` AND
+     `APP-STORE-LISTING.md`, because those two diverged once and the listing shipped **omitting
+     Photos entirely** while the food camera was transmitting. The commits of 1-2 Nov then struck
+     every other "paste this" file and pointed them all at `ASC-SUBMIT-PACK.md` — and nothing
+     compared THAT to the manifest. Exactly this file's own recorded shape: *"a third and fourth copy
+     of an answer set is not covered by a check aimed at the first two."*
+     **Measured: the pack is complete** — all 12 collected types named, `UserID` and
+     `Photos or Videos` included, which is the row `SUBMIT-CHECKLIST` §2 had been missing. So this
+     gate passes today and goes red the day a type is added without it. Fault-injected by renaming
+     *"Photos or Videos"* to *"Imagery"* in the pack: `✗ … does not mention Photos or Videos`, exit
+     non-zero, which is the under-declaration that has already shipped once.
+     **Two of my own instrument failures landed on the way, both recorded shapes.** Matching any
+     `<string>NSPrivacyCollectedDataType…</string>` counted the PURPOSE values
+     (`PurposeAnalytics`, `PurposeAppFunctionality`) as data types and reported three missing from the
+     pack; pairing the KEY with its string gives the true 12. And a `head -20` on the manifest's
+     sorted type list **cut it off at `Tracking`**, so `UserID` was absent from my first read — a
+     probe that cuts its own evidence reports an absence it created, which this file already records
+     from the 6,642-character prompt slice.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at

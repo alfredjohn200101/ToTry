@@ -238,6 +238,24 @@ if (plist) {
           if (missingFromList.length) bad(`APP-STORE-LISTING.md — the sheet the App Privacy form is filled from — does not mention ${missingFromList.map(t => LABEL[t]).join(', ')}, which the shipped manifest declares. Ticking the boxes from it would UNDER-DECLARE.`);
           else good(`and all ${types.length} appear in APP-STORE-LISTING.md, the sheet the form is filled from`);
 
+          // AND THE FILE THAT IS NOW THE SINGLE AUTHORITY, WHICH WAS THE ONE NOT CHECKED.
+          // The two files above are gated because they diverged once. `ASC-SUBMIT-PACK.md` became
+          // the only "paste this" file on 1-2 Nov 2026 — APP-REVIEW-NOTES §1, APP-STORE-LISTING,
+          // SUBMIT-CHECKLIST §§2/4 and APP-STORE-SUBMISSION were all struck and now point at it —
+          // and nothing compared IT to the manifest. That is this repo's own recorded shape: "a
+          // third and fourth copy of an answer set is not covered by a check aimed at the first
+          // two", and SUBMIT-CHECKLIST §2 had already shipped missing the Photos row. Measured
+          // 2 Nov: the pack names all 12, UserID and Photos or Videos included, so this passes
+          // today and goes red the day a type is added without it.
+          const packPath = path.join(ROOT, 'ASC-SUBMIT-PACK.md');
+          if (!fs.existsSync(packPath)) soft('ASC-SUBMIT-PACK.md is missing — it is the file every App Store field is filled from');
+          else {
+            const pack = fs.readFileSync(packPath, 'utf8');
+            const missingFromPack = types.filter(t => LABEL[t] && !pack.includes(LABEL[t]));
+            if (missingFromPack.length) bad(`ASC-SUBMIT-PACK.md — the SINGLE AUTHORITY every field is filled from — does not mention ${missingFromPack.map(t => LABEL[t]).join(', ')}, which the shipped manifest declares. Every other copy is struck and points here, so this one being short IS the wrong answer.`);
+            else good(`and all ${types.length} appear in ASC-SUBMIT-PACK.md, the single authority`);
+          }
+
           // THE LINK FLAG IS A SEPARATE ANSWER AND IT IS NOT THE SAME FOR EVERY TYPE. Four of the
           // eleven are NOT linked to the user; the sheet said all of them were, which over-declares
           // three and is simply wrong about the fourth.
