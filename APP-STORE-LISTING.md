@@ -78,7 +78,7 @@ The first release of To Try. Your whole life in one home — the fight, your bod
 ## App Privacy ("nutrition label")
 
 > ⚠️ **This section was WRONG until 19 Aug 2026 and would have caused an under-declaration.**
-> It listed two data types and said Health & Fitness "does not leave your device". It does. 179 keys
+> It listed two data types and said Health & Fitness "does not leave your device". It does. 184 keys
 > sync to Supabase (`SYNC_KEYS`, `src/app/00-boot.js:790`) including `totry_workouts`, `totry_body`,
 > `totry_nutlog`, `totry_strava_activities`, `totry_transactions`, `totry_bills`, `totry_journal`,
 > `totry_prayers` and `totry_confessions`. Under-declaring is what gets an app pulled *after* it

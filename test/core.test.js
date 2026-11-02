@@ -20351,6 +20351,48 @@ H.section('the type scale can actually scale');
       'the companion is silent only when it opened ITSELF, not when somebody typed into it');
   }
 
+  // 17a. THE SYNC_KEYS COUNT IN THE ANSWER SHEETS IS AN ARTEFACT, NOT PROSE. `APP-PRIVACY.md` said
+  //      178 and `APP-STORE-LISTING.md` said 179 against a measured 184 — two privacy documents, two
+  //      different wrong numbers, about how much of a person's life is uploaded. ASC-SUBMIT-PACK's own
+  //      section 9 had already named it as drift and nothing gated it, so it drifted again. Derived
+  //      from the bundle every run: fixing the docs by hand is not a fix.
+  {
+    const fs = require('fs'), path = require('path');
+    const src = H.html;
+    const A = 'const SYNC_KEYS = [';
+    H.eq(src.split(A).length - 1, 1, 'the SYNC_KEYS anchor is unique in the bundle');
+    const i = src.indexOf(A);
+    let n = 0, depth = 1, end = -1;
+    for (let j = i + A.length; j < src.length; j++) {
+      if (src[j] === '[') depth++;
+      else if (src[j] === ']') { depth--; if (!depth) { end = j; break; } }
+    }
+    H.ok(end > i, 'and its array closes — an unbalanced one must fail, not be guessed at');
+    if (end > i) {
+      // Plain array of quoted literals with // comments and no regex literals, so this is sound here.
+      const body = H.code(src.slice(i + A.length, end));
+      const keys = body.match(/'[^']+'/g) || [];
+      n = keys.length;
+      H.ok(n > 150, 'SYNC_KEYS counted ' + n + ' entries — the walk reached real content');
+      H.eq(keys.filter(k => k.indexOf("'totry_") === 0).length, n,
+        'every entry is a totry_ key, so the count is not picking up something else');
+    }
+    if (n > 150) {
+      [['APP-PRIVACY.md'], ['APP-STORE-LISTING.md']].forEach(function (p) {
+        let doc = '';
+        try { doc = fs.readFileSync(path.join(__dirname, '..', p[0]), 'utf8'); } catch (e) { doc = ''; }
+        H.ok(doc.length > 500, p[0] + ' was read');
+        if (!doc) return;
+        const stated = (doc.match(/(\d+)\s+keys/g) || []).map(x => parseInt(x, 10));
+        H.ok(stated.length > 0, p[0] + ' states a key count at all');
+        const wrong = stated.filter(x => x !== n);
+        H.eq(wrong.length, 0,
+          p[0] + ': every stated key count is the measured ' + n
+          + (wrong.length ? ' — found ' + wrong.join(', ') : ''));
+      });
+    }
+  }
+
   // 17b. THE FLOOR'S OWN SENTENCE, WITH NO ARGUMENT, EXECUTED. An `opts.what` was written into the
   //      backstop first and had ZERO suppliers across all 38 api() callers — a parameter that cannot
   //      fire, under a comment describing a behaviour it never had, which is the dead-guard shape

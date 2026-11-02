@@ -66,7 +66,7 @@ third-party data for advertising. That means **no ATT prompt is required**.
 ## Why each answer, with evidence
 
 ### Contact Info → Email Address — collected, linked
-Account sign-in is email-based and `totry_user_email` is one of the **178 keys in `SYNC_KEYS`**, so it
+Account sign-in is email-based and `totry_user_email` is one of the **184 keys in `SYNC_KEYS`**, so it
 is stored in the Supabase project alongside everything else. Purpose: **App Functionality**.
 
 ### Health & Fitness — collected, linked
