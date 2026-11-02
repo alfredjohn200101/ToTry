@@ -20393,6 +20393,58 @@ H.section('the type scale can actually scale');
     }
   }
 
+  // 17d. THE DOOR COUNT IN THE PASTE-READY APP REVIEW NOTE. `ASC-SUBMIT-PACK.md` tells App Review
+  //      the app gates "every free-text entry point (53 of them)" and `APP-REVIEW-NOTES.md` says
+  //      "57 crisis doors ... 53 entries in its DOORS table plus four". Both are CORRECT and they
+  //      answer different questions — which is why this is a gate and not a fix: on 2 Nov 2026 the
+  //      53/57 disagreement looked exactly like the drift that had just been found twice that hour,
+  //      and reading both sentences is what cleared it. **A number disagreement between two docs is
+  //      only drift if they are answering the same question.** Derived from the DOORS table so that
+  //      adding door 54 goes red in the sentence Apple reads, instead of silently understating it.
+  {
+    const fs = require('fs'), path = require('path');
+    let crisisSrc = '';
+    try { crisisSrc = fs.readFileSync(path.join(__dirname, 'crisis.js'), 'utf8'); } catch (e) { crisisSrc = ''; }
+    H.ok(crisisSrc.length > 10000, 'test/crisis.js was read');
+    if (crisisSrc) {
+      const A = 'const DOORS';
+      H.eq(crisisSrc.split(A).length - 1, 1, 'the DOORS anchor is unique in test/crisis.js');
+      const at = crisisSrc.indexOf(A);
+      let doors = 0;
+      if (at >= 0) {
+        // Bracket-match: that file is full of regex literals, which is why a string-aware walker
+        // aborted on it once. Depth counting over [ and ] alone is enough for the array bounds.
+        let d = 0, open = crisisSrc.indexOf('[', at), end = -1;
+        for (let i = open; i < crisisSrc.length; i++) {
+          if (crisisSrc[i] === '[') d++;
+          else if (crisisSrc[i] === ']') { d--; if (!d) { end = i; break; } }
+        }
+        H.ok(end > open, 'and the DOORS array closes');
+        if (end > open) doors = (crisisSrc.slice(open + 1, end).match(/^ {2}\{/gm) || []).length;
+      }
+      H.ok(doors >= 40, 'the DOORS table holds ' + doors + ' entries — the walk reached real content');
+      if (doors >= 40) {
+        // ANCHOR ON THE CLAIM, NOT THE BARE NUMBER. The first version of this used `\bN\b` over the
+        // whole document and PASSED on the defect: `ASC-SUBMIT-PACK.md` holds three 53s — the claim
+        // at "(53 of them", and two more in the note I wrote EXPLAINING the number ("**53, not
+        // 57.** I bracket-matched…"). So the gate was satisfied by the comment about the number,
+        // which is this repo's most-recorded test trap, hit inside the gate written for that class.
+        // Each doc therefore declares the exact phrase its claim appears in.
+        [['ASC-SUBMIT-PACK.md', 'the single authority every field is filled from', n => '\\(' + n + ' of them'],
+         ['APP-REVIEW-NOTES.md', 'the paste-ready App Review note', n => '\\b' + n + ' entries']].forEach(function (p) {
+          let doc = '';
+          try { doc = fs.readFileSync(path.join(__dirname, '..', p[0]), 'utf8'); } catch (e) { doc = ''; }
+          H.ok(doc.length > 500, p[0] + ' was read');
+          if (!doc) return;
+          const pat = p[2](doors);
+          H.ok(new RegExp(pat).test(doc), p[0] + ' (' + p[1] + ') states the measured ' + doors +
+            ' free-text doors in its own claim (/' + pat + '/) — a stale count understates the ' +
+            'safety claim in text handed to Apple');
+        });
+      }
+    }
+  }
+
   // 17c. THE AGE-RATING EVIDENCE IS AN ARTEFACT TOO. `ASC-SUBMIT-PACK.md` is now the single file
   //      every App Store field is filled from, and its Medical-question evidence said "31 clinical
   //      milestones across 6 vice types" against a measured 41 across 8 — written before v670 added

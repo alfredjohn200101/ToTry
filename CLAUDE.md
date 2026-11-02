@@ -1955,6 +1955,31 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      sorted type list **cut it off at `Tracking`**, so `UserID` was absent from my first read — a
      probe that cuts its own evidence reports an absence it created, which this file already records
      from the 6,642-character prompt slice.
+   - **AND THE DOOR COUNT APPLE READS IS NOW DERIVED — BUT THE REAL LESSON IS THAT I ALMOST
+     "FIXED" A CORRECT NUMBER (2 Nov 2026).** `ASC-SUBMIT-PACK.md` tells App Review the app gates
+     *"every free-text entry point (53 of them)"* while `npm run crisis` had just printed
+     *"all 57 crisis doors"*. After two genuine stale counts in the same hour, a 53/57 disagreement
+     read exactly like a third. **It is not: both are right.** `APP-REVIEW-NOTES.md` already says so
+     in its own words — *"57 crisis doors is `npm run crisis`'s own number: 53 entries in its DOORS
+     table plus four"* — and the four extras are the net with its container deleted, the guest door
+     and the breath screen, none of which is a free-text entry point. **A number disagreement
+     between two docs is only drift if they are answering the same question**, and reading both
+     sentences is what settled it, not comparing the integers.
+     Gated anyway, because 53 sits in paste-ready text handed to Apple: derived by bracket-matching
+     `const DOORS` out of `test/crisis.js` (depth over `[`/`]` only — a string-aware walker once
+     ABORTED on that file because it is full of regex literals).
+     **AND MY FIRST VERSION OF THAT GATE PASSED ON THE DEFECT, WHICH IS THE PART WORTH KEEPING.**
+     It tested `\bN\b` over the whole document. The pack holds **three** 53s: the claim, and two
+     in the note I had written an hour earlier EXPLAINING the number (*"**53, not 57.** I
+     bracket-matched…"*). So changing the claim to 49 left the gate green, satisfied by the comment
+     about the number — this repo's most-recorded test trap, inside the gate written for that very
+     class. Each doc now declares the exact phrase its claim lives in (`\(53 of them`,
+     `\b53 entries`), and both injections fail with three other 53s still in the file.
+     **And my VERIFICATION lied too, in the same five minutes.** `grep -oE ".{22}\b53\b.{26}"`
+     reported ONE occurrence, because a fixed-width context window silently drops matches near a
+     line boundary — so I first concluded the gate was fine and the injection was broken. The
+     python count said 2. **Never use a fixed-width context window to establish a count**; that is
+     the never-slice-a-fixed-window rule arriving as a grep flag.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at
