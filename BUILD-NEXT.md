@@ -29,9 +29,29 @@
 > editing. Read the doc you are correcting before you correct it; and when a count is a proxy for
 > the thing you care about, go and read the thing.
 >
-> **So nothing is worth re-cutting the archive for.** Build 15 is cut, exported, IPA-verified and
-> gate-green: `npm test` 5379/0, `panels` 93 checks / 0 findings, `crisis` 57 doors, `preflight`
-> ready to archive.
+> **So nothing is worth re-cutting the archive for.** Build 15 is cut, exported and IPA-verified,
+> and on **2 Nov 2026 the WHOLE gate was run in sequence against sha `4be5cdd3ad5e`** — the bytes in
+> the IPA, in `www/`, in the repo and on the live origin, all four verified equal:
+>
+> | suite | result |
+> |---|---|
+> | `npm test` | 5379 passed, 0 failed |
+> | `crisis` | 57 doors dialable · 53 ordinary sentences left alone · 6 kinds each rendering every route |
+> | `panels` | 93 checks, 7 walks, **0 findings** |
+> | `personas` | 566 passed, 0 failed |
+> | `test:edge` | 34 + 34 + 32, 0 failed |
+> | `engines` | 0 of 365 days forked (calibration: the old formatter forks 300 of 365) |
+> | `craft` | 10 screens clean — 0 runs under 13px, 0 wrapping caps, 0 neighbours <2px, 3 greys |
+> | `orb` | 0 controls lose their own centre · 0 still covered at the scroll floor · within the ratchet |
+> | `preflight` | ready to archive · the build-15 archive carries the current bundle |
+>
+> The two browser suites also intercepted **567 production writes and sent 0**, which is v670's
+> block measured rather than assumed.
+>
+> **That full run is new, and it had to be.** `personas` last ran *five minutes before v672 existed*
+> and `crisis` six minutes after, many commits before the archived bundle — and none of these suites
+> stamps the bundle it ran against, so "green earlier" was never evidence about these bytes. v672
+> edited `13-body.js`, which holds **crisis door #11**.
 
 ---
 

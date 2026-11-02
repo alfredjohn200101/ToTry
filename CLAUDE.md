@@ -1845,6 +1845,27 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      a bracket in a comment still 13 where the old form gave 4; unbalanced refuses with no tick after
      it; and a genuinely deleted `www/fonts/outfit.woff2` is named and fails. `sw.js` was backed up
      with `cp` and restored by sha (`20edfe398a20c46c`), never `git checkout`.
+   - **AND THE WHOLE GATE HAD NEVER RUN ON THE SHIPPED BYTES UNTIL NOW (2 Nov 2026).** "Green
+     earlier" was doing the same work that *"cannot be automated"* and *"it describes behaviour, so
+     it needs no re-audit"* have each done in this file. Checked by TIMESTAMP against the commit that
+     set `v672` (31 Oct 19:49): **`personas` last ran at 19:44 — five minutes BEFORE v672 existed**,
+     and `crisis` ran at 19:55, six minutes after, which is many commits before the bundle that was
+     actually archived. **None of those suites names a bundle in its output**, so the timestamps were
+     the only evidence and they did not support the claim. And v672 edited `13-body.js`, which holds
+     **crisis door #11**, plus `03-person.js`, where `api()`'s refusal lives — so the suite with the
+     most at stake was the one whose evidence was weakest.
+     Re-run in sequence against sha `4be5cdd3ad5e` — the bytes in the IPA, in `www/`, in the repo and
+     on the live origin, all four verified equal: **`npm test` 5379/0 · `crisis` 57 doors dialable,
+     53 ordinary sentences left alone, 6 kinds each rendering every route · `panels` 93 checks and 7
+     walks, 0 findings · `personas` 566/0 · `test:edge` 34 + 34 + 32, 0 failed · `engines` 0 of 365
+     days forked with its calibration holding at 300 of 365 for the old formatter · `craft` 10
+     screens clean (0 runs under 13px, 0 wrapping caps, 0 neighbours under 2px, 3 greys) · `orb` 0
+     controls losing their own centre and 0 still covered at the scroll floor · `preflight` ready to
+     archive.** The two browser suites also report **567 production writes intercepted and 0 sent**
+     (316 + 251), which is v670's block measured rather than assumed.
+     **A suite that does not stamp what it ran against cannot be cited later**, and that is the
+     cheapest lesson here: `engines` prints its own calibration numbers and is therefore the only one
+     of the eight whose output could be audited after the fact.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at
