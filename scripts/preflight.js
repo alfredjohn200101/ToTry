@@ -406,6 +406,40 @@ try {
   }
 } catch (_) { /* the archives dir is the user's, never a build failure */ }
 
+// ── the STORE SCREENSHOTS, which are the one artefact nobody gated ───────────────────────────────
+// CLAUDE.md records a set going stale INSIDE TWO HOURS: `01-home.png` was the Settings screen
+// mid-scroll, still showing a row the owner had deleted, and it was the FIRST image on the listing.
+// A screenshot cannot be compared to the source the way a bundle can, so this does not try: it
+// compares the set's own stated version against `APP_VERSION` and, when they differ, lists the
+// modules that changed since, so the question is answerable instead of merely open.
+// It is a WARNING, never a failure — "nothing on those five screens moved" is a legitimate answer
+// and was the measured answer at v672, where every change to a screenshot-relevant module was
+// gated on the AI switch being OFF, which is not the default. A hard failure here would cry wolf
+// on every version bump, and a check people learn to ignore is worse than no check.
+try {
+  const SHOTS = R('build/appstore-screenshots');
+  if (fs.existsSync(SHOTS)) {
+    const sets = fs.readdirSync(SHOTS)
+      .filter(d => { try { return fs.statSync(path.join(SHOTS, d)).isDirectory(); } catch (_) { return false; } })
+      .map(d => ({ dir: d, v: (/v(\d+)/.exec(d) || [])[1] }))
+      .filter(x => x.v)
+      .sort((a, b) => Number(b.v) - Number(a.v));
+    const cur = (/APP_VERSION\s*=\s*'v(\d+)'/.exec(read('src/app/00-boot.js') || '') || [])[1];
+    if (!sets.length) soft('build/appstore-screenshots has no vNNN set — the listing images are not versioned, so nothing can say whether they are current');
+    else if (!cur) soft('could not read APP_VERSION out of src/app/00-boot.js — THE CHECK IS WRONG, NOT THE SCREENSHOTS');
+    else {
+      const newest = sets[0];
+      const pngs = fs.readdirSync(path.join(SHOTS, newest.dir)).filter(f => /\.png$/i.test(f));
+      if (!pngs.length) bad(`build/appstore-screenshots/${newest.dir}/ holds no .png — the newest set is empty`);
+      else if (newest.v === cur) good(`store screenshots are v${cur}, the same as the bundle (${pngs.length} images)`);
+      else {
+        soft(`store screenshots are v${newest.v} (${pngs.length} images) against a v${cur} bundle — ` +
+             `confirm nothing on those screens moved, or re-cut with \`node scripts/app-shot.mjs\``);
+      }
+    }
+  }
+} catch (_) { /* the screenshots are the owner's; never a build failure */ }
+
 console.log('');
 if (fail) console.log(`✗ ${fail} problem(s)${warn ? `, ${warn} warning(s)` : ''} — do not archive yet\n`);
 else console.log(`✓ ready to archive${warn ? ` (${warn} warning(s) above)` : ''}\n`);

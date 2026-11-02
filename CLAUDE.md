@@ -1866,6 +1866,51 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      **A suite that does not stamp what it ran against cannot be cited later**, and that is the
      cheapest lesson here: `engines` prints its own calibration numbers and is therefore the only one
      of the eight whose output could be audited after the fact.
+   - **AND THE STORE SCREENSHOTS WERE NINETEEN MODULES BEHIND, WHICH TURNED OUT TO BE FINE — AND
+     NOTHING COULD HAVE TOLD ME THAT (2 Nov 2026).** The set is `iphone-6.9in-v669`, cut 29 Oct from
+     the real Capacitor build; the bundle is v672. Measured: **19 `src/` files changed since**, three
+     of which render screens that ARE in the set — `04-fight.js`, `25-soul.js` and `shell-head.html`.
+     So "the shots are current" was not something to assume.
+     Read rather than assumed, and the answer is clean: **every one of those three changes is gated
+     on `aiOff()` being TRUE**, and the switch ships ON, so the default render of Home, the Feeling
+     Door, Fight, Money and Soul is byte-for-byte the same decision tree it was at v669 —
+     `25-soul.js` adds `if(aiOff()) { card.style.display='none'; return; }`, `04-fight.js` adds an
+     `aiOffNotice` guard and a `{quiet:true}` flag, and `shell-head.html`'s whole diff is the new
+     **Settings** section, which is on no store screenshot. The honest limit: this is a diff read,
+     not a re-cut, because re-cutting needs a booted simulator and ~2GB on a machine already at
+     ~14MB free.
+     **AND IT IS GATED NOW, which is the first time this artefact has been.** CLAUDE.md already
+     records a set going stale INSIDE TWO HOURS — `01-home.png` was the Settings screen mid-scroll,
+     showing a row the owner had deleted, as the FIRST image on the listing — and nothing in
+     `preflight` or `npm test` had ever mentioned the folder. A screenshot cannot be compared to
+     source the way a bundle can, so the check does not try: it compares the set's own stated
+     version against `APP_VERSION` and names the gap. **It is a WARNING and never a failure**,
+     because "nothing on those screens moved" is a legitimate answer and was the answer today; a
+     hard fail would cry wolf on every bump, and a check people learn to ignore is worse than none.
+     Three injections, each driven: a matching version reports ✓, a mismatch reports the gap and
+     still says ready to archive, and an EMPTY newest set is a hard ✗ — because an empty set
+     reading as a pass is the shape this file keeps paying for.
+   - **AND FOUR MORE INSTRUMENT FAILURES IN ONE HOUR, ALL THE SAME TWO FAMILIES.** The privacy
+     manifest inside the IPA is a **binary** plist, so an XML regex over it reported **0 collected
+     data types** — which, if believed, is a submission failure rather than a working app.
+     `plutil -p` reads it: **12 types, Health and Fitness as separate entries, PhotosorVideos
+     present, 0 occurrences of the invalid combined key**, which re-verifies U1 independently.
+     Then `ALL.find('RECOVERY_TIMELINES')` over the concatenated modules found the **comment** in
+     `04-fight.js:1043` before the real declaration in `09-fight-deep.js:1423`, bracket-matched from
+     a `{` inside prose, and reported the registry as having **0 keys**. Anchored on
+     `const RECOVERY_TIMELINES = {` with uniqueness asserted: **8 keys**, and `general` correctly
+     still absent, so a `general` vice reaches the model under v670's safety clause exactly as the
+     record says — which also means the screenshot seed's own vice (`{n:'The pull', type:'general'}`)
+     is model-served, and harmlessly so, because that card is behind a tap.
+     And a shell helper `n(){ grep "$1" $2; }` called with a glob keeps only the FIRST file, so four
+     counts searched one module.
+     **A stale archive was found in the repo and is NOT a hazard, which is worth writing down so
+     nobody re-raises it:** `build/ToTry.xcarchive` is **build 2 from 6 August**, distribution-signed,
+     and its manifest carries `NSPrivacyCollectedDataTypeHealthAndFitness` — the invalid combined key
+     U1 was about — with only 2 types. It is gitignored, `preflight` scans only
+     `~/Library/Developer/Xcode/Archives`, and **Organizer shows exactly one archive: build 15**, with
+     every superseded one already moved to `ToTry-superseded-archives/`. So the upload path is
+     unambiguous and that file is unreachable junk rather than a loaded gun.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at
