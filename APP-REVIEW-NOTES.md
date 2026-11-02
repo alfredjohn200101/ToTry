@@ -1,13 +1,27 @@
 # App Store Connect — the fields you fill in, and why
 
-Re-derived from the code on **29 Oct 2026, v669 / build 12**. Where a claim is checkable, the check
+Re-derived from the code on **29 Oct 2026, v669 / build 12** — and the app is now at **v672 / build 15**, so this file is three versions behind by its own standard. `ASC-SUBMIT-PACK.md` is the current one; treat everything here as context rather than instruction. Where a claim is checkable, the check
 that holds it is named. Re-derive rather than trust this file if it is old — a doc that only
 *describes* behaviour goes stale underneath you, and that failure mode is recorded in CLAUDE.md three
 times now.
 
 ---
 
-## 1. App Review Information → Notes  ← **PASTE THIS. It is the one that prevents a rejection.**
+## 1. App Review Information → Notes — ~~PASTE THIS~~ **DO NOT PASTE THIS ONE. See
+`ASC-SUBMIT-PACK.md` § 6 · Notes.**
+
+> **Two files told you to paste two different things.** This section said "PASTE THIS. It is the one
+> that prevents a rejection" while `ASC-SUBMIT-PACK.md` says to paste its own copy — and the pack's
+> is the corrected one. Pasting the block below instead would have sent App Review a note whose
+> health paragraph is **false** (it predates the v670 correction), whose crisis-door count is wrong,
+> whose 1.2 "block users" limb is unanswered, and which does not mention the AI off-switch at all.
+>
+> It is kept, not deleted, because it is the text the corrections were made *against* — but it is
+> not the thing to act on. **One authority: `ASC-SUBMIT-PACK.md`.** That is the same reasoning that
+> made `CRISIS_LINES` one list serving both the card and the model's prompt, after a model offered an
+> Australian user a UK number.
+
+<details><summary>The superseded text, kept as the thing the corrections were made against</summary>
 
 > **You do not need an account to review this app.**
 >
@@ -39,6 +53,8 @@ times now.
 **Sign-In Required toggle: NO.** Guest mode is a real, complete path.
 
 ---
+
+</details>
 
 ## 2. The answers, with the evidence
 

@@ -140,7 +140,14 @@ two copies of one answer set is how they drift apart, so there is now one.
 > set a tier lower than the answers produce: being corrected costs a review cycle, and an
 > under-declared rating can get an app pulled later.
 
-## Notes for the App Review team (paste in "App Review Information → Notes")
+## Notes for the App Review team — ~~paste in "App Review Information → Notes"~~ **DO NOT PASTE
+THIS ONE. Use `ASC-SUBMIT-PACK.md` § 6 · Notes.**
+
+> This is the THIRD copy of that note, and the pack names this one specifically as the hazard: it
+> opens with "Please use a real inbox that can receive the code" and buries the no-account path in
+> paragraph four, **which is a 2.1 rejection waiting to happen on an app that has a working guest
+> path**. It also predates the v670 health correction and knows nothing about the AI off-switch.
+> Kept as context; not the thing to act on. One authority: `ASC-SUBMIT-PACK.md`.
 ```
 Sign-in is passwordless: enter an email, receive a one-time code, enter it. Please use a real inbox that can receive the code. A new account starts in onboarding and reaches the full app in under a minute.
 
