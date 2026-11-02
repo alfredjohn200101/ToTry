@@ -181,7 +181,7 @@ Everything else is **None / No**. These four are judgement calls and **they are 
 
 | Question | Recommended | Why, and what it costs |
 |---|---|---|
-| **Alcohol, Tobacco, or Drug Use or References** | **Infrequent/Mild** | References are frequent but entirely anti-use — 3 of 12 onboarding vice chips are substances, with quit playbooks. Nothing is depicted or glamorised. **Frequent on this one alone = 18+.** Infrequent is the standard answer for sobriety and quit-smoking apps. |
+| **Alcohol, Tobacco, or Drug Use or References** | **Infrequent/Mild** | References are frequent but entirely anti-use — 3 of 12 onboarding vice chips are substances, with quit playbooks. Nothing is depicted or glamorised. Since v670 the app also names **benzodiazepines, sleeping tablets, opioids, methadone and naloxone** in rendered withdrawal-safety copy; that is still *reference, and anti-use*, so the answer does not move, but know it is there if a reviewer asks. **Frequent on this one alone = 18+.** Infrequent is the standard answer for sobriety and quit-smoking apps. |
 | **Sexual Content or Nudity** | **Infrequent/Mild** | References only. "Lust / PMO" as a vice chip, a scripture chip, one textarea placeholder. The only anatomical stem in the bundle (`masturbat`, 2 occurrences) sits inside keyword arrays tested against what a person types and **never renders**. Frequent = 18+. |
 | **Mature or Suggestive Themes** | **Infrequent/Mild** | Addiction recovery and suicide *disclosure* handled supportively, no method ever named. Frequent = 16+. |
 | **Medical or Treatment Information** | **your call — see below** | Infrequent → 13+. Frequent/Intense → 16+. |
@@ -195,12 +195,18 @@ Everything else is **None / No**. These four are judgement calls and **they are 
 **The Medical question — the one real decision.** The honest measured answer is
 **Frequent/Intense**, which gives **16+**:
 
-- `openRecoveryTimeline` (`src/app/09-fight-deep.js:1472`) renders **31 clinical milestones across
-  6 vice types**, including outcome claims — "Your risk of heart disease has dropped to roughly half
-  that of a smoker", "Liver fat can drop significantly".
-- A rendered **alcohol-withdrawal warning** naming seizures and telling the person to see a GP
-  (`09-fight-deep.js:1433-1434`).
-- `_researchRecoveryTimeline` (`:1551`) asks a model, **with web search**, under the prompt
+- `openRecoveryTimeline` (`src/app/09-fight-deep.js`, `RECOVERY_TIMELINES`) renders **41 clinical
+  milestones across 8 vice types** — re-counted 2 Nov 2026; this said *31 across 6* and was written
+  before v670. Includes outcome claims: "Your risk of heart disease has dropped to roughly half that
+  of a smoker", "Liver fat can drop significantly".
+- A rendered **alcohol-withdrawal warning** naming seizures and telling the person to see a GP.
+- **And since v670, two prescription-drug classes with the same clinical register, which is the
+  strongest evidence on this list and was missing from it.** `sedative` opens *"if you have been
+  taking these every day, do NOT stop suddenly. Benzodiazepines and sleeping tablets are, with
+  alcohol…"*; `opioid` names **medication-assisted treatment**, **naloxone**, and post-abstinence
+  **tolerance loss** — said twice, because day 30 is when somebody feels recovered. That is
+  withdrawal-management guidance, not wellness copy, and it is rendered to the person.
+- `_researchRecoveryTimeline` asks a model, **with web search**, under the prompt
   "You are a recovery scientist… as evidence-based as possible", and renders AI-generated
   day-by-day bodily recovery claims for *any* struggle a person names.
 - An eating-disorder screen routing to the Butterfly Foundation; clinical mechanism copy delivered

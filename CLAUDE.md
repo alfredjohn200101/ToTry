@@ -1911,6 +1911,31 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      `~/Library/Developer/Xcode/Archives`, and **Organizer shows exactly one archive: build 15**, with
      every superseded one already moved to `ToTry-superseded-archives/`. So the upload path is
      unambiguous and that file is unreachable junk rather than a loaded gun.
+   - **AND THE AGE-RATING EVIDENCE WENT STALE IN THE ONE FILE EVERY FIELD IS NOW FILLED FROM
+     (2 Nov 2026).** Third time an App Store answer sheet has rotted *"because it describes
+     behaviour"*, and this time inside `ASC-SUBMIT-PACK.md`, which the previous commits made the
+     single authority precisely so there would be one copy to trust.
+     Its Medical-question evidence read *"31 clinical milestones across 6 vice types"*. Measured by
+     bracket-matching each value out of `RECOVERY_TIMELINES`: **41 milestones across 8 types.**
+     v670 added `sedative` and `opioid`, and the pack had **0 mentions** of opioid, sedative,
+     benzodiazepine, naloxone or tolerance against **10 rendered milestones** carrying exactly that
+     register — *"do NOT stop suddenly. Benzodiazepines and sleeping tablets are, with alcohol…"*,
+     medication-assisted treatment, naloxone, and post-abstinence tolerance loss said twice.
+     **The ANSWER never moved, which is why this was easy to miss and still worth fixing.** The
+     section already recommends Frequent/Intense → 16+, and the new copy is the strongest evidence
+     for that answer — so the defect was an UNDERSTATED case for a conclusion the owner is being
+     invited to argue down (*"if it computes 13+ that is Apple weighting the medical question"*).
+     The drug-references row keeps **Infrequent/Mild** on the same reasoning it always had (anti-use,
+     nothing depicted) and now names the prescription classes, so a reviewer quoting the
+     benzodiazepine line is not a surprise.
+     Line numbers were DROPPED rather than corrected — all three had drifted (`:1472`→ 1495,
+     `:1551`→ 1573) and this file's own rule is that a doc restating a mutable fact misleads at the
+     worst moment.
+     **Gated, derived from the bundle, three injections each caught by the assertion under test:**
+     a stale milestone count fails naming the measured 41, a stale type count fails naming 8 — which
+     is what proves the derivation is live rather than hardcoded — and removing `naloxone` from the
+     pack while the app still renders it fails TWICE, once per drug class. The counts are
+     bracket-matched per value, because a milestone's own prose contains brackets.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at

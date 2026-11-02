@@ -20393,6 +20393,71 @@ H.section('the type scale can actually scale');
     }
   }
 
+  // 17c. THE AGE-RATING EVIDENCE IS AN ARTEFACT TOO. `ASC-SUBMIT-PACK.md` is now the single file
+  //      every App Store field is filled from, and its Medical-question evidence said "31 clinical
+  //      milestones across 6 vice types" against a measured 41 across 8 — written before v670 added
+  //      `sedative` and `opioid`, which are the STRONGEST evidence for the Frequent/Intense answer
+  //      that section already recommends. So the answer never moved and the evidence under it was
+  //      understated, which is the third time an App Store answer sheet has gone stale "because it
+  //      describes behaviour". Derived from the bundle: adding a vice class goes red until the pack
+  //      says so. The class NAMES are asserted too, because a count alone cannot tell the owner
+  //      that the app now names benzodiazepines and naloxone in rendered copy.
+  {
+    const fs = require('fs'), path = require('path');
+    let reg = '';
+    const A = 'const RECOVERY_TIMELINES = {';
+    H.eq(H.html.split(A).length - 1, 1, 'the RECOVERY_TIMELINES anchor is unique in the bundle');
+    const at = H.html.indexOf(A);
+    if (at >= 0) {
+      let depth = 0, open = H.html.indexOf('{', at), end = -1;
+      for (let i = open; i < H.html.length; i++) {
+        if (H.html[i] === '{') depth++;
+        else if (H.html[i] === '}') { depth--; if (!depth) { end = i; break; } }
+      }
+      H.ok(end > open, 'and its object literal closes — unbalanced must fail, not be guessed at');
+      if (end > open) reg = H.html.slice(open + 1, end);
+    }
+    // Count by bracket-matching each value, never by slicing: a milestone's own prose holds brackets.
+    const types = [];
+    let milestones = 0;
+    if (reg) {
+      const re = /^  (\w+):\s*\[/gm;
+      let m;
+      while ((m = re.exec(reg))) {
+        let d = 1, p = m.index + m[0].length;
+        while (p < reg.length) {
+          if (reg[p] === '[') d++;
+          else if (reg[p] === ']') { d--; if (!d) break; }
+          p++;
+        }
+        types.push(m[1]);
+        milestones += (reg.slice(m.index, p).match(/\{\s*d\s*:/g) || []).length;
+      }
+    }
+    H.ok(types.length >= 6, 'RECOVERY_TIMELINES parsed ' + types.length + ' vice types — the walk reached real content');
+    H.ok(milestones >= 30, 'and ' + milestones + ' milestones');
+
+    if (types.length >= 6 && milestones >= 30) {
+      let pack = '';
+      try { pack = fs.readFileSync(path.join(__dirname, '..', 'ASC-SUBMIT-PACK.md'), 'utf8'); } catch (e) { pack = ''; }
+      H.ok(pack.length > 2000, 'ASC-SUBMIT-PACK.md was read');
+      if (pack) {
+        H.ok(pack.indexOf('**' + milestones + ' clinical') >= 0 || new RegExp('\\b' + milestones + '\\s+clinical').test(pack),
+          'the pack states the measured ' + milestones + ' clinical milestones (a stale count understates the Medical answer it recommends)');
+        H.ok(new RegExp('\\b' + types.length + '\\s+vice types').test(pack),
+          'and the measured ' + types.length + ' vice types');
+        // A drug class the app RENDERS must be named in the age-rating section, because the owner
+        // answers "Alcohol, Tobacco, or Drug Use or References" off this file and nothing else.
+        ['sedative', 'opioid'].forEach(function (k) {
+          if (types.indexOf(k) < 0) return;
+          const named = /benzodiazepine/i.test(pack) && /naloxone/i.test(pack);
+          H.ok(named, 'RECOVERY_TIMELINES carries a ' + k + ' class, so the pack must name ' +
+            'benzodiazepines AND naloxone — the rendered words a reviewer would see');
+        });
+      }
+    }
+  }
+
   // 17b. THE FLOOR'S OWN SENTENCE, WITH NO ARGUMENT, EXECUTED. An `opts.what` was written into the
   //      backstop first and had ZERO suppliers across all 38 api() callers — a parameter that cannot
   //      fire, under a comment describing a behaviour it never had, which is the dead-guard shape
