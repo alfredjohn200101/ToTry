@@ -1816,6 +1816,62 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      attempt and 30 in the first, including the 24pt tap-target floor, the sheet-a11y floor, both
      injection drives and the typed-text sweep across 12 stores — and the right sentence is "16 of
      about 40 and then the machine gave out", not "the gate is green".
+     **COMPLETED GREEN ON THE THIRD RUN (2 Nov 2026): 93 checks, 7 walks, 0 findings, exit 0** — so
+     the starvation diagnosis was right and the sentence above was the right sentence to write at the
+     time. Swap was 4.9GB of 7.9GB rather than 5.3 of 6.1, which is the whole difference. The run
+     also reports **316 production writes intercepted and NOT sent** (312 ai-proxy, 4 key-proxy),
+     which is the v670 block doing its job inside the suite that first polluted the live tables.
+   - **AND FOUR `pgrep -f` WAITERS DEADLOCKED EACH OTHER, SO THE SUITE SAT FINISHED AND GREEN FOR
+     NINETY MINUTES WHILE I REPORTED IT RUNNING (2 Nov 2026).** `until ! pgrep -f "node test/panels";
+     do sleep 20; done` — started **four** times across the session — and each of those shells has the
+     needle in its own command line, so each one matches the other three and **none can ever exit**.
+     `/tmp/panelsH.out` had been complete since **15:48 against a 17:18 read**, and worse than the
+     wasted wall-clock: **every status read I took from that pgrep was reading my own waiters rather
+     than the suite**, so the "still running, 75 checks" I reported was a self-inflicted artifact.
+     This is the process-liveness family this file already records — `ps` ELAPSED lying, `grep -i
+     chrom` counting the owner's Chrome — but it points the OTHER way. The usual instrument failure
+     here says *"the app is broken"*; this one says *"the work is still in progress"*, which costs the
+     same hour and is harder to doubt, because waiting feels like diligence.
+     **MY FIRST WRITE-UP OF THIS NAMED THE WRONG MECHANISM AND THE WRONG FIX, AND ONE MEASUREMENT
+     KILLED BOTH.** I recorded it as a SELF-match and prescribed the bracket trick this file already
+     uses for Chromium. Driven with a planted decoy whose argv really does carry the needle (a bare
+     `zsh -c 'sleep 25'` is exec-optimised and drops it, so the first decoy was invalid and reported a
+     clean pass): the plain form returned the DECOY and **not the asking shell**, so `pgrep` already
+     excludes itself and **a single waiter would have been correct** — the bug is purely that there
+     were four. And `pgrep -f "[n]ode test/panels"` matched the decoy **too**: the bracket only stops
+     the matcher matching ITSELF, which pgrep does anyway, and a sibling waiter carries the plain
+     needle whatever pattern I ask with. **A fix that cannot fix, recommended out of a repo's own
+     recorded habit, is exactly the half-applied shape this file fails builds over.**
+     What actually works: never start a second waiter; or stop polling the process list and read the
+     ARTIFACT — the suite's last line is `✓ all panels render for both people`, printed only when
+     `real.length === 0`, so one `grep` is both the liveness and the verdict, and the file's mtime
+     would have answered it in a single call. **A waiter needs a calibration like anything else:
+     prove it exits when the thing it waits for is already gone — and prove the decoy is real.**
+   - **AND I CALLED TWO CLOSED ITEMS OPEN, WITH A CORRECT NUMBER EACH TIME (2 Nov 2026).** Re-deriving
+     `BUILD-NEXT.md`'s priority list against the bundle — because this repo's own record is that
+     *"every ❌ I checked was already built"* — **eleven of fifteen items measured CLOSED**, which
+     is the finding: a "what to do next" list nobody re-measures sends the next session to redo
+     finished work. But two of my own verdicts were wrong, both the same way, and neither was an
+     instrument failure. **The count was right and the inference was wrong.**
+     For 2.1 I counted `routine:null` in `applyRecommendedSplit` (2 occurrences) and read it as "the
+     exercises are discarded". `routine:null` is CORRECT there and a comment says why — `routine`
+     holds the NAME of a separate `totry_routines` entry — and the question was whether `exercises`
+     is persisted, which it is, alongside `detail`. For 2.4 I counted app call sites passing `prefer`
+     (0) and read it as a dead gate. The consumer is `scripts/voice-probe.mjs:113` plus
+     `ai-proxy:577`, which is what makes every link in the fallback chain probeable without touching
+     an env var; **0 app callers IS the documented refusal.** This file already carries both facts,
+     and the second one was recorded two hundred lines below the table I was editing.
+     So: **read the document you are correcting before you correct it** — an older verdict table in
+     the same file had already settled 2.4 at v660 and would have stopped me in one read. And when a
+     count stands in for the thing you actually care about, the count is a PROXY: `routine:null`
+     present is not "exercises lost", and "no app caller" is not "unreachable". Go and read the
+     thing. This is not the instrument lying — the instrument was right twice.
+     Two smaller ones came with it, both mine and both caught before they shipped: four counts in a
+     shell helper searched **one file**, because `n(){ grep "$1" $2; }` called as `n pat src/app/*.js`
+     receives the glob as 42 arguments and keeps only the first — `_jsAttr(` read as 1 where it is 17.
+     And a `\|\|` I wrote inside a markdown table cell **broke the table**, which `\|` escapes; the
+     check for it has to count UNESCAPED pipes only, since the row above legitimately carries a
+     grep's own `\|` alternation.
    - **AND A DATE BOMB WENT OFF AT MIDNIGHT, ON CODE NOBODY HAD TOUCHED (1 Nov 2026).** The giving
      section seeded two gifts RELATIVELY — `now - 2 DAY` and `now - 200 DAY` — and asserted the
      month total as a hardcoded 240 and the year as 1850. Relative is not the same as calendar-safe:

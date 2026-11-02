@@ -54,6 +54,33 @@ L1=$(wc -l < /tmp/run.out); sleep 60; L2=$(wc -l < /tmp/run.out); echo "$L1 -> $
 
 Moving means working. Not moving for a minute means stuck. That is the whole test.
 
+### Never start a second waiter, and prefer the artifact to the process list
+
+`until ! pgrep -f "node test/panels"; do sleep 20; done` is the obvious way to block until a long
+suite ends, and it is safe **exactly once**. `pgrep` excludes itself, so one waiter is correct — but
+the shell running that loop carries the needle in its own command line, so a **second** waiter
+matches the first and the first matches the second, and neither can ever exit. Four of them once
+left `panels` sitting finished and green for ninety minutes while every status read came back
+"still running" — reading the waiters, not the suite.
+
+The bracket trick does **not** rescue this. `pgrep -f "[n]ode test/panels"` only stops the matcher
+matching itself, which pgrep already does; a sibling waiter still carries the plain needle in its
+argv and still matches. Measured with a planted decoy — and note a bare `zsh -c 'sleep 25'` is
+exec-optimised down to `sleep`, so a decoy built that way drops the needle and reports a false
+clean pass.
+
+Ask the output instead. It answers liveness and verdict together, and cannot deadlock:
+
+```bash
+grep -q "✓ all panels render for both people" /tmp/run.out && echo green
+stat -f "%Sm" -t "%H:%M:%S" /tmp/run.out      # when it last wrote anything
+```
+
+That line is printed only when the finding list is empty (`panels.js` ends
+`real.length ? '✗' : '✓'` then `process.exit(real.length ? 1 : 0)`), so finding it in the file *is*
+the pass. **A waiter needs a calibration like anything else: prove it exits when the thing it waits
+for is already gone.**
+
 ## 3. One browser suite at a time, and do not rebuild underneath it
 
 `crisis` and `panels` together will starve each other and this repo has killed both mid-run that

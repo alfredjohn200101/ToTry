@@ -5,6 +5,34 @@
 > Do not treat a CLAIMED item as true until it is driven — this repo's own record is that most
 > "missing" features are already built.
 
+> ## ⚑ RE-DERIVED 2 Nov 2026 at v672 / build 15 — READ THIS BEFORE THE LIST
+>
+> **Eleven of the fifteen items in §0–§2 are CLOSED.** Measured against the current bundle, one
+> item at a time, not recalled — and that re-derivation is itself the point: the repo's own record
+> is that *"every ❌ I checked was already built"*, and a priority list nobody re-measures sends the
+> next session to redo finished work. Each row below now carries its own verdict and the number
+> that settles it.
+>
+> | | |
+> |---|---|
+> | **Closed** | §0 (the gate no longer writes to production), 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8, 2.2, 2.3, 2.5, 2.6 |
+> | **The owner's, not mine** | **1.9** — upload build 15 and press Submit for Review. 1.4 — the score/streak question; the owner kept the panel. |
+> | **Genuinely open** | **None.** All fifteen are closed or are the owner's. |
+>
+> **AND I GOT TWO OF THESE WRONG FIRST, BOTH THE SAME WAY: I MEASURED A PROXY AND READ IT AS THE
+> SUBJECT.** My first pass called 2.1 and 2.4 open. For 2.1 I counted `routine:null` (2 occurrences)
+> and concluded the exercises were discarded — but `routine:null` is CORRECT there and documented,
+> and the question was whether `exercises` is persisted, which it is. For 2.4 I counted app call
+> sites passing `prefer` (0) and called it a dead gate — but the consumer is `voice-probe.mjs` and
+> the edge function, so 0 app callers is the documented refusal. **Both numbers were right and both
+> conclusions were wrong**, and the file already said so two hundred lines below the table I was
+> editing. Read the doc you are correcting before you correct it; and when a count is a proxy for
+> the thing you care about, go and read the thing.
+>
+> **So nothing is worth re-cutting the archive for.** Build 15 is cut, exported, IPA-verified and
+> gate-green: `npm test` 5379/0, `panels` 93 checks / 0 findings, `crisis` 57 doors, `preflight`
+> ready to archive.
+
 ---
 
 ## 0 · First, the thing that changes what this list is for
@@ -21,7 +49,19 @@
 fresh browser context per run, not a population. It is 48,527 of 56,750 total events.
 
 So two of the three things the competitive document called decisive are unanswerable:
-the feedback is ours, and the retention curve is drowned. **This is the top item on the list.**
+the feedback is ours, and the retention curve is drowned. ~~**This is the top item on the list.**~~
+**CLOSED in v670 — and the fix was not where this entry assumed.** Blocking Supabase at the browser
+was tried first and was itself half-applied: it reached 3 of the 11 files in this repo that launch a
+browser, and nothing asserted it, so 666 more rows arrived in the three days after it landed. The
+decision moved INTO the app as `_isLocalProbe()` in `28-init.js`, asked ABOVE the insert, and the
+census is the assertion — anything under `test/` or `scripts/` that calls `.launch(` must install
+the block, derived from the files themselves rather than from a named list. **The discriminator is
+the PROTOCOL, not the hostname**, because Capacitor serves native from `capacitor://localhost` and a
+hostname check would have switched analytics off for the whole App Store build. Verified on this
+`panels` run: **316 production writes intercepted and 0 sent.**
+The historical numbers above are kept as the record of what the pollution was, and
+`supabase/cleanup/2026-10-30-purge-gate-rows.sql` is written and waiting if the owner wants the rows
+removed as well as stopped.
 
 ---
 
@@ -29,26 +69,26 @@ the feedback is ours, and the retention curve is drowned. **This is the top item
 
 | # | Item | Evidence | Est |
 |---|---|---|---|
-| **1.1** | **Stop the gate writing to production.** `npm run crisis` / `panels` INSERT into `feedback` and `app_events` on the live project — including suicide-disclosure test strings. Point the suites at a local/stub endpoint or gate every write on a test flag, then purge the 169 rows and the `boot_offline` noise. | MEASURED above | 2–3h |
-| **1.2** | **13YARN + Suicide Call Back onto all four static crisis surfaces.** `grep -c "13YARN\|139276\|13 92 76" src/shell-head.html` → **0**, while `CRISIS_LINES` carries it. Sign-in screen dials `131114`, `1300224636`, `988`, `116123` only. An Aboriginal or Torres Strait Islander person who opens this app at their worst moment and does not sign in is shown four numbers and none is theirs. Add a coverage assertion of those blocks against `CRISIS_LINES`. | MEASURED | 1–2h |
-| **1.3** | **Faith-swap `bridgeToRealHelp`.** `04-fight.js:1783`–`1800` hardcodes *"A priest — confession and a real conversation"* with **zero** `curFaith`/`faithOn`/`tr` in the whole function body. Its sibling `openRecoveryBridge` (`:1688`) **is** faith-aware. Half-applied: the fix reached one bridge and not the other, and the unfixed one has 7 callers (3 Feeling Door paths, the eating-disorder card, 3 fuel-plan fallbacks). | MEASURED | 1h |
-| **1.4** | **Decide the streak/score question, then make the code match the copy.** `sc-total`/`sc-streak` ship in `shell-head.html`; `10-habits.js:33,36` ship trophies **"Unstoppable — 70%+ win rate"** and **"Faithful — 7 days clean"**; `14-nourish.js:5004` renders a flame + "N-day streak · keep it" with **no `nutGentle()` gate**, so the person who turned numbers off because counting hurt them still gets a flame. Ten-plus strings promise no streak/score/badge. A reviewer catches this in one screenshot, and it gates the listing copy. | MEASURED | 1h decide + 2h |
-| **1.5** | **`_SHRINK[lv] is not a function`** — 4 distinct real users, 1 Oct 2026. `05-moment.js:971` declares `const _SHRINK = [`; `:979` indexes it. In one shared top-level scope with order-dependent `const`, this is the TDZ/ordering family (cf. the `ic()` calendar crash). Drive it, do not read it. | MEASURED (crash log) | 1–2h |
-| **1.6** | **`Cannot set properties of null (setting 'value')`** — 5 **distinct** users on 25 Oct, the most recent live crash. NOT a dead id: the current bundle has 12 dead ids (baseline 40) and **0 dereferenced unguarded**. So the element exists in source and is absent from the DOM at call time — the `#feelingnow-why-input` class, which the id scan structurally cannot see. Find it, and add a check that can. | MEASURED (crash log) | 2–3h |
-| **1.7** | **The inline-handler SyntaxError family** — ~10 real occurrences: *"Failed to read the 'onclick' property … missing ) after argument list"*, *"'onchange' … Unexpected token '<'"*, *"Failed to execute 'click' … Invalid or unexpected token"* at `#nourish`, `#money`, `#today`, `#home`. This is the documented *"the app never prints its own source"* class — interpolated content terminating its own attribute. `npm run panels` checks two shapes of it; these got through. | MEASURED (crash log) | 2–4h |
-| **1.8** | **`d0` / `d2` / `g20` / `demo_f0_0 is not defined`** @ `#money` and `#nourish` — 16 occurrences, 4 Sep, real users. Inline handlers referencing generated identifiers that do not exist at click time. | MEASURED (crash log) | 1–2h |
-| **1.9** | **Archive at v655, export, verify the IPA, upload, and START REVIEW.** App Store Connect holds builds 4, 5, 6, 8 (build 8 = v597, uploaded 9 Sep). **There is no record in this repo of a build ever being submitted for review.** Do NOT upload `ToTry-v643-build10.ipa` — 12 versions stale, predates the share-card fix. Verify the IPA not the archive: distribution cert, `get-task-allow=false`, arm64, `PrivacyInfo.xcprivacy`, bundle sha. | MEASURED (`preflight` = ready; CLAUDE.md) | 1h + gate |
+| **1.1** ✅ CLOSED v670<br><sub>`_isLocalProbe` + 7 assertions; this run intercepted 316, sent 0</sub> | **Stop the gate writing to production.** `npm run crisis` / `panels` INSERT into `feedback` and `app_events` on the live project — including suicide-disclosure test strings. Point the suites at a local/stub endpoint or gate every write on a test flag, then purge the 169 rows and the `boot_offline` noise. | MEASURED above | 2–3h |
+| **1.2** ✅ CLOSED<br><sub>shell-head: 13YARN ×4, Suicide Call Back ×3, Beyond Blue ×3</sub> | **13YARN + Suicide Call Back onto all four static crisis surfaces.** `grep -c "13YARN\|139276\|13 92 76" src/shell-head.html` → **0**, while `CRISIS_LINES` carries it. Sign-in screen dials `131114`, `1300224636`, `988`, `116123` only. An Aboriginal or Torres Strait Islander person who opens this app at their worst moment and does not sign in is shown four numbers and none is theirs. Add a coverage assertion of those blocks against `CRISIS_LINES`. | MEASURED | 1–2h |
+| **1.3** ✅ CLOSED<br><sub>`faithGuide()` maps 4 traditions; secular and faith-level `light` return **null** on purpose — an absent row beats a wrong one. 0 hardcoded priest left in `bridgeToRealHelp`</sub> | **Faith-swap `bridgeToRealHelp`.** `04-fight.js:1783`–`1800` hardcodes *"A priest — confession and a real conversation"* with **zero** `curFaith`/`faithOn`/`tr` in the whole function body. Its sibling `openRecoveryBridge` (`:1688`) **is** faith-aware. Half-applied: the fix reached one bridge and not the other, and the unfixed one has 7 callers (3 Feeling Door paths, the eating-disorder card, 3 fuel-plan fallbacks). | MEASURED | 1h |
+| **1.4** — THE OWNER’S CALL<br><sub>the score panel was kept; `sc-total` reads *Days in the fight*, which is a count and not a grade</sub> | **Decide the streak/score question, then make the code match the copy.** `sc-total`/`sc-streak` ship in `shell-head.html`; `10-habits.js:33,36` ship trophies **"Unstoppable — 70%+ win rate"** and **"Faithful — 7 days clean"**; `14-nourish.js:5004` renders a flame + "N-day streak · keep it" with **no `nutGentle()` gate**, so the person who turned numbers off because counting hurt them still gets a flame. Ten-plus strings promise no streak/score/badge. A reviewer catches this in one screenshot, and it gates the listing copy. | MEASURED | 1h decide + 2h |
+| **1.5** ✅ CLOSED<br><sub>`05-moment.js:987` clamps: `Math.min(Math.max(0, Math.floor(Number(level)) \|\| 0), _SHRINK.length-1)` — NaN, negative and over-range all land in range</sub> | **`_SHRINK[lv] is not a function`** — 4 distinct real users, 1 Oct 2026. `05-moment.js:971` declares `const _SHRINK = [`; `:979` indexes it. In one shared top-level scope with order-dependent `const`, this is the TDZ/ordering family (cf. the `ic()` calendar crash). Drive it, do not read it. | MEASURED (crash log) | 1–2h |
+| **1.6** ✅ CLOSED<br><sub>cause found: a mass-remove of `.modal-bg.open` destroyed the three STATIC sheets, which surfaced later as the null `.value`. One `closeOpenSheets` sink (146 call sites), 0 direct removals left, driven both ways with a calibration over all three quote spellings</sub> | **`Cannot set properties of null (setting 'value')`** — 5 **distinct** users on 25 Oct, the most recent live crash. NOT a dead id: the current bundle has 12 dead ids (baseline 40) and **0 dereferenced unguarded**. So the element exists in source and is absent from the DOM at call time — the `#feelingnow-why-input` class, which the id scan structurally cannot see. Find it, and add a check that can. | MEASURED (crash log) | 2–3h |
+| **1.7** ✅ CLOSED<br><sub>`_jsAttr(` at 17 sites across 9 modules; plus the document-owned-name scan — an inline handler’s scope chain runs through `document`, so a bare `URL` is a **string**</sub> | **The inline-handler SyntaxError family** — ~10 real occurrences: *"Failed to read the 'onclick' property … missing ) after argument list"*, *"'onchange' … Unexpected token '<'"*, *"Failed to execute 'click' … Invalid or unexpected token"* at `#nourish`, `#money`, `#today`, `#home`. This is the documented *"the app never prints its own source"* class — interpolated content terminating its own attribute. `npm run panels` checks two shapes of it; these got through. | MEASURED (crash log) | 2–4h |
+| **1.8** ✅ CLOSED<br><sub>`demo_f0_0`, `d0`, `d2`, `g20`: 0 declared and 0 referenced as a handler anywhere in `src/`; the class is held by the every-handler-calls-a-live-function check</sub> | **`d0` / `d2` / `g20` / `demo_f0_0 is not defined`** @ `#money` and `#nourish` — 16 occurrences, 4 Sep, real users. Inline handlers referencing generated identifiers that do not exist at click time. | MEASURED (crash log) | 1–2h |
+| **1.9** ➡ **THE ONLY LIVE LINE, AND IT IS THE OWNER’S**<br><sub>not v655 — **build 15 / v672** is cut, exported and IPA-verified (distribution-signed, `get-task-allow=false`, arm64, manifest present, web bundle sha matching the repo AND the live PWA). Nothing in this repo uploads anything</sub> | **Archive at v655, export, verify the IPA, upload, and START REVIEW.** App Store Connect holds builds 4, 5, 6, 8 (build 8 = v597, uploaded 9 Sep). **There is no record in this repo of a build ever being submitted for review.** Do NOT upload `ToTry-v643-build10.ipa` — 12 versions stale, predates the share-card fix. Verify the IPA not the archive: distribution cert, `get-task-allow=false`, arm64, `PrivacyInfo.xcprivacy`, bundle sha. | MEASURED (`preflight` = ready; CLAUDE.md) | 1h + gate |
 
 ## 2 · SHOULD — cheap, high value, worth the same binary
 
 | # | Item | Evidence | Est |
 |---|---|---|---|
-| 2.1 | **`applyRecommendedSplit` discards the exercises it just generated.** `04-fight.js:309` keeps `{focus, routine:null}` while the preview two screens earlier renders them and `importTemplate` persists them correctly. Person reads six named exercises, taps Apply, gets a label — on the path whose empty state promises *"no guesswork."* | CLAIMED — verify first | 1 line + test |
-| 2.2 | **Open Graph + meta description + `url:` on `navigator.share` + the URL on both share canvases + rewrite `manifest.json`'s description.** 7 meta tags, 0 og/twitter, 0 description, `<title>ToTry</title>`; the live URL appears once in all of `src/` (the Strava redirect). The app is un-shareable at the HTML level. | CLAIMED — cheap to check | 1h |
-| 2.3 | **The GP row and the community row in `openRecoveryBridge` have empty URLs** — and your own copy calls a GP *"the most underrated door."* | CLAIMED | 30m |
-| 2.4 | **`prefer` has zero call sites.** `03-person.js:1416` reads `if(opts.prefer) body.prefer = opts.prefer; // e.g. 'anthropic' for crisis SOS` and no surface passes it. A dead gate whose own comment names the crisis path. Either wire the SOS path to it or delete the comment. | CLAIMED | 1h |
-| 2.5 | **Tighten the dead-id ratchet 40 → 12.** MEASURED: actual is 12. Its own comment says *"Tighten this number whenever it drops — a ratchet that only ever holds is a ceiling."* 28 free slots is 28 dead ids nobody will notice. | MEASURED | 10m |
-| 2.6 | **Say `wovenDays()` out loud.** It renders only as `aria-hidden` SVG tie marks with no text — unreadable by a screen reader, unscreenshottable as a claim, and it is the one integer no single-feature app can compute. | CLAIMED | 1h |
+| 2.1 ✅ CLOSED v658<br><sub>it persists `exercises: ex` **and** `detail: ex.join(’, ’)`; `routine:null` is deliberate and the comment says why — `routine` holds the NAME of a separate `totry_routines` entry, and these exercises live on the day. The repaint half (`loadTodaySplitCard()`) landed with it</sub> | **`applyRecommendedSplit` discards the exercises it just generated.** `04-fight.js:309` keeps `{focus, routine:null}` while the preview two screens earlier renders them and `importTemplate` persists them correctly. Person reads six named exercises, taps Apply, gets a label — on the path whose empty state promises *"no guesswork."* | CLAIMED — verify first | 1 line + test |
+| 2.2 ✅ CLOSED<br><sub>7 `og:` + 4 `twitter:` tags, 1 meta description, manifest description present, `navigator.share` carries `url:` at 1 of 1 site</sub> | **Open Graph + meta description + `url:` on `navigator.share` + the URL on both share canvases + rewrite `manifest.json`'s description.** 7 meta tags, 0 og/twitter, 0 description, `<title>ToTry</title>`; the live URL appears once in all of `src/` (the Strava redirect). The app is un-shareable at the HTML level. | CLAIMED — cheap to check | 1h |
+| 2.3 ✅ CLOSED<br><sub>the GP row now carries `HEALTH_FINDER`. The other two — *“a sibling, a mate, a mentor”* and *“your community”* — have no URL **because there is none**, and the renderer guards on `o[3]`, so no dead link is drawn</sub> | **The GP row and the community row in `openRecoveryBridge` have empty URLs** — and your own copy calls a GP *"the most underrated door."* | CLAIMED | 30m |
+| 2.4 ✅ CLOSED v660<br><sub>**the misleading comment WAS the defect** and it is gone. `prefer` is not dead: `scripts/voice-probe.mjs:113` builds its own body with it and `ai-proxy:577` honours it, which is what makes each link in the fallback chain probeable without touching an env var. 0 app call sites is the documented refusal, not a gap</sub> | **`prefer` has zero call sites.** `03-person.js:1416` reads `if(opts.prefer) body.prefer = opts.prefer; // e.g. 'anthropic' for crisis SOS` and no surface passes it. A dead gate whose own comment names the crisis path. Either wire the SOS path to it or delete the comment. | CLAIMED | 1h |
+| 2.5 ✅ CLOSED<br><sub>`BASELINE = 12`, equal to the measured actual — 0 free slots</sub> | **Tighten the dead-id ratchet 40 → 12.** MEASURED: actual is 12. Its own comment says *"Tighten this number whenever it drops — a ratchet that only ever holds is a ceiling."* 28 free slots is 28 dead ids nobody will notice. | MEASURED | 10m |
+| 2.6 ✅ CLOSED<br><sub>`31-nextstep.js` renders `_wd` as a 52px display-face number with *woven day*/*woven days*, and only when `_wd>0` — the day-one-is-not-a-zero rule</sub> | **Say `wovenDays()` out loud.** It renders only as `aria-hidden` SVG tie marks with no text — unreadable by a screen reader, unscreenshottable as a claim, and it is the one integer no single-feature app can compute. | CLAIMED | 1h |
 
 ## 3 · POST-SUBMIT — build while review runs
 
@@ -121,6 +161,12 @@ the feedback is ours, and the retention curve is drowned. **This is the top item
 ---
 
 ## Order of attack
+
+> **⚡ SUPERSEDED — every day below is done.** Re-derived 2 Nov 2026 at v672/build 15: days 1–3 are
+> closed (see the banner at the top of this file for the per-item evidence), and day 4's gate run,
+> archive, export and IPA verification are done. **What is left of day 4 is the upload and the
+> Submit for Review click, and both are the owner's.** Kept rather than deleted, because it is the
+> record of the order the work was actually planned in.
 
 **Day 1** — 1.1 (stop the pollution, purge), then 1.2, 1.3 (safety; these go first because App Review reads the un-signed-in screen and a binary freezes them for the length of review).
 **Day 2** — 1.5, 1.6, 1.7, 1.8 (the four real crash families, driven in a browser, not read).
