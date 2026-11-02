@@ -1801,6 +1801,50 @@ it looks vibe coded"*. Apple's **system and craft**; ToTry's **voice**. In short
      LOCAL one timed out at 120s, on a machine with ~14MB of free RAM. So the bytes are verified by
      hash and the behaviour by driving the identical file; the one thing not done is driving the
      github.io origin itself, and that is a machine limit rather than a result.
+     **THE ORIGIN IS NOW VERIFIED WITHOUT A BROWSER, WHICH ANSWERS MOST OF WHAT A BROWSER WAS FOR
+     (2 Nov 2026).** The machine is still at ~14MB free with swap at 5.5GB of 6.1GB — and the
+     consumers are this session and the owner's own Chrome, so there is nothing of mine to free, no
+     simulator and no Xcode. Rather than repeat a known failure, the questions that are actually
+     DIFFERENT about the origin were asked over HTTP: the bundle and `sw.js` are byte-identical to
+     the repo by sha, the live `CACHE` reads `totry-v672-…` (a stale name is how a cache-first
+     worker serves returning users the OLD bundle, which is where both v672 fixes live), the shell
+     carries **0 root-absolute paths**, and **all 13 of the service worker's `CORE` entries return
+     200** — which matters because `addAll` is ATOMIC, as the file's own comment says: one 404
+     rejects the whole install and NOTHING is precached. `privacy.html` and `support.html` are 200
+     and byte-identical, and the live privacy copy carries every correction — *"six things can send
+     an image"*, the five vision providers, Resend, *"on your first open"*, and the off-switch.
+     Calibrated, because a sweep that returns zero against a broken origin is blind: three
+     fabricated paths all 404, and the root-absolute hazard was PROVEN rather than assumed —
+     `https://alfredjohn200101.github.io/sw.js` is a 404, so a root-absolute path really would break
+     live while passing every local test.
+     **What this does NOT do is execute the page**, so it says nothing about runtime behaviour on
+     the origin. That is covered only by the fact that the bytes are hash-identical to the `www/`
+     file that WAS driven, which is an inference and is written down as one.
+   - **AND THE CHECK THAT STANDS BETWEEN A MISSING FILE AND A SILENTLY DEAD OFFLINE MODE WAS SLICED
+     TO THE FIRST `]` (2 Nov 2026).** Looking for whether the live-origin sweep was worth GATING, the
+     answer was no — both halves already exist (`core.test.js` holds *"it is RELATIVE — a
+     root-absolute path 404s at the GitHub Pages subpath"*, and `preflight.js` §3 holds *"every
+     precached file must exist, or install() rejects and offline dies silently"*). **Third time this
+     session that checking first saved building something already built.** But reading it found the
+     defect: `preflight.js` extracted CORE with `/const CORE\s*=\s*\[([\s\S]*?)\]/`, which is
+     NON-GREEDY and stops at the first closing bracket — and `core.test.js:17759` **already records
+     that exact trap and already fixed it on its own side** with a bracket-matching `arrayAfter()`.
+     The same rule computed two ways, which is the shape this file fails builds over.
+     **It was not broken today and it was one character from it.** CORE happens to contain no `]`, so
+     the regex captured all 13 entries. Injecting one bracketed aside into a CORE comment — which
+     this codebase's prose-heavy comments do routinely — took it to **4 entries, and it still printed
+     "has all 4 precached files"**: a green light over nine unchecked files, the four fonts and the
+     vendored Supabase SDK among them, any one of which going missing makes `caches.addAll()` reject
+     so the worker never activates and offline dies with no error.
+     Bracket-matched now, with an unbalanced array REFUSED rather than guessed at, plus a truncation
+     calibration comparing the extracted count against the file's own `'./…'` lines — because a
+     truncated list cannot report itself. **And driving the refusal exposed a defect in my own fix:**
+     it printed the ✗ and then *"✓ www/ has all 0 precached files"* underneath, a green tick over
+     nothing, which is the empty-result-reads-as-a-pass shape this file keeps paying for. An empty
+     list is now a failure in its own right. Four injections, each driven: correct code 13 and ready;
+     a bracket in a comment still 13 where the old form gave 4; unbalanced refuses with no tick after
+     it; and a genuinely deleted `www/fonts/outfit.woff2` is named and fails. `sw.js` was backed up
+     with `cp` and restored by sha (`20edfe398a20c46c`), never `git checkout`.
    - **AND `npm run panels` COULD NOT COMPLETE ON THIS MACHINE, WHICH IS A RESULT AND NOT A PASS.**
      Two runs, two different checks (`panels.js:1553` then `:720`), the same symptom both times —
      `page.goto: Timeout 30000ms exceeded` on a 4.5MB inline-script page — with **Pages free at

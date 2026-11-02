@@ -88,9 +88,46 @@ for (const [label, p] of [['www', 'www/sw.js'], ['iOS bundle', 'ios/App/App/publ
 // ── 3. every precached file must exist, or install() rejects and offline dies silently ───────────
 // caches.addAll() is all-or-nothing: one 404 and the service worker never activates.
 const sw = read('sw.js') || '';
-const coreBlock = (sw.match(/const CORE\s*=\s*\[([\s\S]*?)\]/) || [])[1] || '';
-const core = [...coreBlock.matchAll(/'\.\/([^']*)'/g)].map(m => m[1]).filter(Boolean);
-for (const base of ['www', 'ios/App/App/public']) {
+// BRACKET-MATCH THE ARRAY, never slice to the first `]`. This read `/\[([\s\S]*?)\]/`, which is
+// non-greedy and stops at the FIRST closing bracket — and `core.test.js` already records that exact
+// trap and already fixed it on ITS side with a bracket-matching `arrayAfter()`. The same rule
+// computed two ways is the shape this repo fails builds over, and here the two ways disagree the
+// moment anybody writes a `]` inside a comment in CORE, which this codebase's prose-heavy comments
+// do routinely. MEASURED 2 Nov 2026 by injecting one bracketed aside into a CORE comment: the old
+// regex went 13 entries -> 3 and still printed "has all 3 precached files" — a green light over ten
+// unchecked files, the four fonts and the vendored Supabase SDK among them, any of which going
+// missing makes caches.addAll() reject so the worker never activates and offline dies with no error.
+function coreArray(src) {
+  const at = src.indexOf('const CORE');
+  if (at < 0) return null;
+  const open = src.indexOf('[', at);
+  if (open < 0) return null;
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '[') depth++;
+    else if (src[i] === ']') { depth--; if (!depth) return src.slice(open + 1, i); }
+  }
+  return null;                       // unbalanced: REFUSE rather than check a prefix
+}
+const coreBlock = coreArray(sw);
+if (coreBlock === null) {
+  bad('sw.js: could not bracket-match the CORE array — refusing to guess, because checking a PREFIX of the precache list is a green light over whatever follows it');
+}
+const core = [...(coreBlock || '').matchAll(/'\.\/([^']*)'/g)].map(m => m[1]).filter(Boolean);
+// AND A CALIBRATION, because a truncated list cannot report itself: the entry COUNT must match the
+// number of quoted './…' literals in the whole file's CORE region. Fewer means the extraction lost
+// some, which is the failure this block exists to make impossible.
+const coreQuoted = (sw.match(/^\s*'\.\/[^']*',?\s*$/gm) || []).length;
+if (coreBlock !== null && coreQuoted && core.length < coreQuoted) {
+  bad(`sw.js: extracted ${core.length} precache entries but the file has ${coreQuoted} './…' lines — the CORE extraction is truncating, so every entry past the cut is unchecked`);
+}
+// AN EMPTY LIST IS NOT A PASS. Driving the unbalanced case above printed the refusal and then
+// "✓ www/ has all 0 precached files" underneath it — a green tick over nothing, which is the
+// empty-result-reads-as-a-pass shape this repo keeps paying for. If the list did not come out, say
+// so once and check nothing, rather than reassuring about a set of size zero.
+if (!core.length) {
+  bad('sw.js: the CORE precache list came out EMPTY — nothing was checked for existence, so this is not a pass');
+} else for (const base of ['www', 'ios/App/App/public']) {
   if (!fs.existsSync(R(base))) continue;
   const missing = core.filter(f => !fs.existsSync(path.join(R(base), f)));
   if (missing.length) bad(`${base}/ is missing precached ${missing.join(', ')} — caches.addAll() will reject and offline support dies with no error`);
