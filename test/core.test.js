@@ -7640,7 +7640,9 @@ H.section('"numbers off" is a promise the whole app keeps, not just the Nourish 
   const rbs = H.extractFn('renderBodySystemReport');
   H.ok(/const _gentleCard = \(typeof nutGentle === 'function'\) && nutGentle\(\)/.test(rbs),
     'the Grow card reads the gentle promise once, at the top');
-  H.ok(/_gentleCard\s*\n?\s*\? stat\(\(daysLogged/.test(rbs.replace(/\s+/g,' ')) || /_gentleCard/.test(rbs),
+  // The old form ended `|| /_gentleCard/.test(rbs)`, which any mention of the flag satisfies, so it
+  // could not fail. Comments sit between the ternary's halves, so the shape is read from H.code().
+  H.ok(/\(_gentleCard \? stat\(\(daysLogged/.test(H.code(rbs).replace(/\s+/g,' ')),
     'and the calorie tile becomes days-fuelled instead of a figure');
   H.ok(/_gentleCard&&!lowConf&&goal&&goal\.mode!=='maintain'/.test(rbs),
     'and the protein adjustment is said without a g/kg number');
@@ -20783,6 +20785,63 @@ H.section('a flagged journal row is never resurfaced');
     H.ok(/_evOk\s*=\s*todayEvening\s*&&\s*!todayEvening\.flagged/.test(rc),
       'and so does the evening guard');
   }
+}
+
+// 28. NUMBERS OFF, RENDERED (v673). The Grow card's tile was gated and the sentence beside it was
+//     not: "Eating ~-520 cal/day vs your real burn" and "protein 1.35g/kg" reached the person who had
+//     turned calories off. The section above reads source; this one RENDERS the real function with a
+//     seeded week, once with numbers on (the calibration: the figures must be there) and once off.
+H.section('the Grow card says no calorie or macro figure when numbers are off');
+{
+  const DAY = 86400000, now = Date.now();
+  const render = (gentle) => {
+    const box = { style: {}, innerHTML: '' };
+    const win = {};
+    let L;
+    const store = {};
+    try {
+      L = H.load(['renderBodySystemReport', 'dayKeyOf'], {
+        nutGentle: () => gentle,
+        document: { getElementById: id => (id === 'body-system-report-grow' ? box : null) },
+        window: win,
+        ls: (k, d) => (k in store ? store[k] : (d === undefined ? null : d)),
+        getTrendWeight: arr => arr[arr.length - 1].weight,
+        computeAdaptiveTDEE: () => ({ tdee: 2600, avgIntake: 2080 }),
+        wFmt: (v, o) => (Math.round(v * 10) / 10) + (o && o.bare ? '' : 'kg'),
+        wDelta: v => (v >= 0 ? '+' : '') + v + 'kg',
+        wUnit: () => 'kg',
+      });
+    } catch (e) { return 'LOAD FAILED: ' + (e && e.message); }
+    const nut = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now - i * DAY);
+      nut[L.dayKeyOf(d)] = [{ ts: d.toISOString(), cal: 2080, pro: 120 }];
+    }
+    store.totry_nutlog = nut;
+    store.totry_workouts = [0, 2, 4].map(i => ({ ts: new Date(now - i * DAY).toISOString(), volume: 9000 }));
+    store.totry_body = Array.from({ length: 15 }, (_, i) => ({ ts: new Date(now - (14 - i) * DAY).toISOString(), weight: 90 - i * 0.07 }));
+    store.totry_body_goal = { mode: 'cut', rate: -0.5 };
+    try { L.renderBodySystemReport(); } catch (e) { return 'THREW: ' + (e && e.message); }
+    return box.innerHTML || '';
+  };
+  const on = render(false), off = render(true);
+  const figures = h => ({
+    calDay: /cal\/day/.test(h),
+    gkg: /g\/kg/.test(h),
+    calNum: /\d[\d,]*\s*(?:k?cal)\b/i.test(h),
+    gramsDay: /\d\s*g\/day/.test(h),
+  });
+  const fOn = figures(on), fOff = figures(off);
+  H.ok(on.length > 500 && !/^(LOAD FAILED|THREW)/.test(on),
+    'calibration: the card renders with numbers ON (' + (on.length > 500 ? 'ok' : on.slice(0, 120)) + ')');
+  H.ok(fOn.calDay && fOn.gkg,
+    'calibration: with numbers ON the card really does print cal/day and g/kg (' + JSON.stringify(fOn) + ')');
+  H.ok(off.length > 500 && !/^(LOAD FAILED|THREW)/.test(off),
+    'the card renders with numbers OFF too (' + (off.length > 500 ? 'ok' : off.slice(0, 120)) + ')');
+  H.ok(/line up/.test(off),
+    'and it reached the verdict, not the low-data branch, so the check below covers the sentence that leaked');
+  H.ok(!fOff.calDay && !fOff.gkg && !fOff.calNum && !fOff.gramsDay,
+    'with numbers OFF the card prints no calorie figure, no cal/day, no g/kg and no grams a day (' + JSON.stringify(fOff) + ')');
 }
 
 H.report();

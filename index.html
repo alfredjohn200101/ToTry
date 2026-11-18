@@ -39251,7 +39251,13 @@ function renderBodySystemReport(){
     const bal=Math.round((avgCal!=null?avgCal:tdeeR.avgIntake)-tdeeR.tdee);
     const exp=Math.round(bal*7/7700*100)/100;
     const agree=Math.abs(exp-weekChange)<=0.35;
-    verdict='Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+wFmt(exp)+'/wk; the scale says '+(weekChange>=0?'+':'')+wFmt(weekChange)+' \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
+    // NUMBERS OFF REACHES THE VERDICT TOO. The tile above was gated and this sentence beside it was not,
+    // so the person who turned calories off read "Eating ~-520 cal/day vs your real burn" on the Grow
+    // hub. Under gentle mode the verdict says the one thing it is for -- whether intake and the scale
+    // agree -- with no calorie figure and no expectation derived from one.
+    verdict = _gentleCard
+      ? 'What you are eating and what the scale is doing '+(agree?'<span style="color:var(--gr)">line up \u2713</span>':'<span style="color:var(--go)">do not line up yet \u2014 keep logging tight</span>')+'.'
+      : 'Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+wFmt(exp)+'/wk; the scale says '+(weekChange>=0?'+':'')+wFmt(weekChange)+' \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
     if(goal){
       const tgt=goal.rate||0;
       const onPace=Math.abs(weekChange-tgt)<=0.25;
@@ -39320,7 +39326,12 @@ function renderBodySystemReport(){
     '</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
     (wVol?wVol.toLocaleString()+'kg lifted'+arrow(wVol,pVol):'No volume logged')+
-    (gkg!=null?' \u00b7 protein '+gkg+'g/kg'+(gkg>=1.6?' <span style="color:var(--gr)">\u2713</span>':''):'')+
+    // A macro ratio is a figure too: under gentle mode only the tick survives, as "protein on track".
+    (gkg!=null
+      ? (_gentleCard
+          ? (gkg>=1.6?' \u00b7 protein on track <span style="color:var(--gr)">\u2713</span>':'')
+          : ' \u00b7 protein '+gkg+'g/kg'+(gkg>=1.6?' <span style="color:var(--gr)">\u2713</span>':''))
+      : '')+
     (daysLogged?' \u00b7 '+daysLogged+'/7 days logged':'')+'</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+verdict+'</div>'+
     '<div style="font-size:var(--t-sm);line-height:1.6;margin-top:8px;padding:10px;background:var(--go-bg);border-radius:var(--rs);color:var(--tx)"><span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase;letter-spacing:.045em;display:block;margin-bottom:4px">This week\'s one adjustment</span>'+adjust+'</div>'+
