@@ -534,3 +534,25 @@ WHERE IT BECOMES HARMFUL: any door where a non-null REPLACES the flow instead of
   · src/app/04-fight.js:1885 — _feelingNowGo(). A non-null overwrites the sheet body with the crisis slot plus a single Close button; there is no path onward to the breathing/practice flow the person opened the door for.
 The "Can't start" door named in the brief is the same shape. On those doors negation/bereavement is a denial of service for a person who told the app the truth about their life, and it compounds with the ordinary-vocabulary list — 'hurt her', 'killing myself' and "i'm going to end" are the three likeliest to land there.
 By contrast the additive/redacting doors (sendCoach at 03-person.js:1790, sendPT at 2352, companionFreeText at 06-train.js:160, completeMorning at 03-person.js:5789 which now persists FIRST and only marks `flagged`) show the card without destroying anything, and a false positive there costs only a dismissal.
+
+## v673 (19 Nov 2026) — four silenced disclosures, closed
+
+Found by the 2 Nov sweep (#13–#16), reproduced by hand on 18 Nov, specified in two measurement
+labs, applied verbatim. Measured on the real bundle: 0 newly firing over the gate's benign corpus.
+
+| # | Was | Now |
+|---|---|---|
+| 13 | a stated intent to overdose returned null; bare `'overdose on'` fired on "can you overdose on vitamin d" | three bounded entries (intent + overdose, intent + a quantity of pills, "overdose on MY …"); the bare phrase is gone. An intent is `suicide` (nothing taken yet, helplines lead); a completed overdose stays `medical`. A narrow span removes the stimulant joke ("one more coffee and i'm going to overdose") |
+| 14 | "i am going to end myself" null, "im going to end myself" fired | an intent + `end myself`/`end me` entry; `end me` is clause-bounded because "i'll end me week" is how Australia and the UK say "my" |
+| 15 | the burdensomeness frame fired with a comma, silent with a space | a frame-first entry: the absence must be the person's own, the subject must follow directly ("gone for the weekend" cannot reach it), and the owner's comma-what-follows bound |
+| 16 | `'no point living'` had no "in" form | a bounded `no point in/to living` entry beside its siblings; the bare spelling is left alone |
+
+**Named residuals, asserted by name in `test/core.test.js` §31:**
+- "i'm going to end my fast at sunset" (and the session/day forms) still fire through the bare
+  `'i'm going to end'` phrase — pre-existing; removing it needs "i'm going to end everything" added
+  to the end-it entry first.
+- The bare "no point living" spelling still fires on "no point living in sydney on this wage" and
+  six others — pre-existing. Bounding it too was measured: 7 ordinary sentences go quiet, and 5 of 6
+  plausible disclosures go silent with them. Kept, because this change is about silenced disclosures.
+- "no point in living if she's gone" is not reached: a conditional completion after "living".
+- Negation still fires, as before ("i don't want to overdose on my meds"). The safe direction.
