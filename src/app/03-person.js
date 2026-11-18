@@ -1436,30 +1436,59 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 // the function NAME would have silently broken the Hevy sync — the blanket-sweep shape this repo
 // fails builds over. Food lookups (key-proxy, USDA, Open Food Facts, the barcode database) are
 // untouched for the same reason: no model, no journal, no body data.
-function aiOff(){ try{ return localStorage.getItem('totry_ai_off')==='1'; }catch(_){ return false; } }
+//
+// THREE STATES, NOT TWO (v673, 19 Nov 2026). Apple's 5.1.2(i) reads: "You must clearly disclose where
+// personal data will be shared with third parties, including with third-party AI, and obtain
+// explicit permission before doing so." v671 built the lever and left it ON by default, so the very
+// first open of Home sent the person's why, identity sentence and journal text to a model before
+// anybody had been asked. The key now means:   '0' -> they said yes   '1' -> they said no
+// nothing -> never asked, and NOTHING IS SENT. aiOff() is true for both "no" and "never asked", so
+// every guard v671/v672 put in place refuses for an unasked person too, by construction. What
+// differs is only what the person is TOLD: "you switched it off" is false for somebody never asked.
+// A read that throws fails CLOSED -- consent that cannot be read has not been given.
+//
+// TWO KEYS, ON PURPOSE. The refusal stays in totry_ai_off ('1'), which signOut() and account deletion
+// deliberately KEEP, so a "no" survives the next person on the phone. The permission lives in a NEW
+// key, totry_ai_consent, which both of them wipe with every other totry_ key -- so one person's "yes"
+// is never inherited by whoever signs in next. Neither key is in SYNC_KEYS. A legacy totry_ai_off='0'
+// (written by v671's toggle, which never showed what is sent) is NOT consent. The value is a VERSION:
+// when what is sent or who receives it changes, bump aiConsentVersion() and everybody is asked again.
+// A function, not a const: the test harness loads functions by name, and a const it cannot see would
+// make every consent read as "never asked" in the suite while working in the app.
+function aiConsentVersion(){ return 'v1'; }
+function aiConsent(){
+  try{
+    if(localStorage.getItem('totry_ai_off') === '1') return 'off';
+    return localStorage.getItem('totry_ai_consent') === aiConsentVersion() ? 'on' : 'unasked';
+  }catch(_){ return 'unasked'; }
+}
+function aiOff(){ return aiConsent() !== 'on'; }
 
+// The switch turns the coach OFF directly. It never turns it ON directly: on goes through the
+// invitation, because a switch that grants consent shows none of what 5.1.2(i) requires us to say.
 function toggleAICoach(){
-  const want = !aiOff();
-  try{ localStorage.setItem('totry_ai_off', want?'1':'0'); }catch(_){}
-  // READ IT BACK. On a full device that write throws, the catch swallows it, and claiming the switch
-  // took effect is the one lie this whole feature exists to remove -- the person believes they
-  // declined and every send continues. Measured: stored=null, aiOff()=false, row rendering OFF.
+  if(aiOff()){
+    try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = false; }catch(_){}
+    try{ aiAskSheet(); }catch(_){}
+    return;
+  }
+  // Withdraw the permission FIRST: removeItem needs no space, so even on a full phone where the
+  // refusal below cannot be written, the coach is already off (no consent = nothing sent).
+  try{ localStorage.removeItem('totry_ai_consent'); }catch(_){}
+  try{ localStorage.setItem('totry_ai_off', '1'); }catch(_){}
+  // READ IT BACK. Claiming the switch took effect when it did not is the one lie this whole feature
+  // exists to remove -- the person believes they declined and every send continues.
   const off = aiOff();
-  if(off !== want){
+  if(!off){
     try{ showToast('I could not save that',
       'This phone has no room left, so the switch did not change. Settings → Your data → Export, '
       + 'or clear some space, then try again. Nothing about what the coach sends has changed yet.'); }catch(_){}
-    try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+    try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = true; }catch(_){}
     return;
   }
-  // The reason is a global that only the next call overwrites, so switching back ON has to clear it
-  // or getAIErrorMessage() keeps answering "the coach is switched off" to a surface that renders
-  // before anything is asked.
-  try{ if(!off && window.__lastAIError && window.__lastAIError.error==='ai_off') window.__lastAIError = null; }catch(_){}
-  try{ showToast(off?'The coach is off':'The coach is back',
-    off?'Nothing goes to a model now — including the sentence that used to be written for you each morning. Your logs still sync to your own account the same as before; this switch is only about what a model is shown.'
-       :'Thank you — it can read your data again to answer you.'); }catch(_){}
-  try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = !off; }catch(_){}
+  try{ showToast('The coach is off',
+    'Nothing goes to a model now — including the sentence that used to be written for you each morning. Your logs still sync to your own account the same as before; this switch is only about what a model is shown.'); }catch(_){}
+  try{ const b=document.getElementById('ai-toggle-btn'); if(b) b.checked = false; }catch(_){}
 }
 
 // WHAT A PERSON SEES WHEN THEY TAP AN AI FEATURE THEY THEMSELVES SWITCHED OFF. The nine direct model
@@ -1473,10 +1502,21 @@ function toggleAICoach(){
 // empty box is exactly the dead end this is replacing. _barcodeVisionLookup already did that by
 // hand, which is what made it worth naming.
 function aiOffLine(what){
+  if(aiConsent() === 'unasked')
+    return (what || 'That') + ' uses the coach, which is not on yet. Nothing has been sent.';
   return (what || 'That') + ' needs the coach, and you switched it off. Settings → Your data turns it back on.';
 }
+// For somebody never asked, a tap on an AI feature is the moment to ASK: the invitation sheet says
+// what is sent and to whom, and nothing goes anywhere until they choose. A declined coach keeps the
+// toast it always had. Never call this from a distress path -- those answer with the built-in step
+// (api() stays silent for an unasked person, below), because a permission sheet is not what somebody
+// mid-urge came for.
 function aiOffNotice(what){
   if(!aiOff()) return false;
+  if(aiConsent() === 'unasked'){
+    try{ aiAskSheet(what); }catch(_){ try{ showToast('The coach is not on yet', aiOffLine(what)); }catch(__){} }
+    return true;
+  }
   try{ showToast('The coach is off', aiOffLine(what)); }catch(_){}
   return true;
 }
@@ -1484,7 +1524,54 @@ function aiOffNotice(what){
 // where it lands, and the caller is still responsible for the net (see searchBible).
 function aiOffHtml(what){
   const esc = String(aiOffLine(what)).replace(/</g,'&lt;');
-  return '<div class="ios-empty"><div class="ios-empty-body">' + esc + '</div></div>';
+  const ask = aiConsent() === 'unasked'
+    ? '<button class="btn quiet" style="margin-top:10px" onclick="aiAskSheet()">What turning it on means</button>'
+    : '';
+  return '<div class="ios-empty"><div class="ios-empty-body">' + esc + '</div>' + ask + '</div>';
+}
+
+// THE PERMISSION ITSELF. It names what is sent, to whom, and what happens without being asked once it
+// is on -- the three things 5.1.2(i) means by "clearly disclose" -- and "Not now" stores nothing, so
+// the next tap asks again rather than the app deciding no on their behalf.
+// The provider list is the in-app privacy policy's own (showPrivacyPolicy): text goes to Google
+// (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic; images to Gemini, OpenRouter,
+// Mistral, Cloudflare or NVIDIA. If that chain changes, this sentence and that policy change together.
+function aiAskSheet(what){
+  if(document.getElementById('ai-ask-sheet')) return;
+  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const m = document.createElement('div');
+  m.className = 'modal-bg open'; m.id = 'ai-ask-sheet';
+  m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="ai-ask-title">'+
+    '<div id="ai-ask-title" style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:600;color:var(--tx);margin-bottom:10px">Let the coach read your data?</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
+      (what ? '<p style="margin:0 0 10px">' + esc(what) + ' uses the coach.</p>' : '')+
+      '<p style="margin:0 0 10px">To answer you, ToTry sends an AI provider what you type, plus a summary of what you have logged here: why this matters to you and who you are becoming, what you are working on and your clean days, your most recent journal entries word for word, training, food, weight, money, and your sleep and recent workouts from Apple Health if you have connected it. Some answers are looked up on the web by the provider\u2019s own search.</p>'+
+      '<p style="margin:0 0 10px">A photo goes only when you choose to have one read: a meal, a form check, a package, or a workout, scale or recipe screenshot.</p>'+
+      '<p style="margin:0 0 10px">It goes through ToTry\u2019s server to whichever provider answers first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic, and for photos NVIDIA. Some of them, including Google\u2019s free tier, may keep what you send, have people review it, and use it to improve their models. It is never used for ads and never sold.</p>'+
+      '<p style="margin:0 0 14px">Once it is on, the coach also writes you a sentence each morning and a weekly read without being asked. Settings \u2192 Your data switches all of it off.</p>'+
+    '</div>'+
+    '<button class="btn primary" onclick="aiAllow(this)">Turn on the coach</button>'+
+    '<button class="btn" style="margin-top:8px" onclick="closeModal(this)">Not now</button>'+
+    '<button class="btn subtle" style="margin-top:4px" onclick="closeModal(this);if(typeof showPrivacyPolicy===\'function\')showPrivacyPolicy()">Read the privacy policy</button>'+
+  '</div>';
+  document.body.appendChild(m);
+}
+function aiAllow(btn){
+  // Lift an earlier refusal and record the permission, versioned. removeItem needs no space; the
+  // consent write can still fail on a full phone, which the read-back below catches.
+  try{ localStorage.removeItem('totry_ai_off'); }catch(_){}
+  try{ localStorage.setItem('totry_ai_consent', aiConsentVersion()); }catch(_){}
+  // READ IT BACK, as toggleAICoach does: on a full device the write throws and the person must not be
+  // told the coach is on while every call still refuses.
+  if(aiConsent() !== 'on'){
+    try{ showToast('I could not save that',
+      'This phone has no room left, so the coach is still off. Settings → Your data → Export, or clear some space, then try again.'); }catch(_){}
+    return;
+  }
+  try{ if(window.__lastAIError && /^ai_(off|unasked)$/.test(window.__lastAIError.error || '')) window.__lastAIError = null; }catch(_){}
+  try{ if(btn && typeof closeModal === 'function') closeModal(btn); else { const s = document.getElementById('ai-ask-sheet'); if(s) s.remove(); } }catch(_){}
+  try{ const b = document.getElementById('ai-toggle-btn'); if(b) b.checked = true; }catch(_){}
+  try{ showToast('The coach is on', 'Tap that again to go ahead. Settings → Your data turns it off.'); }catch(_){}
 }
 
 // THE ONE DOOR EVERY MODEL CALL GOES THROUGH. Eleven sites invoked ai-proxy directly before this
@@ -1494,7 +1581,7 @@ function aiOffHtml(what){
 // call site has to know this exists.
 async function aiInvoke(body){
   if(aiOff()){
-    window.__lastAIError = { error:'ai_off' };
+    window.__lastAIError = { error: aiConsent() === 'unasked' ? 'ai_unasked' : 'ai_off' };
     return { data:null, error:{ message:'The coach is switched off in Settings → Your data.' } };
   }
   if(!(sb && sb.functions)) return { data:null, error:{ message:'Not connected yet.' } };
@@ -1526,7 +1613,13 @@ async function api(sys, hist, msg, tok, opts){
   // already returns when every provider fails, so no caller needs a new shape.
   opts = opts || {};
   if(aiOff()){
-    window.__lastAIError = { error:'ai_off' };
+    const _unasked = aiConsent() === 'unasked';
+    window.__lastAIError = { error: _unasked ? 'ai_unasked' : 'ai_off' };
+    // NEVER ASKED: SAY NOTHING HERE. This floor cannot tell a calm tap from the Feeling Door, the SOS
+    // coach or the companion, and a permission prompt or a toast is not what somebody mid-urge came
+    // for. Those surfaces fall back to their built-in step; the calm entry points ask for themselves
+    // through aiOffNotice(what), which opens the invitation.
+    if(_unasked) return '';
     // SAY IT HERE, so the thirteen surfaces that hand-write "Couldn't reach the coach right now" are
     // no longer the only thing the person reads -- and so the fourteenth, written later, is covered
     // without anybody remembering. opts.quiet is for the paths that run with no tap behind them (the
@@ -1721,6 +1814,8 @@ function getAIErrorMessage(){
   // surfaces render this sentence (the coach, the companion, the body screen, the fuel plan and the
   // two morning cards), so this one branch is the whole honesty half for all of them.
   if(err.error === 'ai_off') return 'The coach is switched off — Settings → Your data turns it back on. Nothing else in the app has changed.';
+  // Never asked is not "switched off": nobody chose anything yet, and nothing was sent.
+  if(err.error === 'ai_unasked') return 'The coach is not on yet, so nothing was sent. Settings → Your data → Let the coach read my data turns it on.';
   // The server's daily-limit notice is the most useful message we have — it names the reset and says
   // the rest of the app keeps working. api() stopped returning it as CONTENT (it was being rendered
   // as a person's prayer), so it surfaces here instead.
@@ -1980,6 +2075,14 @@ async function sendCoach(){
     cH.push({role:'user',content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]'});
     cH.push({role:'assistant',content:'[Crisis resources shown]'});
     persistCoachHistory();
+    return;
+  }
+  // NEVER ASKED: ask now, AFTER the crisis gate (a permission prompt may never outrank a disclosure),
+  // and put their words back in the box so turning the coach on costs them nothing they typed.
+  if(typeof aiConsent==='function' && aiConsent()==='unasked'){
+    el.value = t;
+    addMsg('coach-msgs','I\u2019m not on yet, so nothing was sent. Your message is still in the box \u2014 turn me on and send it again.','coach');
+    if(typeof aiAskSheet==='function') aiAskSheet('Talking with the coach');
     return;
   }
   cH.push({role:'user',content:t});
@@ -3153,6 +3256,13 @@ async function sendPT(){
     ptH.push({role:'user',content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]'});
     ptH.push({role:'assistant',content:'[Crisis resources shown]'});
     persistPTHistory();
+    return;
+  }
+  // Same as the coach: asked after the crisis gate, and their message is kept for them.
+  if(typeof aiConsent==='function' && aiConsent()==='unasked'){
+    el.value = t;
+    addMsg('pt-msgs','I\u2019m not on yet, so nothing was sent. Your message is still in the box \u2014 turn me on and send it again.','coach');
+    if(typeof aiAskSheet==='function') aiAskSheet('Training with the PT coach');
     return;
   }
   ptH.push({role:'user',content:t});

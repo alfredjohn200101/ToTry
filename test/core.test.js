@@ -9368,7 +9368,9 @@ H.section('a recipe can come from a screenshot, and what comes back is still gat
     // `sb` stub below is still what answers — the sink passes straight through when the coach is on
     // — but a test that stubs the RAW invoke while the code calls the sink gets an undefined global,
     // a ReferenceError into the catch, and a null draft that reads exactly like a broken feature.
-    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets','aiInvoke','aiOff'], {
+    const fns = H.load(['handleRecipeScreenshot','_recipeFromParsed','_recipeDraftGuard','_recipeDraft','closeOpenSheets','aiInvoke','aiOff','aiConsent','aiConsentVersion'], {
+      // The coach must be ON for this drive: since v673 nothing is sent until the person says yes.
+      localStorage: { getItem: k => (k === 'totry_ai_consent' ? 'v1' : null), setItem(){}, removeItem(){} },
       document: { getElementById: () => ({ click(){} }),
                   querySelector: (sel) => (sel.indexOf('.btn.primary') > -1 ? btn : { remove(){} }),
                   // closeOpenSheets (v659) iterates, so a document stub needs this too.
@@ -19919,41 +19921,95 @@ H.section('the type scale can actually scale');
   };
   const mkEnv = function(ls){
     const toasts = [], row = { checked: true }, W = {};
+    const body = { kids: [], appendChild: function(n){ this.kids.push(n); } };
     let invoked = 0;
-    const fns = H.load(['aiOff','toggleAICoach','aiOffNotice','aiInvoke'], {
+    const fns = H.load(['aiConsentVersion','aiConsent','aiOff','toggleAICoach','aiOffLine','aiOffNotice','aiAskSheet','aiAllow','aiInvoke'], {
       localStorage: ls,
       showToast: function(a,b){ toasts.push(a + ' · ' + b); },
-      document: { getElementById: function(id){ return id === 'ai-toggle-btn' ? row : null; } },
+      document: {
+        getElementById: function(id){
+          if(id === 'ai-toggle-btn') return row;
+          if(id === 'ai-ask-sheet') return body.kids.filter(function(k){ return k.id === 'ai-ask-sheet'; })[0] || null;
+          return null;
+        },
+        createElement: function(){ return { className:'', id:'', innerHTML:'',
+          remove: function(){ const i = body.kids.indexOf(this); if(i > -1) body.kids.splice(i, 1); } }; },
+        body: body,
+      },
       window: W,
       sb: { functions: { invoke: function(){ invoked++; return Promise.resolve({ data:{ text:'hi' }, error:null }); } } },
     });
-    return { fns: fns, toasts: toasts, row: row, W: W, hits: function(){ return invoked; } };
+    return { fns: fns, toasts: toasts, row: row, W: W, hits: function(){ return invoked; },
+             sheet: function(){ return body.kids.filter(function(k){ return k.id === 'ai-ask-sheet'; })[0] || null; } };
   };
+  const ON = { totry_ai_consent: 'v1' };
 
-  // 1. THE PREDICATE, EXECUTED. Default ON matters as much as the off state: a switch that defaults
-  //    to off would take the coach away from everybody on the next release without being asked.
-  H.eq(mkEnv(mkLS({})).fns.aiOff(), false, 'with nothing stored the coach is ON — the switch takes nothing away by existing');
-  H.eq(mkEnv(mkLS({ totry_ai_off:'1' })).fns.aiOff(), true, 'stored “1” switches it off');
-  H.eq(mkEnv(mkLS({ totry_ai_off:'0' })).fns.aiOff(), false, 'and “0” is on, not a truthy string');
+  // 1. THE PREDICATE, EXECUTED, IN THREE STATES (v673). Apple 5.1.2(i) asks for explicit permission
+  //    BEFORE personal data goes to a third-party AI, so with nothing stored the coach is OFF and
+  //    nothing is sent. A legacy totry_ai_off='0' was written by a toggle that never showed what is
+  //    sent, so it is not consent. A refusal outranks a stale permission.
+  H.eq(mkEnv(mkLS({})).fns.aiConsent(), 'unasked', 'with nothing stored the person has not been asked');
+  H.eq(mkEnv(mkLS({})).fns.aiOff(), true, 'and NOTHING is sent until they say yes');
+  H.eq(mkEnv(mkLS({ totry_ai_off:'1' })).fns.aiConsent(), 'off', 'stored “1” is a refusal');
+  H.eq(mkEnv(mkLS({ totry_ai_off:'0' })).fns.aiConsent(), 'unasked', 'a legacy “0” is NOT consent — that toggle never said what is sent');
+  H.eq(mkEnv(mkLS(ON)).fns.aiConsent(), 'on', 'a recorded permission at the current version is consent');
+  H.eq(mkEnv(mkLS(ON)).fns.aiOff(), false, 'and only then does the coach send');
+  H.eq(mkEnv(mkLS({ totry_ai_consent:'v0' })).fns.aiConsent(), 'unasked', 'a permission at an OLD version asks again');
+  H.eq(mkEnv(mkLS({ totry_ai_consent:'v1', totry_ai_off:'1' })).fns.aiConsent(), 'off', 'a refusal outranks a stale permission');
+  H.eq(mkEnv({ getItem: function(){ throw new Error('blocked'); } }).fns.aiOff(), true,
+    'a store that cannot be read fails CLOSED — consent that cannot be read has not been given');
 
-  // 2. THE TOGGLE WRITES WHAT THE PREDICATE READS. The pair is asserted together because this repo
-  //    has shipped a switch whose stored type the reader destroyed (parseInt over a day string).
+  // 2. THE SWITCH TURNS IT OFF DIRECTLY AND NEVER TURNS IT ON DIRECTLY. On goes through the sheet,
+  //    because a switch that grants consent shows none of what 5.1.2(i) requires.
   {
-    const e = mkEnv(mkLS({}));
+    const e = mkEnv(mkLS(ON));
     e.fns.toggleAICoach();
     H.eq(e.fns.aiOff(), true, 'one tap switches it off, read back through the predicate itself');
     H.eq(e.row.checked, false, 'and the row stops showing ON over a stored OFF');
-    e.fns.toggleAICoach();
-    H.eq(e.fns.aiOff(), false, 'a second tap switches it back on');
-    H.ok(e.toasts.length === 2 && /morning/i.test(e.toasts[0]),
+    H.ok(e.toasts.length === 1 && /morning/i.test(e.toasts[0]),
       'the off toast names the thing that stops rather than saying only “off”');
+    e.fns.toggleAICoach();
+    H.eq(e.fns.aiOff(), true, 'a second tap does NOT switch it back on by itself');
+    const sh = e.sheet();
+    H.ok(!!sh, 'it opens the permission sheet instead');
+    // Read through `html`, never `e.sheet().innerHTML`: with no sheet, a dereference here CRASHES the
+    // run instead of failing this assertion -- which is what the fault injection for it first did.
+    const html = sh ? String(sh.innerHTML || '') : '';
+    H.ok(/Gemini/.test(html) && /NVIDIA/.test(html) && /Apple Health/.test(html)
+      && /journal entries word for word/.test(html) && /improve their models/.test(html),
+      'and the sheet names the providers, the Health data, the journal text and the training use');
+    H.ok(/each morning/.test(html), 'and says what it then sends without being asked');
+    e.fns.aiAllow(null);
+    H.eq(e.fns.aiOff(), false, 'only the sheet\'s own button turns it on');
+    H.eq(e.row.checked, true, 'and the row follows');
+    H.ok(!e.sheet(), 'and the sheet closes');
+  }
+  {
+    const e = mkEnv(mkLS({}));
+    e.fns.toggleAICoach();
+    H.eq(e.fns.aiOff(), true, 'from never-asked the switch opens the sheet and grants nothing');
+    H.ok(!!e.sheet(), 'the sheet is open');
+    H.ok(e.fns.aiOffNotice('Reading a meal photo') === true && e.toasts.length === 0,
+      'a calm feature tap from never-asked refuses and ASKS (the sheet), with no “switched it off” toast');
+  }
+  {
+    // A full phone: the consent write throws. The person must not be told the coach is on.
+    const m = {};
+    const ls = { getItem: function(k){ return (k in m) ? m[k] : null; },
+                 setItem: function(){ throw new Error('QuotaExceededError'); },
+                 removeItem: function(k){ delete m[k]; } };
+    const e = mkEnv(ls);
+    e.fns.aiAllow(null);
+    H.eq(e.fns.aiOff(), true, 'on a full phone the permission is not recorded');
+    H.ok(e.toasts.length === 1 && /could not save/i.test(e.toasts[0]) && !/is on/.test(e.toasts[0]),
+      'and the sheet says so instead of claiming the coach is on');
   }
 
   // 3. THE SINK REFUSES WITHOUT TOUCHING THE NETWORK. Asserted on the SPY COUNT, not on the return
   //    value: a refusal that still invoked and then discarded the answer would have sent the data.
   H.defer((function(){
-    const on = mkEnv(mkLS({})), off = mkEnv(mkLS({ totry_ai_off:'1' }));
-    return Promise.all([ on.fns.aiInvoke({ action:'vision' }), off.fns.aiInvoke({ action:'vision' }) ])
+    const on = mkEnv(mkLS(ON)), off = mkEnv(mkLS({ totry_ai_off:'1' })), never = mkEnv(mkLS({}));
+    return Promise.all([ on.fns.aiInvoke({ action:'vision' }), off.fns.aiInvoke({ action:'vision' }), never.fns.aiInvoke({ action:'vision' }) ])
       .then(function(r){
         H.eq(on.hits(), 1, 'coach on: the sink passes straight through to the edge function');
         H.ok(r[0].data && r[0].data.text === 'hi', 'and hands back the Supabase-shaped answer unchanged');
@@ -19961,6 +20017,9 @@ H.section('the type scale can actually scale');
         H.ok(r[1].error && !r[1].data, 'and the caller gets the Supabase-shaped error it already handles');
         H.eq(off.W.__lastAIError && off.W.__lastAIError.error, 'ai_off',
           'stamped ai_off so getAIErrorMessage can tell the truth about why');
+        H.eq(never.hits(), 0, 'never asked: NOTHING is invoked either');
+        H.eq(never.W.__lastAIError && never.W.__lastAIError.error, 'ai_unasked',
+          'stamped ai_unasked, so nobody is told they switched off something they were never asked about');
       });
   })());
 
@@ -20113,7 +20172,7 @@ H.section('the type scale can actually scale');
   //     EXECUTED, not grepped: the toast text is built at runtime, so the assertion drives the
   //     function and reads what showToast was handed.
   {
-    const store = {};
+    const store = { totry_ai_consent: 'v1' };   // on, so the one tap below really switches it OFF
     const said = [];
     const L = { getItem: k => (k in store ? store[k] : null),
                 setItem: (k, v) => { store[k] = String(v); },
@@ -20122,14 +20181,14 @@ H.section('the type scale can actually scale');
     // no summary — defect (n) in CLAUDE.md. A rename should cost one named failure, not the report.
     let t = null, loadErr = '';
     try {
-      t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
+      t = H.load(['aiConsentVersion', 'aiConsent', 'toggleAICoach', 'aiOff', 'aiOffLine', 'aiAskSheet'], {
         localStorage: L,
         showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
         document: { getElementById: () => null },
         window: {},
       });
     } catch (e) { loadErr = String(e && e.message || e); }
-    H.ok(!!t, 'toggleAICoach/aiOff/aiOffLine all load by name' + (loadErr ? ' — ' + loadErr : ''));
+    H.ok(!!t, 'toggleAICoach/aiOff/aiOffLine/aiConsent all load by name' + (loadErr ? ' — ' + loadErr : ''));
     if (t) t.toggleAICoach();
     const off = said.join(' ');
     H.ok(/nothing goes to a model/i.test(off), 'the off toast still says what it does stop');
@@ -20144,10 +20203,11 @@ H.section('the type scale can actually scale');
   //      gate in a single stroke — parses, suite green, does nothing. Both directions.
   {
     const said = [];
-    const mk = stored => H.load(['aiOffNotice', 'aiOff', 'aiOffLine'], {
-      localStorage: { getItem: k => (k === 'totry_ai_off' ? stored : null), setItem: () => {}, removeItem: () => {} },
+    const mk = (stored, consent) => H.load(['aiConsentVersion', 'aiConsent', 'aiOffNotice', 'aiOff', 'aiOffLine', 'aiAskSheet'], {
+      localStorage: { getItem: k => (k === 'totry_ai_off' ? stored : (k === 'totry_ai_consent' ? (consent || null) : null)),
+                      setItem: () => {}, removeItem: () => {} },
       showToast: (t, m) => said.push(String(t) + ' :: ' + String(m)),
-      document: { getElementById: () => null }, window: {},
+      document: { getElementById: () => null, createElement: () => ({}), body: { appendChild: () => {} } }, window: {},
     });
     said.length = 0;
     const offRet = mk('1').aiOffNotice('Reading a meal photo');
@@ -20155,7 +20215,7 @@ H.section('the type scale can actually scale');
     H.ok(/Reading a meal photo/.test(said.join(' ')) && /switched it off/.test(said.join(' ')),
       'and it says which action, and that the person switched it off');
     said.length = 0;
-    const onRet = mk(null).aiOffNotice('Reading a meal photo');
+    const onRet = mk(null, 'v1').aiOffNotice('Reading a meal photo');
     H.eq(onRet, false, 'CALIBRATION — and FALSE when the coach is on, or every guard would refuse always');
     H.eq(said.length, 0, 'and says nothing at all when the coach is on');
   }
@@ -20166,8 +20226,39 @@ H.section('the type scale can actually scale');
   //     stored=null, aiOff()=false, the row rendering OFF, and the toast saying "Nothing goes to a
   //     model now". Every send continued while the person believed they had declined.
   //     The fix is to READ IT BACK, so this executes the toggle against a storage that refuses.
-  [['toggleAICoach', 'aiOff', 'totry_ai_off', 'ai-toggle-btn'],
-   ['toggleMetrics', 'metricsOff', 'totry_no_metrics', 'metrics-toggle-btn']].forEach(function (p) {
+  //     v673: the COACH half of this changed shape for the better. Withdrawing permission removes
+  //     totry_ai_consent, and removeItem needs no space, so on a full phone switching the coach OFF
+  //     now SUCCEEDS -- asserted below. The full-phone failure moved to the one write that can fail,
+  //     recording a yes (aiAllow), which section 2 above drives.
+  {
+    const store = { totry_ai_consent: 'v1' };
+    const said = [];
+    const btn = { checked: true };
+    const L = { getItem: k => (k in store ? store[k] : null),
+                setItem: () => { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; },
+                removeItem: k => { delete store[k]; } };
+    let fns = null;
+    try {
+      fns = H.load(['aiConsentVersion', 'aiConsent', 'toggleAICoach', 'aiOff', 'aiOffLine', 'aiAskSheet'], {
+        localStorage: L,
+        showToast: (title, msg) => said.push(String(title) + ' :: ' + String(msg)),
+        document: { getElementById: id => (id === 'ai-toggle-btn' ? btn : null) },
+        window: {},
+      });
+    } catch (e) { fns = null; }
+    H.ok(!!fns, 'toggleAICoach was found by name — a rename must update this check, not silently drop it');
+    if (fns) {
+      H.eq(fns.aiOff(), false, 'CALIBRATION — the coach starts ON');
+      let threw = false;
+      try { fns.toggleAICoach(); } catch (e) { threw = true; }
+      H.eq(threw, false, 'toggleAICoach on a full device does not throw out of the handler');
+      H.eq(fns.aiOff(), true, 'on a full phone the coach still switches OFF — withdrawing consent needs no space');
+      H.eq(btn.checked, false, 'and the row shows the truth: off');
+      H.ok(/nothing goes to a model/i.test(said.join(' ')) && !/could not save/i.test(said.join(' ')),
+        'and the toast says it is off, because it is');
+    }
+  }
+  [['toggleMetrics', 'metricsOff', 'totry_no_metrics', 'metrics-toggle-btn']].forEach(function (p) {
     const store = {};
     const said = [];
     const btn = { checked: false };
@@ -20317,7 +20408,7 @@ H.section('the type scale can actually scale');
       const store = { totry_ai_off: '1' };
       let drove = false, threw = '';
       try {
-        const e = H.load(['api', 'aiOff', 'aiOffNotice', 'aiOffLine'], {
+        const e = H.load(['api', 'aiConsentVersion', 'aiConsent', 'aiOff', 'aiOffNotice', 'aiOffLine', 'aiAskSheet'], {
           localStorage: { getItem: k => (k in store ? store[k] : null), setItem: () => {}, removeItem: () => {} },
           showToast: (t, m) => said.push(String(t) + ' :: ' + String(m)),
           window: {}, sb: null, isOnline: true,
@@ -20336,6 +20427,30 @@ H.section('the type scale can actually scale');
         }));
       } catch (err) { threw = String(err && err.message || err); }
       H.ok(drove, 'api() was driven in the off state' + (threw ? ' — threw: ' + threw : ''));
+    }
+    // NEVER ASKED (v673): the floor stays SILENT. It cannot tell a calm tap from the Feeling Door or
+    // the SOS coach, and a toast or a permission sheet is not what somebody mid-urge came for. The
+    // calibration is the declined drive above, which DOES speak.
+    {
+      const said = [];
+      let drove2 = false, threw2 = '';
+      try {
+        const W2 = {};
+        const e2 = H.load(['api', 'aiConsentVersion', 'aiConsent', 'aiOff', 'aiOffNotice', 'aiOffLine', 'aiAskSheet'], {
+          localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+          showToast: (t, m) => said.push(String(t) + ' :: ' + String(m)),
+          window: W2, sb: null, isOnline: true,
+          document: { getElementById: () => null, createElement: () => { said.push('SHEET'); return {}; }, body: { appendChild: () => {} } },
+        });
+        const r2 = e2.api('sys', [], 'msg', 900);
+        drove2 = true;
+        H.defer(r2.then(function (txt) {
+          H.eq(txt, '', 'never asked: api() resolves to the empty string, so the surface falls back to its own step');
+          H.eq(said.length, 0, 'never asked: the floor shows NO toast and NO sheet (' + said.join(' | ') + ')');
+          H.eq(W2.__lastAIError && W2.__lastAIError.error, 'ai_unasked', 'and records why, for the surfaces that render a reason');
+        }));
+      } catch (err) { threw2 = String(err && err.message || err); }
+      H.ok(drove2, 'api() was driven in the never-asked state' + (threw2 ? ' — threw: ' + threw2 : ''));
     }
     H.ok(opt > -1 && opt < g,
       'and opts is defaulted ABOVE the backstop, or opts.quiet throws on every refusal');
@@ -20524,7 +20639,16 @@ H.section('the type scale can actually scale');
   {
     let line = '', loadErr = '';
     try {
-      line = H.load(['aiOffLine'], {}).aiOffLine();
+      // The DECLINED form: that is the one the floor speaks (never-asked stays silent, section 21).
+      line = H.load(['aiConsentVersion', 'aiConsent', 'aiOffLine'], {
+        localStorage: { getItem: k => (k === 'totry_ai_off' ? '1' : null), setItem(){}, removeItem(){} },
+      }).aiOffLine();
+      // And the never-asked form must not claim a choice nobody made.
+      const unasked = H.load(['aiConsentVersion', 'aiConsent', 'aiOffLine'], {
+        localStorage: { getItem: () => null, setItem(){}, removeItem(){} },
+      }).aiOffLine('Reading a meal photo');
+      H.ok(!/switched it off/.test(unasked) && /not on yet/.test(unasked) && /Nothing has been sent/.test(unasked),
+        'never asked: the line says the coach is not on yet and nothing was sent, not that they switched it off: ' + JSON.stringify(unasked));
     } catch (e) { loadErr = String(e && e.message || e); }
     H.ok(!!line, 'aiOffLine loads by name' + (loadErr ? ' — ' + loadErr : ''));
     if (line) {
@@ -20644,7 +20768,7 @@ H.section('the type scale can actually scale');
   {
     const store = {};
     const W = { __lastAIError: { error: 'ai_off' } };
-    const t = H.load(['toggleAICoach', 'aiOff', 'aiOffLine'], {
+    const t = H.load(['aiConsentVersion', 'aiConsent', 'aiAllow', 'aiOff', 'aiOffLine'], {
       localStorage: { getItem: k => (k in store ? store[k] : null),
                       setItem: (k, v) => { store[k] = String(v); },
                       removeItem: k => { delete store[k]; } },
@@ -20653,8 +20777,8 @@ H.section('the type scale can actually scale');
       window: W,
     });
     store.totry_ai_off = '1';                 // off
-    t.toggleAICoach();                        // back on
-    H.eq(t.aiOff(), false, 'CALIBRATION — the toggle really switched it back on');
+    t.aiAllow(null);                          // back on, through the permission sheet's own button
+    H.eq(t.aiOff(), false, 'CALIBRATION — the permission really switched it back on');
     H.eq(W.__lastAIError, null,
       'switching the coach back on clears the stale reason, so nothing still says it is off');
   }
@@ -20911,6 +21035,61 @@ H.section('a fasting season and the word "breakfast" do not trip the fuel plan\'
     H.ok(PASS.filter(([s]) => oldRed.test(s)).length >= 15,
       'fault-injected: the old pattern raises the sheet on most of the ordinary sentences above');
   }
+}
+
+// 30. PERMISSION BEFORE ANYTHING GOES TO A THIRD-PARTY AI (v673, Apple 5.1.2(i)). The predicate, the
+//     sheet and the floor are executed in the AI OFF-SWITCH section above. This section holds the
+//     wiring: where the chats ask, which keys a yes and a no live in, and the copy that had to change.
+H.section('nothing goes to a third-party AI until the person says yes');
+{
+  // (a) The coach and PT chats ask only AFTER their crisis gate, and keep what was typed.
+  ['sendCoach', 'sendPT'].forEach(function (fn) {
+    let s = '';
+    try { s = H.code(H.extractFn(fn)); } catch (e) { s = ''; }
+    H.ok(s.length > 300, fn + ' was found by name');
+    if (!s) return;
+    const gate = s.indexOf('detectCrisis(t)'), ask = s.indexOf("aiConsent()==='unasked'"), call = s.indexOf('await api(');
+    H.ok(gate > -1 && ask > -1 && call > -1, fn + ': the crisis gate, the permission check and the model call are all present');
+    H.ok(gate < ask && ask < call,
+      fn + ': the permission check sits AFTER the crisis gate and BEFORE the model call — a prompt may never outrank a disclosure');
+    const branch = s.slice(ask, s.indexOf('return;', ask));
+    H.ok(/el\.value\s*=\s*t\b/.test(branch), fn + ': and it puts their words back in the box, so turning the coach on costs them nothing');
+    H.ok(/aiAskSheet\(/.test(branch), fn + ': and it opens the permission sheet');
+  });
+
+  // (b) A yes is never synced and never survives a sign-out; a no survives both.
+  const BOOT = H.code(H.extractFn('signOut'));
+  H.ok(/k !== 'totry_ai_off'/.test(BOOT) && !/totry_ai_consent/.test(BOOT),
+    'signOut keeps the refusal and wipes the permission with every other totry_ key');
+  const syncAt = H.html.indexOf('const SYNC_KEYS = [');
+  let syncBody = '';
+  if (syncAt > -1) {
+    let d = 0;
+    for (let i = H.html.indexOf('[', syncAt); i < H.html.length; i++) {
+      if (H.html[i] === '[') d++; else if (H.html[i] === ']') { d--; if (!d) { syncBody = H.html.slice(syncAt, i); break; } }
+    }
+  }
+  H.ok(syncBody.length > 200, 'calibration: SYNC_KEYS was read');
+  H.ok(!/totry_ai_consent/.test(syncBody) && !/totry_ai_off/.test(syncBody),
+    'neither the permission nor the refusal is synced, so a cloud restore cannot decide for this device');
+  const keepM = H.html.match(/const keep = \[\s*'totry_theme',\s*'totry_ai_off',\s*'totry_no_metrics'\s*\]/);
+  H.ok(!!keepM, 'account deletion keeps exactly the theme and the two refusals — not the permission');
+
+  // (c) The copy that said the app sends without asking. Read from the files that ship.
+  const fs = require('fs'), path = require('path');
+  const R = f => { try { return fs.readFileSync(path.join(__dirname, '..', f), 'utf8'); } catch (e) { return ''; } };
+  const priv = R('privacy.html'), plist = R('ios/App/App/Info.plist');
+  H.ok(priv.length > 2000 && plist.length > 500, 'calibration: privacy.html and Info.plist were read');
+  H.ok(!/you are not asked/i.test(priv), 'privacy.html no longer says a send happens without asking');
+  H.ok(/Nothing is sent until you say yes/.test(priv), 'and says nothing is sent until the person says yes');
+  H.ok(/NVIDIA/.test(priv.slice(priv.indexOf('Once your Coach message'))), 'and the "what I cannot control" list names NVIDIA, which receives photos');
+  H.ok(!/not asked about/i.test(plist) && /Only if you turn on the coach/.test(plist),
+    'the Health permission string in the binary no longer says the AI send is unasked');
+  H.ok(!/Neither asks you first/.test(H.html) && /Off until you turn it on/.test(H.html),
+    'the Settings footnote says the coach is off until turned on');
+  H.ok(!/you are not asked/i.test(H.html), 'and the in-app privacy policy no longer says it either');
+  H.ok(!/never shared with anyone else/i.test(priv) && !/never shared with anyone else/i.test(H.html),
+    'and no Health sentence says "never shared with anyone else" beside an AI send it describes');
 }
 
 H.report();
