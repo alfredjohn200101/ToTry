@@ -5,6 +5,33 @@
 > Do not treat a CLAIMED item as true until it is driven — this repo's own record is that most
 > "missing" features are already built.
 
+> ## ▶ 18 Nov 2026 — THE NEXT CLICK IS THE OWNER'S, AND NOTHING BELOW BLOCKS IT
+>
+> **Upload build 15 and submit it, with Version Release set to "Manually release this version".**
+> Everything for the form is in `ASC-SUBMIT-PACK.md`. This is decided by `totry-ship-bar`, not by
+> mood: build 15's bundle sha (`4be5cdd3ad5e`) **equals the live PWA's**, so nothing in it can be a
+> regression; nothing below is a rejection risk; and every crisis door still gates and renders.
+>
+> ### The 2 Nov sweep, put through the bar — 25 findings, **0 blockers**
+>
+> 14 survived two refuters, 2 were refuted, 9 had no quorum (their verifiers died on a session
+> limit). The four silenced disclosures were then reproduced by hand on the shipped bytes.
+>
+> | Bucket | Findings |
+> |---|---|
+> | **BLOCKER** | none |
+> | **NEXT — web first** (silenced disclosures, all hand-reproduced) | **#13** a stated intent to overdose returns null while *"can you overdose on vitamin d"* raises the card — one entry fixes both directions · **#14** `end myself`: the object is in no entry at all, only the contracted spellings fire · **#15** the burdensomeness frame without a comma (*"when i am gone my family would be better off"*) · **#16** *"no point in living"* (the list has `no point living`) · **#17** the net loses a plan the moment the person says what it is |
+> | **NEXT** — mis-routed, not a false positive | **#5** *"my brother tried to kill himself"* reaches the HARM-OTHERS card. Re-route it; never silence it |
+> | **NEXT** — takeover false positives (the exercise note is erased at door 56) | **#1** bare `end the pain` — bound it, do not delete it (it alone carries five disclosure forms) · **#4** *"i want to die after that leg day"* · **#18** `better off without me` / `with me gone` need a subject · **#3b** the `end it` object list lacks the gerunds (cutting, dieting, bulking) · **#6b** *"suicide sprints"*, a real conditioning drill |
+> | **NEXT** — the app's own devotional vocabulary, again | **#9** `die to <X>` suppressed for one object where `dead to <X>` has eleven · **#10** the vocative span misses Hinduism's own registry word and the Arabic vocative · **#11** the surrender span has no `my` · **#12** the two FAST_SEASONS names the app prints |
+> | **NEXT** — additive, low | **#20** `nobody needs me here` — and NOT with a terminator, which loses a must-net row |
+> | **NEXT** — tooling, no build | **#21–23, #25** the preflight CORE calibration I wrote on 2 Nov (no quorum — reproduce by hand first) · **#24** corrected today |
+> | **TRADE-OFF** — real, kept, named | **#3a** a hardship clause in front of a bare *"i can't keep going"* fires on purpose: a prefix span silences 6 of 7 ordinary-life disclosures (measured by the refuter) · **#6a** bare `suicide`/`suicidal` on awareness copy and *"i am not suicidal"* — the already-decided negation class |
+> | **NEEDS THE OWNER** — two refuters disagreed | **#2 / #8** *"<any nuisance> and i want it to stop"*. One refuter: it needs an antecedent, and at door 56 it erases the note. The other: bare *"i want it to stop"* is a disclosure by design on every front, which this repo has decided twice |
+> | **NOISE** | **#7**, **#19** — refuted 2 of 2 |
+>
+> The fixes go to the PWA as they pass the gate and ride build 16. They do not hold build 15.
+
 > ## ⚑ RE-DERIVED 2 Nov 2026 at v672 / build 15 — READ THIS BEFORE THE LIST
 >
 > **Eleven of the fifteen items in §0–§2 are CLOSED.** Measured against the current bundle, one
@@ -96,7 +123,7 @@ removed as well as stopped.
 | **1.5** ✅ CLOSED<br><sub>`05-moment.js:987` clamps: `Math.min(Math.max(0, Math.floor(Number(level)) \|\| 0), _SHRINK.length-1)` — NaN, negative and over-range all land in range</sub> | **`_SHRINK[lv] is not a function`** — 4 distinct real users, 1 Oct 2026. `05-moment.js:971` declares `const _SHRINK = [`; `:979` indexes it. In one shared top-level scope with order-dependent `const`, this is the TDZ/ordering family (cf. the `ic()` calendar crash). Drive it, do not read it. | MEASURED (crash log) | 1–2h |
 | **1.6** ✅ CLOSED<br><sub>cause found: a mass-remove of `.modal-bg.open` destroyed the three STATIC sheets, which surfaced later as the null `.value`. One `closeOpenSheets` sink (146 call sites), 0 direct removals left, driven both ways with a calibration over all three quote spellings</sub> | **`Cannot set properties of null (setting 'value')`** — 5 **distinct** users on 25 Oct, the most recent live crash. NOT a dead id: the current bundle has 12 dead ids (baseline 40) and **0 dereferenced unguarded**. So the element exists in source and is absent from the DOM at call time — the `#feelingnow-why-input` class, which the id scan structurally cannot see. Find it, and add a check that can. | MEASURED (crash log) | 2–3h |
 | **1.7** ✅ CLOSED<br><sub>`_jsAttr(` at 17 sites across 9 modules; plus the document-owned-name scan — an inline handler’s scope chain runs through `document`, so a bare `URL` is a **string**</sub> | **The inline-handler SyntaxError family** — ~10 real occurrences: *"Failed to read the 'onclick' property … missing ) after argument list"*, *"'onchange' … Unexpected token '<'"*, *"Failed to execute 'click' … Invalid or unexpected token"* at `#nourish`, `#money`, `#today`, `#home`. This is the documented *"the app never prints its own source"* class — interpolated content terminating its own attribute. `npm run panels` checks two shapes of it; these got through. | MEASURED (crash log) | 2–4h |
-| **1.8** ✅ CLOSED<br><sub>`demo_f0_0`, `d0`, `d2`, `g20`: 0 declared and 0 referenced as a handler anywhere in `src/`; the class is held by the every-handler-calls-a-live-function check</sub> | **`d0` / `d2` / `g20` / `demo_f0_0 is not defined`** @ `#money` and `#nourish` — 16 occurrences, 4 Sep, real users. Inline handlers referencing generated identifiers that do not exist at click time. | MEASURED (crash log) | 1–2h |
+| **1.8** ✅ CLOSED<br><sub>no `on*=` attribute anywhere in `src/` references `demo_f0_0`, `d0`, `d2` or `g20` — measured 0, which is the shape that crashed (an inline handler naming a generated identifier). **Corrected 18 Nov:** this row said *"0 declared"*, which was false — `const d0` is declared five times as a function-local date (`02-native.js` ×2, `04-fight.js`, `14-nourish.js`, `39-import-export.js`); my regex only looked for `function d0(`. The verdict stands on the handler count, not on that</sub> | **`d0` / `d2` / `g20` / `demo_f0_0 is not defined`** @ `#money` and `#nourish` — 16 occurrences, 4 Sep, real users. Inline handlers referencing generated identifiers that do not exist at click time. | MEASURED (crash log) | 1–2h |
 | **1.9** ➡ **THE ONLY LIVE LINE, AND IT IS THE OWNER’S**<br><sub>not v655 — **build 15 / v672** is cut, exported and IPA-verified (distribution-signed, `get-task-allow=false`, arm64, manifest present, web bundle sha matching the repo AND the live PWA). Nothing in this repo uploads anything</sub> | **Archive at v655, export, verify the IPA, upload, and START REVIEW.** App Store Connect holds builds 4, 5, 6, 8 (build 8 = v597, uploaded 9 Sep). **There is no record in this repo of a build ever being submitted for review.** Do NOT upload `ToTry-v643-build10.ipa` — 12 versions stale, predates the share-card fix. Verify the IPA not the archive: distribution cert, `get-task-allow=false`, arm64, `PrivacyInfo.xcprivacy`, bundle sha. | MEASURED (`preflight` = ready; CLAUDE.md) | 1h + gate |
 
 ## 2 · SHOULD — cheap, high value, worth the same binary

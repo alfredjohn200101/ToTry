@@ -14,6 +14,7 @@ only when relevant:
 | add or change an assertion — or a test goes red on code you believe is correct | **`totry-test`** |
 | edit `src/`, build, bump a version, push, deploy, or cut an archive | **`totry-ship`** |
 | add or edit ANY field a person types a sentence into, or touch `detectCrisis`, the registers or the net | **`totry-crisis-door`** |
+| start a sweep or audit, triage findings, decide to fix something "first", re-cut an archive, add to this file — or say what is left before the App Store | **`totry-ship-bar`** |
 
 They are short on purpose and they do not replace this file: when a skill names a rule, the full
 story and the measurement behind it are still here. If you find yourself re-deriving something

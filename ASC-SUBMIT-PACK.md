@@ -232,6 +232,12 @@ Availability: All territories (or at minimum Australia)
 ```
 
 **Submit for Review stays disabled until this section is set** — it is easy to miss.
+
+**Version Release — choose "Manually release this version".** It is on the version page, under
+the build, and this pack never mentioned it until 18 Nov 2026. With it set, an approval does not
+put the app on the store: you press Release when you choose to. That is what makes it safe to
+submit the build you have TODAY and let a newer build follow — Apple's queue is the long wait and
+a first submission is where the surprises are, so it should not sit behind anything else.
 You do **not** need the Paid Apps agreement or banking/tax forms: confirmed from the code, there is
 no StoreKit, no `SKProduct`, no IAP anywhere in `ios/App/App/*.swift` or `src/app/*.js`, and
 `package.json` carries only `@capacitor/*`, `@supabase/supabase-js` and `capacitor-health`.
@@ -373,11 +379,18 @@ recorded for the `6.9-v643` set (01-home was actually Settings mid-scroll) does 
 - All five are **flattened RGB** (`hasAlpha: no`), verified two ways: a zlib re-encoder that compares
   every RGB byte of its own output (`rgbDiff=0`) and `sips` independently.
 
-### Promotional Text — 160/170 (editable later without a new build)
+### Promotional Text — 154/170 (editable later without a new build)
 
 ```
-Meet yourself the moment you feel something — and be moved through it. One home for your whole life: the fight, your body, your money, your faith. Free, no ads.
+Meet yourself the moment you feel something — and be moved through it. One home for your whole life: the fight, your body, your money, your faith. No ads.
 ```
+
+> **"Free" was removed from this field on 18 Nov 2026.** Guideline 2.3.7, read from Apple's own
+> page that day: metadata must not be packed with *"pricing information"*, and names, subtitles,
+> screenshots and previews *"should not include prices"*. The name, subtitle and keywords were
+> already clean and the five screenshots print no price word. This was the one short, prominent
+> field that did, and the store's Get button already says what it costs. The description keeps its
+> single *"Free. No ads."* line: a description is not on that list and one mention is not packing.
 
 ### Description — 2503/4000
 
