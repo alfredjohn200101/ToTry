@@ -3,10 +3,11 @@
 
 ---
 
-## ⛔ 19 Nov 2026 — HOLD. DO NOT UPLOAD BUILD 15.
-> One rejection-class item was found: nothing asks permission before personal data goes to a
-> third-party AI (guideline 5.1.2(i)). See `BUILD-NEXT.md`, 19 Nov section, item B1. Build 16 carries
-> the fix; the section below describes build 15 and is kept as the record.
+## ▶ 19 Nov 2026 — UPLOAD BUILD 16 (v673), NOT BUILD 15.
+> Build 15 had no permission step before personal data goes to a third-party AI (Apple 5.1.2(i)).
+> Build 16 is archived, exported and verified out of the IPA; the details and the provider items to
+> settle first are at the top of `ASC-SUBMIT-PACK.md`. The section below describes build 15 and is
+> kept as the record.
 
 ## ▶▶ CURRENT STATE — 1 Nov 2026 — v672, build 15. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
 > **Build 15 SUPERSEDES 14 AND 13**, and neither of those should go up. v672 corrects two things in

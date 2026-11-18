@@ -1,13 +1,17 @@
 # App Store Connect — submission pack
 
-> ## ⛔ 19 Nov 2026 — DO NOT SUBMIT BUILD 15. Build 16 carries the fix.
+> ## ▶ 19 Nov 2026 — SUBMIT BUILD 16 (v673). BUILD 15 IS RETIRED.
 >
-> Guideline 5.1.2(i) requires an app to *"clearly disclose where personal data will be shared with
-> third parties, including with third-party AI, and obtain explicit permission before doing so."*
-> Build 15 sends the person's why, identity sentence and journal text to a model on first open with
-> no permission step, and the review note below says so (*"on by default"*). Full finding and the
-> shape of the fix: `BUILD-NEXT.md`, 19 Nov section, item B1. **Everything below describes build 15
-> and must be re-derived for build 16** — the review note's AI paragraph in particular.
+> Build 15 sent the person's why, identity sentence and journal text to a model on first open with
+> no permission step, which Apple 5.1.2(i) forbids. **Build 16 asks first.** Verified out of the IPA
+> (`~/Library/Developer/Xcode/Archives/2026-11-19/ToTry-v673-build16.ipa`, also in
+> `~/Library/Developer/Xcode/ToTry-current-build/`): Apple Distribution, L4BD53PLVF,
+> `get-task-allow = false`, 1.0 (16), arm64 only, `PrivacyInfo.xcprivacy` with 12 collected types, the
+> corrected Health usage string, and a web bundle byte-identical (`54f26ddcb8a3`) to the one the whole
+> gate ran green against. Organizer holds exactly one ToTry archive; build 15 is in
+> `ToTry-superseded-archives/`. **Before you submit, read the provider items P1–P3 in
+> `BUILD-NEXT.md`** — they are account settings, not the binary. The sections below were re-derived
+> for build 16 where they changed (the review note, §3 availability, §7, §8); the rest is unchanged.
 
 **Derived from the code and the shipped binary. Re-measured 1 Nov 2026 at v672 / build 15, not
 from the other submission docs.**
