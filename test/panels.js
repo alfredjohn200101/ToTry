@@ -1637,12 +1637,18 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
   // nothing here, because that content never came from the model in the first place; hiding the
   // bridge button fails it immediately. That is the app's own rule stated as a test: the
   // deterministic path carries the weight and the model is only ever a nicety.
-  {
+  // v673: the coach sends nothing until the person says yes. So this runs TWICE. With permission
+  // given, every provider throws (the original check). Never asked, nothing may be sent at all, and no
+  // permission prompt may appear over somebody mid-craving -- the built-in steps carry it alone.
+  // The consent key is written RAW: aiConsent() reads localStorage directly, and the s() helper below
+  // JSON-stringifies, which would store '"v1"' and read as never asked.
+  for (const consent of ['v1', null]) {
     const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       s('totry_onboarded',true); s('totry_name','Sam');
       s('totry_v',[{ n:'Porn', mode:'quit', startDate:new Date(Date.now()-12*864e5).toISOString() }]); });
+    if (consent) await page.addInitScript(v => { localStorage.setItem('totry_ai_consent', v); }, consent);
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2600);
     const r = await page.evaluate(async () => {
@@ -1661,6 +1667,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const ov = document.querySelector('.companion-overlay');
       const txt = (ov && ov.innerText) || document.body.innerText || '';
       return { calls: window.__aiCalls || 0,
+               askSheet: !!document.getElementById('ai-ask-sheet'),
                // scoped to the companion — the subject of this assertion. A document-wide sweep also
                // catches the morning sentence's spinner, which at that moment is still waiting on a
                // REAL network call fired at boot before these stubs existed; measured on its own it
@@ -1671,6 +1678,15 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
                wayThrough: /I.m through it|step away|pick your own way|try this|breathe/i.test(txt),
                chars: txt.length };
     });
+    if (!consent) {
+      if (r.calls) findings.push(`never-asked: the companion reached for a model ${r.calls} time(s) before the person said yes`);
+      else if (r.askSheet) findings.push('never-asked: a permission prompt appeared over somebody mid-craving');
+      else if (!r.wayThrough) findings.push('never-asked: the companion offers no way through without the coach');
+      else if (!r.bridge) findings.push('never-asked: the companion offers no bridge to a real person without the coach');
+      else console.log('never-asked: 0 model calls, no permission prompt, a way through AND a bridge to a real person');
+      await ctx.close();
+      continue;
+    }
     if (!r.calls) findings.push('AI-down: the companion never even tried the model, so this proves nothing — check the stub');
     else if (r.spinners) findings.push(`AI-down: ${r.spinners} spinner(s) still turning after every provider failed`);
     else if (r.stuckThinking) findings.push('AI-down: the companion still says it is thinking, mid-craving, forever');
