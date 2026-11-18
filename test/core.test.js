@@ -20736,4 +20736,53 @@ H.section('the type scale can actually scale');
   }
 }
 
+// 27. A ROW THE CRISIS GATE FLAGGED IS NEVER HANDED BACK (v673). "On This Day" is the one surface
+//     that resurfaces a person's own old words unprompted, and it read the raw store: measured on
+//     19 Nov 2026, a flagged year-old entry was RETURNED. The share card's "what I tried today"
+//     branch drew today's flagged sentence onto something the app invites the person to post.
+//     Both are EXECUTED or read structurally, and both are calibrated in both directions.
+H.section('a flagged journal row is never resurfaced');
+{
+  const DAY = 86400000, now = Date.now();
+  const LONG = 'this is a journal entry long enough to pass the forty character floor';
+  const recent = Array.from({ length: 8 }, (_, i) => ({ ts: now - i * DAY, text: LONG + ' ' + i }));
+  const run = rows => {
+    let L = null;
+    try {
+      L = H.load(['onThisDay', 'safeJournal'], { ls: (k, d) => (k === 'totry_journal' ? rows : (d === undefined ? null : d)) });
+    } catch (e) { return 'LOAD FAILED: ' + (e && e.message); }
+    const r = L.onThisDay();
+    return r ? { flagged: !!r.e.flagged, age: r.age } : null;
+  };
+  H.ok(run(recent) === null, 'calibration: with only recent entries On This Day returns nothing');
+  const plain = run(recent.concat([{ ts: now - 365 * DAY, text: LONG }]));
+  H.ok(plain && plain.flagged === false && plain.age === 365,
+    'calibration: an ordinary year-old entry IS handed back (' + JSON.stringify(plain) + ')');
+  H.ok(run(recent.concat([{ ts: now - 365 * DAY, text: LONG, flagged: true }])) === null,
+    'a year-old entry the crisis gate flagged is NOT handed back');
+  const mixed = run(recent.concat([
+    { ts: now - 365 * DAY, text: LONG, flagged: true },
+    { ts: now - 200 * DAY, text: LONG + ' older ordinary' },
+  ]));
+  H.ok(mixed && mixed.flagged === false && mixed.age === 200,
+    'and it does not hide the day: the next ordinary entry is offered instead (' + JSON.stringify(mixed) + ')');
+
+  let rc = '';
+  try { rc = H.code(H.extractFn('_renderShareCanvas')); } catch (e) { rc = ''; }
+  H.ok(rc.length > 400, '_renderShareCanvas was found by name -- a rename must update this check, not silently drop it');
+  if (rc) {
+    const usesJ = rc.split('\n').filter(l => /todayJournal\.text/.test(l));
+    const usesE = rc.split('\n').filter(l => /todayEvening\.(?:win|release)/.test(l));
+    H.ok(usesJ.length > 0 && usesE.length > 0, 'the share card still draws today\'s own words (the subject of this check exists)');
+    H.ok(usesJ.every(l => /_jOk\s*&&\s*todayJournal\.text/.test(l)),
+      'every use of today\'s journal text on the share card is behind the not-flagged guard');
+    H.ok(usesE.every(l => /_evOk\s*&&\s*\(?\s*todayEvening\.(?:win|release)/.test(l)),
+      'and every use of today\'s evening text is too');
+    H.ok(/_jOk\s*=\s*todayJournal\s*&&\s*!todayJournal\.flagged/.test(rc),
+      'the journal guard really reads the row\'s flagged mark');
+    H.ok(/_evOk\s*=\s*todayEvening\s*&&\s*!todayEvening\.flagged/.test(rc),
+      'and so does the evening guard');
+  }
+}
+
 H.report();

@@ -1298,7 +1298,11 @@ function _renderShareCanvas(style, theme){
   }
   else if(style === 'evening' && (todayEvening || todayJournal)){
     eyebrow('\u00b7 WHAT I TRIED TODAY \u00b7', 330);
-    const text = (todayEvening && (todayEvening.win || todayEvening.release)) || (todayJournal && todayJournal.text) || 'Showed up. Tried. That counts.';
+    // A FLAGGED ROW NEVER REACHES A SHARE CARD. This branch draws today's own words onto something
+    // the app invites the person to post; a row the crisis gate flagged still counts as a day lived
+    // (the card renders) but its sentence is not what goes on it.
+    const _evOk = todayEvening && !todayEvening.flagged, _jOk = todayJournal && !todayJournal.flagged;
+    const text = (_evOk && (todayEvening.win || todayEvening.release)) || (_jOk && todayJournal.text) || 'Showed up. Tried. That counts.';
     ctx.fillStyle = C.ink;
     ctx.font = '300 40px "Cormorant Garamond", Georgia, serif';
     const lines = _wrapText(ctx, '\u201c'+text+'\u201d', 840);

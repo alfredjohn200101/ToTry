@@ -808,7 +808,11 @@ function _subDismiss(key){
 // to trust the app's arithmetic — it's their own handwriting.
 function onThisDay(){
   try{
-    const j=ls('totry_journal')||[];
+    // A ROW THE CRISIS GATE FLAGGED IS NEVER HANDED BACK. This is the one surface that resurfaces a
+    // person's own old words UNPROMPTED ("You wrote this about a year ago"), and it read the raw
+    // store -- so a disclosure came back a year later with nobody on screen to meet it. Every
+    // model-facing reader already goes through safeJournal(); the replaying one did not.
+    const j=(typeof safeJournal==='function') ? safeJournal() : (ls('totry_journal')||[]).filter(function(e){ return e && !e.flagged; });
     if(j.length<8) return null;
     const now=Date.now();
     const scored=j.map(function(e){

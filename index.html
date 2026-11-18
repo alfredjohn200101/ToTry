@@ -43926,7 +43926,11 @@ function _subDismiss(key){
 // to trust the app's arithmetic — it's their own handwriting.
 function onThisDay(){
   try{
-    const j=ls('totry_journal')||[];
+    // A ROW THE CRISIS GATE FLAGGED IS NEVER HANDED BACK. This is the one surface that resurfaces a
+    // person's own old words UNPROMPTED ("You wrote this about a year ago"), and it read the raw
+    // store -- so a disclosure came back a year later with nobody on screen to meet it. Every
+    // model-facing reader already goes through safeJournal(); the replaying one did not.
+    const j=(typeof safeJournal==='function') ? safeJournal() : (ls('totry_journal')||[]).filter(function(e){ return e && !e.flagged; });
     if(j.length<8) return null;
     const now=Date.now();
     const scored=j.map(function(e){
@@ -54278,7 +54282,11 @@ function _renderShareCanvas(style, theme){
   }
   else if(style === 'evening' && (todayEvening || todayJournal)){
     eyebrow('\u00b7 WHAT I TRIED TODAY \u00b7', 330);
-    const text = (todayEvening && (todayEvening.win || todayEvening.release)) || (todayJournal && todayJournal.text) || 'Showed up. Tried. That counts.';
+    // A FLAGGED ROW NEVER REACHES A SHARE CARD. This branch draws today's own words onto something
+    // the app invites the person to post; a row the crisis gate flagged still counts as a day lived
+    // (the card renders) but its sentence is not what goes on it.
+    const _evOk = todayEvening && !todayEvening.flagged, _jOk = todayJournal && !todayJournal.flagged;
+    const text = (_evOk && (todayEvening.win || todayEvening.release)) || (_jOk && todayJournal.text) || 'Showed up. Tried. That counts.';
     ctx.fillStyle = C.ink;
     ctx.font = '300 40px "Cormorant Garamond", Georgia, serif';
     const lines = _wrapText(ctx, '\u201c'+text+'\u201d', 840);
