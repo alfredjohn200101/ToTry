@@ -255,10 +255,33 @@ function _fuelElicitSave(){
   // bread, late-night snacking or takeaway is the normal reason somebody opens this app, and this
   // off-ramp is a gentle sheet rather than a takeover, so a slightly wider net is cheap here in a
   // way it would not be at a crisis door.
-  const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast|(?:stop|quit|give up) eating(?!\s+(?:sugar|carbs|carbohydrates|bread|pasta|rice|meat|red meat|dairy|cheese|gluten|junk|sweets|lollies|chocolate|biscuits|snacks|takeaway|takeout|fast food|processed|crap|rubbish|late|after|before|out|so much|less|more|that|them|it)\b)|until i (?:die|disappear|vanish|am gone))/i;
+  const redFlags = /(starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast|(?:stop|quit|give up) eating(?!\s+(?:sugar|carbs|carbohydrates|bread|pasta|rice|meat|red meat|dairy|cheese|gluten|junk|sweets|lollies|chocolate|biscuits|snacks|takeaway|takeout|fast food|processed|crap|rubbish|late|after|before|out|so much|less|more|that|them|it)\b)|until i (?:die|disappear|vanish|am gone))/i;
   const tooLow = ctx.goalDir==='cut' && ctx.cal < (ctx.sex==='female' ? 1300 : 1500);
-  if(redFlags.test(restrictions) || tooLow){ _fuelSafetyModal(); return; }
+  // The word "fast" is judged on its own, by _fuelFastFlag below, because a fasting season is not
+  // a red flag and "breakfast" is not a fast. Everything else in the list above still fires.
+  let _season = null;
+  try{ _season = (typeof fastSeasonNow === 'function') ? fastSeasonNow() : null; }catch(_){ _season = null; }
+  if(redFlags.test(restrictions) || _fuelFastFlag(restrictions, !!_season) || tooLow){ _fuelSafetyModal(); return; }
   _fuelFinishSave(window._fuelPendingVals);
+}
+
+// THE WORD "FAST" IS NOT, ON ITS OWN, A SIGN OF RESTRICTION. The off-ramp's pattern began
+// `fast(ing)?\b` with no leading word boundary, so "big breakfast please", "no fast food",
+// "fasting for Ramadan until the 20th", "keeping the Lent fast" and "Navratri fast - fruit, milk and
+// nuts only" all opened a sheet telling the person a plan "should build you, not shrink you". This
+// app keeps a registry of six fasting seasons (FAST_SEASONS) and tells the model "a fast is not a
+// diet"; its own meal planner then treated the word as an eating-disorder signal.
+// The check is NOT silenced during a season -- a fast is a documented cover for restriction -- it
+// stops firing on the WORD. Fasting tied to weight, size or a number still fires in any season, and
+// every other phrase in the list above (starv, barely eat, as few calories ...) is unchanged.
+function _fuelFastFlag(text, seasonDeclared){
+  const t = String(text || '').toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\beat(?:ing|s)?\s+(?:too\s+|so\s+|really\s+|very\s+)?fast\b/g, ' ');
+  if(/\bfast(?:ing|ed|s)?\b[^.!?\n]{0,40}\b(?:lose|losing|weight|kg|kilos?|pounds|lbs|thin|thinner|skinny|shred|shredded|smaller|drop (?:some |a few )?(?:weight|kilos?|pounds|\d))/.test(t)) return true;
+  if(!/\bfast(?:ing|ed|s)?\b(?![\s-]*(?:foods?|metabolism|twitch|digest\w*|acting|carbs?|release)\b)/.test(t)) return false;
+  if(seasonDeclared) return false;
+  return !/\b(?:ramadan|ramzan|ramadhan|sawm|suhoor|suhur|sehri|iftar|lent|lenten|navratri|navaratri|uposatha|ekadashi|yom kippur|religious|my faith)\b/.test(t);
 }
 
 function _fuelFinishSave(vals){

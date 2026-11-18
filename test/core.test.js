@@ -15962,6 +15962,10 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
 {
   const SRC = H.extractFn('_fuelElicitSave');
   const { detectCrisis } = H.load(['detectCrisis']);
+  // _fuelElicitSave asks _fuelFastFlag about the word "fast" (v673). This sandbox builds its own
+  // scope rather than going through H.load, so every helper the function calls has to be NAMED
+  // here -- an unnamed one throws a ReferenceError at module level and ends the run with no summary.
+  const { _fuelFastFlag } = H.load(['_fuelFastFlag']);
 
   // Drive the REAL function. A grep cannot see this defect: the call is present and correctly
   // spelled, and only the ARGUMENT it reads is wrong — the shape this repo records as
@@ -15970,7 +15974,7 @@ H.section('the fuel plan gate reads the field that exists, and keeps their work'
     let bridged = false, prefsSaved = null, advanced = false;
     const el = id => ({ value: fields[id] || '', getAttribute: () => null });
     const sb = {
-      detectCrisis,
+      detectCrisis, _fuelFastFlag,
       document: { getElementById: id => el(id), querySelector: () => null,
                   querySelectorAll: () => ({ forEach: () => {}, length: 0 }) },
       // The gate shows the standard card via journalMeetCrisis now — the same helper every door
@@ -20842,6 +20846,71 @@ H.section('the Grow card says no calorie or macro figure when numbers are off');
     'and it reached the verdict, not the low-data branch, so the check below covers the sentence that leaked');
   H.ok(!fOff.calDay && !fOff.gkg && !fOff.calNum && !fOff.gramsDay,
     'with numbers OFF the card prints no calorie figure, no cal/day, no g/kg and no grams a day (' + JSON.stringify(fOff) + ')');
+}
+
+// 29. THE WORD "FAST" IS NOT A RED FLAG ON ITS OWN (v673). The fuel plan's restriction off-ramp
+//     began `fast(ing)?\b` with no leading boundary: "big breakfast please", "no fast food" and
+//     "fasting for Ramadan" all opened the "build you, not shrink you" sheet — 19 of 22 ordinary
+//     sentences, measured. The judgement is _fuelFastFlag now, EXECUTED here with the real redFlags
+//     pattern beside it, in both directions, with and without a declared season.
+H.section('a fasting season and the word "breakfast" do not trip the fuel plan\'s restriction sheet');
+{
+  let L = null, red = null, src = '';
+  try { L = H.load(['_fuelFastFlag'], {}); } catch (e) { L = null; }
+  try { src = H.extractFn('_fuelElicitSave'); } catch (e) { src = ''; }
+  H.ok(!!(L && typeof L._fuelFastFlag === 'function'), '_fuelFastFlag was found by name');
+  H.ok(src.length > 500, '_fuelElicitSave was found by name');
+  const m = src.match(/const redFlags = (\/[\s\S]*?\/i);/);
+  H.ok(!!m, 'calibration: the redFlags pattern was extracted from the real function');
+  if (L && m) {
+    red = eval(m[1]);
+    const whole = (s, season) => red.test(s) || L._fuelFastFlag(s, season);
+    H.ok(!/^\(fast/.test(red.source), 'the bare word "fast" is no longer the first alternative of redFlags');
+    H.ok(/_fuelFastFlag\(\s*restrictions\s*,\s*!!_season\s*\)/.test(H.code(src)),
+      '_fuelElicitSave asks _fuelFastFlag about the typed text AND whether a season is declared');
+    H.ok(/_season\s*=\s*\(typeof fastSeasonNow === 'function'\) \? fastSeasonNow\(\)/.test(H.code(src)),
+      'and the season it passes comes from fastSeasonNow(), the app\'s own registry');
+
+    const FLAG = [
+      ['i want to fast for 5 days', 0], ['i am going to fast to lose weight', 0], ['fasting until i lose 5kg', 0],
+      ['water fasting', 0], ['i want to do a 3 day fast', 0], ['extended fasting', 0], ['im fasting', 0],
+      ['i fast most days', 0], ['dry fast for 3 days', 0], ['fasting for ramadan and i want to lose weight', 0],
+      ['i want to fast for 5 days to lose weight', 1], ['fasting to get skinny', 1], ['fasting until i lose 5kg', 1],
+      ['i barely eat', 1], ['as few calories as possible', 1], ['i want to stop eating', 1],
+    ];
+    const PASS = [
+      ['big breakfast please, i train early', 0], ['i dont like breakfast foods', 0], ['breakfasts are my favourite', 0],
+      ['no fast food', 0], ['no fast-food please', 0], ['i have a fast metabolism', 0], ['i eat too fast', 0],
+      ['fast carbs before training', 0], ['fast-acting carbs after the gym', 0],
+      ['fasting for Ramadan until the 20th', 0], ['i fast during ramadan', 0], ['suhoor before dawn then fasting', 0],
+      ['keeping the Lent fast, no meat on Fridays', 0], ['lenten fast, fish on fridays', 0],
+      ['Navratri fast - fruit, milk and nuts only', 0], ['uposatha: no food after noon, fasting', 0],
+      ['my faith asks me to fast on mondays', 0], ['no mushrooms, coeliac', 0], ['i want to stop eating sugar', 0],
+      ['im fasting this month', 1], ['fasting until sunset', 1], ['16:8 fasting', 1],
+    ];
+    FLAG.forEach(([s, se]) => H.ok(whole(s, !!se), 'still reaches the sheet' + (se ? ' during a declared season' : '') + ': ' + JSON.stringify(s)));
+    PASS.forEach(([s, se]) => H.ok(!whole(s, !!se), 'left alone' + (se ? ' during a declared season' : '') + ': ' + JSON.stringify(s)));
+
+    // The tradition words are tied to the app's own registry: every season a tradition owns must be
+    // recognised by name when nobody has declared it, or a season added later is a false alarm again.
+    const at = H.html.indexOf('const FAST_SEASONS = {');
+    H.ok(at > -1 && H.html.indexOf('const FAST_SEASONS = {', at + 1) === -1, 'FAST_SEASONS is declared exactly once');
+    let depth = 0, end = -1;
+    for (let i = H.html.indexOf('{', at); i < H.html.length; i++) {
+      if (H.html[i] === '{') depth++; else if (H.html[i] === '}') { depth--; if (!depth) { end = i; break; } }
+    }
+    const reg = end > at ? H.html.slice(at, end) : '';
+    const names = [...reg.matchAll(/^\s{2}([a-z_]+):\{ id:'[^']+', name:'([^']+)'/gm)].map(x => ({ id: x[1], name: x[2] }));
+    H.ok(names.length >= 6, 'calibration: the season registry was read (' + names.map(n => n.id).join(',') + ')');
+    names.filter(n => n.id !== 'window' && n.id !== 'own').forEach(n =>
+      H.ok(!L._fuelFastFlag('fasting for ' + n.name, false),
+        'a tradition season named in the text is recognised without being declared: ' + n.name));
+
+    // FAULT INJECTIONS, inline. (a) the old bare word back at the head of redFlags.
+    const oldRed = new RegExp('(fast(ing)?\\b|' + red.source.slice(1), 'i');
+    H.ok(PASS.filter(([s]) => oldRed.test(s)).length >= 15,
+      'fault-injected: the old pattern raises the sheet on most of the ordinary sentences above');
+  }
 }
 
 H.report();
