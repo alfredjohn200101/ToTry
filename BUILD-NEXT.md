@@ -5,6 +5,33 @@
 > Do not treat a CLAIMED item as true until it is driven — this repo's own record is that most
 > "missing" features are already built.
 
+> ## ▶ 19 Nov 2026, later — BUILD 16 (v673) CARRIES THE FIX; THREE PROVIDER DECISIONS ARE THE OWNER'S
+>
+> **Done in v673, each with its own commit, tests and fault injections:** B1 (nothing goes to a
+> third-party AI until the person says yes — `aiConsent()`, a permission sheet, the copy and the
+> Health usage string in Info.plist corrected), N1 (On This Day and the share card never replay a
+> flagged row), N2 (#13–#16, the four silenced disclosures), N3 (numbers off reaches the Grow card's
+> verdict and protein line), N4 (a fasting season and "breakfast" no longer trip the fuel sheet).
+> Build 15 must not be submitted.
+>
+> **Before submitting build 16 — the provider accounts, not the binary.** Checked on the providers'
+> own pages on 19 Nov:
+>
+> | | Provider fact | What it means | Who |
+> |---|---|---|---|
+> | **P1** | Google's free Gemini tier: *"Do not submit sensitive, confidential, or personal information to the Unpaid Services"*; human reviewers may read API input; it is used to improve Google's products; unpaid services may not serve users in the EEA, UK or Switzerland | The app sends journal text and Apple Health data to it first. Apple 5.1.3(i) forbids health data being used for anything but health management, so a reviewer reading the policy's "some may use prompts to improve models" could cite it. | **Owner:** enable billing on the Gemini project (paid tier is "used to improve: No"; pennies at today's traffic) |
+> | **P2** | Mistral's free plan trains on input by default; OpenRouter has separate privacy settings for free models | Same as P1, smaller share of traffic | **Owner:** admin.mistral.ai → Privacy → training off; OpenRouter → privacy settings → free models, training off. Free |
+> | **P3** | NVIDIA's API trial terms forbid production use and personal or health data, and NVIDIA receives form-check photos | A terms breach whatever the copy says | **Server change, owner's OK:** remove NVIDIA from the vision chain in `supabase/functions/ai-proxy` and redeploy. No app build |
+> | **P4** | `gemini-2.5-flash` shuts down on **1 Dec 2026** and is auto-routed to `gemini-3.5-flash-lite`; Groq's llama models are retired (only `gpt-oss-120b` lives); OpenRouter's nemotron free model is dead | The food camera and the coach lean on the first link. This repo has already lost the food camera once to a thinking model's token budget | Re-probe the chain after 1 Dec (`node scripts/voice-probe.mjs chain`) |
+>
+> When P1–P3 are done, the sheet's and the policy's training sentence can be made stronger; bump
+> `aiConsentVersion()` when the provider list changes, so everybody is asked again.
+>
+> **More free models in the app: researched and NOT recommended.** GitHub Models is retired;
+> Cerebras is a 30-day trial that needs a card; SambaNova gives 20 requests a day; NVIDIA is the
+> wrong way round. The constraint is not the number of providers, it is that the free tiers mostly
+> forbid exactly what this app sends.
+
 > ## ▶ 19 Nov 2026 — ONE BLOCKER FOUND. HOLD BUILD 15; BUILD 16 CARRIES THE FIX
 >
 > The owner asked what else the app needs to be what was intended. Twelve read-only lenses went
