@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v672-the-switch-claimed-success-it-had-not-achieved'
+const CACHE = 'totry-v673-nothing-is-sent-until-they-say-yes'
 
 const CORE = [
   './',
