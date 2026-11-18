@@ -531,7 +531,7 @@ and none gates a feature.
 totrybyaj@gmail.com
 ```
 
-### Notes — 3656/4000, paste exactly this
+### Notes — 3790/4000, paste exactly this
 
 This is `APP-REVIEW-NOTES.md` §1 — **the only one of three copies that leads with the guest door** —
 with three corrections: the health paragraph was false (see U2), the crisis count was wrong, and the
@@ -549,9 +549,9 @@ The button is worded that way on purpose: the app is for people in a bad moment,
 
 If you would rather sign in, email totrybyaj@gmail.com and I will create an account and send you the code within the hour.
 
-HEALTH DATA. To Try reads steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so they count toward the day without manual logging. It can also write back — workouts, active energy, body mass and mindful sessions — but only when the person turns that on themselves in Settings; it is off by default. Health data is backed up to our own server so a person's own devices stay in step, which is why Health and Fitness are declared as COLLECTED and LINKED on the App Privacy label. A person's sleep and recent training also form part of the context sent to our AI coaching provider when the app generates coaching. It is never used for advertising, never sold, and never shared for any other purpose. The app works fully without granting either permission.
+HEALTH DATA. To Try reads steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so they count toward the day without manual logging. It can also write back — workouts, active energy, body mass and mindful sessions — but only when the person turns that on themselves in Settings; it is off by default. Health data is backed up to our own server so a person's own devices stay in step, which is why Health and Fitness are declared as COLLECTED and LINKED on the App Privacy label. Only if the person turns the coach on are their sleep and recent training part of the context sent to an AI provider when the app writes coaching. It is never used for advertising, never sold, and never shared for any other purpose. The app works fully without granting either permission.
 
-TURNING THE AI OFF. Settings -> Your data -> "Let the coach read my data" is a single switch, on by default, that stops every outbound call to a model - including the ones the app makes on its own without being asked: one on the first open of each day to write the morning sentence, and one more when it writes the weekly read, which is at most once a week. The privacy policy names both. With it off nothing reaches a model at all, and every surface that would have called one says so plainly rather than blaming the connection. Everything that is not a model call keeps working: the logs, reminders, backups, the reading plan and saved verses, the fight, food search and barcodes. Syncing to the user's own account is unchanged and the switch says so, because it governs what a model is shown and not where the account data lives.
+AI PERMISSION. Nothing is sent to an AI provider until the person agrees. The first time they tap a coach feature (for example the coach chat, or the meal camera in Nourish), a sheet names what is sent - what they type, a summary of their logs including Apple Health sleep and recent workouts, and any photo they choose to have read - and who receives it (Google Gemini, Groq, OpenRouter, Mistral, Cloudflare, Anthropic, and NVIDIA for photos, through our own server). It also says that, once on, the coach writes a morning sentence and a weekly read without being asked. "Not now" leaves the app fully usable. Permission can be withdrawn at any time in Settings -> Your data -> "Let the coach read my data"; with it off nothing reaches a model, and everything that is not a model call keeps working. The round button on Today opens the support screen, not the coach: it and SOS never ask for permission, and without it they answer with built-in steps.
 
 SHARED CONTENT. Community food and exercise names are pre-moderated — nothing is shown to anyone until it is approved, and anything flagged is withheld. Settings → Report shared content lets any person report an item, which reaches me directly. There are no profiles, no author names, no comments, no messaging and no feed: the only thing one person ever sees of another is a plain food or exercise name in a search list. There is therefore no user to block, which is why no block control exists.
 
@@ -579,7 +579,7 @@ Two details that matter in that text:
 
 Order matters — Connect greys out Submit until all of these are green:
 
-1. Build attached and finished processing — **1.0 (12)** as of 29 Oct; confirm against
+1. Build attached and finished processing — **1.0 (16)** as of 19 Nov; confirm against
    `npm run preflight`, never against this line
 2. All five screenshots uploaded to the 6.9" slot
 3. App Privacy complete and **published** (it has its own Publish button)
@@ -600,7 +600,8 @@ Order matters — Connect greys out Submit until all of these are green:
 | "Account deletion?" (5.1.1(v)) | In-app: Settings → Delete account permanently (`27-settings.js:735`). Both server routes probed live and both are deployed. |
 | "Medical claims?" | Four "not medical advice" disclaimers ship. The recovery timelines are informational and the alcohol one tells the person to see a GP. |
 | "Does the AI chat have a content filter on model output?" | **No.** There is prompt-level safety (`safetyNote()`) and a deterministic crisis detector that bypasses the model, but nothing filters what the model says back. If ASC asks a generative-AI capability question, answer it honestly — the chat is reachable two taps from the first screen without an account. |
-| "Can the user decline the AI processing?" (5.1.1(ii)) | Yes, since v671, and v672 corrected it. Settings → Your data → *Let the coach read my data* — on by default, device-local (deliberately not in `SYNC_KEYS`, so a cloud-restored value cannot undo it), and it refuses at every one of the thirteen outbound doors rather than only at `api()`. It survives a sign-out and an account deletion. The analytics opt-out beside it is the same shape. Measured with every request captured: 2 unprompted POSTs on launch with it on, **0** with it off. |
+| "Is permission obtained before data goes to a third-party AI?" (5.1.2(i)) | Yes, since v673 / build 16. The coach is OFF until the person agrees in a sheet that names what is sent and to whom; nothing is sent before that, including the morning sentence. `aiConsent()` in `03-person.js` has three states, and the permission is a separate versioned key (`totry_ai_consent`) that is wiped on sign-out and account deletion, so it never passes to the next person on the phone. Build 15 did not ask, and must not be submitted. |
+| "Can the user decline the AI processing?" (5.1.1(ii)) | Yes. "Not now" on the sheet stores nothing; Settings → Your data → *Let the coach read my data* withdraws a yes at any time. The refusal is device-local (not in `SYNC_KEYS`, so a cloud restore cannot undo it) and survives a sign-out and an account deletion. Every model call goes through one sink, so the refusal holds at all thirteen outbound doors. |
 | "Donations / IAP?" | None in the iOS build. The Buy-me-a-coffee card is gated off for native and fails closed. |
 | "Why does Settings → Help & FAQ do nothing?" | See U3 — it is genuinely dead in the native build. Low exposure (a reviewer is unlikely to tap it) but do not claim it works. |
 

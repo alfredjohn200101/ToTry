@@ -170,8 +170,14 @@ Declare as **Coarse Location**, purpose App Functionality, not linked.
 | **Strava**, **Hevy** | account-linked fitness sync (user-initiated) |
 | OpenFoodFacts, FatSecret, wger, ExerciseDB | food/exercise lookups |
 
-**THE AI SEND CAN BE DECLINED SINCE v671, AND THE ANSWERS DO NOT CHANGE BECAUSE OF IT.** `aiOff()`
-(Settings → Your data → *Let the coach read my data*) is ON by default and refuses at every one of
+**v673: NOTHING GOES TO A MODEL UNTIL THE PERSON SAYS YES, AND THE ANSWERS STILL DO NOT CHANGE.**
+Apple 5.1.2(i) asks for explicit permission before personal data goes to a third-party AI; v671
+shipped the switch on by default. Since v673 the coach is OFF until a permission sheet is accepted
+(`aiConsent()`: never asked / no / yes). The answers below are unchanged: the label asks whether data
+leaves the device, and for anybody who turns the coach on it does.
+
+**The history, kept as the record:** the AI send could be declined since v671. `aiOff()`
+(Settings → Your data → *Let the coach read my data*) was ON by default and refused at every one of
 the thirteen outbound doors, so with it off nothing reaches a model at all — including the two
 unprompted launch POSTs. Every "collected / linked" answer above STAYS: the question is whether the
 data leaves the device, and for anybody who keeps the coach it does. An opt-out never converts a
