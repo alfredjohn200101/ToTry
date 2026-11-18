@@ -3,6 +3,11 @@
 
 ---
 
+## ⛔ 19 Nov 2026 — HOLD. DO NOT UPLOAD BUILD 15.
+> One rejection-class item was found: nothing asks permission before personal data goes to a
+> third-party AI (guideline 5.1.2(i)). See `BUILD-NEXT.md`, 19 Nov section, item B1. Build 16 carries
+> the fix; the section below describes build 15 and is kept as the record.
+
 ## ▶▶ CURRENT STATE — 1 Nov 2026 — v672, build 15. **ONLY THE UPLOAD AND THE SUBMIT CLICK ARE LEFT.**
 > **Build 15 SUPERSEDES 14 AND 13**, and neither of those should go up. v672 corrects two things in
 > v671's own off-switch, both of which ship inside the binary: its confirmation toast said *"What you

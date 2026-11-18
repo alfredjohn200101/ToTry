@@ -1,5 +1,14 @@
 # App Store Connect — submission pack
 
+> ## ⛔ 19 Nov 2026 — DO NOT SUBMIT BUILD 15. Build 16 carries the fix.
+>
+> Guideline 5.1.2(i) requires an app to *"clearly disclose where personal data will be shared with
+> third parties, including with third-party AI, and obtain explicit permission before doing so."*
+> Build 15 sends the person's why, identity sentence and journal text to a model on first open with
+> no permission step, and the review note below says so (*"on by default"*). Full finding and the
+> shape of the fix: `BUILD-NEXT.md`, 19 Nov section, item B1. **Everything below describes build 15
+> and must be re-derived for build 16** — the review note's AI paragraph in particular.
+
 **Derived from the code and the shipped binary. Re-measured 1 Nov 2026 at v672 / build 15, not
 from the other submission docs.**
 Where this file disagrees with `APP-STORE-LISTING.md`, `APP-REVIEW-NOTES.md`, `APP-STORE-SUBMISSION.md`
@@ -228,8 +237,19 @@ the scale reads "Frequent **or** Intense".
 
 ```
 Price:        Free (Tier 0)
-Availability: All territories (or at minimum Australia)
+Availability: Australia, United States, Canada, United Kingdom   (recommended for 1.0)
 ```
+
+**Why four countries and not "all territories" (changed 19 Nov 2026).** The crisis numbers verified
+in the app cover Australia (Lifeline, Beyond Blue, Suicide Call Back, 13YARN, 000), the USA and
+Canada (988, 911) and the UK (Samaritans 116 123, 999, NHS 111) — `CRISIS_LINES` and `MEDICAL_LINES`
+in `src/app/03-person.js`. Everywhere else a person in crisis is shown numbers they cannot dial
+above one web link, and the app's own card says *"The numbers above are Australian."* Add a country
+when its number has been checked against the provider. This is the owner's choice in App Store
+Connect; nothing in the binary depends on it.
+**EU trader status** (Digital Services Act) is asked at submission. With no EU territory selected it
+does not publish anything; decide it before adding one — a trader's address, phone and email appear
+on EU product pages.
 
 **Submit for Review stays disabled until this section is set** — it is easy to miss.
 

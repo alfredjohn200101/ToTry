@@ -5,7 +5,156 @@
 > Do not treat a CLAIMED item as true until it is driven — this repo's own record is that most
 > "missing" features are already built.
 
+> ## ▶ 19 Nov 2026 — ONE BLOCKER FOUND. HOLD BUILD 15; BUILD 16 CARRIES THE FIX
+>
+> The owner asked what else the app needs to be what was intended. Twelve read-only lenses went
+> over every intent document against `src/` at v672 (a thirteenth, a repeat of the App Store audit,
+> was deliberately not re-run). **157 items: 24 already built, 12 refused on record, 3 superseded,
+> 4 unknown, 114 partial or not built.** Raw results, every item with its file:line evidence:
+> `build/intent-vs-reality-2026-11-19.json`.
+>
+> **What is hand-verified and what is not.** B1, N1, S1, O1 and I1 below were reproduced by hand
+> (a grep, a calibrated probe, or Apple's page read first-hand). Everything else is ONE finder's
+> evidence, unrefuted — this repo's record is that such claims are often already built, so
+> reproduce each with one command before acting on it. No browser was run by anybody.
+>
+> ### BLOCKER — rejection class
+>
+> **B1 · Nothing asks before personal data goes to a third-party AI.** Guideline 5.1.2(i), read on
+> Apple's page 19 Nov: *"You must clearly disclose where personal data will be shared with third
+> parties, including with third-party AI, and obtain explicit permission before doing so."*
+> `aiOff()` defaults to false (`03-person.js:1439`); `go('home')` calls `showAIMorningSentence()` and
+> `generateWeeklySynthesis()` with no tap (`03-person.js:6164`), and their prompts carry the why, the
+> identity sentence, vice names and journal text; there is no agreement step anywhere in sign-in or
+> onboarding (0 hits for "by continuing / you agree / agree to"); and `ASC-SUBMIT-PACK.md:534` tells
+> Apple the switch is *"on by default"* and covers calls made *"on its own without being asked"*.
+> The 31 Oct audit asked whether the privacy wording was TRUE and never asked whether permission
+> was obtained.
+> **Shape of the fix:** permission is a third state at the single sink v671 built. Unset = nothing
+> is sent. The entry points that already refuse through `aiOffNotice()` become the invitation (what
+> is sent, to whom, one button). Never ask on a distress path — the local step answers until
+> permission exists. Copy that moves with it: `privacy.html`, `showPrivacyPolicy()`,
+> `APP-PRIVACY.md`, and the review note in `ASC-SUBMIT-PACK.md`. Wording and placement are the
+> owner's.
+>
+> ### NEXT — small, safety, web; they ride build 16 and get no sweep of their own
+>
+> | | Item | Evidence |
+> |---|---|---|
+> | **N1** | "On This Day" hands back a journal entry the crisis gate flagged | Hand-verified: `onThisDay()` (`18-money-deep.js:809`) reads the raw store; a flagged year-old row is RETURNED. Read through `safeJournal()` |
+> | **N2** | The four silenced disclosures #13–#16 | 2 Nov sweep, hand-reproduced then |
+> | **N3** | Numbers-off still prints a deficit figure and protein g/kg on the Grow card | Finder: `14-nourish.js:6345`, `:6414`; the assertion at `core.test.js:7640` ends `\|\| /_gentleCard/` and cannot fail |
+> | **N4** | A fasting season, and the word "breakfast", trip the fuel plan's restriction off-ramp | Finder: the planner never asks `fastSeasonNow` |
+>
+> **Nothing else goes into build 16.** That is the appetite.
+>
+> ### NEXT — server, no build (while Apple reviews)
+>
+> - **S1 · The AI proxy counts nothing for a caller without a JWT.** Hand-verified: `getUserId`
+>   returns null, `checkRateLimit` returns allowed for null, CORS is `*`, `max_tokens` is passed
+>   through uncapped. Every guest is such a caller, by design. Server-side: cap tokens and prompt
+>   size, a per-IP daily ceiling for null callers, verify the token signature. A countable guest
+>   identity is a client change and belongs to 1.0.1.
+> - **S2 · Capacity.** Finder's arithmetic (limits from secondary sources that disagree): the free
+>   chain serves on the order of 500 calls a day, so somewhere between 100 and 450 daily people.
+>   Owner decision: fund one backstop before any launch push. B1 helps — unprompted sends then
+>   happen only for people who said yes.
+> - **S3 · Checked live 19 Nov:** `check_ai_quota`, `increment_ai_usage` and `ai_usage` exist in
+>   production. Their SQL is not in `supabase/migrations/`, and `AI-PROXY-DEPLOY.md` names a secret
+>   (`DAILY_AI_LIMIT`) the code never reads (`DAILY_LIMIT_PER_USER`).
+> - **S4 · Analytics cannot see a person come back.** Since the test block (1 Nov): 3 events, 3
+>   devices, all `guest_enter`. Before it the table is almost entirely test rows — `evening_done`
+>   from 881 "devices" at 1.02 events each. Either delete the pollution (owner: destructive) or
+>   every query filters `ts >= '2026-11-01'`.
+>
+> ### OWNER — clicks and decisions around the launch
+>
+> - **O1 · Territories.** The pack said "All territories". The crisis numbers in source cover
+>   Australia, USA/Canada (988) and the UK only, and the app's own card says *"The numbers above
+>   are Australian."* Recommended for 1.0: Australia, United States, Canada, United Kingdom. EU
+>   trader status only has to be decided if an EU territory is selected.
+> - **O2 · A TestFlight ring of 5–10 real people** while review runs. The feedback table has never
+>   held a note from a person.
+> - **O3 · Listing.** Screenshots carry no captions; the listing never mentions fasting seasons or
+>   giving.
+> - **O4 · After approval:** a Smart App Banner, replace the beta note that promises "you'll get a
+>   link" (`shell-head.html:7277`, `02-native.js:571`), one CHANGELOG entry, the one promised email
+>   to the ~20 accounts, the Instagram bio link.
+> - **O5 · Family Controls.** If earned access is still wanted, file the entitlement request now —
+>   it is the only step whose duration nobody controls.
+> - **O6 · Still parked:** the CLAUDE.md split; whether *"X is awful and I want it to stop"* is a
+>   disclosure (#2/#8).
+>
+> ### 1.0.1 — the first five minutes (the arrival from a reel)
+>
+> - **A1 · No page says what the app is.** The public root is the app itself behind "Welcome." and
+>   an email field; the only other door is labelled for distress. One small static start page, and
+>   the owner decides whether the wall gets one explaining line.
+> - **A2 ·** A guest can only make an account from the Release screen though the copy says "any
+>   time", and a converting guest is never asked their name.
+> - **A3 · Day-one Home:** six seeded habits nobody chose (the "No habits yet" state is
+>   unreachable), three welcome cards queued, one saying the app "comes alive with data"; at 11pm it
+>   offers "Close the day"; "Restless" opens a training setup form; the coach's copy claims a story
+>   it does not have yet.
+> - **A4 · Sex is never asked.** The calorie calculator's dropdown has no neutral option and
+>   silently stores Male, after which every AI surface is told "You are his big BROTHER"; a woman
+>   who never opens Settings is never offered the cycle integration.
+>
+> ### 1.0.x — integration, by the product's own definition
+>
+> - **I1 · The coach a person talks to does not get the whole-person brief.** Hand-verified: the
+>   brief has exactly three consumers (PT context, weekly synthesis, fuel plan). The main coach and
+>   the SOS coach run on `buildCtx()`, which carries none of what was added to the brief since —
+>   giving and its quiet rule, "a fast is not a diet", the cycle line, the person's values.
+> - **I2 ·** The meal plan never reaches `getLifeState()`, Today or Money.
+> - **I3 ·** Goals are read by nothing outside their card; habits keep no history past Monday;
+>   People is two lists and the reach-out engine reads one.
+> - **I4 · Computed, and shown nowhere:** the fight↔fuel sentence; the written hand-off to a human
+>   that has no caller; Money never hands a person to a human.
+> - **I5 ·** Day-milestone toasts still say *"Most people never make it here"* and *"This rewires
+>   the brain"* for elapsed calendar days (`23-evening.js:1503`).
+> - **I6 ·** Pregnancy, breastfeeding, GLP-1 and age are never asked before the food maths
+>   prescribes a deficit. Owner decides the wording.
+>
+> ### 1.1 — the loops the owner specified
+>
+> - **Meal loop.** A looked-up price and a guessed one are indistinguishable (`api()` drops the
+>   proxy's `grounded` flag); a saved recipe reaches a plan only if the model echoes its exact name,
+>   from the first 8, with no door in the plan flow; "this week's plan" is one template day (owner
+>   decision); the list goes stale when a meal is swapped.
+> - **Faith and sex parity.** Eight hardcoded Christian or theistic strings reach everyone; two AI
+>   prompts say "brother" whatever the person's sex; a saved prayer has a home in one tradition of
+>   five; Islam and Hinduism have a third of the passages; no one from those traditions has
+>   reviewed their surfaces.
+> - **Design and accessibility.** Text Size does not reach the crisis card, the conversation,
+>   scripture or the Feeling Door chips; the SOS, Release, two-minute and rosary overlays have no
+>   dialog semantics; the moment surfaces were never rebuilt from components; the orb over text
+>   (named cost). The dawn and dusk skies are switched off in CSS (`shell-head.html:1822`) while
+>   SOUL-ARCHITECTURE says done and `panels` prints "dawn skin on" over nothing — restore or strike.
+> - **The detox thesis.** Earned access (XL, needs the entitlement); a finished breath should hand
+>   to The Release; onboarding's "Social media" chip creates a quit fight with a clean-day clock,
+>   which is the opposite of tool-not-villain; time reclaimed beside money reclaimed.
+> - **Platform.** Android is last on record (no keystore, versionCode 1). `native/` — the React
+>   Native rewrite — is superseded by the Capacitor build and nothing says so.
+>
+> ### Documents that describe an app that no longer exists
+>
+> `SOUL-ARCHITECTURE.md`, `GO-LIVE.md` (v152), `NEXT.md`, `PRE-LAUNCH.md`, `AI-PROXY-DEPLOY.md` §2
+> and §5, and `docs/DESIGN.md` where it contradicts itself. Mark each superseded at the top; do not
+> rewrite them.
+>
+> ### Refused on record — these are not gaps
+>
+> Camera-verified push-ups as a toll · Screen Time minutes in the AI brief · a warden-style blocker
+> with no off-ramp · a paid tier · the AI life coach · reading Instagram or a recipe feed ·
+> adherence streaks and auto-logging in the meal loop · the sleep-to-slip correlation engine ·
+> verse search outside Christianity (ESV is the only keyed text) · Shared Threads for Islam,
+> Hinduism and Buddhism · five killed ideas in `docs/IDEAS.md`.
+
 > ## ▶ 18 Nov 2026 — THE NEXT CLICK IS THE OWNER'S, AND NOTHING BELOW BLOCKS IT
+>
+> **SUPERSEDED 19 Nov 2026 — see the section above.** This banner said nothing blocks build 15. One
+> rejection-class item was found the next day (B1). Everything else in this section still stands.
 >
 > **Upload build 15 and submit it, with Version Release set to "Manually release this version".**
 > Everything for the form is in `ASC-SUBMIT-PACK.md`. This is decided by `totry-ship-bar`, not by
