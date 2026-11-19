@@ -776,7 +776,13 @@ function getLifeState(){
       const p=cyclePhase(); if(!p) return null;
       return { phase:p.key, day:p.day, lenDays:p.len.len, basis:p.len.source }; }catch(_){ return null; } })(),
     // Their OWN top values, in their own order — so counsel argues from their standard, not ours.
-    values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:o.why||'' }:null; }catch(_){ return null; } })(),
+    // The why is SCRUBBED AT THE READER and its whitespace collapsed (v674). values is prompt-only —
+    // no screen reads it — and the coach now re-sends this line with every message, so a why written
+    // before _vsSave was gated would reach a model on every message afterwards: identityForPrompt's
+    // shape, fixed the same way. The collapse matters as much: buildCtx keeps the brief's lines by
+    // PREFIX, so a newline in the why split this line in two and the coach kept the why while losing
+    // its "NEVER score" instruction.
+    values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:(o.why && typeof crisisInAny==='function' && crisisInAny([o.why])) ? '' : String(o.why||'').replace(/\s+/g,' ') }:null; }catch(_){ return null; } })(),
     sex: (typeof userSex==='function') ? userSex() : null,
     // GIVING WAS MISSING FROM THE BRAIN. Every surface reads this object and none of them could tell
     // whether this person gives at all — in an app whose soul statement is "Integration IS the
@@ -1341,10 +1347,25 @@ function buildCtx(){
   }catch(e){}
   
   // Identity + season (who they're becoming)
-  const identity=ls('totry_identity')||'';
+  // identityForPrompt, never the raw store: the 12 Oct reader-side scrub reached only the module-40
+  // wrapper, which appended a scrubbed IDENTITY line AFTER this raw one — so the scrub protected
+  // nothing. Fails closed: no accessor, no identity line.
+  const identity=(typeof identityForPrompt==='function') ? identityForPrompt() : '';
   const season=ls('totry_season')||'';
   const why=ls('totry_why')||'';
-  
+  // THE COACH NEVER GOT THE WHOLE-PERSON READ (v674). buildCtx builds its own context and read none
+  // of getLifeState, so the one voice a person types to at 11pm did not know a fast is sacred, that a
+  // luteal week is physiology, what they said matters most, that they give (or that their giving is
+  // hidden on purpose), or what keeps bringing them here. These five lines are taken from the brief
+  // VERBATIM, by prefix, so each has one source and carries its own instruction. Everything else in
+  // the brief is deliberately NOT taken — buildCtx or brotherSys already states it.
+  const _depthCtx = (function(){ try{
+    const _b = (typeof getLifeState==='function') ? (getLifeState().brief || '') : '';
+    const _keep = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them'];
+    const _dl = _b.split('\n').filter(function(l){ return _keep.some(function(p){ return l.indexOf(p) === 0; }); });
+    return _dl.length ? '\n\nWHAT ELSE YOU KNOW ABOUT THEM (the same read of the whole person the rest of the app uses — follow every instruction in these lines exactly):\n' + _dl.join('\n') : '';
+  }catch(_){ return ''; } })();
+
   // Recent fights
   const fightLog=ls('totry_fight_log')||[];
   const recentFights=fightLog.slice(0,5);
@@ -1397,7 +1418,7 @@ Weight: ${currentWeight?wFmt(currentWeight):'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ /* readiness is already stated once, properly, in checkinCtx above — saying it twice made the coach repeat itself */ if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
-FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
+FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}${_depthCtx}
 
 RECENT JOURNAL: ${recentJournal||'No entries yet'}
 ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : null; return m && m.summary ? '\nWHAT YOU\u2019VE BEEN WORKING ON TOGETHER (from past conversations — reference it naturally, like a coach who remembers):\n'+m.summary : ''; })()}

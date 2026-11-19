@@ -21172,4 +21172,123 @@ H.section('a stated intent to overdose, "end myself", the frame without a comma,
   }
 }
 
+// 31. THE COACH GETS THE WHOLE-PERSON READ, AND ONLY THE PART IT DID NOT HAVE (v674). buildCtx — the
+//     coach and the SOS coach — built its own context and read none of getLifeState, so the one voice a
+//     person types to did not know a fast is sacred, a luteal week is physiology, what they said
+//     matters most, that they give or that their giving is hidden on purpose. It now takes five brief
+//     lines VERBATIM by prefix. The brief here is built by EXECUTING the real lifeStateBrief, so the
+//     expected lines come from the source and a renamed line fails (a). The same change finished two
+//     half-applied scrubs on that prompt: the identity line read the raw store instead of
+//     identityForPrompt, and values.why was neither scrubbed nor collapsed — a newline in it split the
+//     values line, so the prefix filter kept the why and dropped its "NEVER score" instruction.
+H.section('the coach gets the whole-person read: five brief lines, nothing more, and scrubbed');
+{
+  let ok = true;
+  let CI = null, B = null, IFP = null, GL = null, C = null;
+  const SEED = {};
+  const ls = function (k) { return SEED[k]; };
+  let fast = null, fp = null, quiet = false;
+  let GLS = function () { return { brief: '' }; };
+  try {
+    CI = H.load(['crisisInAny', 'detectCrisis']);
+    B = H.load(['lifeStateBrief'], {
+      _unitsNote: () => '', nutGentle: () => false, _gentleWord: () => null,
+      wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$',
+      feelingPattern: () => fp, fastSeasonNow: () => fast,
+    });
+    IFP = H.load(['identityForPrompt'], { ls, crisisInAny: CI.crisisInAny });
+    // The REAL values reader: getLifeState over the app's own getValues accessor and store key.
+    const GV = H.load(['getValues'], { ls });
+    GL = H.load(['getLifeState', 'lifeStateBrief'], {
+      ls, crisisInAny: CI.crisisInAny, getValues: GV.getValues,
+      valLabel: id => id.charAt(0).toUpperCase() + id.slice(1),
+      _unitsNote: () => '', nutGentle: () => false, wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$',
+    });
+    C = H.load(['buildCtx', 'plural', 'latestByDate'], {
+      ls, identityForPrompt: IFP.identityForPrompt, getLifeState: () => GLS(),
+      // The voice is stubbed on purpose: this section is about the DATA half, and the voice has its
+      // own fingerprint. Real voice parts here would make it red on every prompt edit.
+      brotherSys: () => 'SYS\n', sharedWisdomNote: () => '', nutPromptBlock: () => '- Calories: 900',
+      loadV() {}, loadF() {}, loadH() {},
+      vices: [{ n: 'Porn', w: 14, total: 17 }], debts: [{ t: 12000, p: 4500 }], habits: [],
+      userName: 'Sam', getStreak: () => 3, getUserSplit: () => [{ focus: 'Push' }], tIdx: () => 0,
+      todaysNutGoals: () => ({ cal: 2400, pro: 180 }), viceCleanDays: () => 12, waterGoalMl: () => 2500,
+      safeMornings: () => [], ritualLog: () => [], readinessForAI: x => x, computeReadiness: () => null,
+      getMobilityProfile: () => null, dFmt: x => x + 'km', wFmt: x => x + 'kg', wDelta: x => x + 'kg',
+      curSym: () => '$', getDayCount: () => 64, _unitsNote: () => '', nutGentle: () => false,
+    });
+  } catch (e) { ok = false; H.ok(false, 'the coach-brief section could not load its functions by name: ' + e.message); }
+  if (ok) {
+    // A full person: a woman in the luteal phase, keeping Lent, who tithes, has values and a pattern.
+    const person = () => ({
+      training: { sessions7: 3, daysTrained7: 3, lastTitle: 'Push', tonnage7: 12000, topLifts: [{ name: 'Bench', orm: 100 }] },
+      nutrition: { daysLogged7: 5, avgCal7: 2300, avgPro7: 160, todayCal: 900, todayPro: 70 },
+      body: { currentWeight: 86.6 }, soul: {}, fight: { fights7: 0, vices: [] }, activity: { daysQuiet: 0 },
+      sex: 'female', readiness: { score: 72, level: 'moderate' }, money: { hasDebt: true, totalDebt: 7500, reclaimed: 0 },
+      cycle: { phase: 'luteal' },
+      values: { top: ['Family', 'Faith', 'Health'], why: 'Because they are the ones who will remember how I showed up.' },
+      giving: { gives: true, count: 6, word: 'tithe', quiet: quiet, month: 120, year: 1450, percent: 10, zakat: null },
+    });
+    const briefOf = q => {
+      quiet = q; fast = { name: 'Lent', dayN: 12, total: 40 }; fp = { label: 'lonely', count: 5, total: 9 };
+      const b = B.lifeStateBrief(person()); fast = null; fp = null; return b;
+    };
+    const FULL = briefOf(false), QUIET = briefOf(true);
+    SEED.totry_identity = 'I am becoming a person who keeps his word.';
+    SEED.totry_why = 'My kids.';
+    const ctxWith = brief => { GLS = function () { return { brief: brief }; }; return C.buildCtx(); };
+    const out = ctxWith(FULL);
+    const lines = FULL.split('\n');
+    // (a) each of the five reaches the coach verbatim — found in the REAL brief by its prefix first.
+    const KEEP = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them'];
+    KEEP.forEach(function (p) {
+      const hit = lines.filter(l => l.indexOf(p) === 0);
+      H.eq(hit.length, 1, '(a) calibration: the real brief carries exactly one "' + p + '" line');
+      H.ok(hit.length === 1 && out.indexOf(hit[0]) >= 0, '(a) the brief\'s "' + p + '" line reaches the coach verbatim');
+    });
+    // (b) and nothing else of the brief does — the coach already states the rest itself.
+    H.ok(lines.some(l => l.indexOf('Training: ') === 0) && lines.some(l => l.indexOf('Nutrition: avg') === 0),
+      '(b) calibration: the real brief carries a Training line and a Nutrition line');
+    H.ok(out.indexOf('Training: ') < 0 && out.indexOf('Nutrition: avg') < 0,
+      '(b) the brief\'s Training and Nutrition lines are NOT handed to the coach — nobody widens this to the whole brief');
+    const extra = lines.filter(l => out.indexOf(l) >= 0 && !KEEP.some(p => l.indexOf(p) === 0));
+    H.eq(extra, [], '(b) no brief line outside the five appears in the coach prompt');
+    // (c) quiet giving: the instruction reaches the coach, the sums do not.
+    H.ok(out.indexOf('$120 this month') >= 0, '(c) calibration: with amounts shown, the month figure reaches the coach');
+    const qout = ctxWith(QUIET);
+    H.ok(qout.indexOf('must not ask for them or guess') >= 0, '(c) with amounts hidden, the coach is told not to ask or guess');
+    H.ok(qout.indexOf('$120') < 0 && qout.indexOf('$1,450') < 0, '(c) with amounts hidden, no giving figure reaches the coach');
+    // (d) nothing to add, nothing added — not even the header.
+    const eout = ctxWith('');
+    H.ok(eout.indexOf('WHAT ELSE YOU KNOW') < 0 && ctxWith('Not much logged yet — early days.').indexOf('WHAT ELSE YOU KNOW') < 0,
+      '(d) with none of the five in the brief, the coach prompt carries no WHAT ELSE header');
+    H.ok(out.indexOf('WHAT ELSE YOU KNOW') >= 0, '(d) calibration: with the five present, it does');
+    // (g) a ratchet on what this costs per message, measured 1,542 characters for all five.
+    const depth = out.length - eout.length;
+    H.ok(depth > 1000 && depth < 1800, '(g) the depth block for the full seed stays under 1,800 characters (got ' + depth + ')');
+    // (e) the identity line goes through identityForPrompt, never the raw store.
+    H.ok(out.indexOf('keeps his word') >= 0, '(e) calibration: an ordinary identity still reaches the coach');
+    SEED.totry_identity = 'I am becoming a person who wants to kill myself';
+    H.ok(!!CI.crisisInAny([SEED.totry_identity]), '(e) calibration: the seeded identity is a disclosure the detector catches');
+    const iout = ctxWith(FULL);
+    H.ok(iout.indexOf('kill myself') < 0, '(e) a disclosure stored as the identity never reaches the coach prompt');
+    SEED.totry_identity = 'I am becoming a person who keeps his word.';
+    // (f) a newline in the why, through the REAL getLifeState values reader and the real brief.
+    GLS = function () { return GL.getLifeState(); };
+    SEED.totry_values = { v: ['family', 'faith'], why: 'Because they\nwill remember how I showed up.' };
+    const vals = GL.getLifeState().values;
+    H.ok(!!vals && vals.top.join() === 'Family,Faith', '(f) calibration: the real values reader ran over the seeded store');
+    const fout = C.buildCtx();
+    H.ok(fout.indexOf('"Because they will remember how I showed up."') >= 0, '(f) the why reaches the coach whole, on one line');
+    H.ok(fout.indexOf('NEVER score, grade or rank them against their values') >= 0,
+      '(f) a newline in the why does not cost the values line its "NEVER score" instruction');
+    // (h) and a why that is a disclosure is scrubbed at the reader — values is prompt-only.
+    SEED.totry_values = { v: ['family'], why: 'i want to kill myself' };
+    const hv = GL.getLifeState().values;
+    H.ok(!!hv && hv.top.join() === 'Family' && hv.why === '', '(h) a disclosure stored as the values why is scrubbed by getLifeState');
+    H.ok(C.buildCtx().indexOf('kill myself') < 0, '(h) and it never reaches the coach prompt');
+    delete SEED.totry_values;
+  }
+}
+
 H.report();
