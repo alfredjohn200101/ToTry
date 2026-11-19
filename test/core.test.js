@@ -10081,6 +10081,29 @@ H.section('the fight and the food, which nothing else holds together');
     'getLifeState().fight carries it');
   H.ok(/if\(v\.fuelLink\) bits\.push/.test(person), 'and lifeStateBrief says it');
   H.ok(/the ones they lost came after about/.test(person), 'in words a model can use without embroidering');
+  // WITH NUMBERS OFF IT GIVES NO HOURS. Executed on the real brief both ways: "about 6h without
+  // eating" is a food figure, and gentle mode is a promise the person never hears one — the cycle
+  // line already drops its calorie range for the same reason. The pattern itself still reaches the
+  // model, because it is the counsel; only the figure goes.
+  {
+    const viceLineOf = function (gentle) {
+      let B = null;
+      try {
+        B = H.load(['lifeStateBrief'], { _unitsNote: () => '', nutGentle: () => gentle, _gentleWord: () => null,
+          wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$', feelingPattern: () => null, fastSeasonNow: () => null });
+      } catch (e) { return 'THREW ' + e.message; }
+      const b = B.lifeStateBrief({ training: {}, nutrition: {}, body: {}, soul: {}, readiness: {}, money: {}, sex: {}, activity: {},
+        fight: { fights7: 3, vices: [{ name: 'Porn', mode: 'quit', cleanDays: 4, uses7: 0,
+          fuelLink: { lostHours: 6.2, wonHours: 2.1, lostN: 3, wonN: 3 } }] } }) || '';
+      return b.split('\n').find(l => l.indexOf('· Porn:') === 0) || '';
+    };
+    const on = viceLineOf(false), off = viceLineOf(true);
+    H.ok(/about 6h without eating, against 2h/.test(on), 'calibration: with numbers on, the real brief gives the hours (' + on + ')');
+    const offTail = off.indexOf('the ones they lost') >= 0 ? off.slice(off.indexOf('the ones they lost')) : '';
+    H.ok(offTail.length > 0, 'with numbers OFF the brief still names the pattern — the counsel stays (' + off + ')');
+    H.ok(offTail.length > 0 && !/\d/.test(offTail) && !/without eating/.test(offTail),
+      'with numbers OFF the fight-and-food clause carries no hours and no figure at all (' + offTail + ')');
+  }
 
   // A FIGHT ON A FASTED DAY SAYS NOTHING ABOUT FORGETTING TO EAT. During Ramadan an afternoon loss
   // sits ~10 hours after suhoor because of the fast itself, so counting it would counsel somebody to

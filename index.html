@@ -13024,8 +13024,13 @@ function lifeStateBrief(s){
       if(v.hardHour) bits.push('hardest around '+v.hardHour+(v.topTrigger?(', often '+v.topTrigger):''));
       // The one thing here that no single-front app could ever tell them. Only present when the
       // evidence cleared its own bar, so the model is never handed a correlation to embroider.
-      if(v.fuelLink) bits.push('and the ones they lost came after about '+Math.round(v.fuelLink.lostHours)
-        +'h without eating, against '+Math.round(v.fuelLink.wonHours)+'h on the ones they won');
+      // Numbers off hides the hours too, as the cycle line drops its calorie range: "about 6h without
+      // eating" is a figure about food, and the setting exists so they never hear one. The card
+      // (_overridePlan) already has a gentle variant with no hours; the brief was the half it missed.
+      if(v.fuelLink) bits.push(_gentleBrief
+        ? 'and the ones they lost came on an emptier stomach than the ones they won (numbers are off for this person: never give hours or amounts)'
+        : 'and the ones they lost came after about '+Math.round(v.fuelLink.lostHours)
+          +'h without eating, against '+Math.round(v.fuelLink.wonHours)+'h on the ones they won');
       if(v.plan){ if(v.plan.why) bits.push('their WHY (say it back to them): "'+v.plan.why+'"'); if(v.plan.move) bits.push('the move THEY chose: '+v.plan.move); }
       lines.push('· '+v.name+': '+bits.join('; '));
     });
