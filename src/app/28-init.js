@@ -962,8 +962,13 @@ function calcTDEE(){
   const _storedSex = (typeof userSex==='function') ? userSex() : null;
   const sex = (_storedSex === 'male' || _storedSex === 'female')
     ? _storedSex
-    : (document.getElementById('tdee-sex')?.value || 'male');
-  if(!_storedSex){ try{ ls('totry_sex', sex); }catch(_){} }
+    : (document.getElementById('tdee-sex')?.value || '');
+  // NO SEX IS GUESSED. The fallback was `|| 'male'` and the dropdown had no blank option, so an
+  // untouched form read "male" — and the persist line sat ABOVE every bound below, so even a
+  // calculation this function then REFUSED (age 7) stored totry_sex = "male". From then on every AI
+  // surface called a woman who never answered "his big BROTHER" and her cycle offer never appeared.
+  // The equation genuinely differs, so ask rather than guess; the manual targets are one card up.
+  if(sex !== 'male' && sex !== 'female'){ showToast('Choose Male or Female', 'The equation is different for each, and I would rather ask than guess. Or enter your own targets above.'); return; }
   // SANITY FLOOR. These three feed a calorie target the person is asked to eat to, and there was no
   // bound on any of them: a mistyped weight of 7 (or 700) produced a confidently-wrong number with no
   // sign anything was off. Refuse rather than guess — a nonsense target is worse than no target, and this
@@ -984,6 +989,9 @@ function calcTDEE(){
     showToast('Check your weight', 'Enter a weight between ' + wFmt(30, {round:0}) + ' and ' + wFmt(300, {round:0}) + '.');
     return; }
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
+  // Persisted only now, after every bound has passed — a refused calculation stores nothing. It has to
+  // stay ABOVE _calFloor() below, which reads userSex(), so a first-time woman gets her own floor.
+  if(!_storedSex){ try{ ls('totry_sex', sex); }catch(_){} }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
 // Mifflin-St Jeor equation

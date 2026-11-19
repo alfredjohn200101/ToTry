@@ -5603,7 +5603,10 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
           <div class="tdee-row">
             <div class="tdee-field">
               <div class="tdee-label">Sex</div>
-              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
+              <!-- A BLANK FIRST OPTION. With Male first and nothing selected, an untouched select reads
+                   "male", and calcTDEE persisted that to totry_sex — so tapping Calculate recorded a
+                   woman who never answered as male, and every AI surface called her "brother". -->
+              <select id="tdee-sex"><option value="">Choose one</option><option value="male">Male</option><option value="female">Female</option></select>
             </div>
             <div class="tdee-field tdee-wide">
               <div class="tdee-label">Activity</div>
@@ -6528,7 +6531,9 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
 
   <!-- The cycle card — the phase read, and what it means across the whole life. Renders the quiet
-       one-time offer for a woman who hasn't chosen yet, and nothing at all for anyone else. -->
+       one-time offer for a woman who hasn't chosen yet, and nothing at all for anyone else. For
+       somebody who has never said their sex it holds the one-time "About you" question instead
+       (from day 3, skippable, asked once) — choosing Female swaps in the cycle offer in its place. -->
   <div id="cycle-card" style="margin-bottom:14px"></div>
   <!-- ── PROGRESS (middle — what users want to SEE) ──
        Three .met tiles in a fixed three-column grid, each with an 11px caps label above a 22px

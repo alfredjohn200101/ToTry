@@ -1387,7 +1387,7 @@ const SYNC_KEYS = [
   // new device faith fell back to Christianity, so a Muslim or secular person reinstalling was handed
   // someone else's tradition, and userSex() went null, which changes the calorie and protein maths and
   // the voice. Identity has to survive a reinstall.
-  'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen'
+  'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen','totry_sex_door_seen'
 ];
 
 // ONE LIST FOR "THIS IS A CREDENTIAL, NOT DATA".

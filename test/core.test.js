@@ -21854,4 +21854,122 @@ H.section('the week\'s goal reaches the brain, the coach and the done card — s
   H.ok(NAMED.test(page), '(i) privacy.html names it too — the two copies are read by different people and must not disagree');
 }
 
+H.section('about you: no sex is guessed, and the question is asked once, on Track');
+{
+  // WHAT WAS WRONG: #tdee-sex had no blank option, calcTDEE fell back to `|| 'male'`, and its persist
+  // sat above every bound — so tapping Calculate on an untouched form stored totry_sex = "male" even when
+  // the calculation was then REFUSED (age 7). Onboarding never asks, so for anyone who never found
+  // Settings that guess decided the voice ("his big BROTHER") and hid the cycle offer for good.
+  // Everything below EXECUTES the real functions; nothing here greps a call.
+
+  // (a) the dropdown's first option is blank, so an untouched control reads "".
+  const _sel = (H.html.match(/<select id="tdee-sex">([\s\S]*?)<\/select>/) || [])[1] || '';
+  const _firstOpt = (_sel.match(/<option value="([^"]*)"/) || [])[1];
+  H.ok(_sel.length > 0, '(a) #tdee-sex was found in the shell');
+  H.ok(_firstOpt === '', '(a) #tdee-sex opens on a BLANK option, so an untouched control does not read "male" (first value: ' + JSON.stringify(_firstOpt) + ')');
+
+  // (b) calcTDEE, driven with a stubbed form and store.
+  const runTDEE = function (fields, stored) {
+    const store = {}; if (stored) store.totry_sex = stored;
+    const toasts = [];
+    const ls = (k, v) => (v === undefined ? (k in store ? store[k] : null) : (store[k] = v));
+    const document = { getElementById: (id) => (id in fields ? { value: fields[id] } : null) };
+    let T = null;
+    try {
+      T = H.load(['calcTDEE', 'userSex', '_calFloor'], {
+        ls, document, showToast: (a, b) => toasts.push(a + ' | ' + b),
+        dispToKg: (x) => x, wFmt: (x) => x + 'kg', showUnderageFuelNote: () => toasts.push('underage'),
+        withDerivedMacros: (g) => ({ cal: g.cal, pro: g.pro, carb: 0, fat: 0 }),
+      });
+      T.calcTDEE();
+    } catch (e) { toasts.push('THREW ' + e.message); }
+    return { store, toasts, loaded: !!T };
+  };
+  const base = { 'tdee-age': '30', 'tdee-weight': '70', 'tdee-height': '175', 'tdee-activity': '1.55', 'tdee-goal': 'maintain' };
+  const withSex = (sx, over) => Object.assign({}, base, { 'tdee-sex': sx }, over || {});
+
+  const r0 = runTDEE(withSex('female'));
+  H.ok(r0.loaded && r0.store.totry_sex === 'female' && !!r0.store.totry_nut_goals,
+    '(b) calibration: a first-time person who CHOSE Female is stored female and gets targets (' + JSON.stringify(r0.toasts) + ')');
+  const r1 = runTDEE(withSex(''));
+  H.ok(!('totry_sex' in r1.store), '(b) an untouched sex dropdown stores NO sex — it never guesses "male"');
+  H.ok(!('totry_nut_goals' in r1.store) && r1.toasts.some(t => /^Choose Male or Female/.test(t)),
+    '(b) and the calculation is refused with a toast asking for the choice, not computed on a guess (' + JSON.stringify(r1.toasts) + ')');
+  const r2 = runTDEE(withSex('male', { 'tdee-age': '7' }));
+  H.ok(!('totry_sex' in r2.store) && r2.toasts.some(t => /^Check your age/.test(t)),
+    '(b) a calculation refused at the AGE bound stores no sex');
+  const r3 = runTDEE(withSex('female', { 'tdee-height': '300' }));
+  H.ok(!('totry_sex' in r3.store) && r3.toasts.some(t => /^Check your height/.test(t)),
+    '(b) a calculation refused at the HEIGHT bound — the last one — stores no sex either');
+  const r4 = runTDEE(withSex(''), 'female');
+  H.ok(!r4.toasts.some(t => /^Choose Male or Female/.test(t)) && !!r4.store.totry_nut_goals && r4.store.totry_sex === 'female',
+    '(b) a sex already STATED still wins over a blank dropdown — the guard asks about the sex used, not the control (' + JSON.stringify(r4.toasts) + ')');
+  // A first-time woman's floor must read HER sex: the persist has to land above _calFloor().
+  // 45kg/150cm/60y/sedentary/lose: TDEE 1112, minus 500 = 612, so the floor decides — 1200 female, 1500 unstated.
+  const r5 = runTDEE(withSex('female', { 'tdee-age': '60', 'tdee-weight': '45', 'tdee-height': '150', 'tdee-activity': '1.2', 'tdee-goal': 'lose' }));
+  H.eq(r5.store.totry_nut_goals && r5.store.totry_nut_goals.cal, 1200,
+    '(b) a first-time woman gets the 1200 floor — her sex is stored before _calFloor() reads it');
+
+  // (c) the one-time question, in the cycle card's slot.
+  const runCard = function (sex, opts) {
+    opts = opts || {};
+    const store = {}; if (sex) store.totry_sex = sex; if (opts.seen) store.totry_sex_door_seen = 1;
+    const toasts = [];
+    const el = { innerHTML: 'UNSET' };
+    const ls = (k, v) => (v === undefined ? (k in store ? store[k] : null) : (store[k] = v));
+    const document = { getElementById: (id) => (id === 'cycle-card' ? el : null), querySelectorAll: () => [] };
+    let C = null;
+    try {
+      C = H.load(['userSex', '_sexDoorHTML', '_sexDoorPick', '_sexDoorNo', 'renderCycleCard', 'setUserSex'], {
+        ls, document, getDayCount: () => (opts.day == null ? 5 : opts.day),
+        showToast: (a, b) => toasts.push(a + ' | ' + b), svgIcon: () => '',
+        cycleGet: () => ({ on: false, declined: false, log: [] }),
+      });
+      C.renderCycleCard();
+    } catch (e) { toasts.push('THREW ' + e.message); }
+    return { C, el, store, toasts };
+  };
+  const btns = (h) => (h.match(/<button[^>]*onclick="([^"]*)"/g) || []).map(b => b.replace(/^[\s\S]*onclick="/, '').replace(/"$/, ''));
+
+  const d0 = runCard(null, { day: 3 });
+  H.ok(!!d0.C, '(c) the door functions loaded by name — a rename must update this check, not drop it');
+  H.eq(btns(d0.el.innerHTML), ["_sexDoorPick('male')", "_sexDoorPick('female')", '_sexDoorNo()'],
+    '(c) never stated, day 3: one card with exactly Male, Female and Rather not say');
+  H.ok(/Rather not say/.test(d0.el.innerHTML) && !/Track your cycle/.test(d0.el.innerHTML),
+    '(c) and it is the question, never the cycle offer — being unstated is not being female');
+  H.eq(runCard(null, { day: 2 }).el.innerHTML, '', '(c) before day 3 nothing is asked — day 1 belongs to the Feeling Door');
+  H.eq(runCard(null, { day: 9, seen: true }).el.innerHTML, '', '(c) once answered or declined, it is never asked again');
+  H.eq(runCard('male', { day: 9 }).el.innerHTML, '', '(c) a stated male sees neither the question nor the cycle offer');
+  const df = runCard('female', { day: 9 });
+  H.ok(/Track your cycle/.test(df.el.innerHTML) && !/Rather not say/.test(df.el.innerHTML),
+    '(c) a stated female sees the cycle offer as before, not the question');
+
+  // Picking Female leads straight to the existing opt-in, in the same slot — which still needs its own yes.
+  const dp = runCard(null, { day: 4 });
+  if (dp.C) { try { dp.C._sexDoorPick('female'); } catch (e) { dp.toasts.push('THREW ' + e.message); } }
+  H.ok(dp.store.totry_sex === 'female' && /Track your cycle/.test(dp.el.innerHTML),
+    '(c) choosing Female stores it and swaps the card for the cycle offer in place (' + JSON.stringify(dp.toasts) + ')');
+  H.ok(dp.store.totry_sex_door_seen === 1, '(c) and spends the asked-once flag');
+  const dn = runCard(null, { day: 4 });
+  if (dn.C) { try { dn.C._sexDoorNo(); } catch (e) { dn.toasts.push('THREW ' + e.message); } }
+  H.ok(dn.store.totry_sex_door_seen === 1 && dn.el.innerHTML === '' && !('totry_sex' in dn.store),
+    '(c) "Rather not say" closes it for good, clears the card and stores no sex');
+
+  // (d) the asked-once flag syncs, so a second device does not ask again.
+  const _src = H.html, _A = 'const SYNC_KEYS = [';
+  const _i = _src.indexOf(_A);
+  let _keys = [];
+  if (_i >= 0) {
+    let depth = 1, end = -1;
+    for (let j = _i + _A.length; j < _src.length; j++) {
+      if (_src[j] === '[') depth++;
+      else if (_src[j] === ']') { depth--; if (!depth) { end = j; break; } }
+    }
+    try { if (end > _i) _keys = new Function('return [' + _src.slice(_i + _A.length, end) + '];')(); } catch (e) { _keys = []; }
+  }
+  H.ok(_i >= 0 && _src.indexOf(_A, _i + 1) < 0, '(d) the SYNC_KEYS anchor is unique in the bundle');
+  H.ok(_keys.length > 150 && _keys.indexOf('totry_sex') >= 0, '(d) SYNC_KEYS was executed, not grepped (' + _keys.length + ' keys)');
+  H.ok(_keys.indexOf('totry_sex_door_seen') >= 0, '(d) totry_sex_door_seen is in SYNC_KEYS beside totry_faith_door_seen');
+}
+
 H.report();

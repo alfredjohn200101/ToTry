@@ -27,7 +27,8 @@ sends it to the `ai-proxy` edge function, which forwards it to a third-party vis
 **Anyone filling the form from the old table would have under-declared.** The row is added below.
 
 Two smaller corrections from the same audit:
-- **`SYNC_KEYS` is 184 keys, not 178.** Six were added between v512 and v610. None of them opens a new
+- **`SYNC_KEYS` is 185 keys, not 178.** Six were added between v512 and v610, and one after it
+  (`totry_sex_door_seen`, a flag that the one-time "About you" question was answered). None of them opens a new
   Apple category — the new keys are more of what is already declared.
 - **"Contacts → No" is correct, and the reason was never written down, which made it look like an
   assumption.** It is defensible on evidence: there is **no `NSContactsUsageDescription`** in
@@ -66,7 +67,7 @@ third-party data for advertising. That means **no ATT prompt is required**.
 ## Why each answer, with evidence
 
 ### Contact Info → Email Address — collected, linked
-Account sign-in is email-based and `totry_user_email` is one of the **184 keys in `SYNC_KEYS`**, so it
+Account sign-in is email-based and `totry_user_email` is one of the **185 keys in `SYNC_KEYS`**, so it
 is stored in the Supabase project alongside everything else. Purpose: **App Functionality**.
 
 ### Health & Fitness — collected, linked

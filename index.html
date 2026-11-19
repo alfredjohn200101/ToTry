@@ -5603,7 +5603,10 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
           <div class="tdee-row">
             <div class="tdee-field">
               <div class="tdee-label">Sex</div>
-              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
+              <!-- A BLANK FIRST OPTION. With Male first and nothing selected, an untouched select reads
+                   "male", and calcTDEE persisted that to totry_sex — so tapping Calculate recorded a
+                   woman who never answered as male, and every AI surface called her "brother". -->
+              <select id="tdee-sex"><option value="">Choose one</option><option value="male">Male</option><option value="female">Female</option></select>
             </div>
             <div class="tdee-field tdee-wide">
               <div class="tdee-label">Activity</div>
@@ -6528,7 +6531,9 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
   </div>
 
   <!-- The cycle card — the phase read, and what it means across the whole life. Renders the quiet
-       one-time offer for a woman who hasn't chosen yet, and nothing at all for anyone else. -->
+       one-time offer for a woman who hasn't chosen yet, and nothing at all for anyone else. For
+       somebody who has never said their sex it holds the one-time "About you" question instead
+       (from day 3, skippable, asked once) — choosing Female swaps in the cycle offer in its place. -->
   <div id="cycle-card" style="margin-bottom:14px"></div>
   <!-- ── PROGRESS (middle — what users want to SEE) ──
        Three .met tiles in a fixed three-column grid, each with an 11px caps label above a 22px
@@ -9372,7 +9377,7 @@ const SYNC_KEYS = [
   // new device faith fell back to Christianity, so a Muslim or secular person reinstalling was handed
   // someone else's tradition, and userSex() went null, which changes the calorie and protein maths and
   // the voice. Identity has to survive a reinstall.
-  'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen'
+  'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen','totry_sex_door_seen'
 ];
 
 // ONE LIST FOR "THIS IS A CREDENTIAL, NOT DATA".
@@ -12070,7 +12075,8 @@ function _ptIntel(){
 // moment = { kind, detail }  where kind ∈ 'viceOver' | 'calorieOver' | 'trainTired' | 'spendHeavy'
 // Returns once, gently, and respects the user's autonomy. He never shames, never blocks.
 // ════════════════════════════════════════════════════════════════════════════════════════════
-// Biological sex as a known property (set via TDEE, or onboarding). Returns 'male'|'female'|null.
+// Biological sex as a known property — set in Settings -> About you, the calorie calculator (only once
+// a choice is made), or the one-time "About you" card on Track. Onboarding does not ask. Returns 'male'|'female'|null.
 // Used app-wide for gender-aware care: calorie/protein math, training context, and the sibling's
 // understanding (same love, but it knows whether it's speaking to a brother or a sister).
 function userSex(){ try{ return ls('totry_sex') || null; }catch(_){ return null; } }
@@ -12367,9 +12373,46 @@ function _renderCycleNote(elId,pillar){
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+txt+'</div>'+
     '</div></div>';
 }
+// ── ABOUT YOU, ASKED ONCE ─────────────────────────────────────────────────────────────────────
+// Onboarding never asks biological sex, so the only ways it was ever known were Settings -> About you
+// and the calorie calculator — and the calculator GUESSED "male" on an untouched form. Someone who
+// never found Settings was therefore either unstated forever (neutral voice, generic targets, no
+// cycle offer however much it would have served her) or silently recorded as male. This asks once,
+// in the cycle card's own slot on Track, from day 3: day 1 belongs to the Feeling Door, and Track is
+// never on a distress path. "Rather not say" closes it for good, exactly as _faithDoorNo does —
+// no second attempt, no softer re-ask. Choosing Female swaps this card, in place, for the existing
+// "Track your cycle?" offer, which still needs its own yes: being female is not consent.
+function _sexDoorHTML(){
+  try{
+    if(ls('totry_sex_door_seen')) return '';
+    const day = (typeof getDayCount==='function') ? getDayCount() : 1;
+    if(day < 3) return '';
+    return '<div class="card">'+
+      '<div class="eyebrow">About you</div>'+
+      '<p class="card-body">One question, and you can skip it. Which fits your body? It changes the maths behind your calorie and protein targets, and if you are female it lets me offer cycle tracking — only if you want it. Skip it and everything still works, and I keep speaking to you exactly as I do now.</p>'+
+      '<button class="btn" onclick="_sexDoorPick(\'male\')">Male</button>'+
+      '<button class="btn" onclick="_sexDoorPick(\'female\')">Female</button>'+
+      '<button class="btn quiet" onclick="_sexDoorNo()">Rather not say</button>'+
+    '</div>';
+  }catch(_){ return ''; }
+}
+function _sexDoorPick(s){
+  if(s !== 'male' && s !== 'female') return;
+  try{ ls('totry_sex_door_seen', 1); }catch(_){}
+  // setUserSex() re-renders the cycle surfaces itself, so Female lands on the cycle offer in this slot.
+  if(typeof setUserSex==='function') setUserSex(s);
+}
+function _sexDoorNo(){
+  try{ ls('totry_sex_door_seen', 1); renderCycleCard();
+       if(typeof showToast==='function') showToast('Understood','Nothing changes. It is in Settings → About you if you ever want it.');
+  }catch(_){}
+}
 function renderCycleCard(){
   const el=document.getElementById('cycle-card'); if(!el) return;
-  if(userSex()!=='female'){ el.innerHTML=''; return; }     // never shown to anyone who didn't say so
+  const _sx=userSex();
+  // Never stated: the one-time question (or nothing, once answered or before day 3). Never the cycle offer.
+  if(_sx!=='male' && _sx!=='female'){ el.innerHTML=_sexDoorHTML(); return; }
+  if(_sx!=='female'){ el.innerHTML=''; return; }     // never shown to anyone who didn't say so
   const c=cycleGet();
   if(!c.on){
     if(c.declined){ el.innerHTML=''; return; }             // she said no once; that answer stands
@@ -58003,8 +58046,13 @@ function calcTDEE(){
   const _storedSex = (typeof userSex==='function') ? userSex() : null;
   const sex = (_storedSex === 'male' || _storedSex === 'female')
     ? _storedSex
-    : (document.getElementById('tdee-sex')?.value || 'male');
-  if(!_storedSex){ try{ ls('totry_sex', sex); }catch(_){} }
+    : (document.getElementById('tdee-sex')?.value || '');
+  // NO SEX IS GUESSED. The fallback was `|| 'male'` and the dropdown had no blank option, so an
+  // untouched form read "male" — and the persist line sat ABOVE every bound below, so even a
+  // calculation this function then REFUSED (age 7) stored totry_sex = "male". From then on every AI
+  // surface called a woman who never answered "his big BROTHER" and her cycle offer never appeared.
+  // The equation genuinely differs, so ask rather than guess; the manual targets are one card up.
+  if(sex !== 'male' && sex !== 'female'){ showToast('Choose Male or Female', 'The equation is different for each, and I would rather ask than guess. Or enter your own targets above.'); return; }
   // SANITY FLOOR. These three feed a calorie target the person is asked to eat to, and there was no
   // bound on any of them: a mistyped weight of 7 (or 700) produced a confidently-wrong number with no
   // sign anything was off. Refuse rather than guess — a nonsense target is worse than no target, and this
@@ -58025,6 +58073,9 @@ function calcTDEE(){
     showToast('Check your weight', 'Enter a weight between ' + wFmt(30, {round:0}) + ' and ' + wFmt(300, {round:0}) + '.');
     return; }
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
+  // Persisted only now, after every bound has passed — a refused calculation stores nothing. It has to
+  // stay ABOVE _calFloor() below, which reads userSex(), so a first-time woman gets her own floor.
+  if(!_storedSex){ try{ ls('totry_sex', sex); }catch(_){} }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
 // Mifflin-St Jeor equation

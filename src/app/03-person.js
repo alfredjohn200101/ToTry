@@ -10,7 +10,8 @@
 // moment = { kind, detail }  where kind ∈ 'viceOver' | 'calorieOver' | 'trainTired' | 'spendHeavy'
 // Returns once, gently, and respects the user's autonomy. He never shames, never blocks.
 // ════════════════════════════════════════════════════════════════════════════════════════════
-// Biological sex as a known property (set via TDEE, or onboarding). Returns 'male'|'female'|null.
+// Biological sex as a known property — set in Settings -> About you, the calorie calculator (only once
+// a choice is made), or the one-time "About you" card on Track. Onboarding does not ask. Returns 'male'|'female'|null.
 // Used app-wide for gender-aware care: calorie/protein math, training context, and the sibling's
 // understanding (same love, but it knows whether it's speaking to a brother or a sister).
 function userSex(){ try{ return ls('totry_sex') || null; }catch(_){ return null; } }
@@ -307,9 +308,46 @@ function _renderCycleNote(elId,pillar){
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+txt+'</div>'+
     '</div></div>';
 }
+// ── ABOUT YOU, ASKED ONCE ─────────────────────────────────────────────────────────────────────
+// Onboarding never asks biological sex, so the only ways it was ever known were Settings -> About you
+// and the calorie calculator — and the calculator GUESSED "male" on an untouched form. Someone who
+// never found Settings was therefore either unstated forever (neutral voice, generic targets, no
+// cycle offer however much it would have served her) or silently recorded as male. This asks once,
+// in the cycle card's own slot on Track, from day 3: day 1 belongs to the Feeling Door, and Track is
+// never on a distress path. "Rather not say" closes it for good, exactly as _faithDoorNo does —
+// no second attempt, no softer re-ask. Choosing Female swaps this card, in place, for the existing
+// "Track your cycle?" offer, which still needs its own yes: being female is not consent.
+function _sexDoorHTML(){
+  try{
+    if(ls('totry_sex_door_seen')) return '';
+    const day = (typeof getDayCount==='function') ? getDayCount() : 1;
+    if(day < 3) return '';
+    return '<div class="card">'+
+      '<div class="eyebrow">About you</div>'+
+      '<p class="card-body">One question, and you can skip it. Which fits your body? It changes the maths behind your calorie and protein targets, and if you are female it lets me offer cycle tracking — only if you want it. Skip it and everything still works, and I keep speaking to you exactly as I do now.</p>'+
+      '<button class="btn" onclick="_sexDoorPick(\'male\')">Male</button>'+
+      '<button class="btn" onclick="_sexDoorPick(\'female\')">Female</button>'+
+      '<button class="btn quiet" onclick="_sexDoorNo()">Rather not say</button>'+
+    '</div>';
+  }catch(_){ return ''; }
+}
+function _sexDoorPick(s){
+  if(s !== 'male' && s !== 'female') return;
+  try{ ls('totry_sex_door_seen', 1); }catch(_){}
+  // setUserSex() re-renders the cycle surfaces itself, so Female lands on the cycle offer in this slot.
+  if(typeof setUserSex==='function') setUserSex(s);
+}
+function _sexDoorNo(){
+  try{ ls('totry_sex_door_seen', 1); renderCycleCard();
+       if(typeof showToast==='function') showToast('Understood','Nothing changes. It is in Settings → About you if you ever want it.');
+  }catch(_){}
+}
 function renderCycleCard(){
   const el=document.getElementById('cycle-card'); if(!el) return;
-  if(userSex()!=='female'){ el.innerHTML=''; return; }     // never shown to anyone who didn't say so
+  const _sx=userSex();
+  // Never stated: the one-time question (or nothing, once answered or before day 3). Never the cycle offer.
+  if(_sx!=='male' && _sx!=='female'){ el.innerHTML=_sexDoorHTML(); return; }
+  if(_sx!=='female'){ el.innerHTML=''; return; }     // never shown to anyone who didn't say so
   const c=cycleGet();
   if(!c.on){
     if(c.declined){ el.innerHTML=''; return; }             // she said no once; that answer stands
