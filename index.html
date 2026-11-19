@@ -13054,8 +13054,16 @@ function lifeStateBrief(s){
     const _mg = _mgam ? _moneyLineFor('gambling') : null;
     if(_md) _mo.push(_md.name + ' ' + _md.contact + ' (free financial counselling, ' + _md.detail.replace(/^free · /, '') + ')');
     if(_mg) _mo.push(_mg.name + ' ' + _mg.contact + ' (' + _mg.detail + ')');
-    if(_mo.length) lines.push('Free human help for money and gambling, verified for where they live: ' + _mo.join('; ') +
-      '. Offer it only if they raise money worry, debt they cannot get on top of, or a gambling urge, never unprompted; and never give a money or gambling number you remember instead of these.');
+    // WHERE THE REGION CAME FROM IS SAID, NOT ASSUMED. It is the currency they chose, or a guess from
+    // the phone's time zone when they never chose one, and neither is where somebody lives — so the
+    // model is told which, and that a person who lives elsewhere is not to be handed these numbers.
+    const _mr = _md || _mg;
+    const _mw = _mr && _mr.region === 'UK' ? 'the UK' : (_mr ? _mr.region : '');
+    const _mfrom = (_mr && _mr.from === 'currency')
+      ? ' (the country of the currency they chose)'
+      : " (a guess from their phone's time zone; they have not chosen a currency or said where they live)";
+    if(_mo.length) lines.push('Free human help for money and gambling, numbers verified for ' + _mw + _mfrom + ': ' + _mo.join('; ') +
+      '. Offer it only if they raise money worry, debt they cannot get on top of, or a gambling urge, never unprompted; and never give a money or gambling number you remember instead of these. If they say they live somewhere else, these are not theirs to call.');
   }catch(_){ }
   // GIVING, AND THE ONE THING THE MODEL MUST NOT DO WITH IT. The screens hide amounts when the person
   // has turned quiet on, and each tradition's own reason is in the GIVING registry — Qur'an 2:271 for
@@ -15120,8 +15128,9 @@ const HARM_LINES = [
 //     operators' own pages (GambleAware NSW and Gambling Help Queensland). The national page,
 //     gamblinghelponline.org.au, refuses automated fetches, so its national reach rests on those two
 //     operators; confirm it once in a real browser before an upload.
-// REGION COMES FROM THE CURRENCY, and a currency with no verified line gets NO number, only honest
-// copy. There is no US row on purpose: the one candidate read (NFCC) does not say the call is free.
+// REGION: the currency the person CHOSE, else the phone's time zone, else nothing — see _moneyLineFor.
+// A region with no verified line gets NO number, only honest copy. There is no US row on purpose:
+// the one candidate read (NFCC) does not say the call is free.
 // Shown only at a THRESHOLD (interest outrunning payments; the gamble moment) and never as a standing
 // row, because a voice at a threshold is the soul and a permanent row is a report.
 const MONEY_LINES = [
@@ -15129,22 +15138,40 @@ const MONEY_LINES = [
   {kind: 'debt', region: 'UK', name: 'National Debtline', contact: '0808 808 4000', detail: 'free \u00b7 weekdays 9am\u20138pm, Sat 9:30am\u20131pm'},
   {kind: 'gambling', region: 'Australia', name: 'Gambling Helpline', contact: '1800 858 858', detail: 'free \u00b7 confidential \u00b7 24/7'}
 ];
+// A CURRENCY NOBODY CHOSE IS NOT WHERE THEY LIVE. This read getUserCurrency(), whose own default is
+// 'AUD', so a person in the US, NZ or Canada who never opened Settings was handed an Australian 1800
+// number at a gambling urge and under the growing-debt hero — a number that will not connect, with
+// nothing on it saying it was Australian, and a brief telling the coach it was "verified for where
+// they live". So the region is: the currency they actually SET; else the phone's own time zone
+// (Australia/* or Europe/London, the only two regions with a verified row); else nothing, which
+// shows the honest no-number copy. `from` says which, so the brief can say what is true.
 function _moneyLineFor(kind){
   try{
-    // getUserCurrency's own default is AUD, so this mirrors what the person's screens already show.
-    const c = (typeof getUserCurrency === 'function') ? getUserCurrency() : 'AUD';
-    const region = c === 'AUD' ? 'Australia' : (c === 'GBP' ? 'UK' : '');
+    const set = (typeof ls === 'function') ? ls('totry_currency') : null;
+    let region = '', from = 'currency';
+    if(set){
+      region = set === 'AUD' ? 'Australia' : (set === 'GBP' ? 'UK' : '');
+    } else {
+      from = 'timezone';
+      let tz = '';
+      try{ tz = String(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); }catch(_){ tz = ''; }
+      region = /^Australia\//.test(tz) ? 'Australia' : (tz === 'Europe/London' ? 'UK' : '');
+    }
     if(!region) return null;
-    return MONEY_LINES.find(function(r){ return r.kind === kind && r.region === region; }) || null;
+    const r = MONEY_LINES.find(function(x){ return x.kind === kind && x.region === region; });
+    return r ? Object.assign({}, r, { from: from }) : null;
   }catch(_){ return null; }
 }
 // The number is the link, the way _bridgeLines draws one, and it is inline-block with 6px of padding
 // because an anchor is only as tall as its line box: the "Find a GP" link measured 123x20 against
-// the panels 24pt tap floor without it.
+// the panels 24pt tap floor without it. It leads with WHERE the line is, because the region may be a
+// guess from the time zone and a person somewhere else has to be able to see that it is not theirs.
 function _moneyLineHTML(r){
   if(!r) return '';
   const c = String(r.contact == null ? '' : r.contact);
-  return _esc(r.name) + ' <a href="tel:' + c.replace(/\s+/g, '') + '" style="display:inline-block;padding:6px 0;color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">' +
+  const where = r.region === 'UK' ? 'the UK' : String(r.region || '');
+  return (where ? 'In ' + _esc(where) + ': ' : '') +
+    _esc(r.name) + ' <a href="tel:' + c.replace(/\s+/g, '') + '" style="display:inline-block;padding:6px 0;color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">' +
     _esc(c) + '</a> <span style="color:var(--tx3)">\u00b7 ' + _esc(r.detail) + '</span>';
 }
 function showCrisisResponse(containerId, type){
@@ -41085,7 +41112,7 @@ function calcDebtFreeDate(){
     const _mr = (typeof _moneyLineFor === 'function') ? _moneyLineFor('debt') : null;
     if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and everything reclaimed goes straight at it.'
       +'<span style="display:block;margin-top:8px">You don’t have to work that out alone. '
-      +(_mr ? 'Someone whose job this is will talk it through with you, in confidence: '+_moneyLineHTML(_mr)
+      +(_mr ? 'Someone whose job this is will talk it through with you, in confidence. '+_moneyLineHTML(_mr)
             : 'If there is a free, not-for-profit debt adviser where you live, this is the moment they are for.')
       +'</span>';
     return;

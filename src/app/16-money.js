@@ -136,7 +136,7 @@ function calcDebtFreeDate(){
     const _mr = (typeof _moneyLineFor === 'function') ? _moneyLineFor('debt') : null;
     if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and everything reclaimed goes straight at it.'
       +'<span style="display:block;margin-top:8px">You don’t have to work that out alone. '
-      +(_mr ? 'Someone whose job this is will talk it through with you, in confidence: '+_moneyLineHTML(_mr)
+      +(_mr ? 'Someone whose job this is will talk it through with you, in confidence. '+_moneyLineHTML(_mr)
             : 'If there is a free, not-for-profit debt adviser where you live, this is the moment they are for.')
       +'</span>';
     return;

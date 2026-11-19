@@ -17363,22 +17363,64 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
   H.ok(ML.length > 0 && ML.every(r => /\bfree\b/.test(r.detail) && r.name && (r.kind === 'debt' || r.kind === 'gambling')),
     '(a) every row says it is free, is named, and is a debt or a gambling line');
 
-  // (b) THE REGION COMES FROM THE CURRENCY, AND AN UNKNOWN ONE GETS NO NUMBER.
-  let cur = 'AUD', M = null;
-  try { M = H.load(['_moneyLineFor', '_moneyLineHTML', '_esc'], { MONEY_LINES: ML, getUserCurrency: () => cur }); }
+  // (b) THE REGION: THE CURRENCY THEY SET, ELSE THE PHONE'S TIME ZONE, ELSE NO NUMBER.
+  // It used to read getUserCurrency(), whose own default is 'AUD' — so a US, NZ or Canadian person
+  // who never opened Settings was handed an Australian 1800 number that will not connect. The stored
+  // currency (`cur`, null = never set) and the time zone (`tz`) are driven as SEPARATE inputs so
+  // neither can stand in for the other, and the REAL getUserCurrency is loaded beside it so a
+  // regression to reading it meets its real default rather than a stub's.
+  let cur = 'AUD', tz = 'America/New_York', tzThrows = false, M = null;
+  const where = () => ({
+    MONEY_LINES: ML, ls: k => (k === 'totry_currency' ? cur : null),
+    Intl: { DateTimeFormat: () => { if (tzThrows) throw new Error('no Intl'); return { resolvedOptions: () => ({ timeZone: tz }) }; } },
+  });
+  try { M = H.load(['_moneyLineFor', '_moneyLineHTML', '_esc', 'getUserCurrency'], where()); }
   catch (e) { M = null; }
   H.ok(!!M, '(b) _moneyLineFor and _moneyLineHTML were found by name — a rename must update this check, not drop it');
   if (M) {
-    const pick = (c, k) => { cur = c; const r = M._moneyLineFor(k); return r ? r.contact : null; };
-    H.eq(pick('AUD', 'debt'), '1800 007 007', '(b) an AUD person is given the National Debt Helpline');
-    H.eq(pick('GBP', 'debt'), '0808 808 4000', '(b) a GBP person is given National Debtline');
-    H.eq(pick('AUD', 'gambling'), '1800 858 858', '(b) an AUD person is given the Gambling Helpline');
-    H.eq(pick('USD', 'debt'), null, '(b) a USD person is given NO number — honest copy, never an unchecked line');
+    const pick = (c, k, z) => { cur = c; tz = z || 'America/New_York'; tzThrows = false;
+      try { const r = M._moneyLineFor(k); return r ? r.contact : null; } catch (e) { return 'THREW ' + e.message; } };
+    cur = null;
+    H.eq(M.getUserCurrency(), 'AUD',
+      '(b) calibration: the app\'s own getUserCurrency() really does answer AUD for somebody who never chose — the default this region must not read');
+    // SET: the person's own choice wins over the phone.
+    H.eq(pick('AUD', 'debt'), '1800 007 007', '(b) currency SET to AUD: the National Debt Helpline, even on a New York clock');
+    H.eq(pick('GBP', 'debt', 'Australia/Sydney'), '0808 808 4000', '(b) currency SET to GBP: National Debtline, even on a Sydney clock');
+    H.eq(pick('AUD', 'gambling'), '1800 858 858', '(b) currency SET to AUD: the Gambling Helpline');
+    H.eq(pick('USD', 'debt', 'Australia/Melbourne'), null,
+      '(b) currency SET to USD: NO number, even on an Australian clock — what they chose is the better evidence');
     H.eq(pick('EUR', 'debt'), null, '(b) neither is a EUR person');
     H.eq(pick('GBP', 'gambling'), null, '(b) and no UK gambling line, because none was verified');
+    // UNSET: the time zone, and only the two regions with a verified row.
+    H.eq(pick(null, 'debt', 'America/New_York'), null,
+      '(b) NEVER SET, New York clock: no debt number — this returned the Australian 1800 007 007');
+    H.eq(pick(null, 'gambling', 'America/New_York'), null,
+      '(b) NEVER SET, New York clock: no gambling number — this returned the Australian 1800 858 858');
+    H.eq([pick(null, 'debt', 'Pacific/Auckland'), pick(null, 'debt', 'America/Toronto'), pick(null, 'debt', 'Europe/Dublin')],
+      [null, null, null], '(b) NEVER SET, Auckland / Toronto / Dublin clocks: no number for any of them');
+    H.eq([pick(null, 'debt', 'Australia/Melbourne'), pick(null, 'gambling', 'Australia/Perth')], ['1800 007 007', '1800 858 858'],
+      '(b) NEVER SET, an Australia/* clock: the Australian lines');
+    H.eq([pick(null, 'debt', 'Europe/London'), pick(null, 'gambling', 'Europe/London')], ['0808 808 4000', null],
+      '(b) NEVER SET, a Europe/London clock: National Debtline, and still no UK gambling line');
+    cur = null; tzThrows = true;
+    let thrown; try { thrown = M._moneyLineFor('debt'); } catch (e) { thrown = 'THREW ' + e.message; }
+    H.eq(thrown, null, '(b) NEVER SET and no readable time zone: no number, so the honest copy shows');
+    tzThrows = false;
+    // `from` is what lets the brief say what is true.
+    cur = 'AUD'; const rSet = M._moneyLineFor('debt');
+    cur = null; tz = 'Australia/Brisbane'; const rGuess = M._moneyLineFor('debt');
+    H.eq([rSet && rSet.from, rGuess && rGuess.from], ['currency', 'timezone'],
+      '(b) the row says whether its region was CHOSEN (currency) or GUESSED (time zone)');
+    H.ok(rGuess !== ML.find(r => r.kind === 'debt' && r.region === 'Australia') && ML.every(r => !('from' in r)),
+      '(b) and it is a copy — the registry itself is never written to');
     cur = 'AUD';
     const h = M._moneyLineHTML(M._moneyLineFor('debt'));
     H.eq((h.match(/href="tel:([^"]*)"/) || [])[1], '1800007007', '(b) the link dials the number it shows');
+    H.ok(h.indexOf('In Australia: National Debt Helpline') === 0,
+      '(b) the line LEADS with where it is for — "In Australia:" — so somebody elsewhere can see it is not theirs');
+    cur = 'GBP';
+    H.ok(M._moneyLineHTML(M._moneyLineFor('debt')).indexOf('In the UK: National Debtline') === 0,
+      '(b) and "In the UK:" for the UK line');
     H.ok(/display:inline-block/.test(h) && /padding:6px 0/.test(h),
       '(b) the link is inline-block with 6px of padding — an anchor is only as tall as its line box, and the ' +
       '"Find a GP" link failed the 24pt tap floor at 123x20 without it');
@@ -17390,14 +17432,14 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
   const el = id => els[id] || (els[id] = { textContent: '', innerHTML: '', style: {} });
   let proj = null, D = null;
   try {
-    D = H.load(['calcDebtFreeDate', '_moneyLineFor', '_moneyLineHTML', '_esc'], {
-      MONEY_LINES: ML, getUserCurrency: () => cur, loadF() {}, debts: [{ t: 9000 }], _debtBalance: d => d.t,
-      monthlyPaymentRate: () => 120, ls: () => null, projectPayoff: () => proj, curSym: () => '$',
+    D = H.load(['calcDebtFreeDate', '_moneyLineFor', '_moneyLineHTML', '_esc', 'getUserCurrency'], Object.assign(where(), {
+      loadF() {}, debts: [{ t: 9000 }], _debtBalance: d => d.t,
+      monthlyPaymentRate: () => 120, projectPayoff: () => proj, curSym: () => '$',
       document: { getElementById: el },
-    });
+    }));
   } catch (e) { D = null; }
   H.ok(!!D, '(c) calcDebtFreeDate was found by name');
-  const hero = (c, p) => { Object.keys(els).forEach(k => delete els[k]); cur = c; proj = p;
+  const hero = (c, p, z) => { Object.keys(els).forEach(k => delete els[k]); cur = c; proj = p; tz = z || 'America/New_York'; tzThrows = false;
     try { D.calcDebtFreeDate(); } catch (e) { return 'THREW ' + e.message; } return el('df-desc').innerHTML; };
   if (D) {
     const NEVER = { neverClears: true, monthlyInterest: 150 };
@@ -17405,9 +17447,17 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
     H.ok(/the balance grows/.test(au), '(c) calibration: the neverClears branch really ran' + (/^THREW/.test(au) ? ' — ' + au : ''));
     H.ok(au.indexOf('href="tel:1800007007"') >= 0,
       '(c) when interest outruns the payment, an AUD person is handed the National Debt Helpline');
+    H.ok(au.indexOf('in confidence. In Australia: National Debt Helpline') >= 0,
+      '(c) and the line says it is the Australian one');
     const us = hero('USD', NEVER);
     H.ok(/the balance grows/.test(us) && us.indexOf('tel:') < 0 && /not-for-profit debt adviser/.test(us),
       '(c) a USD person reaches the same threshold and gets honest copy with NO number');
+    const unsetUS = hero(null, NEVER, 'America/Chicago');
+    H.ok(/the balance grows/.test(unsetUS) && unsetUS.indexOf('tel:') < 0 && /not-for-profit debt adviser/.test(unsetUS),
+      '(c) somebody who NEVER chose a currency, on a Chicago clock, gets the honest copy and no Australian number');
+    const unsetAU = hero(null, NEVER, 'Australia/Adelaide');
+    H.ok(unsetAU.indexOf('href="tel:1800007007"') >= 0 && unsetAU.indexOf('In Australia:') >= 0,
+      '(c) and on an Adelaide clock, the Australian line — labelled, because it was a guess');
     const fine = hero('AUD', { months: 20, interestPaid: 300 });
     H.ok(el('df-desc').textContent.indexOf('20 months') >= 0,
       '(c) calibration: the on-track branch really ran');
@@ -17418,15 +17468,16 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
   // (d) THE GAMBLE MOMENT OFFERS A PERSON, BETWEEN "TALK IT OUT" AND "NOT NOW".
   let appended = null, G = null;
   try {
-    G = H.load(['openGambleMoment', '_moneyLineFor', '_moneyLineHTML', '_esc'], {
-      MONEY_LINES: ML, getUserCurrency: () => cur, loadV() {}, vices: [{ n: 'Pokies' }], window: {},
+    G = H.load(['openGambleMoment', '_moneyLineFor', '_moneyLineHTML', '_esc', 'getUserCurrency'], Object.assign(where(), {
+      loadV() {}, vices: [{ n: 'Pokies' }], window: {},
       viceSpendFromBank: () => null, _reframeHTML: () => '', curSym: () => '$', haptic() {}, setTimeout() {},
       document: { createElement: () => ({ style: {}, className: '', innerHTML: '' }), body: { appendChild: m => { appended = m; } },
                   querySelectorAll: () => [], getElementById: () => null },
-    });
+    }));
   } catch (e) { G = null; }
   H.ok(!!G, '(d) openGambleMoment was found by name');
-  const moment = c => { appended = null; cur = c; try { G.openGambleMoment(0); } catch (e) { return 'THREW ' + e.message; }
+  const moment = (c, z) => { appended = null; cur = c; tz = z || 'America/New_York'; tzThrows = false;
+    try { G.openGambleMoment(0); } catch (e) { return 'THREW ' + e.message; }
     return appended ? appended.innerHTML : ''; };
   if (G) {
     const au = moment('AUD');
@@ -17434,24 +17485,31 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
     const iTel = au.indexOf('href="tel:1800858858"'), iTalk = au.indexOf('I just need to talk it out'), iNot = au.indexOf('Not now');
     H.ok(iTel > 0, '(d) an AUD person mid-urge is offered the Gambling Helpline, not only the app');
     H.ok(iTel > iTalk && iTel < iNot, '(d) and it sits after "talk it out" and before "Not now", inside the sheet');
+    H.ok(au.indexOf('Rather say it to a person? In Australia: Gambling Helpline') >= 0,
+      '(d) and it says it is the Australian line');
     const gb = moment('GBP');
     H.ok(/Before you put it on/.test(gb) && gb.indexOf('tel:') < 0 && /Text one person who knows/.test(gb),
       '(d) a GBP person gets the playbook\'s own move — tell a person — and no unverified number');
+    const unsetUS = moment(null, 'America/Los_Angeles');
+    H.ok(/Before you put it on/.test(unsetUS) && unsetUS.indexOf('tel:') < 0 && /Text one person who knows/.test(unsetUS),
+      '(d) somebody who NEVER chose a currency, on a Los Angeles clock, mid-urge: the playbook\'s move, not an Australian 1800 number');
+    const unsetAU = moment(null, 'Australia/Hobart');
+    H.ok(unsetAU.indexOf('href="tel:1800858858"') >= 0 && unsetAU.indexOf('In Australia: Gambling Helpline') >= 0,
+      '(d) and on a Hobart clock, the Gambling Helpline, labelled as Australian');
   }
 
   // (e) THE MODEL IS HANDED THE SAME VERIFIED LINE, ONLY FOR A FRONT THEY HAVE, AND THE COACH KEEPS IT.
   let B = null;
   try {
-    B = H.load(['lifeStateBrief', '_moneyLineFor', '_viceStakeKind'], {
-      MONEY_LINES: ML, getUserCurrency: () => cur,
+    B = H.load(['lifeStateBrief', '_moneyLineFor', '_viceStakeKind', 'getUserCurrency'], Object.assign(where(), {
       _unitsNote: () => '', nutGentle: () => false, _gentleWord: () => null, wFmt: x => x + 'kg', wDelta: x => x + 'kg',
       curSym: () => '$', feelingPattern: () => null, fastSeasonNow: () => null,
-    });
+    }));
   } catch (e) { B = null; }
   H.ok(!!B, '(e) lifeStateBrief was found by name');
   const PFX = 'Free human help for money and gambling';
-  const brief = (c, debt, viceName) => {
-    cur = c;
+  const brief = (c, debt, viceName, z) => {
+    cur = c; tz = z || 'America/New_York'; tzThrows = false;
     const s = { training: {}, nutrition: {}, body: {}, soul: {}, activity: { daysQuiet: 0 },
       fight: { fights7: 0, vices: viceName ? [{ name: viceName, cleanDays: 3, uses7: 0 }] : [] },
       money: { hasDebt: debt, totalDebt: debt ? 7500 : 0, reclaimed: 0 } };
@@ -17472,6 +17530,21 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
     H.ok(gb.indexOf('0808 808 4000') >= 0 && gb.indexOf('1800') < 0,
       '(e) GBP: National Debtline, and no Australian number');
     H.eq(lineOf(brief('USD', true, 'Pokies')), '', '(e) USD: no line, so the model is handed nothing it could misquote');
+
+    // WHAT THE BRIEF SAYS ABOUT WHERE. It said "verified for where they live" for a region that was a
+    // DEFAULT. Now it says which evidence the region rests on, and never claims to know where they live.
+    H.ok(/numbers verified for Australia \(the country of the currency they chose\)/.test(L),
+      '(e) currency SET: the line says the numbers are for Australia, the country of the currency they chose');
+    const guessed = lineOf(brief(null, true, 'Pokies', 'Australia/Darwin'));
+    H.ok(guessed.indexOf('1800 007 007') >= 0 && guessed.indexOf('1800 858 858') >= 0 &&
+         /numbers verified for Australia \(a guess from their phone's time zone; they have not chosen a currency or said where they live\)/.test(guessed),
+      '(e) NEVER SET, Darwin clock: the lines are handed over and called what they are — a guess from the time zone');
+    H.ok([L, gb, guessed].every(x => x.indexOf('verified for where they live') < 0),
+      '(e) and no version of the line claims the numbers are "verified for where they live"');
+    H.ok(/If they say they live somewhere else, these are not theirs to call\./.test(guessed),
+      '(e) and the model is told what to do if the guess is wrong');
+    H.eq(lineOf(brief(null, true, 'Pokies', 'America/Denver')), '',
+      '(e) NEVER SET, Denver clock: no line at all — this handed the model two Australian numbers as theirs');
 
     // The coach builds its own prompt and takes brief lines BY PREFIX; without the prefix the one
     // voice somebody types "who can help with my debt?" into would still have no number to give.
