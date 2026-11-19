@@ -4620,6 +4620,23 @@ function applyCoachVoiceCopy(){
     const sx = (typeof userSex === 'function') ? userSex() : null;
     const who  = sx === 'female' ? 'She\u2019s' : sx === 'male' ? 'He\u2019s' : 'Your coach has';
     const them = sx === 'female' ? 'her' : sx === 'male' ? 'him' : '';
+    // A CLAIM IT CANNOT KEEP ON DAY ONE. "Read your whole story" to somebody who installed an hour ago
+    // is a claim the brief behind it cannot back: for a new person it says "Not much logged yet". The
+    // brief's own emptiness test is no use here, because the sex or units line makes it non-empty for
+    // a person who has logged nothing. So this asks the state directly: in the first week, and not yet
+    // active by the state's own measure, the copy says what is true.
+    let early = false;
+    try{
+      const st = (typeof getLifeState === 'function') ? getLifeState() : null;
+      const d = (typeof daysInstalled === 'function') ? daysInstalled() : 99;
+      early = d <= 7 && !(st && st.activity && st.activity.everActive);
+    }catch(_){ early = false; }
+    if(early){
+      const he = sx === 'female' ? 'She' : sx === 'male' ? 'He' : 'Your coach';
+      el.textContent = 'Not a search bar. ' + he + ' only knows what you\u2019ve shared so far \u2014 and learns you '
+        + 'as you go. Ask ' + (them ? them + ' ' : '') + 'anything.';
+      return;
+    }
     el.textContent = who + ' read your whole story \u2014 your training, your fight, your money, your faith, '
       + 'what weighs on you. Not a search bar. Someone who knows you, and points you toward who you\u2019re '
       + 'becoming. Ask ' + (them ? them + ' ' : '') + 'anything.';

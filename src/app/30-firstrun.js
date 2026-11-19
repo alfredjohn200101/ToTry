@@ -70,7 +70,8 @@ function getFirstRunSteps(){
     {
       done: coachHistory.length > 0,
       label: 'Say hello to your Coach',
-      desc: 'It already knows your context.',
+      // It said "It already knows your context." — on day one, when it knows a name at most.
+      desc: 'It learns you as you go.',
       action: "go('coach')"
     }
   ];
@@ -122,7 +123,14 @@ function renderFirstRun(){
   }
   const prog = document.getElementById('firstrun-progress');
   // It was typed in capitals and printed at 11px, centred — caps as a decoration rather than a role.
-  if(prog) prog.textContent = doneCount + ' of ' + steps.length + ' done';
+  // "0 OF 4 DONE" IS A SCORE OF NOTHING. On a new person's first Home the foot of this card was a
+  // count of what they had not done yet, in an app whose vice card refuses to print "0 days clean"
+  // for exactly that reason. The count appears once there is something in it, and the empty foot is
+  // hidden rather than left as a blank line with its own margin.
+  if(prog){
+    prog.textContent = doneCount ? (doneCount + ' of ' + steps.length + ' done') : '';
+    prog.style.display = doneCount ? '' : 'none';
+  }
 }
 // ── WHAT'S NEW ────────────────────────────────────────────────
 // Shows a one-time card when the user opens a version they haven't seen the changelog for.

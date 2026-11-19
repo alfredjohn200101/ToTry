@@ -2201,7 +2201,9 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const feels = await page.evaluate(async () => {
       const out = {};
       for (const f of ['restless','flat','anxious','down','procrast','angry','good']) {
-        document.querySelectorAll('.modal-bg.open:not([id]),.breath-overlay,#form-modal').forEach(e=>e.remove());
+        // .totry-release-ov is cleared too: it does not remove itself until its own button is tapped,
+        // so one feeling landing on the Release would otherwise count as a landing for every feeling after it.
+        document.querySelectorAll('.modal-bg.open:not([id]),.breath-overlay,#form-modal,.totry-release-ov').forEach(e=>e.remove());
         document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
         if (typeof go === 'function') go('home');            // or the previous feeling's tab leaks in
         await new Promise(x=>setTimeout(x,160));
@@ -2222,7 +2224,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         const comp   = document.querySelector('.companion-overlay.open');
         const form   = document.getElementById('form-modal');   // openFormModal DOES carry an id
         const sheet  = document.querySelector('.modal-bg.open:not([id])');
-        if (vis(breath) || vis(comp) || vis(form) || vis(sheet)) { out[f] = 'ok'; continue; }
+        // The Release is a landing, not a dead end: it is the app's own off-ramp, and for a person
+        // with no training history Restless ends there instead of at Train's set-up form.
+        const release = document.querySelector('.totry-release-ov');
+        if (vis(breath) || vis(comp) || vis(form) || vis(sheet) || vis(release)) { out[f] = 'ok'; continue; }
         const pane = [...document.querySelectorAll('[id^="tab-"]')].find(t => getComputedStyle(t).display !== 'none');
         out[f] = (pane && pane.id && pane.id !== 'tab-home') ? 'ok' : 'landed nowhere — the door closed on them';
       }

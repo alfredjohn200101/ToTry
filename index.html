@@ -4884,7 +4884,9 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
       <div class="card-say">Welcome. Let’s set the foundation.</div>
       <button class="card-x" onclick="dismissFirstRun()" aria-label="Dismiss">×</button>
     </div>
-    <p class="card-body">This app comes alive as you use it. Four quick things to start — tap any to do it now.</p>
+    <!-- This line used to tell somebody in their first minute that the thing they had opened was empty
+         until they fed it data. The entry point is a feeling, not a form. -->
+    <p class="card-body">Start wherever you feel something. When you want to, these four make it yours.</p>
     <div id="firstrun-steps"></div>
     <div class="card-foot" id="firstrun-progress"></div>
   </div>
@@ -16685,6 +16687,23 @@ function applyCoachVoiceCopy(){
     const sx = (typeof userSex === 'function') ? userSex() : null;
     const who  = sx === 'female' ? 'She\u2019s' : sx === 'male' ? 'He\u2019s' : 'Your coach has';
     const them = sx === 'female' ? 'her' : sx === 'male' ? 'him' : '';
+    // A CLAIM IT CANNOT KEEP ON DAY ONE. "Read your whole story" to somebody who installed an hour ago
+    // is a claim the brief behind it cannot back: for a new person it says "Not much logged yet". The
+    // brief's own emptiness test is no use here, because the sex or units line makes it non-empty for
+    // a person who has logged nothing. So this asks the state directly: in the first week, and not yet
+    // active by the state's own measure, the copy says what is true.
+    let early = false;
+    try{
+      const st = (typeof getLifeState === 'function') ? getLifeState() : null;
+      const d = (typeof daysInstalled === 'function') ? daysInstalled() : 99;
+      early = d <= 7 && !(st && st.activity && st.activity.everActive);
+    }catch(_){ early = false; }
+    if(early){
+      const he = sx === 'female' ? 'She' : sx === 'male' ? 'He' : 'Your coach';
+      el.textContent = 'Not a search bar. ' + he + ' only knows what you\u2019ve shared so far \u2014 and learns you '
+        + 'as you go. Ask ' + (them ? them + ' ' : '') + 'anything.';
+      return;
+    }
     el.textContent = who + ' read your whole story \u2014 your training, your fight, your money, your faith, '
       + 'what weighs on you. Not a search bar. Someone who knows you, and points you toward who you\u2019re '
       + 'becoming. Ask ' + (them ? them + ' ' : '') + 'anything.';
@@ -22325,10 +22344,23 @@ function _feelMove(feeling){
   // Offered as a SECOND option, never replacing the move — a breath is the one work always available.
   const BREATH_FOR = { restless:'settle', flat:'energize', anxious:'settle', down:'settle', procrast:'box', angry:'cool', good:'' };
   const s = sets[feeling]; if(!s) return;
+  // RESTLESS SENT A NEWCOMER TO A SET-UP FORM. The move says "20 push-ups right now, or a fast walk"
+  // and its button said "Log a quick workout" → Train — which, for somebody who has never trained
+  // and connected nothing, is "Let's get you training … Set up my training". A person who came in
+  // buzzing was handed a configuration screen. With no training history at all the button sends them
+  // to do the thing instead, through the Release, which is the app's own way of ending a moment and
+  // handing them back to their life. The test is the brief's own "has ever trained" signal, so
+  // anybody with a history still gets the workout log they would expect.
+  if(feeling==='restless'){
+    const _t = life && life.training;
+    const _ever = !!(_t && (_t.sessions7 > 0 || _t.sessions14 > 0 || _t.lastTitle || _t.tonnage7));
+    if(!_ever){ s.cta = 'I’m going now'; s.go = '__move'; }
+  }
   const m = document.createElement('div');
   m.className='modal-bg open';
   let onclick = 'closeModal(this)';
-  if(s.go==='__nextstep') onclick = 'closeModal(this);brotherGuidance()';
+  if(s.go==='__move') onclick = 'closeModal(this);theRelease({did:\'You chose to burn the buzz off instead of scrolling it away — twenty push-ups, or a fast walk round the block.\'})';
+  else if(s.go==='__nextstep') onclick = 'closeModal(this);brotherGuidance()';
   else if(s.go==='__companion') onclick = 'closeModal(this);openCompanionForUrge()';
   else if(s.go==='__bridge') onclick = 'closeModal(this);bridgeToRealHelp(\'heavy\')';
   else if(s.go==='__procrast') onclick = 'closeModal(this);_startSmallestThing()';
@@ -56228,11 +56260,23 @@ function renderTourPrompt(){
   if(!card) return;
   if(ls('totry_tour_offered')){ card.style.display='none'; return; }
   // Don't compete with the multi-day first-run onboarding card.
+  // TWO GREETINGS STACKED ON THE VERY FIRST HOME VIEW. go('home') runs this BEFORE checkPreviewBanner,
+  // which is what renders the first-run card — so on a new person's first Home the card still held its
+  // static display:none, this read "not active", and "Welcome in." rendered under "Welcome. Let's set
+  // the foundation". Two cards introducing the app, one above the other. Ask the card for its real
+  // state first; renderFirstRun is idempotent, so running it twice per Home view costs nothing.
+  if(typeof renderFirstRun==='function'){ try{ renderFirstRun(); }catch(_){ } }
   const firstRunActive = document.getElementById('firstrun-card')?.style.display === 'block';
   if(firstRunActive){ card.style.display='none'; return; }
   // Brand-new user (onboarded this session, barely any history): start the tour automatically once.
-  const dayCount = (typeof getDayCount==='function') ? getDayCount() : 99;
-  const brandNew = dayCount <= 1;
+  // "There's a lot new in here" is written for somebody who was here BEFORE the tour existed. It was
+  // gated on getDayCount() <= 1, so a newcomer on days 2 to 10 — or on day 1 with a journey start set
+  // back to the day they quit (getDayCount honours that override and reads "Day 401") — was told the
+  // app had changed around them. How long they have HAD the app is daysInstalled(), and it is the
+  // first-run card's own ten-day window.
+  const dayCount = (typeof daysInstalled==='function') ? daysInstalled()
+    : (typeof getDayCount==='function') ? getDayCount() : 99;
+  const brandNew = dayCount <= 10;
   if(brandNew){
     // Don't ambush someone with an 8-step tour the second they finish onboarding — that's the whole
     // cathedral before they've touched anything. Land them on the home (hero + the one next step),
@@ -56300,7 +56344,7 @@ function renderTourStep(){
     // this and cannot always win: step 3's target sits inside the depth fold, and
     // renderHomeDepthFold re-CLOSES that fold when day-1 progressive disclosure has hidden all of
     // its children — which is the state of the only person the tour is ever auto-offered to
-    // (renderTourPrompt offers it when dayCount <= 1). So the person read "Your vices live here
+    // (renderTourPrompt offers it in a newcomer's first days). So the person read "Your vices live here
     // … Tap one the moment you're tempted" over a dimmed screen with no hole in it. A step that
     // declares a target and cannot find one is skipped now, rather than narrated at nothing.
     if(step.find && !rect){
@@ -58792,7 +58836,8 @@ function getFirstRunSteps(){
     {
       done: coachHistory.length > 0,
       label: 'Say hello to your Coach',
-      desc: 'It already knows your context.',
+      // It said "It already knows your context." — on day one, when it knows a name at most.
+      desc: 'It learns you as you go.',
       action: "go('coach')"
     }
   ];
@@ -58844,7 +58889,14 @@ function renderFirstRun(){
   }
   const prog = document.getElementById('firstrun-progress');
   // It was typed in capitals and printed at 11px, centred — caps as a decoration rather than a role.
-  if(prog) prog.textContent = doneCount + ' of ' + steps.length + ' done';
+  // "0 OF 4 DONE" IS A SCORE OF NOTHING. On a new person's first Home the foot of this card was a
+  // count of what they had not done yet, in an app whose vice card refuses to print "0 days clean"
+  // for exactly that reason. The count appears once there is something in it, and the empty foot is
+  // hidden rather than left as a blank line with its own margin.
+  if(prog){
+    prog.textContent = doneCount ? (doneCount + ' of ' + steps.length + ' done') : '';
+    prog.style.display = doneCount ? '' : 'none';
+  }
 }
 // ── WHAT'S NEW ────────────────────────────────────────────────
 // Shows a one-time card when the user opens a version they haven't seen the changelog for.
@@ -59635,6 +59687,13 @@ function renderHomeGreeting(){
     daypart='dusk';
     hi = (name ? ('Good evening, '+name+'.') : 'Good evening.');
     if(didEvening){ sub = 'You\u2019ve closed the day honestly. Rest well \u2014 tomorrow is grace, new again.'; }
+    // DAY ONE, LATE. Somebody who installed tonight has usually come in through the Feeling Door, and
+    // the Release they were just handed said "put me down, go live the next hour". Home then offered
+    // an eight-step evening ritual. On the first night it says what the before-5am branch says, with
+    // no button; the ritual is still one tab away for anybody who wants it.
+    else if(h >= 21 && typeof daysInstalled==='function' && daysInstalled() <= 1){
+      sub = 'Rest is part of the work. When you\u2019re ready, the morning will be here.';
+    }
     else { sub = 'The day is winding down. Want to look back on it together before you rest?'; actLabel='Close the day'; actType='evening'; }
   }
   if(h >= 21 || h < 5) daypart = 'night';

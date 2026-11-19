@@ -562,6 +562,13 @@ function renderHomeGreeting(){
     daypart='dusk';
     hi = (name ? ('Good evening, '+name+'.') : 'Good evening.');
     if(didEvening){ sub = 'You\u2019ve closed the day honestly. Rest well \u2014 tomorrow is grace, new again.'; }
+    // DAY ONE, LATE. Somebody who installed tonight has usually come in through the Feeling Door, and
+    // the Release they were just handed said "put me down, go live the next hour". Home then offered
+    // an eight-step evening ritual. On the first night it says what the before-5am branch says, with
+    // no button; the ritual is still one tab away for anybody who wants it.
+    else if(h >= 21 && typeof daysInstalled==='function' && daysInstalled() <= 1){
+      sub = 'Rest is part of the work. When you\u2019re ready, the morning will be here.';
+    }
     else { sub = 'The day is winding down. Want to look back on it together before you rest?'; actLabel='Close the day'; actType='evening'; }
   }
   if(h >= 21 || h < 5) daypart = 'night';

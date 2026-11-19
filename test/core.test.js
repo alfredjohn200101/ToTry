@@ -21972,4 +21972,163 @@ H.section('about you: no sex is guessed, and the question is asked once, on Trac
   H.ok(_keys.indexOf('totry_sex_door_seen') >= 0, '(d) totry_sex_door_seen is in SYNC_KEYS beside totry_faith_door_seen');
 }
 
+H.section('day one: one greeting, no score of nothing, Restless ends off the phone, no ritual at 11pm, no claimed story');
+{
+  // WHAT WAS WRONG, each measured on the real functions before the fix:
+  //  (a) go('home') runs renderTourPrompt BEFORE checkPreviewBanner renders the first-run card, so the
+  //      tour read the card's static display:none and BOTH greetings rendered on the first Home view.
+  //  (b) the tour told a newcomer on days 2-10 "There's a lot new in here" (it asked getDayCount()<=1).
+  //  (c) the checklist's foot read "0 of 4 done" — a score of nothing — on minute one.
+  //  (d) Restless's button was "Log a quick workout" → Train, which for somebody who never trained is a
+  //      set-up form. (e) at 23:00 on day one Home offered an eight-step ritual right after the Release
+  //      said "put me down". (f) the Coach tab said it had "read your whole story" on day one.
+  // Everything below EXECUTES the real functions with stubs only for what they do not own.
+  const mkEl = () => ({ style: { display: 'none' }, innerHTML: '', textContent: '', dataset: {}, setAttribute() {} });
+
+  // ── (a)-(c) the welcome cards, driven in BOTH orders ──
+  const runCards = function (opts) {
+    const store = Object.assign({}, opts.store || {});
+    const ls = (k, v) => (v === undefined ? (k in store ? store[k] : null) : (store[k] = v));
+    const els = {};
+    ['home-tour-prompt', 'firstrun-card', 'firstrun-steps', 'firstrun-progress', 'newuser-preview-banner'].forEach(id => { els[id] = mkEl(); });
+    const document = { getElementById: (id) => els[id] || null, querySelectorAll: () => [] };
+    let C = null, err = '';
+    try {
+      C = H.load(['renderTourPrompt', 'renderFirstRun', 'getFirstRunSteps', 'checkPreviewBanner'], {
+        ls, document, loadV: () => {}, vices: opts.vices || [], svgIcon: () => '',
+        checkPostRelapse: () => {},
+        getDayCount: () => (opts.day == null ? 1 : opts.day),
+        daysInstalled: () => (opts.inst == null ? 1 : opts.inst),
+      });
+      // go('home')'s order is renderTourPrompt, then checkPreviewBanner; the reverse is asserted too so
+      // a later reorder of go() cannot bring the stack back.
+      if (opts.reverse) { C.checkPreviewBanner(); C.renderTourPrompt(); }
+      else { C.renderTourPrompt(); C.checkPreviewBanner(); }
+    } catch (e) { err = e.message; }
+    const shown = ['home-tour-prompt', 'firstrun-card', 'newuser-preview-banner'].filter(id => els[id].style.display === 'block');
+    return { C, els, store, shown, err };
+  };
+  const a1 = runCards({});
+  H.ok(!!a1.C && !a1.err, '(a) the four welcome-card functions loaded by name and ran — a rename must update this check (' + a1.err + ')');
+  H.ok(a1.shown.length === 1 && a1.shown[0] === 'firstrun-card',
+    '(a) the FIRST Home view, in go(\'home\')\'s order, shows exactly one greeting — the first-run card (shown: ' + JSON.stringify(a1.shown) + ')');
+  const a2 = runCards({ reverse: true });
+  H.ok(a2.shown.length === 1, '(a) and the reverse order shows one too (shown: ' + JSON.stringify(a2.shown) + ')');
+  const a3 = runCards({ store: { totry_firstrun_dismissed: true }, inst: 1, day: 1 });
+  H.ok(a3.shown.length === 1 && a3.shown[0] === 'home-tour-prompt',
+    '(a) calibration: with the checklist dismissed the tour prompt IS shown, alone — so a pass above is not a tour that never renders (shown: ' + JSON.stringify(a3.shown) + ')');
+
+  // (b) days 2-10 installed, and a journey start set back on install day, are newcomers.
+  const b5 = runCards({ store: { totry_firstrun_dismissed: true }, inst: 5, day: 5 });
+  H.ok(b5.els['home-tour-prompt'].style.display === 'block' && !/lot new/.test(b5.els['home-tour-prompt'].innerHTML),
+    '(b) a newcomer on day 5 installed is not told "There’s a lot new in here"');
+  const bJ = runCards({ store: { totry_firstrun_dismissed: true }, inst: 1, day: 401 });
+  H.ok(!/lot new/.test(bJ.els['home-tour-prompt'].innerHTML),
+    '(b) nor is somebody on install day whose journey start reads "Day 401" — how long they have HAD the app decides');
+  const bR = runCards({ store: { totry_firstrun_dismissed: true }, inst: 40, day: 40 });
+  H.ok(/lot new/.test(bR.els['home-tour-prompt'].innerHTML),
+    '(b) calibration: somebody installed 40 days still gets the returning-user offer, so the branch exists and the pass above is real');
+
+  // (c) no "0 of 4" on minute one; the count appears once there is something in it.
+  const c0 = a1.els['firstrun-progress'];
+  H.ok(c0.textContent === '' && c0.style.display === 'none',
+    '(c) the first-run foot is empty and hidden while nothing is done — no "0 of 4 done" (reads ' + JSON.stringify(c0.textContent) + ')');
+  const c1 = runCards({ store: { totry_identity: 'I am becoming steady' } }).els['firstrun-progress'];
+  H.ok(/^1 of 4 done$/.test(c1.textContent) && c1.style.display !== 'none',
+    '(c) calibration: one step done reads "1 of 4 done" and is shown (reads ' + JSON.stringify(c1.textContent) + ')');
+  let coachStep = null;
+  try { coachStep = (a1.C && a1.C.getFirstRunSteps())[3]; } catch (e) { coachStep = null; }
+  H.ok(!!coachStep && /coach/i.test(coachStep.label) && !/already knows/i.test(coachStep.desc),
+    '(c) the coach step does not claim the coach "already knows" a person on day one (desc: ' + JSON.stringify(coachStep && coachStep.desc) + ')');
+  const _frA = H.html.indexOf('<div id="firstrun-card"');
+  const _frB = _frA >= 0 ? H.html.indexOf('id="firstrun-steps"', _frA) : -1;
+  const _frCard = (_frA >= 0 && _frB > _frA) ? H.html.slice(_frA, _frB).replace(/<!--[\s\S]*?-->/g, '') : '';
+  H.ok(_frCard.length > 100 && H.html.indexOf('<div id="firstrun-card"', _frA + 1) < 0, '(c) the first-run card was found once in the shell');
+  H.ok(!/comes alive/i.test(_frCard),
+    '(c) the first-run card does not tell a newcomer the app is empty until they feed it ("comes alive as you use it")');
+
+  // ── (d) Restless, for somebody who has never trained ──
+  const runFeel = function (life) {
+    const appended = [];
+    const document = {
+      createElement: () => ({ className: '', innerHTML: '', setAttribute() {}, querySelector: () => null, focus() {} }),
+      body: { appendChild: (m) => appended.push(m) },
+      querySelectorAll: () => [],
+    };
+    let err = '';
+    try {
+      const F = H.load(['_feelMove'], {
+        document, ls: () => null, closeFeelingDoor: () => {}, getLifeState: () => life,
+        iosRow: (o) => '<row>' + o.title + '</row>', iosList: (a) => a.join(''), _escFew: (x) => String(x),
+      });
+      F._feelMove('restless');
+    } catch (e) { err = e.message; }
+    const html = appended.length ? appended[0].innerHTML : '';
+    const m = html.match(/<button class="btn primary" onclick="([^"]*)">([^<]*)<\/button>/);
+    return { err, onclick: m ? m[1] : '', cta: m ? m[2] : '' };
+  };
+  const NONE = { training: { sessions7: 0, sessions14: 0, daysTrained7: 0, lastTitle: null, tonnage7: 0 } };
+  const dN = runFeel(NONE);
+  H.ok(!dN.err && dN.onclick.length > 0, '(d) _feelMove(\'restless\') rendered its primary button (' + dN.err + ')');
+  H.ok(/theRelease\(/.test(dN.onclick) && !/go\('train'\)/.test(dN.onclick),
+    '(d) for somebody who has never trained, Restless ends at the Release, not at Train’s set-up form (onclick: ' + dN.onclick.slice(0, 60) + ')');
+  // The attribute has to COMPILE and hand the Release a sentence — a quote in the copy would close it.
+  let did = null;
+  try { new Function('closeModal', 'theRelease', dN.onclick).call(null, () => {}, (o) => { did = o && o.did; }); } catch (e) { did = 'THREW ' + e.message; }
+  H.ok(typeof did === 'string' && did.length > 20 && !/^THREW/.test(did),
+    '(d) and the onclick compiles and passes the Release what they did (' + JSON.stringify(did) + ')');
+  const dT = runFeel({ training: { sessions7: 0, sessions14: 0, daysTrained7: 0, lastTitle: 'Push', tonnage7: 0 } });
+  H.ok(/go\('train'\)/.test(dT.onclick) && /workout/i.test(dT.cta),
+    '(d) calibration: somebody with ANY training history (a last session, nothing this fortnight) still gets the workout log (cta: ' + JSON.stringify(dT.cta) + ')');
+
+  // ── (e) Home at 23:00 on day one offers no ritual ──
+  const runGreet = function (hour, inst) {
+    const fixed = new Date(2026, 10, 19, hour, 0, 0).getTime();
+    class FakeDate extends Date { constructor(...a) { if (a.length) super(...a); else super(fixed); } static now() { return fixed; } }
+    const els = {};
+    ['home-greeting-hi', 'home-greeting-sub', 'home-greeting-action', 'hero-identity-text', 'hero-identity', 'home-verse-section'].forEach(id => { els[id] = mkEl(); });
+    els['home-greeting-action'].style.display = '';
+    const document = { getElementById: (id) => els[id] || null, querySelector: () => null, querySelectorAll: () => [], body: { setAttribute() {} } };
+    let err = '';
+    try {
+      const G = H.load(['renderHomeGreeting'], {
+        Date: FakeDate, document, ls: () => null, ritualLog: () => [], faithLevel: () => 'full',
+        daysInstalled: () => inst,
+      });
+      G.renderHomeGreeting();
+    } catch (e) { err = e.message; }
+    const act = els['home-greeting-action'];
+    return { err, shown: act.style.display !== 'none', act: act.dataset.act || '' };
+  };
+  const e1 = runGreet(23, 1);
+  H.ok(!e1.err && !e1.shown, '(e) at 23:00 on day one the Home hero offers no ritual button (' + e1.err + ' act=' + e1.act + ')');
+  const e5 = runGreet(23, 5);
+  H.ok(e5.shown && e5.act === 'evening', '(e) calibration: on day five at 23:00 the hero still offers to close the day (act=' + e5.act + ')');
+  const e18 = runGreet(18, 1);
+  H.ok(e18.shown && e18.act === 'evening', '(e) and on day one at 18:00, before the late window, it still does (act=' + e18.act + ')');
+
+  // ── (f) the Coach tab does not claim a story it does not have ──
+  const runCoach = function (inst, everActive, sex) {
+    const el = { textContent: 'UNSET' };
+    const document = { getElementById: (id) => (id === 'coach-intro-desc' ? el : null), querySelectorAll: () => [] };
+    let err = '';
+    try {
+      const K = H.load(['applyCoachVoiceCopy'], {
+        document, userSex: () => sex || null, daysInstalled: () => inst,
+        getLifeState: () => ({ activity: { daysQuiet: null, everActive: !!everActive } }),
+      });
+      K.applyCoachVoiceCopy();
+    } catch (e) { err = e.message; }
+    return { err, t: el.textContent };
+  };
+  const f1 = runCoach(1, false, null);
+  H.ok(!f1.err && f1.t !== 'UNSET' && !/whole story/.test(f1.t),
+    '(f) on day one with nothing logged the Coach tab does not say it has "read your whole story" (' + JSON.stringify(f1.t.slice(0, 70)) + ')');
+  const fF = runCoach(2, false, 'female');
+  H.ok(/\bShe\b/.test(fF.t) && /Ask her anything/.test(fF.t) && !/\bHe\b|\bhim\b/.test(fF.t),
+    '(f) and the early copy still speaks in the voice the person chose (' + JSON.stringify(fF.t.slice(0, 50)) + ')');
+  H.ok(/whole story/.test(runCoach(30, false, null).t) && /whole story/.test(runCoach(3, true, null).t),
+    '(f) calibration: past the first week, or active by the state’s own measure, the established copy is unchanged');
+}
+
 H.report();

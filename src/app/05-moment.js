@@ -222,10 +222,23 @@ function _feelMove(feeling){
   // Offered as a SECOND option, never replacing the move — a breath is the one work always available.
   const BREATH_FOR = { restless:'settle', flat:'energize', anxious:'settle', down:'settle', procrast:'box', angry:'cool', good:'' };
   const s = sets[feeling]; if(!s) return;
+  // RESTLESS SENT A NEWCOMER TO A SET-UP FORM. The move says "20 push-ups right now, or a fast walk"
+  // and its button said "Log a quick workout" → Train — which, for somebody who has never trained
+  // and connected nothing, is "Let's get you training … Set up my training". A person who came in
+  // buzzing was handed a configuration screen. With no training history at all the button sends them
+  // to do the thing instead, through the Release, which is the app's own way of ending a moment and
+  // handing them back to their life. The test is the brief's own "has ever trained" signal, so
+  // anybody with a history still gets the workout log they would expect.
+  if(feeling==='restless'){
+    const _t = life && life.training;
+    const _ever = !!(_t && (_t.sessions7 > 0 || _t.sessions14 > 0 || _t.lastTitle || _t.tonnage7));
+    if(!_ever){ s.cta = 'I’m going now'; s.go = '__move'; }
+  }
   const m = document.createElement('div');
   m.className='modal-bg open';
   let onclick = 'closeModal(this)';
-  if(s.go==='__nextstep') onclick = 'closeModal(this);brotherGuidance()';
+  if(s.go==='__move') onclick = 'closeModal(this);theRelease({did:\'You chose to burn the buzz off instead of scrolling it away — twenty push-ups, or a fast walk round the block.\'})';
+  else if(s.go==='__nextstep') onclick = 'closeModal(this);brotherGuidance()';
   else if(s.go==='__companion') onclick = 'closeModal(this);openCompanionForUrge()';
   else if(s.go==='__bridge') onclick = 'closeModal(this);bridgeToRealHelp(\'heavy\')';
   else if(s.go==='__procrast') onclick = 'closeModal(this);_startSmallestThing()';

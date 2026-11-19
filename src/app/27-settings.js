@@ -574,11 +574,23 @@ function renderTourPrompt(){
   if(!card) return;
   if(ls('totry_tour_offered')){ card.style.display='none'; return; }
   // Don't compete with the multi-day first-run onboarding card.
+  // TWO GREETINGS STACKED ON THE VERY FIRST HOME VIEW. go('home') runs this BEFORE checkPreviewBanner,
+  // which is what renders the first-run card — so on a new person's first Home the card still held its
+  // static display:none, this read "not active", and "Welcome in." rendered under "Welcome. Let's set
+  // the foundation". Two cards introducing the app, one above the other. Ask the card for its real
+  // state first; renderFirstRun is idempotent, so running it twice per Home view costs nothing.
+  if(typeof renderFirstRun==='function'){ try{ renderFirstRun(); }catch(_){ } }
   const firstRunActive = document.getElementById('firstrun-card')?.style.display === 'block';
   if(firstRunActive){ card.style.display='none'; return; }
   // Brand-new user (onboarded this session, barely any history): start the tour automatically once.
-  const dayCount = (typeof getDayCount==='function') ? getDayCount() : 99;
-  const brandNew = dayCount <= 1;
+  // "There's a lot new in here" is written for somebody who was here BEFORE the tour existed. It was
+  // gated on getDayCount() <= 1, so a newcomer on days 2 to 10 — or on day 1 with a journey start set
+  // back to the day they quit (getDayCount honours that override and reads "Day 401") — was told the
+  // app had changed around them. How long they have HAD the app is daysInstalled(), and it is the
+  // first-run card's own ten-day window.
+  const dayCount = (typeof daysInstalled==='function') ? daysInstalled()
+    : (typeof getDayCount==='function') ? getDayCount() : 99;
+  const brandNew = dayCount <= 10;
   if(brandNew){
     // Don't ambush someone with an 8-step tour the second they finish onboarding — that's the whole
     // cathedral before they've touched anything. Land them on the home (hero + the one next step),
@@ -646,7 +658,7 @@ function renderTourStep(){
     // this and cannot always win: step 3's target sits inside the depth fold, and
     // renderHomeDepthFold re-CLOSES that fold when day-1 progressive disclosure has hidden all of
     // its children — which is the state of the only person the tour is ever auto-offered to
-    // (renderTourPrompt offers it when dayCount <= 1). So the person read "Your vices live here
+    // (renderTourPrompt offers it in a newcomer's first days). So the person read "Your vices live here
     // … Tap one the moment you're tempted" over a dimmed screen with no hole in it. A step that
     // declares a target and cannot find one is skipped now, rather than narrated at nothing.
     if(step.find && !rect){
