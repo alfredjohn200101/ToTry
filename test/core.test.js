@@ -2773,8 +2773,10 @@ H.section('a store that is read must be a store that is written')
   const fh = fnBody('faithHabitName');
   H.ok(/Stillness \/ reflection/.test(fh), 'and a secular person gets a secular one');
   H.ok(/Salah/.test(fh) && /Puja/.test(fh) && /Meditation/.test(fh), 'each tradition gets its own name');
+  // initHabits no longer seeds anything at all (see 'habits start empty', where it is DRIVEN), so the
+  // old "the seed uses it" check had stopped meaning anything: it passed on the repair's own call.
   const ih = fnBody('initHabits');
-  H.ok(/faithHabitName\(\)/.test(ih), 'the seed uses it');
+  H.ok(ih.length > 0 && !/\{\s*n\s*:/.test(ih), 'initHabits writes no habit of its own — not a faith habit, not any habit');
   H.ok(!/\{n:'Prayer \/ scripture'/.test(ih), 'and no longer hardcodes prayer for everyone');
 
   // Three keys that were READ and never written. Each one is a feature that could never fire.
@@ -21990,7 +21992,7 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
     const store = Object.assign({}, opts.store || {});
     const ls = (k, v) => (v === undefined ? (k in store ? store[k] : null) : (store[k] = v));
     const els = {};
-    ['home-tour-prompt', 'firstrun-card', 'firstrun-steps', 'firstrun-progress', 'newuser-preview-banner'].forEach(id => { els[id] = mkEl(); });
+    ['home-tour-prompt', 'firstrun-card', 'firstrun-steps', 'firstrun-progress'].forEach(id => { els[id] = mkEl(); });
     const document = { getElementById: (id) => els[id] || null, querySelectorAll: () => [] };
     let C = null, err = '';
     try {
@@ -22005,7 +22007,7 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
       if (opts.reverse) { C.checkPreviewBanner(); C.renderTourPrompt(); }
       else { C.renderTourPrompt(); C.checkPreviewBanner(); }
     } catch (e) { err = e.message; }
-    const shown = ['home-tour-prompt', 'firstrun-card', 'newuser-preview-banner'].filter(id => els[id].style.display === 'block');
+    const shown = ['home-tour-prompt', 'firstrun-card'].filter(id => els[id].style.display === 'block');
     return { C, els, store, shown, err };
   };
   const a1 = runCards({});
@@ -22129,6 +22131,96 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
     '(f) and the early copy still speaks in the voice the person chose (' + JSON.stringify(fF.t.slice(0, 50)) + ')');
   H.ok(/whole story/.test(runCoach(30, false, null).t) && /whole story/.test(runCoach(3, true, null).t),
     '(f) calibration: past the first week, or active by the state’s own measure, the established copy is unchanged');
+}
+
+H.section('habits start empty, and the 60-day preview banner is gone');
+{
+  // WHAT WAS WRONG, both measured on the real functions first:
+  //  (a) initHabits() wrote six habits nobody chose whenever the list was empty, on every launch,
+  //      guests included — and `!habits.length` cannot tell "never had any" from "deleted them all",
+  //      so deleting all six brought all six back on the next launch. The "No habits yet" state was
+  //      unreachable.
+  //  (b) a "New here" banner for the first seven days said the app "comes alive with data" and opened
+  //      a sheet of invented Day-60 progress: a third card introducing the app, selling data to
+  //      somebody who came in through a feeling.
+  // Everything below EXECUTES the real functions: ls/lsArr/loadH/saveH run over a fake localStorage
+  // holding raw JSON strings, exactly as the app's own storage does.
+  const runInit = function (init, trad) {
+    const store = {};
+    Object.keys(init || {}).forEach(k => { store[k] = JSON.stringify(init[k]); });
+    const writes = [];
+    const localStorage = {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { writes.push(k); store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    };
+    let err = '', L = null;
+    try {
+      L = H.load(['ls', 'lsArr', 'loadH', 'saveH', '_habitWeekStamp', 'faithHabitName', 'initHabits'], {
+        localStorage, habits: [], faithTradition: () => trad || 'secular', window: {}, _lsQuotaWarned: 0,
+      });
+      L.initHabits();
+    } catch (e) { err = e.message; }
+    let h = null;
+    try { h = (store.totry_h == null) ? null : JSON.parse(store.totry_h); } catch (_) { h = 'UNPARSEABLE'; }
+    return { L, err, h, hWrites: writes.filter(k => k === 'totry_h').length };
+  };
+
+  const fresh = runInit({});
+  H.ok(!!fresh.L && !fresh.err, '(a) initHabits and the real storage path loaded by name and ran — a rename must update this check (' + fresh.err + ')');
+  H.ok(fresh.h === null && fresh.hWrites === 0,
+    '(a) a brand-new install is given NO habits: totry_h is never written (got ' + JSON.stringify(fresh.h) + ', ' + fresh.hWrites + ' writes)');
+  const emptied = runInit({ totry_h: [] });
+  H.ok(!emptied.err && Array.isArray(emptied.h) && emptied.h.length === 0 && emptied.hWrites === 0,
+    '(a) somebody who deleted every habit keeps an empty list on the next launch — nothing comes back (got ' + JSON.stringify(emptied.h) + ')');
+  const guest = runInit({ totry_guest: true }, 'christianity');
+  H.ok(guest.h === null, '(a) and a guest, in any tradition, is given none either (got ' + JSON.stringify(guest.h) + ')');
+
+  // Calibrations: people who HAVE habits keep exactly what they have, and the old repair still runs.
+  const own = runInit({ totry_h: [{ n: 'Read 10 pages', d: [0, 0, 0, 0, 0, 0, 0], pw: 3 }] });
+  H.ok(Array.isArray(own.h) && own.h.length === 1 && own.h[0].n === 'Read 10 pages' && own.h[0].pw === 3,
+    '(a) calibration: a person’s own list is kept exactly — one habit, its name, its weekly target (got ' + JSON.stringify(own.h) + ')');
+  const OLD = ['Morning ritual done', 'No vice today', 'Stillness / reflection', 'Gym session', 'Hit nutrition goal', 'Evening check-in'];
+  const seededBefore = runInit({ totry_h: OLD.map(n => ({ n, d: [0, 0, 0, 0, 0, 0, 0] })) }, 'christianity');
+  const sbNames = Array.isArray(seededBefore.h) ? seededBefore.h.map(x => x.n) : [];
+  H.ok(sbNames.length === 6 && sbNames.indexOf('Gym session') >= 0 && sbNames.indexOf('Evening check-in') >= 0,
+    '(a) calibration: an install that was seeded before this keeps all six — nothing stored is migrated or removed (got ' + JSON.stringify(sbNames) + ')');
+  H.ok(sbNames[2] === 'Prayer / scripture',
+    '(a) calibration: and the untouched faith habit is still repaired to the tradition chosen since — the repair path runs (got ' + JSON.stringify(sbNames[2]) + ')');
+
+  // ── (b) the banner: no markup, no sheet, and checkPreviewBanner renders only its two cards ──
+  const shell = H.code(H.html.replace(/<!--[\s\S]*?-->/g, ''));
+  H.ok(/id="firstrun-card"/.test(shell) && /function checkPreviewBanner\(/.test(shell),
+    '(b) calibration: the stripped bundle still carries the first-run card and checkPreviewBanner, so the absences below are real');
+  H.ok(!/id="newuser-preview-banner"/.test(shell) && !/Preview Day 60/.test(shell) && !/comes alive with data/i.test(shell),
+    '(b) Home carries no "New here" preview banner — no element, no "Preview Day 60", no "comes alive with data"');
+  H.ok(!/\bshowAppPreview\b/.test(shell) && !/\bdismissPreviewBanner\b/.test(shell) && !/totry_preview_dismissed/.test(shell),
+    '(b) and the Day-60 sheet, its dismiss and its flag are gone from the code — nothing defines or calls them');
+
+  const runBanner = function () {
+    const asked = [], reads = [], els = {};
+    const calls = { firstRun: 0, postRelapse: 0 };
+    const document = {
+      getElementById: (id) => { asked.push(id); return els[id] || (els[id] = { style: { display: 'none' } }); },
+      querySelectorAll: () => [],
+    };
+    let err = '';
+    try {
+      const B = H.load(['checkPreviewBanner'], {
+        document, ls: (k, v) => { if (v === undefined) reads.push(k); return null; },
+        renderFirstRun: () => { calls.firstRun++; }, checkPostRelapse: () => { calls.postRelapse++; },
+        getDayCount: () => 1, daysInstalled: () => 1,
+      });
+      B.checkPreviewBanner();
+    } catch (e) { err = e.message; }
+    const shown = Object.keys(els).filter(id => els[id].style.display === 'block');
+    return { err, asked, reads, calls, shown };
+  };
+  const bn = runBanner();
+  H.ok(!bn.err && bn.calls.firstRun === 1 && bn.calls.postRelapse === 1,
+    '(b) checkPreviewBanner still renders the first-run card and the post-relapse card, once each (' + bn.err + ' ' + JSON.stringify(bn.calls) + ')');
+  H.ok(bn.asked.indexOf('newuser-preview-banner') < 0 && bn.reads.indexOf('totry_preview_dismissed') < 0 && bn.shown.length === 0,
+    '(b) and on a newcomer’s day one it reaches for no banner and shows nothing of its own (asked ' + JSON.stringify(bn.asked) + ', shown ' + JSON.stringify(bn.shown) + ')');
 }
 
 H.report();

@@ -290,18 +290,17 @@ function faithHabitName(){
   if(f === 'buddhism')     return 'Meditation / sutta';
   return 'Stillness / reflection';
 }
+// HABITS START EMPTY. This used to write six habits whenever the list was empty — morning ritual,
+// no vice, the faith habit, gym, nutrition, evening check-in — on EVERY launch, guests included. So a
+// newcomer's first Home was six chores they never chose, and because `!habits.length` cannot tell
+// "never had any" from "deleted them all", somebody who deleted all six got all six back on the next
+// launch: the app overrode a choice the person had made. The "No habits yet" state on Home and in the
+// evening, and the first-run card's "Add your first habits", could never be true. Nothing is written
+// for anybody now. A list that already exists is kept exactly as it is — a seeded one included — and
+// still gets the repair below.
 function initHabits(){
   loadH();
-  if(!habits.length){
-    habits=[
-      {n:'Morning ritual done',d:[0,0,0,0,0,0,0]},
-      {n:'No vice today',d:[0,0,0,0,0,0,0]},
-      {n:faithHabitName(),d:[0,0,0,0,0,0,0]},
-      {n:'Gym session',d:[0,0,0,0,0,0,0]},
-      {n:'Hit nutrition goal',d:[0,0,0,0,0,0,0]},
-      {n:'Evening check-in',d:[0,0,0,0,0,0,0]},
-    ];saveH();
-  } else {
+  if(habits.length){
     // Repair a list that was already seeded before this fix, but ONLY when it is plainly untouched
     // default: the exact seeded name, never ticked once, and a tradition that does not use it. Someone
     // who kept the habit, renamed it, or ticked it kept their own list exactly as it is.

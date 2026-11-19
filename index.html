@@ -3990,23 +3990,11 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 /* Rows written as static markup. iosRow() sets these two spans to blocks inline; markup that cannot
    call it names the same thing here, for the screens in this section only. */
 .auth-help .ios-row-title,.auth-help .ios-row-sub,#onboard .ios-row-title,#onboard .ios-row-sub,
-.fr-preview .ios-row-title,.fr-preview .ios-row-sub,.fr-sheet-list .ios-row-title{display:block}
+.fr-sheet-list .ios-row-title{display:block}
 
-/* ── The Day-60 preview and the what's-new sheet (30-firstrun.js) ─────────────────────────────────
-   Both were hand-painted panels opening with 11px capitals. They are sections now: a header, a card or
-   a list, and the money figures carry the only two meanings a money figure has. */
-.fr-preview{max-height:62vh;overflow-y:auto;margin:4px -4px 14px;padding:0 4px}
-.fr-preview .ios-section{margin-bottom:22px}
-.fr-preview .card{margin-bottom:0}
-.fr-preview .card-say{margin-bottom:0}
-.fr-preview .card-body{margin-bottom:0;color:var(--tx)}
-.fr-preview .ios-row-value.good{color:var(--gr)}
-.fr-preview .ios-row-value.bad{color:var(--re)}
-/* A heatmap is a measure, so it is drawn in the colour that means "showed up", in five steps of one ink. */
-.fr-heat{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
-.fr-heat i{aspect-ratio:1;border-radius:3px;background:var(--gr)}
-.fr-heat .l0{background:var(--fill)}.fr-heat .l1{opacity:.3}.fr-heat .l2{opacity:.5}.fr-heat .l3{opacity:.75}
-.fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px 4px}
+/* ── The what's-new sheet (30-firstrun.js) ─────────────────────────────────────────────────────────
+   It was a hand-painted panel opening with 11px capitals; it is a section now. The Day-60 preview sheet
+   that shared this block was removed with its Home banner, and its rules went with it. */
 .fr-sheet-list{margin-bottom:20px}
 
 /* ═══ SHARED ROLES, DECIDED ONCE ═════════════════════════════════════════════════════════════════
@@ -4889,18 +4877,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <p class="card-body">Start wherever you feel something. When you want to, these four make it yours.</p>
     <div id="firstrun-steps"></div>
     <div class="card-foot" id="firstrun-progress"></div>
-  </div>
-
-  <!-- New user preview banner — shows for first 7 days unless dismissed -->
-  <div id="newuser-preview-banner" class="card home-card" style="display:none">
-    <div class="home-card-top">
-      <div style="flex:1;min-width:0">
-        <div class="eyebrow">New here</div>
-        <div class="card-say">This app comes alive with data. Here’s what it looks like after 60 days.</div>
-      </div>
-      <button class="card-x" onclick="dismissPreviewBanner()" aria-label="Dismiss">×</button>
-    </div>
-    <button class="btn primary" onclick="showAppPreview()">Preview Day 60</button>
   </div>
 
   <!-- YOUR COACH SAYS — it was a purple 11px caps label on a blue-tinted card with a hardcoded
@@ -29212,18 +29188,17 @@ function faithHabitName(){
   if(f === 'buddhism')     return 'Meditation / sutta';
   return 'Stillness / reflection';
 }
+// HABITS START EMPTY. This used to write six habits whenever the list was empty — morning ritual,
+// no vice, the faith habit, gym, nutrition, evening check-in — on EVERY launch, guests included. So a
+// newcomer's first Home was six chores they never chose, and because `!habits.length` cannot tell
+// "never had any" from "deleted them all", somebody who deleted all six got all six back on the next
+// launch: the app overrode a choice the person had made. The "No habits yet" state on Home and in the
+// evening, and the first-run card's "Add your first habits", could never be true. Nothing is written
+// for anybody now. A list that already exists is kept exactly as it is — a seeded one included — and
+// still gets the repair below.
 function initHabits(){
   loadH();
-  if(!habits.length){
-    habits=[
-      {n:'Morning ritual done',d:[0,0,0,0,0,0,0]},
-      {n:'No vice today',d:[0,0,0,0,0,0,0]},
-      {n:faithHabitName(),d:[0,0,0,0,0,0,0]},
-      {n:'Gym session',d:[0,0,0,0,0,0,0]},
-      {n:'Hit nutrition goal',d:[0,0,0,0,0,0,0]},
-      {n:'Evening check-in',d:[0,0,0,0,0,0,0]},
-    ];saveH();
-  } else {
+  if(habits.length){
     // Repair a list that was already seeded before this fix, but ONLY when it is plainly untouched
     // default: the exact seeded name, never ticked once, and a tradition that does not use it. Someone
     // who kept the habit, renamed it, or ticked it kept their own list exactly as it is.
@@ -58765,35 +58740,17 @@ function renderPrayers(){
 }
 
 // ── HOME HABITS WIDGET ────────────────────────────────────────
-// ── NEW-USER PREVIEW BANNER ─────────────────────────────────
-// Shows on home for first 7 days unless dismissed. Opens a preview modal
-// that shows what the app looks like with 60 days of data — without storing
-// any of it in the user's actual data.
+// ── THE FIRST-RUN AND POST-RELAPSE CARDS ON HOME ─────────────
+// This also used to show a "New here" banner for a person's first seven days: "This app comes alive
+// with data. Here's what it looks like after 60 days." with a "Preview Day 60" button into a sheet of
+// invented progress (a heatmap, muscle volume, a debt figure, a coach line quoting a verse). It was the
+// third card introducing the app in the first week, and the one that sold DATA to somebody who came in
+// through a feeling — the opposite of the entry point. Removed, with its sheet (showAppPreview) and its
+// dismiss (dismissPreviewBanner), so the first week speaks in one voice. The name stays because go()'s
+// home branch calls it for the two cards it still renders.
 function checkPreviewBanner(){
   renderFirstRun();
   checkPostRelapse();
-  const banner = document.getElementById('newuser-preview-banner');
-  if(!banner) return;
-  const day = getDayCount();
-  const dismissed = ls('totry_preview_dismissed');
-  // Hide the 60-day preview banner while the first-run checklist is still showing,
-  // so a new user isn't hit with two onboarding cards at once.
-  const firstRunActive = document.getElementById('firstrun-card')?.style.display === 'block';
-  // ...and the same for the tour prompt, which is the OTHER onboarding card. The guard above only
-  // knew about the checklist, so dismissing that left the 60-day preview banner and the welcome
-  // tour on Home together — two cards, 142px and 152px, both introducing the app, stacked.
-  const tourActive = document.getElementById('home-tour-prompt')?.style.display === 'block';
-  if(day <= 7 && !dismissed && !firstRunActive && !tourActive){
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
-}
-
-function dismissPreviewBanner(){
-  ls('totry_preview_dismissed', true);
-  const banner = document.getElementById('newuser-preview-banner');
-  if(banner) banner.style.display = 'none';
 }
 
 // ── FIRST-RUN GUIDANCE ────────────────────────────────────────
@@ -58803,8 +58760,9 @@ function getFirstRunSteps(){
   loadV();
   const identity = ls('totry_identity');
   const habitsArr = ls('totry_h');
-  // NOT "the array is non-empty" — the app seeds six habits itself, so that was true before the person
-  // had done anything. This means "they made this list theirs": added one, or ticked one.
+  // NOT "the array is non-empty" — the app used to seed six habits itself, so that was true before the
+  // person had done anything, and an install from before that stopped still carries them. This means
+  // "they made this list theirs": added one, or ticked one.
   // The old fallback — "any d[] slot is 1" — had the same flaw one step further in: autoTickHabits
   // ticks "No vice today" for a person who has merely NAMED something to fight, so on a brand-new
   // install the step was already ✓ before they had touched a habit at all. A checklist that
@@ -58951,7 +58909,9 @@ function dismissFirstRun(){
   ls('totry_firstrun_dismissed', true);
   const card = document.getElementById('firstrun-card');
   if(card) card.style.display = 'none';
-  checkPreviewBanner();
+  // This called checkPreviewBanner() so that dismissing the checklist revealed the 60-day preview
+  // banner straight away. The banner is gone, and nothing else that call rendered depends on this
+  // card being dismissed, so the call went with it.
 }
 
 // ── POST-RELAPSE COMPASSION ───────────────────────────────────
@@ -59036,75 +58996,6 @@ function checkPostRelapse(){
     msg += (_fall[_tr] || _fall.secular);
     subEl.textContent = msg;
   }
-}
-
-function showAppPreview(){
-  closeOpenSheets();
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-
-  // Build a "Day 60 in the life of a user" preview — all illustrative, never saved.
-  // REBUILT FROM THE COMPONENTS (17 Sep 2026). Seven hand-painted panels, each opening with an 11px
-  // capital label tracked at 0.01em, three in the third grey and two in purple; the identity and the
-  // coach's line in New York ITALIC; the day count in a tinted panel with a purple border written as an
-  // rgba literal; the nutrition figures in four colours, one of them a hex no theme could reach; and
-  // the heatmap in a gold that is the brand's signature, not a measure of anything. It is the same
-  // sample, said the way the real screens now say it: section headers, cards, stat tiles and rows.
-  // Every string here is an app-authored constant, so the markup is as trusted as it was.
-  const cur = curSym();
-  const row = (title, value, tone) =>
-    '<div class="ios-row"><span class="ios-row-body"><span class="ios-row-title">' + title + '</span></span>' +
-    '<span class="ios-row-value' + (tone ? ' ' + tone : '') + '">' + value + '</span></div>';
-  const irow = (icon, tone, title, sub) =>
-    '<div class="ios-row has-icon"><span class="ios-row-icon tone-' + tone + '">' + svgIcon(icon, 18) + '</span>' +
-    '<span class="ios-row-body"><span class="ios-row-title">' + title + '</span><span class="ios-row-sub">' + sub + '</span></span></div>';
-  const stat = (label, value, unit) =>
-    '<div class="ios-stat"><div class="ios-stat-label">' + label + '</div><div class="ios-stat-value">' + value +
-    (unit ? '<span class="ios-stat-unit">' + unit + '</span>' : '') + '</div></div>';
-  const heat = Array.from({length:13*7}, () => '<i class="l' + Math.floor(Math.random()*5) + '"></i>').join('');
-
-  m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<h3>What Day 60 looks like</h3>' +
-    '<div class="modal-sub">This is a sample of what your app will look like once you’ve been logging for 2 months. None of this is real — it’s just so you can see what you’re building toward.</div>' +
-    '<div class="fr-preview">' +
-
-      '<div class="ios-section"><div class="ios-header">Who you are becoming</div>' +
-        '<div class="card"><div class="card-say">Disciplined, present, faithful, strong</div>' +
-        '<div class="card-foot">Day 60 · 38 days clean from weed</div></div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Your coach says</div>' +
-        '<div class="card"><div class="card-body">Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13.</div></div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Show-up heatmap</div>' +
-        '<div class="card"><div class="fr-heat" aria-hidden="true">' + heat + '</div>' +
-        '<div class="card-foot">Showed up 87% of days</div></div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Weekly muscle volume</div><div class="ios-list">' +
-        row('Chest', '18.4k kg · 2d ago') + row('Back', '22.1k kg · today') +
-        row('Legs', '31.8k kg · 1d ago') + row('Shoulders', '8.2k kg · 3d ago') +
-      '</div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Today’s nutrition</div><div class="ios-stats">' +
-        stat('Calories', '2,104') + stat('Protein', '178', 'g') + stat('Fibre', '31', 'g') + stat('Vitamin C', '93', '%') +
-      '</div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Patterns from your fights</div><div class="ios-list">' +
-        irow('target', 'orange', 'Top trigger: “boredom”', '6 times · 67% won') +
-        irow('calendar', 'red', 'Hardest day: Fridays', '8 fights · 50% won') +
-        irow('clock', 'indigo', 'Peak: late night', '9 fights · 78% won') +
-      '</div></div>' +
-
-      '<div class="ios-section"><div class="ios-header">Money</div><div class="ios-list">' +
-        row('Debt remaining', cur + '6,840', 'bad') + row('Saved from vices', '+' + cur + '432', 'good') +
-        row('USA trip fund', cur + '1,840 of ' + cur + '8,000') +
-      '</div></div>' +
-
-      '<div class="fr-preview-close">Your version of this fills in one log at a time. Start with one thing today.</div>' +
-    '</div>' +
-    '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)">Start my Day 1</button>' +
-    '<button class="btn quiet" onclick="closeModal(this)">Close preview</button>' +
-  '</div>';
-  document.body.appendChild(m);
 }
 
 // ── TESTER SETUP CARD ─────────────────────────────────────────

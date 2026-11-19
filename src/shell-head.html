@@ -3990,23 +3990,11 @@ input.row-field[type="time"]:not([type="checkbox"]):not([type="radio"]):not([typ
 /* Rows written as static markup. iosRow() sets these two spans to blocks inline; markup that cannot
    call it names the same thing here, for the screens in this section only. */
 .auth-help .ios-row-title,.auth-help .ios-row-sub,#onboard .ios-row-title,#onboard .ios-row-sub,
-.fr-preview .ios-row-title,.fr-preview .ios-row-sub,.fr-sheet-list .ios-row-title{display:block}
+.fr-sheet-list .ios-row-title{display:block}
 
-/* ── The Day-60 preview and the what's-new sheet (30-firstrun.js) ─────────────────────────────────
-   Both were hand-painted panels opening with 11px capitals. They are sections now: a header, a card or
-   a list, and the money figures carry the only two meanings a money figure has. */
-.fr-preview{max-height:62vh;overflow-y:auto;margin:4px -4px 14px;padding:0 4px}
-.fr-preview .ios-section{margin-bottom:22px}
-.fr-preview .card{margin-bottom:0}
-.fr-preview .card-say{margin-bottom:0}
-.fr-preview .card-body{margin-bottom:0;color:var(--tx)}
-.fr-preview .ios-row-value.good{color:var(--gr)}
-.fr-preview .ios-row-value.bad{color:var(--re)}
-/* A heatmap is a measure, so it is drawn in the colour that means "showed up", in five steps of one ink. */
-.fr-heat{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
-.fr-heat i{aspect-ratio:1;border-radius:3px;background:var(--gr)}
-.fr-heat .l0{background:var(--fill)}.fr-heat .l1{opacity:.3}.fr-heat .l2{opacity:.5}.fr-heat .l3{opacity:.75}
-.fr-preview-close{font-size:15px;line-height:1.4;letter-spacing:-0.004em;color:var(--tx2);padding:0 16px 4px}
+/* ── The what's-new sheet (30-firstrun.js) ─────────────────────────────────────────────────────────
+   It was a hand-painted panel opening with 11px capitals; it is a section now. The Day-60 preview sheet
+   that shared this block was removed with its Home banner, and its rules went with it. */
 .fr-sheet-list{margin-bottom:20px}
 
 /* ═══ SHARED ROLES, DECIDED ONCE ═════════════════════════════════════════════════════════════════
@@ -4889,18 +4877,6 @@ input[type="range"]{background:transparent !important;border:0 !important;box-sh
     <p class="card-body">Start wherever you feel something. When you want to, these four make it yours.</p>
     <div id="firstrun-steps"></div>
     <div class="card-foot" id="firstrun-progress"></div>
-  </div>
-
-  <!-- New user preview banner — shows for first 7 days unless dismissed -->
-  <div id="newuser-preview-banner" class="card home-card" style="display:none">
-    <div class="home-card-top">
-      <div style="flex:1;min-width:0">
-        <div class="eyebrow">New here</div>
-        <div class="card-say">This app comes alive with data. Here’s what it looks like after 60 days.</div>
-      </div>
-      <button class="card-x" onclick="dismissPreviewBanner()" aria-label="Dismiss">×</button>
-    </div>
-    <button class="btn primary" onclick="showAppPreview()">Preview Day 60</button>
   </div>
 
   <!-- YOUR COACH SAYS — it was a purple 11px caps label on a blue-tinted card with a hardcoded
