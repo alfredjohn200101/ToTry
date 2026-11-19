@@ -21291,4 +21291,178 @@ H.section('the coach gets the whole-person read: five brief lines, nothing more,
   }
 }
 
+// 32. THE WEEK'S GOAL REACHES THE BRAIN (v674). The Goals screen was the only reader of totry_goals:
+//     getLifeState, the brief, the coach, the weekly read and the next step never asked what somebody
+//     had set out to do this week. goalsForBrain hands it on in their own words, scrubbed at the
+//     reader (the store is replayed to a model and on Home), one line out (buildCtx keeps the brief's
+//     lines by PREFIX). Every function below is the REAL one, extracted by name; the clock is a fixed
+//     instant and the zone is PINNED, because "last week" is a calendar question and the host's own
+//     zone cannot be the test's zone.
+H.section('the week\'s goal reaches the brain, the coach and the done card — scrubbed, one line, never a score');
+{
+  const _tzWas = process.env.TZ;
+  process.env.TZ = 'Australia/Melbourne';
+  let FIXED = new Date(2026, 10, 18, 15, 0, 0).getTime();          // Wed 18 Nov 2026, 15:00 local
+  class FD extends Date {
+    constructor(...a){ if(a.length) super(...a); else super(FIXED); }
+    static now(){ return FIXED; }
+  }
+  const SEED = {};
+  // A JSON round trip, like the real ls(): the array defect ONLY exists through JSON.stringify, which
+  // drops string-keyed properties of an array. A stub that kept the live object could not see it.
+  const ls = function (k, v) {
+    if (arguments.length > 1) { SEED[k] = JSON.stringify(v); return v; }
+    return (k in SEED) ? JSON.parse(SEED[k]) : null;
+  };
+  let ok = true, CI = null, G = null, B = null, NS = null, C = null;
+  try {
+    CI = H.load(['crisisInAny', 'detectCrisis']);
+    G = H.load(['goalsForBrain', 'getCurrentPeriodKey', '_goalsStore', 'getGoal', 'setGoal'],
+      { ls, crisisInAny: CI.crisisInAny, Date: FD, Map });
+    B = H.load(['lifeStateBrief'], {
+      _unitsNote: () => '', nutGentle: () => false, _gentleWord: () => null,
+      wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$', feelingPattern: () => null, fastSeasonNow: () => null,
+    });
+  } catch (e) { ok = false; H.ok(false, 'the goals-to-brain section could not load its functions by name: ' + e.message); }
+  if (ok) {
+    H.ok(new FD().getTimezoneOffset() !== 0, 'calibration: the zone is pinned to a non-UTC one');
+    const wk = G.getCurrentPeriodKey('weekly');
+    H.eq(wk, 'w-2026-47', 'calibration: Wednesday 18 Nov 2026 is ISO week 47');
+    const store = {};
+    store[wk] = 'Train four times.\nPhone charges in the kitchen.\n\nCall Mum on Sunday.';
+    store['w-2026-46'] = 'Finish the essay';
+    store['yr-2026'] = 'Debt-free.';
+    SEED.totry_goals = JSON.stringify(store);
+    const g = G.goalsForBrain();
+    // (a) this week and last week, in their own words, each on ONE line.
+    H.eq(g, { week: 'Train four times. · Phone charges in the kitchen. · Call Mum on Sunday.', lastWeek: 'Finish the essay' },
+      '(a) goalsForBrain returns this week and last week, a multi-line goal joined onto one line');
+
+    // (b) "last week" is the calendar's last week, at the one instant the naive arithmetic gets wrong:
+    //     00:30 on the Monday after Melbourne's clocks went forward (4 Oct 2026). 7 x 24h back from
+    //     there is 23:30 on SUNDAY 27 Sep, which is the week before last.
+    FIXED = new Date(2026, 9, 5, 0, 30, 0).getTime();
+    H.eq(G.getCurrentPeriodKey('weekly'), 'w-2026-41', '(b) calibration: Monday 5 Oct 2026 00:30 is ISO week 41');
+    H.eq(G.getCurrentPeriodKey('weekly', FIXED - 7 * 864e5), 'w-2026-39',
+      '(b) calibration: naive now - 7x24h lands in week 39 here, so this instant really is the trap');
+    SEED.totry_goals = JSON.stringify({ 'w-2026-40': 'Last week, honestly', 'w-2026-39': 'The week before' });
+    H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Last week, honestly' },
+      '(b) across a DST change, last week is week 40 — the calendar\'s last week, not 168 hours ago');
+    // and across the year: Monday 4 Jan 2027 is ISO week 1, and its last week is week 53 of 2026.
+    FIXED = new Date(2027, 0, 4, 9, 0, 0).getTime();
+    SEED.totry_goals = JSON.stringify({ 'w-2026-53': 'Rest over Christmas' });
+    H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Rest over Christmas' }, '(b) last week crosses the year boundary');
+    FIXED = new Date(2026, 10, 18, 15, 0, 0).getTime();
+
+    // (c) scrubbed at the reader — both directions, and per LINE.
+    const goalWith = text => { const s = {}; s[wk] = text; SEED.totry_goals = JSON.stringify(s); return G.goalsForBrain(); };
+    H.eq(goalWith('i want to kill myself'), null, '(c) a stored disclosure is never handed on');
+    H.ok(CI.crisisInAny(['i cant go on\nwalked the dog']) === null && !!CI.crisisInAny(['i cant go on']),
+      '(c) calibration: judged WHOLE, this two-line goal is null; its first line alone is a disclosure');
+    H.eq(goalWith('i cant go on\nwalked the dog'), null,
+      '(c) a disclosure on one line of a goal is caught — the goal is judged line by line, not only whole');
+    H.eq(goalWith('nothing left in the tank by friday\ntake my life in a new direction'),
+      { week: 'nothing left in the tank by friday · take my life in a new direction', lastWeek: '' },
+      '(c) ordinary goals in this app\'s own vocabulary are kept — the scrub does not cry wolf');
+    const longG = goalWith(('Walk every morning before work and read one chapter ').repeat(8)).week;
+    H.ok(longG.length <= 281 && /…$/.test(longG) && !/\s…$/.test(longG),
+      '(c) a long goal is cut at a word, under 280 characters, with an ellipsis');
+    SEED.totry_goals = JSON.stringify({ 'yr-2026': 'Debt-free.' });
+    H.eq(G.goalsForBrain(), null, '(c) no weekly goal this week or last: nothing is handed on');
+
+    // (d) the store is a MAP. The demo seeder wrote an array, and setGoal's string key on an array
+    //     is dropped by JSON.stringify, so the goal vanished behind a "Saved" toast.
+    SEED.totry_goals = JSON.stringify([{ id: 1, name: 'Emergency fund', target: 5000 }]);
+    G.setGoal('weekly', 'Ring Dad on Thursday');
+    H.eq(G.getGoal('weekly'), 'Ring Dad on Thursday', '(d) a goal set over an array store survives the JSON round trip');
+
+    // (e) the brief: one line, a fixed prefix whichever week is present, and the instruction with it.
+    const person = goals => ({
+      training: {}, nutrition: {}, body: {}, soul: {}, fight: {}, activity: { daysQuiet: 0 }, goals: goals,
+    });
+    const PFX = 'Their own goals, in their words';
+    const lineOf = b => b.split('\n').filter(l => l.indexOf(PFX) === 0);
+    const both = B.lifeStateBrief(person({ week: 'Train four times. · Call Mum on Sunday.', lastWeek: 'Finish the essay' }));
+    const bl = lineOf(both);
+    H.eq(bl.length, 1, '(e) the brief carries exactly one goals line');
+    H.ok(bl.length === 1 && bl[0].indexOf('this week "Train four times. · Call Mum on Sunday."') >= 0
+      && bl[0].indexOf('last week "Finish the essay"') >= 0, '(e) with both weeks, in their own words');
+    H.ok(bl.length === 1 && /NEVER score them against it/.test(bl[0]) && /never imply they are behind/.test(bl[0]),
+      '(e) and the goals line carries its own "NEVER score" instruction');
+    const onlyLast = lineOf(B.lifeStateBrief(person({ week: '', lastWeek: 'Finish the essay' })));
+    H.ok(onlyLast.length === 1 && onlyLast[0].indexOf('this week') < 0,
+      '(e) with only last week, the line keeps the same prefix (buildCtx finds it) and invents no "this week"');
+    H.eq(lineOf(B.lifeStateBrief(person(null))).length, 0, '(e) no goals, no line');
+
+    // (f) the coach gets that line verbatim, and getLifeState carries the real reader's output.
+    try {
+      const GL = H.load(['getLifeState', 'lifeStateBrief', 'goalsForBrain', 'getCurrentPeriodKey'], {
+        ls, crisisInAny: CI.crisisInAny, Date: FD, Map, getValues: () => null, valLabel: x => x,
+        _unitsNote: () => '', nutGentle: () => false, wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$',
+      });
+      const s0 = {}; s0[wk] = 'Train four times.\nCall Mum on Sunday.'; SEED.totry_goals = JSON.stringify(s0);
+      const life = GL.getLifeState();
+      H.eq(life.goals, { week: 'Train four times. · Call Mum on Sunday.', lastWeek: '' }, '(f) getLifeState carries the goal from the real reader');
+      const gline = lineOf(life.brief);
+      // The whole goal AND its instruction on the SAME line: a newline inside the goal would leave a
+      // line that starts with the prefix but has lost both its tail and its "NEVER score" — values.why's
+      // defect, which a bare line count passes.
+      H.ok(gline.length === 1 && gline[0].indexOf('Call Mum on Sunday') >= 0 && /NEVER score them against it/.test(gline[0]),
+        '(f) and the real brief carries the whole goal and its instruction on ONE line');
+      C = H.load(['buildCtx', 'plural', 'latestByDate'], {
+        ls, identityForPrompt: () => '', getLifeState: () => life,
+        brotherSys: () => 'SYS\n', sharedWisdomNote: () => '', nutPromptBlock: () => '- Calories: 900',
+        loadV() {}, loadF() {}, loadH() {}, vices: [], debts: [], habits: [],
+        userName: 'Sam', getStreak: () => 3, getUserSplit: () => [{ focus: 'Push' }], tIdx: () => 0,
+        todaysNutGoals: () => ({ cal: 2400, pro: 180 }), viceCleanDays: () => 0, waterGoalMl: () => 2500,
+        safeMornings: () => [], ritualLog: () => [], readinessForAI: x => x, computeReadiness: () => null,
+        getMobilityProfile: () => null, dFmt: x => x + 'km', wFmt: x => x + 'kg', wDelta: x => x + 'kg',
+        curSym: () => '$', getDayCount: () => 64, _unitsNote: () => '', nutGentle: () => false,
+      });
+      H.ok(gline.length === 1 && C.buildCtx().indexOf(gline[0]) >= 0, '(f) the brief\'s goals line reaches the coach verbatim');
+    } catch (e) { H.ok(false, '(f) the getLifeState/buildCtx half could not load by name: ' + e.message); }
+
+    // (g) the done card says it back; an active step does not.
+    try {
+      let trained = [];
+      SEED.totry_prayers = JSON.stringify([{ ts: new FD().toISOString() }]);
+      NS = H.load(['getNextStep', 'ritualLog', 'goalsForBrain', 'getCurrentPeriodKey'], {
+        ls, crisisInAny: CI.crisisInAny, Date: FD, Map, habits: [], loadH() {}, tIdx: () => 2,
+        getUnifiedTraining: () => trained,
+      });
+      const s1 = {}; s1[wk] = 'Train four times.\nCall Mum on Sunday.'; SEED.totry_goals = JSON.stringify(s1);
+      const active = NS.getNextStep();
+      H.ok(!active.done && active.action === 'train', '(g) calibration: untrained at 15:00, the step is "log today\'s training"');
+      H.ok(JSON.stringify(active).indexOf('Call Mum') < 0, '(g) an ACTIVE step never carries the goal — it is not one more thing to do');
+      trained = [{ ts: new FD().toISOString() }];
+      const done = NS.getNextStep();
+      const want = G.goalsForBrain().week;
+      H.ok(done.done === true, '(g) calibration: trained and prayed, the day is done');
+      H.eq(done.sub, 'Rest. This week you set out to: “' + want + '”', '(g) the done card says the week\'s goal back, after "Rest"');
+      SEED.totry_goals = JSON.stringify({});
+      H.eq(NS.getNextStep().sub, 'Rest, or revisit anything you like.', '(g) with no goal, the done card is unchanged');
+      const s2 = {}; s2[wk] = 'i want to kill myself'; SEED.totry_goals = JSON.stringify(s2);
+      H.eq(NS.getNextStep().sub, 'Rest, or revisit anything you like.', '(g) a stored disclosure never reaches the done card');
+    } catch (e) { H.ok(false, '(g) getNextStep could not load or run by name: ' + e.message); }
+  }
+  if (_tzWas === undefined) delete process.env.TZ; else process.env.TZ = _tzWas;
+
+  // (h) the demo seeder writes the goals store as a MAP, and the money goal where its shape belongs.
+  let demo = '';
+  try { demo = H.code(H.extractFn('loadDemoData')); } catch (e) { demo = ''; }
+  H.ok(demo.length > 2000, '(h) loadDemoData was found by name — a rename must update this check, not drop it');
+  const seeds = demo.split("ls('totry_goals',").slice(1).map(s => s.replace(/^\s+/, '').charAt(0));
+  H.ok(seeds.length >= 1 && seeds.every(c => c === '{'), '(h) every demo write of totry_goals is an object, never an array (got ' + JSON.stringify(seeds) + ')');
+  H.ok(/ls\('totry_finance_goals',\s*\[\{id:1,name:'Emergency fund'/.test(demo), '(h) the demo money goal is seeded into totry_finance_goals');
+
+  // (i) both privacy copies say the week's goal is in what is sent — the brief enumerates it now.
+  let pol = '';
+  try { pol = H.extractFn('showPrivacyPolicy'); } catch (e) { pol = ''; }
+  let page = '';
+  try { page = require('fs').readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8'); } catch (e) { page = ''; }
+  const NAMED = /why this matters to you, what you wrote that you set out to do this week and last week, and <strong>the text of your few most recent journal entries/;
+  H.ok(NAMED.test(pol), '(i) the in-app privacy policy names the week\'s goal in the context the coach is sent');
+  H.ok(NAMED.test(page), '(i) privacy.html names it too — the two copies are read by different people and must not disagree');
+}
+
 H.report();

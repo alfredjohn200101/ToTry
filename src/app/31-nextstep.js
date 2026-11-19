@@ -134,7 +134,18 @@ function getNextStep(){
                action:'reflect' };
     }
   }catch(_){ }
-  return { text:'You\u2019ve done today\u2019s work', sub:'Rest, or revisit anything you like.', action:'reflect', done:true };
+  // 6. Done. If they set themselves something for this week, say it back to them here and ONLY here \u2014
+  //    after "Rest", never as a step. On an active step it would be one more thing to do; on the done
+  //    card it is their own words, remembered. Scrubbed one-line text from goalsForBrain, and both
+  //    sinks are text (renderNextStep uses textContent, brotherGuidance escapes `<`).
+  let _goalSub = '';
+  try{
+    const _gb = (typeof goalsForBrain === 'function') ? goalsForBrain() : null;
+    let _gl = (_gb && _gb.week) ? String(_gb.week) : '';
+    if(_gl.length > 90) _gl = _gl.slice(0, 90).replace(/\s+\S*$/, '').replace(/[\s\u00b7,;:]+$/, '') + '\u2026';
+    if(_gl) _goalSub = 'Rest. This week you set out to: \u201c' + _gl + '\u201d';
+  }catch(_){ _goalSub = ''; }
+  return { text:'You\u2019ve done today\u2019s work', sub:_goalSub || 'Rest, or revisit anything you like.', action:'reflect', done:true };
 }
 // The home's time-aware greeting — this is what makes the home FEEL different through the day.
 // Morning: invite setting the day. Midday/afternoon: a light check-in. Evening: invite closing it.

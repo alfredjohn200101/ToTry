@@ -34,8 +34,9 @@ function setReflectTab(tab){
 }
 
 // ── GOAL HIERARCHY ───────────────────────────────────────────
-function getCurrentPeriodKey(level){
-  const now = new Date();
+// `when` is optional and only ever a past moment: goalsForBrain asks for LAST week's key with it.
+function getCurrentPeriodKey(level, when){
+  const now = when ? new Date(when) : new Date();
   const year = now.getFullYear();
   if(level === 'yearly') return 'yr-' + year;
   if(level === 'quarterly'){
@@ -54,14 +55,62 @@ function getCurrentPeriodKey(level){
   }
   return '';
 }
+// THE STORE IS A MAP OF PERIOD KEY → TEXT, AND ONLY A MAP. `|| {}` catches a store that is MISSING
+// and not one that is the wrong shape: the demo seeder wrote an ARRAY here (a money goal that belongs
+// in totry_finance_goals), setGoal then put 'w-2026-47' on that array as a string property, and
+// JSON.stringify drops string properties of an array — so the goal vanished while the toast said
+// "Saved". Measured. One reader, one shape out.
+function _goalsStore(){
+  const g = ls('totry_goals');
+  return (g && typeof g === 'object' && !Array.isArray(g)) ? g : {};
+}
 function getGoal(level){
-  const goals = ls('totry_goals') || {};
+  const goals = _goalsStore();
   return goals[getCurrentPeriodKey(level)] || '';
 }
 function setGoal(level, text){
-  const goals = ls('totry_goals') || {};
+  const goals = _goalsStore();
   goals[getCurrentPeriodKey(level)] = text;
   ls('totry_goals', goals);
+}
+// THE WEEK'S GOAL, FOR THE BRAIN (v674). The Goals screen was the only reader of this store: nothing
+// in getLifeState, the brief, the next step or the weekly read ever asked what somebody had set out
+// to do this week, so a goal said once was never heard again — a tracker field, in an app whose soul
+// statement is that integration IS the product. This hands it on, in their own words.
+// SCRUBBED AT THE READER, because it is replayed — to a model and on Home. saveGoalEdit has been
+// gated since 12 Oct, and gating the write does not reach what was written before that, or what
+// arrives by sync: getTGT's and identityForPrompt's shape, fixed the same way. Judged as a whole AND
+// line by line, because the detector was measured over single sentences and a goal is a short list:
+// "i cant go on\nwalked the dog" returns NULL whole and 'suicide' per line. Over-scrubbing here only
+// means a goal is not quoted back, which is the cheap direction.
+// ONE LINE OUT: buildCtx keeps the brief's lines by PREFIX, so a newline inside a goal would split the
+// brief's line and cost it its "NEVER score" instruction — values.why's defect, not repeated here.
+function goalsForBrain(){
+  try{
+    const g = ls('totry_goals');
+    if(!g || typeof g !== 'object' || Array.isArray(g)) return null;
+    // getLifeState runs many times a render and the detector costs ~2ms for a three-line goal, so the
+    // verdict is remembered per TEXT (it depends on nothing else). A Map, because a plain object
+    // answers `'constructor' in {}` with true.
+    if(!(goalsForBrain._m instanceof Map) || goalsForBrain._m.size > 8) goalsForBrain._m = new Map();
+    const memo = goalsForBrain._m;
+    const clean = function(raw){
+      const t = String(raw || '').trim();
+      if(!t) return '';
+      if(memo.has(t)) return memo.get(t);
+      const lines = t.split(/\n+/).map(function(l){ return l.trim(); }).filter(Boolean);
+      // Fails CLOSED: with no detector to ask, nothing typed is replayed.
+      const hit = (typeof crisisInAny === 'function') ? !!crisisInAny([t].concat(lines)) : true;
+      let one = hit ? '' : lines.join(' · ').replace(/\s+/g, ' ');
+      if(one.length > 280) one = one.slice(0, 280).replace(/\s+\S*$/, '') + '…';
+      memo.set(t, one);
+      return one;
+    };
+    const m = new Date(); m.setHours(12, 0, 0, 0); m.setDate(m.getDate() - 7);   // midday, by calendar day: DST-safe
+    const week = clean(g[getCurrentPeriodKey('weekly')]);
+    const lastWeek = clean(g[getCurrentPeriodKey('weekly', m)]);
+    return (week || lastWeek) ? { week: week, lastWeek: lastWeek } : null;
+  }catch(_){ return null; }
 }
 function editGoal(level){
   const labels = {yearly: 'this year', quarterly: 'this quarter', monthly: 'this month', weekly: 'this week'};

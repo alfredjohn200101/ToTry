@@ -783,6 +783,9 @@ function getLifeState(){
     // PREFIX, so a newline in the why split this line in two and the coach kept the why while losing
     // its "NEVER score" instruction.
     values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:(o.why && typeof crisisInAny==='function' && crisisInAny([o.why])) ? '' : String(o.why||'').replace(/\s+/g,' ') }:null; }catch(_){ return null; } })(),
+    // What they set out to do THIS week (and last), in their own words — scrubbed, one line each.
+    // goalsForBrain lives in 29-goals-prayer.js; a function hoists across the one shared scope.
+    goals: (typeof goalsForBrain==='function') ? goalsForBrain() : null,
     sex: (typeof userSex==='function') ? userSex() : null,
     // GIVING WAS MISSING FROM THE BRAIN. Every surface reads this object and none of them could tell
     // whether this person gives at all — in an app whose soul statement is "Integration IS the
@@ -945,6 +948,15 @@ function lifeStateBrief(s){
     lines.push('What THEY said matters most, in their order: '+s.values.top.map(function(v,i){ return (i+1)+' '+v; }).join(', ')+'.'
       + (s.values.why?(' In their own words about the first one: "'+s.values.why+'"'):'')
       + ' Use THEIR words, not yours, and ask whether a choice moves toward these. NEVER score, grade or rank them against their values, and never imply they are failing them.');
+  }
+  // Their own goal for the week, the same way: a mirror, never a judge. The prefix is fixed whichever
+  // of the two weeks is present, because buildCtx keeps this line BY PREFIX.
+  if(s.goals && (s.goals.week || s.goals.lastWeek)){
+    const _gp = [];
+    if(s.goals.week) _gp.push('this week "'+s.goals.week+'"');
+    if(s.goals.lastWeek) _gp.push('last week "'+s.goals.lastWeek+'"');
+    lines.push('Their own goals, in their words: '+_gp.join('; ')+'.'
+      + ' Use THEIR words, and you may ask whether a choice moves toward it. NEVER score them against it, never count what is left undone, and never imply they are behind or failing it.');
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
   if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+Math.round(s.money.totalDebt).toLocaleString()+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+Math.round(s.money.reclaimed).toLocaleString()+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
@@ -1356,12 +1368,14 @@ function buildCtx(){
   // THE COACH NEVER GOT THE WHOLE-PERSON READ (v674). buildCtx builds its own context and read none
   // of getLifeState, so the one voice a person types to at 11pm did not know a fast is sacred, that a
   // luteal week is physiology, what they said matters most, that they give (or that their giving is
-  // hidden on purpose), or what keeps bringing them here. These five lines are taken from the brief
+  // hidden on purpose), or what keeps bringing them here. These lines are taken from the brief
   // VERBATIM, by prefix, so each has one source and carries its own instruction. Everything else in
   // the brief is deliberately NOT taken — buildCtx or brotherSys already states it.
+  // The sixth, the week's goal in their own words, was added with goalsForBrain (v674): the coach is
+  // the voice somebody types to about their week, and it was the one surface the goal could not reach.
   const _depthCtx = (function(){ try{
     const _b = (typeof getLifeState==='function') ? (getLifeState().brief || '') : '';
-    const _keep = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them'];
+    const _keep = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them', 'Their own goals, in their words'];
     const _dl = _b.split('\n').filter(function(l){ return _keep.some(function(p){ return l.indexOf(p) === 0; }); });
     return _dl.length ? '\n\nWHAT ELSE YOU KNOW ABOUT THEM (the same read of the whole person the rest of the app uses — follow every instruction in these lines exactly):\n' + _dl.join('\n') : '';
   }catch(_){ return ''; } })();
