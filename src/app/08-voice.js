@@ -195,7 +195,27 @@ function _replyNamesAHuman(reply){
   const _HUMAN_KIND = /\b(?:helpline|crisis line|counsellor|counselor|therapist|doctor|gp|priest|imam|rabbi|chaplain|emergency services|emergency room)\b/g;
   const _HUMAN_NEG = /\b(?:not|no|never|isn'?t|ain'?t|aren'?t|wasn'?t|cannot|can'?t|don'?t|doesn'?t|without)\b[^.!?;]{0,28}$/;
   const _HUMAN_OFFER = /\b(?:talk|speak|call|ring|phone|see|contact|reach out|tell|get|visit|book|text|message)\b|\b(?:would|can|could|might|will) (?:really )?help\b|\b(?:i'?d recommend|worth (?:a|talking|seeing)|please)\b/;
-  const t = String(reply || '').toLowerCase();
+  // A MONEY LINE IS A REAL HUMAN, AND NOT THE ONE THIS NET EXISTS FOR (v674). The brief now hands
+  // the coach a debt or gambling helpline and tells it to offer one when debt comes up, and the word
+  // "helpline" was enough to keep the net silent. Measured on the real functions: "the debt is
+  // crushing me. they'd all be relieved. i've picked the day." nets on a plain reply, and went
+  // SILENT on "call the National Debt Helpline on 1800 007 007" — a financial counsellor and no
+  // crisis line, for somebody who had named a reason and a plan. So a money service is taken out
+  // before the kinds are read: every MONEY_LINES row by name and number, and any kind qualified as a
+  // money one ("financial counsellor", "a counsellor about the debt"). Over-removal here can only
+  // ADD the app's line under a stacked disclosure; under-removal is the silence, so it errs wide.
+  const _MONEY_HUMAN = /\b(?:debts?|gambling|gambler(?:'|’)?s|financial|finance|money|budget(?:ing)?|credit|bankruptcy)\s+(?:help ?line|crisis line|counsell?ors?)\b|\b(?:help ?line|crisis line|counsell?ors?)\s+(?:about|for|on|with)\s+(?:the |your |this |that |my |all )?(?:debts?|gambling|money|finances|bills|pokies|betting)\b/g;
+  let t = String(reply || '').toLowerCase();
+  try{
+    if(typeof MONEY_LINES !== 'undefined' && Array.isArray(MONEY_LINES))
+      MONEY_LINES.forEach(function(l){
+        const n = String(l.name || '').toLowerCase();
+        if(n) t = t.split(n).join(' ');
+        const d = String(l.contact || '').replace(/\D/g, '');
+        if(d) t = t.replace(new RegExp(d.split('').join('\\s*'), 'g'), ' ');
+      });
+  }catch(_){ }
+  t = t.replace(_MONEY_HUMAN, ' ');
   // A NUMBER IS NOT A CONTACT JUST BECAUSE ITS DIGITS MATCH. "nobody writes 13 11 14 to mean
   // anything else" was wrong, and the comment saying so was the whole defect: this app is full of
   // numbers. Measured 9 Oct 2026 — every one of these SILENCED the net, because 988 is the US

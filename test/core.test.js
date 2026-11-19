@@ -17487,6 +17487,86 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
   }
 }
 
+// v674 — A MONEY HELPLINE IN THE REPLY SILENCED THE NET. The brief above hands the coach a debt or
+// gambling line and tells it to offer one when debt comes up, and _replyNamesAHuman counted the word
+// "helpline" as a human offered. Measured on the real functions before the fix: "the debt is crushing
+// me. they'd all be relieved. i've picked the day." — which detectCrisis returns null for, so the net
+// is the only floor — netted on a plain reply and went SILENT on a reply naming only the National
+// Debt Helpline. A financial counsellor and no crisis line, for somebody who named a reason and a plan.
+// Everything below EXECUTES the real net over the registries evaluated out of the bundle.
+H.section('a money helpline is not the hand-off the net exists for');
+{
+  const code = H.code();
+  const reg = n => {
+    const i = code.indexOf('const ' + n + ' = [');
+    if (i < 0 || code.indexOf('const ' + n + ' = [', i + 1) >= 0) return null;
+    let j = code.indexOf('[', i), d = 0, k = j;
+    for (; k < code.length; k++) { if (code[k] === '[') d++; else if (code[k] === ']') { d--; if (!d) break; } }
+    try { return new Function('return ' + code.slice(j, k + 1))(); } catch (e) { return null; }
+  };
+  const RR = reg('_RISK_REASON'), RP = reg('_RISK_PLAN'), CL = reg('CRISIS_LINES'), ML = reg('MONEY_LINES');
+  H.ok(!!RR && !!RP && !!CL && !!ML,
+    'calibration: _RISK_REASON, _RISK_PLAN, CRISIS_LINES and MONEY_LINES were each found once and evaluated');
+  const netWith = (money) => {
+    const g = { _RISK_REASON: RR, _RISK_PLAN: RP, CRISIS_LINES: CL };
+    if (money) g.MONEY_LINES = money;
+    try { return H.load(['_needsHumanNet', '_replyNamesAHuman'], g)._needsHumanNet; } catch (e) { return null; }
+  };
+  const net = netWith(ML);
+  H.ok(typeof net === 'function', '_needsHumanNet and _replyNamesAHuman were found by name — a rename must update this check');
+  const run = (f, u, r) => { try { return f(u, r); } catch (e) { return 'THREW ' + e.message; } };
+  if (net && RR && RP && CL && ML) {
+    const STACKED = "the debt is crushing me. they'd all be relieved. i've picked the day.";
+    const OWE = "i owe 40k and nobody needs me. i've got the pills ready.";
+    const PLAIN = "That's a lot to carry. Let's take the next small step together.";
+    const DEBT = "That's a heavy load. You don't have to sort the debt alone - call the National Debt Helpline on 1800 007 007; it's free and confidential.";
+    const GAMBLE = "Please ring the Gambling Helpline on 1800 858 858 tonight, they're there 24/7.";
+    const LIFE = 'Please ring Lifeline 13 11 14 tonight.';
+    H.eq(run(net, STACKED, PLAIN), true, 'calibration: the stacked money disclosure nets on a reply that names nobody');
+
+    // (a) THE BLOCKER: a money line alone does not count as the human.
+    H.eq(run(net, STACKED, DEBT), true,
+      '(a) a reply naming ONLY the National Debt Helpline still nets — the app adds its verified crisis line');
+    H.eq(run(net, STACKED, GAMBLE), true, '(a) and so does a reply naming only the Gambling Helpline');
+    H.eq(run(net, OWE, DEBT), true, '(a) "i owe 40k and nobody needs me. i\'ve got the pills ready." with a debt-line reply nets');
+
+    // (b) THE MODEL PARAPHRASES. These are caught by the money QUALIFIER, not the registry — the
+    // registry knows "national debt helpline", and none of these says it.
+    [ 'A financial counsellor would help with this. Please call one this week.',
+      'Please call a debt helpline tomorrow, it is free.',
+      "Please talk to a counsellor about the debt, it's free.",
+      'A gambling counsellor would really help. Please ring one.',
+    ].forEach(r => H.eq(run(net, STACKED, r), true, '(b) a paraphrased money service does not silence the net: ' + JSON.stringify(r).slice(0, 60)));
+
+    // (c) NO DOUBLE-UP: a reply that also names a crisis line, or a person, is left alone.
+    H.eq(run(net, STACKED, DEBT + ' And please ring Lifeline on 13 11 14 tonight.'), false,
+      '(c) a debt line PLUS Lifeline 13 11 14 is a crisis hand-off — no second line is added');
+    H.eq(run(net, STACKED, LIFE), false, '(c) Lifeline 13 11 14 alone is too');
+    H.eq(run(net, STACKED, 'Please talk to your doctor about this, tonight.'), false,
+      '(c) and a doctor still counts as a person, as it always has');
+
+    // (d) ORDINARY MONEY TALK WITH A DEBT-LINE REPLY: nothing is added, because there is no reason+plan.
+    [ 'who can help with my debt?', 'the debt is crushing me',
+      "i owe 40k on the card and i've picked the day to start paying it down",
+      'how do i stop the pokies eating my pay?', "they'd all be relieved if the debt was gone",
+    ].forEach(u => H.eq(run(net, u, DEBT), false, '(d) ordinary money talk is left alone: ' + JSON.stringify(u).slice(0, 60)));
+
+    // (e) THE REGISTRY HALF: a row added to MONEY_LINES later is recognised by NAME and by NUMBER
+    // without this function being touched. The planted row is synthetic on purpose, and its number
+    // carries 988 — the one CRISIS_LINES number short enough to sit inside another number.
+    const PLANTED = ML.concat([{ kind: 'gambling', region: 'UK', name: 'Planted Helpline', contact: '0800 988 000', detail: 'free' }]);
+    const net2 = netWith(PLANTED);
+    const BY_NAME = 'Please call the Planted Helpline tonight.';
+    const BY_NUMBER = 'Please call 0800 988 000 tonight.';
+    H.eq(run(net, STACKED, BY_NAME), false,
+      'calibration: without the planted row, "the Planted Helpline" reads as a human offered');
+    H.eq(run(net, STACKED, BY_NUMBER), false,
+      'calibration: and without it, the 988 inside 0800 988 000 reads as the US crisis line offered');
+    H.eq(run(net2, STACKED, BY_NAME), true, '(e) a MONEY_LINES row named in the reply does not silence the net');
+    H.eq(run(net2, STACKED, BY_NUMBER), true, '(e) nor does a MONEY_LINES number, even one with 988 inside it');
+  }
+}
+
 
 H.section('stillness reaches the ledger it was already reading from');
 {
