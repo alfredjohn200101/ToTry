@@ -30,7 +30,7 @@ globalThis.fetch = async (url, opts) => {
   // shape returns a 4xx that reads exactly like a dead model. Asserting the shape is the only way to
   // tell those apart before a person meets it.
   let sentBody = null; try { sentBody = JSON.parse(opts.body); } catch (_) {}
-  calls.push({ who, model, body: sentBody });
+  calls.push({ who, model, body: sentBody, url: u });
   const b = behaviour[who];
   if (typeof b === 'function') return b(model);
   if (b === 'fail') return { ok: false, status: 500, json: async () => ({ error: { message: who + ' down' } }), text: async () => 'down' };
@@ -172,7 +172,7 @@ ok(r.body.provider === 'mistral-vision',
    'prefer reaches a vision provider that gemini would otherwise always answer in front of');
 ok(!calls.some(c => c.who === 'gemini'), 'and it goes FIRST, not merely eventually');
 
-// ── the food camera has five providers, and each speaks its own dialect ─────────────────────────
+// ── the food camera has four providers, and each speaks its own dialect ─────────────────────────
 // Vision was gemini -> openrouter -> 503. One bad afternoon at either took the camera out.
 reset({ MISTRAL_API_KEY: 'm', NVIDIA_API_KEY: 'nv' });
 behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
@@ -188,23 +188,61 @@ ok(typeof _mvImg?.image_url === 'string',
 ok(String(_mvImg?.image_url || '').startsWith('data:image/jpeg;base64,'),
    'and it carries the real data: URI, mime and all');
 
-reset({ NVIDIA_API_KEY: 'nv' });
-behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
-r = await call({ action: 'vision', system: 'you are a coach', prompt: 'what is this',
-                 image_base64: 'AAAA', image_mime: 'image/jpeg' });
-ok(r.body.provider === 'nvidia-vision', 'and past three to a fourth');
-const _nv = calls.find(c => c.who === 'nvidia');
-ok(!(_nv?.body?.messages || []).some(m => m.role === 'system'),
-   "nvidia's vision models reject role:system, so the system text is folded into the user part");
-ok(String(_nv?.body?.messages?.[0]?.content?.[0]?.text || '').includes('you are a coach'),
-   'and folding it does not throw the system text away');
+// ── NO PHOTO EVER REACHES NVIDIA (19 Nov 2026) ──────────────────────────────────────────────────
+// NVIDIA's API Trial terms forbid production use and personal or health data, and until today this
+// chain sent it photos as its LAST link — reached whenever the four in front of it failed, and a form
+// check is a picture of the person's body. DRIVEN, not grepped: the key is SET, a model is PINNED,
+// NVIDIA is asked for BY NAME and every link in front of it is down, which is every way a request
+// used to get there. A request "reaches NVIDIA" if it goes to an NVIDIA host, or names an NVIDIA
+// model through anybody else.
+{
+  const NV_ENV = { NVIDIA_API_KEY: 'nv', NVIDIA_VISION_MODEL: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',
+                   MISTRAL_API_KEY: 'm', CLOUDFLARE_API_TOKEN: 'cf', CLOUDFLARE_ACCOUNT_ID: 'acct' };
+  const toNvidia = (c) => /nvidia\.com/i.test(c.url || '') || /^nvidia\//i.test(String(c.model || ''));
+  const allDown = () => { for (const p of ['gemini', 'openrouter', 'mistral', 'cloudflare']) behaviour[p] = 'fail'; };
+
+  // CALIBRATION: the detector must SEE an NVIDIA request, or every "none" below is blindness. Sent
+  // through the same stub the handler's fetch goes through, to the host the removed caller used.
+  calls = [];
+  await globalThis.fetch('https://integrate.api.nvidia.com/v1/chat/completions',
+    { method: 'POST', body: JSON.stringify({ model: 'google/gemma-4-31b-it', messages: [] }) });
+  ok(calls.length === 1 && calls.filter(toNvidia).length === 1,
+     'calibration — the stub records a request to NVIDIA and the detector recognises it');
+
+  // (a) every link in front down, NVIDIA keyed, pinned and preferred, with the system text a form
+  //     check sends. This is exactly the state in which the old chain handed the photo to NVIDIA.
+  reset(NV_ENV); allDown();
+  r = await call({ action: 'vision', system: 'you are a coach', prompt: 'check my squat form',
+                   image_base64: 'AAAA', image_mime: 'image/jpeg', prefer: 'nvidia' });
+  const _vTried = (r.body.attempts || []).filter(a => !a.skipped).map(a => a.provider);
+  ok(['gemini', 'openrouter', 'mistral', 'cloudflare'].every(p => _vTried.includes(p)),
+     'calibration — with every link down the vision walk really ran to its end (' + _vTried.join(',') + ')');
+  ok(calls.filter(toNvidia).length === 0 && !(r.body.attempts || []).some(a => /nvidia/i.test(a.provider || '')),
+     'no photo reaches NVIDIA, even keyed, pinned, asked for by name and with every other link down (' +
+     calls.filter(toNvidia).length + ' of ' + calls.length + ' requests went there)');
+  ok(r.status === 503 && !/nvidia/i.test(String(r.body.provider || '')),
+     'and the camera says it could not read the photo rather than finding NVIDIA as a way out (' + r.status + ')');
+
+  // (b) asking for NVIDIA by name on a healthy chain is ignored, not honoured.
+  reset(NV_ENV);
+  r = await call({ action: 'vision', prompt: 'x', image_base64: 'AAAA', prefer: 'nvidia' });
+  ok(r.body.provider === 'gemini-vision' && calls.filter(toNvidia).length === 0,
+     'prefer:"nvidia" is not a door: the usual first link answers and NVIDIA is never called (' + r.body.provider + ')');
+
+  // (c) the text path never had NVIDIA; naming it in AI_PROVIDER_ORDER must not invent a route.
+  reset({ ...NV_ENV, AI_PROVIDER_ORDER: 'nvidia,gemini,groq' }); behaviour.gemini = 'fail';
+  r = await call({ messages: [{ role: 'user', content: 'hi' }], prefer: 'nvidia' });
+  ok(r.body.provider === 'groq' && calls.filter(toNvidia).length === 0,
+     'and the text path has no way to NVIDIA either, even named in AI_PROVIDER_ORDER (' + r.body.provider + ')');
+}
 
 // And when nothing is configured the camera says so, naming what it tried, rather than hanging.
 reset();
 behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
 r = await call({ action: 'vision', prompt: 'x', image_base64: 'AAAA' });
-ok(r.status === 503 && (r.body.attempts || []).length === 5,
-   'with every provider down or unset the camera reports all five attempts, not silence');
+ok(r.status === 503 && (r.body.attempts || []).map(a => a.provider).join(',') === 'gemini,openrouter,mistral,cloudflare',
+   'with every provider down or unset the camera reports all four attempts, in order, not silence (' +
+   (r.body.attempts || []).map(a => a.provider).join(',') + ')');
 
 // ── a retired model must cost one entry, not the provider ───────────────────────────────────────
 // This is the defect that made vision and web search fall over silently: one hardcoded id per provider.

@@ -1,6 +1,6 @@
 // ToTry — AI Proxy with multi-provider fallback chain + web search
 // Text: Gemini (free) → Groq (free) → OpenRouter (free) → Anthropic (paid, last resort)
-// Vision: Gemini Vision → OpenRouter Vision
+// Vision: Gemini → OpenRouter → Mistral → Cloudflare (never NVIDIA — see MODELS)
 // web_search:true → routes to a search-capable path (Gemini grounding / OpenRouter :online)
 // Hevy proxy: action:'hevy'
 //
@@ -116,11 +116,12 @@ const MODELS = {
   // answered ("Black app icon with gold ToTry text"). The `burned` field is what surfaced that — the
   // provider was working and quietly losing a candidate on every single call.
   cloudflareVision: ["@cf/qwen/qwen3.8-27b", "@cf/google/gemma-4-26b-a4b-it"],
-  // NVIDIA NIM — VISION ONLY, and the reason is the finite pool: 1,000-5,000 lifetime credits, not a
-  // recurring allowance. That is a real third leg for the food camera, which had two, and it is not a
-  // text backstop — the text chain has five without it, and chat would drain the pool in days.
-  nvidiaVision: ["google/gemma-4-31b-it", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-                 "meta/llama-3.2-11b-vision-instruct", "meta/llama-3.2-90b-vision-instruct"],
+  // NVIDIA NIM WAS HERE, AS THE LAST LINK OF THE VISION CHAIN, UNTIL 19 NOV 2026 — DO NOT RE-ADD IT.
+  // NVIDIA's API Trial terms forbid production use and personal or health data, and this chain sends
+  // photos: a form check is a picture of the person's body, a scale screenshot carries their weight.
+  // A free pool is not free if the terms forbid the data in it. Its model list, its caller and its
+  // place in the chain are all gone, so no request can reach integrate.api.nvidia.com however the
+  // secrets are set — `npm run test:edge` drives that with NVIDIA_API_KEY and a pin both present.
   // Vision needs image input support. Verified 19 Nov 2026: 3.5-flash-lite accepts image input
   // (Google's model page, 65,536 output tokens), and both gemma ids list "image" among their input
   // modalities on OpenRouter. Same order and same reasons as the text list above. The nemotron vision
@@ -412,34 +413,9 @@ async function callCloudflareVision({ system, prompt, image_base64, image_mime, 
   });
 }
 
-// NVIDIA's VISION models REJECT role:"system" — the schemas enumerate only user/assistant on three of
-// the four candidates, and the docs add "for system and assistant roles, the object list format is not
-// supported". So the system text is folded into the user's text part, which every candidate accepts.
-// Vision only, deliberately: the free pool is 1,000-5,000 LIFETIME credits, so it is a real backstop
-// for a photo and would be drained in days by chat.
-async function callNvidiaVision({ system, prompt, image_base64, image_mime, max_tokens }) {
-  const key = Deno.env.get("NVIDIA_API_KEY");
-  if (!key) return { skip: true };
-  const dataUrl = `data:${image_mime || "image/png"};base64,${image_base64}`;
-  const text0 = system ? (system + "\n\n" + prompt) : prompt;
-  const msgs = [{ role: "user", content: [
-    { type: "text", text: text0 }, { type: "image_url", image_url: { url: dataUrl } },
-  ]}];
-  return await tryModels(modelList("NVIDIA_VISION_MODEL", "nvidiaVision"), async (model) => {
-    const resp = await fetchWithTimeout("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3 }),
-      // 45s, not 30. Warm it answers in 4.9s; the first call of the day aborted at 30s and reported
-      // "The signal has been aborted", which reads exactly like a broken provider and is a cold start.
-      // It is the LAST link in the vision chain, so a slow answer here still beats no answer.
-    }, 45000);
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) return { error: true, status: resp.status, body: data };
-    const text = data?.choices?.[0]?.message?.content || "";
-    if (!text) return { error: true, status: 500, body: data };
-    return { text, provider: "nvidia-vision", model };
-  });
-}
+// callNvidiaVision() was here until 19 Nov 2026 and is removed, not disabled — see the note in MODELS.
+// NVIDIA_API_KEY and NVIDIA_VISION_MODEL are no longer read by anything, so a secret left set in
+// Supabase is inert; it can be deleted there whenever convenient.
 
 async function callGeminiVision({ system, prompt, image_base64, image_mime, max_tokens }) {
   const key = Deno.env.get("GEMINI_API_KEY");
@@ -600,10 +576,12 @@ Deno.serve(async (req) => {
       // took the food camera out entirely. It now walks every configured provider and REPORTS what it
       // tried — an unconfigured one skips silently, a broken one is named in `attempts`, which is the
       // only way a dead link ever surfaces instead of hiding behind the next.
+      // Four links, not five: NVIDIA left on 19 Nov 2026 because its trial terms forbid the personal
+      // and health data a photo here carries. Every policy copy names exactly these four for photos,
+      // and test/core.test.js compares them against this list.
       let visionChain = [
         ["gemini", callGeminiVision], ["openrouter", callOpenRouterVision],
         ["mistral", callMistralVision], ["cloudflare", callCloudflareVision],
-        ["nvidia", callNvidiaVision],
       ];
       // THE SAME `prefer` THE TEXT PATH HAS. Without it gemini always answers first, so the four links
       // behind it can never be exercised from outside — and an unexercisable fallback is indistinguishable

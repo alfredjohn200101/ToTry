@@ -566,8 +566,17 @@ STRAVA appears as invite-only by design — Strava's API caps our connected-athl
 MULTI-FAITH. At onboarding the user picks a path (Christianity, Islam, Hinduism, Buddhism, or Secular/None) and the app shows that tradition's own text and daily reading, so scripture from the Bible, the Qur'an, the Bhagavad Gita or the Dhammapada is presented respectfully by the user's own choice. All of it is changeable in Settings → Faith & meaning.
 ```
 
-Two details that matter in that text:
+Three details that matter in that text:
 
+- **"and NVIDIA for photos" is left in ON PURPOSE, and it over-discloses by one.** It describes what
+  build 16's permission sheet says, and the reviewer will read that sheet. On 19 Nov 2026 the server
+  was changed to stop sending photos to NVIDIA (its API Trial terms forbid production use and
+  personal or health data): `supabase/functions/ai-proxy` has no NVIDIA link any more, and the next
+  build's sheet and both privacy policies no longer name it. **The server change reaches people only
+  once `ai-proxy` is deployed** — until then NVIDIA is still the last vision fallback, and this note is
+  exactly true. After the deploy, build 16's sheet names one provider the app no longer contacts,
+  which is the safe direction; do not edit this note to match the server while build 16 is the build
+  under review.
 - **The button's rendered text uses a curly apostrophe (U+2019) and a real arrow (U+2192)** —
   `src/shell-head.html:4060` renders `&rsquo;` and `&#8594;`. The block above has them. The markdown
   in `APP-REVIEW-NOTES.md` uses a straight apostrophe; a reviewer searching for the literal string

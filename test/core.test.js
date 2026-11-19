@@ -4336,10 +4336,11 @@ function fnBodyOf(code, name){
   H.ok(/smart-scale screenshot/i.test(H.html), 'the scale screenshot is disclosed');
   // ASSERT THE FACT, NOT THE PHRASING. This read /OpenRouter as a fallback/ and went RED on 15 Oct
   // when the copy was CORRECTED \u2014 the in-app policy had named 2 recipients while the vision chain in
-  // supabase/functions/ai-proxy reaches 5 (gemini, openrouter, mistral, cloudflare, nvidia), so
+  // supabase/functions/ai-proxy reached 5 (gemini, openrouter, mistral, cloudflare, nvidia), so
   // widening it to the true set broke a test pinned to the narrow wording. The fact worth holding is
   // that a person is told about more than the FIRST recipient, however that sentence is written.
-  const namedRecipients = ['OpenRouter', 'Mistral', 'Cloudflare', 'NVIDIA'].filter(r =>
+  // NVIDIA left the chain on 19 Nov 2026, and section 30 now holds each copy to the chain both ways.
+  const namedRecipients = ['OpenRouter', 'Mistral', 'Cloudflare'].filter(r =>
     new RegExp(r, 'i').test(H.html));
   H.ok(namedRecipients.length >= 1,
     'a fallback recipient is named, not just the first one (named: ' + namedRecipients.join(', ') + ')');
@@ -20377,9 +20378,17 @@ H.section('the type scale can actually scale');
     // Read through `html`, never `e.sheet().innerHTML`: with no sheet, a dereference here CRASHES the
     // run instead of failing this assertion -- which is what the fault injection for it first did.
     const html = sh ? String(sh.innerHTML || '') : '';
-    H.ok(/Gemini/.test(html) && /NVIDIA/.test(html) && /Apple Health/.test(html)
-      && /journal entries word for word/.test(html) && /improve their models/.test(html),
-      'and the sheet names the providers, the Health data, the journal text and the training use');
+    H.ok(/Apple Health/.test(html) && /journal entries word for word/.test(html) && /improve their models/.test(html),
+      'and the sheet names the Health data, the journal text and the training use');
+    // WHO RECEIVES IT, both directions (19 Nov 2026). NVIDIA left the server's vision chain because its
+    // trial terms forbid personal and health data, so a sheet still naming it "for photos" would tell
+    // the person about a recipient the app no longer contacts. The six it CAN reach must all be named.
+    // Section 30 holds the same list against supabase/functions/ai-proxy itself.
+    const _sheetNamed = ['Gemini', 'Groq', 'OpenRouter', 'Mistral', 'Cloudflare', 'Anthropic']
+      .filter(function(p){ return new RegExp('\\b' + p + '\\b').test(html); });
+    H.eq(_sheetNamed.length, 6, 'and the sheet names every provider the server can reach (' + _sheetNamed.join(', ') + ')');
+    H.ok(html.length > 500 && !/NVIDIA/i.test(html),
+      'and the sheet does NOT name NVIDIA, which the server stopped contacting on 19 Nov 2026');
     H.ok(/each morning/.test(html), 'and says what it then sends without being asked');
     e.fns.aiAllow(null);
     H.eq(e.fns.aiOff(), false, 'only the sheet\'s own button turns it on');
@@ -21484,7 +21493,61 @@ H.section('nothing goes to a third-party AI until the person says yes');
   H.ok(priv.length > 2000 && plist.length > 500, 'calibration: privacy.html and Info.plist were read');
   H.ok(!/you are not asked/i.test(priv), 'privacy.html no longer says a send happens without asking');
   H.ok(/Nothing is sent until you say yes/.test(priv), 'and says nothing is sent until the person says yes');
-  H.ok(/NVIDIA/.test(priv.slice(priv.indexOf('Once your Coach message'))), 'and the "what I cannot control" list names NVIDIA, which receives photos');
+  // WHO RECEIVES IT — READ OUT OF THE SERVER, not written down here (19 Nov 2026). NVIDIA left the
+  // vision chain because its API Trial terms forbid personal and health data, and a photo here is a
+  // form check of somebody's body. Every sentence that tells a person who receives their data must
+  // now name EXACTLY the providers supabase/functions/ai-proxy can reach: a recipient named and never
+  // contacted is the same untruth as one contacted and never named. Both directions, per copy.
+  {
+    const proxy = H.code(R('supabase/functions/ai-proxy/index.ts'));
+    const arrayAt = function (src, anchor) {          // bracket-matched, never a fixed window
+      const at = src.indexOf(anchor);
+      if (at < 0 || src.indexOf(anchor, at + 1) > -1) return null;   // absent or ambiguous: refuse
+      let d = 0;
+      for (let i = src.indexOf('[', at); i > -1 && i < src.length; i++) {
+        if (src[i] === '[') d++; else if (src[i] === ']') { d--; if (!d) return src.slice(at, i + 1); }
+      }
+      return null;
+    };
+    const visionSrc = arrayAt(proxy, 'let visionChain = ['), textSrc = arrayAt(proxy, 'const DEFAULT_ORDER = [');
+    const vision = visionSrc ? [...visionSrc.matchAll(/\[\s*"([a-z]+)"\s*,/g)].map(m => m[1]) : [];
+    const textP = textSrc ? [...textSrc.matchAll(/"([a-z]+)"/g)].map(m => m[1]) : [];
+    // How each provider is written in the copy. Gemini is "Google" in two of them and "Gemini" in others.
+    const SAYS = { gemini: /\b(Gemini|Google)\b/, groq: /\bGroq\b/, openrouter: /\bOpenRouter\b/, mistral: /\bMistral\b/,
+                   cloudflare: /\bCloudflare\b/, anthropic: /\bAnthropic\b/, nvidia: /\bNVIDIA\b/i };
+    H.ok(vision.length >= 3 && vision.includes('gemini') && textP.length >= 4 && textP.includes('anthropic'),
+      'calibration: the vision chain and the text order were read out of ai-proxy (vision: ' + vision.join(',') + '; text: ' + textP.join(',') + ')');
+    const unknown = vision.concat(textP).filter(p => !SAYS[p]);
+    H.ok(unknown.length === 0, 'and every provider the server can reach has a known spelling here — a new one must be added, not skipped (' + (unknown.join(',') || 'none') + ')');
+    const allP = Array.from(new Set(vision.concat(textP)));
+    const between = function (src, from, to) {        // anchored and unique, never a fixed window
+      const a = src.indexOf(from);
+      if (a < 0 || src.indexOf(from, a + 1) > -1) return '';
+      const b = src.indexOf(to, a);
+      return b > a ? src.slice(a, b) : '';
+    };
+    let inApp = '', sheet = '';
+    try { inApp = H.code(H.extractFn('showPrivacyPolicy')); } catch (e) { inApp = ''; }
+    try { sheet = H.code(H.extractFn('aiAskSheet')); } catch (e) { sheet = ''; }
+    const copies = [
+      ['privacy.html, the photos bullet',          between(priv, 'Photos you send to the coach', '</li>'), vision],
+      ['privacy.html, "what I cannot control"',    between(priv, 'Once your Coach message or a photo reaches', '</p>'), allP],
+      ['the in-app policy, the photos bullet',     between(inApp, 'Photos you send to the coach', '</li>'), vision],
+      ['the in-app policy, "what I cannot control"', between(inApp, 'Once your Coach message or a photo reaches', '</p>'), allP],
+      ['the permission sheet',                     between(sheet, 'whichever provider answers first', '</p>'), allP],
+    ];
+    copies.forEach(function (c) {
+      const name = c[0], said = c[1], reach = c[2];
+      H.ok(said.length > 40, name + ' was found by its anchor (a rename must update this check, not silently drop it)');
+      if (!said) return;
+      const missing = reach.filter(p => !SAYS[p].test(said));
+      const extra = Object.keys(SAYS).filter(p => reach.indexOf(p) < 0 && SAYS[p].test(said));
+      H.ok(missing.length === 0, name + ' names every provider the server can send it to (missing: ' + (missing.join(',') || 'none') + ')');
+      H.ok(extra.length === 0, name + ' names no provider the server cannot reach (extra: ' + (extra.join(',') || 'none') + ')');
+    });
+    H.ok(!vision.includes('nvidia') && !/NVIDIA/i.test(priv) && !/NVIDIA/i.test(inApp),
+      'NVIDIA is gone from the vision chain and from both privacy policies, whole (19 Nov 2026: its trial terms forbid personal and health data)');
+  }
   H.ok(!/not asked about/i.test(plist) && /Only if you turn on the coach/.test(plist),
     'the Health permission string in the binary no longer says the AI send is unasked');
   H.ok(!/Neither asks you first/.test(H.html) && /Off until you turn it on/.test(H.html),

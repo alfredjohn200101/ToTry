@@ -21,11 +21,12 @@
 > |---|---|---|---|
 > | **P1** | Google's free Gemini tier: *"Do not submit sensitive, confidential, or personal information to the Unpaid Services"*; human reviewers may read API input; it is used to improve Google's products; unpaid services may not serve users in the EEA, UK or Switzerland | The app sends journal text and Apple Health data to it first. Apple 5.1.3(i) forbids health data being used for anything but health management, so a reviewer reading the policy's "some may use prompts to improve models" could cite it. | **Owner:** enable billing on the Gemini project (paid tier is "used to improve: No"; pennies at today's traffic) |
 > | **P2** | Mistral's free plan trains on input by default; OpenRouter has separate privacy settings for free models | Same as P1, smaller share of traffic | **Owner:** admin.mistral.ai → Privacy → training off; OpenRouter → privacy settings → free models, training off. Free |
-> | **P3** | NVIDIA's API trial terms forbid production use and personal or health data, and NVIDIA receives form-check photos | A terms breach whatever the copy says | **Server change, owner's OK:** remove NVIDIA from the vision chain in `supabase/functions/ai-proxy` and redeploy. No app build |
+> | **P3** | NVIDIA's API trial terms forbid production use and personal or health data, and NVIDIA receives form-check photos | A terms breach whatever the copy says | **Code done 19 Nov, owner's OK:** NVIDIA is gone from `supabase/functions/ai-proxy` (model list, caller and chain entry), and from both privacy policies and the permission sheet in source; `npm run test:edge` drives the handler and asserts no request reaches NVIDIA. **Still to do: deploy `ai-proxy`** — it reaches people only then, in the same deploy as the Gemini change in `6d7940f`. No app build. The `NVIDIA_API_KEY` secret is now inert and can be deleted |
 > | **P4** | `gemini-2.5-flash` shuts down on **1 Dec 2026** and is auto-routed to `gemini-3.5-flash-lite`; Groq's llama models are retired (only `gpt-oss-120b` lives); OpenRouter's nemotron free model is dead | The food camera and the coach lean on the first link. This repo has already lost the food camera once to a thinking model's token budget | Re-probe the chain after 1 Dec (`node scripts/voice-probe.mjs chain`) |
 >
 > When P1–P3 are done, the sheet's and the policy's training sentence can be made stronger; bump
-> `aiConsentVersion()` when the provider list changes, so everybody is asked again.
+> `aiConsentVersion()` when a provider is ADDED or what is sent grows, so everybody is asked again.
+> A removal does not need it: NVIDIA leaving (P3) only shrank what a yes already covered.
 >
 > **More free models in the app: researched and NOT recommended.** GitHub Models is retired;
 > Cerebras is a 30-day trial that needs a card; SambaNova gives 20 requests a day; NVIDIA is the

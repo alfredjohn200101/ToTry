@@ -169,8 +169,9 @@ behind a fallback chain, so an unverified model id is treated as no model id.
 ### The text chain — free first, paid last
 `gemini → groq → openrouter → mistral → cloudflare → anthropic`
 
-### The vision chain — the food camera, now five deep instead of two
-`gemini → openrouter → mistral → cloudflare → nvidia → 503 (naming every attempt)`
+### The vision chain — the food camera, four deep (it was five until 19 Nov 2026)
+`gemini → openrouter → mistral → cloudflare → 503 (naming every attempt)` — NVIDIA was the fifth link
+and is removed from the code; see "Rejected" below. Not live until `ai-proxy` is deployed.
 
 | Provider | Free? | Secrets | Where to get it |
 |---|---|---|---|
@@ -179,12 +180,12 @@ behind a fallback chain, so an unverified model id is treated as no model id.
 | OpenRouter | standing free tier (`:free` models) | `OPENROUTER_API_KEY` | openrouter.ai/keys — **live, answering** |
 | **Mistral** | **standing free tier, no card** | `MISTRAL_API_KEY` | console.mistral.ai → API Keys (shown once) |
 | **Cloudflare** | **10,000 Neurons/day, resets 00:00 UTC, hard-stops rather than billing** | `CLOUDFLARE_API_TOKEN` **and** `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com → Workers AI → Use REST API |
-| **NVIDIA** *(vision only)* | 1,000–5,000 **lifetime** credits, no card | `NVIDIA_API_KEY` | build.nvidia.com/settings/api-keys |
+| ~~**NVIDIA** *(vision only)*~~ | **REMOVED 19 Nov 2026** — trial terms forbid production use and personal or health data | ~~`NVIDIA_API_KEY`~~ no longer read; the secret is inert and can be deleted | — |
 | Anthropic | PAID, last resort | `ANTHROPIC_API_KEY` | set, but **credit balance is zero** — errors cleanly and falls through |
 
 Every provider SKIPS silently when its key is absent, so keys can be added one at a time and an
 unconfigured one costs nothing. Optional per-provider model pins: `MISTRAL_MODEL`,
-`MISTRAL_VISION_MODEL`, `CLOUDFLARE_MODEL`, `CLOUDFLARE_VISION_MODEL`, `NVIDIA_VISION_MODEL` — a pin is
+`MISTRAL_VISION_MODEL`, `CLOUDFLARE_MODEL`, `CLOUDFLARE_VISION_MODEL` — a pin is
 tried FIRST and the built-in list still follows it, so a stale pin costs a request, never the provider.
 
 ### Probed live against real keys — 2 Sep 2026
@@ -212,16 +213,24 @@ never fires is free while a missing one is a provider that cannot recover.
 in your subscription tier"* despite being documented as image-capable. Only a real key answers that
 question — a capability page never will.
 
-### Three dialects that would fail silently, and are covered by tests
+### Dialects that would fail silently (two live, one historical)
 - **Mistral's `image_url` is a plain STRING**, not OpenAI's `{url:...}` object. The object form returns
   a 422 that reads exactly like a dead model.
-- **NVIDIA's vision models REJECT `role:"system"`** — three of the four candidates enumerate only
-  user/assistant. The system text is folded into the user's text part instead.
+- *(Historical — NVIDIA left the chain 19 Nov 2026.)* NVIDIA's vision models rejected `role:"system"`;
+  the system text was folded into the user's text part. Kept for anyone tempted to re-add it.
 - **Cloudflare needs BOTH secrets** (the account id is in the URL) and returns a bespoke
   `{errors:[{message}]}` body that `extractErrorMsg` could not read, so its failures used to land in
-  `attempts` as an unreadable blob. Both fixed; `npm run test:edge` fault-injects all three.
+  `attempts` as an unreadable blob. Both fixed. `npm run test:edge` was written against all three;
+  its NVIDIA dialect check was replaced on 19 Nov by one asserting nothing reaches NVIDIA at all.
 
 ### Rejected, with the reason — do not re-add these
+- **NVIDIA NIM — REMOVED 19 Nov 2026, owner's decision.** It worked (vision, 4.9s warm) and was the
+  last link of the photo chain. Its API Trial terms forbid **production use** and **personal or
+  health data**, and a photo here can be a form check of the person's body or a scale screenshot with
+  their weight in it. A free pool whose terms forbid the data in it is not a backstop. The model list,
+  the caller and the chain entry are deleted, and `npm run test:edge` drives the handler with
+  `NVIDIA_API_KEY`, a pinned model and `prefer:"nvidia"` all set and asserts no request reaches an
+  NVIDIA host or model. Both privacy policies and the permission sheet stopped naming it the same day.
 - **GitHub Models — RETIRED.** Fully shut down 30 Jul 2026. `models.github.ai` returns **410** on every
   path and `models.inference.ai.azure.com` is **NXDOMAIN**. There is no successor and no key can be
   obtained. It was a genuinely good free tier, which is exactly why it is worth writing down as dead.

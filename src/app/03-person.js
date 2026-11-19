@@ -1543,7 +1543,8 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 // key, totry_ai_consent, which both of them wipe with every other totry_ key -- so one person's "yes"
 // is never inherited by whoever signs in next. Neither key is in SYNC_KEYS. A legacy totry_ai_off='0'
 // (written by v671's toggle, which never showed what is sent) is NOT consent. The value is a VERSION:
-// when what is sent or who receives it changes, bump aiConsentVersion() and everybody is asked again.
+// when what is sent GROWS or a recipient is ADDED, bump aiConsentVersion() and everybody is asked
+// again. A recipient REMOVED (NVIDIA, 19 Nov 2026) does not: a yes to seven providers already covers six.
 // A function, not a const: the test harness loads functions by name, and a const it cannot see would
 // make every consent read as "never asked" in the suite while working in the app.
 function aiConsentVersion(){ return 'v1'; }
@@ -1626,7 +1627,12 @@ function aiOffHtml(what){
 // the next tap asks again rather than the app deciding no on their behalf.
 // The provider list is the in-app privacy policy's own (showPrivacyPolicy): text goes to Google
 // (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic; images to Gemini, OpenRouter,
-// Mistral, Cloudflare or NVIDIA. If that chain changes, this sentence and that policy change together.
+// Mistral or Cloudflare. If that chain changes, this sentence and that policy change together --
+// test/core.test.js reads the chain out of supabase/functions/ai-proxy and holds all three to it.
+// NVIDIA was named here for photos until 19 Nov 2026, when it left the server's vision chain: its
+// trial terms forbid personal and health data. Naming a recipient the app no longer contacts is the
+// same kind of untruth as hiding one it does. One fewer recipient does not bump aiConsentVersion():
+// what a yes already covered only got smaller, so nobody has to be asked again.
 function aiAskSheet(what){
   if(document.getElementById('ai-ask-sheet')) return;
   const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1638,7 +1644,7 @@ function aiAskSheet(what){
       (what ? '<p style="margin:0 0 10px">' + esc(what) + ' uses the coach.</p>' : '')+
       '<p style="margin:0 0 10px">To answer you, ToTry sends an AI provider what you type, plus a summary of what you have logged here: why this matters to you and who you are becoming, what you are working on and your clean days, your most recent journal entries word for word, training, food, weight, money, and your sleep and recent workouts from Apple Health if you have connected it. Some answers are looked up on the web by the provider\u2019s own search.</p>'+
       '<p style="margin:0 0 10px">A photo goes only when you choose to have one read: a meal, a form check, a package, or a workout, scale or recipe screenshot.</p>'+
-      '<p style="margin:0 0 10px">It goes through ToTry\u2019s server to whichever provider answers first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic, and for photos NVIDIA. Some of them, including Google\u2019s free tier, may keep what you send, have people review it, and use it to improve their models. It is never used for ads and never sold.</p>'+
+      '<p style="margin:0 0 10px">It goes through ToTry\u2019s server to whichever provider answers first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic. Some of them, including Google\u2019s free tier, may keep what you send, have people review it, and use it to improve their models. It is never used for ads and never sold.</p>'+
       '<p style="margin:0 0 14px">Once it is on, the coach also writes you a sentence each morning and a weekly read without being asked. Settings \u2192 Your data switches all of it off.</p>'+
     '</div>'+
     '<button class="btn primary" onclick="aiAllow(this)">Turn on the coach</button>'+
