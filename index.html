@@ -12684,9 +12684,10 @@ function getLifeState(){
       nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
       topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
-      // THE FIGHT AND THE FOOD, WHICH ONLY THIS APP HOLDS TOGETHER. Put in the STATE rather than on
-      // a card, so it reaches lifeStateBrief() and therefore the brother, the companion and the
-      // coach — the surfaces a person actually meets in the moment. It is null almost always, by
+      // THE FIGHT AND THE FOOD, WHICH ONLY THIS APP HOLDS TOGETHER. Put in the STATE so it reaches
+      // lifeStateBrief() and therefore the brother, the companion and the coach — AND on the
+      // person's own pattern card (renderUrgeInsights → _overridePlan), because counsel the app
+      // tells only a model is counsel the person never gets. It is null almost always, by
       // design: it refuses to speak unless the gap is knowable on enough fights, on both sides, and
       // wide enough to plan around.
       fuelLink: (function(){ try{ return (typeof _fightFuelLink === 'function') ? _fightFuelLink(v.n) : null; }catch(_){ return null; } })(),
@@ -20674,6 +20675,20 @@ function _fightFuelLink(viceName){
     const log = (ls('totry_fight_log') || []).filter(function(e){ return e && e.vice === viceName && e.ts; });
     if(log.length < 6) return null;
     const diary = ls('totry_nutlog') || {};
+    // A FIGHT ON A FASTED DAY SAYS NOTHING ABOUT FORGETTING TO EAT. This line is counsel to eat, and
+    // during Ramadan an afternoon loss sits ~10 hours after suhoor because of the fast itself — so
+    // counting it would tell somebody to eat on the strength of their own chosen discipline, which is
+    // the _nourishConcern() defect (CLAUDE.md, lesson p) arriving through the fight. Asked of the
+    // FIGHT'S day, not today (fastSeasonNow(whenTs) exists for exactly this), and left OUT like any
+    // other unknowable gap rather than counted. Memoised per local day: a 200-row log would
+    // otherwise build an Intl calendar formatter per fight on every getLifeState().
+    const _fastDay = {};
+    const fastedOn = function(t){
+      if(typeof fastSeasonNow !== 'function') return false;
+      const k = new Date(t).toDateString();
+      if(!(k in _fastDay)) _fastDay[k] = !!fastSeasonNow(t);
+      return _fastDay[k];
+    };
     // Hours between the last meal LOGGED BEFORE a fight and the fight itself. Unknowable when the
     // person logged no food that day or the day before — and unknowable is not zero, so those
     // fights are left out of the comparison entirely rather than counted as "hadn't eaten".
@@ -20690,6 +20705,7 @@ function _fightFuelLink(viceName){
         });
       });
       if(!latest) return null;                       // no meal on record before it: we do not know
+      if(fastedOn(t)) return null;                   // a chosen fast, not a missed meal: we do not know
       const hrs = (t - latest) / 3600000;
       return (hrs >= 0 && hrs <= 24) ? hrs : null;   // beyond a day it is not a meal-to-urge gap
     };
@@ -20750,7 +20766,7 @@ function analyzeUrgePatterns(viceName){
 // Turn a named pattern into a concrete way OUT. Based on relapse-prevention: stimulus control
 // (change the environment that cues the urge) + if-then implementation intentions (pre-decide the
 // response so willpower isn't needed in the moment) + competing response. A brother's practical plan.
-function _overridePlan(p){
+function _overridePlan(p, fuel){
   if(!p) return '';
   const bits = [];
   // Risk window → pre-plan that time so the urge meets a wall already built.
@@ -20770,12 +20786,31 @@ function _overridePlan(p){
   if(p.topTrigger){
     bits.push('When <b style="color:var(--tx)">'+_escFew(p.topTrigger)+'</b> shows up, that\u2019s the cue. Decide your one move ahead of time \u2014 the instant it hits, you DO that (step outside, cold water, text someone, open this app) before the thinking starts. Pre-deciding is how you win when willpower\u2019s thin.');
   }
+  // THE FIGHT AND THE FOOD, SAID TO THE PERSON AS WELL AS THE MODEL. _fightFuelLink() was computed
+  // into getLifeState() and read by lifeStateBrief() alone, so the one piece of counsel only an app
+  // holding both fronts can give reached the coach and never the person it is about. It is said
+  // here, on the card they open to understand their own pattern, and nowhere a person meets in the
+  // moment itself (the SOS, the Feeling Door, the hard-hour greeting): it is counsel for a calm read.
+  // Only when it cleared _fightFuelLink's own bar; never while a fast is live, because "eat before
+  // your hard hour" would argue against a discipline they chose; and with no hours for somebody who
+  // turned the food numbers off.
+  if(fuel && fuel.line && !(typeof fastSeasonNow === 'function' && fastSeasonNow())){
+    bits.push((typeof nutGentle === 'function' && nutGentle())
+      ? 'The ones you lost, you mostly went into on an empty stomach \u2014 longer since you had eaten than on the ones you won. Eating before your hard hour is not a small thing.'
+      : fuel.line);
+  }
   if(!bits.length){
     bits.push('Keep logging the moments \u2014 the more I see, the more exactly I can help you get ahead of it. And remember the pattern isn\u2019t a verdict, it\u2019s a map.');
   }
   // Always close pointing slightly beyond the tactics — this is a fight worth real support, not just tricks.
   bits.push('And if this keeps winning no matter what you try, that\u2019s not failure \u2014 it\u2019s a sign to bring a real person in. You don\u2019t have to carry it alone.');
-  return bits.join('<br><br>');
+  // THAT SENTENCE POINTED AT A PERSON AND GAVE NOTHING TO TAP. bridgeToRealHelp('persistent') was
+  // written for exactly this ("You've been fighting this a while, and it keeps coming back hard") and
+  // had no caller; every live site passes 'heavy'. So the sentence becomes a door the person opens
+  // themselves: nothing pushed, nothing counted, no number on it. The label is their own
+  // declaration, which is what keeps the 'persistent' lead true for whoever taps it.
+  return bits.join('<br><br>') +
+    '<button class="btn quiet" onclick="bridgeToRealHelp(\'persistent\')">It keeps winning \u2014 help me bring someone in</button>';
 }
 
 // THE BRIDGE TO REAL HELP. ToTry is a tool for men who feel voiceless — not a replacement for real
@@ -21076,7 +21111,7 @@ function renderUrgeInsights(){
     // A pattern named without a way out just makes a man feel doomed. So every pattern comes WITH a
     // concrete, evidence-based override — what to actually DO to break this specific loop. The mirror
     // shows the wound AND how to heal it.
-    const override = _overridePlan(p);
+    const override = _overridePlan(p, (typeof _fightFuelLink === 'function') ? _fightFuelLink(v.n) : null);
     html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border-radius:var(--rm)">'+
       '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
       '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+

@@ -10070,14 +10070,121 @@ H.section('the fight and the food, which nothing else holds together');
   const mixed = run([L(7), L(8), L(6), { won:false }, { won:false }, W(2), W(1), W(3)]);
   H.eq(mixed.lostN, 3, 'fights with no meal on record are excluded, not treated as hungry');
 
-  // AND IT REACHES THE PERSON. Put in the state rather than on a card, so it is in the brief the
-  // brother, the companion and the coach all read — the surfaces met in the moment.
+  // AND IT REACHES THE MODEL. In the state, so it is in the brief the brother, the companion and the
+  // coach all read — and (below) on the person's own pattern card, so the person hears it too.
   const person = require('fs').readFileSync(
     require('path').join(__dirname, '..', 'src', 'app', '03-person.js'), 'utf8');
   H.ok(/fuelLink: \(function\(\)\{ try\{ return \(typeof _fightFuelLink/.test(person),
     'getLifeState().fight carries it');
   H.ok(/if\(v\.fuelLink\) bits\.push/.test(person), 'and lifeStateBrief says it');
   H.ok(/the ones they lost came after about/.test(person), 'in words a model can use without embroidering');
+
+  // A FIGHT ON A FASTED DAY SAYS NOTHING ABOUT FORGETTING TO EAT. During Ramadan an afternoon loss
+  // sits ~10 hours after suhoor because of the fast itself, so counting it would counsel somebody to
+  // eat on the strength of their own chosen discipline (CLAUDE.md lesson p). Driven with the REAL
+  // fastSeasonNow over a hand-set season, because the defect worth catching is the ARGUMENT: asked
+  // about TODAY instead of the fight's own day, a season that has already ended explains nothing.
+  // Both seasons below ENDED before today, so a today-question cannot satisfy either assertion.
+  const ymd = (t) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+    + '-' + String(d.getDate()).padStart(2, '0'); };
+  const runFast = (cfg) => {
+    const fl = [], diary = {};
+    [L(7), L(8), L(6), W(2), W(1), W(3)].forEach(function(x, i){
+      const t = now - (i + 1) * DAY, day = 'd' + i;
+      fl.push({ vice:'Scrolling', won: x.won, ts: new Date(t).toISOString(), date: day });
+      diary[day] = [{ name:'meal', ts: new Date(t - x.ate * HR).toISOString() }];
+    });
+    let L2 = null;
+    try {
+      L2 = H.load(['_fightFuelLink', 'fastSeasonNow'], {
+        ls: (k) => (k === 'totry_fight_log' ? fl : k === 'totry_nutlog' ? diary : k === 'totry_fast_season' ? cfg : null),
+        FAST_SEASONS: { ramadan: { name:'Ramadan', days:30 } },
+        faithTradition: () => 'secular', Date });
+    } catch (e) { L2 = null; }
+    return L2 ? L2._fightFuelLink('Scrolling') : 'NOT LOADED';
+  };
+  // Calibration: a season that ended long before any of these fights changes nothing.
+  const farFast = runFast({ choice:'ramadan', start: ymd(now - 40 * DAY), days: 10 });
+  H.ok(!!farFast && farFast !== 'NOT LOADED' && farFast.lostHours === 7,
+    'calibration: the real fastSeasonNow loaded, and a season covering none of the fights leaves the finding intact');
+  // The three LOSSES sit inside a season that ended yesterday: the very fights that made the finding
+  // are explained by the fast, so there is nothing left to say.
+  H.eq(runFast({ choice:'ramadan', start: ymd(now - 3 * DAY), days: 3 }), null,
+    'losses inside a fast are left out as unknowable, so the counsel to eat is not built on a chosen fast');
+  // And the WINS inside one (six to four days ago): with them excluded there are no wins to compare.
+  H.eq(runFast({ choice:'ramadan', start: ymd(now - 6 * DAY), days: 3 }), null,
+    'it asks the FIGHT\'S own day — a season that ended days ago still explains the fights inside it');
+
+  // AND IT REACHES THE PERSON. _overridePlan is the "How to get ahead of it" block on the person's
+  // own pattern card. EXECUTED, never grepped: what matters is the sentence the card renders.
+  const mkPlan = (gentle, fasting) => {
+    try {
+      return H.load(['_overridePlan'], { _escFew: (s) => s, nutGentle: () => gentle,
+        fastSeasonNow: () => (fasting ? { name:'Ramadan' } : null) })._overridePlan;
+    } catch (e) { return null; }
+  };
+  const planOn = mkPlan(false, false);
+  H.ok(typeof planOn === 'function', '_overridePlan was found by name — a rename must update this check');
+  if (typeof planOn === 'function') {
+    const evening = { riskWindow:'evening (5-9pm)' };
+    const fuelSeg = (out) => (out.split('<br><br>').filter((b) => /Eating before your hard hour/.test(b))[0] || '');
+    const withFuel = planOn(evening, real);
+    H.ok(withFuel.indexOf(real.line) >= 0, 'the pattern card says the fight-and-food line when it cleared its bar');
+    H.ok(/\d/.test(fuelSeg(withFuel)), 'calibration: with the numbers on, the line carries its hours');
+    H.ok(!/empty stomach/.test(planOn(evening, null)), 'and says nothing about food when there is no finding');
+    H.ok(!/Keep logging the moments/.test(planOn({}, real)),
+      'a person who HAS the finding is not told to keep logging as if nothing had been found');
+    // HIDE NUMBERS: somebody who turned the food numbers off still gets the counsel, never the hours.
+    const gentleOut = mkPlan(true, false)(evening, real);
+    const gSeg = fuelSeg(gentleOut);
+    H.ok(gSeg.length > 40 && /empty stomach/.test(gSeg),
+      'under numbers-off the counsel is still said');
+    H.ok(!/\d/.test(gSeg) && gentleOut.indexOf(real.line) < 0,
+      'and carries no hours — "about 7 hours since you had eaten" is a food number they asked not to see');
+    // A LIVE FAST: "eat before your hard hour" would argue against a discipline they chose.
+    const fastOut = mkPlan(false, true)(evening, real);
+    H.ok(!/empty stomach|went into hungry|Eating before your hard hour/.test(fastOut),
+      'while a fast is live the card says nothing about eating');
+    // THE DOOR. The card's closing sentence points at a real person; it must be something to TAP,
+    // and it must open the 'persistent' bridge — the ARGUMENT is the fact, since every other live
+    // caller passes 'heavy' and that lead ("what you're carrying sounds heavy") is the wrong one here.
+    H.ok(/onclick="bridgeToRealHelp\('persistent'\)"/.test(withFuel),
+      'the pattern card carries a door to a real person that opens the persistent bridge');
+    H.ok(/onclick="bridgeToRealHelp\('persistent'\)"/.test(planOn({}, null)),
+      'on every pattern card, finding or not');
+    H.ok(!/<button[^>]*>[^<]*\d/.test(planOn(evening, real)), 'and the door carries no count');
+  }
+
+  // THE CARD IS FED THE FINDING FOR ITS OWN VICE. Executed through the real renderUrgeInsights, so a
+  // wrong argument (the vice object, another vice's name) shows up as a card with nothing on it.
+  {
+    let box = { innerHTML:'', style:{} }, asked = [];
+    let R = null;
+    try {
+      R = H.load(['renderUrgeInsights', '_overridePlan'], {
+        document: { getElementById: (id) => (id === 'urge-insights' ? box : null) },
+        loadV: () => {}, vices: [{ n:'Scrolling', trackPatterns:true }],
+        analyzeUrgePatterns: () => ({ total:6, winRate:50, trend:null, riskWindow:'evening (5-9pm)', riskDay:null, topTrigger:null }),
+        _fightFuelLink: (n) => { asked.push(n); return n === 'Scrolling' ? real : null; },
+        _escFew: (s) => s, _esc: (s) => s, plural: (n, w) => n + ' ' + w + (n === 1 ? '' : 's'),
+        nutGentle: () => false, fastSeasonNow: () => null });
+    } catch (e) { R = null; }
+    H.ok(!!R, 'renderUrgeInsights was found by name — a rename must update this check');
+    if (R) {
+      R.renderUrgeInsights();
+      H.eq(asked, ['Scrolling'], 'renderUrgeInsights asks for the fight-and-food finding of the vice the card is about');
+      H.ok(box.innerHTML.indexOf(real.line) >= 0, 'and the card the person sees carries it');
+    }
+  }
+
+  // NEVER ON A DISTRESS SURFACE. The line is counsel for a calm read; the SOS, the Feeling Door and
+  // the hard-hour greeting are the moment itself. _overridePlan has ONE caller, and a second one is a
+  // decision somebody must make on purpose rather than a call that drifts onto the SOS screen.
+  const _opCalls = (H.code().match(/_overridePlan\(/g) || []).length;
+  H.eq(_opCalls, 2, '_overridePlan is declared once and called from the pattern card alone');
+  let _rui = '';
+  try { _rui = H.code(H.extractFn('renderUrgeInsights')); } catch (e) { _rui = ''; }
+  H.ok(/_overridePlan\(p,/.test(_rui), 'and that one caller is renderUrgeInsights');
 }
 
 H.section('what you turned down, and the one new thing');

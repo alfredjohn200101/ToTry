@@ -624,9 +624,10 @@ function getLifeState(){
       nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
       topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
-      // THE FIGHT AND THE FOOD, WHICH ONLY THIS APP HOLDS TOGETHER. Put in the STATE rather than on
-      // a card, so it reaches lifeStateBrief() and therefore the brother, the companion and the
-      // coach — the surfaces a person actually meets in the moment. It is null almost always, by
+      // THE FIGHT AND THE FOOD, WHICH ONLY THIS APP HOLDS TOGETHER. Put in the STATE so it reaches
+      // lifeStateBrief() and therefore the brother, the companion and the coach — AND on the
+      // person's own pattern card (renderUrgeInsights → _overridePlan), because counsel the app
+      // tells only a model is counsel the person never gets. It is null almost always, by
       // design: it refuses to speak unless the gap is knowable on enough fights, on both sides, and
       // wide enough to plan around.
       fuelLink: (function(){ try{ return (typeof _fightFuelLink === 'function') ? _fightFuelLink(v.n) : null; }catch(_){ return null; } })(),
