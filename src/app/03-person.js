@@ -327,7 +327,7 @@ function _sexDoorHTML(){
     if(day < 3) return '';
     return '<div class="card">'+
       '<div class="eyebrow">About you</div>'+
-      '<p class="card-body">One question, and you can skip it. Which fits your body? It changes the maths behind your calorie and protein targets, and if you are female it lets me offer cycle tracking — only if you want it. Skip it and everything still works, and I keep speaking to you exactly as I do now.</p>'+
+      '<p class="card-body">One question, and you can skip it. Which fits your body? It changes the maths behind your calorie and protein targets, and if you are female it lets me offer cycle tracking — only if you want it. Your answer is kept with your account, and the coach uses it once you have turned the coach on. Skip it and everything still works, and I keep speaking to you exactly as I do now.</p>'+
       '<button class="btn" onclick="_sexDoorPick(\'male\')">Male</button>'+
       '<button class="btn" onclick="_sexDoorPick(\'female\')">Female</button>'+
       '<button class="btn quiet" onclick="_sexDoorNo()">Rather not say</button>'+

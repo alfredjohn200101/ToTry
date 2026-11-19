@@ -22169,14 +22169,31 @@ H.section('the week\'s goal reaches the brain, the coach and the done card — s
   H.ok(seeds.length >= 1 && seeds.every(c => c === '{'), '(h) every demo write of totry_goals is an object, never an array (got ' + JSON.stringify(seeds) + ')');
   H.ok(/ls\('totry_finance_goals',\s*\[\{id:1,name:'Emergency fund'/.test(demo), '(h) the demo money goal is seeded into totry_finance_goals');
 
-  // (i) both privacy copies say the week's goal is in what is sent — the brief enumerates it now.
+  // (i) both privacy copies enumerate what is sent: the week's goal (v674), and the values with what
+  //     they wrote about the first one, the feeling that most often brings them, and biological sex —
+  //     all three already in the brief or in every prompt, and named by neither policy. Read with
+  //     comments STRIPPED (a removal's own explanation quotes the old copy, so an unstripped presence
+  //     check passes on deleted text), and the two enumerations must be the SAME sentence: they are
+  //     read by different people and must not disagree.
   let pol = '';
-  try { pol = H.extractFn('showPrivacyPolicy'); } catch (e) { pol = ''; }
+  try { pol = H.code(H.extractFn('showPrivacyPolicy')); } catch (e) { pol = ''; }
   let page = '';
-  try { page = require('fs').readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8'); } catch (e) { page = ''; }
-  const NAMED = /why this matters to you, what you wrote that you set out to do this week and last week, and <strong>the text of your few most recent journal entries/;
-  H.ok(NAMED.test(pol), '(i) the in-app privacy policy names the week\'s goal in the context the coach is sent');
-  H.ok(NAMED.test(page), '(i) privacy.html names it too — the two copies are read by different people and must not disagree');
+  try { page = require('fs').readFileSync(require('path').join(__dirname, '..', 'privacy.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, ''); } catch (e) { page = ''; }
+  const enumOf = function (src) {
+    const A = 'That context is a summary', a = src.indexOf(A);
+    if (a < 0 || src.indexOf(A, a + 1) > -1) return '';
+    const b = src.indexOf('word for word</strong>', a);
+    return b > a ? src.slice(a, b) : '';
+  };
+  const ePol = enumOf(pol), ePage = enumOf(page);
+  H.ok(ePol.length > 200 && ePage.length > 200, '(i) the "That context is a summary" enumeration was found exactly once in each copy (a rename must update this check, not drop it)');
+  H.eq(ePol, ePage, '(i) the in-app policy and privacy.html enumerate the SAME context, word for word');
+  [['the week\'s goal', /set out to do this week and last week/], ['the values they chose', /\bvalues\b/],
+   ['what they wrote about the first value', /\bwhat you wrote about\b/], ['the feeling that most often brings them', /\bfeeling\b/],
+   ['their biological sex', /\bsex\b/], ['the journal, word for word', /most recent journal entries/]].forEach(function (it) {
+    H.ok(it[1].test(ePol), '(i) the in-app privacy policy names ' + it[0] + ' in the context the coach is sent');
+    H.ok(it[1].test(ePage), '(i) privacy.html names ' + it[0] + ' too');
+  });
 
   // (j) and the permission sheet a person actually says yes on names them. "What you are working on"
   //     already covered the goals for a yes given under v1, so the version is NOT bumped (a bump turns
@@ -22279,6 +22296,12 @@ H.section('about you: no sex is guessed, and the question is asked once, on Trac
     '(c) never stated, day 3: one card with exactly Male, Female and Rather not say');
   H.ok(/Rather not say/.test(d0.el.innerHTML) && !/Track your cycle/.test(d0.el.innerHTML),
     '(c) and it is the question, never the cycle offer — being unstated is not being female');
+  // It says where the answer goes before they give it: totry_sex is in SYNC_KEYS, and sexNote() puts it
+  // in every prompt once the coach is on. Asked of the card's own words, not the whole HTML.
+  const _body = (d0.el.innerHTML.match(/<p class="card-body">([\s\S]*?)<\/p>/) || [])[1] || '';
+  H.ok(_body.length > 100, '(c) calibration: the card\'s body paragraph was found (' + _body.length + ' chars)');
+  H.ok(/\baccount\b/.test(_body) && /\bcoach\b/.test(_body),
+    '(c) the card says the answer is kept with their account and that the coach uses it once it is on');
   H.eq(runCard(null, { day: 2 }).el.innerHTML, '', '(c) before day 3 nothing is asked — day 1 belongs to the Feeling Door');
   // Install day with a journey start 400 days back: getDayCount reads 401 here, daysInstalled 1.
   const dj = runCard(null, { day: 1, journey: 400 });
