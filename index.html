@@ -13611,9 +13611,14 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 // deliberately KEEP, so a "no" survives the next person on the phone. The permission lives in a NEW
 // key, totry_ai_consent, which both of them wipe with every other totry_ key -- so one person's "yes"
 // is never inherited by whoever signs in next. Neither key is in SYNC_KEYS. A legacy totry_ai_off='0'
-// (written by v671's toggle, which never showed what is sent) is NOT consent. The value is a VERSION:
-// when what is sent GROWS or a recipient is ADDED, bump aiConsentVersion() and everybody is asked
-// again. A recipient REMOVED (NVIDIA, 19 Nov 2026) does not: a yes to seven providers already covers six.
+// (written by v671's toggle, which never showed what is sent) is NOT consent. The value is a VERSION.
+// Bump aiConsentVersion(), and everybody is asked again, when a RECIPIENT is added or when a CATEGORY
+// is added that the current sheet does not name. More of a category the sheet already names is not
+// a bump: the week's goals (v674) are "what you are working on", so the sheet now names them outright
+// for whoever is asked next and the yes already given stands. A bump is not free either — api()
+// returns '' for 'unasked', so it switches the coach off for every person who said yes until they
+// say it again. A recipient REMOVED (NVIDIA, 19 Nov 2026) does not bump: a yes to seven providers
+// already covers six.
 // A function, not a const: the test harness loads functions by name, and a const it cannot see would
 // make every consent read as "never asked" in the suite while working in the app.
 function aiConsentVersion(){ return 'v1'; }
@@ -13711,7 +13716,7 @@ function aiAskSheet(what){
     '<div id="ai-ask-title" style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:600;color:var(--tx);margin-bottom:10px">Let the coach read your data?</div>'+
     '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
       (what ? '<p style="margin:0 0 10px">' + esc(what) + ' uses the coach.</p>' : '')+
-      '<p style="margin:0 0 10px">To answer you, ToTry sends an AI provider what you type, plus a summary of what you have logged here: why this matters to you and who you are becoming, what you are working on and your clean days, your most recent journal entries word for word, training, food, weight, money, and your sleep and recent workouts from Apple Health if you have connected it. Some answers are looked up on the web by the provider\u2019s own search.</p>'+
+      '<p style="margin:0 0 10px">To answer you, ToTry sends an AI provider what you type, plus a summary of what you have logged here: why this matters to you and who you are becoming, what you are working on and your goals for the week, your clean days, your most recent journal entries word for word, training, food, weight, money, and your sleep and recent workouts from Apple Health if you have connected it. Some answers are looked up on the web by the provider\u2019s own search.</p>'+
       '<p style="margin:0 0 10px">A photo goes only when you choose to have one read: a meal, a form check, a package, or a workout, scale or recipe screenshot.</p>'+
       '<p style="margin:0 0 10px">It goes through ToTry\u2019s server to whichever provider answers first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare or Anthropic. Some of them, including Google\u2019s free tier, may keep what you send, have people review it, and use it to improve their models. It is never used for ads and never sold.</p>'+
       '<p style="margin:0 0 14px">Once it is on, the coach also writes you a sentence each morning and a weekly read without being asked. Settings \u2192 Your data switches all of it off.</p>'+

@@ -22177,6 +22177,16 @@ H.section('the week\'s goal reaches the brain, the coach and the done card — s
   const NAMED = /why this matters to you, what you wrote that you set out to do this week and last week, and <strong>the text of your few most recent journal entries/;
   H.ok(NAMED.test(pol), '(i) the in-app privacy policy names the week\'s goal in the context the coach is sent');
   H.ok(NAMED.test(page), '(i) privacy.html names it too — the two copies are read by different people and must not disagree');
+
+  // (j) and the permission sheet a person actually says yes on names them. "What you are working on"
+  //     already covered the goals for a yes given under v1, so the version is NOT bumped (a bump turns
+  //     the coach off for everybody who said yes); whoever is asked next reads them by name.
+  let sheet = '';
+  try { sheet = H.code(H.extractFn('aiAskSheet')); } catch (e) { sheet = ''; }
+  const sentPara = (sheet.match(/To answer you, ToTry sends[^<]*/) || [''])[0];
+  H.ok(sentPara.length > 100, '(j) the sheet\'s what-is-sent paragraph was found by its anchor (a rename must update this check, not drop it)');
+  H.ok(/goals for the week|this week\S* goals?|set out to do this week/i.test(sentPara),
+    '(j) the permission sheet names the week\'s goals in what is sent (' + sentPara.slice(0, 160) + '…)');
 }
 
 H.section('about you: no sex is guessed, and the question is asked once, on Track');
