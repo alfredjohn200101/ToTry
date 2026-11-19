@@ -53,7 +53,14 @@ const SEARCH_CAPABLE = ["gemini", "openrouter"];
 // Candidate models per provider, tried in order. First entry is the preferred one.
 // An env override (GROQ_MODEL etc.) replaces the whole list with that single value.
 const MODELS = {
-  gemini:      ["gemini-2.5-flash", "gemini-2.0-flash"],
+  // RE-READ AGAINST GOOGLE'S OWN DEPRECATIONS PAGE, 19 Nov 2026. gemini-2.5-flash shuts down on
+  // 1 Dec 2026 ("API requests to gemini-2.5-flash will automatically route to gemini-3.5-flash-lite"),
+  // and gemini-2.0-flash was shut down on 1 Jun 2026 — so the second candidate here had been dead for
+  // six months and Gemini had ONE live id. 3.5-flash-lite leads because it is Google's own named
+  // replacement and the model the API would route to anyway; 3.6-flash is the second live id;
+  // 2.5-flash stays LAST only as a safety net until its shutdown, so a shape error in the 3.x request
+  // shows up in `burned` while something still answers, instead of silently costing the provider.
+  gemini:      ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.5-flash"],
   // Groq retires model IDs regularly and its model list needs an API key, so this cannot be verified
   // from outside. Several current candidates are listed; whichever answers first wins, and the
   // `attempts` array in the response names it, so the winner is observable without guessing.
@@ -68,12 +75,17 @@ const MODELS = {
   // is what made it visible. The two are kept at the back rather than deleted, because a vendor
   // reinstating a model is at least as common as retiring one, and a candidate that never fires is
   // free while a missing one is a provider that cannot recover.
-  groq:        ["openai/gpt-oss-120b", "meta-llama/llama-4-scout-17b-16e-instruct",
-                "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
-  // Verified present in OpenRouter's public /api/v1/models on 17 Aug and re-verified 28 Aug 2026
-  // (all three still listed; the free tier was returning 429 that day, which is quota, not rot).
-  openrouter:  ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free",
-                "google/gemma-4-26b-a4b-it:free"],
+  // THAT REASONING EXPIRED (19 Nov 2026). Groq's own deprecations page shut llama-4-scout down on
+  // 17 Jul 2026 and llama-3.3-70b-versatile / llama-3.1-8b-instant on 16 Aug 2026, naming
+  // openai/gpt-oss-120b and openai/gpt-oss-20b as the replacements. A SHUT-DOWN id is not a vendor
+  // pausing a model, and keeping three of them meant three dead round trips every time gpt-oss-120b
+  // returned 429, before the chain moved on to the next provider.
+  groq:        ["openai/gpt-oss-120b", "openai/gpt-oss-20b"],
+  // Re-measured 19 Nov 2026 against OpenRouter's public /api/v1/models/{id}/endpoints: the nemotron
+  // id has ZERO endpoints, so it was a dead candidate between two live ones. Both gemma ids have one
+  // endpoint each, served by Google AI Studio — which means OpenRouter is NOT independent of Google
+  // for text, and a Google outage can take both legs. That is a known cost, not a fix.
+  openrouter:  ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"],
   anthropic:   ["claude-haiku-4-5-20251001"],
   // Mistral La Plateforme — a STANDING free tier, no card, verified 1 Sep 2026 against the vendor's
   // own console docs. Pixtral is NOT here on purpose: both pixtral ids were retired (12b on 31 Dec
@@ -109,10 +121,12 @@ const MODELS = {
   // text backstop — the text chain has five without it, and chat would drain the pool in days.
   nvidiaVision: ["google/gemma-4-31b-it", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
                  "meta/llama-3.2-11b-vision-instruct", "meta/llama-3.2-90b-vision-instruct"],
-  // Vision needs image input support — all three verified as accepting images.
-  geminiVision:     ["gemini-2.5-flash", "gemini-2.0-flash"],
-  openrouterVision: ["google/gemma-4-31b-it:free", "nvidia/nemotron-nano-12b-v2-vl:free",
-                     "google/gemma-4-26b-a4b-it:free"],
+  // Vision needs image input support. Verified 19 Nov 2026: 3.5-flash-lite accepts image input
+  // (Google's model page, 65,536 output tokens), and both gemma ids list "image" among their input
+  // modalities on OpenRouter. Same order and same reasons as the text list above. The nemotron vision
+  // id has ZERO endpoints on OpenRouter (measured 19 Nov 2026), so it is gone from here too.
+  geminiVision:     ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.5-flash"],
+  openrouterVision: ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"],
   // The :online suffix is applied to a model id rather than being a listed model of its own.
   openrouterSearch: ["google/gemma-4-31b-it:free:online", "google/gemma-4-31b-it:free"],
 };
@@ -156,6 +170,20 @@ async function tryModels(models, attempt) {
   return last;
 }
 
+// Which thinking control a Gemini model takes, decided PER MODEL because one list now spans two
+// families. Google's API reference, read 19 Nov 2026: the 2.x family takes a token budget, and a
+// thinking LEVEL is "Recommended for Gemini 3 or later models. Use with earlier models results in an
+// error." The 3.x migration notes say to replace the budget with a level. So 2.x keeps the measured
+// budget of 0 and 3.x gets MINIMAL ("little to no thinking"), the nearest thing to that budget.
+// 3.8 Flash REJECTS minimal ("will return an error"), so any id not known to accept it gets LOW,
+// which every listed 3.x model supports — an env pin to a newer model cannot break the request shape.
+const GEMINI_MINIMAL_OK = ["gemini-3.5-flash-lite", "gemini-3.6-flash"];
+function geminiThinking(model) {
+  const m = String(model || "");
+  if (/^gemini-2\./.test(m)) return { thinkingBudget: 0 };
+  return { thinkingLevel: GEMINI_MINIMAL_OK.includes(m) ? "MINIMAL" : "LOW" };
+}
+
 async function callGemini({ system, messages, max_tokens, web_search }) {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return { skip: true };
@@ -175,9 +203,10 @@ async function callGemini({ system, messages, max_tokens, web_search }) {
         // the app with HTTP 200 as "best available (truncated)" because every other provider in the
         // chain was down. That is the Brother's voice stopping mid-sentence on the surface a person
         // reaches at their worst. The note above diagnosed the EMPTY-text version of this; the
-        // truncated version was never handled. thinkingBudget 0 gives the whole budget to the
-        // answer, and models that do not support the field ignore it.
-        thinkingConfig: { thinkingBudget: 0 },
+        // truncated version was never handled. Minimal thinking (3.x) or a budget of 0 (2.5) gives
+        // the budget to the answer — geminiThinking() picks the field each model accepts, because a
+        // level sent to 2.5 is an error and a budget sent to 3.x is undocumented.
+        thinkingConfig: geminiThinking(model),
       },
     };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
@@ -421,9 +450,11 @@ async function callGeminiVision({ system, prompt, image_base64, image_mime, max_
     // model: without the cap it spends the output budget reasoning before it writes a character, so a
     // photo of a plate came back truncated mid-JSON and the client's JSON.parse threw. Measured on the
     // live proxy 28 Aug 2026: the text shape needed 4000 tokens to finish WITHOUT the cap. With it,
-    // the whole budget goes to the answer.
+    // the whole budget goes to the answer. Both paths now ask geminiThinking() for the field, since
+    // this list spans 3.x (a level) and 2.5 (a budget): 2.5 rejects a level outright, and Google's
+    // 3.x notes say to replace the budget without saying what happens if you do not.
     const body = { contents: [{ role: "user", parts }], generationConfig: {
-      maxOutputTokens: max_tokens || 1024, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } } };
+      maxOutputTokens: max_tokens || 1024, temperature: 0.3, thinkingConfig: geminiThinking(model) } };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
     const resp = await fetchWithTimeout(url, {

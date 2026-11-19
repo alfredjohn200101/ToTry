@@ -4741,9 +4741,15 @@ function fnBodyOf(code, name){
   // returned the fragment as the best it had. That is the Brother's voice stopping mid-sentence on
   // the surface a person reaches at their worst.
   const fs = require('fs'), path = require('path');
-  const proxy = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'ai-proxy', 'index.ts'), 'utf8');
-  H.ok(/thinkingConfig: \{ thinkingBudget: 0 \}/.test(proxy),
-    'the proxy turns Gemini thinking off so the whole budget goes to the answer');
+  // Since 19 Nov 2026 the Gemini list spans 3.x (which takes a thinking LEVEL) and 2.5 (which takes a
+  // BUDGET and errors on a level), so the field is chosen per model by geminiThinking(). WHICH model gets
+  // WHICH field is driven in test/aiproxy.test.mjs (`npm run test:edge`); this only holds that both
+  // Gemini request sites still ask the helper rather than a literal that is right for one family.
+  // Comments stripped first, because the explanation above each site names the old literal.
+  const proxy = H.code(fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'ai-proxy', 'index.ts'), 'utf8'));
+  const _tcSites = (proxy.match(/thinkingConfig: geminiThinking\(model\)/g) || []).length;
+  H.ok(_tcSites === 2 && (proxy.match(/thinkingConfig:/g) || []).length === 2,
+    'both Gemini request sites (text and vision) take their thinking field from geminiThinking(model) (' + _tcSites + ' of 2)');
   H.ok(proxy.indexOf('thinkingConfig') > proxy.indexOf('maxOutputTokens'),
     'inside generationConfig, where the API expects it');
 
