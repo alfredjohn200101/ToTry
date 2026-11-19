@@ -129,7 +129,16 @@ function calcDebtFreeDate(){
   // Saying so plainly is worth more than a comforting number that will never arrive.
   if(proj.neverClears){
     if(dd) dd.textContent='Not yet on track';
-    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and everything reclaimed goes straight at it.';
+    // AND THEN IT HANDED THEM TO NOBODY (v674). This is the one place the app computes that a debt is
+    // growing faster than it can be paid, and a free counsellor is the most useful thing it could add.
+    // Said HERE, at the threshold, and nowhere as a standing row. With no verified line for their
+    // currency it names no number at all rather than one nobody checked.
+    const _mr = (typeof _moneyLineFor === 'function') ? _moneyLineFor('debt') : null;
+    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and everything reclaimed goes straight at it.'
+      +'<span style="display:block;margin-top:8px">You don’t have to work that out alone. '
+      +(_mr ? 'Someone whose job this is will talk it through with you, in confidence: '+_moneyLineHTML(_mr)
+            : 'If there is a free, not-for-profit debt adviser where you live, this is the moment they are for.')
+      +'</span>';
     return;
   }
   const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);

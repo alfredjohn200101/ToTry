@@ -17165,8 +17165,11 @@ H.section('no surface dials a number the app has not verified');
     return null;
   };
   const numsOf = (rows) => (rows || []).flatMap(r => numsIn(r && r.contact));
+  // MONEY_LINES joined in v674. Its numbers are built into a tel: link at RUNTIME, so the dialled
+  // scan above cannot see them at all — that blind spot is why the money section below pins them by
+  // value. They are unioned here so a later LITERAL tel: for one of them is still recognised.
   const LINES = { CRISIS_LINES: listOf('CRISIS_LINES'), MEDICAL_LINES: listOf('MEDICAL_LINES'),
-                  HARM_LINES: listOf('HARM_LINES') };
+                  HARM_LINES: listOf('HARM_LINES'), MONEY_LINES: listOf('MONEY_LINES') };
   H.ok(LINES.CRISIS_LINES && LINES.CRISIS_LINES.length >= 7,
     'calibration: CRISIS_LINES evaluated to ' + ((LINES.CRISIS_LINES || []).length) + ' rows (>=7)');
   const harmNums = numsOf(LINES.HARM_LINES);
@@ -17176,7 +17179,8 @@ H.section('no surface dials a number the app has not verified');
   H.eq(harmNums.filter(n => n === '7911' || n === '7999'), [],
     'and invents neither 7911 nor 7999 from the separator escape');
 
-  const verified = new Set([].concat(numsOf(LINES.CRISIS_LINES), numsOf(LINES.MEDICAL_LINES), numsOf(LINES.HARM_LINES)));
+  const verified = new Set([].concat(numsOf(LINES.CRISIS_LINES), numsOf(LINES.MEDICAL_LINES), numsOf(LINES.HARM_LINES),
+    numsOf(LINES.MONEY_LINES)));
 
   // AND THE CARD DIMENSION, WHICH THE UNION THREW AWAY. Flattening three lists into one Set makes
   // every number verified for every card — so **111 passes**, and 111 is the NHS NON-emergency
@@ -17213,6 +17217,164 @@ H.section('no surface dials a number the app has not verified');
   H.eq(planted.filter(n => !verified.has(n)), ['741741'],
     'fault-injected: a number the app has not verified is reported — a plausible-looking helpline ' +
     'nobody checked is exactly what the model once offered an Australian user');
+}
+
+// v674 — MONEY HANDED NOBODY ON. The app computes the moment a debt grows faster than it can be
+// paid (projectPayoff's neverClears) and meets a gambling urge in openGambleMoment, and at both it
+// named no human: the debt hero said "the balance grows" and stopped, and the gamble moment's only
+// "talk" opened the app. The model had no money line it was allowed to give either, because
+// safetyNote forbids a remembered number and the only numbers it is handed are crisis lines.
+// Measured at 9c70465: 0 hits for any debt or gambling service anywhere in src/.
+// Every check below EXECUTES the real function; the registry is evaluated, never regexed.
+H.section('money hands the person to a human, at the threshold, on numbers the app verified');
+{
+  const code = H.code();
+  const at = code.indexOf('const MONEY_LINES');
+  H.ok(at > 0 && code.indexOf('const MONEY_LINES', at + 1) === -1,
+    'calibration: MONEY_LINES is declared exactly once, so the evaluation below is unambiguous');
+  let ML = null;
+  try {
+    const o = code.indexOf('[', at); let dep = 0;
+    for (let k = o; k < code.length; k++) {
+      if (code[k] === '[') dep++;
+      else if (code[k] === ']') { dep--; if (!dep) { ML = new Function('return ' + code.slice(o, k + 1))(); break; } }
+    }
+  } catch (e) { ML = null; }
+  H.ok(Array.isArray(ML) && ML.length >= 3, 'calibration: MONEY_LINES evaluated to ' + ((ML || []).length) + ' rows');
+  ML = Array.isArray(ML) ? ML : [];
+
+  // (a) THE NUMBERS ARE PINNED BY VALUE. Each was read on the provider's own page on 19 Nov 2026; a
+  // change to any of them has to be deliberate and has to come with a fresh reading.
+  H.eq(ML.map(r => String(r.contact).replace(/[^0-9]/g, '')).sort(), ['08088084000', '1800007007', '1800858858'],
+    '(a) MONEY_LINES carries exactly the three numbers read on the providers\' own pages — National Debt ' +
+    'Helpline 1800 007 007, National Debtline 0808 808 4000, Gambling Helpline 1800 858 858');
+  H.eq(ML.filter(r => !(r.region === 'Australia' || r.region === 'UK')).map(r => r.region), [],
+    '(a) no row for a region nobody verified — no US line, because the one candidate read does not say the call is free');
+  H.ok(ML.length > 0 && ML.every(r => /\bfree\b/.test(r.detail) && r.name && (r.kind === 'debt' || r.kind === 'gambling')),
+    '(a) every row says it is free, is named, and is a debt or a gambling line');
+
+  // (b) THE REGION COMES FROM THE CURRENCY, AND AN UNKNOWN ONE GETS NO NUMBER.
+  let cur = 'AUD', M = null;
+  try { M = H.load(['_moneyLineFor', '_moneyLineHTML', '_esc'], { MONEY_LINES: ML, getUserCurrency: () => cur }); }
+  catch (e) { M = null; }
+  H.ok(!!M, '(b) _moneyLineFor and _moneyLineHTML were found by name — a rename must update this check, not drop it');
+  if (M) {
+    const pick = (c, k) => { cur = c; const r = M._moneyLineFor(k); return r ? r.contact : null; };
+    H.eq(pick('AUD', 'debt'), '1800 007 007', '(b) an AUD person is given the National Debt Helpline');
+    H.eq(pick('GBP', 'debt'), '0808 808 4000', '(b) a GBP person is given National Debtline');
+    H.eq(pick('AUD', 'gambling'), '1800 858 858', '(b) an AUD person is given the Gambling Helpline');
+    H.eq(pick('USD', 'debt'), null, '(b) a USD person is given NO number — honest copy, never an unchecked line');
+    H.eq(pick('EUR', 'debt'), null, '(b) neither is a EUR person');
+    H.eq(pick('GBP', 'gambling'), null, '(b) and no UK gambling line, because none was verified');
+    cur = 'AUD';
+    const h = M._moneyLineHTML(M._moneyLineFor('debt'));
+    H.eq((h.match(/href="tel:([^"]*)"/) || [])[1], '1800007007', '(b) the link dials the number it shows');
+    H.ok(/display:inline-block/.test(h) && /padding:6px 0/.test(h),
+      '(b) the link is inline-block with 6px of padding — an anchor is only as tall as its line box, and the ' +
+      '"Find a GP" link failed the 24pt tap floor at 123x20 without it');
+    H.eq(M._moneyLineHTML(null), '', '(b) no row, no markup');
+  }
+
+  // (c) THE DEBT HERO NAMES A HUMAN AT THE THRESHOLD — AND ONLY THERE.
+  const els = {};
+  const el = id => els[id] || (els[id] = { textContent: '', innerHTML: '', style: {} });
+  let proj = null, D = null;
+  try {
+    D = H.load(['calcDebtFreeDate', '_moneyLineFor', '_moneyLineHTML', '_esc'], {
+      MONEY_LINES: ML, getUserCurrency: () => cur, loadF() {}, debts: [{ t: 9000 }], _debtBalance: d => d.t,
+      monthlyPaymentRate: () => 120, ls: () => null, projectPayoff: () => proj, curSym: () => '$',
+      document: { getElementById: el },
+    });
+  } catch (e) { D = null; }
+  H.ok(!!D, '(c) calcDebtFreeDate was found by name');
+  const hero = (c, p) => { Object.keys(els).forEach(k => delete els[k]); cur = c; proj = p;
+    try { D.calcDebtFreeDate(); } catch (e) { return 'THREW ' + e.message; } return el('df-desc').innerHTML; };
+  if (D) {
+    const NEVER = { neverClears: true, monthlyInterest: 150 };
+    const au = hero('AUD', NEVER);
+    H.ok(/the balance grows/.test(au), '(c) calibration: the neverClears branch really ran' + (/^THREW/.test(au) ? ' — ' + au : ''));
+    H.ok(au.indexOf('href="tel:1800007007"') >= 0,
+      '(c) when interest outruns the payment, an AUD person is handed the National Debt Helpline');
+    const us = hero('USD', NEVER);
+    H.ok(/the balance grows/.test(us) && us.indexOf('tel:') < 0 && /not-for-profit debt adviser/.test(us),
+      '(c) a USD person reaches the same threshold and gets honest copy with NO number');
+    const fine = hero('AUD', { months: 20, interestPaid: 300 });
+    H.ok(el('df-desc').textContent.indexOf('20 months') >= 0,
+      '(c) calibration: the on-track branch really ran');
+    H.ok(fine.indexOf('tel:') < 0 && el('df-desc').textContent.indexOf('1800') < 0,
+      '(c) and when the debt IS clearing, no line is shown — a threshold, never a standing row');
+  }
+
+  // (d) THE GAMBLE MOMENT OFFERS A PERSON, BETWEEN "TALK IT OUT" AND "NOT NOW".
+  let appended = null, G = null;
+  try {
+    G = H.load(['openGambleMoment', '_moneyLineFor', '_moneyLineHTML', '_esc'], {
+      MONEY_LINES: ML, getUserCurrency: () => cur, loadV() {}, vices: [{ n: 'Pokies' }], window: {},
+      viceSpendFromBank: () => null, _reframeHTML: () => '', curSym: () => '$', haptic() {}, setTimeout() {},
+      document: { createElement: () => ({ style: {}, className: '', innerHTML: '' }), body: { appendChild: m => { appended = m; } },
+                  querySelectorAll: () => [], getElementById: () => null },
+    });
+  } catch (e) { G = null; }
+  H.ok(!!G, '(d) openGambleMoment was found by name');
+  const moment = c => { appended = null; cur = c; try { G.openGambleMoment(0); } catch (e) { return 'THREW ' + e.message; }
+    return appended ? appended.innerHTML : ''; };
+  if (G) {
+    const au = moment('AUD');
+    H.ok(/Before you put it on/.test(au), '(d) calibration: the real gamble moment rendered' + (/^THREW/.test(au) ? ' — ' + au : ''));
+    const iTel = au.indexOf('href="tel:1800858858"'), iTalk = au.indexOf('I just need to talk it out'), iNot = au.indexOf('Not now');
+    H.ok(iTel > 0, '(d) an AUD person mid-urge is offered the Gambling Helpline, not only the app');
+    H.ok(iTel > iTalk && iTel < iNot, '(d) and it sits after "talk it out" and before "Not now", inside the sheet');
+    const gb = moment('GBP');
+    H.ok(/Before you put it on/.test(gb) && gb.indexOf('tel:') < 0 && /Text one person who knows/.test(gb),
+      '(d) a GBP person gets the playbook\'s own move — tell a person — and no unverified number');
+  }
+
+  // (e) THE MODEL IS HANDED THE SAME VERIFIED LINE, ONLY FOR A FRONT THEY HAVE, AND THE COACH KEEPS IT.
+  let B = null;
+  try {
+    B = H.load(['lifeStateBrief', '_moneyLineFor', '_viceStakeKind'], {
+      MONEY_LINES: ML, getUserCurrency: () => cur,
+      _unitsNote: () => '', nutGentle: () => false, _gentleWord: () => null, wFmt: x => x + 'kg', wDelta: x => x + 'kg',
+      curSym: () => '$', feelingPattern: () => null, fastSeasonNow: () => null,
+    });
+  } catch (e) { B = null; }
+  H.ok(!!B, '(e) lifeStateBrief was found by name');
+  const PFX = 'Free human help for money and gambling';
+  const brief = (c, debt, viceName) => {
+    cur = c;
+    const s = { training: {}, nutrition: {}, body: {}, soul: {}, activity: { daysQuiet: 0 },
+      fight: { fights7: 0, vices: viceName ? [{ name: viceName, cleanDays: 3, uses7: 0 }] : [] },
+      money: { hasDebt: debt, totalDebt: debt ? 7500 : 0, reclaimed: 0 } };
+    try { return B.lifeStateBrief(s); } catch (e) { return 'THREW ' + e.message; }
+  };
+  const lineOf = b => (String(b).split('\n').filter(l => l.indexOf(PFX) === 0)[0] || '');
+  if (B) {
+    const both = brief('AUD', true, 'Pokies');
+    H.ok(/7,500 debt remaining/.test(both), '(e) calibration: the money line of the brief rendered' + (/^THREW/.test(both) ? ' — ' + both : ''));
+    const L = lineOf(both);
+    H.ok(L.indexOf('1800 007 007') >= 0 && L.indexOf('1800 858 858') >= 0,
+      '(e) AUD, in debt, fighting gambling: the model is handed both verified lines');
+    H.ok(/never unprompted/.test(L) && /never give a money or gambling number you remember/.test(L),
+      '(e) with the instruction not to volunteer it and not to substitute a remembered number');
+    H.eq(lineOf(brief('AUD', true, 'Porn')).indexOf('1800 858 858'), -1, '(e) no gambling fight, no gambling line');
+    H.eq(lineOf(brief('AUD', false, 'Porn')), '', '(e) no debt and no gambling fight: no line at all');
+    const gb = lineOf(brief('GBP', true, 'Pokies'));
+    H.ok(gb.indexOf('0808 808 4000') >= 0 && gb.indexOf('1800') < 0,
+      '(e) GBP: National Debtline, and no Australian number');
+    H.eq(lineOf(brief('USD', true, 'Pokies')), '', '(e) USD: no line, so the model is handed nothing it could misquote');
+
+    // The coach builds its own prompt and takes brief lines BY PREFIX; without the prefix the one
+    // voice somebody types "who can help with my debt?" into would still have no number to give.
+    let keep = null;
+    try {
+      const bc = H.code(H.extractFn('buildCtx'));
+      const m = bc.match(/const _keep\s*=\s*(\[[^\]]*\])/);
+      keep = m ? new Function('return ' + m[1])() : null;
+    } catch (e) { keep = null; }
+    H.ok(Array.isArray(keep) && keep.length >= 6, '(e) calibration: buildCtx\'s keep list was found and evaluated');
+    H.ok(!!L && Array.isArray(keep) && keep.some(p => L.indexOf(p) === 0),
+      '(e) buildCtx keeps the brief\'s money-help line, so the coach is handed it too');
+  }
 }
 
 

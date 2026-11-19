@@ -960,6 +960,21 @@ function lifeStateBrief(s){
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
   if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+Math.round(s.money.totalDebt).toLocaleString()+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+Math.round(s.money.reclaimed).toLocaleString()+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  // AND THE MODEL WAS GIVEN NO MONEY HUMAN TO NAME (v674). safetyNote tells every surface to give
+  // only a number it was handed, and the only numbers it is handed are crisis lines, so somebody who
+  // asked "who can help with my debt?" got a coach with nothing it was allowed to give. The verified
+  // MONEY_LINES row for where they live, and only for a front they actually have; never volunteered.
+  // buildCtx keeps this line BY PREFIX, so the prefix is fixed.
+  try{
+    const _mo = [];
+    const _md = (s.money && s.money.hasDebt) ? _moneyLineFor('debt') : null;
+    const _mgam = !!(f && f.vices && f.vices.some(function(v){ return _viceStakeKind(v && v.name) === 'gambling'; }));
+    const _mg = _mgam ? _moneyLineFor('gambling') : null;
+    if(_md) _mo.push(_md.name + ' ' + _md.contact + ' (free financial counselling, ' + _md.detail.replace(/^free · /, '') + ')');
+    if(_mg) _mo.push(_mg.name + ' ' + _mg.contact + ' (' + _mg.detail + ')');
+    if(_mo.length) lines.push('Free human help for money and gambling, verified for where they live: ' + _mo.join('; ') +
+      '. Offer it only if they raise money worry, debt they cannot get on top of, or a gambling urge, never unprompted; and never give a money or gambling number you remember instead of these.');
+  }catch(_){ }
   // GIVING, AND THE ONE THING THE MODEL MUST NOT DO WITH IT. The screens hide amounts when the person
   // has turned quiet on, and each tradition's own reason is in the GIVING registry — Qur'an 2:271 for
   // islam, "do not let your left hand know what your right hand is doing" for christianity. So under
@@ -1373,9 +1388,11 @@ function buildCtx(){
   // the brief is deliberately NOT taken — buildCtx or brotherSys already states it.
   // The sixth, the week's goal in their own words, was added with goalsForBrain (v674): the coach is
   // the voice somebody types to about their week, and it was the one surface the goal could not reach.
+  // The seventh is the verified money/gambling line (v674): the coach is where somebody types "who can
+  // help with my debt?", and without it the one number it was allowed to give was none.
   const _depthCtx = (function(){ try{
     const _b = (typeof getLifeState==='function') ? (getLifeState().brief || '') : '';
-    const _keep = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them', 'Their own goals, in their words'];
+    const _keep = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them', 'Their own goals, in their words', 'Free human help for money and gambling'];
     const _dl = _b.split('\n').filter(function(l){ return _keep.some(function(p){ return l.indexOf(p) === 0; }); });
     return _dl.length ? '\n\nWHAT ELSE YOU KNOW ABOUT THEM (the same read of the whole person the rest of the app uses — follow every instruction in these lines exactly):\n' + _dl.join('\n') : '';
   }catch(_){ return ''; } })();
@@ -3002,6 +3019,46 @@ const HARM_LINES = [
   {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
   {region: 'Emergency', name: 'Police / Ambulance', contact: '000 (AU) \u00b7 911 (US) \u00b7 999 (UK)', detail: 'If imminent'}
 ];
+// MONEY HAS ITS OWN HUMANS (v674). The app works out when interest is outrunning somebody's payments
+// and it meets a gambling urge at the door, and until now it said so and handed them to nobody: the
+// only "talk" in the gamble moment opened the app itself, and the debt hero said "the balance grows"
+// and stopped. These are free, not-for-profit services, and each number was read on the provider's
+// OWN page on 19 Nov 2026:
+//   National Debt Helpline: ndh.org.au (Financial Counselling Australia) prints 1800 007 007,
+//     "Call weekdays 9:30am - 4:30pm", "always free and confidential".
+//   National Debtline: nationaldebtline.org ("run by the Money Advice Trust") prints 0808 808 4000,
+//     Mon-Fri 9am-8pm and Sat 9:30am-1pm, "Completely free", "free, independent support".
+//   Gambling Helpline: 1800 858 858, "completely free", "confidential", "24/7", read on two STATE
+//     operators' own pages (GambleAware NSW and Gambling Help Queensland). The national page,
+//     gamblinghelponline.org.au, refuses automated fetches, so its national reach rests on those two
+//     operators; confirm it once in a real browser before an upload.
+// REGION COMES FROM THE CURRENCY, and a currency with no verified line gets NO number, only honest
+// copy. There is no US row on purpose: the one candidate read (NFCC) does not say the call is free.
+// Shown only at a THRESHOLD (interest outrunning payments; the gamble moment) and never as a standing
+// row, because a voice at a threshold is the soul and a permanent row is a report.
+const MONEY_LINES = [
+  {kind: 'debt', region: 'Australia', name: 'National Debt Helpline', contact: '1800 007 007', detail: 'free \u00b7 weekdays 9:30am\u20134:30pm'},
+  {kind: 'debt', region: 'UK', name: 'National Debtline', contact: '0808 808 4000', detail: 'free \u00b7 weekdays 9am\u20138pm, Sat 9:30am\u20131pm'},
+  {kind: 'gambling', region: 'Australia', name: 'Gambling Helpline', contact: '1800 858 858', detail: 'free \u00b7 confidential \u00b7 24/7'}
+];
+function _moneyLineFor(kind){
+  try{
+    // getUserCurrency's own default is AUD, so this mirrors what the person's screens already show.
+    const c = (typeof getUserCurrency === 'function') ? getUserCurrency() : 'AUD';
+    const region = c === 'AUD' ? 'Australia' : (c === 'GBP' ? 'UK' : '');
+    if(!region) return null;
+    return MONEY_LINES.find(function(r){ return r.kind === kind && r.region === region; }) || null;
+  }catch(_){ return null; }
+}
+// The number is the link, the way _bridgeLines draws one, and it is inline-block with 6px of padding
+// because an anchor is only as tall as its line box: the "Find a GP" link measured 123x20 against
+// the panels 24pt tap floor without it.
+function _moneyLineHTML(r){
+  if(!r) return '';
+  const c = String(r.contact == null ? '' : r.contact);
+  return _esc(r.name) + ' <a href="tel:' + c.replace(/\s+/g, '') + '" style="display:inline-block;padding:6px 0;color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">' +
+    _esc(c) + '</a> <span style="color:var(--tx3)">\u00b7 ' + _esc(r.detail) + '</span>';
+}
 function showCrisisResponse(containerId, type){
   const container = document.getElementById(containerId);
   if(!container) return;

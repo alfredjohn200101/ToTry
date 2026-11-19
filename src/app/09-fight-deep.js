@@ -2823,6 +2823,12 @@ function openGambleMoment(i){
     '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:var(--t-hd);padding:14px;text-align:center;margin-bottom:12px">'+
     '<button class="btn" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="margin-bottom:8px">I just need to talk it out</button>'+
+    // A PERSON, NOT ONLY THE APP (v674). "Talk it out" opens the app itself, and this is the moment
+    // somebody is closest to the edge. A verified free line where there is one for their currency,
+    // and otherwise the one move the gambling playbook already teaches: tell a person who knows.
+    (function(){ const r=(typeof _moneyLineFor==='function') ? _moneyLineFor('gambling') : null;
+      return '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;text-align:center;margin:2px 0 10px">Rather say it to a person? '+
+        (r ? _moneyLineHTML(r) : 'Text one person who knows you’re fighting this.')+'</div>'; })()+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
