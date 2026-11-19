@@ -821,7 +821,13 @@ function getLifeState(){
     // shape, fixed the same way. The collapse matters as much: buildCtx keeps the brief's lines by
     // PREFIX, so a newline in the why split this line in two and the coach kept the why while losing
     // its "NEVER score" instruction.
-    values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:(o.why && typeof crisisInAny==='function' && crisisInAny([o.why])) ? '' : String(o.why||'').replace(/\s+/g,' ') }:null; }catch(_){ return null; } })(),
+    // THE WHOLE TEXT AND EACH LINE, as goalsForBrain judges a goal. #vs-why is a textarea, and the
+    // collapse above JOINS its lines: "i cant go on\nmy kids" passes the write gate whole (the bound
+    // asks what follows the line break, and "my kids" is not a new first-person clause), and the joined line
+    // then reached the coach on every message as what matters most to them. Judging only the whole
+    // is the join defect: a line that fires on its own is a line the person wrote. Fails CLOSED, as
+    // the goals do: with no detector to ask, nothing typed here is replayed.
+    values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:(function(){ const w=String(o.why||'').trim(); if(!w) return ''; const lines=w.split(/\n+/).map(function(l){ return l.trim(); }).filter(Boolean); return (typeof crisisInAny!=='function' || crisisInAny([w].concat(lines))) ? '' : w.replace(/\s+/g,' '); })() }:null; }catch(_){ return null; } })(),
     // What they set out to do THIS week (and last), in their own words — scrubbed, one line each.
     // goalsForBrain lives in 29-goals-prayer.js; a function hoists across the one shared scope.
     goals: (typeof goalsForBrain==='function') ? goalsForBrain() : null,

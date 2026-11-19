@@ -21894,6 +21894,27 @@ H.section('the coach gets the whole-person read: five brief lines, nothing more,
     const hv = GL.getLifeState().values;
     H.ok(!!hv && hv.top.join() === 'Family' && hv.why === '', '(h) a disclosure stored as the values why is scrubbed by getLifeState');
     H.ok(C.buildCtx().indexOf('kill myself') < 0, '(h) and it never reaches the coach prompt');
+    // (i) a disclosure on ONE LINE of the why. #vs-why is a textarea, the write gate judges the whole
+    //     text, and the reader joins the lines — so only a per-line judgement can catch these. (f) above
+    //     is the control: an ordinary two-line why still arrives whole.
+    ['i cant go on\nmy kids', 'i cant go on\nwalked the dog', 'nothing left\nfaith'].forEach(function (w) {
+      H.eq(CI.detectCrisis(w), null, '(i) calibration: the write gate passes ' + JSON.stringify(w) + ' whole');
+      H.ok(!!CI.crisisInAny([w.split('\n')[0]]), '(i) calibration: its first line alone is a disclosure: ' + JSON.stringify(w));
+      SEED.totry_values = { v: ['family'], why: w };
+      const iv = GL.getLifeState().values;
+      H.ok(!!iv && iv.top.join() === 'Family' && iv.why === '',
+        '(i) a why with a disclosure on one LINE is scrubbed by getLifeState, not joined and sent: ' + JSON.stringify(w) + ' -> ' + JSON.stringify(iv && iv.why));
+      H.ok(C.buildCtx().indexOf(w.replace(/\s+/g, ' ')) < 0, '(i) and the joined line never reaches the coach prompt: ' + JSON.stringify(w));
+    });
+    // (j) with no detector to ask, nothing typed is replayed — closed, like the goals.
+    try {
+      const GLX = H.load(['getLifeState', 'lifeStateBrief'], {
+        ls, getValues: () => ({ v: ['family'], why: 'Because they will remember.' }), valLabel: id => id,
+        _unitsNote: () => '', nutGentle: () => false, wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$',
+      });
+      const xv = GLX.getLifeState().values;
+      H.ok(!!xv && xv.top.join() === 'family' && xv.why === '', '(j) with no crisisInAny loaded, the values why fails CLOSED (got ' + JSON.stringify(xv && xv.why) + ')');
+    } catch (e) { H.ok(false, '(j) getLifeState could not load by name without the detector: ' + e.message); }
     delete SEED.totry_values;
   }
 }
