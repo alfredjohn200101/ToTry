@@ -1500,7 +1500,14 @@ function renderReviewHistory(){
 // ── MILESTONES + TOAST ────────────────────────────────────────
 function checkMilestones(){
   const day=getDayCount();const achieved=ls('totry_ms')||[];
-  const dayMsgs={7:'7 days. One full week of choosing differently.',14:'Two weeks in. The habits are forming.',30:'30 days. Most people never make it here.',60:'60 days. You are not who you were.',90:'90 days. This rewires the brain. You just did it.',180:'Half a year. The old you feels like someone else.',365:'One full year. You did the impossible thing.'};
+  // WHAT THIS COUNTS IS DAYS SINCE THEY STARTED, NOTHING ELSE. getDayCount() is midnight-to-midnight
+  // from the journey start and knows nothing about what the person did, so these lines fired word for
+  // word for somebody who logged a slip every day of the month: "Most people never make it here" (a
+  // comparison with other people) and "This rewires the brain" (a mechanism for elapsed time, which
+  // this app never asserts; its own research note puts habit formation at a median of 66 days with a
+  // range of 18 to 254). Each line now says only what is true on that day for anybody who reaches it,
+  // and the year closes on the share card's own words, since that is the card the tap opens.
+  const dayMsgs={7:'7 days since you started. However the week went, you are still here.',14:'Two weeks in. The hard days count as much as the good ones.',30:'A month since you started. Not a finish line, just a place to look back from.',60:'60 days. Worth a look at what has shifted, and what has not yet.',90:'90 days in, and you are still showing up for it.',180:'Half a year. Long enough to see your own pattern, and to be kind about it.',365:'A full year since you started. Still here. Still trying.'};
   // Fire a day-milestone ONLY on the exact day it's reached (day === milestone). Any milestone
   // already passed is marked seen silently so it never pops late (fixes "30 days" showing on day 32).
   Object.entries(dayMsgs).forEach(([m,msg])=>{

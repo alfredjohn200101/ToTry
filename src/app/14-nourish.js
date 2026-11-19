@@ -4464,7 +4464,10 @@ function celebrateNutMilestone(n){
   if(done.includes(n)) return;
   done.push(n); ls('totry_nutms', done);
   haptic('success');
-  showToast(n + '-day logging streak', n >= 30 ? 'This is a habit now. Most people never get here.' : 'Consistency is the whole game. Keep going.');
+  // The same two claims the day milestones made, on the food side: "a habit now" asserts a mechanism
+  // for a count of days, and "most people never get here" ranks the person against others. What a
+  // logging run actually is, is their own record — evidence they can learn from, not a score.
+  showToast(n + '-day logging streak', n >= 30 ? 'That is a real record of how you eat now, and it is yours to learn from.' : 'Every day you log gives you more to go on.');
 }
 
 // ── WEEKLY FOOD GROUP INSIGHTS (MFP 2025 winter-release rip) ──

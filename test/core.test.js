@@ -7853,6 +7853,126 @@ H.section('being honest never costs you something you already earned');
     'and in the append-only union list, so a trophy earned on each device gives you both');
 }
 
+H.section('a milestone never ranks a person, claims a mechanism, or pays for hiding a slip');
+{
+  // getDayCount() is days since the journey started and knows nothing about what the person did, so
+  // the day-milestone toasts fired for somebody who had logged 30 slips and no wins: "30 days. Most
+  // people never make it here." and "90 days. This rewires the brain." — a comparison with other
+  // people and a mechanism for elapsed time. celebrateNutMilestone said the same line on the food
+  // side. And the trophy case gave "Unstoppable" (a 70% win rate) to whoever stopped logging slips:
+  // logging one adds to `total` and not to `w`, so two people with the same five won urges split on
+  // whether they told the truth about three losses — the honest one did NOT get it.
+  const RANKS = /most people|than (?:most|others|everyone)|everyone else|rewir|brain|neuro|dopamine|impossible|habits? (?:are|is) forming|habit now|someone else|not who you were/i;
+  const store = (seed) => {
+    const m = Object.assign({}, seed || {});
+    return function(k, v){ if (arguments.length > 1) { m[k] = JSON.parse(JSON.stringify(v)); return; } return m[k] == null ? null : JSON.parse(JSON.stringify(m[k])); };
+  };
+
+  // (a) THE DAY TOASTS, executed on every milestone day for somebody who slipped every day.
+  [7, 14, 30, 60, 90, 180, 365].forEach(day => {
+    const toasts = [];
+    let M = null;
+    try {
+      M = H.load(['checkMilestones'], {
+        getDayCount: () => day, ls: store(), loadV: () => {}, vices: [{ n: 'it', w: 0, total: 30 }],
+        showToast: (t, m) => toasts.push({ t, m }), createShareCard: () => {}, setShareTheme: () => {}
+      });
+      M.checkMilestones();
+    } catch (e) { toasts.push({ t: 'THREW', m: String(e && e.message) }); }
+    // The calibration: without exactly one toast an absent phrase would pass with nothing said at all.
+    H.eq(toasts.map(x => x.t), [day + ' Days'], `day ${day}: exactly one day-milestone toast fires (calibration)`);
+    H.ok(toasts.every(x => !RANKS.test(x.t + ' ' + x.m)),
+      `day ${day}: the toast does not rank the person against others or claim a mechanism — "${toasts.map(x => x.m).join(' / ')}"`);
+  });
+
+  // (b) THE FOOD-LOGGING MILESTONES, same rule.
+  [3, 7, 14, 30, 60, 100, 365].forEach(n => {
+    const toasts = [];
+    try {
+      const N = H.load(['celebrateNutMilestone'], {
+        ls: store(), haptic: () => {}, showToast: (t, m) => toasts.push({ t, m })
+      });
+      N.celebrateNutMilestone(n);
+    } catch (e) { toasts.push({ t: 'THREW', m: String(e && e.message) }); }
+    H.eq(toasts.map(x => x.t), [n + '-day logging streak'], `logging run ${n}: exactly one toast fires (calibration)`);
+    H.ok(toasts.every(x => !RANKS.test(x.t + ' ' + x.m)),
+      `logging run ${n}: the toast does not rank the person or claim a mechanism — "${toasts.map(x => x.m).join(' / ')}"`);
+  });
+
+  // (c) THE REAL ACHS ARRAY, executed. Anchor asserted unique, then bracket-matched over
+  // comment-stripped source (the entries carry explanatory comments) — never a fixed window.
+  const src = H.code();
+  const anchor = 'const ACHS=[';
+  const at = src.indexOf(anchor);
+  H.ok(at >= 0 && src.indexOf(anchor, at + 1) < 0, 'the ACHS array is declared exactly once');
+  let ACHS = null;
+  if (at >= 0) {
+    const open = at + anchor.length - 1;
+    let d = 0, end = -1;
+    for (let j = open; j < src.length; j++) {
+      if (src[j] === '[') d++;
+      else if (src[j] === ']') { d--; if (!d) { end = j + 1; break; } }
+    }
+    try {
+      // eslint-disable-next-line no-new-func
+      ACHS = new Function('ls', 'ritualLog', '_daysShowedUp', 'viceCameBack', 'return ' + src.slice(open, end))(
+        () => null, () => [], () => 0,
+        (v) => Math.max(0, (v.relapseHistory || []).length, Number(v.relapseCount) || 0));
+    } catch (e) { ACHS = null; }
+  }
+  H.ok(Array.isArray(ACHS) && ACHS.length >= 12, `the ACHS array evaluates (${ACHS ? ACHS.length : 'none'} entries)`);
+  if (Array.isArray(ACHS)) {
+    const earned = (vs, str) => {
+      const tw = vs.reduce((a, v) => a + (v.w || 0), 0);
+      return ACHS.filter(a => { try { return a.check(vs, tw, 40, str); } catch (_) { return false; } }).map(a => a.id || a.title);
+    };
+    // The same won urges, the same clean streak; one person also logged k slips honestly. Logging a
+    // slip must never remove a trophy the check would otherwise give. (A slip does lower the live
+    // streak in the app — that half is the once-earned store above, so str is held equal here.)
+    const lost = [];
+    [0, 1, 5, 10, 50, 100].forEach(w => [1, 3, 20].forEach(k => [0, 7].forEach(str => {
+      const hid = earned([{ n: 'it', w, total: w }], str);
+      const told = earned([{ n: 'it', w, total: w + k, relapseCount: k }], str);
+      hid.filter(t => told.indexOf(t) < 0).forEach(t => lost.push(`w${w}+${k} slips, str ${str}: ${t}`));
+    })));
+    H.eq(lost, [], 'logging a slip honestly never costs a trophy that hiding it would have kept');
+    H.ok(earned([{ n: 'it', w: 5, total: 8, relapseCount: 3 }], 0).indexOf('Came back') >= 0 &&
+         earned([{ n: 'it', w: 5, total: 5 }], 0).indexOf('Came back') < 0,
+      'and "Came back" goes to the person who told the truth about a slip, not to the one who hid it');
+
+    // (d) THE OLD STORED KEYS STILL RESOLVE. totry_achievements_earned holds the string a trophy was
+    // earned under, in SYNC_KEYS and the union list, so a rename without an id takes it away.
+    const byKey = k => ACHS.filter(a => (a.id || a.title) === k);
+    H.eq(byKey('Unstoppable').length, 1, 'a stored "Unstoppable" still resolves to exactly one trophy');
+    H.eq(byKey('Faithful').length, 1, 'a stored "Faithful" still resolves to exactly one trophy');
+    H.ok(byKey('Unstoppable').every(a => a.check([{ n: 'it', w: 50, total: 50 }], 50, 400, 400) === false),
+      'and the win-rate trophy is never awarded again, even to a perfect record');
+    H.ok(ACHS.every(a => !/faith/i.test(a.title)), 'no trophy calls abstinence "faithful"');
+    // Executed through the real renderScoreboard: somebody who earned both under the old names sees
+    // both, and earning the streak again does not store it a second time under its new title.
+    let rs = null;
+    try {
+      const saved = { totry_achievements_earned: ['Unstoppable', 'Faithful'] };
+      const ls = store(saved);
+      const ach = { innerHTML: '' };
+      const R = H.load(['renderScoreboard'], {
+        ACHS, ls, loadV: () => {}, vices: [{ n: 'it', w: 0, total: 0 }],
+        viceIsAbstinence: () => true, viceCleanDays: () => 7, getDayCount: () => 1,
+        viceFightingSince: () => null, _calDaysSince: () => 0, viceCameBack: () => 0,
+        viceFrequencyRead: () => null, viceFightDays: () => 0, svgIcon: () => '',
+        iosRow: o => '<row>' + o.title + '</row>', iosList: rows => rows.join(''),
+        document: { getElementById: id => id === 'achievements' ? ach : null }
+      });
+      R.renderScoreboard();
+      rs = { html: ach.innerHTML, stored: ls('totry_achievements_earned') };
+    } catch (e) { rs = { html: 'THREW ' + (e && e.message), stored: null }; }
+    H.ok(/<row>Held the line<\/row>/.test(rs.html) && /<row>Seven clean days<\/row>/.test(rs.html),
+      `an earned "Unstoppable" and "Faithful" still render after the rename — got ${rs.html.slice(0, 160)}`);
+    H.eq(rs.stored, ['Unstoppable', 'Faithful'],
+      'and a seven-day streak earned again is recognised by its id, not stored twice under the new title');
+  }
+}
+
 H.section('auto-tick never marks a day off a word that happens to appear in the name');
 {
   // These matched SUBSTRINGS of the habit name. Nine of fourteen ordinary habits auto-ticked as

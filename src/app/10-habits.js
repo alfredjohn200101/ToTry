@@ -30,10 +30,15 @@ const ACHS=[
   {icon:'trophy',title:'First Victory',desc:'Won your first battle',check:(v,tw)=>tw>=1},
   {icon:'flame',title:'On Fire',desc:'10 total wins',check:(v,tw)=>tw>=10},
   {icon:'award',title:'Century',desc:'100 urges defeated',check:(v,tw)=>tw>=100},
-  {icon:'zap',title:'Unstoppable',desc:'70%+ win rate with 5+ battles',check:(v)=>v.some(x=>x.total>=5&&((x.w||0)/x.total)>=0.7)},
+  // RETIRED FROM AWARDING: a win rate falls every time a slip is logged honestly and rises when one is hidden. Kept so anyone who earned it keeps it; id is the title it was stored under.
+  {id:'Unstoppable',icon:'zap',title:'Held the line',desc:'Won most of your battles, five or more in',check:()=>false},
+  // In its place, the behaviour the rate punished: telling the truth about a slip and staying in it.
+  {icon:'repeat',title:'Came back',desc:'Told the truth about a slip, and kept going',check:(v)=>v.some(x=>(typeof viceCameBack==='function'?viceCameBack(x):0)>=1)},
   {icon:'shield',title:'Warrior',desc:'50 total wins',check:(v,tw)=>tw>=50},
   {icon:'sunrise',title:'New Day',desc:'30 days in — and you showed up for them',check:(v,tw,day)=>day>=30&&_daysShowedUp()>=15},
-  {icon:'book',title:'Faithful',desc:'7 days clean',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
+  // Renamed from "Faithful": abstinence is not faithfulness (a slip would read as unfaithful), and a
+  // secular person's trophy case was handed a faith word under a book. Same criterion; id keeps it earned.
+  {id:'Faithful',icon:'leaf',title:'Seven clean days',desc:'Seven days in a row without it',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
   {icon:'wallet',title:'Debt Fighter',desc:'Made first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
   {icon:'sun',title:'Morning Person',desc:'7 morning rituals',check:()=>ritualLog('totry_mornings').length>=7},
   {icon:'edit',title:'Honest',desc:'10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
@@ -145,11 +150,14 @@ function renderScoreboard(){
   const _achKey = 'totry_achievements_earned';
   let _achSeen = [];
   try{ _achSeen = ls(_achKey) || []; if(!Array.isArray(_achSeen)) _achSeen = []; }catch(_){ _achSeen = []; }
-  const _achNow = ACHS.filter(a => { try{ return a.check(vices, tw, day, str); }catch(_){ return false; } }).map(a => a.title);
+  // KEYED BY id || title. Earned trophies are stored by the string they were earned under, and that
+  // store syncs and unions across devices — so renaming a title without an id would silently take a
+  // trophy away from everybody who had it. "Unstoppable" and "Faithful" carry their old title as id.
+  const _achNow = ACHS.filter(a => { try{ return a.check(vices, tw, day, str); }catch(_){ return false; } }).map(a => a.id || a.title);
   const _achAll = _achSeen.slice();
   _achNow.forEach(t => { if(_achAll.indexOf(t) === -1) _achAll.push(t); });
   if(_achAll.length !== _achSeen.length){ try{ ls(_achKey, _achAll); }catch(_){ } }
-  const _achHas = function(a){ return _achAll.indexOf(a.title) !== -1; };
+  const _achHas = function(a){ return _achAll.indexOf(a.id || a.title) !== -1; };
 
   // TWELVE TINT-FILLED, TINT-BORDERED BOXES STACKED read as a wall of blue, and the thing each one
   // actually is — an icon, a name and a line about it — is a row in a grouped list with a coloured
