@@ -13256,9 +13256,14 @@ function buildCtx(){
   const calVsGoal = nutGoals.cal > 0 ? Math.round((todayCals / nutGoals.cal) * 100) : 0;
   const proVsGoal = nutGoals.pro > 0 ? Math.round((todayPro / nutGoals.pro) * 100) : 0;
   
-  // Today's habits state
+  // Today's habits state. With NO habits there is no line and no weekly count at all: since v674 the
+  // list starts empty, so every new person's prompt read "Habits ticked: 0/0 — none" and "0 days of
+  // habits kept THIS WEEK" — a count of nothing, which a model reads as a person failing at something
+  // they never chose. A zero is information with history and an accusation without it.
   const habitsToday = habits.map(h => h.n + ' ' + (h.d[ti] ? '✓' : '○')).join(', ') || 'none';
   const habitsDone = habits.filter(h => h.d[ti] === 1).length;
+  const habitsLine = habits.length ? ('- Habits ticked: ' + habitsDone + '/' + habits.length + ' — ' + habitsToday + '\n') : '';
+  const habitsWeek = habits.length ? (' | ' + streak + ' day' + (streak===1?'':'s') + ' of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)') : '';
   
   // Water + fasting
   const waterToday = (ls('totry_water') || {})[todayKey] || 0;
@@ -13533,7 +13538,7 @@ function buildCtx(){
   return brotherSys() + sharedWisdomNote() + (typeof _unitsNote==='function' ? _unitsNote() : '') + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
-${userName} | Day ${getDayCount()} of their journey | ${streak} day${streak===1?'':'s'} of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
+${userName} | Day ${getDayCount()} of their journey${habitsWeek}${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
 
 THE FIGHT:
 ${viceDetails}
@@ -13541,8 +13546,7 @@ Overall: ${tw} wins from ${tf} battles (${winRate}% win rate)${fightCtx}
 
 TODAY (live data, right now):
 ${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, todayMeals)}
-- Habits ticked: ${habitsDone}/${habits.length} — ${habitsToday}
-- Water: ${waterTodayL}/${waterGoalL}${fastingCtx}${workoutCtx}${trainingInsightCtx}${moodCtx}${honestCtx}
+${habitsLine}- Water: ${waterTodayL}/${waterGoalL}${fastingCtx}${workoutCtx}${trainingInsightCtx}${moodCtx}${honestCtx}
 
 BODY & TRAINING:
 Today's planned training: ${todayFocus}

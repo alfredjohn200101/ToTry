@@ -21975,6 +21975,36 @@ H.section('the coach gets the whole-person read: five brief lines, nothing more,
   }
 }
 
+// NO HABITS, NO COUNT OF NOTHING (v674). The habit list starts empty now, so every new person's
+// coach prompt read "Habits ticked: 0/0 — none" and "0 days of habits kept THIS WEEK". Executed on the
+// real buildCtx with an empty list and with one habit, so the line is proven to come back when there
+// is something to count.
+H.section('the coach prompt says nothing about habits to somebody who has none');
+{
+  const ctxWith = function (habits, streak) {
+    try {
+      const C = H.load(['buildCtx', 'plural', 'latestByDate'], {
+        ls: () => null, identityForPrompt: () => '', getLifeState: () => ({ brief: '' }),
+        brotherSys: () => 'SYS\n', sharedWisdomNote: () => '', nutPromptBlock: () => '- Calories: 900',
+        loadV() {}, loadF() {}, loadH() {}, vices: [], debts: [], habits: habits,
+        userName: 'Sam', getStreak: () => streak, getUserSplit: () => [{ focus: 'Push' }], tIdx: () => 0,
+        todaysNutGoals: () => ({ cal: 2400, pro: 180 }), viceCleanDays: () => 0, waterGoalMl: () => 2500,
+        safeMornings: () => [], ritualLog: () => [], readinessForAI: x => x, computeReadiness: () => null,
+        getMobilityProfile: () => null, dFmt: x => x + 'km', wFmt: x => x + 'kg', wDelta: x => x + 'kg',
+        curSym: () => '$', getDayCount: () => 1, _unitsNote: () => '', nutGentle: () => false,
+      });
+      return C.buildCtx();
+    } catch (e) { return 'THREW ' + e.message; }
+  };
+  const none = ctxWith([], 0), one = ctxWith([{ n: 'Walk', d: [1, 0, 0, 0, 0, 0, 0] }], 3);
+  H.ok(/Day 1 of their journey/.test(none) && /- Water: /.test(none), 'calibration: the real buildCtx rendered for a person with no habits (' + none.slice(0, 60) + ')');
+  H.ok(!/Habits ticked/.test(none), 'with no habits the prompt carries no "Habits ticked" line (no 0/0 — none)');
+  H.ok(!/of habits kept/.test(none), 'and no weekly count of habits kept');
+  H.ok(/\n- Calories: 900\n- Water: /.test(none), 'and the TODAY block closes up — no blank line where the habits were');
+  H.ok(/- Habits ticked: 1\/1 \S+ Walk ✓/.test(one), 'with a habit, the line is still there with its count (' + ((one.match(/- Habits ticked:[^\n]*/) || [''])[0]) + ')');
+  H.ok(/Day 1 of their journey \| 3 days of habits kept THIS WEEK/.test(one), 'and so is the weekly count, in its place');
+}
+
 // 32. THE WEEK'S GOAL REACHES THE BRAIN (v674). The Goals screen was the only reader of totry_goals:
 //     getLifeState, the brief, the coach, the weekly read and the next step never asked what somebody
 //     had set out to do this week. goalsForBrain hands it on in their own words, scrubbed at the
