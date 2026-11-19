@@ -7856,6 +7856,39 @@ H.section('being honest never costs you something you already earned');
     'and in the append-only union list, so a trophy earned on each device gives you both');
 }
 
+H.section('the companion’s offline steps never rank the person or invent a figure');
+{
+  // COMPANION_LOCAL_STEPS is what somebody mid-urge reads when the coach is off or the model fails,
+  // and its reframe steps still said "most people never learn it" and "breaks its spell twice as
+  // fast" after v674 took the same comparison and the same kind of made-up figure out of the
+  // milestone toasts. It is a module-level const, so it is EXECUTED out of the bundle (brace-matched,
+  // anchor asserted unique) rather than grepped: the comment above it quotes the removed copy.
+  const A = 'const COMPANION_LOCAL_STEPS = {';
+  const src = H.html, at = src.indexOf(A);
+  H.ok(at >= 0 && src.indexOf(A, at + 1) < 0, 'calibration: the COMPANION_LOCAL_STEPS anchor is unique in the bundle');
+  let steps = null;
+  if (at >= 0) {
+    let d = 0, end = -1;
+    for (let j = at + A.length - 1; j < src.length; j++) {
+      if (src[j] === '{') d++;
+      else if (src[j] === '}') { d--; if (!d) { end = j; break; } }
+    }
+    try { steps = end > at ? new Function('return ' + src.slice(at + A.length - 1, end + 1) + ';')() : null; } catch (e) { steps = null; }
+  }
+  const MECH = ['wave', 'defuse', 'interrupt', 'ground', 'reframe'];
+  const all = steps ? MECH.reduce((a, k) => a.concat((steps[k] || []).map(s => [k, s])), []) : [];
+  H.ok(!!steps && MECH.every(k => Array.isArray(steps[k]) && steps[k].length >= 4),
+    'calibration: the offline step list was EXECUTED out of the bundle, all five mechanisms (' + all.length + ' steps)');
+  const RANK = /most people|than (?:most|others|everyone)|everyone else|unlike (?:most|others)/i;
+  const FIGURE = /\btwice as\b|\b(?:three|four|ten) times\b|\bhalf as\b|\b\d+\s*(?:x|times)\s+(?:as|faster|more|less)\b/i;
+  const ranked = all.filter(p => RANK.test(p[1])), figured = all.filter(p => FIGURE.test(p[1]));
+  H.eq(ranked.map(p => p[0]), [], 'no offline companion step ranks the person against other people (' + ranked.map(p => p[1].slice(0, 70)).join(' | ') + ')');
+  H.eq(figured.map(p => p[0]), [], 'and none invents a multiplier (' + figured.map(p => p[1].slice(0, 70)).join(' | ') + ')');
+  // The hand-off stays: the last reframe step still points at a real person.
+  const lastReframe = steps && steps.reframe ? steps.reframe[steps.reframe.length - 1] : '';
+  H.ok(/tell someone real/.test(lastReframe), 'and the last reframe step still hands them to a real person (' + lastReframe.slice(0, 80) + ')');
+}
+
 H.section('a milestone never ranks a person, claims a mechanism, or pays for hiding a slip');
 {
   // getDayCount() is days since the journey started and knows nothing about what the person did, so
