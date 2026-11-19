@@ -12363,7 +12363,10 @@ function _renderCycleNote(elId,pillar){
 function _sexDoorHTML(){
   try{
     if(ls('totry_sex_door_seen')) return '';
-    const day = (typeof getDayCount==='function') ? getDayCount() : 1;
+    // Days since INSTALL, not getDayCount(): a journey start set in Settings (the day they quit) makes
+    // getDayCount() read "Day 401" on install day, which asked about their body on day one — the
+    // trap renderTourPrompt was fixed for in this same release.
+    const day = (typeof daysInstalled==='function') ? daysInstalled() : 1;
     if(day < 3) return '';
     return '<div class="card">'+
       '<div class="eyebrow">About you</div>'+

@@ -22239,14 +22239,21 @@ H.section('about you: no sex is guessed, and the question is asked once, on Trac
   const runCard = function (sex, opts) {
     opts = opts || {};
     const store = {}; if (sex) store.totry_sex = sex; if (opts.seen) store.totry_sex_door_seen = 1;
+    // The REAL day counters over the app's own keys, by CALENDAR day (midday, so DST cannot move it):
+    // installed `day` days ago, and optionally a journey start (Settings -> "the day I quit") far
+    // earlier. A getDayCount stub could not express the second, which is how the door shipped asking
+    // on install day for anybody who had set one.
+    const _at = (n) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - n); return d.toISOString(); };
+    store.totry_start = _at((opts.day == null ? 5 : opts.day) - 1);
+    if (opts.journey) store.totry_journey_start = _at(opts.journey);
     const toasts = [];
     const el = { innerHTML: 'UNSET' };
     const ls = (k, v) => (v === undefined ? (k in store ? store[k] : null) : (store[k] = v));
     const document = { getElementById: (id) => (id === 'cycle-card' ? el : null), querySelectorAll: () => [] };
     let C = null;
     try {
-      C = H.load(['userSex', '_sexDoorHTML', '_sexDoorPick', '_sexDoorNo', 'renderCycleCard', 'setUserSex'], {
-        ls, document, getDayCount: () => (opts.day == null ? 5 : opts.day),
+      C = H.load(['userSex', '_sexDoorHTML', '_sexDoorPick', '_sexDoorNo', 'renderCycleCard', 'setUserSex', 'daysInstalled', 'getDayCount'], {
+        ls, document,
         showToast: (a, b) => toasts.push(a + ' | ' + b), svgIcon: () => '',
         cycleGet: () => ({ on: false, declined: false, log: [] }),
       });
@@ -22263,6 +22270,12 @@ H.section('about you: no sex is guessed, and the question is asked once, on Trac
   H.ok(/Rather not say/.test(d0.el.innerHTML) && !/Track your cycle/.test(d0.el.innerHTML),
     '(c) and it is the question, never the cycle offer — being unstated is not being female');
   H.eq(runCard(null, { day: 2 }).el.innerHTML, '', '(c) before day 3 nothing is asked — day 1 belongs to the Feeling Door');
+  // Install day with a journey start 400 days back: getDayCount reads 401 here, daysInstalled 1.
+  const dj = runCard(null, { day: 1, journey: 400 });
+  H.ok(!!dj.C && dj.C.getDayCount() >= 400 && dj.C.daysInstalled() === 1,
+    '(c) calibration: on install day with a journey start set, getDayCount reads ' + (dj.C && dj.C.getDayCount()) + ' and daysInstalled ' + (dj.C && dj.C.daysInstalled()));
+  H.eq(dj.el.innerHTML, '', '(c) a journey start set on install day does not bring the question forward — it waits for day 3 of the install');
+  H.ok(btns(runCard(null, { day: 3, journey: 400 }).el.innerHTML).length === 3, '(c) and on install day 3, with the same journey start, it is asked');
   H.eq(runCard(null, { day: 9, seen: true }).el.innerHTML, '', '(c) once answered or declined, it is never asked again');
   H.eq(runCard('male', { day: 9 }).el.innerHTML, '', '(c) a stated male sees neither the question nor the cycle offer');
   const df = runCard('female', { day: 9 });
