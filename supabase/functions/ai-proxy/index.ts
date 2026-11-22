@@ -323,6 +323,14 @@ async function callAnthropic({ system, messages, max_tokens }) {
   });
 }
 
+// reasoning_effort ONLY FOR MISTRAL'S REASONING MODELS (23 Nov 2026). It was sent to every Mistral
+// model, and Mistral now answers mistral-small-2603 with 400 "reasoning_effort is not enabled for this
+// model" -- measured on the live proxy -- so the whole Mistral link, text AND the camera, was dead
+// behind a parameter none of its listed models need. The reason it existed still holds for a reasoning
+// model (it spends the output budget thinking before it writes), so the magistral family keeps it.
+function mistralExtras(model) {
+  return /^magistral/i.test(String(model || "")) ? { reasoning_effort: "none" } : {};
+}
 async function callMistral({ system, messages, max_tokens }) {
   const key = Deno.env.get("MISTRAL_API_KEY");
   if (!key) return { skip: true };
@@ -334,7 +342,7 @@ async function callMistral({ system, messages, max_tokens }) {
       // model spends the output budget thinking before it writes, and the meal estimate is the caller
       // with the tightest budget in the app.
       body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.7,
-                             reasoning_effort: "none" }),
+                             ...mistralExtras(model) }),
     }, 20000);
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) return { error: true, status: resp.status, body: data };
@@ -409,7 +417,7 @@ async function callMistralVision({ system, prompt, image_base64, image_mime, max
     const resp = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3,
-                             reasoning_effort: "none" }),
+                             ...mistralExtras(model) }),
     }, 30000);
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) return { error: true, status: resp.status, body: data };

@@ -240,6 +240,23 @@ ok(typeof _mvImg?.image_url === 'string',
 ok(String(_mvImg?.image_url || '').startsWith('data:image/jpeg;base64,'),
    'and it carries the real data: URI, mime and all');
 
+// ── MISTRAL GETS NO reasoning_effort UNLESS THE MODEL REASONS (23 Nov 2026) ─────────────────────
+// Measured on the live proxy: Mistral answers mistral-small-2603 with 400 "reasoning_effort is not
+// enabled for this model", so the parameter killed the whole Mistral link, text and camera alike.
+// Driven through the real handler; the vision call above (_mv) is the calibration that a Mistral
+// body was captured at all.
+ok(!!_mv && !!_mv.body, 'calibration: a Mistral vision request body was captured');
+ok(!('reasoning_effort' in (_mv?.body || {})), 'the Mistral VISION request sends no reasoning_effort to ' + (_mv?.model || '?'));
+reset({ MISTRAL_API_KEY: 'm' });
+r = await call({ messages: [{ role: 'user', content: 'hi' }], prefer: 'mistral' });
+const _mt = calls.find(c => c.who === 'mistral');
+ok(r.body.provider === 'mistral' && !!_mt, 'calibration: a Mistral TEXT request was made and answered');
+ok(!('reasoning_effort' in (_mt?.body || {})), 'the Mistral TEXT request sends no reasoning_effort to ' + (_mt?.model || '?'));
+reset({ MISTRAL_API_KEY: 'm', MISTRAL_MODEL: 'magistral-small-2509' });
+r = await call({ messages: [{ role: 'user', content: 'hi' }], prefer: 'mistral' });
+const _mg = calls.find(c => c.who === 'mistral');
+ok(_mg?.body?.reasoning_effort === 'none', 'a magistral (reasoning) model still gets reasoning_effort "none" (' + (_mg?.model || '?') + ')');
+
 // ── NO PHOTO EVER REACHES NVIDIA (19 Nov 2026) ──────────────────────────────────────────────────
 // NVIDIA's API Trial terms forbid production use and personal or health data, and until today this
 // chain sent it photos as its LAST link — reached whenever the four in front of it failed, and a form
