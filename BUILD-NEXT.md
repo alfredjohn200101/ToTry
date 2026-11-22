@@ -5,6 +5,41 @@
 > Do not treat a CLAIMED item as true until it is driven — this repo's own record is that most
 > "missing" features are already built.
 
+> ## ▶ 23 Nov 2026 — v674 ON THE WEB; THE AI SERVER IS DEPLOYED; GEMINI NEEDS A TOP-UP
+>
+> **The owner's next clicks, in order:**
+> 1. **Top up the Gemini project's prepaid credit in AI Studio** (ai.studio/projects → the app's
+>    project → billing). Measured on the live server 23 Nov: every Gemini call returns HTTP 402
+>    *"Your prepayment credits are depleted."* The app is running on Groq, Mistral and Cloudflare
+>    meanwhile. The project being on prepaid billing also settles most of P1: paid usage is not used
+>    to improve Google's models.
+> 2. **P2, still open:** Mistral (admin.mistral.ai → Privacy → training off) and OpenRouter (privacy
+>    settings → free models → training off). Free.
+> 3. **Upload build 16 (v673)** and submit with manual release, from `ASC-SUBMIT-PACK.md`.
+>
+> **Done since the last banner** (each with tests and fault injections; commits after `9c70465`):
+> - **P3 closed.** NVIDIA is out of the photo chain and out of every sentence that named it.
+> - **P4 closed in code and deployed.** Gemini leads with 3.5-flash-lite (thinkingLevel), 2.5-flash
+>   stays as a fallback and first for web search; Groq and OpenRouter ids corrected; "grounded" is now
+>   decided by evidence in the answer, not by the provider's name.
+> - **Mistral was dead on the live server** (400 "reasoning_effort is not enabled for this model",
+>   pre-existing since before v673): fixed, deployed, and Mistral text answers again.
+> - **Deployed `ai-proxy` v50 with the CLI from the repo's bytes**; the live source was downloaded
+>   back and is byte-identical; `verify_jwt` is still off. The chain probe found no wrong helpline
+>   number, and every provider that answered handed a stacked disclosure to a human.
+> - **v674 for the web:** the coach gets the whole-person read (fast, giving, cycle, values, goals);
+>   the week's goal reaches the brain; milestone toasts stop ranking people and the trophy case stops
+>   paying for a hidden slip; a debt outrunning payments and a gambling urge are offered a free human
+>   line (Australia/UK, chosen by currency, then time zone, otherwise no number) and that line can no
+>   longer silence the crisis net; the fight-and-food counsel reaches the person; the calculator no
+>   longer guesses "male" and Track asks once; the first Home gives before it asks (no seeded habits,
+>   no preview banner, one greeting, no 11pm ritual, Restless ends at the Release).
+>
+> **Named and left:** the uncapped coach history and the raw `totry_why` read in buildCtx/goSosCoach
+> (each its own item); `checkChangelog` still counts journey days, not install days; a stalled (not
+> failing) Gemini call can hold a request longer than the app waits; the permission sheet names fewer
+> categories than the policies do (it is a summary; the policies are complete).
+
 > ## ▶ 19 Nov 2026, later — BUILD 16 (v673) CARRIES THE FIX; THREE PROVIDER DECISIONS ARE THE OWNER'S
 >
 > **Done in v673, each with its own commit, tests and fault injections:** B1 (nothing goes to a
