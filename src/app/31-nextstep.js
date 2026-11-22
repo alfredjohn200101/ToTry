@@ -20,6 +20,17 @@ function ritualLog(key){
   return [];
 }
 
+// THE FIRST NIGHT, LATE — one rule, read by both places Home can offer the evening ritual. Somebody
+// who installed tonight has usually come in through the Feeling Door, and the Release they were just
+// handed said "put me down, go live the next hour". v674 stopped the greeting offering an eight-step
+// ritual at 21:00 on day one, and the NEXT row then offered it instead: its dedupe hid it only while
+// the greeting's button was asking, and the button was gone. Two copies of a rule drift, so there is
+// one. daysInstalled(), never getDayCount(): a journey start set back to the day somebody quit reads
+// "Day 401" on the night they install.
+function _firstNightLate(hour){
+  return hour >= 21 && typeof daysInstalled==='function' && daysInstalled() <= 1;
+}
+
 function getNextStep(){
   const today = dayKeyOf();
   const hour = new Date().getHours();
@@ -80,8 +91,9 @@ function getNextStep(){
   if(!trainedToday && hour >= 10 && hour < 21){
     return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', softenOk:true, action:'train' };
   }
-  // 3. Evening: examen / reflection not done?
-  if(hour >= 17){
+  // 3. Evening: examen / reflection not done? Not on the first night, late — the greeting says rest,
+  //    and this falls through to the done card, which says it too.
+  if(hour >= 17 && !_firstNightLate(hour)){
     const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && dayKeyOf(e.ts)===today);
     const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && dayKeyOf(e.ts)===today);
     if(!eveningToday || !examenToday){
@@ -565,8 +577,9 @@ function renderHomeGreeting(){
     // DAY ONE, LATE. Somebody who installed tonight has usually come in through the Feeling Door, and
     // the Release they were just handed said "put me down, go live the next hour". Home then offered
     // an eight-step evening ritual. On the first night it says what the before-5am branch says, with
-    // no button; the ritual is still one tab away for anybody who wants it.
-    else if(h >= 21 && typeof daysInstalled==='function' && daysInstalled() <= 1){
+    // no button; the ritual is still one tab away for anybody who wants it. The rule lives in
+    // _firstNightLate(), because getNextStep() has to ask exactly the same question.
+    else if(_firstNightLate(h)){
       sub = 'Rest is part of the work. When you\u2019re ready, the morning will be here.';
     }
     else { sub = 'The day is winding down. Want to look back on it together before you rest?'; actLabel='Close the day'; actType='evening'; }

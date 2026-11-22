@@ -22462,7 +22462,7 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
     const document = { getElementById: (id) => els[id] || null, querySelector: () => null, querySelectorAll: () => [], body: { setAttribute() {} } };
     let err = '';
     try {
-      const G = H.load(['renderHomeGreeting'], {
+      const G = H.load(['renderHomeGreeting', '_firstNightLate'], {
         Date: FakeDate, document, ls: () => null, ritualLog: () => [], faithLevel: () => 'full',
         daysInstalled: () => inst,
       });
@@ -22477,6 +22477,48 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
   H.ok(e5.shown && e5.act === 'evening', '(e) calibration: on day five at 23:00 the hero still offers to close the day (act=' + e5.act + ')');
   const e18 = runGreet(18, 1);
   H.ok(e18.shown && e18.act === 'evening', '(e) and on day one at 18:00, before the late window, it still does (act=' + e18.act + ')');
+
+  // (e2) THE NEXT ROW READS THE SAME RULE. v674 removed the greeting's button at 21:00 on day one, and
+  // the NEXT row — hidden only while that button was asking — then offered "Close your day" instead.
+  // getNextStep is driven with training done today (so step 3's "Log today's training" cannot answer
+  // first) and nothing else done, which leaves the evening as the only thing it could ask for.
+  const runStep = function (hour, inst) {
+    const fixed = new Date(2026, 10, 19, hour, 0, 0).getTime();
+    class FakeDate extends Date { constructor(...a) { if (a.length) super(...a); else super(fixed); } static now() { return fixed; } }
+    let err = '', step = null;
+    try {
+      // vices/loadV, _calEvents and computeReadiness are passed EMPTY on purpose: without them the
+      // function reads whatever an earlier section left in scope, and from 22:00 "The hard hour's
+      // near" answers first, which made this fixture fail on correct code.
+      const N = H.load(['getNextStep', '_firstNightLate'], {
+        Date: FakeDate, ls: () => null, ritualLog: () => [], habits: [], loadH() {}, tIdx: () => 2,
+        vices: [], loadV() {}, _calEvents: () => [], computeReadiness: () => null,
+        getUnifiedTraining: () => [{ ts: new FakeDate().toISOString() }],
+        _nextStepCloseSub: () => '(close sub)', daysInstalled: () => inst,
+      });
+      step = N.getNextStep();
+    } catch (e) { err = e.message; }
+    return { err, step: step || {} };
+  };
+  const n23 = runStep(23, 1);
+  H.ok(!n23.err && n23.step.text && n23.step.text !== 'Close your day',
+    '(e2) at 23:00 on day one the NEXT row does not offer "Close your day" (' + n23.err + ' text=' + JSON.stringify(n23.step.text) + ')');
+  H.ok(n23.step.done === true,
+    '(e2) it falls through to the done card, which says rest as the greeting does (done=' + n23.step.done + ')');
+  H.eq(runStep(23, 5).step.text, 'Close your day', '(e2) calibration: on day five at 23:00 the NEXT row still offers to close the day');
+  H.eq(runStep(18, 1).step.text, 'Close your day', '(e2) and on day one at 18:00, before the late window, it still does');
+  // ONE RULE: across the whole evening and the first three days, the greeting offers the ritual
+  // exactly when the NEXT row does. A second copy of the rule drifting is how this was half-applied.
+  const _disagree = [];
+  for (let hr = 17; hr <= 23; hr++) {
+    for (let d = 1; d <= 3; d++) {
+      const g = runGreet(hr, d), s = runStep(hr, d);
+      const greets = g.shown && g.act === 'evening', steps = s.step.text === 'Close your day';
+      if (g.err || s.err || greets !== steps) _disagree.push(hr + ':00 day ' + d + ' greet=' + greets + ' next=' + steps + (g.err || s.err ? ' ERR ' + (g.err || s.err) : ''));
+    }
+  }
+  H.ok(_disagree.length === 0,
+    '(e2) the greeting and the NEXT row agree on the evening ritual at every hour 17-23 on days 1-3 (' + JSON.stringify(_disagree.slice(0, 3)) + ')');
 
   // ── (f) the Coach tab does not claim a story it does not have ──
   const runCoach = function (inst, everActive, sex) {
