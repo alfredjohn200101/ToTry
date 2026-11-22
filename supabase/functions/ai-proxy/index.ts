@@ -47,7 +47,9 @@ const DEFAULT_ORDER = ["gemini", "groq", "openrouter", "mistral", "cloudflare", 
 // the old list was ["gemini","openrouter","anthropic"], so a bad afternoon at the two searchers fell
 // straight to the one provider that costs money and currently has no credit, while four working free
 // providers sat unused. The caller is told which it got — see `grounded` below — because an answer
-// composed from memory must not be presented as one looked up.
+// composed from memory must not be presented as one looked up. This list decides the ORDER only;
+// whether a particular answer was looked up is decided by evidence in that answer (searchGrounded,
+// callOpenRouter), because being able to search is not the same as having searched.
 const SEARCH_CAPABLE = ["gemini", "openrouter"];
 
 // Candidate models per provider, tried in order. First entry is the preferred one.
@@ -185,6 +187,22 @@ function geminiThinking(model) {
   return { thinkingLevel: GEMINI_MINIMAL_OK.includes(m) ? "MINIMAL" : "LOW" };
 }
 
+// DID THIS GEMINI ANSWER ACTUALLY SEARCH? Decided from the answer, never from the provider's name
+// (23 Nov 2026). Sending the google_search tool lets the model search; it does not make it. The model
+// may decide not to, and Google's pricing page lists Search grounding as "Not available" on the free
+// tier for gemini-3.5-flash-lite and gemini-3.6-flash — so on this key a 3.x model can answer a
+// web_search request from memory. The old flag was `SEARCH_CAPABLE.indexOf(name) > -1`, which printed
+// "· from the web" under a calorie range nobody had looked up. Google returns groundingMetadata on a
+// grounded candidate: groundingChunks are the sources it used, and searchEntryPoint is the search it
+// ran. Either one, non-empty, is evidence. A bare or empty groundingMetadata object is not.
+function searchGrounded(cand) {
+  const gm = cand?.groundingMetadata;
+  if (!gm || typeof gm !== "object") return false;
+  if (Array.isArray(gm.groundingChunks) && gm.groundingChunks.length > 0) return true;
+  const sep = gm.searchEntryPoint;
+  return !!(sep && (sep.renderedContent || sep.sdkBlob));
+}
+
 async function callGemini({ system, messages, max_tokens, web_search }) {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return { skip: true };
@@ -227,7 +245,7 @@ async function callGemini({ system, messages, max_tokens, web_search }) {
     // parts, and this looks exactly like a provider outage. The app's smallest real budget is 300.
     if (!text) return { error: true, status: 500, body: data };
     const truncated = cand?.finishReason === "MAX_TOKENS" || cand?.finishReason === "SAFETY";
-    return { text, provider: "gemini", model, truncated };
+    return { text, provider: "gemini", model, truncated, grounded: searchGrounded(cand) };
   });
 }
 
@@ -269,7 +287,10 @@ async function callOpenRouter({ system, messages, max_tokens, web_search }) {
     if (!resp.ok) return { error: true, status: resp.status, body: data };
     const text = data?.choices?.[0]?.message?.content || "";
     if (!text) return { error: true, status: 500, body: data };
-    return { text, provider: "openrouter", model };
+    // Only an ":online" model has OpenRouter's web plugin attached. openrouterSearch falls back to the
+    // PLAIN model when :online is refused (a 402 on a key with no credit), and that answer is from
+    // memory — it used to come back grounded:true because the provider was called "openrouter".
+    return { text, provider: "openrouter", model, grounded: /:online$/.test(String(model)) };
   });
 }
 
@@ -630,10 +651,13 @@ Deno.serve(async (req) => {
           }
           // grounded says whether the answer was actually LOOKED UP or composed from training data.
           // Without it the caller cannot tell the difference, and "from the web" on a screen is a claim
-          // about where a number came from.
+          // about where a number came from. It is the PROVIDER's evidence (searchGrounded, the :online
+          // suffix), never the provider's name — a searcher answering from memory is still memory. Only
+          // `=== true` counts, so a provider that reports nothing is an estimate, not a lookup. The
+          // web_search guard lives HERE and only here: an ordinary request is never labelled grounded.
           return json({ text: res.text, provider: res.provider, model: res.model, attempts,
                         burned: res.burned,
-                        grounded: !!web_search && SEARCH_CAPABLE.indexOf(name) > -1 });
+                        grounded: !!web_search && res.grounded === true });
         }
         attempts.push({ provider: name, status: res.status, error: extractErrorMsg(res.body) });
       } catch (e) {

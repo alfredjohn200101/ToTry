@@ -141,13 +141,65 @@ ok(r.body.provider === 'groq' || r.body.provider === 'mistral',
 ok(r.body.grounded === false,
    'and it says so: an answer composed from training data is NOT reported as looked up');
 
-reset();
-r = await call({ messages: [{ role: 'user', content: 'what is in a gyros' }], web_search: true });
-ok(r.body.provider === 'gemini' && r.body.grounded === true,
-   'while a searcher answering IS reported as grounded, so "from the web" on a screen is a true claim');
+// ── grounded is decided by EVIDENCE in the answer, never by the provider's name (23 Nov 2026) ───
+// It was `SEARCH_CAPABLE.indexOf(name) > -1`: any answer from gemini or openrouter was "looked up".
+// Two ways that was false, both reproduced by driving the handler before the fix: a Gemini answer
+// with no groundingMetadata (on the free tier Google lists Search grounding as "Not available" for
+// 3.5-flash-lite and 3.6-flash, so a 3.x model can answer a search request from memory), and the
+// PLAIN OpenRouter model that openrouterSearch falls back to when ":online" is refused with a 402.
+// Both came back grounded:true, and the photo-meal lookup printed "· from the web" under the number.
+{
+  const WS = { messages: [{ role: 'user', content: 'what is in a gyros' }], web_search: true };
+  const gem = (meta) => () => ({ ok: true, status: 200, json: async () => ({ candidates: [{
+    content: { parts: [{ text: 'from gemini' }] }, finishReason: 'STOP',
+    ...(meta === undefined ? {} : { groundingMetadata: meta }) }] }) });
+  const lastGeminiTools = () => (calls.filter(c => c.who === 'gemini').pop() || {}).body?.tools;
 
-r = await call({ messages: [{ role: 'user', content: 'hi' }] });
-ok(!r.body.grounded, 'and an ordinary request is never labelled grounded at all');
+  reset(); behaviour.gemini = gem({ groundingChunks: [{ web: { uri: 'https://example.org/gyros', title: 'gyros' } }],
+                                    webSearchQueries: ['gyros nutrition'] });
+  r = await call(WS);
+  ok(JSON.stringify(lastGeminiTools()) === '[{"google_search":{}}]',
+     'calibration — the web_search request really sent Gemini the google_search tool (' + JSON.stringify(lastGeminiTools()) + ')');
+  ok(r.body.provider === 'gemini' && r.body.grounded === true,
+     'a Gemini answer carrying grounding chunks IS reported as grounded, so "from the web" is a true claim (' + r.body.grounded + ')');
+
+  reset(); behaviour.gemini = gem({ searchEntryPoint: { renderedContent: '<div class="container">gyros</div>' } });
+  r = await call(WS);
+  ok(r.body.grounded === true, 'a search entry point alone is evidence of a search too (' + r.body.grounded + ')');
+
+  reset(); behaviour.gemini = gem(undefined);
+  r = await call(WS);
+  ok(r.body.provider === 'gemini' && r.body.grounded === false,
+     'a Gemini answer with NO groundingMetadata is NOT grounded — the model answered from memory, so the app labels it an estimate (' +
+     r.body.grounded + ')');
+
+  reset(); behaviour.gemini = gem({ groundingChunks: [], webSearchQueries: [], searchEntryPoint: {} });
+  r = await call(WS);
+  ok(r.body.provider === 'gemini' && r.body.grounded === false,
+     'metadata that is present but EMPTY is not evidence either — no sources and no search (' + r.body.grounded + ')');
+
+  reset(); behaviour.gemini = gem({ groundingChunks: [{ web: { uri: 'https://example.org' } }] });
+  r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+  ok(r.body.provider === 'gemini' && r.body.grounded === false,
+     'and an ordinary request is never labelled grounded, whatever came back with it (' + r.body.grounded + ')');
+
+  // The review's ws2 case: every Gemini search fails, ":online" is refused for credit, and the plain
+  // model in openrouterSearch answers. It has no web plugin, so nothing was looked up.
+  reset(); behaviour.gemini = 'fail';
+  behaviour.openrouter = (model) => /:online$/.test(model)
+    ? { ok: false, status: 402, json: async () => ({ error: { message: 'insufficient credits' } }), text: async () => '' }
+    : { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'from openrouter' } }] }) };
+  r = await call(WS);
+  ok(r.body.provider === 'openrouter' && JSON.stringify(r.body.burned) === '["google/gemma-4-31b-it:free:online"]',
+     'calibration — ":online" was refused and the plain OpenRouter model answered (' + r.body.model + ', burned ' + JSON.stringify(r.body.burned) + ')');
+  ok(r.body.model === 'google/gemma-4-31b-it:free' && r.body.grounded === false,
+     'the PLAIN OpenRouter model is not grounded — it was "openrouter" by name and had no search (' + r.body.grounded + ')');
+
+  reset(); behaviour.gemini = 'fail';
+  r = await call(WS);
+  ok(/:online$/.test(String(r.body.model)) && r.body.grounded === true,
+     'while an ":online" model answering IS grounded (' + r.body.model + ' ' + r.body.grounded + ')');
+}
 
 // ── a provider that answers on its THIRD id is also telling you two ids are dead ────────────────
 // The winner was reported and the candidates burned getting to it were not, so a list could rot down

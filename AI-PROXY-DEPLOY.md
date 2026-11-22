@@ -203,6 +203,16 @@ tried FIRST and the built-in list still follows it, so a stale pin costs a reque
 | web_search default | gemini, `grounded: true` |
 | web_search `prefer:groq` | groq, **`grounded: false`** — an answer from training data is never labelled as looked up |
 
+**`grounded: true` in that table was decided by the provider's NAME, and that was not evidence
+(fixed 23 Nov 2026, NOT LIVE until `ai-proxy` is deployed).** Any answer from gemini or openrouter was
+reported as looked up. Driven locally, two answers from memory came back `grounded: true`: a Gemini
+answer with no `groundingMetadata` (on the free tier Google lists Search grounding as "Not available"
+for 3.5-flash-lite and 3.6-flash), and the PLAIN OpenRouter model `openrouterSearch` falls back to when
+`:online` is refused for credit. `grounded` is now true only when a Gemini candidate carries
+`groundingMetadata` with at least one `groundingChunks` entry or a `searchEntryPoint`, or an OpenRouter
+answer came from an `:online` model. After deploying, read `grounded` on the web_search probe together
+with `model`: a 3.x model answering with `grounded: false` is the free tier refusing to search.
+
 **The `burned` field is what makes a rotting list visible.** Three providers were each answering fine
 while quietly losing candidates on every call — groq two of four, mistral one, cloudflare-vision one.
 All three lists are now ordered by what actually answered. A dead candidate is kept at the BACK rather
