@@ -7981,8 +7981,12 @@ H.section('a milestone never ranks a person, claims a mechanism, or pays for hid
     const byKey = k => ACHS.filter(a => (a.id || a.title) === k);
     H.eq(byKey('Unstoppable').length, 1, 'a stored "Unstoppable" still resolves to exactly one trophy');
     H.eq(byKey('Faithful').length, 1, 'a stored "Faithful" still resolves to exactly one trophy');
-    H.ok(byKey('Unstoppable').every(a => a.check([{ n: 'it', w: 50, total: 50 }], 50, 400, 400) === false),
-      'and the win-rate trophy is never awarded again, even to a perfect record');
+    // The check is EXECUTED inside a try: a throw from it fails this line by name instead of ending the run.
+    let _unstopNever;
+    try { _unstopNever = byKey('Unstoppable').every(a => a.check([{ n: 'it', w: 50, total: 50 }], 50, 400, 400) === false); }
+    catch (e) { _unstopNever = 'THREW ' + (e && e.message); }
+    H.ok(_unstopNever === true,
+      'and the win-rate trophy is never awarded again, even to a perfect record' + (_unstopNever === true ? '' : ' (' + _unstopNever + ')'));
     H.ok(ACHS.every(a => !/faith/i.test(a.title)), 'no trophy calls abstinence "faithful"');
     // Executed through the real renderScoreboard: somebody who earned both under the old names sees
     // both, and earning the streak again does not store it a second time under its new title.
@@ -10075,16 +10079,21 @@ H.section('the fight and the food, which nothing else holds together');
       fl.push({ vice:'Scrolling', won: x.won, ts: new Date(t).toISOString(), date: day });
       if(x.ate != null) diary[day] = [{ name:'meal', ts: new Date(t - x.ate * HR).toISOString() }];
     });
-    return H.load(['_fightFuelLink'], {
-      ls: (k) => (k === 'totry_fight_log' ? fl : k === 'totry_nutlog' ? diary : null),
-      // No dayKeyOf stub — it never ran. This fixture carries its own `date` fields and the
-      // function reads `ts`, so the real day key is irrelevant here.
-      Date })._fightFuelLink('Scrolling');
+    // Loaded AND called inside a try: a dependency added to _fightFuelLink (v674 gave it the fast)
+    // returns a string every assertion below fails on by name, instead of ending the run here.
+    try {
+      return H.load(['_fightFuelLink'], {
+        ls: (k) => (k === 'totry_fight_log' ? fl : k === 'totry_nutlog' ? diary : null),
+        // No dayKeyOf stub — it never ran. This fixture carries its own `date` fields and the
+        // function reads `ts`, so the real day key is irrelevant here.
+        Date })._fightFuelLink('Scrolling');
+    } catch (e) { return 'THREW ' + e.message; }
   };
   const L = (h) => ({ won:false, ate:h }), W = (h) => ({ won:true, ate:h });
 
   const real = run([L(7), L(8), L(6), W(2), W(1), W(3)]);
-  H.ok(!!real, 'a real difference is worth saying');
+  // An OBJECT, not merely truthy: run() returns a 'THREW …' string when the function throws.
+  H.ok(!!real && typeof real === 'object', 'a real difference is worth saying' + (typeof real === 'string' ? ' (' + real + ')' : ''));
   H.eq(real.lostHours, 7, 'the median gap on the ones they lost');
   H.eq(real.wonHours, 2, 'and on the ones they won');
   H.ok(/empty stomach/.test(real.line) && /hard hour/.test(real.line), 'said as counsel, not as a statistic');
@@ -10125,9 +10134,14 @@ H.section('the fight and the food, which nothing else holds together');
         B = H.load(['lifeStateBrief'], { _unitsNote: () => '', nutGentle: () => gentle, _gentleWord: () => null,
           wFmt: x => x + 'kg', wDelta: x => x + 'kg', curSym: () => '$', feelingPattern: () => null, fastSeasonNow: () => null });
       } catch (e) { return 'THREW ' + e.message; }
-      const b = B.lifeStateBrief({ training: {}, nutrition: {}, body: {}, soul: {}, readiness: {}, money: {}, sex: {}, activity: {},
-        fight: { fights7: 3, vices: [{ name: 'Porn', mode: 'quit', cleanDays: 4, uses7: 0,
-          fuelLink: { lostHours: 6.2, wonHours: 2.1, lostN: 3, wonN: 3 } }] } }) || '';
+      // The CALL is inside a try too: a throw here returns a string the assertions below fail on by
+      // name, where uncaught it ended the whole run with no summary.
+      let b = '';
+      try {
+        b = B.lifeStateBrief({ training: {}, nutrition: {}, body: {}, soul: {}, readiness: {}, money: {}, sex: {}, activity: {},
+          fight: { fights7: 3, vices: [{ name: 'Porn', mode: 'quit', cleanDays: 4, uses7: 0,
+            fuelLink: { lostHours: 6.2, wonHours: 2.1, lostN: 3, wonN: 3 } }] } }) || '';
+      } catch (e) { return 'THREW ' + e.message; }
       return b.split('\n').find(l => l.indexOf('· Porn:') === 0) || '';
     };
     const on = viceLineOf(false), off = viceLineOf(true);
@@ -10160,7 +10174,8 @@ H.section('the fight and the food, which nothing else holds together');
         FAST_SEASONS: { ramadan: { name:'Ramadan', days:30 } },
         faithTradition: () => 'secular', Date });
     } catch (e) { L2 = null; }
-    return L2 ? L2._fightFuelLink('Scrolling') : 'NOT LOADED';
+    if (!L2) return 'NOT LOADED';
+    try { return L2._fightFuelLink('Scrolling'); } catch (e) { return 'THREW ' + e.message; }
   };
   // Calibration: a season that ended long before any of these fights changes nothing.
   const farFast = runFast({ choice:'ramadan', start: ymd(now - 40 * DAY), days: 10 });
@@ -10184,7 +10199,10 @@ H.section('the fight and the food, which nothing else holds together');
   };
   const planOn = mkPlan(false, false);
   H.ok(typeof planOn === 'function', '_overridePlan was found by name — a rename must update this check');
-  if (typeof planOn === 'function') {
+  // Every call below runs inside the try: a throw from the card (a dependency this fixture does not
+  // pass) fails one named assertion, where uncaught it ended the whole run with no summary — and the
+  // absence checks here never get to pass against a card that was never rendered.
+  if (typeof planOn === 'function') try {
     const evening = { riskWindow:'evening (5-9pm)' };
     const fuelSeg = (out) => (out.split('<br><br>').filter((b) => /Eating before your hard hour/.test(b))[0] || '');
     const withFuel = planOn(evening, real);
@@ -10212,6 +10230,8 @@ H.section('the fight and the food, which nothing else holds together');
     H.ok(/onclick="bridgeToRealHelp\('persistent'\)"/.test(planOn({}, null)),
       'on every pattern card, finding or not');
     H.ok(!/<button[^>]*>[^<]*\d/.test(planOn(evening, real)), 'and the door carries no count');
+  } catch (e) {
+    H.ok(false, 'the pattern-card (_overridePlan) checks threw instead of asserting (a dependency this fixture does not pass?): ' + (e && e.message));
   }
 
   // THE CARD IS FED THE FINDING FOR ITS OWN VICE. Executed through the real renderUrgeInsights, so a
@@ -10230,7 +10250,8 @@ H.section('the fight and the food, which nothing else holds together');
     } catch (e) { R = null; }
     H.ok(!!R, 'renderUrgeInsights was found by name — a rename must update this check');
     if (R) {
-      R.renderUrgeInsights();
+      // A throw fails by name instead of ending the run; the two checks below still report what it did.
+      try { R.renderUrgeInsights(); } catch (e) { H.ok(false, 'renderUrgeInsights threw instead of rendering (a dependency this fixture does not pass?): ' + e.message); }
       H.eq(asked, ['Scrolling'], 'renderUrgeInsights asks for the fight-and-food finding of the vice the card is about');
       H.ok(box.innerHTML.indexOf(real.line) >= 0, 'and the card the person sees carries it');
     }
@@ -17436,8 +17457,11 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
   if (M) {
     const pick = (c, k, z) => { cur = c; tz = z || 'America/New_York'; tzThrows = false;
       try { const r = M._moneyLineFor(k); return r ? r.contact : null; } catch (e) { return 'THREW ' + e.message; } };
+    // Every call into the loaded functions is caught, as pick() is: a throw fails a named line instead
+    // of ending the run with a stack trace and no summary.
     cur = null;
-    H.eq(M.getUserCurrency(), 'AUD',
+    let _gc; try { _gc = M.getUserCurrency(); } catch (e) { _gc = 'THREW ' + e.message; }
+    H.eq(_gc, 'AUD',
       '(b) calibration: the app\'s own getUserCurrency() really does answer AUD for somebody who never chose — the default this region must not read');
     // SET: the person's own choice wins over the phone.
     H.eq(pick('AUD', 'debt'), '1800 007 007', '(b) currency SET to AUD: the National Debt Helpline, even on a New York clock');
@@ -17463,24 +17487,28 @@ H.section('money hands the person to a human, at the threshold, on numbers the a
     H.eq(thrown, null, '(b) NEVER SET and no readable time zone: no number, so the honest copy shows');
     tzThrows = false;
     // `from` is what lets the brief say what is true.
-    cur = 'AUD'; const rSet = M._moneyLineFor('debt');
-    cur = null; tz = 'Australia/Brisbane'; const rGuess = M._moneyLineFor('debt');
-    H.eq([rSet && rSet.from, rGuess && rGuess.from], ['currency', 'timezone'],
-      '(b) the row says whether its region was CHOSEN (currency) or GUESSED (time zone)');
-    H.ok(rGuess !== ML.find(r => r.kind === 'debt' && r.region === 'Australia') && ML.every(r => !('from' in r)),
-      '(b) and it is a copy — the registry itself is never written to');
-    cur = 'AUD';
-    const h = M._moneyLineHTML(M._moneyLineFor('debt'));
-    H.eq((h.match(/href="tel:([^"]*)"/) || [])[1], '1800007007', '(b) the link dials the number it shows');
-    H.ok(h.indexOf('In Australia: National Debt Helpline') === 0,
-      '(b) the line LEADS with where it is for — "In Australia:" — so somebody elsewhere can see it is not theirs');
-    cur = 'GBP';
-    H.ok(M._moneyLineHTML(M._moneyLineFor('debt')).indexOf('In the UK: National Debtline') === 0,
-      '(b) and "In the UK:" for the UK line');
-    H.ok(/display:inline-block/.test(h) && /padding:6px 0/.test(h),
-      '(b) the link is inline-block with 6px of padding — an anchor is only as tall as its line box, and the ' +
-      '"Find a GP" link failed the 24pt tap floor at 123x20 without it');
-    H.eq(M._moneyLineHTML(null), '', '(b) no row, no markup');
+    try {
+      cur = 'AUD'; const rSet = M._moneyLineFor('debt');
+      cur = null; tz = 'Australia/Brisbane'; const rGuess = M._moneyLineFor('debt');
+      H.eq([rSet && rSet.from, rGuess && rGuess.from], ['currency', 'timezone'],
+        '(b) the row says whether its region was CHOSEN (currency) or GUESSED (time zone)');
+      H.ok(rGuess !== ML.find(r => r.kind === 'debt' && r.region === 'Australia') && ML.every(r => !('from' in r)),
+        '(b) and it is a copy — the registry itself is never written to');
+      cur = 'AUD';
+      const h = M._moneyLineHTML(M._moneyLineFor('debt'));
+      H.eq((h.match(/href="tel:([^"]*)"/) || [])[1], '1800007007', '(b) the link dials the number it shows');
+      H.ok(h.indexOf('In Australia: National Debt Helpline') === 0,
+        '(b) the line LEADS with where it is for — "In Australia:" — so somebody elsewhere can see it is not theirs');
+      cur = 'GBP';
+      H.ok(M._moneyLineHTML(M._moneyLineFor('debt')).indexOf('In the UK: National Debtline') === 0,
+        '(b) and "In the UK:" for the UK line');
+      H.ok(/display:inline-block/.test(h) && /padding:6px 0/.test(h),
+        '(b) the link is inline-block with 6px of padding — an anchor is only as tall as its line box, and the ' +
+        '"Find a GP" link failed the 24pt tap floor at 123x20 without it');
+      H.eq(M._moneyLineHTML(null), '', '(b) no row, no markup');
+    } catch (e) {
+      H.ok(false, '(b) the region-row and link-markup checks threw instead of asserting (a dependency this fixture does not pass?): ' + (e && e.message));
+    }
   }
 
   // (c) THE DEBT HERO NAMES A HUMAN AT THE THRESHOLD — AND ONLY THERE.
@@ -21882,6 +21910,13 @@ H.section('the coach gets the whole-person read: five brief lines, nothing more,
     });
   } catch (e) { ok = false; H.ok(false, 'the coach-brief section could not load its functions by name: ' + e.message); }
   if (ok) {
+    // Every call into a loaded function runs inside a NAMED part, so a throw fails that part by name
+    // and the rest of the suite still reports. Uncaught, it ended the whole run with a stack trace and
+    // no summary: measured in the v674 review, one ordinary `getUserCurrency()` call added to the top
+    // of buildCtx hid every later section. A stack trace reads like a syntax error; a red line does not.
+    const part = function (name, fn) {
+      try { fn(); } catch (e) { H.ok(false, name + ' threw instead of asserting (a dependency this fixture does not pass?): ' + (e && e.message)); }
+    };
     // A full person: a woman in the luteal phase, keeping Lent, who tithes, has values and a pattern.
     const person = () => ({
       training: { sessions7: 3, daysTrained7: 3, lastTitle: 'Push', tonnage7: 12000, topLifts: [{ name: 'Bench', orm: 100 }] },
@@ -21894,73 +21929,95 @@ H.section('the coach gets the whole-person read: five brief lines, nothing more,
     });
     const briefOf = q => {
       quiet = q; fast = { name: 'Lent', dayN: 12, total: 40 }; fp = { label: 'lonely', count: 5, total: 9 };
-      const b = B.lifeStateBrief(person()); fast = null; fp = null; return b;
+      try { return B.lifeStateBrief(person()); } finally { fast = null; fp = null; }
     };
-    const FULL = briefOf(false), QUIET = briefOf(true);
+    let FULL = '', QUIET = '';
+    part('the real lifeStateBrief for the full seed', function () { FULL = briefOf(false); QUIET = briefOf(true); });
     SEED.totry_identity = 'I am becoming a person who keeps his word.';
     SEED.totry_why = 'My kids.';
+    // Each part builds its own prompt, so a buildCtx that throws fails every part that needed it, by
+    // name — never one that would pass an absence check against a prompt that was never built.
     const ctxWith = brief => { GLS = function () { return { brief: brief }; }; return C.buildCtx(); };
-    const out = ctxWith(FULL);
     const lines = FULL.split('\n');
     // (a) each of the five reaches the coach verbatim — found in the REAL brief by its prefix first.
     const KEEP = ['SEASON OF FASTING:', 'Giving:', 'Cycle (self-logged', 'What THEY said matters most', 'What keeps bringing them'];
-    KEEP.forEach(function (p) {
-      const hit = lines.filter(l => l.indexOf(p) === 0);
-      H.eq(hit.length, 1, '(a) calibration: the real brief carries exactly one "' + p + '" line');
-      H.ok(hit.length === 1 && out.indexOf(hit[0]) >= 0, '(a) the brief\'s "' + p + '" line reaches the coach verbatim');
+    part('(a) the five brief lines in the coach prompt', function () {
+      const out = ctxWith(FULL);
+      KEEP.forEach(function (p) {
+        const hit = lines.filter(l => l.indexOf(p) === 0);
+        H.eq(hit.length, 1, '(a) calibration: the real brief carries exactly one "' + p + '" line');
+        H.ok(hit.length === 1 && out.indexOf(hit[0]) >= 0, '(a) the brief\'s "' + p + '" line reaches the coach verbatim');
+      });
     });
     // (b) and nothing else of the brief does — the coach already states the rest itself.
-    H.ok(lines.some(l => l.indexOf('Training: ') === 0) && lines.some(l => l.indexOf('Nutrition: avg') === 0),
-      '(b) calibration: the real brief carries a Training line and a Nutrition line');
-    H.ok(out.indexOf('Training: ') < 0 && out.indexOf('Nutrition: avg') < 0,
-      '(b) the brief\'s Training and Nutrition lines are NOT handed to the coach — nobody widens this to the whole brief');
-    const extra = lines.filter(l => out.indexOf(l) >= 0 && !KEEP.some(p => l.indexOf(p) === 0));
-    H.eq(extra, [], '(b) no brief line outside the five appears in the coach prompt');
+    part('(b) nothing else of the brief in the coach prompt', function () {
+      const out = ctxWith(FULL);
+      H.ok(lines.some(l => l.indexOf('Training: ') === 0) && lines.some(l => l.indexOf('Nutrition: avg') === 0),
+        '(b) calibration: the real brief carries a Training line and a Nutrition line');
+      H.ok(out.indexOf('Training: ') < 0 && out.indexOf('Nutrition: avg') < 0,
+        '(b) the brief\'s Training and Nutrition lines are NOT handed to the coach — nobody widens this to the whole brief');
+      const extra = lines.filter(l => out.indexOf(l) >= 0 && !KEEP.some(p => l.indexOf(p) === 0));
+      H.eq(extra, [], '(b) no brief line outside the five appears in the coach prompt');
+    });
     // (c) quiet giving: the instruction reaches the coach, the sums do not.
-    H.ok(out.indexOf('$120 this month') >= 0, '(c) calibration: with amounts shown, the month figure reaches the coach');
-    const qout = ctxWith(QUIET);
-    H.ok(qout.indexOf('must not ask for them or guess') >= 0, '(c) with amounts hidden, the coach is told not to ask or guess');
-    H.ok(qout.indexOf('$120') < 0 && qout.indexOf('$1,450') < 0, '(c) with amounts hidden, no giving figure reaches the coach');
+    part('(c) quiet giving in the coach prompt', function () {
+      const out = ctxWith(FULL);
+      H.ok(out.indexOf('$120 this month') >= 0, '(c) calibration: with amounts shown, the month figure reaches the coach');
+      const qout = ctxWith(QUIET);
+      H.ok(qout.indexOf('must not ask for them or guess') >= 0, '(c) with amounts hidden, the coach is told not to ask or guess');
+      H.ok(qout.indexOf('$120') < 0 && qout.indexOf('$1,450') < 0, '(c) with amounts hidden, no giving figure reaches the coach');
+    });
     // (d) nothing to add, nothing added — not even the header.
-    const eout = ctxWith('');
-    H.ok(eout.indexOf('WHAT ELSE YOU KNOW') < 0 && ctxWith('Not much logged yet — early days.').indexOf('WHAT ELSE YOU KNOW') < 0,
-      '(d) with none of the five in the brief, the coach prompt carries no WHAT ELSE header');
-    H.ok(out.indexOf('WHAT ELSE YOU KNOW') >= 0, '(d) calibration: with the five present, it does');
-    // (g) a ratchet on what this costs per message, measured 1,542 characters for all five.
-    const depth = out.length - eout.length;
-    H.ok(depth > 1000 && depth < 1800, '(g) the depth block for the full seed stays under 1,800 characters (got ' + depth + ')');
+    part('(d) and (g) the empty brief and the depth ratchet', function () {
+      const out = ctxWith(FULL), eout = ctxWith('');
+      H.ok(eout.indexOf('WHAT ELSE YOU KNOW') < 0 && ctxWith('Not much logged yet — early days.').indexOf('WHAT ELSE YOU KNOW') < 0,
+        '(d) with none of the five in the brief, the coach prompt carries no WHAT ELSE header');
+      H.ok(out.indexOf('WHAT ELSE YOU KNOW') >= 0, '(d) calibration: with the five present, it does');
+      // (g) a ratchet on what this costs per message, measured 1,542 characters for all five.
+      const depth = out.length - eout.length;
+      H.ok(depth > 1000 && depth < 1800, '(g) the depth block for the full seed stays under 1,800 characters (got ' + depth + ')');
+    });
     // (e) the identity line goes through identityForPrompt, never the raw store.
-    H.ok(out.indexOf('keeps his word') >= 0, '(e) calibration: an ordinary identity still reaches the coach');
-    SEED.totry_identity = 'I am becoming a person who wants to kill myself';
-    H.ok(!!CI.crisisInAny([SEED.totry_identity]), '(e) calibration: the seeded identity is a disclosure the detector catches');
-    const iout = ctxWith(FULL);
-    H.ok(iout.indexOf('kill myself') < 0, '(e) a disclosure stored as the identity never reaches the coach prompt');
-    SEED.totry_identity = 'I am becoming a person who keeps his word.';
+    part('(e) the identity line in the coach prompt', function () {
+      H.ok(ctxWith(FULL).indexOf('keeps his word') >= 0, '(e) calibration: an ordinary identity still reaches the coach');
+      SEED.totry_identity = 'I am becoming a person who wants to kill myself';
+      try {
+        H.ok(!!CI.crisisInAny([SEED.totry_identity]), '(e) calibration: the seeded identity is a disclosure the detector catches');
+        const iout = ctxWith(FULL);
+        H.ok(iout.indexOf('kill myself') < 0, '(e) a disclosure stored as the identity never reaches the coach prompt');
+      } finally { SEED.totry_identity = 'I am becoming a person who keeps his word.'; }
+    });
     // (f) a newline in the why, through the REAL getLifeState values reader and the real brief.
     GLS = function () { return GL.getLifeState(); };
-    SEED.totry_values = { v: ['family', 'faith'], why: 'Because they\nwill remember how I showed up.' };
-    const vals = GL.getLifeState().values;
-    H.ok(!!vals && vals.top.join() === 'Family,Faith', '(f) calibration: the real values reader ran over the seeded store');
-    const fout = C.buildCtx();
-    H.ok(fout.indexOf('"Because they will remember how I showed up."') >= 0, '(f) the why reaches the coach whole, on one line');
-    H.ok(fout.indexOf('NEVER score, grade or rank them against their values') >= 0,
-      '(f) a newline in the why does not cost the values line its "NEVER score" instruction');
+    part('(f) a newline in the values why', function () {
+      SEED.totry_values = { v: ['family', 'faith'], why: 'Because they\nwill remember how I showed up.' };
+      const vals = GL.getLifeState().values;
+      H.ok(!!vals && vals.top.join() === 'Family,Faith', '(f) calibration: the real values reader ran over the seeded store');
+      const fout = C.buildCtx();
+      H.ok(fout.indexOf('"Because they will remember how I showed up."') >= 0, '(f) the why reaches the coach whole, on one line');
+      H.ok(fout.indexOf('NEVER score, grade or rank them against their values') >= 0,
+        '(f) a newline in the why does not cost the values line its "NEVER score" instruction');
+    });
     // (h) and a why that is a disclosure is scrubbed at the reader — values is prompt-only.
-    SEED.totry_values = { v: ['family'], why: 'i want to kill myself' };
-    const hv = GL.getLifeState().values;
-    H.ok(!!hv && hv.top.join() === 'Family' && hv.why === '', '(h) a disclosure stored as the values why is scrubbed by getLifeState');
-    H.ok(C.buildCtx().indexOf('kill myself') < 0, '(h) and it never reaches the coach prompt');
+    part('(h) a disclosure as the values why', function () {
+      SEED.totry_values = { v: ['family'], why: 'i want to kill myself' };
+      const hv = GL.getLifeState().values;
+      H.ok(!!hv && hv.top.join() === 'Family' && hv.why === '', '(h) a disclosure stored as the values why is scrubbed by getLifeState');
+      H.ok(C.buildCtx().indexOf('kill myself') < 0, '(h) and it never reaches the coach prompt');
+    });
     // (i) a disclosure on ONE LINE of the why. #vs-why is a textarea, the write gate judges the whole
     //     text, and the reader joins the lines — so only a per-line judgement can catch these. (f) above
     //     is the control: an ordinary two-line why still arrives whole.
     ['i cant go on\nmy kids', 'i cant go on\nwalked the dog', 'nothing left\nfaith'].forEach(function (w) {
-      H.eq(CI.detectCrisis(w), null, '(i) calibration: the write gate passes ' + JSON.stringify(w) + ' whole');
-      H.ok(!!CI.crisisInAny([w.split('\n')[0]]), '(i) calibration: its first line alone is a disclosure: ' + JSON.stringify(w));
-      SEED.totry_values = { v: ['family'], why: w };
-      const iv = GL.getLifeState().values;
-      H.ok(!!iv && iv.top.join() === 'Family' && iv.why === '',
-        '(i) a why with a disclosure on one LINE is scrubbed by getLifeState, not joined and sent: ' + JSON.stringify(w) + ' -> ' + JSON.stringify(iv && iv.why));
-      H.ok(C.buildCtx().indexOf(w.replace(/\s+/g, ' ')) < 0, '(i) and the joined line never reaches the coach prompt: ' + JSON.stringify(w));
+      part('(i) the why ' + JSON.stringify(w), function () {
+        H.eq(CI.detectCrisis(w), null, '(i) calibration: the write gate passes ' + JSON.stringify(w) + ' whole');
+        H.ok(!!CI.crisisInAny([w.split('\n')[0]]), '(i) calibration: its first line alone is a disclosure: ' + JSON.stringify(w));
+        SEED.totry_values = { v: ['family'], why: w };
+        const iv = GL.getLifeState().values;
+        H.ok(!!iv && iv.top.join() === 'Family' && iv.why === '',
+          '(i) a why with a disclosure on one LINE is scrubbed by getLifeState, not joined and sent: ' + JSON.stringify(w) + ' -> ' + JSON.stringify(iv && iv.why));
+        H.ok(C.buildCtx().indexOf(w.replace(/\s+/g, ' ')) < 0, '(i) and the joined line never reaches the coach prompt: ' + JSON.stringify(w));
+      });
     });
     // (j) with no detector to ask, nothing typed is replayed — closed, like the goals.
     try {
@@ -22039,74 +22096,91 @@ H.section('the week\'s goal reaches the brain, the coach and the done card — s
     });
   } catch (e) { ok = false; H.ok(false, 'the goals-to-brain section could not load its functions by name: ' + e.message); }
   if (ok) {
+    // Every call into a loaded function runs inside a NAMED part, as (f) and (g) below always did: a
+    // throw fails that part by name instead of ending the run with a stack trace and no summary.
+    const part = function (name, fn) {
+      try { fn(); } catch (e) { H.ok(false, name + ' threw instead of asserting (a dependency this fixture does not pass?): ' + (e && e.message)); }
+    };
     H.ok(new FD().getTimezoneOffset() !== 0, 'calibration: the zone is pinned to a non-UTC one');
-    const wk = G.getCurrentPeriodKey('weekly');
-    H.eq(wk, 'w-2026-47', 'calibration: Wednesday 18 Nov 2026 is ISO week 47');
-    const store = {};
-    store[wk] = 'Train four times.\nPhone charges in the kitchen.\n\nCall Mum on Sunday.';
-    store['w-2026-46'] = 'Finish the essay';
-    store['yr-2026'] = 'Debt-free.';
-    SEED.totry_goals = JSON.stringify(store);
-    const g = G.goalsForBrain();
-    // (a) this week and last week, in their own words, each on ONE line.
-    H.eq(g, { week: 'Train four times. · Phone charges in the kitchen. · Call Mum on Sunday.', lastWeek: 'Finish the essay' },
-      '(a) goalsForBrain returns this week and last week, a multi-line goal joined onto one line');
+    let wk = '';
+    part('(a) the week key and goalsForBrain', function () {
+      wk = G.getCurrentPeriodKey('weekly');
+      H.eq(wk, 'w-2026-47', 'calibration: Wednesday 18 Nov 2026 is ISO week 47');
+      const store = {};
+      store[wk] = 'Train four times.\nPhone charges in the kitchen.\n\nCall Mum on Sunday.';
+      store['w-2026-46'] = 'Finish the essay';
+      store['yr-2026'] = 'Debt-free.';
+      SEED.totry_goals = JSON.stringify(store);
+      const g = G.goalsForBrain();
+      // (a) this week and last week, in their own words, each on ONE line.
+      H.eq(g, { week: 'Train four times. · Phone charges in the kitchen. · Call Mum on Sunday.', lastWeek: 'Finish the essay' },
+        '(a) goalsForBrain returns this week and last week, a multi-line goal joined onto one line');
+    });
 
     // (b) "last week" is the calendar's last week, at the one instant the naive arithmetic gets wrong:
     //     00:30 on the Monday after Melbourne's clocks went forward (4 Oct 2026). 7 x 24h back from
     //     there is 23:30 on SUNDAY 27 Sep, which is the week before last.
-    FIXED = new Date(2026, 9, 5, 0, 30, 0).getTime();
-    H.eq(G.getCurrentPeriodKey('weekly'), 'w-2026-41', '(b) calibration: Monday 5 Oct 2026 00:30 is ISO week 41');
-    H.eq(G.getCurrentPeriodKey('weekly', FIXED - 7 * 864e5), 'w-2026-39',
-      '(b) calibration: naive now - 7x24h lands in week 39 here, so this instant really is the trap');
-    SEED.totry_goals = JSON.stringify({ 'w-2026-40': 'Last week, honestly', 'w-2026-39': 'The week before' });
-    H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Last week, honestly' },
-      '(b) across a DST change, last week is week 40 — the calendar\'s last week, not 168 hours ago');
-    // and across the year: Monday 4 Jan 2027 is ISO week 1, and its last week is week 53 of 2026.
-    FIXED = new Date(2027, 0, 4, 9, 0, 0).getTime();
-    SEED.totry_goals = JSON.stringify({ 'w-2026-53': 'Rest over Christmas' });
-    H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Rest over Christmas' }, '(b) last week crosses the year boundary');
-    FIXED = new Date(2026, 10, 18, 15, 0, 0).getTime();
+    part('(b) last week across a DST change and the year', function () {
+      try {
+        FIXED = new Date(2026, 9, 5, 0, 30, 0).getTime();
+        H.eq(G.getCurrentPeriodKey('weekly'), 'w-2026-41', '(b) calibration: Monday 5 Oct 2026 00:30 is ISO week 41');
+        H.eq(G.getCurrentPeriodKey('weekly', FIXED - 7 * 864e5), 'w-2026-39',
+          '(b) calibration: naive now - 7x24h lands in week 39 here, so this instant really is the trap');
+        SEED.totry_goals = JSON.stringify({ 'w-2026-40': 'Last week, honestly', 'w-2026-39': 'The week before' });
+        H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Last week, honestly' },
+          '(b) across a DST change, last week is week 40 — the calendar\'s last week, not 168 hours ago');
+        // and across the year: Monday 4 Jan 2027 is ISO week 1, and its last week is week 53 of 2026.
+        FIXED = new Date(2027, 0, 4, 9, 0, 0).getTime();
+        SEED.totry_goals = JSON.stringify({ 'w-2026-53': 'Rest over Christmas' });
+        H.eq(G.goalsForBrain(), { week: '', lastWeek: 'Rest over Christmas' }, '(b) last week crosses the year boundary');
+      } finally { FIXED = new Date(2026, 10, 18, 15, 0, 0).getTime(); }
+    });
 
     // (c) scrubbed at the reader — both directions, and per LINE.
-    const goalWith = text => { const s = {}; s[wk] = text; SEED.totry_goals = JSON.stringify(s); return G.goalsForBrain(); };
-    H.eq(goalWith('i want to kill myself'), null, '(c) a stored disclosure is never handed on');
-    H.ok(CI.crisisInAny(['i cant go on\nwalked the dog']) === null && !!CI.crisisInAny(['i cant go on']),
-      '(c) calibration: judged WHOLE, this two-line goal is null; its first line alone is a disclosure');
-    H.eq(goalWith('i cant go on\nwalked the dog'), null,
-      '(c) a disclosure on one line of a goal is caught — the goal is judged line by line, not only whole');
-    H.eq(goalWith('nothing left in the tank by friday\ntake my life in a new direction'),
-      { week: 'nothing left in the tank by friday · take my life in a new direction', lastWeek: '' },
-      '(c) ordinary goals in this app\'s own vocabulary are kept — the scrub does not cry wolf');
-    const longG = goalWith(('Walk every morning before work and read one chapter ').repeat(8)).week;
-    H.ok(longG.length <= 281 && /…$/.test(longG) && !/\s…$/.test(longG),
-      '(c) a long goal is cut at a word, under 280 characters, with an ellipsis');
-    SEED.totry_goals = JSON.stringify({ 'yr-2026': 'Debt-free.' });
-    H.eq(G.goalsForBrain(), null, '(c) no weekly goal this week or last: nothing is handed on');
+    part('(c) the goal scrub', function () {
+      const goalWith = text => { const s = {}; s[wk] = text; SEED.totry_goals = JSON.stringify(s); return G.goalsForBrain(); };
+      H.eq(goalWith('i want to kill myself'), null, '(c) a stored disclosure is never handed on');
+      H.ok(CI.crisisInAny(['i cant go on\nwalked the dog']) === null && !!CI.crisisInAny(['i cant go on']),
+        '(c) calibration: judged WHOLE, this two-line goal is null; its first line alone is a disclosure');
+      H.eq(goalWith('i cant go on\nwalked the dog'), null,
+        '(c) a disclosure on one line of a goal is caught — the goal is judged line by line, not only whole');
+      H.eq(goalWith('nothing left in the tank by friday\ntake my life in a new direction'),
+        { week: 'nothing left in the tank by friday · take my life in a new direction', lastWeek: '' },
+        '(c) ordinary goals in this app\'s own vocabulary are kept — the scrub does not cry wolf');
+      const longG = goalWith(('Walk every morning before work and read one chapter ').repeat(8)).week;
+      H.ok(longG.length <= 281 && /…$/.test(longG) && !/\s…$/.test(longG),
+        '(c) a long goal is cut at a word, under 280 characters, with an ellipsis');
+      SEED.totry_goals = JSON.stringify({ 'yr-2026': 'Debt-free.' });
+      H.eq(G.goalsForBrain(), null, '(c) no weekly goal this week or last: nothing is handed on');
+    });
 
     // (d) the store is a MAP. The demo seeder wrote an array, and setGoal's string key on an array
     //     is dropped by JSON.stringify, so the goal vanished behind a "Saved" toast.
-    SEED.totry_goals = JSON.stringify([{ id: 1, name: 'Emergency fund', target: 5000 }]);
-    G.setGoal('weekly', 'Ring Dad on Thursday');
-    H.eq(G.getGoal('weekly'), 'Ring Dad on Thursday', '(d) a goal set over an array store survives the JSON round trip');
+    part('(d) setGoal over an array store', function () {
+      SEED.totry_goals = JSON.stringify([{ id: 1, name: 'Emergency fund', target: 5000 }]);
+      G.setGoal('weekly', 'Ring Dad on Thursday');
+      H.eq(G.getGoal('weekly'), 'Ring Dad on Thursday', '(d) a goal set over an array store survives the JSON round trip');
+    });
 
     // (e) the brief: one line, a fixed prefix whichever week is present, and the instruction with it.
-    const person = goals => ({
-      training: {}, nutrition: {}, body: {}, soul: {}, fight: {}, activity: { daysQuiet: 0 }, goals: goals,
-    });
     const PFX = 'Their own goals, in their words';
     const lineOf = b => b.split('\n').filter(l => l.indexOf(PFX) === 0);
-    const both = B.lifeStateBrief(person({ week: 'Train four times. · Call Mum on Sunday.', lastWeek: 'Finish the essay' }));
-    const bl = lineOf(both);
-    H.eq(bl.length, 1, '(e) the brief carries exactly one goals line');
-    H.ok(bl.length === 1 && bl[0].indexOf('this week "Train four times. · Call Mum on Sunday."') >= 0
-      && bl[0].indexOf('last week "Finish the essay"') >= 0, '(e) with both weeks, in their own words');
-    H.ok(bl.length === 1 && /NEVER score them against it/.test(bl[0]) && /never imply they are behind/.test(bl[0]),
-      '(e) and the goals line carries its own "NEVER score" instruction');
-    const onlyLast = lineOf(B.lifeStateBrief(person({ week: '', lastWeek: 'Finish the essay' })));
-    H.ok(onlyLast.length === 1 && onlyLast[0].indexOf('this week') < 0,
-      '(e) with only last week, the line keeps the same prefix (buildCtx finds it) and invents no "this week"');
-    H.eq(lineOf(B.lifeStateBrief(person(null))).length, 0, '(e) no goals, no line');
+    part('(e) the goals line of the brief', function () {
+      const person = goals => ({
+        training: {}, nutrition: {}, body: {}, soul: {}, fight: {}, activity: { daysQuiet: 0 }, goals: goals,
+      });
+      const both = B.lifeStateBrief(person({ week: 'Train four times. · Call Mum on Sunday.', lastWeek: 'Finish the essay' }));
+      const bl = lineOf(both);
+      H.eq(bl.length, 1, '(e) the brief carries exactly one goals line');
+      H.ok(bl.length === 1 && bl[0].indexOf('this week "Train four times. · Call Mum on Sunday."') >= 0
+        && bl[0].indexOf('last week "Finish the essay"') >= 0, '(e) with both weeks, in their own words');
+      H.ok(bl.length === 1 && /NEVER score them against it/.test(bl[0]) && /never imply they are behind/.test(bl[0]),
+        '(e) and the goals line carries its own "NEVER score" instruction');
+      const onlyLast = lineOf(B.lifeStateBrief(person({ week: '', lastWeek: 'Finish the essay' })));
+      H.ok(onlyLast.length === 1 && onlyLast[0].indexOf('this week') < 0,
+        '(e) with only last week, the line keeps the same prefix (buildCtx finds it) and invents no "this week"');
+      H.eq(lineOf(B.lifeStateBrief(person(null))).length, 0, '(e) no goals, no line');
+    });
 
     // (f) the coach gets that line verbatim, and getLifeState carries the real reader's output.
     try {
@@ -22134,7 +22208,7 @@ H.section('the week\'s goal reaches the brain, the coach and the done card — s
         curSym: () => '$', getDayCount: () => 64, _unitsNote: () => '', nutGentle: () => false,
       });
       H.ok(gline.length === 1 && C.buildCtx().indexOf(gline[0]) >= 0, '(f) the brief\'s goals line reaches the coach verbatim');
-    } catch (e) { H.ok(false, '(f) the getLifeState/buildCtx half could not load by name: ' + e.message); }
+    } catch (e) { H.ok(false, '(f) the getLifeState/buildCtx half could not load or run by name: ' + e.message); }
 
     // (g) the done card says it back; an active step does not.
     try {
@@ -22305,8 +22379,12 @@ H.section('about you: no sex is guessed, and the question is asked once, on Trac
   H.eq(runCard(null, { day: 2 }).el.innerHTML, '', '(c) before day 3 nothing is asked — day 1 belongs to the Feeling Door');
   // Install day with a journey start 400 days back: getDayCount reads 401 here, daysInstalled 1.
   const dj = runCard(null, { day: 1, journey: 400 });
-  H.ok(!!dj.C && dj.C.getDayCount() >= 400 && dj.C.daysInstalled() === 1,
-    '(c) calibration: on install day with a journey start set, getDayCount reads ' + (dj.C && dj.C.getDayCount()) + ' and daysInstalled ' + (dj.C && dj.C.daysInstalled()));
+  // Both counters are CALLED inside a try, as runCard calls the card: a throw fails this line by name.
+  let _djDay = null, _djInst = null;
+  try { _djDay = dj.C && dj.C.getDayCount(); _djInst = dj.C && dj.C.daysInstalled(); }
+  catch (e) { _djDay = 'THREW ' + e.message; }
+  H.ok(!!dj.C && _djDay >= 400 && _djInst === 1,
+    '(c) calibration: on install day with a journey start set, getDayCount reads ' + _djDay + ' and daysInstalled ' + _djInst);
   H.eq(dj.el.innerHTML, '', '(c) a journey start set on install day does not bring the question forward — it waits for day 3 of the install');
   H.ok(btns(runCard(null, { day: 3, journey: 400 }).el.innerHTML).length === 3, '(c) and on install day 3, with the same journey start, it is asked');
   H.eq(runCard(null, { day: 9, seen: true }).el.innerHTML, '', '(c) once answered or declined, it is never asked again');
