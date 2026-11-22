@@ -56338,10 +56338,19 @@ function renderTourPrompt(){
     // The headline named its own family and set font-weight:700 on it. This face ships ONE roman
     // weight and font-synthesis is off globally, so the 700 declared an intention the font cannot
     // honour; .card-say is the role, and it already speaks in our face.
+    // A SECOND WELCOME, OPENING WITH THE SAME SENTENCE. Inside this window the tour card only shows
+    // once the first-run card has gone, and that card has already said "Welcome. Let's set the
+    // foundation" and "Start wherever you feel something." So tapping its x (or finishing all four
+    // steps, which dismisses it) brought up "Welcome in." over that same first line, on the next Home
+    // view. Once the checklist has greeted them this card only offers the tour. "Welcome in." is kept
+    // for the one path where nothing greeted them: renderFirstRun failed and its card never rendered.
     card.style.display='block';
-    card.innerHTML='<div class="card-say">Welcome in.</div>'+
-      '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
+    card.innerHTML = ls('totry_firstrun_dismissed')
+      ? '<div class="card-say">A 60-second look around?</div>'+
+        '<div class="card-body">How it all fits together, whenever you want it.</div>'
+      : '<div class="card-say">Welcome in.</div>'+
+        '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>';
+    card.innerHTML += '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
       '<button class="btn" onclick="dismissTourPrompt()">I\u2019ll explore</button></div>';
     return;
   }
@@ -58882,8 +58891,13 @@ function getFirstRunSteps(){
 function renderFirstRun(){
   const card = document.getElementById('firstrun-card');
   if(!card) return;
-  // Never show past day 10, or once the user has dismissed it
-  if(ls('totry_firstrun_dismissed') || getDayCount() > 10){
+  // Never show past day 10 OF THE INSTALL, or once the user has dismissed it.
+  // It asked getDayCount(), which honours the Settings journey-start override — so somebody who set
+  // day one back to the day they quit never saw this card at all (the tour said "Welcome in." in its
+  // place), and somebody 40 days in who reset their journey got "Welcome. Let's set the foundation"
+  // again. How long they have HAD the app is daysInstalled(), and renderTourPrompt and renderNextStep
+  // ask the same thing, so the three cards share one window.
+  if(ls('totry_firstrun_dismissed') || daysInstalled() > 10){
     card.style.display = 'none';
     return;
   }
@@ -59717,8 +59731,11 @@ function renderNextStep(){
   // "NEXT" label sitting over an empty list. Hide the section; the row's own display stays in step.
   const sec = document.getElementById('next-step-section');
   const _hide = () => { el.style.display='none'; if(sec) sec.style.display='none'; };
-  // Don't compete with the first-run card for brand-new users.
-  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ _hide(); return; }
+  // Don't compete with the first-run card for brand-new users. Same clock as that card
+  // (daysInstalled, not getDayCount): with the card on install days and this guard on journey days,
+  // somebody 40 days in who reset their journey start lost this row for three days with no checklist
+  // above it, and somebody who set day one back to the day they quit got both on minute one.
+  if(!ls('totry_firstrun_dismissed') && daysInstalled() <= 3){ _hide(); return; }
   const step = getNextStep();
   // TWO ASKS FOR ONE ACT. The hero's filled button and this row resolved to the same room — "Begin
   // the morning" 24pt above "Start your morning", both go('morning') — and the softening subtitle

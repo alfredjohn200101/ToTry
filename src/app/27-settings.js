@@ -598,10 +598,19 @@ function renderTourPrompt(){
     // The headline named its own family and set font-weight:700 on it. This face ships ONE roman
     // weight and font-synthesis is off globally, so the 700 declared an intention the font cannot
     // honour; .card-say is the role, and it already speaks in our face.
+    // A SECOND WELCOME, OPENING WITH THE SAME SENTENCE. Inside this window the tour card only shows
+    // once the first-run card has gone, and that card has already said "Welcome. Let's set the
+    // foundation" and "Start wherever you feel something." So tapping its x (or finishing all four
+    // steps, which dismisses it) brought up "Welcome in." over that same first line, on the next Home
+    // view. Once the checklist has greeted them this card only offers the tour. "Welcome in." is kept
+    // for the one path where nothing greeted them: renderFirstRun failed and its card never rendered.
     card.style.display='block';
-    card.innerHTML='<div class="card-say">Welcome in.</div>'+
-      '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
+    card.innerHTML = ls('totry_firstrun_dismissed')
+      ? '<div class="card-say">A 60-second look around?</div>'+
+        '<div class="card-body">How it all fits together, whenever you want it.</div>'
+      : '<div class="card-say">Welcome in.</div>'+
+        '<div class="card-body">Start wherever you feel something. Or, if you\u2019d rather, take a 60-second look at how it all fits together.</div>';
+    card.innerHTML += '<div class="btn-row"><button class="btn" onclick="acceptTourPrompt()">Show me around</button>'+
       '<button class="btn" onclick="dismissTourPrompt()">I\u2019ll explore</button></div>';
     return;
   }

@@ -22366,7 +22366,7 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
     let C = null, err = '';
     try {
       C = H.load(['renderTourPrompt', 'renderFirstRun', 'getFirstRunSteps', 'checkPreviewBanner'], {
-        ls, document, loadV: () => {}, vices: opts.vices || [], svgIcon: () => '',
+        ls, document, loadV: opts.loadV || (() => {}), vices: opts.vices || [], svgIcon: () => '',
         checkPostRelapse: () => {},
         getDayCount: () => (opts.day == null ? 1 : opts.day),
         daysInstalled: () => (opts.inst == null ? 1 : opts.inst),
@@ -22417,6 +22417,75 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
   H.ok(_frCard.length > 100 && H.html.indexOf('<div id="firstrun-card"', _frA + 1) < 0, '(c) the first-run card was found once in the shell');
   H.ok(!/comes alive/i.test(_frCard),
     '(c) the first-run card does not tell a newcomer the app is empty until they feed it ("comes alive as you use it")');
+
+  // ── (g) no second welcome once the checklist has greeted them ──
+  // Measured before the fix on the real functions: tap × on "Welcome. Let's set the foundation" (or
+  // finish all four steps, which dismisses it) and the next Home view said "Welcome in." over the
+  // checklist's own first line, "Start wherever you feel something." The repeat is judged against the
+  // SHELL's copy of that card, so rewording either card cannot quietly reintroduce it.
+  const _frBody = ((_frCard.match(/<p class="card-body">([\s\S]*?)<\/p>/) || [])[1] || '').replace(/<[^>]+>/g, ' ');
+  const _frLines = _frBody.split(/(?<=[.!?])\s+/).map(s => s.trim().replace(/[.!?]+$/, '').toLowerCase()).filter(s => s.length > 10);
+  H.ok(_frLines.length >= 1, '(g) the first-run card\'s body sentences were read from the shell (' + JSON.stringify(_frLines) + ')');
+  const _tourText = (r) => r.els['home-tour-prompt'].innerHTML.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const _repeats = (t) => {
+    const low = t.toLowerCase(), hits = _frLines.filter(s => low.indexOf(s) >= 0);
+    if (/\bwelcome\b/i.test(t)) hits.push('a second "welcome"');
+    return hits;
+  };
+  const gX = runCards({ store: { totry_firstrun_dismissed: true }, inst: 1, day: 1 });
+  const gXt = _tourText(gX);
+  H.ok(gX.els['home-tour-prompt'].style.display === 'block' && /acceptTourPrompt\(\)/.test(gX.els['home-tour-prompt'].innerHTML) && gXt.length > 20,
+    '(g) after the checklist is dismissed the tour card still renders and still offers the tour (' + JSON.stringify(gXt) + ')');
+  H.ok(_repeats(gXt).length === 0,
+    '(g) and it does not greet them again or repeat the checklist\'s own first line (' + JSON.stringify(_repeats(gXt)) + ' in ' + JSON.stringify(gXt) + ')');
+  const gD = runCards({ store: { totry_identity: 'I am becoming steady', totry_habits_touched: true, totry_coach_history: [{ role: 'user' }] },
+    vices: [{ n: 'x' }], inst: 3, day: 3 });
+  const gDt = _tourText(gD);
+  H.ok(gD.store.totry_firstrun_dismissed === true && gD.shown.length === 1 && gD.shown[0] === 'home-tour-prompt',
+    '(g) finishing all four steps dismisses the checklist and leaves the tour card alone (shown: ' + JSON.stringify(gD.shown) + ')');
+  H.ok(_repeats(gDt).length === 0,
+    '(g) and that path does not repeat the welcome either (' + JSON.stringify(_repeats(gDt)) + ')');
+  // Calibration: the one path where nothing greeted them — renderFirstRun failed, so its card never
+  // rendered — still says "Welcome in." with the first line. That proves both branches exist and that
+  // _repeats() can see a repeat when one is there, so the two passes above are not a blind checker.
+  const gF = runCards({ inst: 1, day: 1, loadV: () => { throw new Error('storage'); } });
+  const gFt = _tourText(gF);
+  H.ok(gF.els['firstrun-card'].style.display !== 'block' && _repeats(gFt).length >= 2,
+    '(g) calibration: when the checklist never rendered, the tour card is the welcome, and _repeats() finds it (' + JSON.stringify(_repeats(gFt)) + ')');
+
+  // ── (h) ONE WINDOW: the checklist, the tour card and the NEXT row all count days since INSTALL ──
+  // renderFirstRun asked getDayCount(), which honours the journey-start override, while the tour card
+  // asked daysInstalled(). Measured before the fix: installed today with day one set back 400 days, the
+  // checklist never showed and the tour said "Welcome in." in its place; installed 40 days ago with the
+  // journey reset two days ago, "Welcome. Let's set the foundation" came back.
+  const hJ = runCards({ inst: 1, day: 401 });
+  H.ok(hJ.shown.length === 1 && hJ.shown[0] === 'firstrun-card',
+    '(h) installed today with a journey start reading "Day 401", the checklist shows, alone (shown: ' + JSON.stringify(hJ.shown) + ')');
+  const hR = runCards({ inst: 40, day: 3 });
+  H.ok(hR.els['firstrun-card'].style.display !== 'block',
+    '(h) installed 40 days ago with a journey reset to day 3, the checklist does not come back (shown: ' + JSON.stringify(hR.shown) + ')');
+  // renderNextStep hides its row on days 1-3 so it does not compete with the checklist. It must count
+  // the same days, or a reset journey hides NEXT for three days with no checklist above it.
+  const runNext = function (inst, day, dismissed) {
+    const els = {};
+    ['next-step-anchor', 'next-step-section', 'next-step-text', 'next-step-sub'].forEach(id => { els[id] = mkEl(); });
+    const document = { getElementById: (id) => els[id] || null, querySelectorAll: () => [] };
+    let err = '';
+    try {
+      const N = H.load(['renderNextStep'], {
+        document, ls: (k) => (k === 'totry_firstrun_dismissed' ? !!dismissed : null),
+        getDayCount: () => day, daysInstalled: () => inst, _HERO_ACT: {}, _heroAlreadyAsks: () => false,
+        _countOpenLoops: () => 0, getNextStep: () => ({ text: 'One thing', sub: 's', action: 'soul', done: false }),
+      });
+      N.renderNextStep();
+    } catch (e) { err = e.message; }
+    return { err, shown: els['next-step-anchor'].style.display === 'flex' };
+  };
+  const nR = runNext(40, 3, false);
+  H.ok(!nR.err && nR.shown, '(h) 40 days installed with a reset journey, the NEXT row is not hidden behind a checklist that is not there (' + nR.err + ')');
+  H.ok(!runNext(1, 401, false).shown, '(h) installed today with a journey reading "Day 401", NEXT waits while the checklist leads');
+  H.ok(runNext(1, 401, true).shown && runNext(5, 5, false).shown,
+    '(h) calibration: once the checklist is dismissed, or past day 3, NEXT shows — so the hide above is the first-run guard');
 
   // ── (d) Restless, for somebody who has never trained ──
   const runFeel = function (life) {

@@ -62,8 +62,13 @@ function getFirstRunSteps(){
 function renderFirstRun(){
   const card = document.getElementById('firstrun-card');
   if(!card) return;
-  // Never show past day 10, or once the user has dismissed it
-  if(ls('totry_firstrun_dismissed') || getDayCount() > 10){
+  // Never show past day 10 OF THE INSTALL, or once the user has dismissed it.
+  // It asked getDayCount(), which honours the Settings journey-start override — so somebody who set
+  // day one back to the day they quit never saw this card at all (the tour said "Welcome in." in its
+  // place), and somebody 40 days in who reset their journey got "Welcome. Let's set the foundation"
+  // again. How long they have HAD the app is daysInstalled(), and renderTourPrompt and renderNextStep
+  // ask the same thing, so the three cards share one window.
+  if(ls('totry_firstrun_dismissed') || daysInstalled() > 10){
     card.style.display = 'none';
     return;
   }

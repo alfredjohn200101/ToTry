@@ -622,8 +622,11 @@ function renderNextStep(){
   // "NEXT" label sitting over an empty list. Hide the section; the row's own display stays in step.
   const sec = document.getElementById('next-step-section');
   const _hide = () => { el.style.display='none'; if(sec) sec.style.display='none'; };
-  // Don't compete with the first-run card for brand-new users.
-  if(!ls('totry_firstrun_dismissed') && getDayCount() <= 3){ _hide(); return; }
+  // Don't compete with the first-run card for brand-new users. Same clock as that card
+  // (daysInstalled, not getDayCount): with the card on install days and this guard on journey days,
+  // somebody 40 days in who reset their journey start lost this row for three days with no checklist
+  // above it, and somebody who set day one back to the day they quit got both on minute one.
+  if(!ls('totry_firstrun_dismissed') && daysInstalled() <= 3){ _hide(); return; }
   const step = getNextStep();
   // TWO ASKS FOR ONE ACT. The hero's filled button and this row resolved to the same room — "Begin
   // the morning" 24pt above "Start your morning", both go('morning') — and the softening subtitle
