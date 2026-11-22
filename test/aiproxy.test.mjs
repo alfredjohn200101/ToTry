@@ -398,6 +398,53 @@ delete ENV.GROQ_MODEL;
      'and its 2.5 safety net gets a budget, not a level (' + JSON.stringify(tc(_gv25)) + ')');
 }
 
+// ── a web-search request asks the Gemini model that CAN search first (23 Nov 2026) ──────────────
+// Google's pricing page lists Search grounding as "Free tier: Not available" for 3.5-flash-lite and
+// 3.6-flash, and "Free of charge, up to 500 RPD" for 2.5-flash; this key is on the free tier. The
+// text list leads with 3.x, so every lookup went to two models that cannot search before the one that
+// can — driven with 3.x refusing search, the review saw both named in `burned` on every request.
+// Search walks its own list now; text and vision keep theirs, which (b) above and here both hold.
+{
+  const geminiModels = () => calls.filter(c => c.who === 'gemini').map(c => c.model);
+  const WS = { messages: [{ role: 'user', content: 'oat milk 1L nutrition' }], web_search: true };
+
+  // (a) every Gemini id fails, so the whole search list is walked and its order is visible.
+  reset(); behaviour.gemini = 'fail';
+  r = await call(WS);
+  const _ws = geminiModels();
+  const _wsTools = calls.filter(c => c.who === 'gemini').map(c => JSON.stringify(c.body?.tools));
+  ok(_ws.length === 3 && _wsTools.every(t => t === '[{"google_search":{}}]'),
+     'calibration — a web_search request walked all three Gemini ids, each carrying google_search (' + _ws.length + ')');
+  ok(JSON.stringify(_ws) === JSON.stringify(['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash']),
+     'a web_search request tries gemini-2.5-flash FIRST, the one id that can still search on a free key, then the 3.x ids (' + _ws.join(', ') + ')');
+
+  // (b) the review's ws.mjs case: any 3.x request carrying the search tool is refused; 2.5 grounds.
+  reset();
+  behaviour.gemini = (model) => (String(model).startsWith('gemini-3'))
+    ? { ok: false, status: 429, json: async () => ({ error: { message: 'grounding not available on the free tier' } }), text: async () => '' }
+    : { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'from gemini' }] }, finishReason: 'STOP',
+        groundingMetadata: { groundingChunks: [{ web: { uri: 'https://example.org/oat-milk' } }] } }] }) };
+  r = await call(WS);
+  ok(r.body.model === 'gemini-2.5-flash' && r.body.grounded === true && !r.body.burned && geminiModels().length === 1,
+     'so on a free key a lookup costs ONE request and is grounded, not two refused 3.x calls first (' +
+     r.body.model + ', burned ' + JSON.stringify(r.body.burned || []) + ', ' + geminiModels().length + ' Gemini request(s))');
+  const _ws25 = calls.find(c => c.who === 'gemini' && c.model === 'gemini-2.5-flash');
+  ok(JSON.stringify(_ws25?.body?.generationConfig?.thinkingConfig) === '{"thinkingBudget":0}',
+     'and 2.5 is sent the budget it accepts on the search path too, not a level (' + JSON.stringify(_ws25?.body?.generationConfig?.thinkingConfig) + ')');
+
+  // (c) a non-search request is untouched: same three ids, 3.x first.
+  reset(); behaviour.gemini = 'fail';
+  r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+  ok(JSON.stringify(geminiModels()) === JSON.stringify(['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-2.5-flash']),
+     'an ordinary request keeps the text order, 3.5-flash-lite first (' + geminiModels().join(', ') + ')');
+
+  // (d) a GEMINI_MODEL pin still leads a search request, and the search list follows it.
+  reset({ GEMINI_MODEL: 'gemini-3.8-flash' }); behaviour.gemini = 'fail';
+  r = await call(WS);
+  ok(JSON.stringify(geminiModels()) === JSON.stringify(['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash']),
+     'a GEMINI_MODEL pin still leads a search request, with the search list behind it (' + geminiModels().join(', ') + ')');
+}
+
 // ── no candidate a vendor has SHUT DOWN is ever tried ───────────────────────────────────────────
 // Each of these was confirmed dead on 19 Nov 2026 against the vendor's own page: gemini-2.0-flash shut
 // down 1 Jun 2026; Groq shut llama-4-scout down 17 Jul and the two llama-3.x ids 16 Aug; both nemotron

@@ -213,6 +213,14 @@ for 3.5-flash-lite and 3.6-flash), and the PLAIN OpenRouter model `openrouterSea
 answer came from an `:online` model. After deploying, read `grounded` on the web_search probe together
 with `model`: a 3.x model answering with `grounded: false` is the free tier refusing to search.
 
+**A web_search request walks its own Gemini list, `gemini-2.5-flash` first (23 Nov 2026, NOT LIVE
+until deployed).** Google's pricing page lists Search grounding as "Free tier: Not available" for
+3.5-flash-lite and 3.6-flash and "Free of charge, up to 500 RPD" for 2.5-flash, so leading search with
+the 3.x ids sent every lookup to two models that cannot search on this key before the one that can.
+`MODELS.geminiSearch` is `2.5-flash → 3.5-flash-lite → 3.6-flash`; text and vision keep 3.x first, and
+a `GEMINI_MODEL` pin still leads both. After 2.5-flash shuts down on 1 Dec Google routes it to
+3.5-flash-lite, so re-run the web_search probe then and read `model`, `burned` and `grounded` together.
+
 **The `burned` field is what makes a rotting list visible.** Three providers were each answering fine
 while quietly losing candidates on every call — groq two of four, mistral one, cloudflare-vision one.
 All three lists are now ordered by what actually answered. A dead candidate is kept at the BACK rather

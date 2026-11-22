@@ -63,6 +63,14 @@ const MODELS = {
   // 2.5-flash stays LAST only as a safety net until its shutdown, so a shape error in the 3.x request
   // shows up in `burned` while something still answers, instead of silently costing the provider.
   gemini:      ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.5-flash"],
+  // WEB SEARCH ONLY, 2.5-flash FIRST (23 Nov 2026). Google's pricing page lists "Grounding with Google
+  // Search: Free tier Not available" for gemini-3.5-flash-lite and gemini-3.6-flash, and "Free of
+  // charge, up to 500 RPD" for gemini-2.5-flash, and this key is on the free tier. Driven with 3.x
+  // refusing search, the list above sent every lookup to two models that cannot search before the one
+  // that can (`burned` named both). Until 2.5-flash shuts down on 1 Dec 2026 it is the only Gemini id
+  // that grounds here; after that Google routes it to 3.5-flash-lite, and `grounded` (searchGrounded)
+  // reports whatever actually happened rather than assuming. Text and vision keep the list above.
+  geminiSearch: ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash"],
   // Groq retires model IDs regularly and its model list needs an API key, so this cannot be verified
   // from outside. Several current candidates are listed; whichever answers first wins, and the
   // `attempts` array in the response names it, so the winner is observable without guessing.
@@ -210,7 +218,9 @@ async function callGemini({ system, messages, max_tokens, web_search }) {
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
-  return await tryModels(modelList("GEMINI_MODEL", "gemini"), async (model) => {
+  // A search request walks geminiSearch (2.5-flash first, see MODELS); everything else is unchanged.
+  // GEMINI_MODEL still leads either list when it is set.
+  return await tryModels(modelList("GEMINI_MODEL", web_search ? "geminiSearch" : "gemini"), async (model) => {
     const body = {
       contents,
       generationConfig: {
