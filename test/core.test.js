@@ -22591,8 +22591,20 @@ H.section('day one: one greeting, no score of nothing, Restless ends off the pho
   H.ok(/theRelease\(/.test(dN.onclick) && !/go\('train'\)/.test(dN.onclick),
     '(d) for somebody who has never trained, Restless ends at the Release, not at Train’s set-up form (onclick: ' + dN.onclick.slice(0, 60) + ')');
   // The attribute has to COMPILE and hand the Release a sentence — a quote in the copy would close it.
+  // It is DECODED first, because the browser decodes it first: the HTML parser turns &#39; / &apos; /
+  // &quot; / &amp; back into characters BEFORE the JavaScript is compiled (CLAUDE.md lesson m), so
+  // compiling the raw attribute passed on "didn&#39;t", which kills the button. Measured in the v674
+  // review: raw compiles, decoded throws "Unexpected identifier 't'". ONE pass, as the parser does it,
+  // so "&amp;#39;" stays the six characters "&#39;" and is not decoded twice.
+  const _attrDecode = (s) => String(s).replace(/&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|amp|lt|gt));/gi, (m, d, x, n) =>
+    d ? String.fromCodePoint(+d) : x ? String.fromCodePoint(parseInt(x, 16)) : ({ apos: "'", quot: '"', amp: '&', lt: '<', gt: '>' })[n.toLowerCase()]);
+  H.eq(_attrDecode('a&#39;b&apos;c&quot;d&#x27;e&amp;#39;f'), 'a\'b\'c"d\'e&#39;f',
+    '(d) calibration: the attribute decoder turns every entity spelling back into its character, in one pass');
+  let _entityDies = false;
+  try { new Function('closeModal', 'theRelease', _attrDecode("closeModal(this);theRelease({did:'You didn&#39;t scroll'})")); } catch (e) { _entityDies = true; }
+  H.ok(_entityDies, '(d) calibration: an &#39; inside the quoted sentence does not compile once decoded, so the check below can see one');
   let did = null;
-  try { new Function('closeModal', 'theRelease', dN.onclick).call(null, () => {}, (o) => { did = o && o.did; }); } catch (e) { did = 'THREW ' + e.message; }
+  try { new Function('closeModal', 'theRelease', _attrDecode(dN.onclick)).call(null, () => {}, (o) => { did = o && o.did; }); } catch (e) { did = 'THREW ' + e.message; }
   H.ok(typeof did === 'string' && did.length > 20 && !/^THREW/.test(did),
     '(d) and the onclick compiles and passes the Release what they did (' + JSON.stringify(did) + ')');
   const dT = runFeel({ training: { sessions7: 0, sessions14: 0, daysTrained7: 0, lastTitle: 'Push', tonnage7: 0 } });
